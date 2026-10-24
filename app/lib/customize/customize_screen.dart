@@ -328,10 +328,14 @@ class _Tile extends StatelessWidget {
                   children: [
                     art,
                     const SizedBox(height: 2),
-                    WholeWordText(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: LtText.body(weight: selected ? FontWeight.w700 : FontWeight.w400),
+                    // One line inside the tile: shrinks rather than wrapping.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: WholeWordText(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: LtText.body(weight: selected ? FontWeight.w700 : FontWeight.w400),
+                      ),
                     ),
                   ],
                 ),

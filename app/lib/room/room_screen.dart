@@ -160,7 +160,9 @@ class _RoomOverlay extends StatelessWidget {
               offset: Offset(0, frame.chipOffsetY),
               child: Transform.rotate(
                 angle: -3 * math.pi / 180,
-                child: StatusPill(label: mood),
+                // A small status, not something to read closely: it grows with the text only
+                // so far, so at the largest sizes it never covers the twin.
+                child: MediaQuery.withClampedTextScaling(maxScaleFactor: 1.5, child: StatusPill(label: mood)),
               ),
             ),
           ),

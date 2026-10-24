@@ -132,7 +132,8 @@ class NameBanner extends StatelessWidget {
             children: [
               Text('{ ', style: brace, maxLines: 1),
               ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: math.max(room, 120)),
+                // Long names ellipsise; at large text the whole banner shrinks instead.
+                constraints: BoxConstraints(maxWidth: math.max(room, 420)),
                 child: Text(
                   shown,
                   style: LtText.display(size),
