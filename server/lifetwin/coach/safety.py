@@ -427,6 +427,8 @@ WARM = {
     "good morning",
     "morning",
 }
+# Plain function words seen in live rewordings ("stick with that", "till the show is back").
+WARM |= {"stick", "till", "until", "shall", "down", "around", "along", "hear", "back", "lots"}
 FILLER = {
     "the",
     "and",
