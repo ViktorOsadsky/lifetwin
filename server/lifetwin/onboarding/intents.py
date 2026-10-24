@@ -29,11 +29,13 @@ from lifetwin.onboarding.parsing import (
     UNITS_WORDS,
     VAGUE,
     YES_WORDS,
+    _base,
     _canonical,
     _others,
     _topic,
     _unhedged,
     is_skip,
+    normalize_text,
 )
 
 # ---------------------------------------------------------------------------
@@ -847,6 +849,14 @@ _ANSWER_WORDS: dict[str, str] = {
         r"none|zero|never|nothing|teetotal\w*|sober|don't|do not)\b"
     ),
     "exercise_minutes_weekly": r"\b(?:none|nothing|zero|never|don't|do not)\b",
+    # Check-in questions about one day: a plain yes or no answers them.
+    "exercise_minutes_today": (
+        r"\b(?:no|nope|nah|yes|yeah|yep|didn't|did not|haven't|none|nothing|not today)\b"
+    ),
+    "alcohol_drinks_yesterday": (
+        r"\b(?:drinks?|beers?|wines?|glass(?:es)? of|whiske?y|none|zero|nothing|no|nope|"
+        r"didn't|did not)\b"
+    ),
 }
 _READ_BACK_WORDS = r"\b(?:yes|yeah|yep|yup|no|nope|nah|right|correct|wrong)\b"
 # "per day 2 glasses of wine a week": a rate cut off from speech before the number.
@@ -854,15 +864,17 @@ _DANGLING_RATE = r"^(?:per|a|each|every) (?:day|week|night|month)\s+(?=\S*\d)"
 _RATE = r"\b(?:a|per|each|every) (?:day|week|night|month)\b"
 
 
-def _on_topic(piece: str, field: ProfileField, confirming: bool) -> bool:
+def _on_topic(piece: str, field: ProfileField, confirming: bool, checkin: bool = False) -> bool:
     """A number, the question's topic, or a word that answers it."""
     canonical = _canonical(piece)
     if re.search(r"\d", canonical) or is_skip(piece, field):
         return True
+    if checkin and same_as_before(piece):
+        return True
     cues = (
         TOPICS.get(_topic(field), NOTHING),
-        FIELD_CUES[field],
-        _ANSWER_WORDS.get(field, NOTHING),
+        FIELD_CUES.get(field, NOTHING),
+        _ANSWER_WORDS.get(field) or _ANSWER_WORDS.get(_base(field), NOTHING),
     )
     if any(re.search(cue, canonical) for cue in cues):
         return True
@@ -905,7 +917,12 @@ def words_of(text: str) -> str:
 
 
 def focus(
-    text: str, field: ProfileField, *, transcript: bool = False, confirming: bool = False
+    text: str,
+    field: ProfileField,
+    *,
+    transcript: bool = False,
+    confirming: bool = False,
+    checkin: bool = False,
 ) -> str:
     """Leave out room chatter around an answer.
 
@@ -916,7 +933,7 @@ def focus(
     """
 
     def keep(piece: str) -> bool:
-        return _on_topic(piece, field, confirming) or _changes_meaning(piece)
+        return _on_topic(piece, field, confirming, checkin) or _changes_meaning(piece)
 
     # Each sentence keeps its own end, so "yes?" stays a question.
     parts = re.split(f"({SENTENCE_END})", text)
@@ -958,5 +975,124 @@ def asks_back(text: str, field: ProfileField, *, transcript: bool = False) -> bo
         "?" in text
         or bool(TAGGED_QUESTION.search(words))
         or bool(re.search(TOPICS.get(_topic(field), NOTHING), _canonical(text)))
-        or bool(re.search(rf"\b(?:{FIELD_NAMES[field]})\b", words))
+        or bool(re.search(rf"\b(?:{FIELD_NAMES.get(_base(field), NOTHING)})\b", words))
     )
+
+
+# ---------------------------------------------------------------------------
+# Check-ins: "same as last week"
+# ---------------------------------------------------------------------------
+
+SAME = re.compile(
+    r"same old(?: same old)?|"
+    r"(?:(?:about|much|pretty much|just about|roughly|more or less|basically|exactly|still|"
+    r"very much|pretty|all)\s+)*(?:the )?same(?:(?: as| like) (?:usual|always|ever|before|normal|"
+    r"last (?:time|week|night|check ?in|one)|the last (?:time|week|one)|yesterday|i said|"
+    r"i told you|then))?(?: as (?:usual|always|ever))?"
+    r"|(?:as|like) (?:usual|always|before|normal|last (?:week|time))"
+    r"|the usual|no changes?|nothing(?:'s| has)? changed"
+    r"|(?:hasn't|has not|didn't|did not|haven't|have not) changed?|unchanged|no different"
+)
+# Words that may stand around "the same": who or what is the same, and plain fillers.
+SAME_AROUND = set(
+    """oh yes yeah yep yup well i'd i would say think it's its it is was has been were are my the
+    this that that's week night time really honestly pretty much so just about mochi dear thanks
+    thank you here too as again sleep sleeping slept weight weigh weighed exercise exercising
+    exercised walking walked walks drinks drinking drank drink smoking smoke blood pressure
+    reading numbers feel feeling felt i'm am did do had have got all around roughly basically
+    still stayed staying stays for me everything things amount one usual always before last
+    hon honey love""".split()
+)
+
+
+# Number words other than "one" ("same as last one") mean a value was said.
+SAME_NUMBERS = "|".join(word for word in (*UNITS_WORDS, *TENS_WORDS) if word != "one")
+
+
+def same_as_before(text: str) -> bool:
+    """ "Same as last week", "about the same", "no change": the last answer still holds.
+
+    Only the words around it may be fillers or the topic: "not the same", "the same
+    but a bit less" or any number is not a plain "same".
+    """
+    words = phrase(text)
+    if re.search(rf"\d|\b(?:{SAME_NUMBERS})\b", words):
+        return False
+    match = SAME.search(words)
+    if not match:
+        return False
+    rest = (words[: match.start()] + " " + words[match.end() :]).split()
+    return all(word in SAME_AROUND for word in rest)
+
+
+# ---------------------------------------------------------------------------
+# Emergencies (onboarding and check-ins share this)
+# ---------------------------------------------------------------------------
+
+EMERGENCY_NOTE = "If you need help right now, please call 911."
+# Calm and short: no cheerful filler and no next question while it is on screen.
+EMERGENCY_MESSAGE = (
+    "I'm sorry you're going through that. "
+    + EMERGENCY_NOTE
+    + " We can carry on whenever you're ready."
+)
+RESUME_LEAD = "Okay, let's carry on. "
+# Only obvious phrasings, typed or transcribed. "My heart attack was in 2015", "I'm
+# dying to see my grandkids" and "this pain in my knee" are not among them.
+EMERGENCY = re.compile(
+    r"\bchest pains?\b|\bpains? in (?:my|the) chest\b|\btightness in my chest\b|"
+    r"\bmy chest (?:hurts|is hurting|is (?:really |so |very )?tight|feels (?:tight|heavy))\b|"
+    r"\b(?:can't|cannot|can not|couldn't|could not) (?:breathe|catch my breath|get my breath)\b|"
+    r"\b(?:struggling|trouble|hard|difficulty) (?:to )?breath(?:e|ing)\b|"
+    r"\bhaving a (?:heart attack|stroke)\b|"
+    r"\b(?:think|feel like) (?:i'm|i am|it's|it is) (?:a |having a )?(?:heart attack|stroke)\b|"
+    r"\b(?:fell|fallen|had a fall)(?: down)?,? and (?:i )?(?:can't|cannot|can not) get up\b|"
+    r"\b(?:want|wanna|wants) to die\b|\bwant to be dead\b|\bkill(?:ing)? myself\b(?! laughing)|"
+    r"\bend (?:my life|it all)\b|\bsuicid\w*|\bbetter off dead\b|\bno reason to live\b|"
+    r"\b(?:don't|do not) want to (?:live|be alive)(?: anymore| any more)?\b|"
+    r"\b(?:i think|i feel like) (?:i'm|i am) dying\b|"
+    r"\b(?:won't|will not|can't|cannot) stop (?:the )?bleeding\b|"
+    r"\b(?:call|need|get me|send) (?:an ambulance|911|nine one one)\b"
+)
+# "I had chest pain years ago": history, unless it is said to be happening now.
+HISTORY = re.compile(
+    r"(?<!'ve )(?<!have )(?<!has )\bhad\b|\b(?:was|were|ago|used to|back in|history of|"
+    r"after my|since my|when i was|survived|recovered|years|last (?:year|month|week))\b|"
+    r"\bin (?:19|20)\d\d\b"
+)
+HAPPENING_NOW = re.compile(
+    r"\b(?:now|right now|today|tonight|this (?:morning|afternoon|evening)|all (?:day|morning|night)|"
+    r"just now|still|again)\b"
+)
+RESUME = _units(
+    "continue",
+    "let's continue",
+    "please continue",
+    "ok continue",
+    "okay continue",
+    "okay let's continue",
+    "carry on",
+    "let's carry on",
+    "keep going",
+    "let's keep going",
+    "go on",
+    "go ahead",
+    "i'm ready",
+    "i'm ready now",
+)
+
+
+def emergency(text: str) -> bool:
+    """A reply that says something urgent is happening now ("I've got chest pain")."""
+    words = " ".join(re.sub(r"[^\w'\s.,;!?]", " ", normalize_text(text).lower()).split())
+    for clause in re.split(r"[.,;!?]|\bbut\b", words):
+        if EMERGENCY.search(clause) and (
+            not HISTORY.search(clause) or HAPPENING_NOW.search(clause)
+        ):
+            return True
+    return False
+
+
+def resumes(text: str) -> bool:
+    """ "Continue", "let's carry on": go on with the question that was paused."""
+    return _full(RESUME, phrase(text))

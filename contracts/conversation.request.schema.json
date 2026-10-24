@@ -249,7 +249,8 @@
         "correct",
         "skip",
         "cancel",
-        "import"
+        "import",
+        "resume"
       ],
       "title": "Action",
       "type": "string"

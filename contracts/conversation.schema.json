@@ -272,7 +272,8 @@
             "thinking",
             "confirming",
             "celebrating",
-            "idle"
+            "idle",
+            "concerned"
           ],
           "title": "State",
           "type": "string"
@@ -304,6 +305,11 @@
     },
     "complete": {
       "title": "Complete",
+      "type": "boolean"
+    },
+    "emergency": {
+      "default": false,
+      "title": "Emergency",
       "type": "boolean"
     },
     "guide_mode": {
@@ -394,6 +400,7 @@
     "provider_status",
     "voice_status",
     "speech_hint",
+    "emergency",
     "accepted_input_modes",
     "mascot_events",
     "complete",
