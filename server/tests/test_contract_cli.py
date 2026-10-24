@@ -47,7 +47,7 @@ def schema(name):
 def test_in_process_replays_success_and_error_contracts_without_sockets():
     result = run_checker("--in-process")
     assert result.returncode == 0, result.stderr
-    assert "Validated 19 schemas and 31 request fixtures" in result.stdout
+    assert "Validated 21 schemas and 31 request fixtures" in result.stdout
     assert "35 responses checked across 35 cases in process" in result.stdout
     assert "PASS invalid-conversation-transition (API response checked)" in result.stdout
     assert "PASS missing-quiz-version (API response checked)" in result.stdout
@@ -72,7 +72,7 @@ def test_replay_targets_are_mutually_exclusive():
 def test_exported_schemas_are_current():
     result = run_contract_script("export.py", "--check")
     assert result.returncode == 0, result.stderr
-    assert "Checked 19 API schemas." in result.stdout
+    assert "Checked 21 API schemas." in result.stdout
 
 
 def test_export_check_rejects_schema_files_missing_from_registry(monkeypatch, tmp_path):
