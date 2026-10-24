@@ -10,6 +10,7 @@ import logging
 import re
 from collections.abc import Callable
 from datetime import date
+from typing import Literal
 
 from fastapi import HTTPException
 
@@ -38,12 +39,14 @@ from lifetwin.checkin.scripts import (
     CheckinField,
 )
 from lifetwin.core.models import CheckinValues
+from lifetwin.onboarding.habits import merge, read_notes
 from lifetwin.onboarding.intents import (
     EMERGENCY_MESSAGE,
     RESUME_LEAD,
     asks_back,
     clean_reply,
     control_intent,
+    dont_know,
     emergency,
     focus,
     keeps_answer,
@@ -83,6 +86,16 @@ from lifetwin.onboarding.service import (
 logger = logging.getLogger(__name__)
 
 BOTH_BP = ["systolic_bp", "diastolic_bp"]
+UNKNOWN_LEAD = "That's okay, we'll leave that one for today. "
+PROBE_SKIPPED = "Of course. "
+PROBES = {
+    "exercise": "What did you do? Or we can just move on.",
+    "sleep": "Did anything keep you up? Or we can just move on.",
+}
+PROBE_MOVE_ON = re.compile(
+    r"(?:(?:let's|lets) )?(?:just )?(?:move on|keep going|skip(?: it)?)|next|pass|no|nope|nah|"
+    r"nothing|not really|no thanks|(?:i'd )?rather not(?: say)?|never mind"
+)
 BOTH_BP_MESSAGE = 'Please tell me both blood pressure numbers, for example "120 over 80".'
 BP_ORDER = "The top number is usually the bigger one. Could you check your reading?"
 CONFIRM_FIRST = "Please answer yes or no to what I just read back first."
@@ -251,6 +264,7 @@ class CheckinService:
             questions=list(questions),
             current_field=questions[0],
             previous=request.previous,
+            memory_consent=request.memory_consent,
         )
         return self._respond(state, GREETINGS[request.kind] + " " + self._prompt(state))
 
@@ -282,6 +296,17 @@ class CheckinService:
         if action == "resume" or (action == "reply" and resumes(text)):
             # "Continue" after a pause: the same question or read-back again.
             return respond(RESUME_LEAD + self._prompt(state))
+        if state.phase == "probing" and action in {"reply", "skip"}:
+            intent = control_intent(text) if action == "reply" else None
+            if intent is None or intent.kind == "skip":
+                lead = PROBE_SKIPPED
+                if action == "reply" and not PROBE_MOVE_ON.fullmatch(words_of(text)):
+                    notes = _safe(read_notes, text, topic=state.probe_topic) or []
+                    state.habit_notes = merge(state.habit_notes, notes)[-5:]
+                    lead = "Thanks for telling me. "
+                state.probe_topic = None
+                self._advance(state)
+                return respond(lead + self._prompt(state))
         field = state.current_field
         if action == "reply" and field and state.phase in {"asking", "confirming"}:
             # Room chatter around the answer goes before anything else reads it.
@@ -414,6 +439,11 @@ class CheckinService:
             state.confirmed = CheckinValues.model_validate(merged)
             state.pending = CheckinValues()
             state.skipped_fields = [f for f in state.skipped_fields if f not in additions]
+            topic = self._probe(state, additions)
+            if topic:
+                state.phase, state.current_field, state.probe_asked = "probing", None, True
+                state.probe_topic = topic
+                return respond("Got it. " + self._prompt(state))
             self._advance(state)
             return respond("Got it. " + self._prompt(state))
         if action == "skip":
@@ -433,6 +463,17 @@ class CheckinService:
             # A question reopened by "go back": "keep it" or "skip" leaves the saved answer.
             self._advance(state)
             return respond("Okay, I kept your answer. " + self._prompt(state))
+        if (
+            state.phase == "asking"
+            and dont_know(text)
+            and not is_skip(text, field)
+            and not (field == "systolic_bp" and no_new_reading(text))
+        ):
+            # "Not sure", "I'd have to check": left out today, never asked again in it.
+            names = BOTH_BP if field == "systolic_bp" else [field]
+            state.unknown_fields += [n for n in names if n not in state.unknown_fields]
+            self._advance(state)
+            return respond(UNKNOWN_LEAD + self._prompt(state))
         if state.phase == "asking" and (
             is_skip(text, field) or (field == "systolic_bp" and no_new_reading(text))
         ):
@@ -494,6 +535,7 @@ class CheckinService:
     ) -> CheckinResponse:
         reaction = {
             "asking": "asking",
+            "probing": "asking",
             "confirming": "confirming",
             "ready": "celebrating",
             "cancelled": "idle",
@@ -530,6 +572,8 @@ class CheckinService:
             return heard(pending, state.kind) + " Is that right?"
         if state.phase == "ready":
             return self._closing(state)
+        if state.phase == "probing":
+            return PROBES[state.probe_topic]
         return self._question(state)
 
     @staticmethod
@@ -615,12 +659,28 @@ class CheckinService:
                 state.skipped_fields.append(name)
 
     @staticmethod
+    def _probe(state: CheckinState, additions: dict) -> Literal["exercise", "sleep"] | None:
+        """One light habit follow-up per check-in, only with memory consent."""
+        if not state.memory_consent or state.probe_asked:
+            return None
+        if (additions.get("exercise_minutes_today") or 0) > 0 or (
+            additions.get("exercise_minutes_weekly") or 0
+        ) > 0:
+            return "exercise"
+        night = additions.get("sleep_hours_last_night")
+        if night is not None and night < 6:
+            return "sleep"
+        return None
+
+    @staticmethod
     def _advance(state: CheckinState) -> None:
         state.current_field = next(
             (
                 name
                 for name in state.questions
-                if not CheckinService._saved(state, name) and name not in state.skipped_fields
+                if not CheckinService._saved(state, name)
+                and name not in state.skipped_fields
+                and name not in state.unknown_fields
             ),
             None,
         )

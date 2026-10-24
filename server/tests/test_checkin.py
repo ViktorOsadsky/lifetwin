@@ -38,7 +38,7 @@ from lifetwin.checkin.scripts import (
     WEEKLY,
     WHY_NOTES,
 )
-from lifetwin.checkin.service import CheckinService
+from lifetwin.checkin.service import UNKNOWN_LEAD, CheckinService
 from lifetwin.core.config import Settings
 from lifetwin.core.models import CheckinValues, HealthProfile
 from lifetwin.onboarding.intents import EMERGENCY_MESSAGE, RESUME_LEAD, same_as_before
@@ -749,12 +749,23 @@ def test_not_caught_repeats_the_question():
     assert result.message == NOT_CAUGHT + " " + SERVICE._question(state)
 
 
-@pytest.mark.parametrize("text", ["skip", "I'd rather not say", "pass", "I don't know"])
+@pytest.mark.parametrize("text", ["skip", "I'd rather not say"])
 def test_skip_words(text):
     result = say(at("weekly", "weight_kg"), text)
     assert result.message.startswith(SKIPPED)
     assert result.state.skipped_fields[-1] == "weight_kg"
     assert result.state.current_field == "systolic_bp"
+
+
+# Conversation v2: not knowing is recorded as unknown, distinct from skipping.
+@pytest.mark.parametrize("text", ["pass", "I don't know", "not sure", "I'd have to check"])
+def test_unknown_words(text):
+    result = say(at("weekly", "weight_kg"), text)
+    assert result.message.startswith(UNKNOWN_LEAD)
+    assert result.state.unknown_fields == ["weight_kg"]
+    assert "weight_kg" not in result.state.skipped_fields
+    assert result.state.current_field == "systolic_bp"
+    assert result.profile_update.weight_kg is None
 
 
 def test_the_skip_button():
