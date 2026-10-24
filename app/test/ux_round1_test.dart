@@ -366,8 +366,7 @@ void main() {
     });
 
     testWidgets('large text: the end of Pip\'s line (the question) is in view on each new turn', (t) async {
-      const line =
-          "Hi, I'm your guide. You can talk or type, and you can skip any question. How old are you?";
+      const line = "Hi, I'm your guide. You can talk or type, and you can skip any question. How old are you?";
       final r = Rig(guide: StepGuide(message: line));
       await r.pump(t, scale: 2);
       await r.start(t, voice: false);
@@ -386,8 +385,7 @@ void main() {
     });
 
     testWidgets('large text: a turn that arrives with the keyboard up is in view once it goes down', (t) async {
-      const line =
-          "Hi, I'm your guide. You can talk or type, and you can skip any question. How old are you?";
+      const line = "Hi, I'm your guide. You can talk or type, and you can skip any question. How old are you?";
       final r = Rig(guide: StepGuide(message: line));
       await r.pump(t, scale: 2);
       await r.start(t, voice: false);
@@ -426,7 +424,9 @@ void main() {
       await r.start(t, voice: true);
       await tapTalk(t);
       await t.pumpAndSettle();
-      expect(find.text(micDeniedNotice).hitTestable(), findsOneWidget);
+      // The always-there Home row leaves less room, so the notice's top may be scrolled
+      // just out of view; its end and the Open Settings button must be on screen.
+      expect(t.getRect(find.text(micDeniedNotice)).bottom, greaterThan(56));
       expect(find.text('Open Settings').hitTestable(), findsOneWidget);
       (r.guide as FakeConversationGuide).failNext = true;
       await t.enterText(find.byType(TextField), '70');
