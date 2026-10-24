@@ -1,5 +1,7 @@
 # iOS testing
 
+This is the team's intended device workflow. The repository does not yet contain the app, contract stub or helper script mentioned below; run these commands only after their implementation PRs land. Local device/tool versions are teammate-provided context, not checks performed by this documentation change. Product requirements are in [MASTER_PLAN.md](../MASTER_PLAN.md); proposed dependencies are in [tech-stack.md](tech-stack.md).
+
 Device testing runs on Daniel's Mac, where the test iPhone (iPhone 13 Pro, iOS 26.6) is connected and signing is set up
 (team `A5C3J42JT3`). Other Macs can use the simulator, which needs no signing.
 

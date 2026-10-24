@@ -1,17 +1,17 @@
 # LifeSim team plan
 
-How we split the master doc ([`projectspec.md`](../projectspec.md)) so four people can build in parallel without drifting apart.
-Changes from the master doc are listed in [prd-reconciliation.md](prd-reconciliation.md).
+How we split the original spec ([`projectspec.md`](../projectspec.md)) so four people can build in parallel without drifting apart. Read [MASTER_PLAN.md](../MASTER_PLAN.md) first for the current mascot-led game, SVG/Lottie twin, voice/text intake, magic-ball fortune, quiz, sensitivity search, plans and experiments. This document governs owners and sync points. Changes from the original spec are listed in [prd-reconciliation.md](prd-reconciliation.md); stack defaults are in [tech-stack.md](tech-stack.md). Referenced contracts, app and scripts are planned deliverables until implementation PRs land.
 
 ## Decisions so far
 
 | Area | Decision |
 |---|---|
 | App | Flutter / Dart, tested on iOS through Xcode |
+| Presentation | LottieFiles motion and SVG assets; Talking Tom-style game shell, mascot-led voice/text intake, magic-ball fortune, quiz with independent game-health reactions |
 | Training | Python. Victor picks the method |
 | Server | FastAPI (master doc §7). Serves Victor's model and keeps the LLM key off the phone (§15) |
 | Advisor input | The user's inputs plus the model's results. May change later |
-| Merging | Fast: merge straight to `main`, no required review. Bad merge → roll back to a checkpoint (below) |
+| Merging | Short branch → PR → merge to `main` after applicable checks and repository protections pass. No extra review required unless repository rules require it. Bad merge → revert through a PR |
 
 Because Victor is free to choose the model, the shared boundary is **the API, not the model file**. Everyone builds against the
 JSON contracts in `contracts/`, so the model behind them can change without breaking anyone.
@@ -37,6 +37,7 @@ numbers flowing early. Everyone else works on the stub, so a late model delays o
    - `prediction.schema.json`: `/api/predict` response (§9 fields plus `status` / `limitation`)
    - `compare.schema.json`: `/api/compare`, deltas in percentage points computed by the server
    - `advisor.schema.json`: `/api/advisor` request and response
+   - `sensitivity.schema.json`, `conversation.schema.json`, `quiz.schema.json`: bounded scans, confirmed conversational intake, and independent game-health scoring from the master guide
    - `fixtures/`: sample requests and expected responses (typical, smoker + diabetic, minor, age out of range, the §4.1 demo futures, an advisor question)
    - `stub_server.py`: returns contract-shaped responses from **fake** coefficients (`model_version: "stub-0"`)
    - `check.py`: replays every fixture against any server
@@ -51,8 +52,7 @@ numbers flowing early. Everyone else works on the stub, so a late model delays o
 3. **Changing a contract** = edit the schema, update `stub_server.py`, run `python3 contracts/stub_server.py --write-fixtures`,
    check passes, and tell the team in chat **before** merging. A contract change merged without telling people is the main
    way we'd drift.
-4. **Branches are short.** Name them `a/…`, `b/…`, `c/…`, `d/…`. Pull `main` into your branch often and merge back at least at
-   every sync point.
+4. **Branches are short.** Default to `codex/<track>-<task>`; the earlier `a/…` through `d/…` names are legacy conventions. Pull `main` into your branch often and merge through PRs at every sync point.
 5. **Sync points** (hours after kickoff; master doc §12 phases in brackets):
    **T+2** Contract Zero · **T+8** every track merged, stub flow runs on the phone [phase 2] · **T+16** real model behind the
    API [phase 1 done] · **T+20** compare screen working end to end [phase 3] · **T+24** advisor in the app [phase 4] ·
@@ -74,17 +74,18 @@ To undo one bad merge (keeps everyone else's later work):
 git revert -m 1 <merge-commit>   # or: git revert <commit> for a non-merge commit
 ```
 
-To get back to a known-good state when `main` is badly broken:
+To recover checkpoint behavior, branch from current `main`, then revert the bad changes or restore reviewed paths from the checkpoint and open a recovery PR:
 
 ```sh
-git switch -c recover cp-03      # inspect, then merge recover back into main
+git switch -c codex/recover-checkpoint main
+# Revert bad changes or restore reviewed paths from cp-03; open a PR.
 ```
 
-Don't `git reset --hard` and force-push `main`. That throws away every teammate's commits made after the checkpoint.
+Branching from an ancestor checkpoint and merging it back does not undo later commits. Don't `git reset --hard` and force-push `main`. That throws away every teammate's commits made after the checkpoint. Deliver individual reverts through PRs too.
 
 ## Rules every track follows (master doc §3.1, §5.3, §15)
 
-- Every number on screen comes from the model API. Never hardcode one, and never let the LLM invent one.
+- Every personal survival prediction comes from the model API. Never hardcode one or let the LLM invent one. Quiz/game-health scores are separate deterministic game values and never change medical predictions.
 - Out-of-population profiles (minors, ages outside the validated range) get a limitation message, not a curve.
 - Curves stop at the model's `max_horizon_years`.
 - Always label results as modeled associations from observational data, not causal effects.
