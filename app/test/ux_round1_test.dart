@@ -342,6 +342,29 @@ void main() {
   });
 
   group('notices', () {
+    testWidgets('very large text: a new turn shows its controls from the top (Yes not scrolled away)', (t) async {
+      final r = Rig(guide: StepGuide());
+      await r.pump(t, scale: 3);
+      await r.start(t, voice: false);
+      await t.enterText(find.byType(TextField), '70');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pumpAndSettle();
+      // The person scrolled the controls down (to Skip, say), then sends.
+      final controlsScroll = find
+          .descendant(of: find.byType(SingleChildScrollView).last, matching: find.byType(Scrollable))
+          .first;
+      await t.drag(controlsScroll, const Offset(0, -600));
+      await t.pumpAndSettle();
+      expect(t.state<ScrollableState>(controlsScroll).position.pixels, greaterThan(0));
+      await r.c.submitTyped('70');
+      await t.pumpAndSettle();
+      expect(r.c.confirming, isTrue);
+      expect(find.text('Yes').hitTestable(), findsOneWidget);
+      final yes = t.getRect(find.text('Yes'));
+      final controls = t.getRect(find.byType(SingleChildScrollView).last);
+      expect(yes.top, greaterThanOrEqualTo(controls.top));
+    });
+
     testWidgets('large text: the end of Pip\'s line (the question) is in view on each new turn', (t) async {
       const line =
           "Hi, I'm your guide. You can talk or type, and you can skip any question. How old are you?";

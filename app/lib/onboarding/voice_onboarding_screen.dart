@@ -131,6 +131,10 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   final _noticeKey = GlobalKey(debugLabel: 'notice');
   final _quickKey = GlobalKey(debugLabel: 'quick answers');
   final _lineKey = GlobalKey(debugLabel: "Pip's line");
+
+  /// The controls scroll when the text is very large; each new turn starts at the top, so
+  /// its first button (Yes, the quick answers) is not left scrolled out of sight.
+  final _controlsScroll = ScrollController();
   String? _shownNotice;
 
   void _useHealth() {
@@ -202,6 +206,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     _aiLock?.cancel();
     _turnLock?.cancel();
     _resized?.cancel();
+    _controlsScroll.dispose();
     _text.dispose();
     _focus.dispose();
     super.dispose();
@@ -222,6 +227,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       _turnLock = Timer(secondTapGuard, () {});
       _reveal(_lineKey);
       if (_quickInStory && !largeText(context)) _reveal(_quickKey);
+      if (_controlsScroll.hasClients) _controlsScroll.jumpTo(0);
     }
     if (c.notice != null && c.notice != _shownNotice) _reveal(_noticeKey);
     _shownNotice = c.notice;
@@ -390,6 +396,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: box.maxHeight * (hideKeyboard ? 0.5 : 0.6)),
             child: SingleChildScrollView(
+              controller: _controlsScroll,
               padding: EdgeInsets.fromLTRB(LtSpace.gutter, LtSpace.sm, LtSpace.gutter, hideKeyboard ? 8 : 16),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _controls(context, keyboard)),
             ),
