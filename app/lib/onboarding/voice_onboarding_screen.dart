@@ -243,6 +243,9 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         // Tapping anywhere that is not a control puts the keyboard away.
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
+          // Not a control for VoiceOver (it would be an unnamed, screen-sized button);
+          // "Hide keyboard" does the same for everyone.
+          excludeFromSemantics: true,
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
           child: ListenableBuilder(
             listenable: c,

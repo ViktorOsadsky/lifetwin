@@ -740,6 +740,19 @@ void main() {
   });
 
   group('13. VoiceOver', () {
+    testWidgets('every control has a name; no unnamed screen-sized button', (t) async {
+      final handle = t.ensureSemantics();
+      final r = Rig();
+      await r.pump(t);
+      await r.start(t, voice: false);
+      await expectLater(t, meetsGuideline(labeledTapTargetGuideline));
+      await t.enterText(find.byType(TextField), '70');
+      await t.tap(find.text('Send'));
+      await t.pumpAndSettle();
+      await expectLater(t, meetsGuideline(labeledTapTargetGuideline));
+      handle.dispose();
+    });
+
     testWidgets('with a screen reader on, the mascot does not also speak; the line is a live region', (t) async {
       final r = Rig();
       r.fakeInput.startError = const MicDeniedException();
