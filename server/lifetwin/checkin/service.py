@@ -88,6 +88,11 @@ RESTART_QUESTION = (
     "If so, say yes, start over. Otherwise, just keep going."
 )
 HOW_ARE_YOU_ASKED = re.compile(r"\bhow (?:are|r) (?:you|u)\b|\bhow's (?:it going|mochi)\b")
+# "How are you, Mochi?" said on its own, with or without a question mark.
+ASKED_HOW_I_AM = re.compile(
+    r"(?:and |so |well )?(?:how (?:are|r) (?:you|u)|how's it going|how about you|and you)"
+    r"(?: (?:doing|today|mochi|yourself|dear))*"
+)
 HOW_ARE_YOU_TAIL = re.compile(
     r"[\s,.;!-]*(?:and |how about |what about )?(?:how are )?(?:you|yourself)(?: mochi)?"
     r"(?: doing)?[\s?!.]*$",
@@ -119,7 +124,7 @@ LABELS: dict[str, str] = {
     "diastolic_bp": "blood pressure",
 }
 FEELING = {"good": "good", "okay": "okay", "not_great": "not great"}
-WEEK = {"good": "a good week", "okay": "an okay week", "not_great": "a hard week"}
+LAST_FEELING = {"good": "good", "okay": "okay", "not_great": "not so great"}
 
 
 def _safe(read, *args, **kwargs):
@@ -132,6 +137,8 @@ def _safe(read, *args, **kwargs):
 
 
 def _many(value: float, unit: str) -> str:
+    if value == 0.5:
+        return f"half a{'n' if unit == 'hour' else ''} {unit}"
     return f"{_plain(value)} {unit}{'' if value == 1 else 's'}"
 
 
@@ -150,7 +157,7 @@ def _last(field: str, value, kind: str) -> str:
     if field == "weight_kg":
         return _pounds(value)
     if field == "wellbeing":
-        return (WEEK if kind == "weekly" else FEELING)[value]
+        return LAST_FEELING[value]
     return str(value)
 
 
@@ -287,6 +294,8 @@ class CheckinService:
         if action == "reply":
             if state.phase == "ready" and WHAT_NOW.fullmatch(words_of(text)):
                 return respond(DONE_AGAIN)
+            if ASKED_HOW_I_AM.fullmatch(words_of(text)):
+                return respond(HOW_ARE_YOU + self._prompt(state))
             intent = control_intent(text)
             kind = intent.kind if intent else None
             if kind in {"repeat", "slower", "louder"}:
@@ -579,7 +588,7 @@ class CheckinService:
             return (
                 f"Okay, let's go back to your {label}. Right now I have that "
                 f"{_facts(saved, state.kind)[0]}. "
-                + self._question(state)
+                + self._question(state, plain=True)
                 + ' If that was right, say "keep it".'
             )
         if field in state.skipped_fields:

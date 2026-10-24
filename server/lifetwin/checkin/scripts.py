@@ -172,7 +172,7 @@ QUESTIONS: dict[CheckinKind, dict[CheckinField, dict[str, str]]] = {
         "wellbeing": {
             "ask": "Last one: how did this week go for you: good, okay, or not great?",
             "again": (
-                "Last one. Last week you had {value}. "
+                "Last one. Last week you said your week was {value}. "
                 "How did this week go: good, okay, or not great?"
             ),
         },
