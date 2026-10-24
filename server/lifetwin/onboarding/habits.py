@@ -368,10 +368,10 @@ READERS = {
 FIELD_TOPICS: dict[str, HabitTopic] = {
     "sleep_hours": "sleep",
     "smoking_status": "smoking",
-    "sitting_minutes_daily": "sitting",
+    "sedentary_min_day": "sitting",
     "general_health": "health",
-    "moderate_minutes_weekly": "exercise",
-    "vigorous_minutes_weekly": "exercise",
+    "moderate_recreation_min_week": "exercise",
+    "vigorous_recreation_min_week": "exercise",
     "exercise_minutes_weekly": "exercise",
 }
 EXERCISE_CUE = r"\b(?:walk\w*|swim\w*|garden\w*|golf|danc\w*|yoga|tai chi|bik\w*|cycl\w*|jog\w*|tennis|pickleball|bowling|hik\w*|gym|treadmill|aerobics|stroll\w*|pilates)\b"

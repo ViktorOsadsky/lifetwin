@@ -12,9 +12,9 @@ Codes and units are the package's (model_handoff/lifetwin_on_device, assets/mode
 | hypertension_diagnosed | hypertension | no 0, yes 1 |
 | general_health | general_health | excellent 1, very good 2, good 3, fair 4, poor 5 |
 | sleep_hours | sleep_hours | hours, 2-12 |
-| vigorous_recreation_min_week | vigorous_minutes_weekly | minutes a week |
-| moderate_recreation_min_week | moderate_minutes_weekly | minutes a week |
-| sedentary_min_day | sitting_minutes_daily | minutes a day |
+| vigorous_recreation_min_week | vigorous_recreation_min_week | minutes a week |
+| moderate_recreation_min_week | moderate_recreation_min_week | minutes a week |
+| sedentary_min_day | sedentary_min_day | minutes a day |
 
 Nothing is filled in: a missing answer stays missing, and with any input missing
 the model gives no number. Values outside the package's entry ranges are left out.
@@ -35,12 +35,12 @@ INPUTS: dict[ModelInput, tuple[str, ...]] = {
     "bmi": ("height_cm", "weight_kg"),
     "smoking_status": ("smoking_status",),
     "diabetes_diagnosed": ("diabetes",),
-    "hypertension_diagnosed": ("hypertension",),
+    "hypertension_diagnosed": ("hypertension_diagnosed",),
     "general_health": ("general_health",),
     "sleep_hours": ("sleep_hours",),
-    "vigorous_recreation_min_week": ("vigorous_minutes_weekly",),
-    "moderate_recreation_min_week": ("moderate_minutes_weekly",),
-    "sedentary_min_day": ("sitting_minutes_daily",),
+    "vigorous_recreation_min_week": ("vigorous_recreation_min_week",),
+    "moderate_recreation_min_week": ("moderate_recreation_min_week",),
+    "sedentary_min_day": ("sedentary_min_day",),
 }
 SEX = {"male": 1, "female": 2}
 SMOKING = {"never": 0, "former": 1, "current": 2}
@@ -74,12 +74,14 @@ def model_inputs(
         "sex_nhanes": SEX.get(p.sex or ""),
         "smoking_status": SMOKING.get(p.smoking_status or ""),
         "diabetes_diagnosed": None if p.diabetes is None else int(p.diabetes),
-        "hypertension_diagnosed": None if p.hypertension is None else int(p.hypertension),
+        "hypertension_diagnosed": None
+        if p.hypertension_diagnosed is None
+        else int(p.hypertension_diagnosed),
         "general_health": HEALTH.get(p.general_health or ""),
         "sleep_hours": p.sleep_hours,
-        "vigorous_recreation_min_week": p.vigorous_minutes_weekly,
-        "moderate_recreation_min_week": p.moderate_minutes_weekly,
-        "sedentary_min_day": p.sitting_minutes_daily,
+        "vigorous_recreation_min_week": p.vigorous_recreation_min_week,
+        "moderate_recreation_min_week": p.moderate_recreation_min_week,
+        "sedentary_min_day": p.sedentary_min_day,
     }
     values = {
         name: value if value is None or name not in BOUNDS or _within(name, value) else None
@@ -146,7 +148,7 @@ def character_hints(profile: HealthProfile, notes: list[HabitNote]) -> Character
     elif profile.general_health:
         mood = {"fair": "okay", "poor": "not_great"}.get(profile.general_health, "good")
     energy = None
-    moderate, vigorous = profile.moderate_minutes_weekly, profile.vigorous_minutes_weekly
+    moderate, vigorous = profile.moderate_recreation_min_week, profile.vigorous_recreation_min_week
     if moderate is not None or vigorous is not None:
         minutes = (moderate or 0) + 2 * (vigorous or 0)
     else:

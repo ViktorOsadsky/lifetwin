@@ -971,7 +971,7 @@
       "text": "my doctor would know",
       "state": {
         "phase": "asking",
-        "current_field": "hypertension",
+        "current_field": "hypertension_diagnosed",
         "confirmed_profile": {
           "age": 72,
           "sex": "female"
@@ -984,11 +984,11 @@
       "complete": false,
       "state": {
         "unknown_fields": [
-          "hypertension"
+          "hypertension_diagnosed"
         ],
         "skipped_fields": [],
         "pending_profile": {
-          "hypertension": null
+          "hypertension_diagnosed": null
         }
       },
       "model_inputs": {
@@ -1014,7 +1014,7 @@
       "text": "Last time it was 140 over 90",
       "state": {
         "phase": "asking",
-        "current_field": "hypertension"
+        "current_field": "hypertension_diagnosed"
       }
     },
     "status": 200,
@@ -1023,9 +1023,9 @@
       "complete": false,
       "state": {
         "phase": "asking",
-        "current_field": "hypertension",
+        "current_field": "hypertension_diagnosed",
         "pending_profile": {
-          "hypertension": null,
+          "hypertension_diagnosed": null,
           "systolic_bp": null
         },
         "habit_notes": {
@@ -1105,9 +1105,9 @@
         "sex": "female",
         "smoking_status": "never",
         "sleep_hours": 6,
-        "moderate_minutes_weekly": 90,
-        "vigorous_minutes_weekly": 0,
-        "sitting_minutes_daily": 480
+        "moderate_recreation_min_week": 90,
+        "vigorous_recreation_min_week": 0,
+        "sedentary_min_day": 480
       },
       "habit_notes": [
         {

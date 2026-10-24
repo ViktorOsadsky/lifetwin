@@ -91,7 +91,7 @@ def _smoking(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation |
 
 
 def _activity_minutes(profile: HealthProfile) -> int | None:
-    moderate, vigorous = profile.moderate_minutes_weekly, profile.vigorous_minutes_weekly
+    moderate, vigorous = profile.moderate_recreation_min_week, profile.vigorous_recreation_min_week
     if moderate is None and vigorous is None:
         return profile.exercise_minutes_weekly
     return (moderate or 0) + 2 * (vigorous or 0)
@@ -110,7 +110,11 @@ def _activity(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation 
     gentle = barrier is not None and any(word in barrier for word in GENTLE_BARRIERS)
     fields = [
         f
-        for f in ("moderate_minutes_weekly", "vigorous_minutes_weekly", "exercise_minutes_weekly")
+        for f in (
+            "moderate_recreation_min_week",
+            "vigorous_recreation_min_week",
+            "exercise_minutes_weekly",
+        )
         if getattr(profile, f) is not None
     ]
     based = fields + (["note:exercise"] if note else [])
@@ -153,7 +157,9 @@ def _activity(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation 
             "for. Keep it up!",
             based,
         )
-    walks = (profile.moderate_minutes_weekly or 0) > 0 and not profile.vigorous_minutes_weekly
+    walks = (
+        profile.moderate_recreation_min_week or 0
+    ) > 0 and not profile.vigorous_recreation_min_week
     if walks and not gentle:
         doing = f"you {_verb(kind)}{company}" if kind else "you're active"
         return _rec(
@@ -230,7 +236,7 @@ SITTING_TIPS = {
 
 
 def _sitting(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation | None:
-    if profile.sitting_minutes_daily is None or profile.sitting_minutes_daily < 240:
+    if profile.sedentary_min_day is None or profile.sedentary_min_day < 240:
         return None
     note = _note(notes, "sitting")
     kinds = (note.kind or "").split(" and ") if note else []
@@ -238,7 +244,7 @@ def _sitting(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation |
     text = (tip or "You could try standing up and moving for a few minutes every hour.") + (
         " Moving more and sitting less is good advice for everyone."
     )
-    based = ["sitting_minutes_daily"] + (["note:sitting"] if note else [])
+    based = ["sedentary_min_day"] + (["note:sitting"] if note else [])
     return _rec("sitting_minus_60_realistic", "sitting", "Sit a little less", text, based)
 
 

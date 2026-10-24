@@ -19,10 +19,10 @@ ProfileField = Literal[
     "systolic_bp",
     "diastolic_bp",
     "general_health",
-    "hypertension",
-    "sitting_minutes_daily",
-    "moderate_minutes_weekly",
-    "vigorous_minutes_weekly",
+    "hypertension_diagnosed",
+    "sedentary_min_day",
+    "moderate_recreation_min_week",
+    "vigorous_recreation_min_week",
 ]
 FIELDS: tuple[ProfileField, ...] = tuple(HealthProfile.model_fields)
 FIELD_COUNT = len(FIELDS)
@@ -275,7 +275,7 @@ class Recommendation(ApiModel):
     title: str = Field(min_length=1, max_length=80)
     # Mochi's words: gentle, concrete, no numbers of years, no promises.
     message: str = Field(min_length=1, max_length=400)
-    # Profile fields and habit-note topics it uses, e.g. "moderate_minutes_weekly", "note:exercise".
+    # Profile fields and habit-note topics it uses, e.g. "moderate_recreation_min_week", "note:exercise".
     based_on: list[str] = Field(max_length=6)
     # The package's wellness card it is grounded in, and that card's public source.
     wellness_card: Literal["smoking", "activity", "sleep", "sitting"]

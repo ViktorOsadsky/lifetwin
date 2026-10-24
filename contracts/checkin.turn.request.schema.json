@@ -408,10 +408,10 @@
                 "systolic_bp",
                 "diastolic_bp",
                 "general_health",
-                "hypertension",
-                "sitting_minutes_daily",
-                "moderate_minutes_weekly",
-                "vigorous_minutes_weekly"
+                "hypertension_diagnosed",
+                "sedentary_min_day",
+                "moderate_recreation_min_week",
+                "vigorous_recreation_min_week"
               ],
               "type": "string"
             },

@@ -115,7 +115,7 @@ SCRIPT: tuple[Question, ...] = (
         proxy_replies=("Great", "Pretty good", "Okay", "Not so good", "Poorly"),
     ),
     Question(
-        "hypertension",
+        "hypertension_diagnosed",
         "high blood pressure",
         (
             "Has a doctor ever told you that you have high blood pressure?",
@@ -140,7 +140,7 @@ SCRIPT: tuple[Question, ...] = (
         ("Yes", "No", NOT_SURE),
     ),
     Question(
-        "sitting_minutes_daily",
+        "sedentary_min_day",
         "sitting time",
         (
             "About how many hours a day do you spend sitting? TV and driving count.",
@@ -157,7 +157,7 @@ SCRIPT: tuple[Question, ...] = (
         proxy_replies=("Mostly sitting", "About half", "On my feet most of the day"),
     ),
     Question(
-        "moderate_minutes_weekly",
+        "moderate_recreation_min_week",
         "lighter activity",
         (
             "In a usual week, how many minutes of lighter activity do you do, like brisk "
@@ -180,7 +180,7 @@ SCRIPT: tuple[Question, ...] = (
         proxy_replies=("Yes", "No"),
     ),
     Question(
-        "vigorous_minutes_weekly",
+        "vigorous_recreation_min_week",
         "harder exercise",
         (
             "And harder exercise that makes you breathe hard, like jogging or tennis? "
@@ -266,11 +266,11 @@ ORDER: tuple[str, ...] = (
     "weight_kg",
     "sleep_hours",
     "general_health",
-    "hypertension",
+    "hypertension_diagnosed",
     "diabetes",
-    "sitting_minutes_daily",
-    "moderate_minutes_weekly",
-    "vigorous_minutes_weekly",
+    "sedentary_min_day",
+    "moderate_recreation_min_week",
+    "vigorous_recreation_min_week",
 )
 ASKED: tuple[ProfileField, ...] = tuple(step for step in ORDER if step != HEALTH_STEP)
 
@@ -374,12 +374,12 @@ STEERS: tuple[tuple[str, ProfileField], ...] = (
     (
         r"\b(?:walk\w*|stroll\w*|garden\w*|golf\w*|danc\w*|swim\w*|yoga|tai chi|bik\w*|"
         r"cycl\w*|hik\w*|tennis|gym|pickleball|bowling)\b",
-        "moderate_minutes_weekly",
+        "moderate_recreation_min_week",
     ),
     (r"\b(?:sleep\w*|slept|tired|exhausted|insomnia|nap\w*|bedtime)\b", "sleep_hours"),
-    (r"\b(?:tv|television|telly|sit|sitting|couch|recliner|computer)\b", "sitting_minutes_daily"),
+    (r"\b(?:tv|television|telly|sit|sitting|couch|recliner|computer)\b", "sedentary_min_day"),
     (r"\b(?:smok\w*|cigar\w*)\b", "smoking_status"),
-    (r"\b(?:blood pressure|hypertension)\b", "hypertension"),
+    (r"\b(?:blood pressure|hypertension)\b", "hypertension_diagnosed"),
     (r"\b(?:diabet\w*|blood sugar)\b", "diabetes"),
     (r"\b(?:knees?|hips?|arthritis|aches?|pains?|my health)\b", "general_health"),
 )

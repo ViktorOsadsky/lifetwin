@@ -51,14 +51,14 @@ class HealthProfile(ApiModel):
     general_health: GeneralHealth | None = None
     # A doctor has told the person they have high blood pressure (a diagnosis, never
     # inferred from a reading).
-    hypertension: bool | None = None
+    hypertension_diagnosed: bool | None = None
     # Awake time spent sitting on a usual day (reading, TV, driving all count).
-    sitting_minutes_daily: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1439)
+    sedentary_min_day: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1439)
     # Recreational activity in a usual week: lighter ("a little out of breath") and harder.
-    moderate_minutes_weekly: Annotated[int | None, WholeNumber] = Field(
+    moderate_recreation_min_week: Annotated[int | None, WholeNumber] = Field(
         default=None, ge=0, le=10080
     )
-    vigorous_minutes_weekly: Annotated[int | None, WholeNumber] = Field(
+    vigorous_recreation_min_week: Annotated[int | None, WholeNumber] = Field(
         default=None, ge=0, le=10080
     )
 

@@ -133,18 +133,18 @@ def test_demo_path_with_apple_health():
     d.say("yes")
     assert d.state["current_probe"] == "sleep_pattern"  # short sleep, asked after it lost out
     d.say("Around midnight, and I get up for the bathroom")
-    assert d.state["current_field"] == "hypertension"
+    assert d.state["current_field"] == "hypertension_diagnosed"
     d.say("Not sure")
-    assert "hypertension" in d.state["unknown_fields"]
+    assert "hypertension_diagnosed" in d.state["unknown_fields"]
     d.say("No")
     d.say("yes")
     d.say("About 7 hours, mostly TV")
     d.say("yes")
     # Apple Health's total: only the harder part is asked; the rest is lighter activity.
-    assert d.state["current_field"] == "vigorous_minutes_weekly"
+    assert d.state["current_field"] == "vigorous_recreation_min_week"
     assert "Apple Health shows about 90 minutes" in d.result["message"]
     d.say("None")
-    assert d.state["pending_profile"]["moderate_minutes_weekly"] == 90
+    assert d.state["pending_profile"]["moderate_recreation_min_week"] == 90
     end = d.say("yes")
     assert end["complete"] is True
     assert len(d.state["probes_asked"]) <= MAX_PROBES
@@ -251,7 +251,7 @@ def test_person_who_volunteers_everything_at_once():
     assert d.state["current_probe"] is None
     assert any(n.get("quit_ago") == "20 years" for n in d.state["habit_notes"])
     # Steered by their own words: the dog walks come next, before the Health offer.
-    assert d.state["current_field"] == "moderate_minutes_weekly"
+    assert d.state["current_field"] == "moderate_recreation_min_week"
     assert "your dog" in d.result["message"]
 
 
@@ -334,35 +334,35 @@ def reply(state: dict, text: str, client: TestClient | None = None) -> dict:
 
 
 def test_unknown_is_acknowledged_kindly_and_once_says_still_learning():
-    first = reply(asking("hypertension"), "no idea")
+    first = reply(asking("hypertension_diagnosed"), "no idea")
     assert any(first["message"].startswith(ack) for ack in UNKNOWN_ACKS)
     assert "still learning" in first["message"]
     second = reply(first["state"] | asking("diabetes"), "not sure")
     assert "still learning" not in second["message"]
-    assert second["state"]["unknown_fields"] == ["hypertension", "diabetes"]
+    assert second["state"]["unknown_fields"] == ["hypertension_diagnosed", "diabetes"]
 
 
 def test_sitting_proxy_is_an_estimate_read_back_honestly():
-    asked = reply(asking("sitting_minutes_daily"), "no idea")
-    assert asked["state"]["proxy_field"] == "sitting_minutes_daily"
-    assert asked["quick_replies"] == list(BY_FIELD["sitting_minutes_daily"].proxy_replies)
+    asked = reply(asking("sedentary_min_day"), "no idea")
+    assert asked["state"]["proxy_field"] == "sedentary_min_day"
+    assert asked["quick_replies"] == list(BY_FIELD["sedentary_min_day"].proxy_replies)
     estimate = reply(asked["state"], "most of the day")
-    assert estimate["state"]["pending_profile"]["sitting_minutes_daily"] == 600
+    assert estimate["state"]["pending_profile"]["sedentary_min_day"] == 600
     assert "rough estimate" in estimate["message"]
     saved = reply(estimate["state"], "yes")
-    assert saved["state"]["estimated_fields"] == ["sitting_minutes_daily"]
+    assert saved["state"]["estimated_fields"] == ["sedentary_min_day"]
     assert saved["model_inputs"]["estimated"] == ["sedentary_min_day"]
     note = next(n for n in saved["state"]["habit_notes"] if n["estimate_for"])
     assert note == {**note, "topic": "sitting", "estimate": "most of the day sitting"}
 
 
 def test_a_reading_is_context_and_the_diagnosis_is_asked_once_more():
-    first = reply(asking("hypertension"), "130 over 85 last week")
-    assert first["state"]["current_field"] == "hypertension"
+    first = reply(asking("hypertension_diagnosed"), "130 over 85 last week")
+    assert first["state"]["current_field"] == "hypertension_diagnosed"
     assert first["state"]["pending_profile"]["systolic_bp"] is None
     assert "isn't the same as a diagnosis" in first["message"]
     second = reply(first["state"], "it was 128 over 80 at the pharmacy")
-    assert "hypertension" in second["state"]["unknown_fields"]
+    assert "hypertension_diagnosed" in second["state"]["unknown_fields"]
     assert second["state"]["confirmed_profile"]["systolic_bp"] is None
 
 
@@ -427,12 +427,12 @@ def test_model_inputs_use_the_packages_codes():
         weight_kg=60,
         smoking_status="former",
         diabetes=False,
-        hypertension=True,
+        hypertension_diagnosed=True,
         general_health="very_good",
         sleep_hours=7,
-        vigorous_minutes_weekly=0,
-        moderate_minutes_weekly=150,
-        sitting_minutes_daily=480,
+        vigorous_recreation_min_week=0,
+        moderate_recreation_min_week=150,
+        sedentary_min_day=480,
     )
     result = model_inputs(profile)
     assert result.status == "ready" and result.missing == []
@@ -458,16 +458,18 @@ def test_model_inputs_never_fill_in_and_send_height_and_weight_together():
     assert result.profile.height_cm is None and result.profile.weight_kg is None
     assert result.profile.sleep_hours is None  # outside the package's 2-12 entry range
     assert "bmi" in result.missing and "sleep_hours" in result.missing
-    unknown = model_inputs(HealthProfile(smoking_status="unknown"), unknown=["hypertension"])
+    unknown = model_inputs(
+        HealthProfile(smoking_status="unknown"), unknown=["hypertension_diagnosed"]
+    )
     assert unknown.unknown == ["hypertension_diagnosed", "smoking_status"]
     assert unknown.profile.smoking_status is None
 
 
 def test_character_hints_are_coarse_and_kind():
     assert character_hints(HealthProfile(), []).model_dump() == {"mood": None, "energy": None}
-    active = HealthProfile(general_health="good", moderate_minutes_weekly=200, sleep_hours=7)
+    active = HealthProfile(general_health="good", moderate_recreation_min_week=200, sleep_hours=7)
     assert character_hints(active, []).model_dump() == {"mood": "good", "energy": "high"}
-    tired = HealthProfile(general_health="poor", moderate_minutes_weekly=60, sleep_hours=5)
+    tired = HealthProfile(general_health="poor", moderate_recreation_min_week=60, sleep_hours=5)
     assert character_hints(tired, []).model_dump() == {"mood": "not_great", "energy": "low"}
     worried = [HabitNote(topic="health", feeling="worried")]
     assert character_hints(active, worried).mood == "not_great"
@@ -489,30 +491,30 @@ def recs(**profile) -> list:
 
 
 def test_smoking_comes_first_with_quit_support():
-    found = recs(smoking_status="current", sleep_hours=6, moderate_minutes_weekly=0)
+    found = recs(smoking_status="current", sleep_hours=6, moderate_recreation_min_week=0)
     assert found[0].lever == "quit_smoking"
     assert "1-800-QUIT-NOW" in found[0].message
     assert found[0].source_url == "https://www.cdc.gov/tobacco/about/"
 
 
 def test_inactive_people_get_a_small_start():
-    found = recs(moderate_minutes_weekly=0, vigorous_minutes_weekly=0)
+    found = recs(moderate_recreation_min_week=0, vigorous_recreation_min_week=0)
     assert found[0].lever == "moderate_plus_90"
     assert "10 to 15 minutes" in found[0].message
 
 
 def test_active_people_get_encouragement_not_more_minutes():
-    found = recs(moderate_minutes_weekly=200, vigorous_minutes_weekly=0)
+    found = recs(moderate_recreation_min_week=200, vigorous_recreation_min_week=0)
     assert [rec.lever for rec in found] == ["keep_it_up"]
     assert "Keep it up" in found[0].message
 
 
 def test_walkers_may_pick_up_the_pace_unless_something_hurts():
     walk = HabitNote(topic="exercise", kind="walking", **{"with": "dog"})
-    found = recs(moderate_minutes_weekly=60, vigorous_minutes_weekly=0, notes=[walk])
+    found = recs(moderate_recreation_min_week=60, vigorous_recreation_min_week=0, notes=[walk])
     assert found[0].lever == "vigorous_plus_60" and "your dog" in found[0].message
     sore = HabitNote(topic="exercise", kind="walking", barrier="knee pain")
-    found = recs(moderate_minutes_weekly=60, vigorous_minutes_weekly=0, notes=[sore])
+    found = recs(moderate_recreation_min_week=60, vigorous_recreation_min_week=0, notes=[sore])
     assert found[0].lever == "moderate_plus_90"
     assert "about 150 minutes" in found[0].message  # 60 now, three more 30-minute walks
 
@@ -527,16 +529,16 @@ def test_never_weight_never_years_and_at_most_three():
         dict(
             smoking_status="current",
             sleep_hours=5,
-            moderate_minutes_weekly=0,
-            sitting_minutes_daily=600,
+            moderate_recreation_min_week=0,
+            sedentary_min_day=600,
             weight_kg=120,
             height_cm=160,
         ),  # fmt: skip
         dict(
-            moderate_minutes_weekly=60,
-            vigorous_minutes_weekly=0,
+            moderate_recreation_min_week=60,
+            vigorous_recreation_min_week=0,
             sleep_hours=6,
-            sitting_minutes_daily=480,
+            sedentary_min_day=480,
         ),  # fmt: skip
         dict(weight_kg=140, height_cm=165),
     ]
@@ -567,7 +569,11 @@ def test_lever_order_matches_the_sensitivity_scan_when_present():
 def test_recommendations_route_is_stateless_and_template_by_default():
     client = TestClient(create_app(Settings(_env_file=None, app_env="test")))
     body = {
-        "profile": {"sleep_hours": 6, "moderate_minutes_weekly": 0, "vigorous_minutes_weekly": 0},
+        "profile": {
+            "sleep_hours": 6,
+            "moderate_recreation_min_week": 0,
+            "vigorous_recreation_min_week": 0,
+        },
         "habit_notes": [{"topic": "sleep", "bedtime": "midnight"}],
     }
     response = client.post("/api/recommendations", json=body)
@@ -624,7 +630,7 @@ def finished_state() -> dict:
     return {
         "phase": "confirming",
         "memory_consent": True,
-        "pending_profile": {"vigorous_minutes_weekly": 0},
+        "pending_profile": {"vigorous_recreation_min_week": 0},
         "confirmed_profile": {
             "age": 72,
             "sex": "female",
@@ -632,11 +638,11 @@ def finished_state() -> dict:
             "weight_kg": 60,
             "smoking_status": "never",
             "diabetes": False,
-            "hypertension": False,
+            "hypertension_diagnosed": False,
             "general_health": "good",
             "sleep_hours": 6,
-            "moderate_minutes_weekly": 60,
-            "sitting_minutes_daily": 300,
+            "moderate_recreation_min_week": 60,
+            "sedentary_min_day": 300,
         },
         "habit_notes": [
             {"topic": "exercise", "kind": "walking", "with": "dog"},
@@ -680,7 +686,7 @@ def test_consent_sends_answers_and_their_words_but_never_a_name(caplog):
     instructions, facts = provider.calls[0]
     assert "never add numbers" in instructions
     sent = json.dumps(facts)
-    assert "dog" in sent and "moderate_minutes_weekly" in sent
+    assert "dog" in sent and "moderate_recreation_min_week" in sent
     assert not re.search(r"\b(?:name|email|phone|address)\b", sent)
     assert result["phrased_by"] == "muse"
     assert result["recommendations"][0]["message"].startswith("Lovely walks with your dog!")
@@ -842,11 +848,11 @@ def test_leaving_a_probe_by_jump_or_correction_returns_a_valid_state():
 @pytest.mark.parametrize(
     ("field", "text"),
     [
-        ("sitting_minutes_daily", "my wife sits all day"),
+        ("sedentary_min_day", "my wife sits all day"),
         ("general_health", "my husband is in poor health"),
         ("general_health", "I'm not fine"),
         ("general_health", "I'm okay but my wife is poorly"),
-        ("sitting_minutes_daily", "I don't sit much, maybe half"),
+        ("sedentary_min_day", "I don't sit much, maybe half"),
     ],
 )
 def test_simpler_question_keeps_the_safety_rules(field, text):
@@ -856,16 +862,19 @@ def test_simpler_question_keeps_the_safety_rules(field, text):
 
 def test_someone_elses_reading_is_not_kept():
     result = reply(
-        asking("hypertension", memory_consent=True), "my wife's blood pressure is 150 over 95"
+        asking("hypertension_diagnosed", memory_consent=True),
+        "my wife's blood pressure is 150 over 95",
     )
     assert all(not note["reading"] for note in result["state"]["habit_notes"])
-    result = reply(asking("hypertension", memory_consent=True), "her blood pressure is 120 over 70")
+    result = reply(
+        asking("hypertension_diagnosed", memory_consent=True), "her blood pressure is 120 over 70"
+    )
     assert all(not note["reading"] for note in result["state"]["habit_notes"])
 
 
 def test_a_bare_yes_never_means_150_minutes():
-    result = reply(asking("moderate_minutes_weekly"), "yes")
-    assert result["state"]["pending_profile"]["moderate_minutes_weekly"] is None
+    result = reply(asking("moderate_recreation_min_week"), "yes")
+    assert result["state"]["pending_profile"]["moderate_recreation_min_week"] is None
 
 
 @pytest.mark.parametrize(

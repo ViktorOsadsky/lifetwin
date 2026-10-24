@@ -22,10 +22,10 @@
                 "systolic_bp",
                 "diastolic_bp",
                 "general_health",
-                "hypertension",
-                "sitting_minutes_daily",
-                "moderate_minutes_weekly",
-                "vigorous_minutes_weekly"
+                "hypertension_diagnosed",
+                "sedentary_min_day",
+                "moderate_recreation_min_week",
+                "vigorous_recreation_min_week"
               ],
               "type": "string"
             },
@@ -72,10 +72,10 @@
               "systolic_bp",
               "diastolic_bp",
               "general_health",
-              "hypertension",
-              "sitting_minutes_daily",
-              "moderate_minutes_weekly",
-              "vigorous_minutes_weekly"
+              "hypertension_diagnosed",
+              "sedentary_min_day",
+              "moderate_recreation_min_week",
+              "vigorous_recreation_min_week"
             ],
             "type": "string"
           },
@@ -172,10 +172,10 @@
               "systolic_bp",
               "diastolic_bp",
               "general_health",
-              "hypertension",
-              "sitting_minutes_daily",
-              "moderate_minutes_weekly",
-              "vigorous_minutes_weekly"
+              "hypertension_diagnosed",
+              "sedentary_min_day",
+              "moderate_recreation_min_week",
+              "vigorous_recreation_min_week"
             ],
             "type": "string"
           },
@@ -199,10 +199,10 @@
                 "systolic_bp",
                 "diastolic_bp",
                 "general_health",
-                "hypertension",
-                "sitting_minutes_daily",
-                "moderate_minutes_weekly",
-                "vigorous_minutes_weekly"
+                "hypertension_diagnosed",
+                "sedentary_min_day",
+                "moderate_recreation_min_week",
+                "vigorous_recreation_min_week"
               ],
               "type": "string"
             },
@@ -235,10 +235,10 @@
               "systolic_bp",
               "diastolic_bp",
               "general_health",
-              "hypertension",
-              "sitting_minutes_daily",
-              "moderate_minutes_weekly",
-              "vigorous_minutes_weekly"
+              "hypertension_diagnosed",
+              "sedentary_min_day",
+              "moderate_recreation_min_week",
+              "vigorous_recreation_min_week"
             ],
             "type": "string"
           },
@@ -267,10 +267,10 @@
                 "systolic_bp",
                 "diastolic_bp",
                 "general_health",
-                "hypertension",
-                "sitting_minutes_daily",
-                "moderate_minutes_weekly",
-                "vigorous_minutes_weekly"
+                "hypertension_diagnosed",
+                "sedentary_min_day",
+                "moderate_recreation_min_week",
+                "vigorous_recreation_min_week"
               ],
               "type": "string"
             },
@@ -310,10 +310,10 @@
               "systolic_bp",
               "diastolic_bp",
               "general_health",
-              "hypertension",
-              "sitting_minutes_daily",
-              "moderate_minutes_weekly",
-              "vigorous_minutes_weekly"
+              "hypertension_diagnosed",
+              "sedentary_min_day",
+              "moderate_recreation_min_week",
+              "vigorous_recreation_min_week"
             ],
             "type": "string"
           },
@@ -401,10 +401,10 @@
                 "systolic_bp",
                 "diastolic_bp",
                 "general_health",
-                "hypertension",
-                "sitting_minutes_daily",
-                "moderate_minutes_weekly",
-                "vigorous_minutes_weekly"
+                "hypertension_diagnosed",
+                "sedentary_min_day",
+                "moderate_recreation_min_week",
+                "vigorous_recreation_min_week"
               ],
               "type": "string"
             },
@@ -731,7 +731,7 @@
           "default": null,
           "title": "Height Cm"
         },
-        "hypertension": {
+        "hypertension_diagnosed": {
           "anyOf": [
             {
               "type": "boolean"
@@ -741,9 +741,9 @@
             }
           ],
           "default": null,
-          "title": "Hypertension"
+          "title": "Hypertension Diagnosed"
         },
-        "moderate_minutes_weekly": {
+        "moderate_recreation_min_week": {
           "anyOf": [
             {
               "maximum": 10080,
@@ -755,7 +755,21 @@
             }
           ],
           "default": null,
-          "title": "Moderate Minutes Weekly"
+          "title": "Moderate Recreation Min Week"
+        },
+        "sedentary_min_day": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sedentary Min Day"
         },
         "sex": {
           "anyOf": [
@@ -772,20 +786,6 @@
           ],
           "default": null,
           "title": "Sex"
-        },
-        "sitting_minutes_daily": {
-          "anyOf": [
-            {
-              "maximum": 1439,
-              "minimum": 0,
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Sitting Minutes Daily"
         },
         "sleep_hours": {
           "anyOf": [
@@ -833,7 +833,7 @@
           "default": null,
           "title": "Systolic Bp"
         },
-        "vigorous_minutes_weekly": {
+        "vigorous_recreation_min_week": {
           "anyOf": [
             {
               "maximum": 10080,
@@ -845,7 +845,7 @@
             }
           ],
           "default": null,
-          "title": "Vigorous Minutes Weekly"
+          "title": "Vigorous Recreation Min Week"
         },
         "weight_kg": {
           "anyOf": [
@@ -899,10 +899,10 @@
             "systolic_bp",
             "diastolic_bp",
             "general_health",
-            "hypertension",
-            "sitting_minutes_daily",
-            "moderate_minutes_weekly",
-            "vigorous_minutes_weekly"
+            "hypertension_diagnosed",
+            "sedentary_min_day",
+            "moderate_recreation_min_week",
+            "vigorous_recreation_min_week"
           ],
           "type": "string"
         },

@@ -19,7 +19,7 @@ MAX_PROBES = 3
 
 def _activity(profile: HealthProfile) -> int | None:
     """Known weekly activity minutes, or None while it could still be more than zero."""
-    parts = [profile.moderate_minutes_weekly, profile.vigorous_minutes_weekly]
+    parts = [profile.moderate_recreation_min_week, profile.vigorous_recreation_min_week]
     known = [value for value in parts if value is not None]
     if any(known):
         return sum(known)
@@ -48,7 +48,7 @@ class Probe:
 
 
 ACTIVITY_FIELDS = frozenset(
-    {"moderate_minutes_weekly", "vigorous_minutes_weekly", "exercise_minutes_weekly"}
+    {"moderate_recreation_min_week", "vigorous_recreation_min_week", "exercise_minutes_weekly"}
 )
 
 PROBES: tuple[Probe, ...] = (
@@ -99,8 +99,8 @@ PROBES: tuple[Probe, ...] = (
     Probe(
         "sitting_activities",
         "sitting",
-        frozenset({"sitting_minutes_daily"}),
-        lambda p: None if p.sitting_minutes_daily is None else p.sitting_minutes_daily >= 360,
+        frozenset({"sedentary_min_day"}),
+        lambda p: None if p.sedentary_min_day is None else p.sedentary_min_day >= 360,
         "sitting_minus_60_realistic",
         (
             "What keeps you sitting most, like TV, reading or driving?",

@@ -18,7 +18,7 @@ Claimed in [issue #6](https://github.com/ViktorOsadsky/lifetwin/issues/6). Code 
 | `sleep_hours` | Asleep (core/deep/REM/unspecified) | Median night over the last 14 nights; needs at least 3 nights |
 | `systolic_bp`, `diastolic_bp` | Blood Pressure | Average of the last 3 readings within 90 days |
 
-Age, sex, smoking, alcohol and diabetes stay as conversation questions. In onboarding v2 Mochi offers Apple Health right after age, sex and smoking (the server returns `client_action: "open_health_import"` on a yes), and the confirmed values come back with action `import`. Exercise Time is all brisk-or-harder movement, so after an import Mochi asks only how much of it is harder exercise and reads the rest back as lighter activity (`moderate_minutes_weekly = exercise_minutes_weekly - vigorous_minutes_weekly`); this split needs owner approval. US users hear feet, inches and pounds; values are
+Age, sex, smoking, alcohol and diabetes stay as conversation questions. In onboarding v2 Mochi offers Apple Health right after age, sex and smoking (the server returns `client_action: "open_health_import"` on a yes), and the confirmed values come back with action `import`. Exercise Time is all brisk-or-harder movement, so after an import Mochi asks only how much of it is harder exercise and reads the rest back as lighter activity (`moderate_recreation_min_week = exercise_minutes_weekly - vigorous_recreation_min_week`); this split needs owner approval. US users hear feet, inches and pounds; values are
 stored in the profile's metric units.
 
 ## Decisions (user rulings, 2026-10-24)

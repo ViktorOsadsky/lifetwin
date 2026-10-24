@@ -235,9 +235,9 @@ ESTIMATED = {
     "sleep_hours",
     "exercise_minutes_weekly",
     "alcohol_drinks_weekly",
-    "sitting_minutes_daily",
-    "moderate_minutes_weekly",
-    "vigorous_minutes_weekly",
+    "sedentary_min_day",
+    "moderate_recreation_min_week",
+    "vigorous_recreation_min_week",
 }
 
 
@@ -313,10 +313,10 @@ def _facts(values: dict, about: set[str] = frozenset()) -> list[str]:
             "systolic_bp": str,
             "diastolic_bp": str,
             "general_health": HEALTH_RATINGS.get,
-            "hypertension": lambda v: "yes" if v else "no",
-            "sitting_minutes_daily": _duration,
-            "moderate_minutes_weekly": _duration,
-            "vigorous_minutes_weekly": _duration,
+            "hypertension_diagnosed": lambda v: "yes" if v else "no",
+            "sedentary_min_day": _duration,
+            "moderate_recreation_min_week": _duration,
+            "vigorous_recreation_min_week": _duration,
         }[field](value)
         if field in about and field in ESTIMATED and not shown.startswith("about "):
             shown = "about " + shown
@@ -342,16 +342,16 @@ def _facts(values: dict, about: set[str] = frozenset()) -> list[str]:
                 "systolic_bp": f"your top blood pressure number is {shown}",
                 "diastolic_bp": f"your bottom blood pressure number is {shown}",
                 "general_health": f"your health is {shown}",
-                "hypertension": (
+                "hypertension_diagnosed": (
                     "a doctor has told you that you have high blood pressure"
                     if value
                     else "a doctor has not told you that you have high blood pressure"
                 ),
-                "sitting_minutes_daily": f"you sit {shown} a day",
-                "moderate_minutes_weekly": (
+                "sedentary_min_day": f"you sit {shown} a day",
+                "moderate_recreation_min_week": (
                     "no lighter activity" if value == 0 else f"{shown} of lighter activity a week"
                 ),
-                "vigorous_minutes_weekly": (
+                "vigorous_recreation_min_week": (
                     "no harder exercise" if value == 0 else f"{shown} of harder exercise a week"
                 ),
             }[field]
@@ -739,7 +739,7 @@ class ConversationService:
                     state.estimated_fields.append(field)
                 if state.memory_consent is not False:
                     topic = {
-                        "sitting_minutes_daily": "sitting",
+                        "sedentary_min_day": "sitting",
                         "general_health": "health",
                         "sleep_hours": "sleep",
                     }.get(field, "exercise")
@@ -896,14 +896,19 @@ class ConversationService:
                 state.habit_notes = merge(state.habit_notes, notes)
         if not candidates:
             candidates = _safe(parse_reply, text, target, today=today, strict=voice) or {}
-        if target == "vigorous_minutes_weekly" and asking:
+        if target == "vigorous_recreation_min_week" and asking:
             candidates = self._health_split(state, candidates)
         if target not in BP_FIELDS and candidates.keys() & BP_FIELDS:
             # Onboarding asks for a diagnosis, not numbers: a reading said in passing is
             # kept as context in the habit notes and never saved as a value.
             reading = _safe(blood_pressure_reading, text)
             mine = _safe(_others, raw_text) is False
-            if reading and mine and state.memory_consent is not False and target != "hypertension":
+            if (
+                reading
+                and mine
+                and state.memory_consent is not False
+                and target != "hypertension_diagnosed"
+            ):
                 state.habit_notes = merge(state.habit_notes, [reading])
             candidates = {k: v for k, v in candidates.items() if k not in BP_FIELDS}
         phrase = " ".join(text.lower().replace(",", " ").rstrip(".!?").split())
@@ -933,7 +938,7 @@ class ConversationService:
         hint = None if candidates else _safe(clarify, text, target, today=today)
         if not candidates and not hint and target == "general_health":
             hint = _safe(health_either, text)
-        if not candidates and asking and target == "hypertension":
+        if not candidates and asking and target == "hypertension_diagnosed":
             reading = (
                 None
                 if _safe(_others, raw_text) is not False
@@ -941,10 +946,10 @@ class ConversationService:
             )
             if reading:
                 said_before = any(note.reading for note in state.habit_notes) or (
-                    "hypertension" in state.proxies_asked
+                    "hypertension_diagnosed" in state.proxies_asked
                 )
                 if not said_before:
-                    state.proxies_asked.append("hypertension")
+                    state.proxies_asked.append("hypertension_diagnosed")
                 if state.memory_consent is not False:
                     state.habit_notes = merge(state.habit_notes, [reading])
                 if said_before:
@@ -1157,10 +1162,10 @@ class ConversationService:
         # Someone else, doubt or a number: read normally, which asks again if unsure.
         if re.search(r"\d", plain) or _safe(_others, text) is not False:
             return None
-        estimate = field in {"sitting_minutes_daily", "general_health"}
+        estimate = field in {"sedentary_min_day", "general_health"}
         if estimate and _safe(_doubtful, _canonical(plain)) is not False:
             return None  # an estimate needs a plain answer; "no, not really" is still a no
-        if field == "sitting_minutes_daily":
+        if field == "sedentary_min_day":
             if re.search(r"\b(?:not|never)\b|n't\b", plain) and not re.search(
                 r"\bnot much\b", plain
             ):
@@ -1179,7 +1184,7 @@ class ConversationService:
                         return None
                     return {field: rating}, said
             return None
-        if field in {"moderate_minutes_weekly", "vigorous_minutes_weekly"}:
+        if field in {"moderate_recreation_min_week", "vigorous_recreation_min_week"}:
             no = re.search(NO_WORDS, plain) or re.search(r"\b(?:hardly|rarely|seldom)\b", plain)
             yes = re.search(YES_WORDS, plain) or re.search(r"\b(?:i do|sometimes|a bit)\b", plain)
             if no and not yes:
@@ -1194,23 +1199,21 @@ class ConversationService:
     def _health_split(state: ConversationState, candidates: dict) -> dict:
         """With Apple Health's weekly total, harder exercise leaves the rest as lighter."""
         total = state.confirmed_profile.exercise_minutes_weekly
-        vigorous = candidates.get("vigorous_minutes_weekly")
+        vigorous = candidates.get("vigorous_recreation_min_week")
         if (
             total is None
             or vigorous is None
             or vigorous > total
-            or state.confirmed_profile.moderate_minutes_weekly is not None
-            or "moderate_minutes_weekly" in candidates
+            or state.confirmed_profile.moderate_recreation_min_week is not None
+            or "moderate_recreation_min_week" in candidates
         ):
             return candidates
-        return {**candidates, "moderate_minutes_weekly": total - vigorous}
+        return {**candidates, "moderate_recreation_min_week": total - vigorous}
 
     @staticmethod
     def _over_a_day(state: ConversationState, pending: dict) -> str | None:
         sleep = pending.get("sleep_hours", state.confirmed_profile.sleep_hours)
-        sitting = pending.get(
-            "sitting_minutes_daily", state.confirmed_profile.sitting_minutes_daily
-        )
+        sitting = pending.get("sedentary_min_day", state.confirmed_profile.sedentary_min_day)
         if sleep is not None and sitting is not None and sleep * 60 + sitting > 1440:
             return (
                 "That plus your sleep comes to more than a whole day. About how many hours "
@@ -1245,9 +1248,9 @@ class ConversationService:
 
     def _topic(self, state: ConversationState, field: str) -> str:
         """The question a named topic opens: activity goes to the part still open."""
-        if field == "moderate_minutes_weekly" and not self._open(state, field):
-            if self._open(state, "vigorous_minutes_weekly"):
-                return "vigorous_minutes_weekly"
+        if field == "moderate_recreation_min_week" and not self._open(state, field):
+            if self._open(state, "vigorous_recreation_min_week"):
+                return "vigorous_recreation_min_week"
         return field
 
     def _steer(self, state: ConversationState, text: str, asked: str, answered: set[str]) -> None:
@@ -1290,11 +1293,11 @@ class ConversationService:
             if not self._open(state, step):
                 continue
             if (
-                step == "moderate_minutes_weekly"
+                step == "moderate_recreation_min_week"
                 and state.confirmed_profile.exercise_minutes_weekly is not None
-                and self._open(state, "vigorous_minutes_weekly")
+                and self._open(state, "vigorous_recreation_min_week")
             ):
-                step = "vigorous_minutes_weekly"  # Health's total: ask the harder part first
+                step = "vigorous_recreation_min_week"  # Health's total: ask the harder part first
             state.current_field, state.phase = step, "asking"
             return
         state.current_field, state.phase = None, "ready"
@@ -1308,7 +1311,7 @@ class ConversationService:
         if (
             question.with_health
             and total is not None
-            and state.confirmed_profile.moderate_minutes_weekly is None
+            and state.confirmed_profile.moderate_recreation_min_week is None
         ):
             return question.with_health.format(total=_duration(total))
         text = pick(question.ask, state.seed, "ask", field)

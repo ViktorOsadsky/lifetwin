@@ -443,10 +443,10 @@ FIELD_NAMES: dict[ProfileField, str] = {
     "systolic_bp": r"blood pressure|bp|top (?:blood pressure )?number",
     "diastolic_bp": r"bottom (?:blood pressure )?number",
     "general_health": r"general health|overall health|health rating|health",
-    "hypertension": r"high blood pressure|hypertension",
-    "sitting_minutes_daily": r"sitting|sitting time|sitting down|how much i sit",
-    "moderate_minutes_weekly": r"lighter activity|light activity|light exercise|walking|walks",
-    "vigorous_minutes_weekly": r"harder exercise|hard exercise|vigorous exercise|vigorous activity",
+    "hypertension_diagnosed": r"high blood pressure|hypertension",
+    "sedentary_min_day": r"sitting|sitting time|sitting down|how much i sit",
+    "moderate_recreation_min_week": r"lighter activity|light activity|light exercise|walking|walks",
+    "vigorous_recreation_min_week": r"harder exercise|hard exercise|vigorous exercise|vigorous activity",
 }
 _NAME = "|".join(FIELD_NAMES.values())
 _THE = r"(?:my |the |your )?"
@@ -496,14 +496,14 @@ TAGGED_QUESTION = re.compile(
 TOPIC_NAMES: dict[str, str] = {
     r"(?:my |the |how i )?(?:sleep|sleeping)(?: question)?|how (?:much|well) i sleep": "sleep_hours",
     r"(?:my |the )?(?:general |overall )?health(?: question)?|how i feel": "general_health",
-    r"(?:my |the )?(?:high )?blood pressure(?: question)?|(?:my )?hypertension": "hypertension",
+    r"(?:my |the )?(?:high )?blood pressure(?: question)?|(?:my )?hypertension": "hypertension_diagnosed",
     r"(?:my |the )?(?:diabetes|blood sugar)(?: question)?": "diabetes",
     r"(?:my |the )?(?:sitting|sitting time|sitting down)(?: question| part)?|how much i sit": (
-        "sitting_minutes_daily"
+        "sedentary_min_day"
     ),
     r"(?:my |the )?(?:exercise|exercising|activity|walking|walks|workouts?|moving)(?: questions?| part)?"
-    r"|how active i am|what i do to stay active": "moderate_minutes_weekly",
-    r"(?:my |the )?(?:harder|hard|vigorous) (?:exercise|activity)": "vigorous_minutes_weekly",
+    r"|how active i am|what i do to stay active": "moderate_recreation_min_week",
+    r"(?:my |the )?(?:harder|hard|vigorous) (?:exercise|activity)": "vigorous_recreation_min_week",
     r"(?:my |the )?(?:smoking|cigarettes)(?: question)?": "smoking_status",
     r"(?:my |the )?weight(?: question)?|how much i weigh": "weight_kg",
     r"(?:my |the )?height(?: question)?|how tall i am": "height_cm",
