@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../theme/lifetwin_theme.dart';
+import 'whole_word_text.dart';
 
 /// "Question 3 of 11" with one segment per question (Question.dc.html): done ones
 /// filled ink, the current one mint with an ink outline, the rest lavender. The
@@ -20,7 +21,7 @@ class LtStepProgress extends StatelessWidget {
     final big = MediaQuery.textScalerOf(context).scale(1) > 1.3;
     final h = big ? 14.0 : 12.0;
     final done = step - 1;
-    final label = Text('Question $step of $total', style: LtText.label);
+    final label = WholeWordText('Question $step of $total', style: LtText.label);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
