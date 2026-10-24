@@ -119,7 +119,8 @@ def test_grounding_still_needs_a_named_cue_for_a_field_nobody_asked():
         ("age", "I'm in my seventies"),
         ("age", "I'm going on 80"),
         ("age", "I weigh 70"),
-        ("height_cm", "I used to be 5 foot 10, now I'm 5 foot 8"),
+        # The old height alone; with "now I'm 5 foot 8" the now value is read back.
+        ("height_cm", "I used to be 5 foot 10"),
         ("height_cm", "just under 6 feet"),
         ("weight_kg", "150 lb, down from 170"),
         ("weight_kg", "-70 kg"),

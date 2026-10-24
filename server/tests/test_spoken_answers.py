@@ -126,3 +126,37 @@ def test_a_comma_pair_that_is_not_one_answer_is_asked_about(field, text):
 
 def test_a_comma_range_is_read_back_as_about():
     assert "about 6.5 hours" in say("sleep_hours", "6, 7 hours a night.").message
+
+
+# An old value set against one marked as now: only the now value is read back.
+NOW_AFTER_PAST = [
+    ("height_cm", "I used to be 5'9\", but I'm shrinking, 5'8\" now.", {"height_cm": 172.72}),
+    ("height_cm", "I was 5'10\", now 5'9\".", {"height_cm": 175.26}),
+    ("height_cm", "I used to be 5 foot 10, now I'm 5 foot 8", {"height_cm": 172.72}),
+    ("weight_kg", "I was 200 pounds, now I'm 185.", {"weight_kg": 83.915}),
+    ("sleep_hours", "I used to sleep 8 hours, now about 6.", {"sleep_hours": 6.0}),
+    (
+        "exercise_minutes_weekly",
+        "I used to walk an hour every day, now 30 minutes 3 times a week.",
+        {"exercise_minutes_weekly": 90},
+    ),
+]
+NOW_AFTER_PAST_TRAPS = [
+    ("weight_kg", "I was 200 pounds."),  # only the old value
+    ("weight_kg", "I used to weigh 180, my wife says I'm 170 now."),  # someone else's word
+    ("sleep_hours", "I used to sleep 8 hours, now I don't know."),  # no now value
+    ("weight_kg", "I used to weigh 200, I lost 15 pounds now."),  # a change, not a weight
+    ("height_cm", "I was 5'10\", now 5'9\" or 5'7\"."),  # two now values
+    ("age", "I was 70 last year, now 71."),  # age keeps its own rules
+]
+
+
+@pytest.mark.parametrize(("field", "text", "expected"), NOW_AFTER_PAST)
+def test_the_value_marked_now_replaces_the_old_one(field, text, expected):
+    check(field, text, expected)
+    check(field, text, expected, mode="text")
+
+
+@pytest.mark.parametrize(("field", "text"), NOW_AFTER_PAST_TRAPS)
+def test_an_old_value_without_a_clear_now_value_is_asked_about(field, text):
+    check(field, text, None)

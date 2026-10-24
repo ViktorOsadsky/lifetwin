@@ -1810,6 +1810,35 @@ def _drop_self_correction(text: str) -> str:
     return " ".join(text.split())
 
 
+# "I used to be 5'9", I'm 5'8" now", "I was 200 pounds, now I'm 185": an old value set
+# against one marked as now. Only the now value is read; nothing else may hold a number.
+PAST_CLAUSE = re.compile(
+    r"\b(?:used to|use to|was|were|weighed|slept|walked|drank|exercised|ago|back then)\b"
+)
+NOW_CLAUSE = re.compile(r"\b(?:now|these days|nowadays|currently|at the moment|right now)\b")
+NOW_AFTER_PAST = {"height_cm", "weight_kg", "sleep_hours", "exercise_minutes_weekly"}
+
+
+def _now_after_past(text: str) -> str:
+    clauses = [(start, end) for start, end, _ in _clauses(text)]
+    past = [
+        (a, b)
+        for a, b in clauses
+        if PAST_CLAUSE.search(text[a:b]) and not NOW_CLAUSE.search(text[a:b])
+    ]
+    now = [
+        (a, b)
+        for a, b in clauses
+        if NOW_CLAUSE.search(text[a:b]) and not PAST_CLAUSE.search(text[a:b])
+    ]
+    numbered = {(a, b) for a, b in clauses if re.search(r"\d", text[a:b])}
+    if not past or len(now) != 1 or not numbered <= set(past) | set(now) or not numbered & set(now):
+        return text
+    a, b = now[0]
+    text = _blank(text, past)
+    return text[:a] + NOW_CLAUSE.sub(" ", text[a:b]) + text[b:]
+
+
 def parse_value(field: ProfileField, text: str, *, today: date | None = None) -> dict:
     """Accept explicit, current, single answers; do not guess units or diagnoses."""
     today = today or date.today()
@@ -1819,6 +1848,8 @@ def parse_value(field: ProfileField, text: str, *, today: date | None = None) ->
         return _blood_pressure(field, canonical)
     if field not in CATEGORICAL:
         canonical = _drop_self_correction(canonical)
+    if field in NOW_AFTER_PAST:
+        canonical = _now_after_past(canonical)
     if field == "sex":
         sex = _sex(canonical)
         return _validated({field: sex}) if sex else {}
