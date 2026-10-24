@@ -45,6 +45,7 @@ void main() {
     await look('01b-customize');
     await tapRound(t, 'Back to room');
     await waitFor(t, find.text('Fortune'));
+    await pumpFor(t, const Duration(milliseconds: 800)); // Customize slides away
     await tapText(t, 'Fortune');
     await look('02-room-talk-first');
     await tapText(t, 'Talk');
@@ -103,21 +104,23 @@ void main() {
     await pumpFor(t, const Duration(seconds: 2));
     await look('13-forecast');
     await tapText(t, 'See what shaped it');
-    await waitFor(t, find.text('We assumed'));
+    await waitFor(t, find.text('Built from your answers'));
     await look('13b-outlook');
-    await t.scrollUntilVisible(find.text('We assumed'), 300, scrollable: find.byType(Scrollable).first);
+    await t.scrollUntilVisible(find.text('Limits'), 300, scrollable: find.byType(Scrollable).first);
     await look('13c-outlook-end');
     await tapRound(t, 'Back to your look ahead');
     await waitFor(t, find.text('See what shaped it'));
     // The server without its model: "still learning".
     await tapRound(t, 'Back');
     await waitFor(t, find.text('Fortune'));
+    await pumpFor(t, const Duration(milliseconds: 800));
     await qaMode('501', path: '/api/predict', times: 1);
     await openFortune(t);
     await waitFor(t, find.text('Still learning'));
     await look('13d-still-learning');
     await tapText(t, 'Back to room');
     await waitFor(t, find.text('Fortune'));
+    await pumpFor(t, const Duration(milliseconds: 800));
     await openFortune(t);
     await waitFor(t, find.textContaining('were still living 5 years later'));
     await pumpFor(t, const Duration(seconds: 2));

@@ -62,6 +62,9 @@ Future<void> pumpFor(WidgetTester t, Duration d) async {
 /// Links that ignore taps for 0.7 s after a new question, so a double tap can't act twice.
 const guardedLinks = {'Skip this question', 'Go back', 'Use my Health app'};
 
+/// Taps that swoosh the conversation in from the Room (720 ms); its buttons move until then.
+const swooshes = {'Talk', 'Go back to my answers'};
+
 Future<void> tapText(WidgetTester t, String label, {int seconds = 30}) async {
   final f = find.text(label);
   await waitFor(t, f, seconds: seconds);
@@ -70,6 +73,7 @@ Future<void> tapText(WidgetTester t, String label, {int seconds = 30}) async {
   await t.pump();
   await t.tap(f.first, warnIfMissed: false);
   await t.pump();
+  if (swooshes.contains(label)) await pumpFor(t, const Duration(milliseconds: 1000));
 }
 
 /// Two taps on the same spot, 60 ms apart: a tremor or an impatient double tap.
@@ -102,6 +106,7 @@ Future<void> doubleTapText(WidgetTester t, String label, {Finder? finder}) async
   await t.pump(const Duration(milliseconds: 60));
   await t.tapAt(at);
   await t.pump();
+  if (swooshes.contains(label)) await pumpFor(t, const Duration(milliseconds: 1000));
 }
 
 String screenText() => find

@@ -223,6 +223,8 @@ void main() {
       await tick(t);
       await tapButton(t, 'Talk');
       await tick(t);
+      // The swoosh brings the conversation in (720 ms); its buttons move until then.
+      await tick(t, 1000);
       final c = ctl(t);
       // The AI question ignores taps for a moment, so a double tap can't answer it.
       final talked = await tapButton(t, "Yes, I'll talk");

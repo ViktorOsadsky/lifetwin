@@ -26,6 +26,12 @@ Future<void> tapText(WidgetTester t, String label) async {
   await t.ensureVisible(f.first);
   await t.pump();
   await t.tap(f.first);
+  // The Room's Talk swooshes the conversation in (720 ms); its buttons move until then.
+  if (const {'Talk', 'Go back to my answers'}.contains(label)) {
+    for (var i = 0; i < 10; i++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
+  }
 }
 
 /// Like [waitFor], but if the server says "too many tries" (60 requests a

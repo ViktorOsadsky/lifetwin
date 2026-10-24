@@ -248,6 +248,7 @@ void main() {
         await t.pumpWidget(const LifeTwinApp());
         await tick(t);
         await tapButton(t, 'Talk');
+        await Future<void>.delayed(const Duration(seconds: 1)); // the swoosh brings the conversation in
         await tick(t);
         final c = ctl(t);
         // The AI question ignores taps for a moment, so a double tap can't answer it.

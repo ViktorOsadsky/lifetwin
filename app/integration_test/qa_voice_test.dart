@@ -42,6 +42,9 @@ Future<void> startVoice(WidgetTester t, VoiceRig r) async {
   await settled(t);
 }
 
+/// The first answer by voice is also photographed: listening, then its read-back.
+var _shotsTaken = false;
+
 /// Taps Talk, plays [clip] into the microphone, taps Talk again and waits for [want].
 Future<void> talkClip(WidgetTester t, VoiceRig r, String clip, String want) async {
   final c = r.controller;
@@ -54,6 +57,12 @@ Future<void> talkClip(WidgetTester t, VoiceRig r, String clip, String want) asyn
     await pumpFor(t, const Duration(milliseconds: 100));
   }
   expect(c.phase, VoicePhase.listening, reason: 'mic never opened: ${c.notice}');
+  final shoot = !_shotsTaken;
+  _shotsTaken = true;
+  if (shoot) {
+    await pumpFor(t, const Duration(milliseconds: 1200)); // some words are heard
+    await qaAction(t, 'shot', name: 'voice-listening', wait: Duration.zero);
+  }
   while (r.mic.clipEndedAt == null && c.phase == VoicePhase.listening) {
     await pumpFor(t, const Duration(milliseconds: 100));
   }
@@ -61,6 +70,7 @@ Future<void> talkClip(WidgetTester t, VoiceRig r, String clip, String want) asyn
   if (c.phase == VoicePhase.listening) await t.tap(find.byType(TalkButton).first, warnIfMissed: false);
   await waitFor(t, find.textContaining(want), seconds: 40);
   await settled(t);
+  if (shoot) await qaAction(t, 'shot', name: 'voice-readback');
 }
 
 void main() {
