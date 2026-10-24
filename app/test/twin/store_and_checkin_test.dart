@@ -156,14 +156,14 @@ void main() {
       final repo = await repoOn(b);
       await repo.saveConversationProfile({'age': 50});
       final doc = jsonDecode(file!) as Map;
-      expect(doc.keys, unorderedEquals(['version', 'profile', 'history']));
+      expect(doc.keys, unorderedEquals(['version', 'profile', 'profile_meta', 'history']));
       expect(doc['version'], 1);
       expect(doc['profile'], {'age': 50});
       expect((doc['history'] as List).single['kind'], 'onboarding'); // the history is in the same protected file
       expect(await b.protection(), 'NSFileProtectionComplete');
       await repo.deleteMyData();
       expect(file, isNull);
-      expect(calls.map((c) => c.method), ['read', 'write', 'write', 'protection', 'delete']);
+      expect(calls.map((c) => c.method), ['read', 'write', 'protection', 'delete']); // one write per event
 
       // No plugin (flutter test without the mock, macOS): kept in memory, never unprotected.
       final m = ProtectedFileBackend(channel: const MethodChannel('lifetwin/none'));

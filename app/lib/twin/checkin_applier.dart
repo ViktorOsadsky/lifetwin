@@ -7,7 +7,7 @@
 /// quick check-ins never touch the profile.
 library;
 
-import '../checkin/checkin_models.dart' show CheckinEntry, DayLog;
+import '../checkin/checkin_models.dart' show CheckinEntry, DayLog, shiftDay;
 import '../checkin/checkin_store.dart' show readFinishedCheckin;
 import '../checkin/daily_logs.dart' show DailyLogsAssembler;
 
@@ -147,7 +147,7 @@ CheckinOutcome applyCheckinResponse(
       changedFields: const [],
       emergency: emergency,
       record: record,
-      dayLogParts: kind == 'quick' ? _checkedParts(response) : const [],
+      dayLogParts: kind == 'quick' ? _checkedParts(response, localDate) : const [],
     );
   }
   final update = Map<String, dynamic>.from(response['profile_update'] as Map? ?? const {});
@@ -164,10 +164,11 @@ CheckinOutcome applyCheckinResponse(
 }
 
 /// The quick check-in's `daily_logs` parts with every value type- and range-checked;
-/// a refused value is left unknown.
-List<DayLog> _checkedParts(Map<String, dynamic> response) => [
+/// a refused value is left unknown. A quick check-in describes only its own day and the
+/// day before ([localDate] and the day before it); a part for any other date is refused.
+List<DayLog> _checkedParts(Map<String, dynamic> response, String localDate) => [
   for (final row in response['daily_logs'] as List? ?? const [])
-    if (row is Map && row['date'] is String && RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(row['date'] as String))
+    if (row is Map && (row['date'] == localDate || row['date'] == shiftDay(localDate, -1)))
       DayLog.fromJson({
         'date': row['date'],
         for (final e in dayLogSchema.entries)

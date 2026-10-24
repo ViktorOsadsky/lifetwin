@@ -75,13 +75,13 @@ class DailyLogsAssembler {
   }
 
   /// Weekly summaries from weekly check-ins whose confirmed answers hold all four
-  /// behaviour fields. A check-in describes the Monday–Sunday week that has ended by the
-  /// end of its day (a Sunday check-in counts that week).
+  /// behaviour fields. A check-in describes the past seven days, so it is filed under the
+  /// Monday–Sunday week holding most of them ([weekDescribedBy]).
   List<Map<String, dynamic>> weeklySummaries(List<CheckinEntry> checkins) {
     final byWeek = <String, Map<String, dynamic>>{};
     for (final c in checkins) {
       if (c.kind != 'weekly' || !weeklySummaryFields.every((f) => c.answers[f] is num)) continue;
-      final week = shiftDay(mondayOf(shiftDay(c.date, 1)), -7);
+      final week = weekDescribedBy(c.date);
       final summary = {'week_start': week, for (final f in weeklySummaryFields) f: c.answers[f]};
       if (_weeklyUsable(summary)) byWeek[week] = summary; // a later check-in for the week wins
     }
@@ -123,6 +123,15 @@ class DailyLogsAssembler {
     }
     return sleep * 60 + sit + (vig + mod) / 7 <= 1440;
   }
+}
+
+/// The Monday of the week a weekly check-in on [date] describes: the Monday–Sunday week
+/// holding most of the seven days ending on [date]. Thursday to Sunday: that day's own
+/// week; Monday to Wednesday: the week before. So whatever the person's weekly day, a
+/// completed week is there for the forecast every day until the next check-in.
+String weekDescribedBy(String date) {
+  final weekday = parseDay(date).weekday;
+  return weekday >= DateTime.thursday ? mondayOf(date) : shiftDay(mondayOf(date), -7);
 }
 
 /// "Good weeks", never streaks: Monday–Sunday weeks with at least [daysForGoodWeek]

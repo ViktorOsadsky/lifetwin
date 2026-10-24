@@ -74,6 +74,7 @@ class MemoryBackend implements StoreBackend {
 /// lives on your phone"). No sync and no network: nothing here is ever sent.
 ///
 /// - [profile]: the confirmed answers (server HealthProfile names; profile_mapping.dart).
+/// - [profileMeta]: per profile value, its source and whether it is an estimate.
 /// - [checkins]: finished quick, daily and weekly check-ins as confirmed.
 /// - [dayLogs]: one row per day in the package's `daily_logs` names, possibly partial;
 ///   a missing value is unknown (null), never zero.
@@ -110,6 +111,12 @@ class TwinStore extends ChangeNotifier {
   }
 
   Map<String, dynamic> get profile => Map<String, dynamic>.from(_doc['profile'] as Map? ?? const {});
+
+  /// Per profile field: where its value came from, and whether it is an estimate.
+  Map<String, FieldProvenance> get profileMeta => {
+    for (final e in (_doc['profile_meta'] as Map? ?? const {}).entries)
+      if (e.value is Map) '${e.key}': FieldProvenance.fromJson(Map<String, dynamic>.from(e.value as Map)),
+  };
   bool get hasProfile => profile.values.any((v) => v != null);
 
   List<CheckinEntry> get checkins => [for (final c in _list('checkins')) CheckinEntry.fromJson(c)];
@@ -127,9 +134,17 @@ class TwinStore extends ChangeNotifier {
       if (r is Map) Map<String, dynamic>.from(r),
   ];
 
-  Future<void> _saveProfile(Map<String, dynamic> p) => _save('profile', {
-    for (final e in p.entries)
-      if (e.value != null) e.key: e.value,
+  /// The profile and, for the values just confirmed, where each came from. One write.
+  Future<void> _saveProfile(Map<String, dynamic> p, [Map<String, FieldProvenance> provenance = const {}]) => _saveAll({
+    'profile': {
+      for (final e in p.entries)
+        if (e.value != null) e.key: e.value,
+    },
+    if (provenance.isNotEmpty)
+      'profile_meta': {
+        for (final e in profileMeta.entries) e.key: e.value.toJson(),
+        for (final e in provenance.entries) e.key: e.value.toJson(),
+      },
   });
 
   Future<void> _addCheckin(CheckinEntry r) => _save('checkins', [..._list('checkins'), r.toJson()]);
@@ -160,14 +175,65 @@ class TwinStore extends ChangeNotifier {
   Future<void> _deleteAll() async {
     _doc = {};
     notifyListeners();
-    await (_writing = _writing.then((_) => _backend.delete()));
+    final delete = _writing.catchError((Object _) {}).then((_) => _backend.delete());
+    _writing = delete.catchError((Object _) {});
+    await delete;
   }
 
-  Future<void> _save(String key, Object value) {
-    _doc = {..._doc, 'version': schemaVersion, key: value};
+  Future<void> _save(String key, Object value) => _saveAll({key: value});
+
+  /// Set while a [_transaction] runs: its writes are collected and written once.
+  Map<String, Object>? _staged;
+
+  /// Runs [body] as one write: everything it saves reaches the file together, or (if the
+  /// write fails) nothing does and memory is put back, so a retry never duplicates a
+  /// check-in or a history entry. A transaction inside a transaction joins the outer one.
+  Future<T> _transaction<T>(Future<T> Function() body) async {
+    if (_staged != null) return body();
+    final previous = _doc;
+    _staged = {};
+    final T result;
+    try {
+      result = await body();
+    } catch (_) {
+      _staged = null;
+      _doc = previous;
+      notifyListeners();
+      rethrow;
+    }
+    final staged = _staged!;
+    _staged = null;
+    if (staged.isNotEmpty) {
+      notifyListeners();
+      await _write(previous, _doc);
+    }
+    return result;
+  }
+
+  Future<void> _saveAll(Map<String, Object> values) {
+    final previous = _doc;
+    _doc = {..._doc, 'version': schemaVersion, ...values};
+    if (_staged != null) {
+      _staged!.addAll(values);
+      return Future.value();
+    }
     notifyListeners();
-    final text = jsonEncode(_doc);
-    // One write at a time, in order.
-    return _writing = _writing.then((_) => _backend.write(text));
+    return _write(previous, _doc);
+  }
+
+  /// One write at a time, in order. A failed write doesn't block the later ones, and puts
+  /// memory back to [previous] unless something newer was saved since (that write carries
+  /// the whole document anyway).
+  Future<void> _write(Map<String, dynamic> previous, Map<String, dynamic> next) {
+    final text = jsonEncode(next);
+    final write = _writing.catchError((Object _) {}).then((_) => _backend.write(text));
+    _writing = write.catchError((Object _) {});
+    return write.catchError((Object e) {
+      if (identical(_doc, next)) {
+        _doc = previous;
+        notifyListeners();
+      }
+      throw e;
+    });
   }
 }
