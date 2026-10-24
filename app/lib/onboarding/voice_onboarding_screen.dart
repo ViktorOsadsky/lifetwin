@@ -128,6 +128,9 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
 
   bool get _justChanged => _turnLock?.isActive ?? false;
 
+  final _noticeKey = GlobalKey(debugLabel: 'notice');
+  String? _shownNotice;
+
   void _useHealth() {
     if (!_justChanged) widget.onUseHealth?.call();
   }
@@ -194,6 +197,20 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     final listening = c.phase == VoicePhase.listening;
     if (listening != _wasListening) HapticFeedback.mediumImpact();
     _wasListening = listening;
+    // A new notice may land below the fold (the controls take the lower part of the
+    // screen): scroll it into view, its Try again or Open Settings button included.
+    if (c.notice != null && c.notice != _shownNotice) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final notice = _noticeKey.currentContext;
+        if (notice == null || !notice.mounted) return;
+        Scrollable.ensureVisible(
+          notice,
+          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+          duration: MediaQuery.disableAnimationsOf(notice) ? Duration.zero : const Duration(milliseconds: 250),
+        );
+      });
+    }
+    _shownNotice = c.notice;
     if (!identical(c.turn, _shownTurn)) {
       _shownTurn = c.turn;
       _turnLock?.cancel();
@@ -481,6 +498,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           const SizedBox(height: LtSpace.lg),
           _pad(
             _NoticeBox(
+              key: _noticeKey,
               message: c.notice!,
               onRetry: c.canRetry ? c.retry : null,
               onOpenSettings: c.notice == micDeniedNotice ? widget.onOpenSettings : null,
@@ -1022,7 +1040,7 @@ class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
 }
 
 class _NoticeBox extends StatelessWidget {
-  const _NoticeBox({required this.message, this.onRetry, this.onOpenSettings});
+  const _NoticeBox({super.key, required this.message, this.onRetry, this.onOpenSettings});
   final String message;
   final VoidCallback? onRetry;
   final Future<void> Function()? onOpenSettings;

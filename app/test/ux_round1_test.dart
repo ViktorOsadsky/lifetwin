@@ -341,6 +341,26 @@ void main() {
     });
   });
 
+  group('notices', () {
+    testWidgets('a new notice scrolls into view with its button (mic denied, no network)', (t) async {
+      final r = Rig();
+      r.fakeInput.startError = const MicDeniedException();
+      await r.pump(t);
+      await r.start(t, voice: true);
+      await tapTalk(t);
+      await t.pumpAndSettle();
+      expect(find.text(micDeniedNotice).hitTestable(), findsOneWidget);
+      expect(find.text('Open Settings').hitTestable(), findsOneWidget);
+      (r.guide as FakeConversationGuide).failNext = true;
+      await t.enterText(find.byType(TextField), '70');
+      await t.tap(find.text('Send'));
+      await t.pumpAndSettle();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pumpAndSettle();
+      expect(find.text('Try again').hitTestable(), findsOneWidget);
+    });
+  });
+
   group('leaving the app', () {
     testWidgets('while listening closes the microphone and sends nothing; back, Talk works again', (t) async {
       final r = Rig();
