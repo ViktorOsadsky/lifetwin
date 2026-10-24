@@ -167,9 +167,12 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('app starts on the voice screen and can open Apple Health import', (t) async {
+  testWidgets('app starts on the Room; Talk with Pip opens the voice screen and Apple Health import', (t) async {
     final r = Rig();
     await t.pumpWidget(LifeTwinApp(controller: r.c));
+    expect(find.text('Your room'), findsOneWidget);
+    await t.tap(find.text('Talk with Pip'));
+    await t.pumpAndSettle();
     expect(find.text('Talk with me?'), findsOneWidget);
     await choose(t, "No, I'll type");
     await t.ensureVisible(find.text('Use my Health app instead'));

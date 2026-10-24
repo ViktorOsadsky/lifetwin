@@ -221,6 +221,8 @@ void main() {
       log('START api=${const String.fromEnvironment('API_BASE_URL')}');
       await t.pumpWidget(LifeTwinApp(controller: controller));
       await tick(t);
+      await tapButton(t, 'Talk with Pip');
+      await tick(t);
       final c = ctl(t);
       if (!await tapButton(t, "Yes, I'll talk") || !await tapButton(t, 'Not now')) {
         record('consent', false, '', 'could not get past consent; screen: ${screenText()}');
