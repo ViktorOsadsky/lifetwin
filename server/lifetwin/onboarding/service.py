@@ -70,6 +70,7 @@ from lifetwin.onboarding.parsing import (
     parse_value,
 )
 from lifetwin.onboarding.probes import BY_ID as PROBES
+from lifetwin.onboarding.probes import MAX_PROBES
 from lifetwin.onboarding.probes import choose as choose_probe
 from lifetwin.onboarding.providers import ExtractionUnavailable, Extractor
 from lifetwin.onboarding.script import (
@@ -386,8 +387,11 @@ class ConversationService:
         clock: Callable[[], date] = date.today,
         seed: Callable[[], int] | None = None,
         personalizer: Personalizer | None = None,
+        max_probes: int = MAX_PROBES,
     ):
         self.extractor = extractor
+        # The habit follow-ups per onboarding: 1 in the short demo (ONBOARDING_DEMO=1).
+        self.max_probes = max(0, min(max_probes, MAX_PROBES))
         # Outside-AI wording (opt-in per provider); never used to read or decide values.
         self.personalizer = personalizer
         self.timeout = max(0.1, min(timeout_seconds, 10.0))
@@ -1094,6 +1098,7 @@ class ConversationService:
                 self._settled(state),
                 state.probes_asked,
                 state.habit_notes,
+                self.max_probes,
             )
         )
         if probe:

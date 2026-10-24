@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from lifetwin.app import create_app
 from lifetwin.core.config import Settings
+from lifetwin.core.models import HealthProfile
 
 
 def config(**overrides):
@@ -446,3 +447,40 @@ def test_openapi_declares_only_reachable_error_statuses(client):
     assert "409" not in paths["/api/predict"]["post"]["responses"]
     assert "404" in paths["/api/quiz/questions/{question_id}"]["get"]["responses"]
     assert "404" not in paths["/api/capabilities"]["get"]["responses"]
+
+
+OLD_PROFILE = {
+    # A profile saved before general_health, hypertension_diagnosed, sedentary_min_day and
+    # the two activity fields existed.
+    "age": 70,
+    "sex": "male",
+    "height_cm": 170,
+    "weight_kg": 75,
+    "sleep_hours": 7,
+    "exercise_minutes_weekly": 150,
+    "smoking_status": "former",
+    "diabetes": False,
+    "systolic_bp": 130,
+    "diastolic_bp": 80,
+}
+
+
+def test_profiles_saved_before_the_five_new_fields_still_load(client):
+    profile = HealthProfile.model_validate(OLD_PROFILE)
+    for field in (
+        "general_health",
+        "hypertension_diagnosed",
+        "sedentary_min_day",
+        "moderate_recreation_min_week",
+        "vigorous_recreation_min_week",
+    ):
+        assert getattr(profile, field) is None
+    response = client.post("/api/recommendations", json={"profile": OLD_PROFILE})
+    assert response.status_code == 200, response.text
+    # An old profile resumed in a conversation keeps its answers and asks the rest.
+    state = {"phase": "asking", "current_field": "general_health", "confirmed_profile": OLD_PROFILE}
+    turn = client.post(
+        "/api/onboarding/turn", json={"action": "reply", "state": state, "text": "good"}
+    )
+    assert turn.status_code == 200, turn.text
+    assert turn.json()["state"]["confirmed_profile"]["age"] == 70

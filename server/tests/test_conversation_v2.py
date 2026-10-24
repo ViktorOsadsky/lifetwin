@@ -42,10 +42,12 @@ TODAY = date(2026, 10, 24)
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def client_for(seed: int = 7, personalizer=None) -> TestClient:
+def client_for(seed: int = 7, personalizer=None, max_probes: int = MAX_PROBES) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/api")
-    service = ConversationService(clock=lambda: TODAY, seed=lambda: seed, personalizer=personalizer)
+    service = ConversationService(
+        clock=lambda: TODAY, seed=lambda: seed, personalizer=personalizer, max_probes=max_probes
+    )
     app.dependency_overrides[get_service] = lambda: service
     return TestClient(app)
 
@@ -160,6 +162,56 @@ def test_demo_path_with_apple_health():
     assert "dog" in end["message"]
     # Spoken length: about two and a half minutes, Apple Health screen not counted.
     assert d.seconds() < 150, d.seconds()
+
+
+def test_short_demo_setting_asks_one_follow_up_in_the_same_order():
+    settings = Settings(onboarding_demo=True)
+    assert create_app(settings).state.conversation_service.max_probes == 1
+    assert create_app(Settings()).state.conversation_service.max_probes == MAX_PROBES
+    d = Dialogue(client_for(max_probes=1))
+    assert d.state["phase"] == "remembering"  # the memory question stays
+    d.say("Sure")
+    d.say("I'm 72, female, and I've never smoked")
+    d.say("yes")
+    assert d.state["phase"] == "offering"  # Apple Health right after age, sex and smoking
+    assert d.say("yes please")["client_action"] == "open_health_import"
+    d.health(height_cm=162.6, weight_kg=68, sleep_hours=6.5, exercise_minutes_weekly=90)
+    assert d.state["current_probe"] == "activity"
+    d.say("I walk my dog every morning")
+    asked = []
+    for _ in range(30):
+        if d.result["complete"]:
+            break
+        state = d.state
+        assert state["phase"] != "probing", "a second follow-up in the short demo"
+        if state["phase"] == "confirming":
+            d.say("yes")
+            continue
+        asked.append(state["current_field"])
+        d.say(
+            {
+                "general_health": "Good",
+                "hypertension_diagnosed": "No",
+                "diabetes": "No",
+                "sedentary_min_day": "About 7 hours, mostly TV",
+                "vigorous_recreation_min_week": "None",
+            }[state["current_field"]]
+        )
+    assert d.result["complete"] is True
+    assert d.state["probes_asked"] == ["activity"]
+    # The same order as without the setting.
+    assert asked == [
+        "general_health",
+        "hypertension_diagnosed",
+        "diabetes",
+        "sedentary_min_day",
+        "vigorous_recreation_min_week",
+    ]
+    assert d.result["model_inputs"]["status"] == "ready"
+    # Spoken length estimate for the demo path, Apple Health screen not counted: about
+    # 138 s, against 150 s with three follow-ups. The 75 s target needs more than the
+    # follow-up limit (the read-backs and the opening and closing lines are most of it).
+    assert d.seconds() < 145, d.seconds()
 
 
 def test_without_apple_health_stays_near_four_minutes():

@@ -23,6 +23,7 @@ from lifetwin.core.models import (
 )
 from lifetwin.onboarding import ChatCompletionsExtractor, ConversationService, OpenAIExtractor
 from lifetwin.onboarding import router as onboarding_router
+from lifetwin.onboarding.probes import MAX_PROBES
 from lifetwin.personalize.providers import DISPLAY_NAMES, ClaudePersonalizer, MusePersonalizer
 from lifetwin.prediction import load_model
 from lifetwin.prediction.models import PredictionResponse
@@ -141,6 +142,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ),
         timeout_seconds=settings.provider_timeout_seconds,
         personalizer=personalizer,
+        max_probes=1 if settings.onboarding_demo else MAX_PROBES,
     )
     # Check-ins are guided only and stateless: the caller sends the previous answers.
     application.state.checkin_service = CheckinService()

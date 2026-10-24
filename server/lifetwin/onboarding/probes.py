@@ -141,6 +141,7 @@ def choose(
     answered: set[str],
     asked: list[str],
     notes: list[HabitNote],
+    limit: int = MAX_PROBES,
 ) -> Probe | None:
     """The probe to ask now, if any.
 
@@ -149,9 +150,9 @@ def choose(
     useful probe is asked at the next answer instead. Probes that can still come later
     compete for the remaining slots: a sleep question early on does not use up the slot
     an activity question would need. ``just_confirmed`` breaks ties toward the answer
-    just given.
+    just given. ``limit`` is the most probes for this onboarding (one in the short demo).
     """
-    if len(asked) >= MAX_PROBES:
+    if len(asked) >= limit:
         return None
     covered = {note.topic for note in notes if note.estimate_for is None}
 
@@ -179,4 +180,4 @@ def choose(
         and probe not in now
     ]
     ahead = [probe for probe in later if _rank(probe) < _rank(best)]
-    return best if len(ahead) < MAX_PROBES - len(asked) else None
+    return best if len(ahead) < limit - len(asked) else None
