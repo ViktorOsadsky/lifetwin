@@ -36,3 +36,29 @@ def test_prediction_placeholder_contains_no_estimate_or_model_identity():
     assert body["status"] == "not_implemented"
     assert body["prediction"] is None
     assert body["model_version"] is None
+
+
+@pytest.mark.parametrize("value", [35.0, 35])
+def test_integral_floats_are_accepted_for_whole_number_fields(value):
+    profile = HealthProfile.model_validate(
+        {"age": value, "exercise_minutes_weekly": value, "systolic_bp": 120.0, "diastolic_bp": 80.0}
+    )
+    assert profile.age == 35 and isinstance(profile.age, int)
+    assert profile.systolic_bp == 120 and isinstance(profile.systolic_bp, int)
+
+
+@pytest.mark.parametrize("field", ["age", "exercise_minutes_weekly", "systolic_bp"])
+def test_non_integral_floats_are_still_rejected(field):
+    with pytest.raises(ValidationError):
+        HealthProfile.model_validate({field: 60.5})
+
+
+@pytest.mark.parametrize("pair", [(80, 150), (120, 120)])
+def test_systolic_must_exceed_diastolic_with_plain_message(pair):
+    with pytest.raises(ValidationError, match="top blood pressure number is usually the bigger"):
+        HealthProfile.model_validate({"systolic_bp": pair[0], "diastolic_bp": pair[1]})
+
+
+def test_single_blood_pressure_value_is_allowed():
+    assert HealthProfile.model_validate({"diastolic_bp": 80}).diastolic_bp == 80
+    assert HealthProfile.model_validate({"systolic_bp": 120, "diastolic_bp": 80})

@@ -12,6 +12,7 @@ from lifetwin.advisor import router as advisor_router
 from lifetwin.core.config import Settings
 from lifetwin.core.middleware import RequestBudgetMiddleware
 from lifetwin.core.models import (
+    BP_ORDER_MESSAGE,
     ApiError,
     CompareRequest,
     DeferredFeature,
@@ -23,6 +24,53 @@ from lifetwin.onboarding import router as onboarding_router
 from lifetwin.quiz.router import router as quiz_router
 from lifetwin.quiz.service import load_bank
 from lifetwin.research.tavily import TavilyResearch
+
+FIELD_WORDS = {
+    "age": "age",
+    "sex": "sex",
+    "height_cm": "height",
+    "weight_kg": "weight",
+    "sleep_hours": "hours of sleep",
+    "exercise_minutes_weekly": "weekly exercise minutes",
+    "smoking_status": "smoking",
+    "alcohol_drinks_weekly": "drinks per week",
+    "diabetes": "diabetes",
+    "systolic_bp": "top blood pressure number",
+    "diastolic_bp": "bottom blood pressure number",
+    "text": "your message",
+    "limit": "number of questions",
+    "question_id": "question",
+}
+
+
+def invalid_input_message(exc: RequestValidationError) -> str:
+    errors = exc.errors()
+    if any(BP_ORDER_MESSAGE in str(error.get("msg", "")) for error in errors):
+        return BP_ORDER_MESSAGE
+    names = []
+    for error in errors:
+        word = FIELD_WORDS.get(str(error["loc"][-1])) if error.get("loc") else None
+        if word and word not in names:
+            names.append(word)
+    if names:
+        return f"Please check these answers: {', '.join(names)}. Then try again."
+    return "Some answers do not look right. Please check them and try again."
+
+
+def _described(statuses: dict[int, str]) -> dict:
+    return {status: {"model": ApiError, "description": text} for status, text in statuses.items()}
+
+
+# Only statuses a route can really return. COMMON_ERRORS come from the
+# request-budget middleware and apply to every route.
+COMMON_ERRORS = _described(
+    {
+        429: "Request or concurrency limit reached",
+        500: "Redacted internal error",
+        504: "Request deadline exceeded",
+    }
+)
+BODY_ERRORS = _described({413: "Request body too large", 422: "Invalid request fields or values"})
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -39,20 +87,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version="0.1.0",
         description="Mascot intake, educational plans and quiz content. Prediction is deferred.",
         lifespan=lifespan,
-        responses={
-            status: {"model": ApiError, "description": description}
-            for status, description in {
-                400: "Malformed request",
-                404: "Resource not found",
-                405: "Method not allowed",
-                409: "Invalid conversation transition",
-                413: "Request body too large",
-                422: "Invalid request fields or values",
-                429: "Request or concurrency limit reached",
-                500: "Redacted internal error",
-                504: "Request deadline exceeded",
-            }.items()
-        },
+        responses=COMMON_ERRORS,
     )
     application.state.settings = settings
     application.state.conversation_service = ConversationService(
@@ -60,7 +95,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             api_key=settings.openai_api_key.get_secret_value(),
             model=settings.openai_model,
             timeout_seconds=settings.provider_timeout_seconds,
-        )
+        ),
+        timeout_seconds=settings.provider_timeout_seconds,
     )
     application.state.research_client = TavilyResearch(
         api_key=settings.tavily_api_key.get_secret_value(),
@@ -74,7 +110,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             status_code=422,
             content=ApiError(
                 code="invalid_request",
-                message="Request fields or values are invalid.",
+                message=invalid_input_message(exc),
                 request_id=getattr(request.state, "request_id", None),
             ).model_dump(),
         )
@@ -82,7 +118,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @application.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException):
         code = "not_found" if exc.status_code == 404 else "request_rejected"
-        message = "Resource not found." if exc.status_code == 404 else "The request was rejected."
+        message = (
+            "We could not find that. Please go back and try again."
+            if exc.status_code == 404
+            else "We could not do that. Please go back and try again."
+        )
         if isinstance(exc.detail, dict):
             try:
                 known = ApiError.model_validate(exc.detail)
@@ -125,26 +165,46 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # Only route shells and input boundaries: no model, math or mock results.
     @application.post(
-        "/api/predict", response_model=DeferredFeature, status_code=501, tags=["deferred"]
+        "/api/predict",
+        response_model=DeferredFeature,
+        status_code=501,
+        tags=["deferred"],
+        responses=BODY_ERRORS,
     )
     async def predict(profile: HealthProfile):
         return DeferredFeature()
 
     @application.post(
-        "/api/compare", response_model=DeferredFeature, status_code=501, tags=["deferred"]
+        "/api/compare",
+        response_model=DeferredFeature,
+        status_code=501,
+        tags=["deferred"],
+        responses=BODY_ERRORS,
     )
     async def compare(profiles: CompareRequest):
         return DeferredFeature()
 
     @application.post(
-        "/api/sensitivity", response_model=DeferredFeature, status_code=501, tags=["deferred"]
+        "/api/sensitivity",
+        response_model=DeferredFeature,
+        status_code=501,
+        tags=["deferred"],
+        responses=BODY_ERRORS,
     )
     async def sensitivity(payload: SensitivityRequest):
         return DeferredFeature()
 
-    application.include_router(onboarding_router, prefix="/api")
-    application.include_router(advisor_router, prefix="/api")
-    application.include_router(quiz_router, prefix="/api")
+    application.include_router(
+        onboarding_router,
+        prefix="/api",
+        responses={**BODY_ERRORS, **_described({409: "Invalid conversation transition"})},
+    )
+    application.include_router(advisor_router, prefix="/api", responses=BODY_ERRORS)
+    application.include_router(
+        quiz_router,
+        prefix="/api",
+        responses=_described({404: "Quiz question not found", 422: "Invalid request values"}),
+    )
     application.add_middleware(RequestBudgetMiddleware, settings=settings)
     application.add_middleware(
         CORSMiddleware,
