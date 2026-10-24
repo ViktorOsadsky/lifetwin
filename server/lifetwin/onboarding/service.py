@@ -470,12 +470,12 @@ class ConversationService:
             named = ", ".join(names[:-1]) + " and " + names[-1] if len(names) > 1 else names[0]
             # Asking the same question again without saying why feels like being stuck.
             missing = (
-                f"The Health app didn't have your {FRIENDLY_LABELS[asked]}, so I still need it. "
+                f"Apple Health didn't have your {FRIENDLY_LABELS[asked]}, so I still need it. "
                 if asked and state.current_field == asked
                 else ""
             )
             return respond(
-                f"Thank you. I added your {named} from the Health app. "
+                f"Thank you. I added your {named} from Apple Health. "
                 + missing
                 + self._prompt(state)
             )
