@@ -7,8 +7,7 @@ final now = DateTime(2026, 10, 24, 12);
 HealthSample s(String type, DateTime start, {DateTime? end, num? value}) =>
     HealthSample(type: type, start: start, end: end ?? start, value: value);
 
-HealthCandidate? pick(List<HealthCandidate> cs, HealthField f) =>
-    cs.where((c) => c.field == f).firstOrNull;
+HealthCandidate? pick(List<HealthCandidate> cs, HealthField f) => cs.where((c) => c.field == f).firstOrNull;
 
 void main() {
   test('height and weight use the latest reading within a year, in metric', () {
@@ -77,8 +76,14 @@ void main() {
 
   test('agent payload keeps readings but no source or device names', () {
     final payload = agentSamplesPayload([
-      HealthSample(type: 'STEPS', start: DateTime.utc(2026, 10, 20), end: DateTime.utc(2026, 10, 20, 1),
-          value: 1200, unit: 'COUNT', recordingMethod: 'automatic'),
+      HealthSample(
+        type: 'STEPS',
+        start: DateTime.utc(2026, 10, 20),
+        end: DateTime.utc(2026, 10, 20, 1),
+        value: 1200,
+        unit: 'COUNT',
+        recordingMethod: 'automatic',
+      ),
     ], windowDays: 30);
     final sample = (payload['samples'] as List).single as Map;
     expect(sample, {

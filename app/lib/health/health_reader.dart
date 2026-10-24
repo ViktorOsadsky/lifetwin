@@ -66,7 +66,9 @@ class HealthReader {
       startTime: now.subtract(const Duration(days: 365)),
       endTime: now,
     );
-    return [for (final p in _health.removeDuplicates([...recent, ...body])) _toSample(p)];
+    return [
+      for (final p in _health.removeDuplicates([...recent, ...body])) _toSample(p),
+    ];
   }
 }
 

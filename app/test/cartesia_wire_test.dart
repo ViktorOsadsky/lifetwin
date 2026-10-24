@@ -82,7 +82,10 @@ void main() {
     expect(e, isA<TtsAudio>());
     expect((e as TtsAudio).pcm, pcm);
 
-    expect(CartesiaWire.parseTts(jsonEncode({'type': 'done', 'context_id': 'ctx1'}), contextId: 'ctx1'), isA<TtsDone>());
+    expect(
+      CartesiaWire.parseTts(jsonEncode({'type': 'done', 'context_id': 'ctx1'}), contextId: 'ctx1'),
+      isA<TtsDone>(),
+    );
     expect(CartesiaWire.parseTts(jsonEncode({'done': true}), contextId: 'ctx1'), isA<TtsDone>());
     expect(CartesiaWire.parseTts(jsonEncode({'type': 'error', 'error': 'bad voice'})), isA<TtsError>());
     expect(CartesiaWire.parseTts(chunk, contextId: 'other'), isA<TtsIgnored>());
@@ -92,9 +95,11 @@ void main() {
   });
 
   test('STT parsing: partial, final, flush, error, junk', () {
-    final p = CartesiaWire.parseStt(jsonEncode({'type': 'transcript', 'is_final': false, 'text': 'I am'})) as SttTranscript;
+    final p =
+        CartesiaWire.parseStt(jsonEncode({'type': 'transcript', 'is_final': false, 'text': 'I am'})) as SttTranscript;
     expect((p.text, p.isFinal), ('I am', false));
-    final f = CartesiaWire.parseStt(jsonEncode({'type': 'transcript', 'is_final': true, 'text': 'I am 70'})) as SttTranscript;
+    final f =
+        CartesiaWire.parseStt(jsonEncode({'type': 'transcript', 'is_final': true, 'text': 'I am 70'})) as SttTranscript;
     expect((f.text, f.isFinal), ('I am 70', true));
     expect(CartesiaWire.parseStt(jsonEncode({'type': 'flush_done'})), isA<SttFlushed>());
     expect(CartesiaWire.parseStt(jsonEncode({'type': 'done'})), isA<SttFlushed>());
@@ -109,20 +114,61 @@ void main() {
     final out = b.add(Uint8List.fromList([4, 5, 6, 7, 8, 9]));
     expect(out.map((c) => c.toList()), [
       [1, 2, 3, 4],
-      [5, 6, 7, 8]
+      [5, 6, 7, 8],
     ]);
     expect(b.flush(), Uint8List.fromList([9]));
     expect(b.flush(), isNull);
   });
 
+  test('PauseDetector fires once per pause, only after speech', () {
+    Uint8List chunk(int amplitude) {
+      final d = ByteData(3200);
+      for (var i = 0; i < 1600; i++) {
+        d.setInt16(i * 2, i.isEven ? amplitude : -amplitude, Endian.little);
+      }
+      return d.buffer.asUint8List();
+    }
+
+    final p = PauseDetector();
+    final quiet = chunk(50), speech = chunk(3000);
+    expect([for (var i = 0; i < 10; i++) p.add(quiet)], everyElement(false)); // silence before speaking
+    expect(p.add(speech), false);
+    final pause = [for (var i = 0; i < 10; i++) p.add(quiet)];
+    expect(pause.indexOf(true), 5); // the sixth quiet 100 ms chunk
+    expect(pause.where((f) => f), hasLength(1));
+    p.add(speech);
+    expect([for (var i = 0; i < 6; i++) p.add(quiet)].last, true); // next pause fires again
+  });
+
+  test('PauseDetector still finds pauses in a noisy room', () {
+    Uint8List chunk(int amplitude) {
+      final d = ByteData(3200);
+      for (var i = 0; i < 1600; i++) {
+        d.setInt16(i * 2, i.isEven ? amplitude : -amplitude, Endian.little);
+      }
+      return d.buffer.asUint8List();
+    }
+
+    final p = PauseDetector();
+    final hall = chunk(1200), speech = chunk(6000);
+    for (var i = 0; i < 20; i++) {
+      p.add(hall);
+    }
+    expect([for (var i = 0; i < 50; i++) p.add(speech)], everyElement(false)); // 5 s of talking
+    expect([for (var i = 0; i < 6; i++) p.add(hall)].last, true);
+  });
+
   test('server turn parsing', () {
     final t = HttpConversationGuide.parseTurn({
-      'state': {'phase': 'confirming', 'confirmed_profile': {'age': 70}},
+      'state': {
+        'phase': 'confirming',
+        'confirmed_profile': {'age': 70},
+      },
       'message': 'Is that right?',
       'complete': false,
       'mascot_events': [
         {'state': 'thinking', 'caption': 'x'},
-        {'state': 'confirming', 'caption': 'y'}
+        {'state': 'confirming', 'caption': 'y'},
       ],
     });
     expect(t.isConfirming, true);
@@ -131,10 +177,11 @@ void main() {
   });
 
   test('transcript pieces are joined exactly as Ink sends them (live sequence)', () {
-    expect(CartesiaWire.joinTranscript([" I'", 'm about', ' five', ' foot eight, I think.'], ''),
-        "I'm about five foot eight, I think.");
+    expect(
+      CartesiaWire.joinTranscript([" I'", 'm about', ' five', ' foot eight, I think.'], ''),
+      "I'm about five foot eight, I think.",
+    );
     expect(CartesiaWire.joinTranscript([' I weigh'], ' about 160'), 'I weigh about 160');
     expect(CartesiaWire.joinTranscript([], ''), '');
   });
 }
-

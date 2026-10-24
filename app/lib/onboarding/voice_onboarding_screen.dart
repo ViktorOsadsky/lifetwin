@@ -44,18 +44,29 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: ListenableBuilder(
-          listenable: c,
-          builder: (context, _) => CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: c.phase == VoicePhase.consent && c.turn == null && !c.canRetry ? _consent(context) : _talk(context),
-                ),
-              ),
-            ],
+        // Tapping anywhere that is not a control puts the keyboard away.
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: ListenableBuilder(
+            listenable: c,
+            builder: (context, _) => !c.askingVoice && !(c.phase == VoicePhase.consent && c.turn == null && !c.canRetry)
+                ? Padding(padding: const EdgeInsets.all(24), child: _talk(context))
+                : CustomScrollView(
+                    slivers: [
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: c.askingVoice
+                              ? _voiceAgain(context)
+                              : c.phase == VoicePhase.consent && c.turn == null && !c.canRetry
+                              ? _consent(context)
+                              : _talk(context),
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),
@@ -82,6 +93,30 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
         BigButton(label: 'Yes, I can talk', filled: true, onTap: () => setState(() => _voiceChoice = true)),
         const SizedBox(height: 16),
         BigButton(label: 'Type instead', filled: false, onTap: () => setState(() => _voiceChoice = false)),
+      ],
+    );
+  }
+
+  /// Same question as the first screen, asked when someone who started by
+  /// typing wants to talk.
+  Widget _voiceAgain(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(header: true, child: Text('Talk with me?', style: text.headlineMedium)),
+        const SizedBox(height: 24),
+        Text(
+          'Your voice is sent to Cartesia, a voice service, only while you hold the Talk button. '
+          'It turns your words into text and speaks my answers. LifeTwin does not keep recordings.\n\n'
+          'You can type instead at any time.',
+          style: text.titleLarge?.copyWith(height: 1.4),
+        ),
+        const Spacer(),
+        const SizedBox(height: 24),
+        BigButton(label: 'Yes, I can talk', filled: true, onTap: () => c.answerVoiceAgain(true)),
+        const SizedBox(height: 16),
+        BigButton(label: 'Keep typing', filled: false, onTap: () => c.answerVoiceAgain(false)),
       ],
     );
   }
@@ -114,9 +149,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   Widget _talk(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final busy = c.phase == VoicePhase.interpreting;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final header =
         // Mascot line: always visible as a caption, announced when it changes.
         Semantics(
           liveRegion: true,
@@ -134,28 +168,51 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
               ),
             ],
           ),
+        );
+    // The question stays put while the rest scrolls, so the keyboard never hides it.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.3),
+          child: SingleChildScrollView(child: header),
         ),
-        const SizedBox(height: 24),
-        if (c.caption.isNotEmpty)
-          Semantics(
-            liveRegion: true,
-            child: Text(
-              c.phase == VoicePhase.listening ? 'Hearing: ${c.caption}' : 'You said: ${c.caption}',
-              style: text.titleLarge?.copyWith(fontStyle: FontStyle.italic, height: 1.35),
-            ),
+        Expanded(
+          child: CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 24),
+                    if (c.caption.isNotEmpty && !keyboard)
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          c.phase == VoicePhase.listening ? 'Hearing: ${c.caption}' : 'You said: ${c.caption}',
+                          style: text.titleLarge?.copyWith(fontStyle: FontStyle.italic, height: 1.35),
+                        ),
+                      ),
+                    if (c.notice != null) ...[
+                      const SizedBox(height: 16),
+                      _NoticeBox(message: c.notice!, onRetry: c.canRetry ? c.retry : null),
+                    ],
+                    const Spacer(),
+                    const SizedBox(height: 24),
+                    ..._controls(context),
+                  ],
+                ),
+              ),
+            ],
           ),
-        if (c.notice != null) ...[
-          const SizedBox(height: 16),
-          _NoticeBox(message: c.notice!, onRetry: c.canRetry ? c.retry : null),
-        ],
-        const Spacer(),
-        const SizedBox(height: 24),
-        ..._controls(context),
+        ),
       ],
     );
   }
 
   List<Widget> _controls(BuildContext context) {
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
     final busy = c.phase == VoicePhase.interpreting;
     if (c.phase == VoicePhase.done) {
       return [
@@ -165,6 +222,16 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
           BigButton(label: 'Use my Health app', filled: false, onTap: widget.onUseHealth!),
         ],
         if (c.canHearAgain) ...[const SizedBox(height: 12), _hearAgain()],
+      ];
+    }
+    if (c.confirming && c.correcting) {
+      return [
+        Text('Okay. What is the right answer?', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 16),
+        if (c.typing) ..._typingControls(busy) else TalkButton(controller: c),
+        const SizedBox(height: 12),
+        if (!busy) BigButton(label: 'Never mind', filled: false, onTap: c.keepAnswer),
+        _modeSwitch(),
       ];
     }
     if (c.confirming && !busy) {
@@ -184,56 +251,69 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
       ],
       if (c.typing) ..._typingControls(busy) else TalkButton(controller: c),
       const SizedBox(height: 12),
-      if (c.canHearAgain) _hearAgain(),
-      _modeSwitch(),
-      _helperSwitch(),
-      if (widget.onUseHealth != null)
-        TextButton.icon(
-          onPressed: widget.onUseHealth,
-          icon: const Icon(Icons.favorite_border),
-          label: Text('Use my Health app instead', style: Theme.of(context).textTheme.titleMedium),
-          style: TextButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-        ),
+      if (!keyboard) ...[
+        if (c.canHearAgain) _hearAgain(),
+        _modeSwitch(),
+        _helperSwitch(),
+        if (widget.onUseHealth != null)
+          TextButton.icon(
+            onPressed: widget.onUseHealth,
+            icon: const Icon(Icons.favorite_border),
+            label: Text('Use my Health app instead', style: Theme.of(context).textTheme.titleMedium),
+            style: TextButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+          ),
+      ],
     ];
   }
 
   List<Widget> _typingControls(bool busy) => [
-        TextField(
-          controller: _text,
-          enabled: !busy,
-          style: Theme.of(context).textTheme.titleLarge,
-          textInputAction: TextInputAction.send,
-          onSubmitted: (_) => _send(),
-          minLines: 1,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Type your answer',
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.all(18),
-          ),
-        ),
-        const SizedBox(height: 16),
-        BigButton(label: busy ? 'One moment…' : 'Send', filled: true, onTap: busy ? null : _send),
-      ];
+    TextField(
+      controller: _text,
+      enabled: !busy,
+      style: Theme.of(context).textTheme.titleLarge,
+      textInputAction: TextInputAction.send,
+      onSubmitted: (_) => _send(),
+      minLines: 1,
+      maxLines: 3,
+      decoration: const InputDecoration(
+        labelText: 'Type your answer',
+        border: OutlineInputBorder(),
+        contentPadding: EdgeInsets.all(18),
+      ),
+    ),
+    const SizedBox(height: 16),
+    BigButton(label: busy ? 'One moment…' : 'Send', filled: true, onTap: busy ? null : _send),
+    if (MediaQuery.viewInsetsOf(context).bottom > 0) ...[
+      const SizedBox(height: 12),
+      BigButton(label: 'Hide keyboard', filled: false, onTap: () => FocusManager.instance.primaryFocus?.unfocus()),
+    ],
+  ];
 
   Widget _hearAgain() => TextButton.icon(
-        onPressed: c.hearAgain,
-        icon: const Icon(Icons.volume_up),
-        label: Text('Hear it again', style: Theme.of(context).textTheme.titleMedium),
-        style: TextButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-      );
+    onPressed: c.hearAgain,
+    icon: const Icon(Icons.volume_up),
+    label: Text('Hear it again', style: Theme.of(context).textTheme.titleMedium),
+    style: TextButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+  );
 
   Widget _helperSwitch() => TextButton.icon(
-        onPressed: () => c.setAiHelper(!c.aiHelper),
-        icon: Icon(c.aiHelper ? Icons.auto_awesome : Icons.auto_awesome_outlined),
-        label: Text(c.aiHelper ? 'Turn off AI helper' : 'Turn on AI helper',
-            style: Theme.of(context).textTheme.titleMedium),
-        style: TextButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-      );
+    onPressed: () => c.setAiHelper(!c.aiHelper),
+    icon: Icon(c.aiHelper ? Icons.auto_awesome : Icons.auto_awesome_outlined),
+    label: Text(
+      c.aiHelper ? 'Turn off AI helper' : 'Turn on AI helper',
+      style: Theme.of(context).textTheme.titleMedium,
+    ),
+    style: TextButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+  );
 
   Widget _modeSwitch() {
-    if (c.typing && !c.voiceUsable) return const SizedBox.shrink();
     final toVoice = c.typing;
+    if (toVoice) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: BigButton(label: 'Talk instead', filled: false, onTap: () => c.setTyping(false)),
+      );
+    }
     return TextButton.icon(
       onPressed: () => c.setTyping(!c.typing),
       icon: Icon(toVoice ? Icons.mic : Icons.keyboard),
@@ -292,8 +372,8 @@ class _TalkButtonState extends State<TalkButton> {
     final label = busy
         ? 'One moment…'
         : listening
-            ? 'Listening. Tap or let go when done'
-            : 'Hold to talk';
+        ? 'Listening. Tap or let go when done'
+        : 'Hold to talk';
     final scheme = Theme.of(context).colorScheme;
     return Semantics(
       button: true,
@@ -314,23 +394,26 @@ class _TalkButtonState extends State<TalkButton> {
             color: busy
                 ? scheme.surfaceContainerHighest
                 : listening
-                    ? scheme.tertiary
-                    : scheme.primary,
+                ? scheme.tertiary
+                : scheme.primary,
             borderRadius: BorderRadius.circular(44),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(listening ? Icons.mic : Icons.mic_none,
-                  size: 36, color: busy ? scheme.onSurfaceVariant : (listening ? scheme.onTertiary : scheme.onPrimary)),
+              Icon(
+                listening ? Icons.mic : Icons.mic_none,
+                size: 36,
+                color: busy ? scheme.onSurfaceVariant : (listening ? scheme.onTertiary : scheme.onPrimary),
+              ),
               const SizedBox(width: 12),
               Flexible(
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: busy ? scheme.onSurfaceVariant : (listening ? scheme.onTertiary : scheme.onPrimary),
-                      ),
+                    color: busy ? scheme.onSurfaceVariant : (listening ? scheme.onTertiary : scheme.onPrimary),
+                  ),
                 ),
               ),
             ],
@@ -358,8 +441,11 @@ class _NoticeBox extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(message,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: scheme.onSecondaryContainer, height: 1.35)),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(color: scheme.onSecondaryContainer, height: 1.35),
+            ),
             if (onRetry != null) ...[
               const SizedBox(height: 12),
               BigButton(label: 'Try again', filled: false, onTap: onRetry),

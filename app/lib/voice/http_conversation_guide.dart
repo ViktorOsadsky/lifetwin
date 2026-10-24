@@ -2,16 +2,19 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'api_base.dart';
 import 'speech.dart';
 
-const apiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8000');
+export 'api_base.dart' show ApiBase, apiBaseUrl;
 
 /// Calls POST /api/onboarding/turn. The state is held by the app, not the server.
 class HttpConversationGuide implements ConversationGuide {
-  HttpConversationGuide({http.Client? client, this.baseUrl = apiBaseUrl}) : _client = client ?? http.Client();
+  HttpConversationGuide({http.Client? client, String? baseUrl, ApiBase? base})
+    : _client = client ?? http.Client(),
+      base = base ?? ApiBase(baseUrl ?? apiBaseUrl, client);
 
   final http.Client _client;
-  final String baseUrl;
+  final ApiBase base;
 
   @override
   Future<GuideTurn> turn({
@@ -32,10 +35,19 @@ class HttpConversationGuide implements ConversationGuide {
       'provider_consent': aiHelper,
     };
     try {
+      final url = await base.url();
       final r = await _client
-          .post(Uri.parse('$baseUrl/api/onboarding/turn'),
-              headers: {'content-type': 'application/json'}, body: jsonEncode(body))
+          .post(
+            Uri.parse('$url/api/onboarding/turn'),
+            headers: {'content-type': 'application/json'},
+            body: jsonEncode(body),
+          )
           .timeout(const Duration(seconds: 20));
+      if (r.statusCode == 429) {
+        throw GuideTooBusy(
+          _reason(r.bodyBytes) ?? 'Too many tries in a short time. Please wait a minute, then try again.',
+        );
+      }
       if (r.statusCode >= 400 && r.statusCode < 500) {
         throw GuideRejected(_reason(r.bodyBytes) ?? 'Something in that answer could not be used.');
       }
@@ -44,6 +56,7 @@ class HttpConversationGuide implements ConversationGuide {
     } on GuideFailure {
       rethrow;
     } catch (e) {
+      base.forget();
       throw GuideFailure('$e');
     }
   }

@@ -104,6 +104,11 @@ class GuideFailure implements Exception {
 
 /// The server answered but refused the request, with a plain-language reason
 /// (e.g. "Please check these answers: height."). Retrying unchanged won't help.
+/// The server is asking the app to slow down (HTTP 429). Retrying later is safe.
+class GuideTooBusy extends GuideFailure {
+  const GuideTooBusy(super.message);
+}
+
 class GuideRejected extends GuideFailure {
   const GuideRejected(super.message);
 }
