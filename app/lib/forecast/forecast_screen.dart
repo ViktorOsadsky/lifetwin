@@ -5,6 +5,7 @@ import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart';
 import '../twin/profile_mapping.dart' show joinPlain;
+import '../twin/twin_model.dart' show extrapolationCaveat;
 import '../voice/speech.dart';
 import '../widgets/whole_word_text.dart';
 import 'forecast_client.dart';
@@ -36,6 +37,7 @@ List<String> forecastMeaning(Forecast f) => [
   'They show links, not causes. Changing one answer may not change what happens.',
   'We only look ${f.maxHorizonYears} years ahead, as far as the model was checked.',
   'It is worked out on your phone, from your own answers only. Nothing is filled in for you.',
+  if (f.extrapolated) extrapolationCaveat,
 ];
 
 /// V-4 fortune result, with V-5 still learning and the unsupported state.
@@ -332,6 +334,12 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
           textAlign: TextAlign.center,
           style: LtText.body(color: LtColors.gold),
         ),
+        if (f.extrapolated)
+          WholeWordText(
+            extrapolationCaveat,
+            textAlign: TextAlign.center,
+            style: LtText.body(color: LtColors.cream),
+          ),
         const SizedBox(height: 4),
         Wrap(
           alignment: WrapAlignment.spaceBetween,

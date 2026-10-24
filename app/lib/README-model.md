@@ -20,6 +20,22 @@ This folder (`lib/twin/`) is the data and logic layer behind the forecast, "expe
 - Never show a death date, an age at death or years gained.
 - Nothing is filled in. A missing answer is never replaced by a typical or healthy value. The "We assumed" section is gone.
 
+## Ages 30–34 and 80–85 (extrapolated)
+
+Owner ruling: "it is okay to extrapolate a bit below and above the age ranges". The package itself supports only ages 35–79, and its files are not edited. `TwinModelService` (`twin_model.dart`) wraps it for these two bands:
+
+1. **Run the package at the nearest checked age.** For an age of 30–34 the package runs at 35; for 80–85 it runs at 79. So every other check still applies unchanged: missing inputs, entry ranges, the 1st–99th percentile support, and the nearest-neighbour support.
+2. **Move only the age term to the real age**, using the model's own coefficient: `score += coefficient[age_decade] × (age − anchor) / 10`, then `S(t) = baseline(t)^exp(score)`.
+3. **The age is never clamped.** An 84-year-old gets lower survival than the same profile at 79. A test checks the formula against the package inside 35–79.
+
+What the UI sees for these ages:
+
+- `TwinAssessment.extrapolated`, `Forecast.extrapolated` and `ExperimentResult.extrapolated` are true. The raw results also carry `extrapolated: true` and `extrapolation_caveat`.
+- Show `extrapolationCaveat` with any number: "Your age is outside the ages this model was checked on (35–79), so treat this as a rough guide." The forecast screen and Why? already do.
+- `profile_used.age` is the person's real age.
+
+Under 30 or over 85 there is no number: `unsupported_age` with "Annual estimates support ages 30–85 only." The wellness cards don't change, because the package's guidance only changes at ages 18, 61 and 65, which neither anchor crosses.
+
 ## Profile mapping (`profile_mapping.dart`)
 
 The app keeps the confirmed profile under the field names of `server/lifetwin/core/models.py`. `toModelProfile()` maps it to the package's 11 inputs.
@@ -174,6 +190,7 @@ Levers only move the way guidance points. Less exercise, more sitting, and weigh
 - `missingInputs`, `supportIssues`
 - `interpretation`
 - `causalInterpretation`: always false
+- `extrapolated` / `caveat`: age 30–34 or 80–85; show the caveat with any number
 - `title`
 
 **Rules:**

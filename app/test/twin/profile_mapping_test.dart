@@ -145,13 +145,56 @@ void main() {
     expect(a.percentByYear, isEmpty);
   });
 
-  test('ages outside 35–79 show the package status and no number', () {
-    for (final age in [30, 82]) {
+  test('under 30 or over 85: no number', () {
+    for (final age in [29, 86]) {
       final a = model.assess({...appProfileFor(_golden0()), 'age': age});
       expect(a.status, 'unsupported_age');
-      expect(a.message, 'Annual estimates support ages 35–79 only.');
+      expect(a.message, 'Annual estimates support ages 30–85 only.');
       expect(a.percentByYear, isEmpty);
     }
+  });
+
+  test('30–34 and 80–85 give a number flagged extrapolated, with the caveat', () {
+    for (final age in [30, 34, 80, 85]) {
+      final a = model.assess({...appProfileFor(_golden0()), 'age': age});
+      expect(a.status, 'available', reason: 'age $age');
+      expect(a.extrapolated, isTrue);
+      expect(a.raw['extrapolation_caveat'], extrapolationCaveat);
+      expect(a.profileUsed['age'], age); // the real age, not the anchor
+      final f = Forecast.fromAssessment(a);
+      expect(f.supported && f.extrapolated, isTrue);
+    }
+    expect(
+      extrapolationCaveat,
+      'Your age is outside the ages this model was checked on (35–79), so treat this as a rough guide.',
+    );
+    final inside = model.assess(appProfileFor(_golden0()));
+    expect(inside.extrapolated, isFalse);
+    expect(inside.raw.containsKey('extrapolation_caveat'), isFalse);
+  });
+
+  test('an 84-year-old is not clamped to 79: lower survival, along the model\'s own age term', () {
+    final p = appProfileFor(_golden0());
+    final at79 = model.assess({...p, 'age': 79}), at84 = model.assess({...p, 'age': 84});
+    for (var y = 1; y <= 5; y++) {
+      expect(at84.survivalByYear[y]!, lessThan(at79.survivalByYear[y]!));
+    }
+    // Moving the age term inside the checked range matches the package itself (79 -> 70).
+    final spec = model.engine.model.spec;
+    final coefficient = ((spec['coefficients'] as List).first as num).toDouble();
+    final at70 = model.assess({...p, 'age': 70});
+    final score70 = (at79.survival['log_relative_hazard_score'] as num) + coefficient * (70 - 79) / 10;
+    expect(at70.survival['log_relative_hazard_score'], closeTo(score70, 1e-12));
+    final score84 = (at79.survival['log_relative_hazard_score'] as num) + coefficient * (84 - 79) / 10;
+    final base5 = ((spec['baseline_survival'] as List).last as num).toDouble();
+    expect(at84.survivalByYear[5], closeTo(math.pow(base5, math.exp(score84)).toDouble(), 1e-12));
+  });
+
+  test('outside the age range, the other support checks still apply', () {
+    // The package's entry ranges still reject a bad value at 84.
+    expect(model.assess({...appProfileFor(_golden0()), 'age': 84, 'sleep_hours': 1}).status, 'invalid_input');
+    // Missing inputs still come first.
+    expect(model.assess({'age': 84, 'sex': 'male'}).status, 'missing_inputs');
   });
 
   test('the forecast never carries a death date or years gained', () {

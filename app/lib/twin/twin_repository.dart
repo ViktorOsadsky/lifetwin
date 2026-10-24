@@ -135,7 +135,7 @@ class TwinRepository extends ChangeNotifier {
     if (a == null) return null;
     final used = a.profileUsed;
     return TwinExperiment(
-      engine: model.engine,
+      model: model,
       current: a,
       appProfile: store.profile,
       order: leverRanking.orderFor(age: used['age'] as num?, sexNhanes: used['sex_nhanes'] as num?),

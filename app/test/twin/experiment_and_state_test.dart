@@ -36,7 +36,7 @@ void main() {
   TwinExperiment experimentFor(Map<String, dynamic> p) {
     final a = model.assess(p);
     return TwinExperiment(
-      engine: model.engine,
+      model: model,
       current: a,
       appProfile: p,
       order: ranking.orderFor(age: a.profileUsed['age'] as num?, sexNhanes: a.profileUsed['sex_nhanes'] as num?),
@@ -225,6 +225,20 @@ void main() {
         ..set(LeverId.moderate, 600);
       expect(e.result.status, 'invalid_input');
       expect(e.result.differenceByYear, isEmpty);
+    });
+
+    test('an 84-year-old experiments with an extrapolated, flagged difference', () {
+      final e = experimentFor({...smoker, 'age': 84})..set(LeverId.smoking, 1);
+      expect(e.current.extrapolated, isTrue);
+      expect(e.result.status, 'available');
+      expect(e.result.extrapolated, isTrue);
+      expect(e.result.caveat, extrapolationCaveat);
+      expect(
+        e.result.alternativePercentByYear[5]! - e.result.currentPercentByYear[5]!,
+        closeTo(e.result.difference5!, 1e-9),
+      );
+      expect(e.result.currentPercentByYear[5], closeTo(e.current.percentByYear[5]!, 1e-9));
+      expect(experimentFor(smoker).result.extrapolated, isFalse);
     });
 
     test('with answers missing, levers say which input and there is no number', () {

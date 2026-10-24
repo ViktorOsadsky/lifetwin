@@ -68,6 +68,9 @@ class Forecast {
   /// The full result (wellness cards, avatar, `profile_used`, `input_provenance`).
   final TwinAssessment? assessment;
 
+  /// Age 30–34 or 80–85: show [extrapolationCaveat] with the number.
+  bool get extrapolated => assessment?.extrapolated ?? false;
+
   /// "about 93": out of 100 people, at a supported horizon.
   int outOf100(int years) => (100 * (survival[years] ?? 0)).round();
 }

@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show AssetBundle, rootBundle;
-import 'package:lifetwin_on_device/lifetwin_on_device.dart';
 
 import 'twin_model.dart';
 
@@ -161,6 +160,7 @@ class ExperimentResult {
     this.missingInputs = const [],
     this.supportIssues = const [],
     this.interpretation,
+    this.extrapolated = false,
   });
 
   /// - `available`: [differenceByYear] holds the numbers.
@@ -199,6 +199,10 @@ class ExperimentResult {
   /// "Difference between two model profiles, not the benefit of changing a habit."
   final String? interpretation;
 
+  /// The person's age is 30–34 or 80–85: show [extrapolationCaveat] with any number.
+  final bool extrapolated;
+  String? get caveat => extrapolated ? extrapolationCaveat : null;
+
   /// Always false: an observational difference, never a causal benefit.
   bool get causalInterpretation => false;
 
@@ -209,7 +213,7 @@ class ExperimentResult {
 /// modeled difference. Bind a ListenableBuilder to it; [set] and [reset] notify.
 class TwinExperiment extends ChangeNotifier {
   TwinExperiment({
-    required this.engine,
+    required this.model,
     required this.current,
     required Map<String, dynamic> appProfile,
     List<String> order = defaultLeverOrder,
@@ -218,7 +222,7 @@ class TwinExperiment extends ChangeNotifier {
     _result = _compute();
   }
 
-  final LifeTwinEngine engine;
+  final TwinModelService model;
 
   /// The person's own assessment.
   final TwinAssessment current;
@@ -264,8 +268,10 @@ class TwinExperiment extends ChangeNotifier {
   }
 
   ExperimentResult _compute() {
+    final x = current.extrapolated;
     if (!current.available) {
       return ExperimentResult(
+        extrapolated: x,
         status: 'current_unavailable',
         message: current.message,
         missingInputs: current.missingInputs,
@@ -276,20 +282,21 @@ class TwinExperiment extends ChangeNotifier {
       for (final l in _levers)
         if (l.changed) l,
     ];
-    if (moved.isEmpty) return const ExperimentResult(status: 'no_change');
+    if (moved.isEmpty) return ExperimentResult(status: 'no_change', extrapolated: x);
     try {
       final flags = [for (final l in moved) _flag(l)];
       final counted = [
         for (var i = 0; i < moved.length; i++)
           if (flags[i].counted) moved[i],
       ];
-      if (counted.isEmpty) return ExperimentResult(status: 'not_counted', levers: flags);
-      final c = engine.compare({'current_profile': _base, 'alternative_profile': _apply(counted)});
+      if (counted.isEmpty) return ExperimentResult(status: 'not_counted', levers: flags, extrapolated: x);
+      final c = model.compare({'current_profile': _base, 'alternative_profile': _apply(counted)});
       final alt = TwinAssessment({'survival': c['alternative']});
       final cur = TwinAssessment({'survival': c['current']});
       final warnings = [for (final w in c['warnings'] as List? ?? const []) '$w'];
       if (!alt.available) {
         return ExperimentResult(
+          extrapolated: x,
           status: 'alternative_unavailable',
           message: alt.message,
           missingInputs: alt.missingInputs,
@@ -299,6 +306,7 @@ class TwinExperiment extends ChangeNotifier {
         );
       }
       return ExperimentResult(
+        extrapolated: x,
         status: 'available',
         differenceByYear: TwinAssessment.yearMap(c['modeled_difference_percentage_points']),
         currentPercentByYear: cur.percentByYear,
@@ -308,7 +316,8 @@ class TwinExperiment extends ChangeNotifier {
         interpretation: c['interpretation'] as String?,
       );
     } on FormatException {
-      return const ExperimentResult(
+      return ExperimentResult(
+        extrapolated: x,
         status: 'invalid_input',
         message: 'Sleep, sitting and exercise together come to more than 24 hours a day. Try smaller changes.',
       );
@@ -319,7 +328,7 @@ class TwinExperiment extends ChangeNotifier {
   /// the result always comes from one compare() of the full alternative profile.
   LeverFlag _flag(ExperimentLever l) {
     LeverFlag no(String reason) => LeverFlag(id: l.id, counted: false, reason: reason);
-    final c = engine.compare({
+    final c = model.compare({
       'current_profile': _base,
       'alternative_profile': _apply([l]),
     });
