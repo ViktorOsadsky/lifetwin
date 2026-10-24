@@ -41,6 +41,9 @@ dependencies:
   http: ^1.6.0
   url_launcher: ^6.3.2
   lottie: ^3.1.0
+  # The on-device survival model (copied from model_handoff/, see lib/README-model.md).
+  lifetwin_on_device:
+    path: packages/lifetwin_on_device
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -239,6 +239,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  lifetwin_on_device:
+    dependency: "direct main"
+    description:
+      path: "packages/lifetwin_on_device"
+      relative: true
+    source: path
+    version: "1.0.0"
   lints:
     dependency: transitive
     description:
