@@ -42,7 +42,8 @@
         "topic",
         "title",
         "url",
-        "publisher"
+        "publisher",
+        "reviewed_on"
       ],
       "title": "EvidenceSource",
       "type": "object"
@@ -120,7 +121,12 @@
         "title",
         "next_step",
         "evidence_summary",
-        "source_ids"
+        "source_ids",
+        "evidence_kind",
+        "modeled_effect_status",
+        "modeled_effect",
+        "experiment_assumptions",
+        "optional"
       ],
       "title": "PlanAction",
       "type": "object"
@@ -176,6 +182,10 @@
       },
       "required": [
         "status",
+        "sources",
+        "retrieved_source_ids",
+        "query_count",
+        "page_count",
         "limitation"
       ],
       "title": "ResearchResult",
@@ -237,6 +247,9 @@
     }
   },
   "required": [
+    "schema_version",
+    "status",
+    "mode",
     "mascot_message",
     "actions",
     "sources",

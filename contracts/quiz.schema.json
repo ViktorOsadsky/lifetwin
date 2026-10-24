@@ -114,6 +114,21 @@
           "type": "string"
         }
       },
+      "required": [
+        "state_scope",
+        "minimum_game_health",
+        "maximum_game_health",
+        "initial_game_health",
+        "clamp_after_each_effect",
+        "score_once_per_question_version",
+        "review_once_after_wrong_answer",
+        "retry_after_review_is_unscored",
+        "network_failure_is_unscored",
+        "affects_confirmed_profile",
+        "affects_prediction",
+        "answer_metadata",
+        "label"
+      ],
       "title": "LocalScoringRules",
       "type": "object"
     },
@@ -226,6 +241,7 @@
         }
       },
       "required": [
+        "schema_version",
         "id",
         "topic",
         "difficulty",
@@ -315,7 +331,9 @@
     }
   },
   "required": [
+    "schema_version",
     "bank_version",
+    "local_scoring",
     "total",
     "questions"
   ],
