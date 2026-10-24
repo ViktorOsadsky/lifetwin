@@ -63,6 +63,12 @@ Use strict structured results for extraction and planning, handle refusals/incom
 
 Expected backend configuration: `OPENAI_API_KEY`, `OPENAI_MODEL`, `TAVILY_API_KEY`, `MODEL_ARTIFACT_PATH`, and `APP_ENV`. Flutter gets only the public `API_BASE_URL` and mode flags. Commit an `.env.example` with placeholders during implementation, never actual keys. Public provider-backed routes need server-side rate/concurrency limits and budget caps before external demonstration.
 
+## Convex backend (experimental branch only)
+
+> **Experimental branch only** (`codex/b-convex-backend`). Not merged, not the default, and not a decision. FastAPI in `server/` stays the backend of record.
+
+[`convex/`](../convex/README.md) is a TypeScript port of the non-prediction FastAPI backend as Convex HTTP actions, with the same paths, status codes, ApiError envelope, request IDs and byte-identical JSON bodies (checked against FastAPI-generated reference fixtures and by `contracts/check.py --base-url` against a local Convex deployment). The app points at it by setting `API_BASE_URL` to the deployment's `.site` URL. Provider keys are Convex environment variables, and keyless mode makes no network calls. The database is used only by an opt-in ephemeral session store (`SESSION_STORE=ephemeral`, rows deleted 30 minutes after creation); by default nothing is stored. Prediction stays a 501 shell; Track A's model would become a separate inference service called from an action. Known gaps vs FastAPI (no per-IP rate or concurrency limits, no `/docs` UI, no OpenAI Responses adapter) are listed in the README.
+
 ## Decisions still needed
 
 - Voice/STT/TTS provider, transport, microphone capture/playback packages and interruption behavior; preserve the common voice/text conversation contract while deferred.
