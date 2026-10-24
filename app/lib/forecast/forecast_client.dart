@@ -1,90 +1,75 @@
-import 'dart:convert';
+import '../twin/profile_mapping.dart';
+import '../twin/twin_model.dart';
+import '../twin/twin_repository.dart';
 
-import 'package:http/http.dart' as http;
-
-import '../voice/api_base.dart';
-
-/// The fields POST /api/predict accepts (contracts/prediction.request.schema.json).
-const forecastProfileFields = {
-  'age',
-  'sex',
-  'height_cm',
-  'weight_kg',
-  'sleep_hours',
-  'exercise_minutes_weekly',
-  'smoking_status',
-  'alcohol_drinks_weekly',
-  'diabetes',
-  'systolic_bp',
-  'diastolic_bp',
-};
-
-/// One server forecast (contracts/prediction.schema.json). Survival values are 0 to 1.
+/// One on-device forecast, read for the forecast screens from a [TwinAssessment].
+/// Survival values are 0 to 1. A number exists only when [supported]
+/// (`survival.status == 'available'`).
 class Forecast {
   const Forecast({
     required this.supported,
     required this.survival,
     required this.maxHorizonYears,
     required this.modelVersion,
-    this.filledIn = const [],
+    this.status = 'available',
     this.reason,
+    this.missingInputs = const [],
     this.limitations = const [],
     this.curve = const [],
+    this.assessment,
   });
+
+  factory Forecast.fromAssessment(TwinAssessment a) {
+    final survival = a.available ? a.survivalByYear : const <int, double>{};
+    final max = survival.isEmpty ? 5 : survival.keys.reduce((x, y) => x > y ? x : y);
+    return Forecast(
+      supported: a.available,
+      status: a.status,
+      survival: survival,
+      maxHorizonYears: max,
+      modelVersion: a.modelVersion,
+      reason: a.available ? null : a.message,
+      missingInputs: a.missingInputs,
+      limitations: [?a.interpretation],
+      // Year 0 is everyone; then the five yearly points the model returns.
+      curve: survival.isEmpty
+          ? const []
+          : [
+              (years: 0.0, survival: 1.0),
+              for (final y in (survival.keys.toList()..sort())) (years: y.toDouble(), survival: survival[y]!),
+            ],
+      assessment: a,
+    );
+  }
 
   final bool supported;
 
-  /// Years (1, 3, 5) to the share of similar people still living then.
+  /// `available`, `missing_inputs`, `unsupported_age`, `unsupported_profile`, `invalid_input`.
+  final String status;
+
+  /// Years (1–5) to the share of similar people still living then.
   final Map<int, double> survival;
   final int maxHorizonYears;
   final String modelVersion;
 
-  /// Plain words for answers the model filled in with typical survey values.
-  final List<String> filledIn;
-
-  /// Why there is no forecast, when [supported] is false.
+  /// The package's status message when not [supported].
   final String? reason;
+
+  /// Package input names still needed (status `missing_inputs`).
+  final List<String> missingInputs;
+
+  /// Plain words for [missingInputs].
+  List<String> get missingLabels => [for (final m in missingInputs) modelInputLabels[m] ?? m];
   final List<String> limitations;
 
-  /// The model's monthly curve up to [maxHorizonYears], as returned.
+  /// The yearly curve: (0, 1.0), then years 1–5.
   final List<({double years, double survival})> curve;
 
-  /// "about 93": out of 100 people, at the longest supported horizon.
-  int outOf100(int years) => (100 * (survival[years] ?? 0)).round();
+  /// The full result (wellness cards, avatar, `profile_used`, `input_provenance`).
+  final TwinAssessment? assessment;
 
-  static Forecast parse(Object? json) {
-    if (json is! Map || json['status'] is! String || json['model_version'] is! String) {
-      throw const ForecastFailure('unexpected response');
-    }
-    final supported = json['status'] == 'supported';
-    final survival = <int, double>{
-      for (final p in (json['survival'] as List? ?? const []))
-        if (p is Map && p['years'] is num && p['survival'] is num)
-          (p['years'] as num).toInt(): (p['survival'] as num).toDouble(),
-    };
-    final max = (json['max_horizon_years'] as num?)?.toInt() ?? 5;
-    if (supported && !survival.containsKey(max)) throw const ForecastFailure('missing horizon');
-    return Forecast(
-      supported: supported,
-      survival: survival,
-      maxHorizonYears: max,
-      modelVersion: json['model_version'] as String,
-      filledIn: [
-        for (final f in (json['filled_in'] as List? ?? const []))
-          if (f is Map && f['label'] is String) f['label'] as String,
-      ],
-      reason: json['reason'] as String?,
-      limitations: [
-        for (final l in (json['limitations'] as List? ?? const []))
-          if (l is String) l,
-      ],
-      curve: [
-        for (final p in (json['curve'] as List? ?? const []))
-          if (p is Map && p['years'] is num && p['survival'] is num)
-            (years: (p['years'] as num).toDouble(), survival: (p['survival'] as num).toDouble()),
-      ],
-    );
-  }
+  /// "about 93": out of 100 people, at a supported horizon.
+  int outOf100(int years) => (100 * (survival[years] ?? 0)).round();
 }
 
 abstract class ForecastClient {
@@ -96,61 +81,30 @@ class ForecastFailure implements Exception {
   const ForecastFailure(this.message, {this.plain, this.modelMissing = false});
   final String message;
 
-  /// The server has no model installed yet (HTTP 501): "still learning".
+  /// The model could not be loaded: "still learning".
   final bool modelMissing;
 
-  /// A message from the server that is safe and useful to show.
+  /// A message that is safe and useful to show.
   final String? plain;
   @override
   String toString() => 'ForecastFailure($message)';
 }
 
-/// Calls POST /api/predict with the confirmed answers only.
-class HttpForecastClient implements ForecastClient {
-  HttpForecastClient({required this.base, http.Client? client}) : _client = client ?? http.Client();
+/// The forecast on the phone: `LifeTwinEngine.assess()` with the phone's history. No
+/// network. (POST /api/predict is no longer called; the server route stays for now.)
+class OnDeviceForecastClient implements ForecastClient {
+  OnDeviceForecastClient(this.repository);
 
-  final ApiBase base;
-  final http.Client _client;
+  final Future<TwinRepository> repository;
 
   @override
   Future<Forecast> predict(Map<String, dynamic> confirmedProfile) async {
-    final body = {
-      for (final e in confirmedProfile.entries)
-        if (forecastProfileFields.contains(e.key) && e.value != null) e.key: e.value,
-    };
+    final TwinRepository repo;
     try {
-      final url = await base.url();
-      final r = await _client
-          .post(
-            Uri.parse('$url/api/predict'),
-            headers: {'content-type': 'application/json'},
-            body: jsonEncode(body),
-          )
-          .timeout(const Duration(seconds: 20));
-      if (r.statusCode == 501) {
-        throw const ForecastFailure(
-          'model not installed',
-          plain: 'The forecast is not set up on this server yet.',
-          modelMissing: true,
-        );
-      }
-      if (r.statusCode != 200) throw ForecastFailure('HTTP ${r.statusCode}', plain: _reason(r.bodyBytes));
-      return Forecast.parse(jsonDecode(utf8.decode(r.bodyBytes)));
-    } on ForecastFailure {
-      rethrow;
+      repo = await repository;
     } catch (e) {
-      base.forget();
-      throw ForecastFailure('$e');
+      throw ForecastFailure('model failed to load: $e', modelMissing: true);
     }
-  }
-
-  static String? _reason(List<int> body) {
-    try {
-      final json = jsonDecode(utf8.decode(body));
-      final message = json is Map ? json['message'] : null;
-      return message is String && message.trim().isNotEmpty ? message.trim() : null;
-    } catch (_) {
-      return null;
-    }
+    return Forecast.fromAssessment(repo.assess(confirmedProfile));
   }
 }
