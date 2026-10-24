@@ -61,6 +61,9 @@
   {"field": "diabetes", "profile": {}, "consent": false, "mode": "text", "turns": ["My doctor diagnosed me with type 2"], "expected": {"diabetes": true}, "why": "diabetes diagnosed"},
   {"field": "diabetes", "profile": {"diabetes": true}, "consent": false, "mode": "text", "turns": ["it's in remission now"], "expected": {}, "why": "diabetes remission"},
   {"field": "weight_kg", "profile": {}, "consent": true, "mode": "text", "turns": ["I lost weight", "150 pounds", "I've been swimming"], "expected": {"weight_kg": 68.0389}, "why": "probe with consent"},
-  {"field": "weight_kg", "profile": {}, "consent": true, "mode": "text", "turns": ["150 pounds, since I started swimming"], "expected": {"weight_kg": 68.0389}, "why": "reason given, no probe"}
+  {"field": "weight_kg", "profile": {}, "consent": true, "mode": "text", "turns": ["150 pounds, since I started swimming"], "expected": {"weight_kg": 68.0389}, "why": "reason given, no probe"},
+  {"field": null, "profile": {}, "consent": false, "mode": "transcript", "turns": ["okay so um I gotta update my sleep. I'm getting about seven and a half hours now"], "expected": {"sleep_hours": 7.5}, "why": "free transcript sleep"},
+  {"field": "alcohol_drinks_weekly", "profile": {}, "consent": false, "mode": "transcript", "turns": ["Ellen turn that down. I have maybe one beer a week now"], "expected": {"alcohol_drinks_weekly": 1}, "why": "transcript chatter drinks"},
+  {"field": "systolic_bp", "profile": {}, "consent": false, "mode": "transcript", "turns": ["the machine said one thirty eight over eighty six"], "expected": {"systolic_bp": 138, "diastolic_bp": 86}, "why": "transcript spoken bp"}
  ]
 }

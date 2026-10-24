@@ -186,7 +186,7 @@ BIRTHDAY_SAID = re.compile(
     r"\bmy birthday (?:was|came|has (?:been|passed|come)|just passed)\b|\b(?:a|one) year older\b"
 )
 BP_TALK_CUE = re.compile(r"\b(?:blood pressure|pressure|hypertension|bp|doctor)\b")
-INSTEAD = re.compile(r"[\s,]+(?:instead|then|please)[\s.!]*$", re.I)
+INSTEAD = re.compile(r"[\s,]+(?:instead|then|please|too|as well|also)[\s.!?]*$", re.I)
 CLEAR_WORDS = re.compile(r"\b(?:clear|erase|wipe|delete)\b")
 # Words that only name an answer to change ("I'd like to update my weight, please").
 NAMING = set(
@@ -308,7 +308,10 @@ class ChangeService:
             # Room chatter around the answer goes before anything else reads it.
             text = focus(text, field, transcript=turn.voice, confirming=state.phase == "confirming")
         # "Change my sleep instead" is the same request as "change my sleep".
-        intent = control_intent(text) or control_intent(INSTEAD.sub("", text))
+        intent = control_intent(text)
+        trimmed = control_intent(INSTEAD.sub("", text))
+        if trimmed and trimmed.kind == "back" and getattr(intent, "kind", None) != "back":
+            intent = trimmed
         kind = intent.kind if intent else None
         if kind in {"repeat", "slower", "louder"}:
             lead = {"repeat": REPEAT_LEAD, "slower": SLOWER_LEAD, "louder": LOUDER_LEAD}[kind]
@@ -566,8 +569,9 @@ class ChangeService:
         values = self._read(state.field, text, turn)[0]
         pending = state.pending.model_dump(exclude_none=True)
         if values and not _same(values, pending):
-            # "Actually it's 155": a new value in place of the one heard.
+            # "Actually it's 155, I've been walking": a new value, and the reason with it.
             state.phase, state.pending = "asking", HealthProfile()
+            state.note = _note(text) if turn.consent else None
             return self._answer(state, turn, text)
         said = read_back_reply(text)[0]
         if said in {"no", "yes", "unsure"} or self._nothing(text) or is_skip(text, state.field):
