@@ -3,7 +3,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:lifesim/twin/twin_repository.dart';
-import 'package:lifesim/twin/twin_store.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -12,8 +11,8 @@ void main() {
     final backend = ProtectedFileBackend();
     final repo = await TwinRepository.open(backend: backend);
     await repo.deleteMyData();
-    await repo.saveConfirmedProfile({'age': 45, 'sex': 'female'});
-    await repo.store.saveTwin({'type': 'bear', 'look': 'cal_hat'});
+    await repo.saveConversationProfile({'age': 45, 'sex': 'female'});
+    await repo.saveTwinLook({'type': 'bear', 'look': 'cal_hat'});
     // A phone reports NSFileProtectionComplete; the simulator has no protection classes.
     expect(await backend.protection(), anyOf('NSFileProtectionComplete', 'simulator'));
     final again = await TwinStore.open(ProtectedFileBackend());

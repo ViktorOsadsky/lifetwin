@@ -7,7 +7,6 @@ import 'package:lifesim/twin/checkin_applier.dart';
 import 'package:lifesim/twin/twin_history.dart';
 import 'package:lifesim/twin/twin_model.dart';
 import 'package:lifesim/twin/twin_repository.dart';
-import 'package:lifesim/twin/twin_store.dart';
 
 /// Every model input known (golden profile 1 with height and weight).
 const fullProfile = {
@@ -47,58 +46,80 @@ Map<String, dynamic> responseFor(String name) {
   };
 }
 
+/// A finished weekly check-in whose answers cover all four behaviour fields.
+Map<String, dynamic> weeklyWithBehaviour({required double sleep}) {
+  final r = responseFor('checkin-weekly-profile-update');
+  (r['state'] as Map)['confirmed'] = {
+    'sleep_hours': sleep,
+    'vigorous_recreation_min_week': 60,
+    'moderate_recreation_min_week': 165,
+    'sedentary_min_day': 393,
+  };
+  r['profile_update'] = <String, dynamic>{};
+  return r;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final monday = DateTime(2026, 10, 26);
 
-  group('TwinStore', () {
-    test('round trip: profile, check-ins, logs, summaries, notes, twin', () async {
+  group('phone store (written only through TwinRepository)', () {
+    late TwinModelService model;
+    setUpAll(() async => model = await TwinModelService.load());
+    Future<TwinRepository> repoOn(StoreBackend b) async =>
+        TwinRepository(model: model, store: await TwinStore.open(b), clock: () => monday);
+
+    test('round trip: profile, check-ins, weekly summary, habit notes, twin look', () async {
       final backend = MemoryBackend();
-      final s = await TwinStore.open(backend);
-      expect(s.hasProfile, isFalse);
-      await s.saveProfile({...fullProfile, 'diastolic_bp': null});
-      await s.addCheckin(const CheckinRecord(kind: 'daily', date: '2026-10-24', answers: {'wellbeing': 'good'}));
-      await s.putDailyLog({
-        'date': '2026-10-23',
-        'workday': true,
-        'sleep_hours': 7,
-        'vigorous_recreation_min': 0,
-        'moderate_recreation_min': 30,
-        'sedentary_min_day': 400,
-      });
-      final week = {
-        'week_start': '2026-10-12',
-        'sleep_hours': 7,
-        'vigorous_recreation_min_week': 60,
-        'moderate_recreation_min_week': 165,
-        'sedentary_min_day': 393,
-      };
-      await s.putWeeklySummary(week);
-      await s.putWeeklySummary({...week, 'sleep_hours': 6.5}); // same week: replaced
-      await s.addHabitNote({'topic': 'walks', 'text': 'walks the dog twice a day'}, at: DateTime.utc(2026, 10, 24));
-      await s.saveTwin({'type': 'bear', 'look': 'cal_hat', 'name': 'Mochi'});
+      final repo = await repoOn(backend);
+      expect(repo.store.hasProfile, isFalse);
+      await repo.saveConversationProfile({...fullProfile, 'diastolic_bp': null});
+      await repo.applyCheckin(weeklyWithBehaviour(sleep: 7));
+      await repo.applyCheckin(weeklyWithBehaviour(sleep: 6.5)); // same week: replaced
+      await repo.applyMemoryConsent(true);
+      expect(await repo.addHabitNote({'topic': 'walks', 'text': 'walks the dog twice a day'}), isTrue);
+      await repo.saveTwinLook({'type': 'bear', 'look': 'cal_hat', 'name': 'Mochi'});
 
       final again = await TwinStore.open(backend);
       expect(again.profile, fullProfile); // nulls are not stored
-      expect(again.checkins.single.wellbeing, 'good');
-      expect(again.dailyLogs.single['date'], '2026-10-23');
-      expect(again.weeklySummaries.single['sleep_hours'], 6.5);
-      expect(again.habitNotes.single, {
-        'at': '2026-10-24T00:00:00.000Z',
-        'note': {'topic': 'walks', 'text': 'walks the dog twice a day'},
+      expect(again.checkins.map((c) => c.kind), ['weekly', 'weekly']);
+      expect(again.weeklySummaries.single, {
+        'week_start': '2026-10-19',
+        'sleep_hours': 6.5,
+        'vigorous_recreation_min_week': 60,
+        'moderate_recreation_min_week': 165,
+        'sedentary_min_day': 393,
       });
+      expect(again.habitNotes.single['note'], {'topic': 'walks', 'text': 'walks the dog twice a day'});
+      expect(again.memoryConsent, isTrue);
       expect(again.twin, {'type': 'bear', 'look': 'cal_hat', 'name': 'Mochi'});
+    });
+
+    test('habit notes need memory consent; turning it off deletes them', () async {
+      final backend = MemoryBackend();
+      final repo = await repoOn(backend);
+      expect(await repo.addHabitNote({'text': 'tea at night'}), isFalse);
+      expect(repo.store.habitNotes, isEmpty);
+      await repo.applyMemoryConsent(true);
+      await repo.addHabitNote({'text': 'tea at night'});
+      await repo.saveConversationProfile(fullProfile);
+      await repo.applyMemoryConsent(false);
+      expect(repo.store.habitNotes, isEmpty);
+      expect(repo.store.profile, fullProfile); // the profile stays: the forecast needs it
+      expect((await TwinStore.open(backend)).habitNotes, isEmpty);
     });
 
     test('Delete my data removes the file and everything in memory', () async {
       final backend = MemoryBackend();
-      final s = await TwinStore.open(backend);
-      await s.saveProfile(fullProfile);
-      await s.saveTwin({'type': 'human'});
-      await s.deleteAll();
+      final repo = await repoOn(backend);
+      await repo.saveConversationProfile(fullProfile);
+      await repo.saveTwinLook({'type': 'human'});
+      expect(repo.wellnessCards, isNotEmpty);
+      await repo.deleteMyData();
       expect(backend.text, isNull);
-      expect(s.hasProfile, isFalse);
-      expect(s.twin, isNull);
+      expect(repo.current, isNull);
+      expect(repo.store.hasProfile, isFalse);
+      expect(repo.store.twin, isNull);
       expect((await TwinStore.open(backend)).profile, isEmpty);
     });
 
@@ -129,14 +150,14 @@ void main() {
         () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null),
       );
       final b = ProtectedFileBackend();
-      final s = await TwinStore.open(b);
-      await s.saveProfile({'age': 50});
+      final repo = await repoOn(b);
+      await repo.saveConversationProfile({'age': 50});
       expect(jsonDecode(file!), {
         'version': 1,
         'profile': {'age': 50},
       });
       expect(await b.protection(), 'NSFileProtectionComplete');
-      await s.deleteAll();
+      await repo.deleteMyData();
       expect(file, isNull);
       expect(calls.map((c) => c.method), ['read', 'write', 'protection', 'delete']);
 
@@ -280,16 +301,15 @@ void main() {
     setUpAll(() async => model = await TwinModelService.load());
 
     test('a weekly check-in updates the profile on the phone and recomputes the forecast', () async {
-      final store = await TwinStore.open(MemoryBackend());
-      final repo = TwinRepository(model: model, store: store, clock: () => monday);
-      final before = await repo.saveConfirmedProfile(fullProfile);
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      final before = await repo.saveConversationProfile(fullProfile);
       expect(before.status, 'available');
       var notified = 0;
       repo.addListener(() => notified++);
       final o = await repo.applyCheckin(responseFor('checkin-weekly-profile-update'));
       expect(o.changedFields, isNotEmpty);
-      expect(store.profile['sleep_hours'], 6.0);
-      expect(store.checkins.single.kind, 'weekly');
+      expect(repo.profile['sleep_hours'], 6.0);
+      expect(repo.store.checkins.single.kind, 'weekly');
       final after = repo.current!;
       expect(after.profileUsed['sleep_hours'], 6.0);
       expect(after.inputProvenance, {'source': 'profile_snapshot'});
@@ -298,31 +318,21 @@ void main() {
     });
 
     test('a stored weekly summary window replaces the behaviour values, with provenance kept', () async {
-      final store = await TwinStore.open(MemoryBackend());
-      await store.putWeeklySummary({
-        'week_start': '2026-10-19',
-        'sleep_hours': 7,
-        'vigorous_recreation_min_week': 60,
-        'moderate_recreation_min_week': 165,
-        'sedentary_min_day': 393,
-      });
-      final repo = TwinRepository(model: model, store: store, clock: () => monday);
-      final a = await repo.saveConfirmedProfile({...fullProfile, 'sedentary_min_day': null});
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      await repo.applyCheckin(weeklyWithBehaviour(sleep: 7));
+      final a = await repo.saveConversationProfile({...fullProfile, 'sedentary_min_day': null});
       expect(a.status, 'available'); // sitting came from the window
       expect(a.source, 'weekly_summaries');
       expect(a.inputProvenance['window_start'], '2026-10-19');
       expect(a.profileUsed['moderate_recreation_min_week'], 165);
     });
 
-    test('Delete my data clears the store and the current result', () async {
-      final backend = MemoryBackend();
-      final repo = TwinRepository(model: model, store: await TwinStore.open(backend), clock: () => monday);
-      await repo.saveConfirmedProfile(fullProfile);
-      expect(repo.wellnessCards, isNotEmpty);
-      await repo.deleteMyData();
-      expect(repo.current, isNull);
-      expect(repo.profile, isEmpty);
-      expect(backend.text, isNull);
+    test('the emergency flag shows on the twin until cleared', () async {
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      await repo.applyCheckin(responseFor('checkin-emergency-pause'));
+      expect(repo.twinState().emergency, isTrue);
+      repo.clearEmergency();
+      expect(repo.twinState().emergency, isFalse);
     });
   });
 }

@@ -1,16 +1,31 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show AssetBundle;
+import 'package:flutter/services.dart';
 
 import 'checkin_applier.dart';
 import 'twin_experiment.dart';
 import 'twin_history.dart';
 import 'twin_model.dart';
 import 'twin_state.dart';
-import 'twin_store.dart';
+
+part 'twin_store.dart';
 
 /// The one object the UI talks to: the model (loaded once), the phone's store, the
 /// current assessment, check-ins, the twin's state, experiments, and "Delete my data".
 /// Everything runs on the phone; nothing here uses the network.
+///
+/// Who may write (owner ruling: no edits without consulting the agent). There is no setter
+/// for profile values or history. The only writes are:
+/// - [saveConversationProfile]: values confirmed in a Mochi conversation (onboarding, the
+///   "change through Mochi" conversation; Apple Health values arrive through it after
+///   their read-back);
+/// - [applyCheckin]: a check-in response (weekly `profile_update`, finished check-ins);
+/// - [applyMemoryConsent] / [addHabitNote]: habit notes, only with `memory_consent`;
+/// - [saveTwinLook]: cosmetic only;
+/// - [deleteMyData].
+/// Experiments ([experiment]) are hypothetical and never write.
 class TwinRepository extends ChangeNotifier {
   TwinRepository({
     required this.model,
@@ -61,9 +76,10 @@ class TwinRepository extends ChangeNotifier {
     asOf: _clock(),
   );
 
-  /// Saves the confirmed answers (end of the conversation) and recomputes.
-  Future<TwinAssessment> saveConfirmedProfile(Map<String, dynamic> p) async {
-    await store.saveProfile(p);
+  /// Keeps the answers a Mochi conversation confirmed (the whole confirmed profile it
+  /// returns) and recomputes. Call only with a conversation's confirmed values.
+  Future<TwinAssessment> saveConversationProfile(Map<String, dynamic> confirmed) async {
+    await store._saveProfile(confirmed);
     return _refresh();
   }
 
@@ -73,9 +89,9 @@ class TwinRepository extends ChangeNotifier {
   Future<CheckinOutcome> applyCheckin(Map<String, dynamic> response) async {
     final outcome = applyCheckinResponse(store.profile, response, localDate: _clock());
     _emergency = outcome.emergency;
-    if (outcome.record != null) await store.addCheckin(outcome.record!);
-    if (outcome.changedFields.isNotEmpty) await store.saveProfile(outcome.profile);
-    if (outcome.weeklySummary != null) await store.putWeeklySummary(outcome.weeklySummary!);
+    if (outcome.record != null) await store._addCheckin(outcome.record!);
+    if (outcome.changedFields.isNotEmpty) await store._saveProfile(outcome.profile);
+    if (outcome.weeklySummary != null) await store._putWeeklySummary(outcome.weeklySummary!);
     if (outcome.record != null || outcome.changedFields.isNotEmpty) {
       _refresh();
     } else {
@@ -91,7 +107,22 @@ class TwinRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addHabitNote(Map<String, dynamic> note) => store.addHabitNote(note);
+  /// The conversation's `memory_consent`. False deletes the stored habit notes.
+  Future<void> applyMemoryConsent(bool consent) async {
+    await store._setMemoryConsent(consent);
+    notifyListeners();
+  }
+
+  /// Keeps a free-form habit note from the conversation, only with memory consent.
+  /// Returns false (and keeps nothing) without it.
+  Future<bool> addHabitNote(Map<String, dynamic> note) async {
+    if (!store.memoryConsent) return false;
+    await store._addHabitNote(note, at: _clock());
+    return true;
+  }
+
+  /// The twin's cosmetic look (`type`, `look`, `name`); never part of the health profile.
+  Future<void> saveTwinLook(Map<String, dynamic> look) => store._saveTwin(look);
 
   /// The character's state now.
   TwinState twinState() =>
@@ -112,7 +143,7 @@ class TwinRepository extends ChangeNotifier {
 
   /// "Delete my data": the profile, history, notes and twin look, on the phone.
   Future<void> deleteMyData() async {
-    await store.deleteAll();
+    await store._deleteAll();
     _current = null;
     _emergency = false;
     notifyListeners();

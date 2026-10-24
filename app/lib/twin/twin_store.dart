@@ -1,10 +1,4 @@
-import 'dart:async';
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-
-import 'twin_history.dart';
+part of 'twin_repository.dart';
 
 /// Where the store's one JSON document lives.
 abstract class StoreBackend {
@@ -84,6 +78,10 @@ class MemoryBackend implements StoreBackend {
 /// - [dailyLogs] / [weeklySummaries]: rows in the package's shapes (twin_history.dart).
 /// - [habitNotes]: free-form JSON from the conversation.
 /// - [twin]: cosmetic customization; never part of the health profile.
+/// - [memoryConsent]: the conversation's `memory_consent`; habit notes are kept only while true.
+///
+/// Reads are public. Writes are private to this library, so the only write paths are the
+/// [TwinRepository] methods the owner allows (see lib/README-model.md, "Who may write").
 class TwinStore extends ChangeNotifier {
   TwinStore._(this._backend, Map<String, dynamic> doc) : _doc = doc;
 
@@ -116,31 +114,22 @@ class TwinStore extends ChangeNotifier {
   List<Map<String, dynamic>> get weeklySummaries => _list('weekly_summaries');
   List<Map<String, dynamic>> get habitNotes => _list('habit_notes');
   Map<String, dynamic>? get twin => _doc['twin'] == null ? null : Map<String, dynamic>.from(_doc['twin'] as Map);
+  bool get memoryConsent => _doc['memory_consent'] == true;
 
   List<Map<String, dynamic>> _list(String key) => [
     for (final r in _doc[key] as List? ?? const [])
       if (r is Map) Map<String, dynamic>.from(r),
   ];
 
-  Future<void> saveProfile(Map<String, dynamic> p) => _save('profile', {
+  Future<void> _saveProfile(Map<String, dynamic> p) => _save('profile', {
     for (final e in p.entries)
       if (e.value != null) e.key: e.value,
   });
 
-  Future<void> addCheckin(CheckinRecord r) => _save('checkins', [..._list('checkins'), r.toJson()]);
-
-  /// Adds or replaces the row for its `date`.
-  Future<void> putDailyLog(Map<String, dynamic> row) => _save(
-    'daily_logs',
-    [
-      for (final r in dailyLogs)
-        if (r['date'] != row['date']) r,
-      row,
-    ]..sort((a, b) => '${a['date']}'.compareTo('${b['date']}')),
-  );
+  Future<void> _addCheckin(CheckinRecord r) => _save('checkins', [..._list('checkins'), r.toJson()]);
 
   /// Adds or replaces the row for its `week_start`.
-  Future<void> putWeeklySummary(Map<String, dynamic> row) => _save(
+  Future<void> _putWeeklySummary(Map<String, dynamic> row) => _save(
     'weekly_summaries',
     [
       for (final r in weeklySummaries)
@@ -149,15 +138,21 @@ class TwinStore extends ChangeNotifier {
     ]..sort((a, b) => '${a['week_start']}'.compareTo('${b['week_start']}')),
   );
 
-  Future<void> addHabitNote(Map<String, dynamic> note, {DateTime? at}) => _save('habit_notes', [
+  Future<void> _addHabitNote(Map<String, dynamic> note, {DateTime? at}) => _save('habit_notes', [
     ...habitNotes,
     {'at': (at ?? DateTime.now()).toIso8601String(), 'note': note},
   ]);
 
-  Future<void> saveTwin(Map<String, dynamic> look) => _save('twin', look);
+  Future<void> _saveTwin(Map<String, dynamic> look) => _save('twin', look);
+
+  /// Turning memory off deletes the stored habit notes.
+  Future<void> _setMemoryConsent(bool consent) async {
+    if (!consent) await _save('habit_notes', const <Object>[]);
+    await _save('memory_consent', consent);
+  }
 
   /// "Delete my data": removes the file and everything in memory.
-  Future<void> deleteAll() async {
+  Future<void> _deleteAll() async {
     _doc = {};
     notifyListeners();
     await (_writing = _writing.then((_) => _backend.delete()));

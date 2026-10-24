@@ -89,7 +89,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       if (!mounted) return;
       final look = repo.store.twin;
       if (look != null && widget.appearance == null) _look.value = _appearanceFrom(look);
-      _look.addListener(() => repo.store.saveTwin(_appearanceJson(_look.value)).ignore());
+      _look.addListener(() => repo.saveTwinLook(_appearanceJson(_look.value)).ignore());
       if (repo.store.hasProfile) setState(() => _stored = repo.store.profile);
     }, onError: (Object e) => debugPrint('LifeTwin model or store did not load: $e'));
   }
@@ -108,7 +108,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
 
   /// Keeps the finished conversation's answers on the phone.
   void _keepProfile(Map<String, dynamic> p) {
-    _twin.then((repo) => repo.saveConfirmedProfile(p)).ignore();
+    _twin.then((repo) => repo.saveConversationProfile(p)).ignore();
   }
 
   @override
