@@ -1572,6 +1572,12 @@ NOT_SMOKING_OBJECT = (
     r"(?!\s+(?:my|his|her|our|their|work\w*|job|drink\w*|alcohol|booze|eating|coffee|sugar|"
     r"the (?!cig|smok|habit|tobacco|pipe)))"
 )
+PAST_WHEN = (
+    r"(?:in my (?:youth|decades|twenties|thirties|forties|teens)|years? ago|back then|"
+    r"in the past|when i was (?:young\w*|a kid|a teen\w*|in (?:the )?\w+)|"
+    r"as a (?:kid|teen\w*|young \w+)|for \d+ years?)\b"
+)
+DID_WHEN = rf"\s*(?:$|[,.;!]|{PAST_WHEN}|once\b|before\b)"
 FORMER = (
     r"\b(?:(?:quit|quitted|stopped|gave up|given up)" + NOT_SMOKING_OBJECT + r"|used to|use to|"
     r"former|formerly|ex smoker|"
@@ -1581,7 +1587,10 @@ FORMER = (
     # "I haven't had one since 1988", "I smoked in the army"
     r"\bhaven't (?:had|touched|smoked)\b[^,.;]*\b(?:since|in)\b|"
     r"\bsmoked\b[^,.;]*\b(?:in the (?:army|navy|service|military|war)|in (?:college|school)|"
-    r"as a (?:kid|teen\w*|young\w*)|in my (?:youth|decades)|years ago|back then|during)\b"
+    r"as a (?:kid|teen\w*|young\w*)|in my (?:youth|decades)|years ago|back then|during)\b|"
+    # "Not now, but I did in my 20s", "no, but I did years ago": "did" is the asked smoking.
+    rf"\b(?:not (?:now|anymore|any more|these days|nowadays)|no),? but i did\b(?={DID_WHEN})|"
+    rf"\bi did\b(?=\s+{PAST_WHEN})"
 )
 CURRENT = (
     r"\b(?:i smoke|i'm smoking|i am smoking|still smoke|currently|current|"
@@ -2027,6 +2036,14 @@ def clarify(text: str, field: ProfileField, *, today: date | None = None) -> str
             "How many days a week do you have that? You can say, for example, "
             '"one glass of wine, 3 days a week".'
         )
+    if (
+        field == "smoking_status"
+        and re.search(r"(?<!'ve )(?<!have )(?<!has )\bsmoked\b", canonical)
+        and _smoking(canonical) is None
+        and not re.search(rf"{FORMER}|\bnever\b|{RESUMED}", canonical)
+    ):
+        # "I smoked a pack a day": past tense, but not said to be over.
+        return 'Do you still smoke now? Please say "I still smoke" or "I quit".'
     if field == "smoking_status" and re.search(
         r"^(?:no|nope|nah)$|\bnot a smoker\b|\bnon ?smoker\b|\b(?:don't|do not) smoke\b|"
         r"\bnot anymore\b",

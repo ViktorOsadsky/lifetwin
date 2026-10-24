@@ -874,7 +874,9 @@ def _changes_meaning(piece: str) -> bool:
     canonical = _canonical(piece)
     plain = _unhedged(canonical)
     return bool(
-        UNCERTAIN.search(plain)
+        # "No, but I did": a contrast is part of the answer before it.
+        re.match(r"(?:but|except|though|although)\b", plain)
+        or UNCERTAIN.search(plain)
         or HYPOTHETICAL.search(plain)
         or VAGUE.search(plain)
         or ADVICE.search(plain)

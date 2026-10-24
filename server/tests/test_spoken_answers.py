@@ -199,3 +199,33 @@ def test_a_modest_word_that_changes_the_amount_still_asks(field, text):
 )
 def test_an_exact_age_inside_its_decade_is_read(text, expected):
     check("age", text, expected)
+
+
+# "Not now, but I did": "did" answers the smoking question itself.
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("not now, but I did in my 20s.", {"smoking_status": "former"}),
+        ("Not now, but I did when I was young.", {"smoking_status": "former"}),
+        ("No, but I did years ago.", {"smoking_status": "former"}),
+        ("No, but I did.", {"smoking_status": "former"}),
+        ("I did when I was in the navy.", {"smoking_status": "former"}),
+        ("No, but I did try a cigar yesterday.", None),  # maybe smoking now
+        ("No, but my husband did.", None),  # someone else
+    ],
+)
+def test_but_i_did_is_a_former_smoker(text, expected):
+    check("smoking_status", text, expected)
+
+
+@pytest.mark.parametrize("text", ["I smoked a few cigarettes a day.", "I smoked 2 packs a day."])
+def test_past_tense_smoking_asks_whether_it_goes_on(text):
+    result = say("smoking_status", text)
+    assert heard("smoking_status", text) == {}
+    assert result.message.startswith("Do you still smoke now?")
+
+
+def test_a_contrast_beside_a_no_is_kept_from_room_chatter():
+    # Voice focus once dropped "but I did" and asked "did you ever smoke?".
+    check("diabetes", "No, but I did.", None)
+    check("smoking_status", "Hey, turn that down. No, but I did.", {"smoking_status": "former"})
