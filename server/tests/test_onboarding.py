@@ -18,7 +18,7 @@ from lifetwin.onboarding import (
 from lifetwin.onboarding.models import ConversationState, ExtractionResult, TurnRequest
 from lifetwin.onboarding.parsing import QUESTIONS, grounded_candidates, parse_reply, parse_value
 from lifetwin.onboarding.providers import ExtractionUnavailable
-from lifetwin.onboarding.service import describe
+from lifetwin.onboarding.service import heard
 
 
 @pytest.fixture
@@ -529,13 +529,13 @@ def test_provider_cannot_turn_bare_weight_into_blood_pressure():
 @pytest.mark.parametrize(
     ("field", "text", "expected"),
     [
-        ("weight_kg", "160 lbs", "Weight: 160 pounds (about 72.6 kg)"),
-        ("weight_kg", "70 kg", "Weight: 70 kg (about 154.3 pounds)"),
-        ("height_cm", "5 ft 10 in", "Height: 5 feet 10 inches (about 178 cm)"),
-        ("height_cm", "178 cm", "Height: 178 cm (about 5 feet 10 inches)"),
-        ("systolic_bp", "120/80", "Blood pressure: 120 over 80"),
-        ("exercise_minutes_weekly", "150 minutes", "Exercise: 150 minutes a week"),
-        ("smoking_status", "never", "Smoking: never smoked"),
+        ("weight_kg", "160 lbs", "I heard you weigh 160 pounds (about 72.6 kg)."),
+        ("weight_kg", "70 kg", "I heard you weigh 70 kg (about 154.3 pounds)."),
+        ("height_cm", "5 ft 10 in", "I heard you are 5 feet 10 inches (about 178 cm) tall."),
+        ("height_cm", "178 cm", "I heard you are 178 cm (about 5 feet 10 inches) tall."),
+        ("systolic_bp", "120/80", "I heard your blood pressure is 120 over 80."),
+        ("exercise_minutes_weekly", "150 minutes", "I heard you exercise 150 minutes a week."),
+        ("smoking_status", "never", "I heard you have never smoked."),
     ],
 )
 def test_confirmation_message_is_plain_language(client, field, text, expected):
@@ -543,7 +543,7 @@ def test_confirmation_message_is_plain_language(client, field, text, expected):
     assert expected in message
     assert "_" not in message
     assert "Metric fields" not in message
-    assert "Is that right? Say yes, or tell me the right answer." in message
+    assert message.endswith("Is that right?")
 
 
 def test_several_pending_and_correction_messages_use_plain_labels(client):
@@ -580,7 +580,8 @@ def test_ambiguous_reply_while_confirming_changes_nothing(client, text):
     pending = turn(client, "reply", asking("height_cm"), text="5 ft 10 in")["state"]
     result = turn(client, "reply", pending, text=text)
     assert result["state"] == pending
-    assert "nothing has changed" in result["message"].lower()
+    message = result["message"]
+    assert message.endswith("Is that right?") or "right answer for your height" in message
 
 
 def test_pending_blood_pressure_pair_is_corrected_as_a_pair(client):
@@ -752,7 +753,7 @@ def test_unitless_or_approximate_number_gets_specific_follow_up(client, field, t
 
 def test_start_and_fallback_messages_avoid_jargon(client):
     start = turn(client, "start")["message"]
-    assert "You can type or talk to me." in start
+    assert "You can talk or type" in start and "skip any question" in start
     assert "transcript" not in start
     message = turn(client, "reply", asking("age"), text="purple")["message"]
     assert "listed category" not in message and "units" not in message
@@ -1083,7 +1084,8 @@ def test_import_adds_confirmed_values_and_moves_past_the_current_question(client
         "height_cm",
     }
     assert result["state"]["pending_profile"]["weight_kg"] is None
-    assert "Health app" in result["message"] and "2 answers" in result["message"]
+    assert "I added your weight and sleep from the Health app." in result["message"]
+    assert "68" not in result["message"]
 
 
 def test_import_clears_a_previous_skip_for_the_same_field(client):
@@ -1147,6 +1149,6 @@ def test_import_that_answers_the_current_question_does_not_repeat_it(client):
 )
 def test_read_back_keeps_whole_number_zeros(values, shown):
     """Found by the Convex port: 170 cm was read back as "17 cm" for confirmation."""
-    text = describe(values)
+    text = heard(values)
     assert shown in text
     assert " 17 cm" not in text and " 18 cm" not in text

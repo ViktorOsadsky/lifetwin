@@ -81,7 +81,7 @@ def test_real_noisy_transcripts(field, text, expected):
 
 def test_a_hedged_typical_reading_is_read_back_as_about():
     result = say("systolic_bp", REAL[9][1])
-    assert "Blood pressure: about 130 over 85" in result.message
+    assert "your blood pressure is about 130 over 85" in result.message
 
 
 def test_born_in_1952_is_worked_out_and_checked():

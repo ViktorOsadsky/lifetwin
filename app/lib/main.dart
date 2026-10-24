@@ -6,6 +6,7 @@ import 'health/health_screen.dart';
 import 'health/health_summary.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'onboarding/voice_onboarding_screen.dart';
+import 'theme/lifetwin_theme.dart';
 import 'voice/cartesia_speech.dart';
 import 'voice/http_conversation_guide.dart';
 import 'voice/voice_token.dart';
@@ -52,7 +53,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'LifeTwin',
-      theme: ThemeData(colorSchemeSeed: const Color(0xFF2F5BD3), useMaterial3: true),
+      debugShowCheckedModeBanner: false,
+      theme: lifeTwinTheme(),
       home: Builder(
         builder: (context) => VoiceOnboardingScreen(
           controller: _controller,

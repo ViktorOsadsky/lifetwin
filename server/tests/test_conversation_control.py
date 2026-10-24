@@ -25,6 +25,7 @@ from lifetwin.onboarding.service import (
     QUESTION_BACK_LEAD,
     REPEAT_LEAD,
     RESTART_QUESTION,
+    SKIPPED,
     SLOWER_LEAD,
     UNSURE_LEAD,
     WHY_NOTE,
@@ -68,9 +69,8 @@ def kind_of(result: TurnResponse) -> str:
         (QUESTION_BACK_LEAD, "question_back"),
         (UNSURE_LEAD, "is_that_a_yes"),
         (NO_LEAD, "no"),
-        ("Confirmed!", "confirmed"),
-        ("I'll leave that unknown.", "skipped"),
-        ("That's okay; I won't fill it in.", "skipped"),
+        ("Got it.", "confirmed"),
+        (SKIPPED, "skipped"),
     ]
     if message.startswith(RESTART_QUESTION):
         return "restart_question"
@@ -82,8 +82,8 @@ def kind_of(result: TurnResponse) -> str:
         if message.startswith(lead):
             return kind
     if state.phase == "confirming" and (
-        message.startswith("Here is what I heard.")
-        or (" that makes you " in message and "Nothing has changed" not in message)
+        (message.startswith("I heard ") and message.endswith("Is that right?"))
+        or (" that makes you " in message and message.endswith(" right?"))
     ):
         return "read_back"
     if state.phase == "asking" and message == QUESTIONS[state.current_field]:
@@ -569,7 +569,7 @@ def test_start_over_holds_nothing_over_to_the_next_turn():
     asked = reply(pending, "start over")
     assert asked.state == pending
     assert asked.message == RESTART_QUESTION + " " + ConversationService._prompt(pending)
-    assert asked.message.endswith("Is that right? Say yes, or tell me the right answer.")
+    assert asked.message.endswith("Is that right?")
     assert "restart_requested" not in asked.state.model_dump()
 
 

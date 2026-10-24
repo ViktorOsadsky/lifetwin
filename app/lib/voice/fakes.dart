@@ -140,38 +140,53 @@ class FakeConversationGuide implements ConversationGuide {
         return _turn('asking', 'How old are you?', confirmed, pending);
       case 'reply' when text == 'about five foot eight':
         return aiHelper
-            ? _turn('confirming', 'I heard 5 feet 8 inches. Is that right?', confirmed, {
+            ? _turn('confirming', 'I heard you are 5 feet 8 inches (about 173 cm) tall. Is that right?', confirmed, {
                 'height_cm': 172.72,
               }, provider: 'used')
             : _turn(
                 'asking',
-                "I can ask an AI helper to read this answer, but only if you say it's okay.",
+                "I couldn't read that. You can let the AI helper try.",
                 confirmed,
                 pending,
                 provider: 'consent_required',
               );
+      // A spoken or typed answer to the read-back: "yes" saves it, anything else asks again.
+      case 'reply' when state?['phase'] == 'confirming':
+        if (RegExp(r'^(yes|yeah|yep|that.s right)\b', caseSensitive: false).hasMatch(text ?? '')) {
+          return _done({...confirmed, ...pending});
+        }
+        return _turn(
+          'confirming',
+          'Okay, nothing has changed. What is the right answer for your age?',
+          confirmed,
+          pending,
+        );
+      case 'reply' when text == 'go back':
+        return _turn('asking', "Okay, let's go back to your age. How old are you?", confirmed, pending);
       case 'reply':
         if (state?['phase'] == 'asking' && state?['current_field'] == 'age') {
-          return _turn('confirming', 'I heard 70 years old. Is that right?', confirmed, {
+          return _turn('confirming', 'I heard you are 70. Is that right?', confirmed, {
             'age': 70,
           }, mascot: 'confirming');
         }
         return _turn('asking', 'How old are you?', confirmed, pending);
       case 'confirm':
-        return _turn(
-          'ready',
-          'Thank you. That is all I need.',
-          {...confirmed, ...pending},
-          {},
-          complete: true,
-          mascot: 'celebrating',
-        );
+        return _done({...confirmed, ...pending});
       case 'correct':
         return _turn('asking', 'Okay. How old are you?', confirmed, {});
       default:
         return _turn('asking', 'How old are you?', confirmed, pending);
     }
   }
+
+  GuideTurn _done(Map<String, dynamic> confirmed) => _turn(
+    'ready',
+    'All done. Thank you. Tap Continue to see your forecast.',
+    confirmed,
+    {},
+    complete: true,
+    mascot: 'celebrating',
+  );
 
   GuideTurn _turn(
     String phase,

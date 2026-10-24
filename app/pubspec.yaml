@@ -39,6 +39,7 @@ dependencies:
   web_socket_channel: ^3.0.3
   flutter_pcm_sound: ^3.3.3
   http: ^1.6.0
+  url_launcher: ^6.3.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -62,6 +63,21 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # LifeTwin design-system fonts (SIL OFL 1.1, from github.com/google/fonts).
+  # Fredoka is a variable font; text styles select weight with FontVariation('wght').
+  assets:
+    - assets/fonts/fredoka/OFL.txt
+    - assets/fonts/atkinson_hyperlegible/OFL.txt
+  fonts:
+    - family: Fredoka
+      fonts:
+        - asset: assets/fonts/fredoka/Fredoka-Variable.ttf
+    - family: AtkinsonHyperlegible
+      fonts:
+        - asset: assets/fonts/atkinson_hyperlegible/AtkinsonHyperlegible-Regular.ttf
+        - asset: assets/fonts/atkinson_hyperlegible/AtkinsonHyperlegible-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -247,7 +247,7 @@ void main() {
         await t.pumpWidget(const LifeTwinApp());
         await tick(t);
         final c = ctl(t);
-        if (!await tapButton(t, 'Yes, I can talk') || !await tapButton(t, 'Not now')) {
+        if (!await tapButton(t, "Yes, I'll talk") || !await tapButton(t, 'Not now')) {
           await log('could not get past consent; screen: ${screenText()}');
           fail++;
           return;
@@ -298,17 +298,17 @@ void main() {
           );
           if (c.confirming) {
             if (find.byType(TalkButton).evaluate().isEmpty) {
-              await log('  note: the read-back screen has no Talk button; tapping Change to talk');
-              await tapButton(t, 'Change');
+              await log('  note: the read-back screen has no Talk button; tapping "No, change it" to talk');
+              await tapButton(t, 'No, change it');
               await waitUntil(t, () => find.byType(TalkButton).evaluate().isNotEmpty, seconds: 5);
             }
             final k = await talk(t, 'no, sixty');
-            final ok2 = k.error == null && k.confirming && k.reply.contains('Age: 60');
+            final ok2 = k.error == null && k.confirming && k.reply.contains('you are 60');
             await record(
               '"no, sixty" corrects read-back',
               ok2,
               '$k',
-              ok2 ? '' : k.error ?? (k.confirming ? 'read-back lacks "Age: 60"' : 'no read-back'),
+              ok2 ? '' : k.error ?? (k.confirming ? 'read-back lacks "you are 60"' : 'no read-back'),
             );
             if (c.confirming) {
               if (!await tapYes(t)) await recover(t);
@@ -330,7 +330,7 @@ void main() {
           ('exercise_minutes_weekly', 'I walk thirty minutes five days a week', ['150 minutes']),
           ('smoking_status', 'I used to smoke but I quit years ago', ['smoked in the past']),
           ('alcohol_drinks_weekly', 'two glasses of wine a week', ['2 drinks']),
-          ('diabetes', 'no', ['Diabetes: no']),
+          ('diabetes', 'no', ['not told you that you have diabetes']),
           ('systolic_bp', 'one thirty over eighty five', ['130 over 85']),
         ];
         for (final (field, words, expects) in steps) {
