@@ -47,7 +47,7 @@ Greeting: "Hi, it's Mochi! Just a quick check-in, under a minute. You can skip a
 
 Which topics: sleep if today's row has no sleep, activity if the activity day's row lacks either pace, and sitting if it lacks sitting. Feeling fills a free place (at most three). If everything is known and feeling is done, no check-in is due.
 
-The weekly check-in (on the person's weekly day, Sunday by default; quietly still ready afterwards) now asks the model's own inputs: `vigorous_recreation_min_week` and `moderate_recreation_min_week` as one plain question with a follow-up, and `sedentary_min_day` on a usual day.
+The weekly check-in (on the person's weekly day, Sunday by default; quietly still ready afterwards; filed under the Monday–Sunday week holding most of the seven days before it, `weekDescribedBy`) now asks the model's own inputs: `vigorous_recreation_min_week` and `moderate_recreation_min_week` as one plain question with a follow-up, and `sedentary_min_day` on a usual day.
 
 ## What the UI calls
 

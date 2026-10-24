@@ -84,9 +84,11 @@ This is the one object the UI and the check-in controller (`lib/checkin/`) shoul
 | `Map<String, dynamic> profile` | Confirmed profile (read only) |
 | `TwinStore store` | Read-only views: `profile`, `hasProfile`, `checkins`, `dayLogs`, `historyEntries`, `habitNotes`, `twin`, `checkinSettings`, `memoryConsent` |
 | `TwinAssessment assess([Map? appProfile, Map? modelInputs])` | Assesses any profile with the phone's history; writes nothing |
-| `Future<TwinAssessment> saveOnboarding(Map state, {Map? modelInputs, Set<String> fromHealth})` | A finished onboarding: memory consent, habit notes (only with consent), then the confirmed profile |
-| `Future<TwinAssessment> saveConversationProfile(Map confirmed, {String kind, Map? modelInputs, Set<String> fromHealth})` | Keeps a Mochi conversation's confirmed profile and recomputes. `kind` is `onboarding` (default) or `mochi_change` |
-| `Future<void> recordHealthImport(Map values)` | The Apple Health values confirmed on the Health screen; history only |
+| `Future<TwinAssessment> saveOnboarding(Map state, {Map? modelInputs, Map<String, String> sources})` | A finished conversation: memory consent, habit notes (only with consent), then the confirmed profile. The first one is recorded as `onboarding`, later ones as `mochi_change` |
+| `Future<TwinAssessment> saveConversationProfile(Map confirmed, {String kind, Map? modelInputs, Map<String, String> sources, Set<String> estimated})` | Keeps a Mochi conversation's confirmed profile and recomputes. `kind` is `onboarding` (default) or `mochi_change` |
+| `Future<void> recordHealthImport(Map values)` / `recordImport(Map values, {required String source, bool estimated})` | Apple Health (or wristband) values confirmed after their read-back; history only |
+| `FieldProvenance? provenance(String field)` | Where the stored value came from (`source`, `estimated`, `at`, `sourceLabel`, `estimateText`); null for a value saved before provenance was kept ("You said") |
+| `Map<String, dynamic> outsideAiProfile([Map? profile])` | The profile without wristband values, for anything sent with `outside_ai_consent` |
 | `Future<CheckinOutcome> applyCheckin(Map response, {String? localDate})` | Applies a `/api/checkin/start` or `/turn` response (below) |
 | `Future<HistoryEntry?> applyDayCorrection(DateTime date, String field, Object? value, [String source])` | A past day's answer corrected through a confirmed Mochi read-back (below) |
 | `List<HistoryEntry> history({DateTime? from, DateTime? to})` | The person's history, newest first (below) |
@@ -112,14 +114,14 @@ It is a `ChangeNotifier`, so bind it with `ListenableBuilder`.
 The owner's rule is: "people shouldn't be able to edit their things unless they consult with their agent first." So there is no setter for profile values or history. `TwinStore`'s write methods are private to the repository library. The only writes are:
 
 1. `saveOnboarding` / `saveConversationProfile`, with values confirmed in a Mochi conversation: onboarding (`main.dart` calls `saveOnboarding` on Continue) and the "change through Mochi" conversation (`kind: HistoryKind.mochiChange`). Apple Health values arrive through the conversation after their read-back (`importHealth`).
-2. `recordHealthImport`, history only, for the values confirmed on the Health screen.
+2. `recordHealthImport` / `recordImport`, history only, for values confirmed after their read-back (the Health screen, the wristband).
 3. `applyCheckin`, for a finished check-in: a weekly `profile_update`, a quick check-in's `daily_logs`.
 4. `applyDayCorrection`, for a past day's answer, from a confirmed Mochi read-back.
 5. `applyMemoryConsent` / `addHabitNote`, for habit notes, only with consent.
 6. `saveTwinLook` and `saveCheckinSettings`, which are preferences.
 7. `deleteMyData`.
 
-Every health write appends its history entry at the same time. Experiment levers are hypothetical and never write to the profile.
+Every health write appends its history entry at the same time, in one write to the file: if the write fails, nothing of that event is kept (memory is put back), so a retry never records a check-in twice. Experiment levers are hypothetical and never write to the profile.
 
 **Write rules** (`mergeConfirmed` / `profileSchema`, shared by every profile write):
 
@@ -154,7 +156,8 @@ The store is one JSON document, written by the iOS runner (`ios/Runner/AppDelega
 
 - **Quick, `complete: true`:** recorded as a `CheckinEntry`. Its `daily_logs` parts are type-checked and merged into the stored day rows (`readFinishedCheckin` + `mergeDayLogs`): each known value goes into its date's row and a later confirmed answer wins. A missing value is never written. `workday` is worked out when the window is built: Monday to Friday.
 - **Daily, `complete: true`:** history only.
-- **Weekly, `complete: true`:** every non-null `profile_update` field is set on the profile under the write rules, then the forecast is recomputed. When the confirmed answers cover all four behaviour fields within the package's limits, the check-in makes a weekly summary for the Monday–Sunday week that has ended by the end of its day (`DailyLogsAssembler.weeklySummaries`, worked out from the stored check-ins; a later check-in for the same week wins).
+- **Weekly, `complete: true`:** every non-null `profile_update` field is set on the profile under the write rules, then the forecast is recomputed. When the confirmed answers cover all four behaviour fields within the package's limits, the check-in makes a weekly summary (`DailyLogsAssembler.weeklySummaries`, worked out from the stored check-ins; a later check-in for the same week wins). A weekly check-in describes the past seven days, so it is filed under the Monday–Sunday week holding most of them (`weekDescribedBy`): from Thursday to Sunday its own week, from Monday to Wednesday the week before. Whatever weekly day the person picks, a completed week is then there for the forecast every day until the next check-in.
+- **Quick day values** are accepted only for the check-in's own date and the day before.
 - **"Not sure" vs the server.** The server may confirm `smoking_status: "unknown"` for a person whose stored answer is `former`. The app keeps `former` (owner ruling).
 - **`emergency: true`:** sets `CheckinOutcome.emergency`. It is never stored. The twin shows `concerned` until `clearEmergency()` or the next ordinary response.
 
@@ -178,14 +181,25 @@ final bp = repo.readings();
 | `id` | Stable id (`h1`, `h2`, ...) |
 | `kind` | `HistoryKind`: `quick`, `daily`, `weekly`, `onboarding`, `mochi_change`, `health_import`, `correction`, `reading`; `document` is reserved for document-upload confirmations |
 | `at`, `date`, `time` | The phone's local date and time it happened (`YYYY-MM-DD`, `HH:MM`) |
-| `source`, `sourceLabel` | `said` "You said", `apple_health` "Apple Health", `document` "Document", `mochi_change` "Mochi change" |
+| `source`, `sourceLabel` | `HistorySource`: `you_said` "You said", `apple_health` "Apple Health", `document` "Document", `mochi_change` "Mochi change", `wristband` "From your band" |
 | `items` | `HistoryItem`s, below |
 | `days` | Quick check-ins and corrections: the days whose day-log row this wrote |
 | `weekStart` | Weekly check-ins whose answers made a weekly summary: that week's Monday |
 | `fedForecast` | `weekly_summaries` or `daily_logs` when this entry's values are in the window the current forecast used; null otherwise (worked out when read) |
 | `corrects` / `correctedBy` / `corrected` | A correction's original entry; the original's latest correction |
 
-**`HistoryItem`:** `field`, `label` (plain words, e.g. "time sitting"), `value`, `unit`, `text` (the value with units in plain words: "7.5 hours", "very good", "no"), `old` / `oldText` (for a change: the value before), `isChange`, `date` (the day a day value describes), and `source` when it differs from the entry's (an Apple Health value inside an onboarding entry).
+**`HistoryItem`:** `field`, `label` (plain words, e.g. "time sitting"), `value`, `unit`, `text` (the value with units in plain words: "7.5 hours", "very good", "no"), `old` / `oldText` (for a change: the value before), `isChange`, `date` (the day a day value describes), `source` / `sourceLabel` (every item has one; an onboarding entry can mix "You said" and Apple Health), and `estimated` / `estimateText` ("≈ Sensor estimate" for a band value, "≈ Rough estimate" for an answer to Mochi's simpler question; null otherwise).
+
+### Provenance per value (owner ruling on the wristband)
+
+Owner: "We are calibrating it. For this demo and this scope, we need it as a confirmation." A wristband estimate (for example moderate minutes a week after at least 4 worn days of 10 or more hours) that the person confirmed after a read-back is saved as their answer, and may change the outlook.
+
+- **Sources:** `you_said`, `apple_health`, `document`, `mochi_change`, `wristband` (`HistorySource`). Any other value passed in `sources` is treated as `you_said`.
+- **Where it's kept:** for each profile value, `store.profileMeta[field]` / `repo.provenance(field)` (`FieldProvenance{source, estimated, at}`), and on every `HistoryItem`.
+- **`estimated: true`:** every wristband value, and the fields in the conversation's `state.estimated_fields` (proxy answers). Show `estimateText` beside the value: "From your band · ≈ Sensor estimate".
+- **When it changes:** a conversation save sets provenance for the values it changed (an unchanged value keeps its old provenance). A weekly answer is the person's own word, so every value it confirms becomes `you_said`, even when unchanged. `main.dart` labels an Apple Health value `apple_health` only while the confirmed answer still equals the imported one.
+- **Server side:** the document branch adds `import_source: apple_health | document` to the onboarding `TurnRequest`. Plan `wristband` as a third value there; this branch has no server change for it. Until then the app passes the source itself: `saveOnboarding(state, sources: {'moderate_recreation_min_week': HistorySource.wristband})`, `recordImport(values, source: HistorySource.wristband)`.
+- **Outside AI:** band values are never sent to an outside AI until the owner rules. Anything the app sends with `outside_ai_consent` (today nothing does; the recommendations request and personalized turns will) must take its profile from `repo.outsideAiProfile()` or `withoutWristbandValues(profile, store.profileMeta)`. Note that an onboarding turn sends the whole conversation `state`, so a turn with `outside_ai_consent` must not carry band values in `confirmed_profile` either.
 
 What each kind holds:
 
