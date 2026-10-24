@@ -1,0 +1,45 @@
+{
+  "mode": "plan-only",
+  "plan": {
+    "actor": "apify/website-content-crawler",
+    "reviewedActorId": "aYG0l9s7dbB7j3gbS",
+    "input": {
+      "startUrls": [
+        {
+          "url": "https://docs.apify.com/mcp"
+        },
+        {
+          "url": "https://docs.apify.com/storage"
+        },
+        {
+          "url": "https://docs.apify.com/actors/running/tasks"
+        },
+        {
+          "url": "https://docs.apify.com/agents/plugins"
+        },
+        {
+          "url": "https://docs.apify.com/actors/running/permissions"
+        }
+      ],
+      "maxCrawlPages": 5,
+      "maxCrawlDepth": 0,
+      "maxResults": 5,
+      "maxConcurrency": 1,
+      "useSitemaps": false,
+      "saveMarkdown": true,
+      "summarize": false,
+      "proxyConfiguration": {
+        "useApifyProxy": false
+      }
+    },
+    "options": {
+      "maxTotalChargeUsd": 0.2,
+      "maxItems": 5,
+      "timeout": 120,
+      "waitForFinish": 0,
+      "build": "0.0.1"
+    },
+    "inputSha256": "aaef769894eae9741aae9bdd7af24334df933d322df02dc63ec715fc3eca3136",
+    "planSha256": "8e00d1acc0bdd0415a0852a9a067fad0fb92ba8ab9c18202ec8499b925b0d2d6"
+  }
+}

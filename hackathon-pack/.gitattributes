@@ -1,0 +1,2 @@
+# Preserve the archived sponsor brief's original CRLF line endings.
+research/integrations/visa-doc-refinement/visa-starter-pack.source.txt whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

@@ -1,0 +1,52 @@
+[
+  {
+    "skill": "apify-evidence-engine",
+    "installed_path": "/Users/flare/.codex/skills/apify-evidence-engine",
+    "identical": true
+  },
+  {
+    "skill": "creative-web-worlds",
+    "installed_path": "/Users/flare/.codex/skills/creative-web-worlds",
+    "identical": true
+  },
+  {
+    "skill": "hackathon-backend",
+    "installed_path": "/Users/flare/.codex/skills/hackathon-backend",
+    "identical": true
+  },
+  {
+    "skill": "hackathon-demo-director",
+    "installed_path": "/Users/flare/.codex/skills/hackathon-demo-director",
+    "identical": true
+  },
+  {
+    "skill": "hackathon-idea-lab",
+    "installed_path": "/Users/flare/.codex/skills/hackathon-idea-lab",
+    "identical": true
+  },
+  {
+    "skill": "hackathon-ml-evals",
+    "installed_path": "/Users/flare/.codex/skills/hackathon-ml-evals",
+    "identical": true
+  },
+  {
+    "skill": "hackathon-prize-strategy",
+    "installed_path": "/Users/flare/.codex/skills/hackathon-prize-strategy",
+    "identical": true
+  },
+  {
+    "skill": "hyphenate-finance-agent",
+    "installed_path": "/Users/flare/.codex/skills/hyphenate-finance-agent",
+    "identical": true
+  },
+  {
+    "skill": "sponsor-track-builder",
+    "installed_path": "/Users/flare/.codex/skills/sponsor-track-builder",
+    "identical": true
+  },
+  {
+    "skill": "visa-agentic-commerce",
+    "installed_path": "/Users/flare/.codex/skills/visa-agentic-commerce",
+    "identical": true
+  }
+]

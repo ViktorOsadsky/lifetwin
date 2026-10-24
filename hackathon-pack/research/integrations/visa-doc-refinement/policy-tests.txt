@@ -1,0 +1,21 @@
+test_approved_cart_submits (test_commerce_policy.PolicyTests) ... ok
+test_cannot_claim_confirmation_without_receipt (test_commerce_policy.PolicyTests) ... ok
+test_card_fields_and_nested_credentials_blocked (test_commerce_policy.PolicyTests) ... ok
+test_digest_order_independent (test_commerce_policy.PolicyTests) ... ok
+test_duplicate_submission_blocked (test_commerce_policy.PolicyTests) ... ok
+test_each_material_change_requires_new_approval (test_commerce_policy.PolicyTests) ... ok
+test_environment_bound (test_commerce_policy.PolicyTests) ... ok
+test_expired_and_future_approval (test_commerce_policy.PolicyTests) ... ok
+test_forged_consent_denied (test_commerce_policy.PolicyTests) ... ok
+test_fulfillment_or_variant_change_invalidates_approval (test_commerce_policy.PolicyTests) ... ok
+test_no_float_or_boolean_money (test_commerce_policy.PolicyTests) ... ok
+test_parallel_same_request_reserved_once (test_commerce_policy.PolicyTests) ... ok
+test_terminal_state_cannot_reopen (test_commerce_policy.PolicyTests) ... ok
+test_timeout_requires_reconciliation (test_commerce_policy.PolicyTests) ... ok
+test_unaccounted_tax_or_fees_denied (test_commerce_policy.PolicyTests) ... ok
+test_wrong_signing_key_denied (test_commerce_policy.PolicyTests) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.102s
+
+OK

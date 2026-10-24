@@ -1,0 +1,1294 @@
+{
+  "finance": {
+    "mode": "LOCAL_SYNTHETIC",
+    "external_calls": 0,
+    "sponsor_integration_verified": false,
+    "evidence_events": [
+      {
+        "sequence": 1,
+        "event": "inherited_opening_balance",
+        "proposal_id": "opening-owned-stock",
+        "hash": "9e1e3fa5018009e1615e0dc990fe30126c31948b98829b79968d19ea309759d1",
+        "period": "2026-03",
+        "evidence": {
+          "opening-ledger": "v1"
+        },
+        "approved_by": "controller",
+        "approval_simulated": true,
+        "inherited_untrusted_semantics": true,
+        "previous_event_hash": null,
+        "event_hash": "e3e240fbd51601aa1c55154d209293a61efeeb67c0a4c222ffbab346dd5760ca"
+      },
+      {
+        "sequence": 2,
+        "event": "simulated_controller_authorized_local_post",
+        "proposal_id": "sale-1",
+        "hash": "e7f9dda94acbe881f85442dd343529d562a04b35227e78aa5234e7b461ecad9b",
+        "period": "2026-03",
+        "evidence": {
+          "C-1": "v2",
+          "sale-1": "v1"
+        },
+        "approved_by": "controller",
+        "approval_simulated": true,
+        "inherited_untrusted_semantics": false,
+        "previous_event_hash": "e3e240fbd51601aa1c55154d209293a61efeeb67c0a4c222ffbab346dd5760ca",
+        "event_hash": "b12a39f06f28c513b20642bcd0c5a9abbab4fc350b0d3eeeaf3817dd71979ad2"
+      },
+      {
+        "sequence": 3,
+        "event": "simulated_controller_authorized_local_post",
+        "proposal_id": "settlement-1",
+        "hash": "2e6b1789c0d0ff20ea823383f10a2c347c803c1ef8f7d210a400379f06c27bf1",
+        "period": "2026-03",
+        "evidence": {
+          "settlement-1": "v1",
+          "sale-1": "v1"
+        },
+        "approved_by": "controller",
+        "approval_simulated": true,
+        "inherited_untrusted_semantics": false,
+        "previous_event_hash": "b12a39f06f28c513b20642bcd0c5a9abbab4fc350b0d3eeeaf3817dd71979ad2",
+        "event_hash": "509880ec496262b63c85699034f8d7b2fba5024e97b7ed114efff627940119d2"
+      },
+      {
+        "sequence": 4,
+        "event": "inherited_legacy_error_to_be_corrected",
+        "proposal_id": "legacy-april",
+        "hash": "f10f37b17e64ecae90366ee970b7d1d24b38e6033c1d217757acbb4f558d73c0",
+        "period": "2026-04",
+        "evidence": {
+          "legacy-april": "v1",
+          "return-1": "v1"
+        },
+        "approved_by": "controller",
+        "approval_simulated": true,
+        "inherited_untrusted_semantics": true,
+        "previous_event_hash": "509880ec496262b63c85699034f8d7b2fba5024e97b7ed114efff627940119d2",
+        "event_hash": "587ad8249606cc565ddccc54476a10c46c7e6350355ba698e1f5bdedd7381b91"
+      },
+      {
+        "sequence": 5,
+        "event": "simulated_controller_authorized_local_post",
+        "proposal_id": "june-consignor-correction",
+        "hash": "f8cd0a069edc9c6b6a6aff1cc94feaa191ed48b3af3c5fee222ae225b7978d45",
+        "period": "2026-06",
+        "evidence": {
+          "C-1": "v2",
+          "sale-1": "v1",
+          "return-1": "v1",
+          "legacy-april": "v1"
+        },
+        "approved_by": "controller",
+        "approval_simulated": true,
+        "inherited_untrusted_semantics": false,
+        "previous_event_hash": "587ad8249606cc565ddccc54476a10c46c7e6350355ba698e1f5bdedd7381b91",
+        "event_hash": "ee7bc05e709e7d8a620ec011649f8c877b36531ff19a9fd8e24ec9d621a955a2"
+      },
+      {
+        "sequence": 6,
+        "event": "simulated_controller_authorized_local_post",
+        "proposal_id": "june-late-bank-adjustment",
+        "hash": "9cd8a3b7ede34d7bef387716648bc0f25c0f8969b5d0bc193f23891c929e449b",
+        "period": "2026-06",
+        "evidence": {
+          "bank-refund-1": "v1",
+          "return-1": "v1"
+        },
+        "approved_by": "controller",
+        "approval_simulated": true,
+        "inherited_untrusted_semantics": false,
+        "previous_event_hash": "ee7bc05e709e7d8a620ec011649f8c877b36531ff19a9fd8e24ec9d621a955a2",
+        "event_hash": "f1094bd6d70c7384fd4c4d7a2b0a43a394f32061e0f9828eabecd0ba3041f88f"
+      },
+      {
+        "sequence": 7,
+        "event": "simulated_controller_authorized_local_post",
+        "proposal_id": "june-owned-impairment",
+        "hash": "fac840e06daa0ae976786fd9da69d9c53eeb744e43992cec94c040f6bf745840",
+        "period": "2026-06",
+        "evidence": {
+          "owned-Q": "v1",
+          "inspection-Q": "v1"
+        },
+        "approved_by": "controller",
+        "approval_simulated": true,
+        "inherited_untrusted_semantics": false,
+        "previous_event_hash": "f1094bd6d70c7384fd4c4d7a2b0a43a394f32061e0f9828eabecd0ba3041f88f",
+        "event_hash": "b2c0c007be41993d97bef03c2b6fa41a9281b72e7be258c76159dd970ad28f47"
+      },
+      {
+        "sequence": 8,
+        "event": "simulated_controller_authorized_local_post",
+        "proposal_id": "june-owned-impairment-reversal",
+        "hash": "eb4009047391e6be54d683aec25e94198a30cd9ed691212a968d746320c31153",
+        "period": "2026-06",
+        "evidence": {
+          "owned-Q": "v1",
+          "inspection-Q": "v2"
+        },
+        "approved_by": "controller",
+        "approval_simulated": true,
+        "inherited_untrusted_semantics": false,
+        "previous_event_hash": "b2c0c007be41993d97bef03c2b6fa41a9281b72e7be258c76159dd970ad28f47",
+        "event_hash": "b07f6fb92e5700938146c9c4a620191846d28e6f9603555f6a33adc550defb2e"
+      }
+    ],
+    "journals": [
+      {
+        "proposal_id": "opening-owned-stock",
+        "tenant_id": "second-semester",
+        "source_ids": [
+          "opening-ledger"
+        ],
+        "source_version": "case-snapshot-1",
+        "source_versions": {
+          "opening-ledger": "v1"
+        },
+        "policy_version": "shop-policy-3",
+        "lines": [
+          {
+            "account": "OwnedInventory",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 8000,
+            "credit_minor": 0
+          },
+          {
+            "account": "OpeningEquity",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 0,
+            "credit_minor": 8000
+          }
+        ],
+        "posting_period": "2026-03",
+        "requested_by": "analyst",
+        "operation_key": "opening-owned-stock"
+      },
+      {
+        "proposal_id": "sale-1",
+        "tenant_id": "second-semester",
+        "source_ids": [
+          "C-1",
+          "sale-1"
+        ],
+        "source_version": "case-snapshot-1",
+        "source_versions": {
+          "C-1": "v2",
+          "sale-1": "v1"
+        },
+        "policy_version": "shop-policy-3",
+        "lines": [
+          {
+            "account": "ProcessorReceivable",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 20000,
+            "credit_minor": 0
+          },
+          {
+            "account": "ConsignorPayable",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 0,
+            "credit_minor": 14000
+          },
+          {
+            "account": "CommissionRevenue",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 0,
+            "credit_minor": 6000
+          }
+        ],
+        "posting_period": "2026-03",
+        "requested_by": "analyst",
+        "operation_key": "sale-1"
+      },
+      {
+        "proposal_id": "settlement-1",
+        "tenant_id": "second-semester",
+        "source_ids": [
+          "settlement-1",
+          "sale-1"
+        ],
+        "source_version": "case-snapshot-1",
+        "source_versions": {
+          "settlement-1": "v1",
+          "sale-1": "v1"
+        },
+        "policy_version": "shop-policy-3",
+        "lines": [
+          {
+            "account": "Bank",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 19400,
+            "credit_minor": 0
+          },
+          {
+            "account": "ProcessorFees",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 600,
+            "credit_minor": 0
+          },
+          {
+            "account": "ProcessorReceivable",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 0,
+            "credit_minor": 20000
+          }
+        ],
+        "posting_period": "2026-03",
+        "requested_by": "analyst",
+        "operation_key": "settlement-1"
+      },
+      {
+        "proposal_id": "legacy-april",
+        "tenant_id": "second-semester",
+        "source_ids": [
+          "legacy-april",
+          "return-1"
+        ],
+        "source_version": "case-snapshot-1",
+        "source_versions": {
+          "legacy-april": "v1",
+          "return-1": "v1"
+        },
+        "policy_version": "shop-policy-3",
+        "lines": [
+          {
+            "account": "ConsignorPayable",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 13000,
+            "credit_minor": 0
+          },
+          {
+            "account": "CommissionReturns",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 7000,
+            "credit_minor": 0
+          },
+          {
+            "account": "RefundClearing",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 0,
+            "credit_minor": 20000
+          }
+        ],
+        "posting_period": "2026-04",
+        "requested_by": "analyst",
+        "operation_key": "legacy-april"
+      },
+      {
+        "proposal_id": "june-consignor-correction",
+        "tenant_id": "second-semester",
+        "source_ids": [
+          "C-1",
+          "sale-1",
+          "return-1",
+          "legacy-april"
+        ],
+        "source_version": "case-snapshot-1",
+        "source_versions": {
+          "C-1": "v2",
+          "sale-1": "v1",
+          "return-1": "v1",
+          "legacy-april": "v1"
+        },
+        "policy_version": "shop-policy-3",
+        "lines": [
+          {
+            "account": "ConsignorPayable",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 1000,
+            "credit_minor": 0
+          },
+          {
+            "account": "CommissionReturns",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 0,
+            "credit_minor": 1000
+          }
+        ],
+        "posting_period": "2026-06",
+        "requested_by": "analyst",
+        "operation_key": "june-consignor-correction",
+        "original_effective_period": "2026-04",
+        "reason": "Contract owes 70%; reverse residual 1000 payable and excess 1000 return expense. Closed April retained."
+      },
+      {
+        "proposal_id": "june-late-bank-adjustment",
+        "tenant_id": "second-semester",
+        "source_ids": [
+          "bank-refund-1",
+          "return-1"
+        ],
+        "source_version": "case-snapshot-1",
+        "source_versions": {
+          "bank-refund-1": "v1",
+          "return-1": "v1"
+        },
+        "policy_version": "shop-policy-3",
+        "lines": [
+          {
+            "account": "RefundClearing",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 20000,
+            "credit_minor": 0
+          },
+          {
+            "account": "Bank",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 0,
+            "credit_minor": 20000
+          }
+        ],
+        "posting_period": "2026-06",
+        "requested_by": "analyst",
+        "operation_key": "june-late-bank-adjustment",
+        "original_effective_period": "2026-04",
+        "reason": "June controller-approved correction for bank debit effective April, received June; not a June operational cash-flow claim."
+      },
+      {
+        "proposal_id": "june-owned-impairment",
+        "tenant_id": "second-semester",
+        "source_ids": [
+          "owned-Q",
+          "inspection-Q"
+        ],
+        "source_version": "case-snapshot-1",
+        "source_versions": {
+          "owned-Q": "v1",
+          "inspection-Q": "v1"
+        },
+        "policy_version": "shop-policy-3",
+        "lines": [
+          {
+            "account": "InventoryImpairment",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 3000,
+            "credit_minor": 0
+          },
+          {
+            "account": "InventoryAllowance",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 0,
+            "credit_minor": 3000
+          }
+        ],
+        "posting_period": "2026-06",
+        "requested_by": "analyst",
+        "operation_key": "june-owned-impairment"
+      },
+      {
+        "proposal_id": "june-owned-impairment-reversal",
+        "tenant_id": "second-semester",
+        "source_ids": [
+          "owned-Q",
+          "inspection-Q"
+        ],
+        "source_version": "case-snapshot-1",
+        "source_versions": {
+          "owned-Q": "v1",
+          "inspection-Q": "v2"
+        },
+        "policy_version": "shop-policy-3",
+        "lines": [
+          {
+            "account": "InventoryAllowance",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 2000,
+            "credit_minor": 0
+          },
+          {
+            "account": "InventoryImpairment",
+            "entity": "shop-us",
+            "currency": "USD",
+            "debit_minor": 0,
+            "credit_minor": 2000
+          }
+        ],
+        "posting_period": "2026-06",
+        "requested_by": "analyst",
+        "operation_key": "june-owned-impairment-reversal",
+        "reverses_part_of": "june-owned-impairment",
+        "reason": "New independent inspection supports 7000, restore 2000 within original cost under fixture policy."
+      }
+    ],
+    "balances_debit_positive_minor": {
+      "OwnedInventory": 8000,
+      "OpeningEquity": -8000,
+      "ProcessorReceivable": 0,
+      "ConsignorPayable": 0,
+      "CommissionRevenue": -6000,
+      "Bank": -600,
+      "ProcessorFees": 600,
+      "CommissionReturns": 6000,
+      "RefundClearing": 0,
+      "InventoryImpairment": 1000,
+      "InventoryAllowance": -1000
+    },
+    "regression_cases": [
+      {
+        "case": "benign_sale",
+        "expected": "allow_local_adapter",
+        "actual": "allow_local_adapter",
+        "helper_ready": true,
+        "helper_errors": [],
+        "application_errors": [],
+        "matches_expected": true
+      },
+      {
+        "case": "balanced_wrong_consignment_split",
+        "expected": "hold",
+        "actual": "hold",
+        "helper_ready": true,
+        "helper_errors": [],
+        "application_errors": [
+          "signed_contract_split_mismatch"
+        ],
+        "matches_expected": true
+      },
+      {
+        "case": "busy_controller_rejects_correction",
+        "expected": "hold",
+        "actual": "hold",
+        "helper_ready": false,
+        "helper_errors": [
+          "approval_required"
+        ],
+        "application_errors": [],
+        "matches_expected": true
+      },
+      {
+        "case": "requester_cannot_approve",
+        "expected": "hold",
+        "actual": "hold",
+        "helper_ready": false,
+        "helper_errors": [
+          "approver_entity_scope_required",
+          "approver_role_required",
+          "independent_approver_required"
+        ],
+        "application_errors": [],
+        "matches_expected": true
+      },
+      {
+        "case": "old_march_proposal_after_return_and_close",
+        "expected": "hold",
+        "actual": "hold",
+        "helper_ready": false,
+        "helper_errors": [
+          "closed_or_unknown_period",
+          "stale_or_incomplete_evidence"
+        ],
+        "application_errors": [],
+        "matches_expected": true
+      },
+      {
+        "case": "bank_import_unknown",
+        "expected": "hold",
+        "actual": "hold",
+        "helper_ready": false,
+        "helper_errors": [
+          "reconcile_remote_outcome_first"
+        ],
+        "application_errors": [],
+        "matches_expected": true
+      },
+      {
+        "case": "bank_import_confirmed",
+        "expected": "hold",
+        "actual": "hold",
+        "helper_ready": false,
+        "helper_errors": [
+          "already_executed"
+        ],
+        "application_errors": [],
+        "matches_expected": true
+      },
+      {
+        "case": "old_inspection_approval_after_revision",
+        "expected": "hold",
+        "actual": "hold",
+        "helper_ready": false,
+        "helper_errors": [
+          "stale_or_incomplete_evidence"
+        ],
+        "application_errors": [],
+        "matches_expected": true
+      },
+      {
+        "case": "no_condition_evidence_for_owned_quarantine",
+        "expected": "hold",
+        "actual": "hold",
+        "helper_ready": true,
+        "helper_errors": [],
+        "application_errors": [
+          "recoverable_amount_unknown_until_authoritative_inspection"
+        ],
+        "matches_expected": true
+      },
+      {
+        "case": "quarantined_consigned_stock_is_not_owned_inventory",
+        "expected": "hold",
+        "actual": "hold",
+        "helper_ready": true,
+        "helper_errors": [],
+        "application_errors": [
+          "consigned_item_is_not_shop_asset"
+        ],
+        "matches_expected": true
+      },
+      {
+        "case": "two_equal_bank_debits_no_reference",
+        "expected": "hold",
+        "actual": "hold",
+        "helper_ready": true,
+        "helper_errors": [],
+        "application_errors": [
+          "bank_match_not_unique_need_reference"
+        ],
+        "matches_expected": true
+      }
+    ],
+    "closed_snapshots_unchanged": true,
+    "physical_stock": {
+      "return-1": "consignor-owned quarantine; off-balance-sheet custody",
+      "owned-Q": "shop-owned quarantine; net carrying 7000"
+    },
+    "rejection_history_probe": {
+      "ready_for_adapter": true,
+      "errors": [],
+      "execution_surface": "local_example",
+      "posted": false
+    },
+    "human_handoff": [
+      {
+        "owner": "controller",
+        "issue": "Closed April correction and cash reporting treatment",
+        "state": "simulated approved for this fixture only"
+      },
+      {
+        "owner": "warehouse",
+        "issue": "Consignor item remains quarantined; complete condition handoff",
+        "state": "open; payout blocked"
+      },
+      {
+        "owner": "treasury",
+        "issue": "Resolve unknown remote outcomes by authoritative provider lookup before retry",
+        "state": "not attempted; no provider configured"
+      }
+    ],
+    "limits": [
+      "Local hash chain is not durable immutable storage.",
+      "No real bank, consignor, sandbox or approver accessed.",
+      "The gate cannot determine missing evidence or correct journal semantics; the case adapter supplies these.",
+      "Monthly bank effective-date reporting still requires human policy judgment; late posting date does not alter economic date."
+    ]
+  },
+  "shopping": {
+    "mode": "LOCAL_SYNTHETIC",
+    "external_calls": 0,
+    "visa_api_used": false,
+    "generative_work_performed": "Assistant translated shopper/course prose into editable structured constraints and source-grounded explanations during this evaluation; runner is deterministic after that step.",
+    "runtime_model_integration": false,
+    "scenarios": [
+      {
+        "case": "base_select_B_63720",
+        "expected_selection": "B",
+        "result": {
+          "state": "selected",
+          "selected": {
+            "product": "B",
+            "variant": "13-16-x86",
+            "delivered_minor": 63720,
+            "eligible": true,
+            "reasons": [],
+            "source": "fixture://merchant/B/13-16-x86",
+            "retrieved_at": "2026-10-23T18:59:00Z"
+          },
+          "comparison": [
+            {
+              "product": "A",
+              "variant": "13-16-x86",
+              "delivered_minor": 65016,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_exceeds_strict_cap"
+              ],
+              "source": "fixture://merchant/A/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "B",
+              "variant": "13-16-x86",
+              "delivered_minor": 63720,
+              "eligible": true,
+              "reasons": [],
+              "source": "fixture://merchant/B/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "C",
+              "variant": "chrome-16",
+              "delivered_minor": 48600,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/C/chrome-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "D",
+              "variant": "arm-16",
+              "delivered_minor": 59400,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/D/arm-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "E",
+              "variant": "16-16-x86",
+              "delivered_minor": 64800,
+              "eligible": false,
+              "reasons": [
+                "does_not_fit_internal_bag_envelope"
+              ],
+              "source": "fixture://merchant/E/16-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "F",
+              "variant": "13-16-x86",
+              "delivered_minor": null,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_unknown"
+              ],
+              "source": "fixture://merchant/F/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "G",
+              "variant": "marketplace-unspecified",
+              "delivered_minor": 54000,
+              "eligible": false,
+              "reasons": [
+                "dimensions_unknown",
+                "ExamLock:compatibility_unknown",
+                "CADLab:compatibility_unknown"
+              ],
+              "source": "fixture://merchant/G/marketplace-unspecified",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            }
+          ],
+          "action": "read_only_merchant_handoff",
+          "payment_authorized": false
+        }
+      },
+      {
+        "case": "merchant_raises_B_price_no_affordable_verified_candidate",
+        "expected_selection": null,
+        "result": {
+          "state": "abstained",
+          "selected": null,
+          "comparison": [
+            {
+              "product": "A",
+              "variant": "13-16-x86",
+              "delivered_minor": 65016,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_exceeds_strict_cap"
+              ],
+              "source": "fixture://merchant/A/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "B",
+              "variant": "13-16-x86",
+              "delivered_minor": 66960,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_exceeds_strict_cap"
+              ],
+              "source": "fixture://merchant/B/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "C",
+              "variant": "chrome-16",
+              "delivered_minor": 48600,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/C/chrome-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "D",
+              "variant": "arm-16",
+              "delivered_minor": 59400,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/D/arm-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "E",
+              "variant": "16-16-x86",
+              "delivered_minor": 64800,
+              "eligible": false,
+              "reasons": [
+                "does_not_fit_internal_bag_envelope"
+              ],
+              "source": "fixture://merchant/E/16-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "F",
+              "variant": "13-16-x86",
+              "delivered_minor": null,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_unknown"
+              ],
+              "source": "fixture://merchant/F/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "G",
+              "variant": "marketplace-unspecified",
+              "delivered_minor": 54000,
+              "eligible": false,
+              "reasons": [
+                "dimensions_unknown",
+                "ExamLock:compatibility_unknown",
+                "CADLab:compatibility_unknown"
+              ],
+              "source": "fixture://merchant/G/marketplace-unspecified",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            }
+          ],
+          "action": "request_current_exact_quote_and_compatibility_evidence",
+          "payment_authorized": false
+        }
+      },
+      {
+        "case": "explicit_F_tax_quote_resolves_abstention",
+        "expected_selection": "F",
+        "result": {
+          "state": "selected",
+          "selected": {
+            "product": "F",
+            "variant": "13-16-x86",
+            "delivered_minor": 64260,
+            "eligible": true,
+            "reasons": [],
+            "source": "fixture://merchant/F/13-16-x86",
+            "retrieved_at": "2026-10-23T18:59:00Z"
+          },
+          "comparison": [
+            {
+              "product": "A",
+              "variant": "13-16-x86",
+              "delivered_minor": 65016,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_exceeds_strict_cap"
+              ],
+              "source": "fixture://merchant/A/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "B",
+              "variant": "13-16-x86",
+              "delivered_minor": 66960,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_exceeds_strict_cap"
+              ],
+              "source": "fixture://merchant/B/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "C",
+              "variant": "chrome-16",
+              "delivered_minor": 48600,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/C/chrome-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "D",
+              "variant": "arm-16",
+              "delivered_minor": 59400,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/D/arm-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "E",
+              "variant": "16-16-x86",
+              "delivered_minor": 64800,
+              "eligible": false,
+              "reasons": [
+                "does_not_fit_internal_bag_envelope"
+              ],
+              "source": "fixture://merchant/E/16-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "F",
+              "variant": "13-16-x86",
+              "delivered_minor": 64260,
+              "eligible": true,
+              "reasons": [],
+              "source": "fixture://merchant/F/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "G",
+              "variant": "marketplace-unspecified",
+              "delivered_minor": 54000,
+              "eligible": false,
+              "reasons": [
+                "dimensions_unknown",
+                "ExamLock:compatibility_unknown",
+                "CADLab:compatibility_unknown"
+              ],
+              "source": "fixture://merchant/G/marketplace-unspecified",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            }
+          ],
+          "action": "read_only_merchant_handoff",
+          "payment_authorized": false
+        }
+      },
+      {
+        "case": "old_B_quote_recheck_before_handoff",
+        "expected_selection": null,
+        "result": {
+          "state": "abstained",
+          "selected": null,
+          "comparison": [
+            {
+              "product": "A",
+              "variant": "13-16-x86",
+              "delivered_minor": 65016,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_exceeds_strict_cap"
+              ],
+              "source": "fixture://merchant/A/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "B",
+              "variant": "13-16-x86",
+              "delivered_minor": 63720,
+              "eligible": false,
+              "reasons": [
+                "stale_quote_recheck"
+              ],
+              "source": "fixture://merchant/B/13-16-x86",
+              "retrieved_at": "2026-10-23T16:00:00Z"
+            },
+            {
+              "product": "C",
+              "variant": "chrome-16",
+              "delivered_minor": 48600,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/C/chrome-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "D",
+              "variant": "arm-16",
+              "delivered_minor": 59400,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/D/arm-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "E",
+              "variant": "16-16-x86",
+              "delivered_minor": 64800,
+              "eligible": false,
+              "reasons": [
+                "does_not_fit_internal_bag_envelope"
+              ],
+              "source": "fixture://merchant/E/16-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "F",
+              "variant": "13-16-x86",
+              "delivered_minor": null,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_unknown"
+              ],
+              "source": "fixture://merchant/F/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "G",
+              "variant": "marketplace-unspecified",
+              "delivered_minor": 54000,
+              "eligible": false,
+              "reasons": [
+                "dimensions_unknown",
+                "ExamLock:compatibility_unknown",
+                "CADLab:compatibility_unknown"
+              ],
+              "source": "fixture://merchant/G/marketplace-unspecified",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            }
+          ],
+          "action": "request_current_exact_quote_and_compatibility_evidence",
+          "payment_authorized": false
+        }
+      },
+      {
+        "case": "same_family_wrong_RAM_variant",
+        "expected_selection": null,
+        "result": {
+          "state": "abstained",
+          "selected": null,
+          "comparison": [
+            {
+              "product": "A",
+              "variant": "13-16-x86",
+              "delivered_minor": 65016,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_exceeds_strict_cap"
+              ],
+              "source": "fixture://merchant/A/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "B",
+              "variant": "13-16-x86",
+              "delivered_minor": 63720,
+              "eligible": false,
+              "reasons": [
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/B/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "C",
+              "variant": "chrome-16",
+              "delivered_minor": 48600,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/C/chrome-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "D",
+              "variant": "arm-16",
+              "delivered_minor": 59400,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/D/arm-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "E",
+              "variant": "16-16-x86",
+              "delivered_minor": 64800,
+              "eligible": false,
+              "reasons": [
+                "does_not_fit_internal_bag_envelope"
+              ],
+              "source": "fixture://merchant/E/16-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "F",
+              "variant": "13-16-x86",
+              "delivered_minor": null,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_unknown"
+              ],
+              "source": "fixture://merchant/F/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "G",
+              "variant": "marketplace-unspecified",
+              "delivered_minor": 54000,
+              "eligible": false,
+              "reasons": [
+                "dimensions_unknown",
+                "ExamLock:compatibility_unknown",
+                "CADLab:compatibility_unknown"
+              ],
+              "source": "fixture://merchant/G/marketplace-unspecified",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            }
+          ],
+          "action": "request_current_exact_quote_and_compatibility_evidence",
+          "payment_authorized": false
+        }
+      },
+      {
+        "case": "one_millimeter_over_bag_limit",
+        "expected_selection": null,
+        "result": {
+          "state": "abstained",
+          "selected": null,
+          "comparison": [
+            {
+              "product": "A",
+              "variant": "13-16-x86",
+              "delivered_minor": 65016,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_exceeds_strict_cap"
+              ],
+              "source": "fixture://merchant/A/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "B",
+              "variant": "13-16-x86",
+              "delivered_minor": 63720,
+              "eligible": false,
+              "reasons": [
+                "does_not_fit_internal_bag_envelope"
+              ],
+              "source": "fixture://merchant/B/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "C",
+              "variant": "chrome-16",
+              "delivered_minor": 48600,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/C/chrome-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "D",
+              "variant": "arm-16",
+              "delivered_minor": 59400,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/D/arm-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "E",
+              "variant": "16-16-x86",
+              "delivered_minor": 64800,
+              "eligible": false,
+              "reasons": [
+                "does_not_fit_internal_bag_envelope"
+              ],
+              "source": "fixture://merchant/E/16-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "F",
+              "variant": "13-16-x86",
+              "delivered_minor": null,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_unknown"
+              ],
+              "source": "fixture://merchant/F/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "G",
+              "variant": "marketplace-unspecified",
+              "delivered_minor": 54000,
+              "eligible": false,
+              "reasons": [
+                "dimensions_unknown",
+                "ExamLock:compatibility_unknown",
+                "CADLab:compatibility_unknown"
+              ],
+              "source": "fixture://merchant/G/marketplace-unspecified",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            }
+          ],
+          "action": "request_current_exact_quote_and_compatibility_evidence",
+          "payment_authorized": false
+        }
+      },
+      {
+        "case": "strict_cap_inclusive_at_65000_still_choose_cheaper_B",
+        "expected_selection": "B",
+        "result": {
+          "state": "selected",
+          "selected": {
+            "product": "B",
+            "variant": "13-16-x86",
+            "delivered_minor": 63720,
+            "eligible": true,
+            "reasons": [],
+            "source": "fixture://merchant/B/13-16-x86",
+            "retrieved_at": "2026-10-23T18:59:00Z"
+          },
+          "comparison": [
+            {
+              "product": "A",
+              "variant": "13-16-x86",
+              "delivered_minor": 65000,
+              "eligible": true,
+              "reasons": [],
+              "source": "fixture://merchant/A/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "B",
+              "variant": "13-16-x86",
+              "delivered_minor": 63720,
+              "eligible": true,
+              "reasons": [],
+              "source": "fixture://merchant/B/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "C",
+              "variant": "chrome-16",
+              "delivered_minor": 48600,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/C/chrome-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "D",
+              "variant": "arm-16",
+              "delivered_minor": 59400,
+              "eligible": false,
+              "reasons": [
+                "ExamLock:unsupported_native_platform",
+                "CADLab:unsupported_native_platform"
+              ],
+              "source": "fixture://merchant/D/arm-16",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "E",
+              "variant": "16-16-x86",
+              "delivered_minor": 64800,
+              "eligible": false,
+              "reasons": [
+                "does_not_fit_internal_bag_envelope"
+              ],
+              "source": "fixture://merchant/E/16-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "F",
+              "variant": "13-16-x86",
+              "delivered_minor": null,
+              "eligible": false,
+              "reasons": [
+                "delivered_cost_unknown"
+              ],
+              "source": "fixture://merchant/F/13-16-x86",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            },
+            {
+              "product": "G",
+              "variant": "marketplace-unspecified",
+              "delivered_minor": 54000,
+              "eligible": false,
+              "reasons": [
+                "dimensions_unknown",
+                "ExamLock:compatibility_unknown",
+                "CADLab:compatibility_unknown"
+              ],
+              "source": "fixture://merchant/G/marketplace-unspecified",
+              "retrieved_at": "2026-10-23T18:59:00Z"
+            }
+          ],
+          "action": "read_only_merchant_handoff",
+          "payment_authorized": false
+        }
+      }
+    ],
+    "shopper_message": "Choose B 13-16-x86 at $637.20 delivered with this current fixture quote: $580 item + $10 shipping + $47.20 tax. It fits the stated internal envelope and the provided native app matrix. Exact bag clearance and app versions remain production verification tasks. If B changes price, pause and obtain a current exact quote for F; never silently assume zero tax.",
+    "heldout_properties": [
+      "$650.16 is over budget despite $590 sticker",
+      "Windows ARM is not equivalent to required x86 native apps",
+      "Unknown tax cannot pass a delivered-cost cap",
+      "Bag outer dimensions cannot establish internal fit",
+      "An outdated quote cannot authorize a merchant handoff",
+      "No payment consent is implied by a recommendation"
+    ],
+    "proposed_real_metrics": [
+      "Time to an app-compatible within-budget decision against a manual comparison baseline",
+      "False-positive hard-constraint acceptance rate on fresh labeled retailer/app facts",
+      "User completion of a read-only merchant handoff; no conversion uplift claimed"
+    ]
+  }
+}

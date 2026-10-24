@@ -1,0 +1,21 @@
+# Independent forward-test critique
+
+Scope: two small held-out outputs made by this fresh-context agent applying the candidate instructions. This is a test of instruction behavior, not proof of broad generalization or parity with a studio. The agent generated and critiqued its own test output; the parent may provide a separate independent review. No intended answer or author report was supplied or inspected.
+
+## A — creative-web-worlds
+
+The actual output is specific enough to direct a bounded build: a modular shell/mount joint supplies the reveal, a copper contact strip gives the intermediate frame a reason to exist, and one state drives finish name, material and control selection. The decision to use actual 3D in production is justified by view-dependent material/light and shell movement. The storyboard explicitly remains vector evidence. A 0.65-viewport reveal, interruptible 160 ms finish response, tap view alternatives and reduced-motion endpoints address the requested lightweight mobile behavior. It avoids a full backend, checkout or processing project.
+
+Rendered inspection supports composition claims only. The opening is legible and the inspection frame keeps the material result near controls. The middle frame retains the lens silhouette, readable body seam and entering finish group. The board's simplified camera can read as a metal illustration, but its smooth gradients do not demonstrate the proposed bead-blast texture or distinct ceramic/polymer roughness. The runtime score has not been built, so continuity, interruption, latency, focus and 320 px/large-text behavior remain unverified. These are explicit limits matching the requested concept/storyboard scope, not an instruction failure.
+
+Material instruction gaps observed: **none in this forward test.** The fidelity paragraph prevented backend overbuilding; the direct-interaction paragraph produced co-visible state/control design; motion/mobile requirements produced an explicit middle frame and reversal rules; medium guidance prevented passing the vector board off as 3D. Passing this brief does not certify final craft or general style range.
+
+## B — sponsor-track-builder + hackathon-prize-strategy
+
+The actual plan selects a coherent useful combination rather than maximizing logo count. Cartesia is the core input/clarification/action channel and Convex supplies required durability. It declines to infer a Convex rubric from general backend docs, an Atlassian fit from external Jira access, or a Canva prize from its inventory card. It retains the supplied pack's up-to-four glasses detail separately from Hive/Devpost TBD and labels hardware rather than adopting cash-style catalog values. It preserves Hive's numeric Cartesia weights without incorrectly attributing them to the unweighted starter pack.
+
+The plan is concrete without pretending implementation: named read/proposal/confirm/status operations; scoped proposal binding; transactional collision and duplicate handling; separate interruption from committed cancellation; source-specific proof artifacts; access and permitted-work gates. It neither promises provider costs/credits nor asserts user savings, fairness, win probability, unlimited quotas or stackable prizes. Its 33-hour budget leaves a buffer and removes Forge/Canva integrations that would create a second critical path. Current public docs support the chosen capabilities; live availability and all integration behavior are clearly unrun.
+
+The current source check found a new deadline discrepancy (Hive Sunday 8:50 AM Pacific versus Devpost 9 AM PST). The skill's recheck/preserve-conflicts instructions caused this to be caught and carried into an earlier internal target. Exact build-start/reuse authorization, user eligibility, actual account access, Convex entry contract and award allocation remain unresolved and are shown as gates. Those are source/access limitations, not missing instruction.
+
+Material instruction gaps observed: **none in this forward test.** The requested output is a plan, so absence of runnable provider code/runtime proof is appropriate; the plan does not claim a completed sponsor integration. No skill changes recommended from this case alone. The known limitations above should remain visible in any completion claim.

@@ -1,0 +1,11 @@
+# Observed local evaluation — 2026-10-23
+
+`python3 scripts/test_finance.py -v`: **8/8 tests passed**. Existing coverage checks evidence/identity syntax, entity/currency balancing, bad minor units, proposal replay, the deliberate unknown-account limitation, OpenAPI references/security and MCP pagination.
+
+`python3 scripts/test_workflow.py -v`: **2/2 test methods passed**, exercising **14/14 planted scenarios** plus an empty-context check. `--report` emits each actual result. Two scenarios pass the local gate: a synthetic partial settlement plus fee, and an independently approved updated June evidence snapshot. Twelve scenarios hold for the expected reason: wrong account, closed March period, self-approval, controller rejection, balanced amount edit after approval, newly arrived credit note, changed policy, unknown write outcome, confirmed replay, wrong entity scope, wrong actor role and another tenant sharing an entity name.
+
+The original balance helper accepted all twelve proposals requiring workflow holds. That is its documented scope limit, not a claim that its eight tests failed. The added gate covers those boundaries. No external write/recovery, source extraction, ambiguous-match resolution or credit-note accounting adjustment ran. The temporal fixture tests hold/reapproval behavior; it does not establish correct accounting treatment.
+
+Skill Creator validation initially failed under system `python3` with `ModuleNotFoundError: No module named 'yaml'`. Rerunning the unchanged validator with the existing `/private/tmp/calhacks-validator-env/bin/python` passed: `Skill is valid!`. No dependency was installed. A file patch also initially failed because it attempted delete/add of one path in a single patch; separating those edits succeeded before validation.
+
+Raw source manifest, per-scenario decisions, first validation output and successful rerun are kept in the workspace research evidence (`hackathon-pack/research/integrations/hyphenate-doc-refinement`). These files are research artifacts, not needed by the installed skill. Credentials used: zero. Authenticated API calls: zero. External financial mutations: zero. Third-party docs were inspected; no Hyphenate API contract or tenant was supplied.

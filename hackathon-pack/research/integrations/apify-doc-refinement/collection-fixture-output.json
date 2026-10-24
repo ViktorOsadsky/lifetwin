@@ -1,0 +1,45 @@
+{
+  "provenance": {
+    "actor": "apify/website-content-crawler",
+    "actorId": "aYG0l9s7dbB7j3gbS",
+    "buildId": "fixture-build",
+    "buildNumber": "0.0.1",
+    "runId": "fixture-run",
+    "datasetId": "fixture-dataset",
+    "status": "SUCCEEDED",
+    "inputSha256": "aaef769894eae9741aae9bdd7af24334df933d322df02dc63ec715fc3eca3136",
+    "fetchedAt": "2026-10-23T22:09:19.051447+00:00",
+    "usageTotalUsd": null,
+    "limit": 5,
+    "sourceUrls": [
+      "https://docs.apify.com/actors/running/permissions",
+      "https://docs.apify.com/actors/running/tasks",
+      "https://docs.apify.com/agents/plugins",
+      "https://docs.apify.com/mcp",
+      "https://docs.apify.com/storage"
+    ]
+  },
+  "items": [
+    {
+      "url": "https://docs.apify.com/mcp",
+      "markdown": "Synthetic fixture; not captured web evidence."
+    },
+    {
+      "url": "https://docs.apify.com/storage",
+      "markdown": "Synthetic fixture; not captured web evidence."
+    },
+    {
+      "url": "https://docs.apify.com/actors/running/tasks",
+      "markdown": "Synthetic fixture; not captured web evidence."
+    },
+    {
+      "url": "https://docs.apify.com/agents/plugins",
+      "markdown": "Synthetic fixture; not captured web evidence."
+    },
+    {
+      "url": "https://docs.apify.com/actors/running/permissions",
+      "markdown": "Synthetic fixture; not captured web evidence."
+    }
+  ],
+  "evidenceMode": "synthetic-fixture"
+}

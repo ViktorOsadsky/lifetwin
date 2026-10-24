@@ -1,0 +1,83 @@
+test_bad_poll_delay_rejected_before_network (test_apify.ApifyTests) ... test_empty_success_is_valid_empty_dataset (test_apify.ApifyTests) ... ok
+test_failure_never_fetches_dataset_or_restarts (test_apify.ApifyTests) ... ok
+test_input_is_snapshotted (test_apify.ApifyTests) ... FAIL
+test_invalid_budget_blocks_before_network (test_apify.ApifyTests) ... ok
+test_legitimate_actor_limit_field_is_independent_of_run_limit (test_apify.ApifyTests) ... ERROR
+test_limits_are_run_query_not_input (test_apify.ApifyTests) ... ok
+test_modified_plan_rejected_before_network (test_apify.ApifyTests) ... FAIL
+test_poll_exhaustion_aborts_owned_run (test_apify.ApifyTests) ... ok
+test_readonly_client_rejects_run_tool (test_apify.ApifyTests) ... ok
+test_sse_and_json_protocol_frames (test_apify.ApifyTests) ... ok
+test_tools_pagination (test_apify.ApifyTests) ... ok
+test_uncertain_start_is_not_retried (test_apify.ApifyTests) ... ok
+
+======================================================================
+ERROR: test_legitimate_actor_limit_field_is_independent_of_run_limit (test_apify.ApifyTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/test_apify.py", line 36, in test_legitimate_actor_limit_field_is_independent_of_run_limit
+    plan = make_plan('fixture/actor', {'maxItems': 2, 'timeout': 5}, 1, max_items=3)
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/bounded_run.py", line 30, in make_plan
+    raise ValueError('Run limits belong in query/callOptions, not Actor input: ' + ', '.join(sorted(misplaced)))
+ValueError: Run limits belong in query/callOptions, not Actor input: maxItems, timeout
+
+======================================================================
+FAIL: test_bad_poll_delay_rejected_before_network (test_apify.ApifyTests) (delay=-1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/test_apify.py", line 55, in test_bad_poll_delay_rejected_before_network
+    collect(lambda *args: self.fail('network called'), self.plan(), poll_seconds=delay)
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/bounded_run.py", line 60, in collect
+    run = api('POST', f'acts/{actor}/runs', plan['options'], plan['input'])['data']
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/test_apify.py", line 55, in <lambda>
+    collect(lambda *args: self.fail('network called'), self.plan(), poll_seconds=delay)
+AssertionError: network called
+
+======================================================================
+FAIL: test_bad_poll_delay_rejected_before_network (test_apify.ApifyTests) (delay=nan)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/test_apify.py", line 55, in test_bad_poll_delay_rejected_before_network
+    collect(lambda *args: self.fail('network called'), self.plan(), poll_seconds=delay)
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/bounded_run.py", line 60, in collect
+    run = api('POST', f'acts/{actor}/runs', plan['options'], plan['input'])['data']
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/test_apify.py", line 55, in <lambda>
+    collect(lambda *args: self.fail('network called'), self.plan(), poll_seconds=delay)
+AssertionError: network called
+
+======================================================================
+FAIL: test_bad_poll_delay_rejected_before_network (test_apify.ApifyTests) (delay=inf)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/test_apify.py", line 55, in test_bad_poll_delay_rejected_before_network
+    collect(lambda *args: self.fail('network called'), self.plan(), poll_seconds=delay)
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/bounded_run.py", line 60, in collect
+    run = api('POST', f'acts/{actor}/runs', plan['options'], plan['input'])['data']
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/test_apify.py", line 55, in <lambda>
+    collect(lambda *args: self.fail('network called'), self.plan(), poll_seconds=delay)
+AssertionError: network called
+
+======================================================================
+FAIL: test_input_is_snapshotted (test_apify.ApifyTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/test_apify.py", line 44, in test_input_is_snapshotted
+    self.assertEqual(len(plan['input']['urls']), 1)
+AssertionError: 2 != 1
+
+======================================================================
+FAIL: test_modified_plan_rejected_before_network (test_apify.ApifyTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/test_apify.py", line 50, in test_modified_plan_rejected_before_network
+    collect(lambda *args: self.fail('network called'), plan)
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/bounded_run.py", line 60, in collect
+    run = api('POST', f'acts/{actor}/runs', plan['options'], plan['input'])['data']
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine/scripts/test_apify.py", line 50, in <lambda>
+    collect(lambda *args: self.fail('network called'), plan)
+AssertionError: network called
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.002s
+
+FAILED (failures=5, errors=1)

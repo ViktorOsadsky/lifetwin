@@ -1,0 +1,30 @@
+PrizeAwarded by CartesiaBest Use of Cartesia (Cartesia)Build a useful voice experience with Cartesia. Voice should be core to the product–not just a feature added for the demo. Other tools are fine; make clear what Cartesia contributes.
+
+What to submit
+• A working demo
+• A 2-minute, demo-first presentation: one complete user flow, then a brief problem + how you built it
+• A short README: setup, Cartesia features used, known limitations
+• Source access for judges (per event rules). No API keys or secrets in the repo
+
+Judging criteria (25% each)
+
+Problem and originality — Useful, clearly scoped, thoughtfully designed?
+Use of Cartesia — Meaningfully integrated into the core experience? Voice clear, responsive, and natural?
+Execution — Main flow works? Likely edge cases handled?
+Impact and responsibility — Accessibility, privacy, and responsible use considered?
+
+We’ll favor a strong working prototype over a large unfinished idea.
+
+Ideas
+• Commute standup — voice-only morning brief you can interrupt while driving (hands-busy)
+• Ambient / wearable assistant — help without pulling out a phone
+• Keep-your-voice accessibility — clone for reading aloud or speaking another language
+• Live coach or translator — low-latency back-and-forth where voice quality matters
+• Multi-speaker agent — tutor, debate partner, or support sim with distinct voices
+
+Docs: https://docs.cartesia.ai
+Playground: https://play.cartesia.aiYour destinationMeta glasses (still TBD)SPONSOR-ROW-14build  ·  Explore  ·  create
+
+PrizeAwarded by ConvexBest use of Convex (Convex)Coming soon!Your destinationTeenage Engineering EP-133 K.O. II and a Waveshare ESP32-S3 touch display boardSPONSOR-ROW-19build  ·  Explore  ·  create
+
+PrizeAwarded by AtlassianBest Agent / Best Security Solution for AgentsTo find out more, click here: https://docs.google.com/document/d/12Y2Vamxbm9W_l2Eo4AM530R7HfNAYCXI-UI6F6Xnggw/edit?pli=1&tab=t.0#heading=h.c700g1a8lnrhYour destinationAirpod MaxSPONSOR-ROW-29build  ·  Explore  ·  create

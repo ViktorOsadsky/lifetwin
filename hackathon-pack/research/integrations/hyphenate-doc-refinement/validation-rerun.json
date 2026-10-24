@@ -1,0 +1,11 @@
+{
+  "command": [
+    "/private/tmp/calhacks-validator-env/bin/python",
+    "/Users/flare/.codex/skills/.system/skill-creator/scripts/quick_validate.py",
+    "hackathon-pack/skills/hyphenate-finance-agent"
+  ],
+  "exit_code": 0,
+  "stdout": "Skill is valid!\n",
+  "stderr": "",
+  "missing_relative_links": []
+}

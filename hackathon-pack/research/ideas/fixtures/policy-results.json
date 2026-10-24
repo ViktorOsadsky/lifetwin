@@ -1,0 +1,141 @@
+{
+  "passed": 20,
+  "total": 20,
+  "results": [
+    {
+      "case": "replacement_is_not_cash",
+      "passed": true,
+      "actual": [
+        "replacement_only_no_cash",
+        0
+      ]
+    },
+    {
+      "case": "unknown_model",
+      "passed": true,
+      "actual": [
+        "review_missing_model",
+        0
+      ]
+    },
+    {
+      "case": "suffix_is_not_equivalent",
+      "passed": true,
+      "actual": [
+        "no_match_in_this_rule",
+        0
+      ]
+    },
+    {
+      "case": "brand_conflict",
+      "passed": true,
+      "actual": [
+        "no_match_in_this_rule",
+        0
+      ]
+    },
+    {
+      "case": "stale_notice",
+      "passed": true,
+      "actual": [
+        "review_stale_source",
+        0
+      ]
+    },
+    {
+      "case": "reseller_not_assumed_eligible",
+      "passed": true,
+      "actual": [
+        "match_review_program_eligibility",
+        0
+      ]
+    },
+    {
+      "case": "model_alone_not_enough",
+      "passed": true,
+      "actual": [
+        "review_serial_required",
+        0
+      ]
+    },
+    {
+      "case": "gift_card_not_payroll_cash",
+      "passed": true,
+      "actual": [
+        "restricted_credit_no_cash",
+        0
+      ]
+    },
+    {
+      "case": "unapproved_claim_not_cash",
+      "passed": true,
+      "actual": [
+        "cash_claim_not_approved",
+        0
+      ]
+    },
+    {
+      "case": "approved_not_settled",
+      "passed": true,
+      "actual": [
+        "approved_cash_claim_not_settled",
+        0
+      ]
+    },
+    {
+      "case": "case_and_space_normalization",
+      "passed": true,
+      "actual": [
+        "replacement_only_no_cash",
+        0
+      ]
+    },
+    {
+      "case": "duplicate_callback_is_idempotent",
+      "passed": true
+    },
+    {
+      "case": "partial_settlements_sum_in_integer_cents",
+      "passed": true
+    },
+    {
+      "case": "conflicting_duplicate_blocked",
+      "passed": true
+    },
+    {
+      "case": "invalid_money_rejected",
+      "passed": true
+    },
+    {
+      "case": "real_api_record_has_prose_models_and_replace_remedy",
+      "passed": true
+    },
+    {
+      "case": "verified_terms_propose_only_consignor_share_not_full_refund",
+      "passed": true
+    },
+    {
+      "case": "missing_clawback_terms_do_not_invent_consignor_debt",
+      "passed": true
+    },
+    {
+      "case": "unpaid_commission_reversal_is_not_cash_recovery",
+      "passed": true
+    },
+    {
+      "case": "recall_hold_survives_return_flow_and_unapproved_refund",
+      "passed": true
+    }
+  ],
+  "ablation": {
+    "naive_recovered_cash_cents": 10000,
+    "correct_spendable_cash_cents": 0,
+    "finding": "replacement entitlement is not settled cash"
+  },
+  "limitations": [
+    "Not an LLM accuracy test",
+    "Not program eligibility verification",
+    "Not customer or willingness-to-pay validation",
+    "No external state changed; finance inputs are synthetic"
+  ]
+}

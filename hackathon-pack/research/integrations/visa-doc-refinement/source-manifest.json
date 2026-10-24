@@ -1,0 +1,49 @@
+{
+  "observedDate": "2026-10-23",
+  "visaBrief": {
+    "title": "Visa x CAL Hacks 13.0 Hacker Starter Pack",
+    "url": "https://docs.google.com/document/d/1Lgtd0f8mHZy_nWabtz751AkSW5Oj-z1XMhzAwddtfOA/edit?tab=t.0#heading=h.bo9rj437g1tj",
+    "localText": "visa-starter-pack.source.txt",
+    "sha256": "82858e31a54da36b54bdb5e6b04991e2f377761a5cac39045f4a10648fbafebb",
+    "retrieval": "Parent agent supplied extracted public document text; this agent read it in full."
+  },
+  "hive": {
+    "url": "https://hive.hackberkeley.org/resources",
+    "source": "Parent browser-captured design-lab/sponsor-docs/hive-starter-packs.json",
+    "relevantCards": [
+      {
+        "label": "RESOURCES / SPONSOR STARTER PACKS\nHyphenate\nHyphenate",
+        "url": "https://docs.google.com/document/d/1u4iN8R97ILY3kfHTPKC82zdutHrGx4ze5eCAP-J92w4/edit?usp=sharing"
+      },
+      {
+        "label": "RESOURCES / SPONSOR STARTER PACKS\nvisa\nvisa",
+        "url": "https://docs.google.com/document/d/1Lgtd0f8mHZy_nWabtz751AkSW5Oj-z1XMhzAwddtfOA/edit?tab=t.0#heading=h.bo9rj437g1tj"
+      }
+    ],
+    "otherResources": "Parent browser observed empty filter on 2026-10-23"
+  },
+  "rubricConflict": {
+    "starterPack": {
+      "innovation": 25,
+      "technicalExecution": 20,
+      "userExperience": 20,
+      "commerceImpact": 20,
+      "trustResponsibility": 15
+    },
+    "hivePrizeCard": {
+      "innovation": 25,
+      "technicalExecution": 20,
+      "userExperience": 25,
+      "commerceImpact": 15,
+      "trustResponsibility": 15
+    },
+    "hiveEvidence": "../../event/hive-cards-captured.json Visa card",
+    "resolved": false
+  },
+  "officialDocsReopened": [
+    "https://developer.visa.com/mcp-docs",
+    "https://developer.visa.com/resources/mcp-get-started"
+  ],
+  "officialPinnedGithubReopen": "Web fetch failed with cache miss. Existing pinned-source integration notes preserved without claiming a fresh source checkout.",
+  "runtimeAccess": "No authorized credentials or live tool schemas; no runtime calls attempted in this refinement."
+}

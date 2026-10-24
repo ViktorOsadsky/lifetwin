@@ -1,0 +1,67 @@
+{
+  "schema_version": "xpart-ai-catalog-v1",
+  "entity": "part",
+  "requested": "W10308869",
+  "normalized": "W10308869",
+  "match_count": 1,
+  "products": [
+    {
+      "@type": "Product",
+      "resolution": {
+        "requested": "W10308869",
+        "resolved_by": "part_number",
+        "exact_normalized_identity": true
+      },
+      "identity": {
+        "xpart_number": "XP11028990",
+        "manufacturer_part_number": "W10308869",
+        "normalized_part_number": "W10308869",
+        "brand": "Whirlpool",
+        "name": "Replacement Part",
+        "appliance_type": "Appliance"
+      },
+      "commerce": {
+        "condition": "new",
+        "price_cad": null,
+        "local_quantity": 0,
+        "availability": "out_of_stock",
+        "product_url": "https://xpartsupply.com/products/wpw10308869-door-bin",
+        "shopify_product_id": "gid://shopify/Product/10250283778337",
+        "shopify_variant_id": null,
+        "direct_cart_url": null,
+        "certified_pre_owned_policy": null
+      },
+      "compatibility": {
+        "verified_models": [
+          {
+            "model": "WRF560SEHZ00",
+            "brand": "Whirlpool",
+            "confidence": 100
+          }
+        ],
+        "verified_cross_references": [
+          {
+            "part_number": "W10331764",
+            "relationship": "replaces",
+            "brand": "Whirlpool",
+            "confidence": 100
+          },
+          {
+            "part_number": "W11227366",
+            "relationship": "replaces",
+            "brand": "Whirlpool",
+            "confidence": 100
+          }
+        ],
+        "diagram_locations": []
+      },
+      "ai_readiness": {
+        "score": 80,
+        "tier": "B",
+        "verified_model_count": 1,
+        "verified_cross_reference_count": 2,
+        "last_verified_at": "2026-08-31T12:39:00.315206+00:00"
+      }
+    }
+  ]
+}

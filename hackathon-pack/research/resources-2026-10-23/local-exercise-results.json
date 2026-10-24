@@ -1,0 +1,74 @@
+{
+  "mode": "local synthetic exercise; no network/API use",
+  "before_defect": {
+    "status": "completed",
+    "output": {
+      "summary": "fabricated finding from callback"
+    },
+    "effects": 1
+  },
+  "revised_cases": [
+    {
+      "case": "forged_completion_while_canonical_pending",
+      "result": "pending",
+      "state": {
+        "status": "pending",
+        "output": null,
+        "effects": 0
+      }
+    },
+    {
+      "case": "unknown_run",
+      "result": "unknown_run"
+    },
+    {
+      "case": "status_lookup_timeout",
+      "result": "retry_later",
+      "state": {
+        "status": "pending",
+        "output": null,
+        "effects": 0
+      }
+    },
+    {
+      "case": "delayed_completion_reconciled_by_poll",
+      "result": "applied",
+      "state": {
+        "status": "completed",
+        "output": {
+          "summary": "canonical researched finding"
+        },
+        "effects": 1
+      }
+    },
+    {
+      "case": "three_duplicate_callbacks",
+      "state": {
+        "status": "completed",
+        "output": {
+          "summary": "canonical researched finding"
+        },
+        "effects": 1
+      }
+    },
+    {
+      "case": "canonical_failure_overrides_forged_success",
+      "result": "applied",
+      "state": {
+        "status": "failed",
+        "output": null,
+        "effects": 0
+      }
+    },
+    {
+      "case": "canonical_cancel_overrides_forged_success",
+      "state": {
+        "status": "cancelled",
+        "output": null,
+        "effects": 0
+      }
+    }
+  ],
+  "assertions": "all passed",
+  "authenticated_lookup": "injected local fixture, not real HTTP"
+}

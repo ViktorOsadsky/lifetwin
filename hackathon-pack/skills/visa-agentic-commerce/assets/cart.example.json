@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "merchantId": "fixture-merchant",
+  "currency": "USD",
+  "currencyExponent": 2,
+  "amountMinor": 2500,
+  "contextDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+  "items": [{"id": "fixture-sku", "quantity": 1, "unitAmountMinor": 2500}]
+}

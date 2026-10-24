@@ -1,0 +1,326 @@
+{
+  "contract": "build is numeric selector; actId and buildNumber are separate response fields; opaque buildId must not be compared with selector",
+  "mode": "offline double using preserved original helper and fixed helper",
+  "cases": [
+    {
+      "case": "happy_pagination",
+      "before": {
+        "returned_envelope": true,
+        "provenance": {
+          "actor": "apify/website-content-crawler",
+          "buildId": "fixture-reviewed-build-id",
+          "runId": "fixture-run-private",
+          "datasetId": "fixture-dataset-private",
+          "status": "SUCCEEDED",
+          "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+          "fetchedAt": "2026-10-23T22:10:13.221896+00:00",
+          "usageTotalUsd": 0.012,
+          "limit": 2,
+          "sourceUrls": [
+            "https://nodejs.org/en/about/previous-releases",
+            "https://www.python.org/downloads/"
+          ]
+        },
+        "calls": [
+          {
+            "method": "POST",
+            "path": "acts/apify~website-content-crawler/runs",
+            "query": {
+              "maxTotalChargeUsd": 0.05,
+              "maxItems": 2,
+              "timeout": 45,
+              "waitForFinish": 0,
+              "build": "1.2.3"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "datasets/fixture-dataset-private/items",
+            "query": {
+              "format": "json",
+              "clean": "true",
+              "offset": 0,
+              "limit": 1
+            }
+          },
+          {
+            "method": "GET",
+            "path": "datasets/fixture-dataset-private/items",
+            "query": {
+              "format": "json",
+              "clean": "true",
+              "offset": 1,
+              "limit": 1
+            }
+          }
+        ]
+      },
+      "after": {
+        "returned_envelope": true,
+        "provenance": {
+          "actor": "apify/website-content-crawler",
+          "actorId": "aYG0l9s7dbB7j3gbS",
+          "buildId": "fixture-reviewed-build-id",
+          "buildNumber": "1.2.3",
+          "runId": "fixture-run-private",
+          "datasetId": "fixture-dataset-private",
+          "status": "SUCCEEDED",
+          "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+          "fetchedAt": "2026-10-23T22:10:13.222102+00:00",
+          "usageTotalUsd": 0.012,
+          "limit": 2,
+          "sourceUrls": [
+            "https://nodejs.org/en/about/previous-releases",
+            "https://www.python.org/downloads/"
+          ]
+        },
+        "calls": [
+          {
+            "method": "POST",
+            "path": "acts/apify~website-content-crawler/runs",
+            "query": {
+              "maxTotalChargeUsd": 0.05,
+              "maxItems": 2,
+              "timeout": 45,
+              "waitForFinish": 0,
+              "build": "1.2.3"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "datasets/fixture-dataset-private/items",
+            "query": {
+              "format": "json",
+              "clean": "true",
+              "offset": 0,
+              "limit": 1
+            }
+          },
+          {
+            "method": "GET",
+            "path": "datasets/fixture-dataset-private/items",
+            "query": {
+              "format": "json",
+              "clean": "true",
+              "offset": 1,
+              "limit": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "wrong_actor",
+      "before": {
+        "returned_envelope": true,
+        "provenance": {
+          "actor": "apify/website-content-crawler",
+          "buildId": "fixture-reviewed-build-id",
+          "runId": "fixture-run-private",
+          "datasetId": "fixture-dataset-private",
+          "status": "SUCCEEDED",
+          "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+          "fetchedAt": "2026-10-23T22:10:13.222143+00:00",
+          "usageTotalUsd": 0.012,
+          "limit": 2,
+          "sourceUrls": [
+            "https://nodejs.org/en/about/previous-releases",
+            "https://www.python.org/downloads/"
+          ]
+        },
+        "calls": [
+          {
+            "method": "POST",
+            "path": "acts/apify~website-content-crawler/runs",
+            "query": {
+              "maxTotalChargeUsd": 0.05,
+              "maxItems": 2,
+              "timeout": 45,
+              "waitForFinish": 0,
+              "build": "1.2.3"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "datasets/fixture-dataset-private/items",
+            "query": {
+              "format": "json",
+              "clean": "true",
+              "offset": 0,
+              "limit": 1
+            }
+          },
+          {
+            "method": "GET",
+            "path": "datasets/fixture-dataset-private/items",
+            "query": {
+              "format": "json",
+              "clean": "true",
+              "offset": 1,
+              "limit": 1
+            }
+          }
+        ]
+      },
+      "after": {
+        "returned_envelope": false,
+        "error": "Actor/build/run identity mismatch for run fixture-run-private; reconcile; no abort or restart issued",
+        "calls": [
+          {
+            "method": "POST",
+            "path": "acts/apify~website-content-crawler/runs",
+            "query": {
+              "maxTotalChargeUsd": 0.05,
+              "maxItems": 2,
+              "timeout": 45,
+              "waitForFinish": 0,
+              "build": "1.2.3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "wrong_build",
+      "before": {
+        "returned_envelope": true,
+        "provenance": {
+          "actor": "apify/website-content-crawler",
+          "buildId": "fixture-reviewed-build-id",
+          "runId": "fixture-run-private",
+          "datasetId": "fixture-dataset-private",
+          "status": "SUCCEEDED",
+          "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+          "fetchedAt": "2026-10-23T22:10:13.222210+00:00",
+          "usageTotalUsd": 0.012,
+          "limit": 2,
+          "sourceUrls": [
+            "https://nodejs.org/en/about/previous-releases",
+            "https://www.python.org/downloads/"
+          ]
+        },
+        "calls": [
+          {
+            "method": "POST",
+            "path": "acts/apify~website-content-crawler/runs",
+            "query": {
+              "maxTotalChargeUsd": 0.05,
+              "maxItems": 2,
+              "timeout": 45,
+              "waitForFinish": 0,
+              "build": "1.2.3"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "datasets/fixture-dataset-private/items",
+            "query": {
+              "format": "json",
+              "clean": "true",
+              "offset": 0,
+              "limit": 1
+            }
+          },
+          {
+            "method": "GET",
+            "path": "datasets/fixture-dataset-private/items",
+            "query": {
+              "format": "json",
+              "clean": "true",
+              "offset": 1,
+              "limit": 1
+            }
+          }
+        ]
+      },
+      "after": {
+        "returned_envelope": false,
+        "error": "Actor/build/run identity mismatch for run fixture-run-private; reconcile; no abort or restart issued",
+        "calls": [
+          {
+            "method": "POST",
+            "path": "acts/apify~website-content-crawler/runs",
+            "query": {
+              "maxTotalChargeUsd": 0.05,
+              "maxItems": 2,
+              "timeout": 45,
+              "waitForFinish": 0,
+              "build": "1.2.3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "missing_build_number",
+      "before": {
+        "returned_envelope": true,
+        "provenance": {
+          "actor": "apify/website-content-crawler",
+          "buildId": "fixture-reviewed-build-id",
+          "runId": "fixture-run-private",
+          "datasetId": "fixture-dataset-private",
+          "status": "SUCCEEDED",
+          "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+          "fetchedAt": "2026-10-23T22:10:13.222274+00:00",
+          "usageTotalUsd": 0.012,
+          "limit": 2,
+          "sourceUrls": [
+            "https://nodejs.org/en/about/previous-releases",
+            "https://www.python.org/downloads/"
+          ]
+        },
+        "calls": [
+          {
+            "method": "POST",
+            "path": "acts/apify~website-content-crawler/runs",
+            "query": {
+              "maxTotalChargeUsd": 0.05,
+              "maxItems": 2,
+              "timeout": 45,
+              "waitForFinish": 0,
+              "build": "1.2.3"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "datasets/fixture-dataset-private/items",
+            "query": {
+              "format": "json",
+              "clean": "true",
+              "offset": 0,
+              "limit": 1
+            }
+          },
+          {
+            "method": "GET",
+            "path": "datasets/fixture-dataset-private/items",
+            "query": {
+              "format": "json",
+              "clean": "true",
+              "offset": 1,
+              "limit": 1
+            }
+          }
+        ]
+      },
+      "after": {
+        "returned_envelope": false,
+        "error": "Actor/build/run identity mismatch for run fixture-run-private; reconcile; no abort or restart issued",
+        "calls": [
+          {
+            "method": "POST",
+            "path": "acts/apify~website-content-crawler/runs",
+            "query": {
+              "maxTotalChargeUsd": 0.05,
+              "maxItems": 2,
+              "timeout": 45,
+              "waitForFinish": 0,
+              "build": "1.2.3"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

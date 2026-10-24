@@ -1,0 +1,29 @@
+{
+  "startUrls": [
+    {
+      "url": "https://docs.apify.com/mcp"
+    },
+    {
+      "url": "https://docs.apify.com/storage"
+    },
+    {
+      "url": "https://docs.apify.com/actors/running/tasks"
+    },
+    {
+      "url": "https://docs.apify.com/agents/plugins"
+    },
+    {
+      "url": "https://docs.apify.com/actors/running/permissions"
+    }
+  ],
+  "maxCrawlPages": 5,
+  "maxCrawlDepth": 0,
+  "maxResults": 5,
+  "maxConcurrency": 1,
+  "useSitemaps": false,
+  "saveMarkdown": true,
+  "summarize": false,
+  "proxyConfiguration": {
+    "useApifyProxy": false
+  }
+}

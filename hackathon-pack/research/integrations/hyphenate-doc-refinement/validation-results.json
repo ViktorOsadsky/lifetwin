@@ -1,0 +1,32 @@
+[
+  {
+    "command": [
+      "python3",
+      "hackathon-pack/skills/hyphenate-finance-agent/scripts/test_finance.py",
+      "-v"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "test_balanced_wrong_account_requires_semantic_review (__main__.FinanceChecks) ... ok\ntest_cross_currency_net_zero_is_rejected (__main__.FinanceChecks) ... ok\ntest_cross_entity_net_zero_is_rejected (__main__.FinanceChecks) ... ok\ntest_evidence_and_replay (__main__.FinanceChecks) ... ok\ntest_float_bool_and_negative_rejected (__main__.FinanceChecks) ... ok\ntest_mcp_pagination_not_silently_complete (__main__.FinanceChecks) ... ok\ntest_openapi_security_and_reference_preserved (__main__.FinanceChecks) ... ok\ntest_valid_but_no_claim_of_accounting_correctness (__main__.FinanceChecks) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.000s\n\nOK\n"
+  },
+  {
+    "command": [
+      "python3",
+      "hackathon-pack/skills/hyphenate-finance-agent/scripts/test_workflow.py",
+      "-v"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "test_empty_context_fails_closed (__main__.WorkflowChecks) ... ok\ntest_planted_scenarios (__main__.WorkflowChecks) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n"
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/flare/.codex/skills/.system/skill-creator/scripts/quick_validate.py",
+      "hackathon-pack/skills/hyphenate-finance-agent"
+    ],
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": "Traceback (most recent call last):\n  File \"/Users/flare/.codex/skills/.system/skill-creator/scripts/quick_validate.py\", line 10, in <module>\n    import yaml\nModuleNotFoundError: No module named 'yaml'\n"
+  }
+]

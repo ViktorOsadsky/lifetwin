@@ -1,0 +1,76 @@
+{
+  "mode": "OFFLINE SYNTHETIC FIXTURE REPLAY",
+  "visaApiInvoked": false,
+  "llmInvoked": false,
+  "liveCatalogInvoked": false,
+  "catalogDecisions": [
+    {
+      "id": "harbor-c",
+      "amountMinor": 6901,
+      "eligible": true,
+      "reasons": []
+    },
+    {
+      "id": "metro-anc",
+      "amountMinor": 7987,
+      "eligible": false,
+      "reasons": [
+        "wired_usb_c_audio_unverified"
+      ]
+    },
+    {
+      "id": "studio-c",
+      "amountMinor": 7553,
+      "eligible": false,
+      "reasons": [
+        "delivery_unknown"
+      ]
+    },
+    {
+      "id": "fast-c",
+      "amountMinor": 8529,
+      "eligible": false,
+      "reasons": [
+        "over_budget"
+      ]
+    },
+    {
+      "id": "commute-c",
+      "amountMinor": 6510,
+      "eligible": false,
+      "reasons": [
+        "not_in_stock"
+      ]
+    }
+  ],
+  "quoteExpiry": {
+    "eligibleCount": 0
+  },
+  "stricterBudget": {
+    "budgetMinor": 6000,
+    "eligibleCount": 0
+  },
+  "unknownCharges": {
+    "id": "harbor-c",
+    "amountMinor": null,
+    "eligible": false,
+    "reasons": [
+      "total_unknown"
+    ]
+  },
+  "optionalCheckoutReplay": {
+    "changedQuoteBlocked": "Cart or environment changed; obtain fresh user approval",
+    "duplicateRetryBlocked": "Request already reserved; reconcile existing state before any retry",
+    "syntheticAdapterSubmissions": 1,
+    "reconciled": {
+      "state": "confirmed",
+      "cartDigest": "8ddca3cf85a0cfd249decfe01d27a6e5049cfdf252fe0aaecff5baf3eb5e0f5a",
+      "environment": "simulated",
+      "receiptReference": "fixture-receipt-001"
+    }
+  },
+  "liveVic": {
+    "state": "not_attempted",
+    "reason": "No authorized runtime credentials or discovered schemas"
+  }
+}

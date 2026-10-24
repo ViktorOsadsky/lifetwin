@@ -1,0 +1,156 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "# Search results:\n- **Search query:** Amazon products\n- **Number of Actors found:** 2\n\n# Actors:\n\n## [Amazon Scraper - Product Prices, BSR & Sales Estimates](https://apify.com/automly/amazon-products-scraper---fast-efficient-with-sales-data) (`automly/amazon-products-scraper---fast-efficient-with-sales-data`)\n- **URL:** https://apify.com/automly/amazon-products-scraper---fast-efficient-with-sales-data\n- **Description:** Scrape Amazon products by keyword, product link or ASIN in 20 Amazon stores: price, Best Sellers Rank, monthly sales and revenue estimates, rating, review count, badges, variants and specs. No login. Export to CSV, JSON or Excel, schedule runs or use the API.\n- **[Pricing](https://apify.com/automly/amazon-products-scraper---fast-efficient-with-sales-data/pricing):** This Actor is paid per event:\n  - **Actor Start**: Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event). ($0.05 per event)\n  - **result**: Single result in the default dataset. ($0.00555 per event)\n- **Stats:** 1,310 total users, 362 monthly users\n- **Developed by:** [automly](https://apify.com/automly) (community)\n- **Categories:** Research Markets And Competitors, Track Products And Prices, Ecommerce, Amazon, Reviews, Products, AI Tools\n- **Input fields:** keywords?: array, startUrls?: array, asins?: array, maxResultsPerKeyword?: integer, fullDetails?: boolean, marketplace?: string, concurrency?: integer, proxyConfiguration?: object\n\n## [Amazon Products Scraper](https://apify.com/curious_coder/amazon-scraper) (`curious_coder/amazon-scraper`)\n- **URL:** https://apify.com/curious_coder/amazon-scraper\n- **Description:** Scrape amazon products, category pages, search results, amazon best sellers, etc and extract complete details such as description, price, rating, bestsellers ranks, badges, photos etc.\n- **[Pricing](https://apify.com/curious_coder/amazon-scraper/pricing):** This Actor is paid per event:\n  - **Actor Start**: Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event). ($0.00005 per event)\n  - **result**: Single result in the default dataset. ($0.001 per event)\nPrices shown are for FREE tier. Higher tiers may offer lower prices \u2014 use fetch-actor-details to see the full pricing table.\n- **Stats:** 1,270 total users, 128 monthly users\n- **Rating:** 4.67 out of 5\n- **Developed by:** [curious_coder](https://apify.com/curious_coder) (community)\n- **Categories:** Research Markets And Competitors, Track Products And Prices, Ecommerce, Amazon, Products\n- **Input fields:** urls: array, deepScrape?: boolean, startPage?: integer, count?: integer, proxy?: object\n\nIf you need more detailed information about any of these Actors, including their input\nschemas and usage instructions, use the fetch-actor-details tool with the\nspecific Actor name.\nThis session can run only Actors already exposed as dedicated tools. Other Actors found\nhere are informational and cannot be run in this configuration. To use one, create your own Apify MCP server configuration at https://mcp.apify.com and add it to your agent."
+    }
+  ],
+  "structuredContent": {
+    "actors": [
+      {
+        "title": "Amazon Scraper - Product Prices, BSR & Sales Estimates",
+        "url": "https://apify.com/automly/amazon-products-scraper---fast-efficient-with-sales-data",
+        "id": "se6u51NCji6y89vBS",
+        "fullName": "automly/amazon-products-scraper---fast-efficient-with-sales-data",
+        "pictureUrl": "https://images.apifyusercontent.com/QfKnI2tvwtP9pY6RBkOKTED1bCXUVgVgZugaknY2Dyw/rs:fill:76:76/cb:1/aHR0cHM6Ly9hcGlmeS1pbWFnZS11cGxvYWRzLXByb2QuczMudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vb1RBM0doWno2WVc1NHp4MTQtYWN0b3Itc2U2dTUxTkNqaTZ5ODl2QlMtUm9ucno3VGZBai1BbWF6b25faWNvbi5wbmc.webp",
+        "developer": {
+          "username": "automly",
+          "isOfficialApify": false,
+          "url": "https://apify.com/automly"
+        },
+        "description": "Scrape Amazon products by keyword, product link or ASIN in 20 Amazon stores: price, Best Sellers Rank, monthly sales and revenue estimates, rating, review count, badges, variants and specs. No login. Export to CSV, JSON or Excel, schedule runs or use the API.",
+        "categories": [
+          "Research Markets And Competitors",
+          "Track Products And Prices",
+          "Ecommerce",
+          "Amazon",
+          "Reviews",
+          "Products",
+          "AI Tools"
+        ],
+        "pricing": {
+          "model": "PAY_PER_EVENT",
+          "events": [
+            {
+              "title": "Actor Start",
+              "description": "Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event).",
+              "priceUsd": 0.05
+            },
+            {
+              "title": "result",
+              "description": "Single result in the default dataset.",
+              "priceUsd": 0.00555
+            }
+          ]
+        },
+        "stats": {
+          "totalUsers": 1310,
+          "monthlyUsers": 362
+        },
+        "isDeprecated": false,
+        "inputFields": {
+          "type": "object",
+          "properties": {
+            "keywords": {
+              "type": "array"
+            },
+            "startUrls": {
+              "type": "array"
+            },
+            "asins": {
+              "type": "array"
+            },
+            "maxResultsPerKeyword": {
+              "type": "integer"
+            },
+            "fullDetails": {
+              "type": "boolean"
+            },
+            "marketplace": {
+              "type": "string"
+            },
+            "concurrency": {
+              "type": "integer"
+            },
+            "proxyConfiguration": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      {
+        "title": "Amazon Products Scraper",
+        "url": "https://apify.com/curious_coder/amazon-scraper",
+        "id": "uzzHpNqi9keWCc5o5",
+        "fullName": "curious_coder/amazon-scraper",
+        "pictureUrl": "https://images.apifyusercontent.com/V0Z7E_ntNqH-784nmdCXE7-8ebcQfDhdao5M7JI02Uw/rs:fill:76:76/cb:1/aHR0cHM6Ly9hcGlmeS1pbWFnZS11cGxvYWRzLXByb2QuczMuYW1hem9uYXdzLmNvbS91enpIcE5xaTlrZVdDYzVvNS9zUHFvMko5enI0YWtnaFB0RC1hbWF6b24ucG5n.webp",
+        "developer": {
+          "username": "curious_coder",
+          "isOfficialApify": false,
+          "url": "https://apify.com/curious_coder"
+        },
+        "description": "Scrape amazon products, category pages, search results, amazon best sellers, etc and extract complete details such as description, price, rating, bestsellers ranks, badges, photos etc.",
+        "categories": [
+          "Research Markets And Competitors",
+          "Track Products And Prices",
+          "Ecommerce",
+          "Amazon",
+          "Products"
+        ],
+        "pricing": {
+          "model": "PAY_PER_EVENT",
+          "events": [
+            {
+              "title": "Actor Start",
+              "description": "Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event).",
+              "priceUsd": 5e-05
+            },
+            {
+              "title": "result",
+              "description": "Single result in the default dataset.",
+              "priceUsd": 0.001
+            }
+          ],
+          "pricingNote": "Prices shown are for FREE tier. Higher tiers may offer lower prices \u2014 use fetch-actor-details to see the full pricing table."
+        },
+        "stats": {
+          "totalUsers": 1270,
+          "monthlyUsers": 128
+        },
+        "rating": {
+          "average": 4.67,
+          "count": 7
+        },
+        "isDeprecated": false,
+        "inputFields": {
+          "type": "object",
+          "properties": {
+            "urls": {
+              "type": "array"
+            },
+            "deepScrape": {
+              "type": "boolean"
+            },
+            "startPage": {
+              "type": "integer"
+            },
+            "count": {
+              "type": "integer"
+            },
+            "proxy": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "urls"
+          ]
+        }
+      }
+    ],
+    "query": "Amazon products",
+    "count": 2,
+    "userTier": "FREE",
+    "instructions": "If you need more detailed information about any of these Actors, including their input\nschemas and usage instructions, use the fetch-actor-details tool with the\nspecific Actor name.\nThis session can run only Actors already exposed as dedicated tools. Other Actors found\nhere are informational and cannot be run in this configuration. To use one, create your own Apify MCP server configuration at https://mcp.apify.com and add it to your agent."
+  },
+  "isError": false
+}

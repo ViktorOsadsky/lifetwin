@@ -1,0 +1,33 @@
+{
+  "actor": "apify/website-content-crawler",
+  "reviewedActorId": "aYG0l9s7dbB7j3gbS",
+  "input": {
+    "startUrls": [
+      {
+        "url": "https://www.python.org/downloads/"
+      },
+      {
+        "url": "https://nodejs.org/en/about/previous-releases"
+      }
+    ],
+    "proxyConfiguration": {
+      "useApifyProxy": false
+    },
+    "crawlerType": "cheerio",
+    "maxCrawlDepth": 0,
+    "maxCrawlPages": 2,
+    "useSitemaps": false,
+    "useLlmsTxt": false,
+    "maxConcurrency": 1,
+    "saveMarkdown": true
+  },
+  "options": {
+    "maxTotalChargeUsd": 0.05,
+    "maxItems": 2,
+    "timeout": 45,
+    "waitForFinish": 0,
+    "build": "1.2.3"
+  },
+  "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+  "planSha256": "bb8140f53282345752c2152e4028b59b668ad971d1cf52fa2e17938f8db847ba"
+}

@@ -1,0 +1,518 @@
+{
+  "mode": "OFFLINE_DOUBLES",
+  "paid_runs": 0,
+  "actors_executed": 0,
+  "cases": [
+    {
+      "case": "happy_pagination",
+      "helper_returned_envelope": true,
+      "error": null,
+      "application_errors": [],
+      "result": {
+        "provenance": {
+          "actor": "apify/website-content-crawler",
+          "buildId": "fixture-reviewed-build",
+          "runId": "fixture-run-private",
+          "datasetId": "fixture-dataset-private",
+          "status": "SUCCEEDED",
+          "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+          "fetchedAt": "2026-10-23T22:05:24.948250+00:00",
+          "usageTotalUsd": 0.012,
+          "limit": 2,
+          "sourceUrls": [
+            "https://nodejs.org/en/about/previous-releases",
+            "https://www.python.org/downloads/"
+          ]
+        },
+        "items": [
+          {
+            "url": "https://www.python.org/downloads/",
+            "markdown": "Synthetic Python support row, not scraped data.",
+            "capturedAt": "2026-10-23T18:00:00Z"
+          },
+          {
+            "url": "https://nodejs.org/en/about/previous-releases",
+            "markdown": "Synthetic Node support row, not scraped data.",
+            "capturedAt": "2026-10-23T18:00:00Z"
+          }
+        ]
+      },
+      "calls": [
+        {
+          "method": "POST",
+          "path": "acts/apify~website-content-crawler/runs",
+          "query": {
+            "maxTotalChargeUsd": 0.05,
+            "maxItems": 2,
+            "timeout": 45,
+            "waitForFinish": 0,
+            "build": "fixture-reviewed-build"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "datasets/fixture-dataset-private/items",
+          "query": {
+            "format": "json",
+            "clean": "true",
+            "offset": 0,
+            "limit": 1
+          }
+        },
+        {
+          "method": "GET",
+          "path": "datasets/fixture-dataset-private/items",
+          "query": {
+            "format": "json",
+            "clean": "true",
+            "offset": 1,
+            "limit": 1
+          }
+        }
+      ],
+      "ready_for_comparable_evidence": true
+    },
+    {
+      "case": "empty",
+      "helper_returned_envelope": true,
+      "error": null,
+      "application_errors": [
+        "incomplete_or_out_of_scope_source_coverage"
+      ],
+      "result": {
+        "provenance": {
+          "actor": "apify/website-content-crawler",
+          "buildId": "fixture-reviewed-build",
+          "runId": "fixture-run-private",
+          "datasetId": "fixture-dataset-private",
+          "status": "SUCCEEDED",
+          "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+          "fetchedAt": "2026-10-23T22:05:24.948377+00:00",
+          "usageTotalUsd": 0.012,
+          "limit": 2,
+          "sourceUrls": []
+        },
+        "items": []
+      },
+      "calls": [
+        {
+          "method": "POST",
+          "path": "acts/apify~website-content-crawler/runs",
+          "query": {
+            "maxTotalChargeUsd": 0.05,
+            "maxItems": 2,
+            "timeout": 45,
+            "waitForFinish": 0,
+            "build": "fixture-reviewed-build"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "datasets/fixture-dataset-private/items",
+          "query": {
+            "format": "json",
+            "clean": "true",
+            "offset": 0,
+            "limit": 1
+          }
+        }
+      ],
+      "ready_for_comparable_evidence": false
+    },
+    {
+      "case": "missing_second_source",
+      "helper_returned_envelope": true,
+      "error": null,
+      "application_errors": [
+        "incomplete_or_out_of_scope_source_coverage"
+      ],
+      "result": {
+        "provenance": {
+          "actor": "apify/website-content-crawler",
+          "buildId": "fixture-reviewed-build",
+          "runId": "fixture-run-private",
+          "datasetId": "fixture-dataset-private",
+          "status": "SUCCEEDED",
+          "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+          "fetchedAt": "2026-10-23T22:05:24.948408+00:00",
+          "usageTotalUsd": 0.012,
+          "limit": 2,
+          "sourceUrls": [
+            "https://www.python.org/downloads/"
+          ]
+        },
+        "items": [
+          {
+            "url": "https://www.python.org/downloads/",
+            "markdown": "Synthetic Python support row, not scraped data.",
+            "capturedAt": "2026-10-23T18:00:00Z"
+          }
+        ]
+      },
+      "calls": [
+        {
+          "method": "POST",
+          "path": "acts/apify~website-content-crawler/runs",
+          "query": {
+            "maxTotalChargeUsd": 0.05,
+            "maxItems": 2,
+            "timeout": 45,
+            "waitForFinish": 0,
+            "build": "fixture-reviewed-build"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "datasets/fixture-dataset-private/items",
+          "query": {
+            "format": "json",
+            "clean": "true",
+            "offset": 0,
+            "limit": 1
+          }
+        },
+        {
+          "method": "GET",
+          "path": "datasets/fixture-dataset-private/items",
+          "query": {
+            "format": "json",
+            "clean": "true",
+            "offset": 1,
+            "limit": 1
+          }
+        }
+      ],
+      "ready_for_comparable_evidence": false
+    },
+    {
+      "case": "wrong_source",
+      "helper_returned_envelope": true,
+      "error": null,
+      "application_errors": [
+        "incomplete_or_out_of_scope_source_coverage"
+      ],
+      "result": {
+        "provenance": {
+          "actor": "apify/website-content-crawler",
+          "buildId": "fixture-reviewed-build",
+          "runId": "fixture-run-private",
+          "datasetId": "fixture-dataset-private",
+          "status": "SUCCEEDED",
+          "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+          "fetchedAt": "2026-10-23T22:05:24.948436+00:00",
+          "usageTotalUsd": 0.012,
+          "limit": 2,
+          "sourceUrls": [
+            "https://unrequested.example.invalid/prompt",
+            "https://www.python.org/downloads/"
+          ]
+        },
+        "items": [
+          {
+            "url": "https://www.python.org/downloads/",
+            "markdown": "Synthetic Python support row, not scraped data.",
+            "capturedAt": "2026-10-23T18:00:00Z"
+          },
+          {
+            "url": "https://unrequested.example.invalid/prompt",
+            "markdown": "Synthetic Node support row, not scraped data.",
+            "capturedAt": "2026-10-23T18:00:00Z"
+          }
+        ]
+      },
+      "calls": [
+        {
+          "method": "POST",
+          "path": "acts/apify~website-content-crawler/runs",
+          "query": {
+            "maxTotalChargeUsd": 0.05,
+            "maxItems": 2,
+            "timeout": 45,
+            "waitForFinish": 0,
+            "build": "fixture-reviewed-build"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "datasets/fixture-dataset-private/items",
+          "query": {
+            "format": "json",
+            "clean": "true",
+            "offset": 0,
+            "limit": 1
+          }
+        },
+        {
+          "method": "GET",
+          "path": "datasets/fixture-dataset-private/items",
+          "query": {
+            "format": "json",
+            "clean": "true",
+            "offset": 1,
+            "limit": 1
+          }
+        }
+      ],
+      "ready_for_comparable_evidence": false
+    },
+    {
+      "case": "wrong_build",
+      "helper_returned_envelope": true,
+      "error": null,
+      "application_errors": [
+        "returned_build_differs_from_reviewed_build"
+      ],
+      "result": {
+        "provenance": {
+          "actor": "apify/website-content-crawler",
+          "buildId": "fixture-unreviewed-build",
+          "runId": "fixture-run-private",
+          "datasetId": "fixture-dataset-private",
+          "status": "SUCCEEDED",
+          "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+          "fetchedAt": "2026-10-23T22:05:24.948464+00:00",
+          "usageTotalUsd": 0.012,
+          "limit": 2,
+          "sourceUrls": [
+            "https://nodejs.org/en/about/previous-releases",
+            "https://www.python.org/downloads/"
+          ]
+        },
+        "items": [
+          {
+            "url": "https://www.python.org/downloads/",
+            "markdown": "Synthetic Python support row, not scraped data.",
+            "capturedAt": "2026-10-23T18:00:00Z"
+          },
+          {
+            "url": "https://nodejs.org/en/about/previous-releases",
+            "markdown": "Synthetic Node support row, not scraped data.",
+            "capturedAt": "2026-10-23T18:00:00Z"
+          }
+        ]
+      },
+      "calls": [
+        {
+          "method": "POST",
+          "path": "acts/apify~website-content-crawler/runs",
+          "query": {
+            "maxTotalChargeUsd": 0.05,
+            "maxItems": 2,
+            "timeout": 45,
+            "waitForFinish": 0,
+            "build": "fixture-reviewed-build"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "datasets/fixture-dataset-private/items",
+          "query": {
+            "format": "json",
+            "clean": "true",
+            "offset": 0,
+            "limit": 1
+          }
+        },
+        {
+          "method": "GET",
+          "path": "datasets/fixture-dataset-private/items",
+          "query": {
+            "format": "json",
+            "clean": "true",
+            "offset": 1,
+            "limit": 1
+          }
+        }
+      ],
+      "ready_for_comparable_evidence": false
+    },
+    {
+      "case": "cost_unknown",
+      "helper_returned_envelope": true,
+      "error": null,
+      "application_errors": [
+        "actual_cost_unknown_do_not_claim_measured_cost"
+      ],
+      "result": {
+        "provenance": {
+          "actor": "apify/website-content-crawler",
+          "buildId": "fixture-reviewed-build",
+          "runId": "fixture-run-private",
+          "datasetId": "fixture-dataset-private",
+          "status": "SUCCEEDED",
+          "inputSha256": "e5d0874b5bb96406c1547aabd459f4a5aa0cc13f18f264f470b4fdaa62db1b7b",
+          "fetchedAt": "2026-10-23T22:05:24.948491+00:00",
+          "usageTotalUsd": null,
+          "limit": 2,
+          "sourceUrls": [
+            "https://nodejs.org/en/about/previous-releases",
+            "https://www.python.org/downloads/"
+          ]
+        },
+        "items": [
+          {
+            "url": "https://www.python.org/downloads/",
+            "markdown": "Synthetic Python support row, not scraped data.",
+            "capturedAt": "2026-10-23T18:00:00Z"
+          },
+          {
+            "url": "https://nodejs.org/en/about/previous-releases",
+            "markdown": "Synthetic Node support row, not scraped data.",
+            "capturedAt": "2026-10-23T18:00:00Z"
+          }
+        ]
+      },
+      "calls": [
+        {
+          "method": "POST",
+          "path": "acts/apify~website-content-crawler/runs",
+          "query": {
+            "maxTotalChargeUsd": 0.05,
+            "maxItems": 2,
+            "timeout": 45,
+            "waitForFinish": 0,
+            "build": "fixture-reviewed-build"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "datasets/fixture-dataset-private/items",
+          "query": {
+            "format": "json",
+            "clean": "true",
+            "offset": 0,
+            "limit": 1
+          }
+        },
+        {
+          "method": "GET",
+          "path": "datasets/fixture-dataset-private/items",
+          "query": {
+            "format": "json",
+            "clean": "true",
+            "offset": 1,
+            "limit": 1
+          }
+        }
+      ],
+      "ready_for_comparable_evidence": false
+    },
+    {
+      "case": "failed_partial",
+      "helper_returned_envelope": false,
+      "error": {
+        "class": "RuntimeError",
+        "message": "Actor run fixture-run-private ended FAILED; inspect logs; no automatic rerun"
+      },
+      "application_errors": [],
+      "result": null,
+      "calls": [
+        {
+          "method": "POST",
+          "path": "acts/apify~website-content-crawler/runs",
+          "query": {
+            "maxTotalChargeUsd": 0.05,
+            "maxItems": 2,
+            "timeout": 45,
+            "waitForFinish": 0,
+            "build": "fixture-reviewed-build"
+          }
+        }
+      ],
+      "ready_for_comparable_evidence": false
+    },
+    {
+      "case": "never_terminal",
+      "helper_returned_envelope": false,
+      "error": {
+        "class": "TimeoutError",
+        "message": "Polling exhausted; abort requested for run fixture-run-private; verify terminal state before retry"
+      },
+      "application_errors": [],
+      "result": null,
+      "calls": [
+        {
+          "method": "POST",
+          "path": "acts/apify~website-content-crawler/runs",
+          "query": {
+            "maxTotalChargeUsd": 0.05,
+            "maxItems": 2,
+            "timeout": 45,
+            "waitForFinish": 0,
+            "build": "fixture-reviewed-build"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "actor-runs/fixture-run-private",
+          "query": null
+        },
+        {
+          "method": "GET",
+          "path": "actor-runs/fixture-run-private",
+          "query": null
+        },
+        {
+          "method": "POST",
+          "path": "actor-runs/fixture-run-private/abort",
+          "query": null
+        }
+      ],
+      "ready_for_comparable_evidence": false
+    },
+    {
+      "case": "post_timeout",
+      "helper_returned_envelope": false,
+      "error": {
+        "class": "TimeoutError",
+        "message": "Synthetic transport timeout after possible start"
+      },
+      "application_errors": [],
+      "result": null,
+      "calls": [
+        {
+          "method": "POST",
+          "path": "acts/apify~website-content-crawler/runs",
+          "query": {
+            "maxTotalChargeUsd": 0.05,
+            "maxItems": 2,
+            "timeout": 45,
+            "waitForFinish": 0,
+            "build": "fixture-reviewed-build"
+          }
+        }
+      ],
+      "ready_for_comparable_evidence": false
+    },
+    {
+      "case": "mutated_plan",
+      "helper_returned_envelope": false,
+      "error": {
+        "class": "ValueError",
+        "message": "Run plan changed since review; regenerate and review it before execution"
+      },
+      "application_errors": [],
+      "result": null,
+      "calls": [],
+      "ready_for_comparable_evidence": false
+    }
+  ],
+  "schema_validation": "Field names, required names and enum checked against live current crawler schema; not a complete JSON Schema validator.",
+  "live_discovery_evidence": [
+    "apify-live-tools.json",
+    "apify-live-search.json",
+    "apify-live-crawler.json",
+    "apify-live-rag.json"
+  ],
+  "decision": "Select official Website Content Crawler provisionally for two exact source URLs in a single bounded job. Do not execute: no spending authorization, live build pin or current platform compute/proxy estimate.",
+  "cost": "Crawler Actor fee FREE does not make collection free. Platform resource cost remains unknown; $0.05 is an unexecuted cap, not a quote or incurred cost. RAG alternative charges page/search/start events and accepts one URL/query, so two independent URL calls add starts.",
+  "permissions": "Actors visible to MCP discovery are candidates. No user account permission review or authenticated execution has occurred.",
+  "evidence_contract": {
+    "sourceUrl": "canonical exact requested URL",
+    "capturedAt": "Actor crawl time if present, unknown otherwise",
+    "fetchedAt": "retrieval time, distinct from crawl time",
+    "fact": "version branch/support status",
+    "uncertainty": "source missing/stale/unsupported extraction",
+    "decision": "prevent choosing unsupported developer runtime"
+  }
+}

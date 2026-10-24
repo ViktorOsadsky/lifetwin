@@ -1,0 +1,177 @@
+﻿Visa x CAL Hacks 13.0 Hacker Starter Pack
+Welcome to the Visa Challenge Track at CAL Hacks 13.0!
+This starter pack is designed to help you understand the challenge, identify opportunities for innovation, and accelerate development throughout the weekend.
+________________
+
+
+Reimagine Shopping - Use Generative AI to craft smarter and more effortless commerce experiences.
+Shopping is evolving from searching and browsing to conversing and collaborating with AI. Consumers increasingly expect intelligent experiences that help them discover products, compare options, personalize recommendations, manage budgets, and complete purchases seamlessly.
+Your challenge is to design and build a commerce experience powered by Generative AI that makes shopping more intuitive, personalized, and frictionless while enabling secure and trusted customer experiences.
+________________
+
+
+Challenge Areas
+Your solution can focus on any part of the shopping journey.
+1. Discovery
+How can AI help customers find exactly what they're looking for?
+Example Ideas
+* Conversational product search
+* Voice-enabled shopping assistants
+* Personalized product discovery
+* Social shopping recommendations
+* AI-powered gift finders
+2. Decision-Making
+How can AI help consumers make more informed purchasing decisions?
+Example Ideas
+* Product comparison copilots
+* AI buying guides
+* Sustainability recommendation engines
+* Budget-conscious shopping assistants
+* Smart review summarization
+3. Personalization
+How can every shopper receive a uniquely tailored experience?
+Example Ideas
+* Personalized storefronts
+* Dynamic recommendations
+* Shopping companions
+* Customized bundles
+* Lifestyle-based product suggestions
+4. Checkout
+How can AI reduce friction during checkout?
+Example Ideas
+* Smart cart optimization
+* Subscription management assistants
+* Checkout copilots
+* Automated savings recommendations
+* Purchase planning tools
+5. Payments
+How can shopping experiences become more secure and intelligent?
+Example Ideas
+* Spending assistants
+* Budget planning copilots
+* Financial wellness tools
+* Fraud awareness experiences
+* Smart payment preference recommendations
+6. Loyalty & Rewards
+How can rewards programs become more engaging?
+Example Ideas
+* Personalized rewards optimization
+* Gamified shopping experiences
+* AI loyalty advisors
+* Reward redemption assistants
+* Merchant engagement platforms
+7. Post-Purchase Experience
+How can AI improve the customer experience after a purchase?
+Example Ideas
+* Order tracking assistants
+* Customer support copilots
+* Return management tools
+* Loyalty engagement experiences
+* Automated product assistance
+
+
+Important Challenge Guidance
+AI Should Be Meaningful
+Adding a chatbot alone is not enough.
+The best projects will demonstrate how AI fundamentally improves the shopping experience or solves a meaningful customer or merchant challenge.
+Ask yourself:
+* Why does this need AI?
+* What becomes possible because of AI?
+* How is the customer experience meaningfully better?
+
+
+Consider Trust & Responsibility
+Visa operates in one of the world's most trusted payment ecosystems.
+Strong projects should consider:
+* Privacy
+* Transparency
+* Security
+* Responsible AI design
+* Data protection
+* User consent
+Suggested Technology Stack
+Front-End Development
+* React
+* Next.js
+* TypeScript
+* TailwindCSS
+* Flutter
+* Angular
+AI & Machine Learning
+* Azure OpenAI
+* OpenAI APIs
+* Anthropic Claude
+* LangChain
+* Semantic Kernel
+* Retrieval-Augmented Generation (RAG)
+* Vector Search
+Backend Services
+* Node.js
+* Python
+* FastAPI
+* Express
+* Azure Functions
+* Serverless Architectures
+Data & Storage
+* PostgreSQL
+* Azure SQL
+* Cosmos DB
+* MongoDB
+* Vector Databases
+Optional External APIs
+Visa will not be providing proprietary Visa APIs for this challenge.
+Teams are welcome to leverage publicly available APIs, datasets, and platforms such as:
+* Product catalog APIs
+* Public retail datasets
+* E-commerce APIs
+* Geolocation APIs
+* Open financial education datasets
+* Price comparison APIs
+* Sustainability datasets
+* Open-source commerce tools
+Judging Criteria
+Criteria
+	Weight
+	Innovation
+	25%
+	Technical Execution
+	20%
+	User Experience
+	20%
+	Commerce Impact
+	20%
+	Trust & Responsibility
+	15%
+	________________
+
+
+Innovation (25%)
+* Is this a novel idea?
+* Does it solve a meaningful problem?
+* Is the solution differentiated?
+Technical Execution (20%)
+* Does the application work?
+* Is the AI implementation meaningful?
+* Is the architecture thoughtfully designed?
+User Experience (20%)
+* Is the experience intuitive?
+* Is the application easy to use?
+* Would consumers actually adopt it?
+Commerce Impact (20%)
+* Does the solution create measurable value?
+* Does it improve customer experiences?
+* Does it help merchants achieve better outcomes?
+Trust & Responsibility (15%)
+* Is customer data protected?
+* Are recommendations explainable?
+* Does the solution address responsible AI concerns?
+________________
+
+
+By Sunday morning, make sure you can clearly demonstrate:
+* What challenge are you solving?
+* Who benefits from your solution?
+* How does AI improve the experience?
+* How does the solution work?
+* Why does this matter?
+* Where could this go next?

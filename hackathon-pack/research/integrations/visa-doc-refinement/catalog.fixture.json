@@ -1,0 +1,13 @@
+{
+  "label": "SYNTHETIC CATALOG; no live product or retailer evidence",
+  "observedAt": "2026-10-23T20:00:00Z",
+  "quoteExpiresAt": "2026-10-23T20:15:00Z",
+  "request": {"currency": "USD", "budgetMinor": 8000, "deliverBy": "2026-10-26", "digitalUsbCAudioRequired": true, "microphoneRequired": true},
+  "products": [
+    {"id": "harbor-c", "name": "Harbor USB-C Wired", "sourceUrl": "https://catalog.example/harbor-c?variant=usb-c-digital", "digitalUsbCAudio": true, "microphone": true, "inStock": true, "deliveryDate": "2026-10-26", "itemMinor": 5900, "taxMinor": 501, "shippingMinor": 500},
+    {"id": "metro-anc", "name": "Metro ANC Wireless", "sourceUrl": "https://catalog.example/metro-anc?variant=wireless", "digitalUsbCAudio": false, "microphone": true, "inStock": true, "deliveryDate": "2026-10-25", "itemMinor": 6900, "taxMinor": 587, "shippingMinor": 500},
+    {"id": "studio-c", "name": "Studio C", "sourceUrl": "https://catalog.example/studio-c?variant=usb-c", "digitalUsbCAudio": true, "microphone": true, "inStock": true, "deliveryDate": null, "itemMinor": 6500, "taxMinor": 553, "shippingMinor": 500},
+    {"id": "fast-c", "name": "Fast C", "sourceUrl": "https://catalog.example/fast-c?variant=usb-c", "digitalUsbCAudio": true, "microphone": true, "inStock": true, "deliveryDate": "2026-10-25", "itemMinor": 7400, "taxMinor": 629, "shippingMinor": 500},
+    {"id": "commute-c", "name": "Commute C", "sourceUrl": "https://catalog.example/commute-c?variant=usb-c", "digitalUsbCAudio": true, "microphone": true, "inStock": false, "deliveryDate": "2026-10-25", "itemMinor": 6000, "taxMinor": 510, "shippingMinor": 0}
+  ]
+}

@@ -1,0 +1,17 @@
+test_balanced_wrong_account_requires_semantic_review (test_finance.FinanceChecks) ... ok
+test_cross_currency_net_zero_is_rejected (test_finance.FinanceChecks) ... ok
+test_cross_entity_net_zero_is_rejected (test_finance.FinanceChecks) ... ok
+test_evidence_and_replay (test_finance.FinanceChecks) ... ok
+test_float_bool_and_negative_rejected (test_finance.FinanceChecks) ... ok
+test_mcp_pagination_not_silently_complete (test_finance.FinanceChecks) ... ok
+test_openapi_security_and_reference_preserved (test_finance.FinanceChecks) ... ok
+test_valid_but_no_claim_of_accounting_correctness (test_finance.FinanceChecks) ... ok
+test_empty_context_fails_closed (test_workflow.WorkflowChecks) ... ok
+test_history_of_another_snapshot_does_not_grant_current_approval (test_workflow.WorkflowChecks) ... ok
+test_missing_or_malformed_history_fails_closed (test_workflow.WorkflowChecks) ... ok
+test_planted_scenarios (test_workflow.WorkflowChecks) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.001s
+
+OK

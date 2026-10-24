@@ -1,0 +1,16 @@
+{
+  "product": "BagFit Campus: an evidence-backed laptop decision assistant",
+  "request": "I have at most $650 delivered, not before tax. The padded pocket inside my existing bag is 330 by 235 by 23 mm. I need ExamLock for exams and CADLab for class; please don't tell me a browser substitute is the same thing.",
+  "requirements": {"max_delivered_minor":65000,"currency":"USD","currency_exponent":2,"bag_internal_mm":[330,235,23],"minimum_clearance_mm":0,"required_apps":["ExamLock","CADLab"],"checked_at":"2026-10-23T19:00:00Z","max_quote_age_seconds":900},
+  "apps": {"ExamLock":{"os":"Windows 11","cpu_arch":"x86_64","virtualization_allowed":false},"CADLab":{"os":"Windows 11","cpu_arch":"x86_64","ram_gb_min":16}},
+  "catalog": [
+    {"id":"A","variant":"13-16-x86","source":"fixture://merchant/A/13-16-x86","retrieved_at":"2026-10-23T18:59:00Z","dimensions_mm":[321,214,18],"price_minor":59000,"shipping_minor":1200,"tax_minor":4816,"os":"Windows 11","cpu_arch":"x86_64","ram_gb":16,"available":true},
+    {"id":"B","variant":"13-16-x86","source":"fixture://merchant/B/13-16-x86","retrieved_at":"2026-10-23T18:59:00Z","dimensions_mm":[323,218,19],"price_minor":58000,"shipping_minor":1000,"tax_minor":4720,"os":"Windows 11","cpu_arch":"x86_64","ram_gb":16,"available":true},
+    {"id":"C","variant":"chrome-16","source":"fixture://merchant/C/chrome-16","retrieved_at":"2026-10-23T18:59:00Z","dimensions_mm":[310,210,17],"price_minor":45000,"shipping_minor":0,"tax_minor":3600,"os":"ChromeOS","cpu_arch":"x86_64","ram_gb":16,"available":true},
+    {"id":"D","variant":"arm-16","source":"fixture://merchant/D/arm-16","retrieved_at":"2026-10-23T18:59:00Z","dimensions_mm":[320,220,18],"price_minor":55000,"shipping_minor":0,"tax_minor":4400,"os":"Windows 11","cpu_arch":"arm64","ram_gb":16,"available":true},
+    {"id":"E","variant":"16-16-x86","source":"fixture://merchant/E/16-16-x86","retrieved_at":"2026-10-23T18:59:00Z","dimensions_mm":[356,245,20],"price_minor":60000,"shipping_minor":0,"tax_minor":4800,"os":"Windows 11","cpu_arch":"x86_64","ram_gb":16,"available":true},
+    {"id":"F","variant":"13-16-x86","source":"fixture://merchant/F/13-16-x86","retrieved_at":"2026-10-23T18:59:00Z","dimensions_mm":[320,215,18],"price_minor":59500,"shipping_minor":0,"tax_minor":null,"os":"Windows 11","cpu_arch":"x86_64","ram_gb":16,"available":true},
+    {"id":"G","variant":"marketplace-unspecified","source":"fixture://merchant/G/marketplace-unspecified","retrieved_at":"2026-10-23T18:59:00Z","dimensions_mm":null,"price_minor":50000,"shipping_minor":0,"tax_minor":4000,"os":"Windows 11","cpu_arch":null,"ram_gb":16,"available":true}
+  ],
+  "provenance_notice":"Every merchant, variant, app requirement and quote is synthetic. No link is a real retailer offer. Tax is an explicit fixture quote, not a computed jurisdictional claim. App data stands in for the school's authoritative app compatibility matrix; production must verify current exact versions and license requirements. No user address or card data is needed."
+}

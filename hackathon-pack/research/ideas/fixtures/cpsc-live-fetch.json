@@ -1,0 +1,108 @@
+{
+  "url": "https://www.saferproducts.gov/RestWebServices/Recall?format=json&RecallTitle=Cosori",
+  "retrieved_at": "2026-10-23T11:35:46.124856+00:00",
+  "records": [
+    {
+      "RecallID": 9537,
+      "RecallNumber": "23130",
+      "RecallDate": "2023-02-23T00:00:00",
+      "Description": "This recall involves Cosori air fryers with model numbers CP158-AF, CP158-AF-R19, CP158-AF-RXW, CP158-AF-RXR, CAF-P581-BUSR, CAF-P581-AUSR, CAF-P581-RUSR, CP137-AF, CP137-AF-RXB, CP137-AF-RXR, CP137-AF-RXW, CS158-AF, CS158-AF-RXB, CS158-AF-R19, CAF-P581S-BUSR, CAF-P581S-RUSR, CAF-P581S-AUSR, CO137-AF, CO158-AF, CO158-AF-RXB, CP258-AF. The brand name Cosori is on the front of each unit. The model number is printed on the bottom label of each unit and on the accompanying user manual. The units are size 3.7 and 5.8 qt. and were sold in black, gray, white, blue or red colors.",
+      "URL": "https://www.cpsc.gov/Recalls/2023/Two-Million-COSORI-Air-Fryers-Recalled-by-Atekcity-Due-to-Fire-and-Burn-Hazards",
+      "Title": "Two Million COSORI\u00ae Air Fryers Recalled by Atekcity Due to Fire and Burn Hazards",
+      "ConsumerContact": "Cosori toll-free at 888-216-5974 from 8 a.m. to 5 p.m. ET Monday through Friday, email at CosoriRecall@Sedgwick.com or online at www.recall.cosori.com or www.cosori.com and click on the \"Important Voluntary Safety Recall. Learn More\" banner at the bottom of the page for more information.",
+      "LastPublishDate": "2023-02-23T00:00:00",
+      "Products": [
+        {
+          "Name": "Cosori Air Fryers",
+          "Description": "",
+          "Model": "",
+          "Type": "",
+          "CategoryID": "",
+          "NumberOfUnits": "About 2 million (In addition, about 250,000 were sold in Canada and about 21,000 were sold in Mexico)"
+        }
+      ],
+      "Inconjunctions": [
+        {
+          "URL": "https://recalls-rappels.canada.ca/en/alert-recall/certain-models-cosori-branded-air-fryers-recalled-due-potential-fire-hazard"
+        }
+      ],
+      "Images": [
+        {
+          "URL": "https://www.cpsc.gov/s3fs-public/RecalledCosoriairfryerModelsCP158AFCS158AFCAFP581AUSRandCAFP581SAUSRLightGray_0.JPG",
+          "Caption": "Recalled Cosori air fryer Models CP158-AF, CS158-AF, CAF-P581-AUSR and CAF-P581S-AUSR (Light Gray)"
+        },
+        {
+          "URL": "https://www.cpsc.gov/s3fs-public/RecalledCosoriairfryerModelsCP158AFCS158AFCAFP581AUSRandCAFP581SAUSRBLUE_0.jpg",
+          "Caption": "Recalled Cosori air fryer Models CP158-AF, CS158-AF, CAF-P581-BUSR and CAF-P581S-BUSR (Blue)"
+        },
+        {
+          "URL": "https://www.cpsc.gov/s3fs-public/RecalledCosoriairfryerModelsCP158AFCS158AFCAFP581AUSRandCAFP581SAUSRWINERED_0.JPG",
+          "Caption": "Recalled Cosori air fryer Models CP158-AF, CS158-AF, CAF-P581-RUSR, and CAF-P581S-RUSR (Wine Red)"
+        },
+        {
+          "URL": "https://www.cpsc.gov/s3fs-public/RecalledCosoriairfryerModelCO137AFCO158AFandCO158AFRXBBlack_0.JPG",
+          "Caption": "Recalled Cosori air fryer Model CO137-AF, CO158-AF and CO158-AF-RXB (Black)"
+        },
+        {
+          "URL": "https://www.cpsc.gov/s3fs-public/RecalledCosoriairfryerModelCP137AFCP137AFRXBCP158AFCP158AFR19CS158AFCS158AFR19andCS158AFRXBBlack_0.JPG",
+          "Caption": "Recalled Cosori air fryer Model CP137-AF, CP137-AF-RXB, CP158-AF, CP158-AF-R19, CS158-AF, CS158-AF-R19 and CS158-AF-RXB (Black)"
+        },
+        {
+          "URL": "https://www.cpsc.gov/s3fs-public/RecalledCosoriairfryerModelCP137AFCP137AFRXRCP158AFandCP158AFRXRRed_0.JPG",
+          "Caption": "Recalled Cosori air fryer Model CP137-AF, CP137-AF-RXR, CP158-AF and CP158-AF-RXR (Red)"
+        },
+        {
+          "URL": "https://www.cpsc.gov/s3fs-public/RecalledCosoriairfryerModelCP137AFCP137AFRXRCP158AFandCP158AFRXWWhite_0.JPG",
+          "Caption": "Recalled Cosori air fryer Models CP137-AF, CP137-AF-RXW, CP158-AF, and CP158-AF-RXW (White)"
+        },
+        {
+          "URL": "https://www.cpsc.gov/s3fs-public/RecalledCosoriairfryerModelCP258AFSilverBlack_0.JPG",
+          "Caption": "Recalled Cosori air fryer Model CP258-AF (Silver Black)"
+        }
+      ],
+      "Injuries": [
+        {
+          "Name": "The firm has received 205 reports of the air fryers catching fire, burning, melting, overheating and smoking. These include 10 reports of minor, superficial burn injuries and 23 reports of minor property damage."
+        }
+      ],
+      "Manufacturers": [],
+      "Retailers": [
+        {
+          "Name": "Best Buy, Target and The Home Depot stores nationwide and online at Amazon.com, Adorama.com, Bedbathandbeyond.com, Cosori.com, eBay.com, Homegoods.com, Kohls.com, Lowes.com, Macys.com, QVC.com, Staples.com, Vesync.com, Walmart.com, Wayfair.com, Wellbots.com and Woot.com from June 2018 through December 2022 for between $70 and $130.",
+          "CompanyID": ""
+        }
+      ],
+      "Importers": [
+        {
+          "Name": "Atekcity Corporation, of Anaheim, Calif.",
+          "CompanyID": ""
+        }
+      ],
+      "Distributors": [],
+      "SoldAtLabel": null,
+      "ManufacturerCountries": [
+        {
+          "Country": "China"
+        }
+      ],
+      "ProductUPCs": [],
+      "Hazards": [
+        {
+          "Name": "A wire connection in the air fryers can overheat, posing fire and burn hazards.",
+          "HazardType": "",
+          "HazardTypeID": ""
+        }
+      ],
+      "Remedies": [
+        {
+          "Name": "Consumers should immediately stop using the recalled air fryers and contact Cosori to receive their choice of a free replacement air fryer or another Cosori product by registering at recall.cosori.com. During registration consumers must provide their contact information and submit photos of the recalled unit with the cord cut off. No receipt is needed to receive a replacement."
+        }
+      ],
+      "RemedyOptions": [
+        {
+          "Option": "Replace"
+        }
+      ]
+    }
+  ]
+}

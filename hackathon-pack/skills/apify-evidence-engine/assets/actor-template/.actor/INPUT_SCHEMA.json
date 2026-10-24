@@ -1,0 +1,25 @@
+{
+  "title": "Product evidence snapshots",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "snapshots": {
+      "title": "Captured HTML snapshots",
+      "description": "One to 20 objects with sourceUrl, observedAt, and html. Caller supplies capture time; this Actor does not fetch pages.",
+      "type": "array",
+      "editor": "json",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["sourceUrl", "observedAt", "html"],
+        "properties": {
+          "sourceUrl": {"type": "string"},
+          "observedAt": {"type": "string"},
+          "html": {"type": "string", "maxLength": 2000000}
+        }
+      }
+    }
+  },
+  "required": ["snapshots"]
+}

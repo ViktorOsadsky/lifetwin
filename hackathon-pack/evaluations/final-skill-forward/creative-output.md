@@ -1,0 +1,35 @@
+# Held-out creative output — ORBIT modular camera
+
+Brief: “Create a premium mobile-first visual concept for a modular camera, with a beautiful scroll reveal into color/material inspection. I want striking visuals and intuitive lightweight interactions; a backend, checkout and actual camera processing aren't needed.”
+
+ORBIT is a fictional design concept. Its story is the circular lens mount meeting a replaceable rectangular shell. One warm-white sweep catches the machined collar; a thin copper contact strip appears as the shell opens, then the same camera settles above three finish swatches. Keep the setting light slate, with near-black optical glass and one ochre selection mark. No prestige, performance or sustainability claims. The useful action is inspecting a finish on the object.
+
+Compare two compositions: a floating exploded camera with detached parts would explain modularity but crowd a phone and spend too much travel on reassembly. Choose a close, restrained three-quarter object that opens a single side shell by 12 mm, reveals the seam, then closes into inspection. Its silhouette stays readable throughout. This relationship is specific to a modular camera rather than a decorative orbit metaphor.
+
+Use Avenir Next Medium for the compact ORBIT masthead and finish names; Avenir Next Regular for the single two-line title, “A camera. / Your composition.” Use 34/38 px at 390 px width, -0.7 px tracking, and 16/23 px for operational labels. Keep the lens and text in separate vertical bands. A 24 px page margin and rounded-square controls echo the shell; the lens is the only dominant circle.
+
+The production medium is actual Three.js/R3F because shell separation, lens depth, grazing light and roughness distinguish the finishes. Author one bevelled body mesh, one removable shell, concentric optical collar geometry and recessed contacts; tiny screws and the mount seam need real geometry at the inspection crop. Three material presets: Silver / bead-blasted aluminium; Ink / matte ceramic coating; Clay / satin polymer. These are fictional concept materials, not claims about a manufactured product. Two large area-light equivalents and a neutral studio environment; no particles or environment fly-through. The included static vector board establishes composition and continuity only: its simplified gradients cannot validate production material realism.
+
+## Three-frame mobile motion score
+
+Design viewport: 390 × 844 including safe-area allowance. [Static storyboard](storyboard.html) contains the opening, intermediate and settled compositions. The annotations below are specification, not product UI.
+
+| Frame | User intent → interval → change → endpoint | Interruption, mobile and reduced motion |
+|---|---|---|
+| 1 — silhouette, p=0 | Identify the camera. Initial view is fully resolved: compact masthead, two-line title, 308 px camera silhouette, visible “Inspect finishes” button. No entrance delay. | Button jumps directly to inspection and takes focus to the finish group without spatial travel under reduced motion. No automatic camera spin. |
+| 2 — join, p=.5 | See how the shell meets the mount. Native scroll over **0.65 viewport** (about 549 px) drives camera yaw 18°→5°, lens scale 1→1.12 and shell offset 0→12→0 mm; maximum separation at p=.45. Title exits upward before the enlarged camera reaches its former band. At p=.5 the shell gap remains legible and the next finish group is already entering. | Scrub follows progress directly, without added catch-up. Reverse retraces the same transforms; fast scrolling resolves to the destination without a queued animation. Mobile keeps the entire lens, body seam and copper strip inside 24 px margins. No pin beyond this finite reveal. |
+| 3 — finish, p=1 | Compare materials. The closed body settles at 290 px wide above “Silver” and “Bead-blasted aluminium.” Three named 48 px radio targets sit below, followed by “Front” / “Detail” view buttons. Selection commits immediately; a 160 ms material transition starts from the currently visible value and yields to the next tap. A “Detail” tap moves to a fixed 1.45× seam/collar crop over 220 ms. | The preview and controls share a 560 px inspection block; a short sticky preview is permitted only while that block is onscreen. No drag required. Returning to the reveal keeps the chosen finish. Reduced motion switches materials and views instantly, displays the assembled camera plus a small seam detail, and preserves working controls. |
+
+On a shorter phone, move the title closer to the masthead and reduce preview height before reducing the camera below a useful inspection size; the controls must remain in the same viewport as the material result. At 320 px, use 20 px margins and 260 px object width. Landscape flows as preview beside controls. Do not inherit desktop travel distance. Desktop may widen the preview, but uses the same finite score and state.
+
+## Implementation boundary and verification
+
+Deliver one visual scene with finish/view state, semantic radios and buttons, keyboard focus, a loading still, and a complete no-WebGL fallback using three authored product renders plus the same controls. No login, cart, order, camera feed, image processing, configuration export or invented live integration. Keep controls operable before WebGL finishes loading. On context loss, preserve finish/view and show the corresponding still.
+
+One authoritative `{finish, view}` state drives material, selected radio and visible name. Hover changes only the target surface; focus has a dark 2 px ring; press has a small inset treatment. No ambient captions, tooltip-only labels or instructional scroll text. A load error names the recovery action: “Preview unavailable. Retry”; stills and finish selection remain usable.
+
+Prototype one body and three materials before extending anything. Use a capped device pixel ratio as a starting budget, demand rendering after settling, and one owned motion timeline cleaned up on breakpoint/preference change. Verify exact current renderer/motion APIs before coding. No frame-rate or load-time claim is made here.
+
+Review production screenshots at p=0,.25,.5,.75,1; play reverse and fast skip; repeatedly tap Ink→Clay→Silver during a transition; turn reduced motion on at p=.5; force no-WebGL and context loss; verify viewport/control co-visibility at 320 px and with large text. This test produced a static composition board, not those runtime observations.
+
+Reference relationship: the [ION/X1 live opening](https://exp-ion.lusion.co/) was inspected as a desktop still on 2026-10-23. Its subdued object, sparse perimeter controls and large product type establish a deliberate hierarchy, but the opening nearly loses the black shell against black. ORBIT instead uses a pale field and a clearly separated shell edge. No mobile or motion behavior was inferred from that still. [Infinite Passerella's case study](https://lusion.co/projects/infinite_passerella/) documents authored clothing texture and models; the transferable interpretation is that material must earn the close view, not merely change hue.

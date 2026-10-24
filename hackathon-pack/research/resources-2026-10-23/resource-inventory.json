@@ -1,0 +1,193 @@
+{
+  "review_date": "2026-10-23",
+  "resource_page": "https://hive.hackberkeley.org/resources",
+  "visible_cards": 19,
+  "unique_packs": 18,
+  "duplicate": "Canva, same document with different query parameters",
+  "records": [
+    {
+      "name": "Canva",
+      "url": "https://docs.google.com/document/d/1K7Yr2nThpxLt6mALIyIKlaW_fmTacVCFudH-TFM47rA/edit?usp=sharing",
+      "status": "public Google Doc read; official docs read",
+      "routes": [
+        "sponsor-track-builder",
+        "creative-web-worlds"
+      ],
+      "decision": "Three distinct development surfaces; no prize implied. Duplicate card deduplicated by document ID."
+    },
+    {
+      "name": "Factory",
+      "url": "https://docs.google.com/document/d/1fvdIhF-v-a9Q35eiNHcQj6avg0nMUjKk0TPMUync0Rk/edit?tab=t.0",
+      "status": "linked Google Doc returned 401",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-prize-strategy"
+      ],
+      "decision": "Access-limited. Keep prior runtime-SDK requirement from prize snapshot separately attributed; do not invent unseen pack."
+    },
+    {
+      "name": "Fetch.ai",
+      "url": "https://www.fetch.ai/events/calhacks-13-0",
+      "status": "exact page failed text retrieval; browser client-side exception",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-prize-strategy"
+      ],
+      "decision": "Current resource unreadable. Earlier dated event-page prize conflict remains; ecosystem invocation is conditional until full brief."
+    },
+    {
+      "name": "Creao AI",
+      "url": "https://community.creao.ai/CalHacks2026?utm_source=calhacks13-2026&utm_medium=hackathon&utm_campaign=hackathons-oct-2026",
+      "status": "event landing and linked Tech Stack read in browser",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-backend",
+        "hackathon-prize-strategy"
+      ],
+      "decision": "Core saved agent + ID/run link/live demo. Async API and unsigned webhook verification; confirmed more-specific prize split conflicts with Devpost."
+    },
+    {
+      "name": "CRS Credit",
+      "url": "https://calhacks.crscreditapi.com/",
+      "status": "event pack read in live browser",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-backend"
+      ],
+      "decision": "Live sandbox gate, separate development-helper MCP, credential/collection access still unverified. No real-person lookups."
+    },
+    {
+      "name": "Hyphenate",
+      "url": "https://docs.google.com/document/d/1u4iN8R97ILY3kfHTPKC82zdutHrGx4ze5eCAP-J92w4/edit?usp=sharing",
+      "status": "public Google Doc read; dedicated skill author owns reconciliation",
+      "routes": [
+        "hyphenate-finance-agent",
+        "hackathon-backend"
+      ],
+      "decision": "User-defined finance world; no mandated proprietary API. Dedicated skill handles realistic finance seat and recovery."
+    },
+    {
+      "name": "Cartesia",
+      "url": "https://docs.google.com/document/d/1lBbGq4zbjx4tcgYP2WmcHu6w_E_N39BC/edit?usp=sharing&ouid=104118192944522132782&rtpof=true&sd=true",
+      "status": "public Google Doc read",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-demo-director"
+      ],
+      "decision": "Managed Agent or Sonic routes; central voice, interruptions, two-minute flow, README/code. Starter criteria have no numeric weights."
+    },
+    {
+      "name": "Moss",
+      "url": "https://docs.moss.dev/docs",
+      "status": "official general docs and quickstart read",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-ml-evals"
+      ],
+      "decision": "Live/local retrieval, indexed context and source-backed evaluation; vendor latency is not measured product evidence. No new rubric."
+    },
+    {
+      "name": "Convex.dev",
+      "url": "https://docs.convex.dev/home",
+      "status": "official general home read",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-backend"
+      ],
+      "decision": "Existing reactive-state/transaction route covers required capability. Resource does not add event rules or warrant another skill."
+    },
+    {
+      "name": "Apify",
+      "url": "https://drive.google.com/drive/folders/1RqT3r6i1MqSBAJoAIwXc3lEMmQCnshVt",
+      "status": "public folder reviewed by root and dedicated skill author",
+      "routes": [
+        "apify-evidence-engine",
+        "hackathon-idea-lab"
+      ],
+      "decision": "Web data, Actors, automation; no financial-AI endpoints. Dedicated skill handles bounded runs, store/schema discovery and reusable Actor."
+    },
+    {
+      "name": "Atlassian",
+      "url": "https://docs.google.com/document/d/12Y2Vamxbm9W_l2Eo4AM530R7HfNAYCXI-UI6F6Xnggw/edit?usp=sharing",
+      "status": "public Google Doc read",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-backend",
+        "hackathon-demo-director"
+      ],
+      "decision": "Forge app requirement, workload/governance tracks, scoped external calls, repo and maximum-three-minute video."
+    },
+    {
+      "name": "Context.dev",
+      "url": "https://docs.google.com/document/d/1CM6dcuojhrRtcokWgspJ8ELeS864UVAneW83eQLliw4/edit?tab=t.0",
+      "status": "public Google Doc and official Scrape/Search/Answers docs read",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-idea-lab"
+      ],
+      "decision": "Alternative public-evidence route with per-format success/partial sources. People overview failed text retrieval; no capability/credit claim from that failure."
+    },
+    {
+      "name": "Mana",
+      "url": "https://mana.space/a/calhacks",
+      "status": "event pack read in live browser after loading",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-prize-strategy",
+        "hackathon-demo-director"
+      ],
+      "decision": "5k reward update; meaningful contribution paragraph + one/two chat/commit links. In-Mana app is bonus; no inferred runtime API."
+    },
+    {
+      "name": "Bright Data",
+      "url": "https://github.com/ScrapeAlchemist/public-data-hackpack",
+      "status": "event-linked GitHub README and SETUP read",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-idea-lab"
+      ],
+      "decision": "Server REST versus exploratory MCP; current tool discovery; no blanket vendor skill installation or hardcoded live evidence."
+    },
+    {
+      "name": "Bitdeer AI",
+      "url": "https://drive.google.com/file/d/1s6HW6Auouwv2XbRsPMmyge6vJRKaXJPZ/view?usp=drivesdk",
+      "status": "two-page public PDF read in browser; getting-started docs read",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-ml-evals",
+        "creative-web-worlds"
+      ],
+      "decision": "Inference/embedding/reranker/image routes, model catalog, account and credit request gate. Available compute does not justify training."
+    },
+    {
+      "name": "Greptile",
+      "url": "https://www.greptile.com/docs/introduction",
+      "status": "official general introduction and quickstart read",
+      "routes": [
+        "sponsor-track-builder"
+      ],
+      "decision": "Repository review aid, not automatic runtime/prize fit; connection expands repository access and can post reviews."
+    },
+    {
+      "name": "visa",
+      "url": "https://docs.google.com/document/d/1Lgtd0f8mHZy_nWabtz751AkSW5Oj-z1XMhzAwddtfOA/edit?tab=t.0#heading=h.bo9rj437g1tj",
+      "status": "public Google Doc read; dedicated skill author owns reconciliation",
+      "routes": [
+        "visa-agentic-commerce",
+        "creative-web-worlds",
+        "hackathon-prize-strategy"
+      ],
+      "decision": "Starter UX20/commerce20 conflicts with prize UX25/commerce15. No proprietary API contract; dedicated skill handles commerce/trust flow."
+    },
+    {
+      "name": "Spacexsi",
+      "url": "https://drive.google.com/file/d/15YRK6uPOlHDAnc78oJOoUBQZ9cTHqCiL/view?usp=sharing",
+      "status": "one-page public PDF read in browser",
+      "routes": [
+        "sponsor-track-builder",
+        "hackathon-prize-strategy"
+      ],
+      "decision": "Cursor and real space data; Grok Bot bonus. Mandatory Imagine/Voice conflict with Hive remains explicit; sponsor spellings differ."
+    }
+  ]
+}

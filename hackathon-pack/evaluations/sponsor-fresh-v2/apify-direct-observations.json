@@ -1,0 +1,11 @@
+{
+  "observed_date":"2026-10-23",
+  "execution_surface":"Direct public web reader; NOT an Apify Actor run",
+  "purpose":"Obtain a small actual evidence sample from the two exact requested websites while paid execution is prohibited. These observations are separate from synthetic Apify lifecycle rows.",
+  "observations":[
+    {"sourceUrl":"https://www.python.org/downloads/","fact":{"branch":"3.15","maintenance_status":"bugfix","end_of_support":"2031-10"},"source_location":"Active Python releases table","uncertainty":"The page's release table is current observed evidence; this alone does not prove compatibility with a student's course tooling."},
+    {"sourceUrl":"https://nodejs.org/en/about/previous-releases","fact":{"branch":"v24","status":"LTS","branch_v26_status":"Current"},"source_location":"Node.js release status table","uncertainty":"LTS and Python bugfix are different maintenance models; do not present them as equivalent numeric quality scores."}
+  ],
+  "downstream_decision":"A source-backed development-environment recommendation must distinguish supported/LTS branches from a newer Current branch. The two-source comparator should abstain if either page is missing; no claim of laptop app compatibility follows from these observations.",
+  "actor_run_id":null,"actor_dataset_id":null,"actor_build_id":null,"actor_cost_usd":null
+}

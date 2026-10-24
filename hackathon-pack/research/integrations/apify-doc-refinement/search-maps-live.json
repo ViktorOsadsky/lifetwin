@@ -1,0 +1,187 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "# Search results:\n- **Search query:** Google Maps reviews\n- **Number of Actors found:** 2\n\n# Actors:\n\n## [Google Maps Reviews Scraper](https://apify.com/compass/Google-Maps-Reviews-Scraper) (`compass/Google-Maps-Reviews-Scraper`)\n- **URL:** https://apify.com/compass/Google-Maps-Reviews-Scraper\n- **Description:** Extract all reviews of Google Maps places using place URLs. Get review text, published date, response from owner, review URL, and reviewer's details. Download scraped data, run the scraper via API, schedule and monitor runs or integrate with other tools.\n- **[Pricing](https://apify.com/compass/Google-Maps-Reviews-Scraper/pricing):** This Actor is paid per event:\n  - **Scraped review**: Cost per individual review scraped. ($0.0006 per event)\n  - **Actor Start**: Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event). ($0.00005 per event)\nPrices shown are for FREE tier. Higher tiers may offer lower prices \u2014 use fetch-actor-details to see the full pricing table.\n- **Stats:** 64,333 total users, 8,505 monthly users\n- **Rating:** 4.86 out of 5\n- **Developed by:** [compass](https://apify.com/compass) (Apify)\n- **Categories:** Research Markets And Competitors, Brand Monitoring, Collect Reviews And Ratings, Analyze Sentiment, Collect And Analyze Customer Reviews, Build Market Datasets, Maps And Local Businesses, Google Maps, Google, Reviews, Profiles, Places\n- **Input fields:** startUrls?: array, placeIds?: array, maxReviews?: integer, reviewsSort?: string, reviewsStartDate?: string, reviewsFilterString?: string, language?: string, reviewsOrigin?: string, personalData?: boolean\n\n## [Google Maps Reviews Scraper - Most Comprehensive](https://apify.com/kaix/google-maps-reviews-scraper) (`kaix/google-maps-reviews-scraper`)\n- **URL:** https://apify.com/kaix/google-maps-reviews-scraper\n- **Description:** \ud83d\udd25 ~$0.04/1K reviews \ud83d\udd25 The most comprehensive Google Maps review scraper. Extract reviews with ratings, text, translations, photos, author details, owner responses, structured dining/hotel/attraction data, and 65+ place fields. Supports keyword filtering, sorting.\n- **[Pricing](https://apify.com/kaix/google-maps-reviews-scraper/pricing):** This Actor is paid per event:\n  - **reviews**: Single result in the default dataset. ($0.00004 per event)\n  - **Actor Start**: Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event). ($0.00005 per event)\nPrices shown are for FREE tier. Higher tiers may offer lower prices \u2014 use fetch-actor-details to see the full pricing table.\n- **Stats:** 1,824 total users, 343 monthly users\n- **Rating:** 4.90 out of 5\n- **Developed by:** [kaix](https://apify.com/kaix) (community)\n- **Categories:** Brand Monitoring, Collect And Distribute Content, Map Businesses By Type And Location, Collect Reviews And Ratings, Maps And Local Businesses, Review Sites, Google Maps, Google, Reviews, Contact Details, Places\n- **Input fields:** urls: array, maxReviews?: integer, sort?: string, searchQuery?: string, reviewsNewerThan?: string, reviewsOlderThan?: string, language?: string, region?: string, proxyConfiguration?: object\n\nIf you need more detailed information about any of these Actors, including their input\nschemas and usage instructions, use the fetch-actor-details tool with the\nspecific Actor name.\nThis session can run only Actors already exposed as dedicated tools. Other Actors found\nhere are informational and cannot be run in this configuration. To use one, create your own Apify MCP server configuration at https://mcp.apify.com and add it to your agent."
+    }
+  ],
+  "structuredContent": {
+    "actors": [
+      {
+        "title": "Google Maps Reviews Scraper",
+        "url": "https://apify.com/compass/Google-Maps-Reviews-Scraper",
+        "id": "Xb8osYTtOjlsgI6k9",
+        "fullName": "compass/Google-Maps-Reviews-Scraper",
+        "pictureUrl": "https://images.apifyusercontent.com/UH3iYjKerv4UxQLJXw8CKXWlmfOI3biiZMLIAdR4ZHs/rs:fill:76:76/cb:1/aHR0cHM6Ly9hcGlmeS1pbWFnZS11cGxvYWRzLXByb2QuczMuYW1hem9uYXdzLmNvbS9YYjhvc1lUdE9qbHNnSTZrOS9mNkwzdm1LaGd6aXVZYXljZi1Hb29nbGVfTWFwc19SZXZpZXdzX1NjcmFwZXIucG5n.webp",
+        "developer": {
+          "username": "compass",
+          "isOfficialApify": true,
+          "url": "https://apify.com/compass"
+        },
+        "description": "Extract all reviews of Google Maps places using place URLs. Get review text, published date, response from owner, review URL, and reviewer's details. Download scraped data, run the scraper via API, schedule and monitor runs or integrate with other tools.",
+        "categories": [
+          "Research Markets And Competitors",
+          "Brand Monitoring",
+          "Collect Reviews And Ratings",
+          "Analyze Sentiment",
+          "Collect And Analyze Customer Reviews",
+          "Build Market Datasets",
+          "Maps And Local Businesses",
+          "Google Maps",
+          "Google",
+          "Reviews",
+          "Profiles",
+          "Places"
+        ],
+        "pricing": {
+          "model": "PAY_PER_EVENT",
+          "events": [
+            {
+              "title": "Scraped review",
+              "description": "Cost per individual review scraped.",
+              "priceUsd": 0.0006
+            },
+            {
+              "title": "Actor Start",
+              "description": "Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event).",
+              "priceUsd": 5e-05
+            }
+          ],
+          "pricingNote": "Prices shown are for FREE tier. Higher tiers may offer lower prices \u2014 use fetch-actor-details to see the full pricing table."
+        },
+        "stats": {
+          "totalUsers": 64333,
+          "monthlyUsers": 8505
+        },
+        "rating": {
+          "average": 4.86,
+          "count": 199
+        },
+        "isDeprecated": false,
+        "inputFields": {
+          "type": "object",
+          "properties": {
+            "startUrls": {
+              "type": "array"
+            },
+            "placeIds": {
+              "type": "array"
+            },
+            "maxReviews": {
+              "type": "integer"
+            },
+            "reviewsSort": {
+              "type": "string"
+            },
+            "reviewsStartDate": {
+              "type": "string"
+            },
+            "reviewsFilterString": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "reviewsOrigin": {
+              "type": "string"
+            },
+            "personalData": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      {
+        "title": "Google Maps Reviews Scraper - Most Comprehensive",
+        "url": "https://apify.com/kaix/google-maps-reviews-scraper",
+        "id": "VpQAf550Awe9ey24X",
+        "fullName": "kaix/google-maps-reviews-scraper",
+        "pictureUrl": "https://images.apifyusercontent.com/ZuUKYwAY4CjcekHYokD2AF_8A8t47n8bnbZPPxPMoio/rs:fill:76:76/cb:1/aHR0cHM6Ly9hcGlmeS1pbWFnZS11cGxvYWRzLXByb2QuczMudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vZEFOVUpJdmdiRmVxT01CQ2ItYWN0b3ItVnBRQWY1NTBBd2U5ZXkyNFgtWng3a3BmQWcxVS1kQU5VSkl2Z2JGZXFPTUJDYi1hY3Rvci1ycEdoc3g2NEliWE1XWGhIai1ZYlRuTHV0dFVxLWxvZ28ucG5n.webp",
+        "developer": {
+          "username": "kaix",
+          "isOfficialApify": false,
+          "url": "https://apify.com/kaix"
+        },
+        "description": "\ud83d\udd25 ~$0.04/1K reviews \ud83d\udd25 The most comprehensive Google Maps review scraper. Extract reviews with ratings, text, translations, photos, author details, owner responses, structured dining/hotel/attraction data, and 65+ place fields. Supports keyword filtering, sorting.",
+        "categories": [
+          "Brand Monitoring",
+          "Collect And Distribute Content",
+          "Map Businesses By Type And Location",
+          "Collect Reviews And Ratings",
+          "Maps And Local Businesses",
+          "Review Sites",
+          "Google Maps",
+          "Google",
+          "Reviews",
+          "Contact Details",
+          "Places"
+        ],
+        "pricing": {
+          "model": "PAY_PER_EVENT",
+          "events": [
+            {
+              "title": "reviews",
+              "description": "Single result in the default dataset.",
+              "priceUsd": 4e-05
+            },
+            {
+              "title": "Actor Start",
+              "description": "Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event).",
+              "priceUsd": 5e-05
+            }
+          ],
+          "pricingNote": "Prices shown are for FREE tier. Higher tiers may offer lower prices \u2014 use fetch-actor-details to see the full pricing table."
+        },
+        "stats": {
+          "totalUsers": 1824,
+          "monthlyUsers": 343
+        },
+        "rating": {
+          "average": 4.9,
+          "count": 14
+        },
+        "isDeprecated": false,
+        "inputFields": {
+          "type": "object",
+          "properties": {
+            "urls": {
+              "type": "array"
+            },
+            "maxReviews": {
+              "type": "integer"
+            },
+            "sort": {
+              "type": "string"
+            },
+            "searchQuery": {
+              "type": "string"
+            },
+            "reviewsNewerThan": {
+              "type": "string"
+            },
+            "reviewsOlderThan": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "proxyConfiguration": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "urls"
+          ]
+        }
+      }
+    ],
+    "query": "Google Maps reviews",
+    "count": 2,
+    "userTier": "FREE",
+    "instructions": "If you need more detailed information about any of these Actors, including their input\nschemas and usage instructions, use the fetch-actor-details tool with the\nspecific Actor name.\nThis session can run only Actors already exposed as dedicated tools. Other Actors found\nhere are informational and cannot be run in this configuration. To use one, create your own Apify MCP server configuration at https://mcp.apify.com and add it to your agent."
+  },
+  "isError": false
+}

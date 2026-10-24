@@ -1,0 +1,78 @@
+- link "Skip to content":
+  - /url: "#main"
+- banner:
+  - link "Cal hacks 13.0 home":
+    - /url: /
+  - button "Switch to dark theme":
+    - generic: Switch to dark theme
+  - navigation "Main":
+    - link "schedule":
+      - /url: /schedule
+    - link "map":
+      - /url: /map
+    - link "prizes":
+      - /url: /prizes
+    - link "FAQ":
+      - /url: /faq
+    - link "resources":
+      - /url: /resources
+  - link "sign in":
+    - /url: /login?next=%2Fschedule
+- main:
+  - link "Back to Home":
+    - /url: /
+    - text: Back to Home
+  - paragraph: Cal hacks 13.0 / schedule
+  - paragraph: What’s going on?
+  - heading "schedule" [level=1]
+  - link "TV view ↗":
+    - /url: /tv
+  - button "Filters":
+    - generic: Filters
+  - tablist "Schedule day":
+    - tab "Day 01 · Fri, 10/23":
+      - generic: Day 01 · Fri, 10/23
+    - tab "Day 02 · Sat, 10/24":
+      - generic: Day 02 · Sat, 10/24
+    - tab "Day 03 · Sun, 10/25" [active] [selected]:
+      - generic: Day 03 · Sun, 10/25
+  - generic: Search events
+  - searchbox "Search events"
+  - tabpanel "Day 03 · Sun, 10/25":
+    - region "Scheduled Events, CAL HACKS 13.0 DAY 3":
+      - heading "Scheduled Events" [level=3]
+      - paragraph: CAL HACKS 13.0 DAY 3
+      - generic: /Time
+      - generic: /Event
+      - generic: /Status
+      - list:
+        - button "Continued from 8:30 PM SLEEP AREA OPEN ON TIME. Open event details"
+        - button "12:00 AM MIDNIGHT SNACK ON TIME. Open event details"
+        - button "8:00 AM BREAKFAST ON TIME. Open event details"
+        - button "8:00 AM SHOWERS OPEN ON TIME. Open event details"
+        - button "8:50 AM PROJECT SUBMISSION DEADLINE ON TIME. Open event details"
+        - button "10:30 AM JUDGING ON TIME. Open event details"
+        - button "12:30 PM LUNCH ON TIME. Open event details"
+        - generic: "&"
+        - button "1:00 PM PROJECT GALLERY & HACKER MIXER ON TIME. Open event details"
+        - button "2:00 PM CLOSING CEREMONY ON TIME. Open event details"
+        - button "3:00 PM BUSES TO MONTGOMERY BART ON TIME. Open event details"
+        - generic: "'"
+        - button "4:00 PM WINNERS' PHOTOS ON TIME. Open event details"
+  - paragraph: All times are Pacific.
+- contentinfo:
+  - link "Hackathons @ Berkeley":
+    - /url: https://hackberkeley.org/
+    - img "Hackathons @ Berkeley"
+  - paragraph: follow us on
+  - list:
+    - link "Instagram":
+      - /url: https://www.instagram.com/calhacks/
+    - link "LinkedIn":
+      - /url: https://www.linkedin.com/company/cal-hacks/posts/
+  - paragraph:
+    - text: made with
+    - img "love"
+    - text: by
+    - generic: hackathons @ berkeley
+- alert

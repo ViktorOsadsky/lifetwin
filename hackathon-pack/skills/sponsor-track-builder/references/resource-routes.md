@@ -1,0 +1,52 @@
+# Routes from the Hive resources — reviewed October 23, 2026
+
+Read only the selected route. [Hive resources](https://hive.hackberkeley.org/resources) exposed 19 cards, 18 unique packs; Canva appears twice. The [review ledger](../../../research/resources-2026-10-23/resource-review.md) gives every URL and access status. Public documentation was read; no account, connector, credit redemption, API request or deployment was performed. These routes do not establish working access.
+
+## CREAO: asynchronous core agent
+
+The [event pack](https://community.creao.ai/CalHacks2026) requires at least one CREAO agent doing the core work, a run share link and agent ID in the Devpost README, and a demo showing it running. Select the CREAO track in Devpost. The pack announces $2,500 / $1,500 / $1,000 across its three tracks; Devpost's earlier amounts conflict.
+
+Use [Tech Stack](https://community.creao.ai/CalHacks2026/tech) and [API Trigger](https://docs.creao.ai/pro/api-trigger) for the actual contract. A server starts `POST https://agent.creao.ai/api/v1/runs` with `appId`, `inputs` and a stable `idempotencyKey`; 202 returns a run ID. Poll `GET /api/v1/runs/{id}` or receive a webhook. Runs can take minutes; there is no live token stream. Prefer an agent-scoped key when one agent suffices; all keys stay on the server.
+
+Webhooks are **unsigned**: treat them as a wake-up hint. Bind `runId` to the expected local job and agent, fetch authenticated status, and use that canonical result. De-duplicate terminal processing and reconcile missing callbacks by polling. The pack says delivery can retry three times; a callback token is an additional check, not proof of completion. Do not let a run trigger itself or unbounded child runs. Preserve installed packages using Create Agent / Update Environment; a normal conversation's install does not persist to future runs. Respect user authorization for connected-app writes even if the platform permits automatic writes.
+
+## Atlassian: Forge app doing work or governing actions
+
+The [starter brief](https://docs.google.com/document/d/12Y2Vamxbm9W_l2Eo4AM530R7HfNAYCXI-UI6F6Xnggw/edit) explicitly calls for a **Forge app** for an Atlassian product, recommending Jira or Confluence. Choose either team workload automation or security/privacy controls for acting agents. A generic external Jira chatbot is not sufficient evidence of this requirement.
+
+Start with [Forge docs](https://developer.atlassian.com/platform/forge/) and [sponsor starter code](https://github.com/atlassian-labs/forge-inspired). The event pack specifies Node 22/24, Forge CLI 14+, a Forge-scoped token and a demo site. Inspect existing setup before installing/provisioning. External model hosts need declared fetch permissions and encrypted variables; Forge LLM token usage can bill. Prove one relevant issue/document flow with traceable actions, a malicious issue body that cannot change authorization, and recovery that does not revert a teammate's later edit. Submit repository access and a demo video **at most three minutes**. Do not deploy, connect accounts or publish merely to review the pack.
+
+## CRS: live sandbox, separate development helper
+
+[The event pack](https://calhacks.crscreditapi.com/) requires meaningful CRS sandbox use working live. Credentials and product-specific Postman/OpenAPI collections come through the signup flow; reading the public page does not grant access. It documents `https://api-sandbox.stitchcredit.com:443/api`, `/users/login` and a sample Experian report route, but use the supplied collection and sponsor test identities rather than reproducing someone's real personal details. Do not generalize one sample route to all granted products.
+
+Its linked [Cal Hacks MCP package](https://www.npmjs.com/package/@crscreditapi/crs-calhacks-mcp-server) is described as planning/development/debugging help. Inspect its actual tool list before claiming it supplies live report data. Keep end-user decisions outside the demo: demonstrate bounded interpretation of synthetic data, trace each finding, and expose uncertainty. Missing credentials or absent required test cases is an access gate, not a reason to invent a live result.
+
+## Cartesia: choose managed conversation or speech output
+
+The [starter pack](https://docs.google.com/document/d/1lBbGq4zbjx4tcgYP2WmcHu6w_E_N39BC/edit) supports two routes: hosted Managed Agents with tools/turn taking, or Sonic TTS added to an existing app. Follow [event docs](https://docs.cartesia.ai/calhacks) and the [cookbook](https://github.com/cartesia-ai/cookbook); inspect current SDK/version before coding. Managed Agents choose an LLM from Cartesia's catalogue; do not introduce an extra LLM key unless the chosen flow needs one.
+
+Choose voice only when it changes the task. Verify interruption, cancellation and tool completion separately so barge-in cannot duplicate an action. Provide text/captions and clear microphone state. Required proof: working flow, two-minute demo-first presentation, short README covering setup/features/limitations, and source access under event rules. The pack specifies Meta glasses per winning member, up to four. Its criteria have no numeric weights in the retrieved pack; earlier Hive equal weights remain a separately attributed source.
+
+## Moss / Context.dev: retrieval and public evidence
+
+[Moss docs](https://docs.moss.dev/docs) are general documentation, not a Cal Hacks rubric. Read the [quickstart](https://docs.moss.dev/docs/start/quickstart) or [live-call context](https://docs.moss.dev/docs/build/live-call-context.md) only if fast changing-context retrieval is necessary. Preserve document IDs, metadata and updates; compare supported answers and missing-evidence behavior with the existing retrieval baseline. Do not turn the vendor's latency claim into your measured result. Project credentials belong on the backend; browser clients require the documented scoped authenticator.
+
+[Context.dev's starter](https://docs.google.com/document/d/1CM6dcuojhrRtcokWgspJ8ELeS864UVAneW83eQLliw4/edit) links [Scrape](https://docs.context.dev/scrape/overview), [Search](https://docs.context.dev/search/overview), [Answers](https://docs.context.dev/answers/overview) and People. Choose scrape for a known URL, search for discovery, Answers for researched JSON with sources. Check each requested scrape format's `success`, partial-result flags and source freshness; a successful HTTP response can contain incomplete evidence. People access and credits were not verified. Use one necessary public-data provider; keep the dedicated Apify workflow when Actors/platform datasets are the selected route.
+
+## Canva / Greptile: useful development capabilities, no inferred prize
+
+The [Canva starter](https://docs.google.com/document/d/1K7Yr2nThpxLt6mALIyIKlaW_fmTacVCFudH-TFM47rA/edit) routes among an editor app, REST integration and assistant MCP. Choose the actual surface from [developer docs](https://www.canva.dev/docs/). Distinguish Dev MCP for building an app from a design-capable assistant connection. Confirm auth, available operations and a saved/editable output before promising a user workflow. Avoid preview-only APIs for a stable path.
+
+[Greptile introduction](https://www.greptile.com/docs/introduction) and [quickstart](https://www.greptile.com/docs/quickstart) describe code review. It can improve a selected repository's real PR; it does not establish a runtime sponsor requirement or a prize category. Installing its app broadens repository access and may post reviews, so inspect existing access and seek authorization for a new connection. Keep evidence of a useful finding and its fix, rather than claiming installation alone improved the product.
+
+## Bright Data / Bitdeer / Mana / SpaceXSI
+
+- **Bright Data:** the linked [public-data hackpack](https://github.com/ScrapeAlchemist/public-data-hackpack) is event-specific sample code and ideas. Its [setup](https://github.com/ScrapeAlchemist/public-data-hackpack/blob/master/SETUP.md) separates server REST calls used by shipped apps from MCP used in exploration. Discover current tools; old removed-tool/plugin examples and old flags are unreliable. Keep the narrow relevant vendor skill if useful; do not install its entire catalog merely because the pack lists it. Source timing, tool counts and route success are the author's dated measurements, not yours. Preserve the live-public-data prize rules from Hive.
+- **Bitdeer:** the [two-page starter PDF](https://drive.google.com/file/d/1s6HW6Auouwv2XbRsPMmyge6vJRKaXJPZ/view) offers Model Studio chat, embeddings, reranking and image generation. Credits require an account and request form; access is not automatic. Use [getting started](https://developers.bitdeer.ai/docs/guides/getting-started), the [catalog](https://developers.bitdeer.ai/docs/api/models-catalog) and [workshop demo](https://github.com/BitdeerAI/cal-hacks-demo). Choose inference or retrieval evaluation before training; credit availability is not an ML benefit. Resolve the current model identifier at implementation time.
+- **Mana:** [event pack](https://mana.space/a/calhacks) allows building in Mana or using it on an existing repo. Show material contribution, one explanatory paragraph, one or two real shared chats/commits, and a demonstrable moment. A usable app/agent inside Mana earns a stated +10 bonus. Confirm judge access and strip private content before sharing. The page announces $5,000 to the winning team; Hive's earlier TBD remains historical. No public runtime API contract was supplied here; do not invent one.
+- **SpaceXSI / SpaceXAI:** [one-page starter PDF](https://drive.google.com/file/d/15YRK6uPOlHDAnc78oJOoUBQZ9cTHqCiL/view) requires Cursor-built work using real space data and gives Grok Bot a bonus. It does not state mandatory Grok Imagine/Voice, unlike the captured Hive card. Resolve that eligibility conflict before creating an API dependency. Codes are supplied at the booth; do not claim possession. File title, body and card have different sponsor spellings; keep the source identity visible.
+
+## Access-limited packs
+
+Factory's exact linked document returned 401; current Fetch.ai page failed in both text retrieval and the browser (client exception). Preserve the earlier event snapshot as dated evidence and keep these access failures explicit. A general vendor manual can inform an implementation, but cannot stand in for the inaccessible event brief's requirements.

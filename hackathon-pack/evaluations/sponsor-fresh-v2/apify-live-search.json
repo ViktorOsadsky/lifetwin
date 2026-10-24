@@ -1,0 +1,256 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "# Search results:\n- **Search query:** website content\n- **Number of Actors found:** 3\n\n# Actors:\n\n## [Website Content Crawler](https://apify.com/apify/website-content-crawler) (`apify/website-content-crawler`)\n- **URL:** https://apify.com/apify/website-content-crawler\n- **Description:** Crawl websites and extract text content to feed AI models, LLM applications, vector databases, or RAG pipelines. The Actor supports rich formatting using Markdown, cleans the HTML, downloads files, and integrates well with \ud83e\udd9c\ud83d\udd17 LangChain, LlamaIndex, and the wider LLM ecosystem.\n- **[Pricing](https://apify.com/apify/website-content-crawler/pricing):** This Actor is free to use. You are only charged for Apify platform usage.\n- **Stats:** 171,336 total users, 13,740 monthly users\n- **Rating:** 4.62 out of 5\n- **Developed by:** [apify](https://apify.com/apify) (Apify)\n- **Categories:** Collect And Distribute Content, Developer Tools, Transform And Process Data, Build AI Training Data, Prepare Data For Llm And Rag, Convert Web Pages To AI Ready Text, Generic Scrapers, AI Tools\n- **Input fields:** startUrls: array, crawlerType?: string, includeUrlGlobs?: array, excludeUrlGlobs?: array, maxCrawlDepth?: integer, maxCrawlPages?: integer, useSitemaps?: boolean, onlyCrawlPagesModifiedSince?: string, useLlmsTxt?: boolean, respectRobotsTxtFile?: boolean, keepUrlFragments?: boolean, ignoreCanonicalUrl?: boolean, proxyConfiguration: object, initialCookies?: array, customHttpHeaders?: object, signHttpRequests?: boolean, initialConcurrency?: integer, maxConcurrency?: integer, requestTimeoutSecs?: integer, minFileDownloadSpeedKBps?: integer ... (+32 more)\n\n## [Fast Website Content Crawler](https://apify.com/6sigmag/fast-website-content-crawler) (`6sigmag/fast-website-content-crawler`)\n- **URL:** https://apify.com/6sigmag/fast-website-content-crawler\n- **Description:** A high-performance web scraper that rapidly extracts and analyzes content from multiple websites simultaneously. Perfect for competitive research, content aggregation, and website structure analysis.\n- **[Pricing](https://apify.com/6sigmag/fast-website-content-crawler/pricing):** This Actor is paid per event:\n  - **Actor Start**: Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event). ($0.0015 per event)\n  - **result**: Single result in the default dataset. ($0.003 per event)\n- **Stats:** 4,659 total users, 137 monthly users\n- **Rating:** 4.90 out of 5\n- **Developed by:** [6sigmag](https://apify.com/6sigmag) (community)\n- **Categories:** Research Markets And Competitors, Collect And Distribute Content, Generic Scrapers\n- **Input fields:** startUrls: array\n\n## [Website Content Crawler | Markdown for RAG](https://apify.com/xtech/news-source-crawler) (`xtech/news-source-crawler`)\n- **URL:** https://apify.com/xtech/news-source-crawler\n- **Description:** Turn public news, blog, and documentation pages into clean Markdown or plain text. Discover pages through sitemaps and feeds, or extract known URLs directly. Export content, metadata, and change-tracking fields for RAG and monitoring, while respecting robots.txt and website boundaries.\n- **[Pricing](https://apify.com/xtech/news-source-crawler/pricing):** This Actor is paid per event:\n  - **Actor Start**: Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event). ($0.00005 per event)\n  - **result**: Single result in the default dataset. ($0.001562536477 per event)\n- **Stats:** 440 total users, 15 monthly users\n- **Rating:** 4.76 out of 5\n- **Developed by:** [xtech](https://apify.com/xtech) (community)\n- **Categories:** Collect And Distribute Content, Developer Tools, Transform And Process Data, Build AI Training Data, Prepare Data For Llm And Rag, Convert Web Pages To AI Ready Text, News And Articles, Generic Scrapers, News Articles, AI Tools\n- **Input fields:** sourceUrls: array, sitemapUrls?: array, discoveryMode?: string, maxPages?: integer, includePaths?: array, excludePaths?: array, contentFormat?: string, maxConcurrency?: integer\n\nIf you need more detailed information about any of these Actors, including their input\nschemas and usage instructions, use the fetch-actor-details tool with the\nspecific Actor name.\nThis session can run only Actors already exposed as dedicated tools. Other Actors found\nhere are informational and cannot be run in this configuration. To use one, create your own Apify MCP server configuration at https://mcp.apify.com and add it to your agent."
+    }
+  ],
+  "structuredContent": {
+    "actors": [
+      {
+        "title": "Website Content Crawler",
+        "url": "https://apify.com/apify/website-content-crawler",
+        "id": "aYG0l9s7dbB7j3gbS",
+        "fullName": "apify/website-content-crawler",
+        "pictureUrl": "https://images.apifyusercontent.com/Q3n5SF1SFDjB0Q-opIqN87lcyICJMvxlH09ynsqMjyA/rs:fill:76:76/cb:1/aHR0cHM6Ly9hcGlmeS1pbWFnZS11cGxvYWRzLXByb2QuczMuYW1hem9uYXdzLmNvbS9hWUcwbDlzN2RiQjdqM2diUy9QZlRvRU5rSlp4YWh6UER1My1DbGVhblNob3RfMjAyMy0wMy0yOF9hdF8xMC40MC4yMF8yeC5wbmc.webp",
+        "developer": {
+          "username": "apify",
+          "isOfficialApify": true,
+          "url": "https://apify.com/apify"
+        },
+        "description": "Crawl websites and extract text content to feed AI models, LLM applications, vector databases, or RAG pipelines. The Actor supports rich formatting using Markdown, cleans the HTML, downloads files, and integrates well with \ud83e\udd9c\ud83d\udd17 LangChain, LlamaIndex, and the wider LLM ecosystem.",
+        "categories": [
+          "Collect And Distribute Content",
+          "Developer Tools",
+          "Transform And Process Data",
+          "Build AI Training Data",
+          "Prepare Data For Llm And Rag",
+          "Convert Web Pages To AI Ready Text",
+          "Generic Scrapers",
+          "AI Tools"
+        ],
+        "pricing": {
+          "model": "FREE"
+        },
+        "stats": {
+          "totalUsers": 171336,
+          "monthlyUsers": 13740
+        },
+        "rating": {
+          "average": 4.62,
+          "count": 235
+        },
+        "isDeprecated": false,
+        "inputFields": {
+          "type": "object",
+          "properties": {
+            "startUrls": {
+              "type": "array"
+            },
+            "crawlerType": {
+              "type": "string"
+            },
+            "includeUrlGlobs": {
+              "type": "array"
+            },
+            "excludeUrlGlobs": {
+              "type": "array"
+            },
+            "maxCrawlDepth": {
+              "type": "integer"
+            },
+            "maxCrawlPages": {
+              "type": "integer"
+            },
+            "useSitemaps": {
+              "type": "boolean"
+            },
+            "onlyCrawlPagesModifiedSince": {
+              "type": "string"
+            },
+            "useLlmsTxt": {
+              "type": "boolean"
+            },
+            "respectRobotsTxtFile": {
+              "type": "boolean"
+            },
+            "keepUrlFragments": {
+              "type": "boolean"
+            },
+            "ignoreCanonicalUrl": {
+              "type": "boolean"
+            },
+            "proxyConfiguration": {
+              "type": "object"
+            },
+            "initialCookies": {
+              "type": "array"
+            },
+            "customHttpHeaders": {
+              "type": "object"
+            },
+            "signHttpRequests": {
+              "type": "boolean"
+            },
+            "initialConcurrency": {
+              "type": "integer"
+            },
+            "maxConcurrency": {
+              "type": "integer"
+            },
+            "requestTimeoutSecs": {
+              "type": "integer"
+            },
+            "minFileDownloadSpeedKBps": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "startUrls",
+            "proxyConfiguration"
+          ]
+        },
+        "inputFieldsTruncated": true,
+        "inputFieldsTotalCount": 52
+      },
+      {
+        "title": "Fast Website Content Crawler",
+        "url": "https://apify.com/6sigmag/fast-website-content-crawler",
+        "id": "vFDBqKNXeGllTgOLz",
+        "fullName": "6sigmag/fast-website-content-crawler",
+        "developer": {
+          "username": "6sigmag",
+          "isOfficialApify": false,
+          "url": "https://apify.com/6sigmag"
+        },
+        "description": "A high-performance web scraper that rapidly extracts and analyzes content from multiple websites simultaneously. Perfect for competitive research, content aggregation, and website structure analysis.",
+        "categories": [
+          "Research Markets And Competitors",
+          "Collect And Distribute Content",
+          "Generic Scrapers"
+        ],
+        "pricing": {
+          "model": "PAY_PER_EVENT",
+          "events": [
+            {
+              "title": "Actor Start",
+              "description": "Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event).",
+              "priceUsd": 0.0015
+            },
+            {
+              "title": "result",
+              "description": "Single result in the default dataset.",
+              "priceUsd": 0.003
+            }
+          ]
+        },
+        "stats": {
+          "totalUsers": 4659,
+          "monthlyUsers": 137
+        },
+        "rating": {
+          "average": 4.9,
+          "count": 7
+        },
+        "isDeprecated": false,
+        "inputFields": {
+          "type": "object",
+          "properties": {
+            "startUrls": {
+              "type": "array"
+            }
+          },
+          "required": [
+            "startUrls"
+          ]
+        }
+      },
+      {
+        "title": "Website Content Crawler | Markdown for RAG",
+        "url": "https://apify.com/xtech/news-source-crawler",
+        "id": "cFZNFC2dBBtuyslrE",
+        "fullName": "xtech/news-source-crawler",
+        "pictureUrl": "https://images.apifyusercontent.com/Tm_lyCEw0tdgqNbeh_YBoiOYmbxS6LO-Q1U7m70Um5I/rs:fill:76:76/cb:1/aHR0cHM6Ly9hcGlmeS1pbWFnZS11cGxvYWRzLXByb2QuczMudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vU3NzZTVHWnlkalFqeHB1a3ctYWN0b3ItY0ZaTkZDMmRCQnR1eXNsckUtZm92ZjUwQktjcS1uZXdzLXN2Z3JlcG8tY29tLnBuZw.webp",
+        "developer": {
+          "username": "xtech",
+          "isOfficialApify": false,
+          "url": "https://apify.com/xtech"
+        },
+        "description": "Turn public news, blog, and documentation pages into clean Markdown or plain text. Discover pages through sitemaps and feeds, or extract known URLs directly. Export content, metadata, and change-tracking fields for RAG and monitoring, while respecting robots.txt and website boundaries.",
+        "categories": [
+          "Collect And Distribute Content",
+          "Developer Tools",
+          "Transform And Process Data",
+          "Build AI Training Data",
+          "Prepare Data For Llm And Rag",
+          "Convert Web Pages To AI Ready Text",
+          "News And Articles",
+          "Generic Scrapers",
+          "News Articles",
+          "AI Tools"
+        ],
+        "pricing": {
+          "model": "PAY_PER_EVENT",
+          "events": [
+            {
+              "title": "Actor Start",
+              "description": "Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event).",
+              "priceUsd": 5e-05
+            },
+            {
+              "title": "result",
+              "description": "Single result in the default dataset.",
+              "priceUsd": 0.001562536477
+            }
+          ]
+        },
+        "stats": {
+          "totalUsers": 440,
+          "monthlyUsers": 15
+        },
+        "rating": {
+          "average": 4.76,
+          "count": 3
+        },
+        "isDeprecated": false,
+        "inputFields": {
+          "type": "object",
+          "properties": {
+            "sourceUrls": {
+              "type": "array"
+            },
+            "sitemapUrls": {
+              "type": "array"
+            },
+            "discoveryMode": {
+              "type": "string"
+            },
+            "maxPages": {
+              "type": "integer"
+            },
+            "includePaths": {
+              "type": "array"
+            },
+            "excludePaths": {
+              "type": "array"
+            },
+            "contentFormat": {
+              "type": "string"
+            },
+            "maxConcurrency": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "sourceUrls"
+          ]
+        }
+      }
+    ],
+    "query": "website content",
+    "count": 3,
+    "userTier": "FREE",
+    "instructions": "If you need more detailed information about any of these Actors, including their input\nschemas and usage instructions, use the fetch-actor-details tool with the\nspecific Actor name.\nThis session can run only Actors already exposed as dedicated tools. Other Actors found\nhere are informational and cannot be run in this configuration. To use one, create your own Apify MCP server configuration at https://mcp.apify.com and add it to your agent."
+  },
+  "isError": false
+}

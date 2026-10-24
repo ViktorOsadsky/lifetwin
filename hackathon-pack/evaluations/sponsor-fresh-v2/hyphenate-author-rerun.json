@@ -1,0 +1,266 @@
+{
+  "surface": "local simulation; no API calls or postings",
+  "scenarios": [
+    {
+      "scenario": "partial_settlement_plus_fee",
+      "expected_errors": [],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": true,
+        "errors": [],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "balanced_wrong_account",
+      "expected_errors": [
+        "unknown_account"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "unknown_account"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "march_period_closed_in_june",
+      "expected_errors": [
+        "closed_or_unknown_period"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "closed_or_unknown_period"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "requester_cannot_self_approve",
+      "expected_errors": [
+        "independent_approver_required"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "independent_approver_required"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "controller_rejection",
+      "expected_errors": [
+        "approval_required"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "approval_required"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "rejected_snapshot_cannot_be_reapproved_unchanged",
+      "expected_errors": [
+        "rejected_snapshot_requires_revision"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "rejected_snapshot_requires_revision"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "revised_snapshot_with_fresh_independent_approval",
+      "expected_errors": [],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": true,
+        "errors": [],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "revised_snapshot_still_needs_fresh_approval",
+      "expected_errors": [
+        "approval_snapshot_mismatch"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "approval_snapshot_mismatch"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "balanced_edit_invalidates_approval",
+      "expected_errors": [
+        "approval_snapshot_mismatch"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "approval_snapshot_mismatch"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "june_credit_note_blocks_old_snapshot",
+      "expected_errors": [
+        "stale_or_incomplete_evidence"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "stale_or_incomplete_evidence"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "policy_change_requires_new_decision",
+      "expected_errors": [
+        "stale_policy"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "stale_policy"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "timeout_requires_reconciliation",
+      "expected_errors": [
+        "reconcile_remote_outcome_first"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "reconcile_remote_outcome_first"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "confirmed_replay_blocked",
+      "expected_errors": [
+        "already_executed"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "already_executed"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "controller_outside_entity_scope",
+      "expected_errors": [
+        "approver_entity_scope_required"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "approver_entity_scope_required"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "actor_name_does_not_grant_role",
+      "expected_errors": [
+        "approver_role_required"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "approver_role_required"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "same_entity_name_different_tenant",
+      "expected_errors": [
+        "tenant_context_mismatch"
+      ],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": false,
+        "errors": [
+          "tenant_context_mismatch"
+        ],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    },
+    {
+      "scenario": "revised_june_snapshot_independently_approved",
+      "expected_errors": [],
+      "baseline_balance_valid": true,
+      "result": {
+        "ready_for_adapter": true,
+        "errors": [],
+        "execution_surface": "local_example",
+        "posted": false
+      },
+      "passed": true
+    }
+  ],
+  "passed": true
+}

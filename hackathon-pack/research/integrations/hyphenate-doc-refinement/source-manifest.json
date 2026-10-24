@@ -1,0 +1,18 @@
+{
+  "checked_date": "2026-10-23",
+  "document_url": "https://docs.google.com/document/d/1u4iN8R97ILY3kfHTPKC82zdutHrGx4ze5eCAP-J92w4/edit?usp=sharing",
+  "source_sha256": "eb6cd435841acbc1ef5b68214a4b7a9017845eb2ef1caf475167e8a9f39e1f13",
+  "source_access": "public Google Docs text and HTML export; embedded links inspected",
+  "hive_url": "https://hive.hackberkeley.org/resources",
+  "hive_confirmation": "root rendered browser observation + design-lab/sponsor-docs/hive-starter-packs.json",
+  "official_pages_opened": [
+    "https://hyphenate.ai/",
+    "https://hyphenate.ai/treasury",
+    "https://docs.stripe.com/sandboxes",
+    "https://github.com/formancehq/ledger"
+  ],
+  "credentials_used": false,
+  "authenticated_api_calls": 0,
+  "external_financial_mutations": 0,
+  "source_contract": "challenge brief, not an API/MCP contract"
+}

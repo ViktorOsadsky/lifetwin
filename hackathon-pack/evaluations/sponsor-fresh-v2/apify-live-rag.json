@@ -1,0 +1,602 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "# Actor information\n## [RAG Web Browser](https://apify.com/apify/rag-web-browser) (`apify/rag-web-browser`)\n- **URL:** https://apify.com/apify/rag-web-browser\n- **[Pricing](https://apify.com/apify/rag-web-browser/pricing):** This Actor is paid per event:\n  - **Fetched page**: Returns content of a fetched page (FREE: $0.00228, BRONZE: $0.0019, SILVER: $0.00162, GOLD: $0.00133, PLATINUM: $0.00105, DIAMOND: $0.00076 per event)\n  - **Search result**: Returns a set of links to be fetched (FREE: $0.00348, BRONZE: $0.0029, SILVER: $0.00247, GOLD: $0.00203, PLATINUM: $0.0016, DIAMOND: $0.00116 per event)\n  - **Actor Start**: Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event). (FREE: $0.000225, BRONZE: $0.000225, SILVER: $0.000225, GOLD: $0.000225, PLATINUM: $0.000225, DIAMOND: $0.000225 per event)\n- **Developed by:** [apify](https://apify.com/apify) (Apify)\n- **Categories:** AI, Open Source\n- **Last modified:** 2026-10-21T10:28:15.987Z"
+    },
+    {
+      "type": "text",
+      "text": "# README summary\n## RAG Web Browser\n\nA web-browsing and web-scraping Actor designed to provide up-to-date web context for LLMs and retrieval-augmented generation (RAG) pipelines: it issues web searches, crawls top search results or specific URLs, renders JavaScript when needed with a headless browser, expands collapsed page sections, extracts page metadata (title, description, language, canonical/OpenGraph data), converts HTML to clean Markdown/plain text/HTML, and returns ordered, de-duplicated absolute links with visible link text and crawl/status/timing information; it also supports a lightweight HTTP-fetch mode for static pages, media skipping, anti-scraping bypass via proxies and browser fingerprints, and integration via OpenAPI/MCP for function-calling and low-latency HTTP server deployments for parallel requests.\n\n## Use cases\n\n- Feed LLM applications and RAG pipelines with up-to-date web content discovered via web search.  \n- Crawl and extract content from specific web pages (including JavaScript-rendered pages) and convert it to Markdown or plain text for prompt context.  \n- Provide search-driven collections of top results (titles, descriptions, page metadata, and extracted content) for semantic retrieval.  \n- Integrate web browsing capabilities into custom AI assistants, GPTs, and MCP-based agent workflows via OpenAPI/function-calling.  \n- Low-latency, production-ready web extraction using a standby HTTP server that handles parallel requests.  \n- Fast static-site scraping using a lightweight HTTP fetch mode when JavaScript rendering is not required.  \n- Extract and normalize links on pages into absolute URLs with associated visible text for downstream citation or navigation.  \n- Capture content hidden in collapsed elements (accordions/FAQ) by expanding them before extraction.  \n- Avoid downloading media files during scraping to focus on textual content for LLM consumption."
+    },
+    {
+      "type": "text",
+      "text": "# [Input schema](https://apify.com/apify/rag-web-browser/input)\n```json\n{\"title\":\"RAG Web Browser\",\"description\":\"Web browser for OpenAI Assistants, RAG pipelines, or AI agents, similar to a web browser in ChatGPT. It queries Google Search, scrapes the top N pages, and returns their content as Markdown for further processing by an LLM. It can also scrape individual URLs.\",\"type\":\"object\",\"schemaVersion\":1,\"properties\":{\"query\":{\"title\":\"Search term or URL\",\"description\":\"Enter Google Search keywords or a URL of a specific web page. The keywords might include the [advanced search operators](https://blog.apify.com/how-to-scrape-google-like-a-pro/). Examples:\\n\\n- <code>san francisco weather</code>\\n- <code>https://www.cnn.com</code>\\n- <code>function calling site:openai.com</code>\",\"type\":\"string\",\"prefill\":\"web browser for RAG pipelines -site:reddit.com\"},\"maxResults\":{\"title\":\"Maximum results\",\"description\":\"The maximum number of top organic Google Search results whose web pages will be extracted. If `query` is a URL, then this field is ignored and the Actor only fetches the specific web page.\",\"type\":\"integer\",\"default\":3},\"outputFormats\":{\"title\":\"Output formats\",\"description\":\"Select one or more formats to which the target web pages will be extracted and saved in the resulting dataset.\",\"type\":\"array\",\"default\":[\"markdown\"],\"items\":{\"type\":\"string\",\"enum\":[\"text\",\"markdown\",\"html\",\"links\"],\"enumTitles\":[\"Plain text\",\"Markdown\",\"HTML\",\"Links\"]}},\"requestTimeoutSecs\":{\"title\":\"Request timeout\",\"description\":\"The maximum time in seconds available for the request, including querying Google Search and scraping the target web pages. For example, OpenAI allows only [45 seconds](https://platform.openai.com/docs/actions/production#timeouts) for custom actions. If a target page loading and extraction exceeds this timeout, the corresponding page will be skipped in results to ensure at least some results are returned within the timeout. If no page is extracted within the timeout, the whole request fails.\",\"type\":\"integer\",\"default\":40},\"serpProxyGroup\":{\"title\":\"SERP proxy group\",\"description\":\"Enables overriding the default Apify Proxy group used for fetching Google Search results. Either `GOOGLE_SERP` (default) or `SHADER`. No longer offered in the UI.\",\"type\":\"string\",\"default\":\"GOOGLE_SERP\"},\"serpMaxRetries\":{\"title\":\"SERP max retries\",\"description\":\"The maximum number of times the Actor will retry fetching the Google Search results on error. If the last attempt fails, the entire request fails.\",\"type\":\"integer\",\"default\":2},\"proxyConfiguration\":{\"title\":\"Proxy configuration\",\"description\":\"Apify Proxy configuration used for scraping the target web pages.\",\"type\":\"object\",\"default\":{\"useApifyProxy\":true},\"prefill\":{\"useApifyProxy\":true}},\"scrapingTool\":{\"title\":\"Select a scraping tool\",\"description\":\"Select a scraping tool for extracting the target web pages. The Browser tool is more powerful and can handle JavaScript heavy websites, while the Plain HTML tool can't handle JavaScript but is about two times faster.\",\"type\":\"string\",\"enum\":[\"browser-playwright\",\"raw-http\"],\"default\":\"raw-http\"},\"removeElementsCssSelector\":{\"title\":\"Remove HTML elements (CSS selector)\",\"description\":\"A CSS selector matching HTML elements that will be removed from the DOM, before converting it to text, Markdown, or saving as HTML. This is useful to skip irrelevant page content. The value must be a valid CSS selector as accepted by the `document.querySelectorAll()` function. \\n\\nBy default, the Actor removes common navigation elements, headers, footers, modals, scripts, and inline image.\\n\\n[Description truncated]\",\"type\":\"string\",\"default\":\"nav, footer, script, style, noscript, svg, img[src^='data:'],\\n[role=\\\"alert\\\"],\\n[role=\\\"banner\\\"],\\n[role=\\\"dialog\\\"],\\n[role=\\\"alertdialog\\\"],\\n[role=\\\"region\\\"][aria-label*=\\\"skip\\\" i],\\n[aria-modal=\\\"true\\\"]\",\"prefill\":\"nav, footer, script, style, noscript, svg, img[src^='data:'],\\n[role=\\\"alert\\\"],\\n[role=\\\"banner\\\"],\\n[role=\\\"dialog\\\"],\\n[role=\\\"alertdialog\\\"],\\n[role=\\\"region\\\"][aria-label*=\\\"skip\\\" i],\\n[aria-modal=\\\"true\\\"]\"},\"htmlTransformer\":{\"title\":\"HTML transformer\",\"description\":\"Specify how to transform the HTML to extract meaningful content without any extra fluff, like navigation or modals. The HTML transformation happens after removing and clicking the DOM elements.\\n\\n- **None** (default) - Only removes the HTML elements specified via 'Remove HTML elements' option.\\n\\n- **Readable text** - Extracts the main contents of the webpage, without navigation and other fluff.\\n\\n[Description truncated]\",\"type\":\"string\",\"default\":\"none\",\"prefill\":\"none\"},\"desiredConcurrency\":{\"title\":\"Desired browsing concurrency\",\"description\":\"The desired number of web browsers running in parallel. The system automatically scales the number based on the CPU and memory usage. If the initial value is `0`, the Actor picks the number automatically based on the available memory.\",\"type\":\"integer\",\"default\":5},\"maxRequestRetries\":{\"title\":\"Target page max retries\",\"description\":\"The maximum number of times the Actor will retry loading the target web page on error. If the last attempt fails, the page will be skipped in the results.\",\"type\":\"integer\",\"default\":1},\"dynamicContentWaitSecs\":{\"title\":\"Target page dynamic content timeout\",\"description\":\"The maximum time in seconds to wait for dynamic page content to load. The Actor considers the web page as fully loaded once this time elapses or when the network becomes idle.\",\"type\":\"integer\",\"default\":10},\"removeCookieWarnings\":{\"title\":\"Remove cookie warnings\",\"description\":\"If enabled, the Actor attempts to close or remove cookie consent dialogs to improve the quality of extracted text. Note that this setting increases the latency.\",\"type\":\"boolean\",\"default\":true},\"debugMode\":{\"title\":\"Enable debug mode\",\"description\":\"If enabled, the Actor will store debugging information into the resulting dataset under the `debug` field.\",\"type\":\"boolean\",\"default\":false}},\"required\":[\"query\"]}\n```"
+    },
+    {
+      "type": "text",
+      "text": "# Output Schema (TypeScript)\nInferred from recent successful runs:\n```typescript\ntype ActorOutput = { crawl: { httpStatusCode: number, httpStatusMessage: string, loadedAt: string, requestStatus: string, uniqueKey: string }, metadata: { jsonLd: { @graph: { contactPoint: { @type: string, contactType: string, email: string, telephone: string }[], sameAs: string[], about: { @id: string }, address: { @type: string, addressCountry: string, addressLocality: string, addressRegion: string, postalCode: string, streetAddress: string }, geo: { latitude: number, longitude: number, @type: string }, isPartOf: { @id: string }, parentOrganization: { @type: string, name: string, url: string }, publisher: { @id: string }, @id: string, @type: string, description: string, email: string, image: string | {...}, logo: string | {...}, name: string, priceRange: string, telephone: string, url: string, itemListElement: { position: number, @type: string, name: string, item: {...} | string, nextItem: { @id: string, @type: string, name: string }, previousItem: { @id: string, @type: string, name: string }, @id: string }[], potentialAction: { target: string[] | {...}, query-input: { valueRequired: boolean, @type: string, valueName: string }, @type: string }[], height: number, width: number, breadcrumb: { @id: string }, primaryImageOfPage: { @id: string }, caption: string, contentUrl: string, dateModified: string, datePublished: string, inLanguage: string, thumbnailUrl: string, mainEntity: {...}[] | {...}, articleSection: string[] | string, wordCount: number, author: { @id: string, name: string }, creator: { @id: string }, mainEntityOfPage: { @id: string }, headline: string, groups: unknown[], memberGroups: unknown[], fePreview: boolean, noSearch: boolean, protected: boolean, pageId: number, alternateName: string, searchIndexer: string, title: string }[], publisher: { logo: { @type: string, url: string, height: string, width: string }, @context: string, @type: string, name: string }, @context: string, @type: string, author: string | {...}, dateModified: string, datePublished: string, description: string, headline: string, image: string | {...}, name: string, openingHours: string, url: string, educationRequirements: { @type: string, credentialCategory: string }, experienceRequirements: { monthsOfExperience: number, @type: string }, hiringOrganization: { @type: string, logo: string, name: string, sameAs: string }, identifier: { @type: string, name: string, value: string }, jobLocation: { latitude: number, longitude: number, address: { streetAddress: null, @type: string, addressCountry: string, addressLocality: string, addressRegion: string }, @type: string }, datePosted: string, employmentType: string, industry: string, skills: string, title: string, validThrough: string, mainEntity: string | {...}[], sameAs: string | unknown[], inLanguage: string, mainEntityOfPage: boolean | string, alternativeHeadline: string, dateCreated: string, genre: string, keywords: string, wordcount: string }[], openGraph: { content: string, property: string }[], headers: { set-cookie: string[] | string, accept-ch: string, accept-ch-lifetime: string, accept-ranges: string, age: string, alt-svc: string, cache-control: string, cf-cache-status: string, cf-ray: string, content-encoding: string, content-security-policy: string, content-type: string, cross-origin-opener-policy: string, cross-origin-resource-policy: string, date: string, document-policy: string, etag: string, expires: string, last-modified: string, link: string, origin-agent-cluster: string, permissions-policy: string, pragma: string, report-to: string, reporting-endpoints: string, server: string, strict-transport-security: string, surrogate-control: string, surrogate-key: string, vary: string, x-content-type-options: string, x-contextid: string, x-fb-connection-quality: string, x-fb-debug: string, x-frame-options: string, x-lambda-id: string, x-stack: string, x-wf-region: string, x-xss-protection: string, host-header: string, referrer-policy: string, x-cache-enabled: string, x-cdn-c: string, x-httpd-modphp: string, x-proxy-cache: string, content-length: string, x-li-fabric: string, x-li-pop: string, x-li-proto: string, x-li-uuid: string, content-language: string, nel: string, server-timing: string, x-analytics: string, x-cache: string, x-cache-status: string, x-client-ip: string, x-request-id: string, x-akamai-transformed: string, back-lae-origin-response-start: string, modified-at: string, payment: string, via: string, x-amz-cf-id: string, x-amz-cf-pop: string, x-organization-slug: string, x-ua-device: string, wpo-cache-status: string, x-lima-id: string, x-powered-by: string, x-seen-by: string, x-served-by: string, x-wix-request-id: string, x-ws-origin: string, x-ws-ratelimit-limit: string, x-ws-ratelimit-remaining: string, traceresponse: string, x-debug-info: string, x-drupal-cache: string, x-drupal-dynamic-cache: string, x-generator: string, x-platform-cache: string, x-platform-cluster: string, x-platform-processor: string, x-platform-router: string, access-control-allow-credentials: string, access-control-allow-headers: string, access-control-allow-methods: string, transfer-encoding: string, x-cache-control: string, x-date: string, x-rcache: string, x-ua-compatible: string, contao-cache: string, x-content-digest: string, x-matched-path: string, x-vercel-cache: string, x-vercel-id: string }, canonicalUrl: string, description: string, languageCode: string, redirectedUrl: string, title: string, url: string, author: string, keywords: string }, searchResult: { rank: number, description: string, resultType: string, title: string, url: string }, markdown: string, query: string, text: string }\n```"
+    },
+    {
+      "type": "text",
+      "text": "This Actor is not exposed as a tool and cannot be run in this configuration. To use it,\ncreate your own Apify MCP server configuration at https://mcp.apify.com and add it to your agent."
+    }
+  ],
+  "structuredContent": {
+    "actorInfo": {
+      "title": "RAG Web Browser",
+      "url": "https://apify.com/apify/rag-web-browser",
+      "id": "3ox4R101TgZz67sLr",
+      "fullName": "apify/rag-web-browser",
+      "pictureUrl": "https://images.apifyusercontent.com/IizWhGArjLEyyugvhZa7mC4swbv2vJHQXFGSnihH6uk/rs:fill:76:76/cb:1/aHR0cHM6Ly9hcGlmeS1pbWFnZS11cGxvYWRzLXByb2QuczMudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vM294NFIxMDFUZ1p6NjdzTHIvU0dtQ2VUQlZTNHBkTEtyWE0tMjgxNTk4Ni5wbmc.webp",
+      "developer": {
+        "username": "apify",
+        "isOfficialApify": true,
+        "url": "https://apify.com/apify"
+      },
+      "description": "",
+      "categories": [
+        "AI",
+        "Open Source"
+      ],
+      "pricing": {
+        "model": "PAY_PER_EVENT",
+        "userTier": "FREE",
+        "events": [
+          {
+            "title": "Fetched page",
+            "description": "Returns content of a fetched page",
+            "tieredPricing": [
+              {
+                "tier": "FREE",
+                "priceUsd": 0.00228
+              },
+              {
+                "tier": "BRONZE",
+                "priceUsd": 0.0019
+              },
+              {
+                "tier": "SILVER",
+                "priceUsd": 0.00162
+              },
+              {
+                "tier": "GOLD",
+                "priceUsd": 0.00133
+              },
+              {
+                "tier": "PLATINUM",
+                "priceUsd": 0.00105
+              },
+              {
+                "tier": "DIAMOND",
+                "priceUsd": 0.00076
+              }
+            ]
+          },
+          {
+            "title": "Search result",
+            "description": "Returns a set of links to be fetched",
+            "tieredPricing": [
+              {
+                "tier": "FREE",
+                "priceUsd": 0.00348
+              },
+              {
+                "tier": "BRONZE",
+                "priceUsd": 0.0029
+              },
+              {
+                "tier": "SILVER",
+                "priceUsd": 0.00247
+              },
+              {
+                "tier": "GOLD",
+                "priceUsd": 0.00203
+              },
+              {
+                "tier": "PLATINUM",
+                "priceUsd": 0.0016
+              },
+              {
+                "tier": "DIAMOND",
+                "priceUsd": 0.00116
+              }
+            ]
+          },
+          {
+            "title": "Actor Start",
+            "description": "Charged when the Actor starts running. Number of events charged depends on Actor memory (one event per GB, minimum one event).",
+            "tieredPricing": [
+              {
+                "tier": "FREE",
+                "priceUsd": 0.000225
+              },
+              {
+                "tier": "BRONZE",
+                "priceUsd": 0.000225
+              },
+              {
+                "tier": "SILVER",
+                "priceUsd": 0.000225
+              },
+              {
+                "tier": "GOLD",
+                "priceUsd": 0.000225
+              },
+              {
+                "tier": "PLATINUM",
+                "priceUsd": 0.000225
+              },
+              {
+                "tier": "DIAMOND",
+                "priceUsd": 0.000225
+              }
+            ]
+          }
+        ]
+      },
+      "modifiedAt": "2026-10-21T10:28:15.987Z",
+      "isDeprecated": false
+    },
+    "readme": "## RAG Web Browser\n\nA web-browsing and web-scraping Actor designed to provide up-to-date web context for LLMs and retrieval-augmented generation (RAG) pipelines: it issues web searches, crawls top search results or specific URLs, renders JavaScript when needed with a headless browser, expands collapsed page sections, extracts page metadata (title, description, language, canonical/OpenGraph data), converts HTML to clean Markdown/plain text/HTML, and returns ordered, de-duplicated absolute links with visible link text and crawl/status/timing information; it also supports a lightweight HTTP-fetch mode for static pages, media skipping, anti-scraping bypass via proxies and browser fingerprints, and integration via OpenAPI/MCP for function-calling and low-latency HTTP server deployments for parallel requests.\n\n## Use cases\n\n- Feed LLM applications and RAG pipelines with up-to-date web content discovered via web search.  \n- Crawl and extract content from specific web pages (including JavaScript-rendered pages) and convert it to Markdown or plain text for prompt context.  \n- Provide search-driven collections of top results (titles, descriptions, page metadata, and extracted content) for semantic retrieval.  \n- Integrate web browsing capabilities into custom AI assistants, GPTs, and MCP-based agent workflows via OpenAPI/function-calling.  \n- Low-latency, production-ready web extraction using a standby HTTP server that handles parallel requests.  \n- Fast static-site scraping using a lightweight HTTP fetch mode when JavaScript rendering is not required.  \n- Extract and normalize links on pages into absolute URLs with associated visible text for downstream citation or navigation.  \n- Capture content hidden in collapsed elements (accordions/FAQ) by expanding them before extraction.  \n- Avoid downloading media files during scraping to focus on textual content for LLM consumption.",
+    "inputSchema": {
+      "title": "RAG Web Browser",
+      "description": "Web browser for OpenAI Assistants, RAG pipelines, or AI agents, similar to a web browser in ChatGPT. It queries Google Search, scrapes the top N pages, and returns their content as Markdown for further processing by an LLM. It can also scrape individual URLs.",
+      "type": "object",
+      "schemaVersion": 1,
+      "properties": {
+        "query": {
+          "title": "Search term or URL",
+          "description": "Enter Google Search keywords or a URL of a specific web page. The keywords might include the [advanced search operators](https://blog.apify.com/how-to-scrape-google-like-a-pro/). Examples:\n\n- <code>san francisco weather</code>\n- <code>https://www.cnn.com</code>\n- <code>function calling site:openai.com</code>",
+          "type": "string",
+          "prefill": "web browser for RAG pipelines -site:reddit.com"
+        },
+        "maxResults": {
+          "title": "Maximum results",
+          "description": "The maximum number of top organic Google Search results whose web pages will be extracted. If `query` is a URL, then this field is ignored and the Actor only fetches the specific web page.",
+          "type": "integer",
+          "default": 3
+        },
+        "outputFormats": {
+          "title": "Output formats",
+          "description": "Select one or more formats to which the target web pages will be extracted and saved in the resulting dataset.",
+          "type": "array",
+          "default": [
+            "markdown"
+          ],
+          "items": {
+            "type": "string",
+            "enum": [
+              "text",
+              "markdown",
+              "html",
+              "links"
+            ],
+            "enumTitles": [
+              "Plain text",
+              "Markdown",
+              "HTML",
+              "Links"
+            ]
+          }
+        },
+        "requestTimeoutSecs": {
+          "title": "Request timeout",
+          "description": "The maximum time in seconds available for the request, including querying Google Search and scraping the target web pages. For example, OpenAI allows only [45 seconds](https://platform.openai.com/docs/actions/production#timeouts) for custom actions. If a target page loading and extraction exceeds this timeout, the corresponding page will be skipped in results to ensure at least some results are returned within the timeout. If no page is extracted within the timeout, the whole request fails.",
+          "type": "integer",
+          "default": 40
+        },
+        "serpProxyGroup": {
+          "title": "SERP proxy group",
+          "description": "Enables overriding the default Apify Proxy group used for fetching Google Search results. Either `GOOGLE_SERP` (default) or `SHADER`. No longer offered in the UI.",
+          "type": "string",
+          "default": "GOOGLE_SERP"
+        },
+        "serpMaxRetries": {
+          "title": "SERP max retries",
+          "description": "The maximum number of times the Actor will retry fetching the Google Search results on error. If the last attempt fails, the entire request fails.",
+          "type": "integer",
+          "default": 2
+        },
+        "proxyConfiguration": {
+          "title": "Proxy configuration",
+          "description": "Apify Proxy configuration used for scraping the target web pages.",
+          "type": "object",
+          "default": {
+            "useApifyProxy": true
+          },
+          "prefill": {
+            "useApifyProxy": true
+          }
+        },
+        "scrapingTool": {
+          "title": "Select a scraping tool",
+          "description": "Select a scraping tool for extracting the target web pages. The Browser tool is more powerful and can handle JavaScript heavy websites, while the Plain HTML tool can't handle JavaScript but is about two times faster.",
+          "type": "string",
+          "enum": [
+            "browser-playwright",
+            "raw-http"
+          ],
+          "default": "raw-http"
+        },
+        "removeElementsCssSelector": {
+          "title": "Remove HTML elements (CSS selector)",
+          "description": "A CSS selector matching HTML elements that will be removed from the DOM, before converting it to text, Markdown, or saving as HTML. This is useful to skip irrelevant page content. The value must be a valid CSS selector as accepted by the `document.querySelectorAll()` function. \n\nBy default, the Actor removes common navigation elements, headers, footers, modals, scripts, and inline image.\n\n[Description truncated]",
+          "type": "string",
+          "default": "nav, footer, script, style, noscript, svg, img[src^='data:'],\n[role=\"alert\"],\n[role=\"banner\"],\n[role=\"dialog\"],\n[role=\"alertdialog\"],\n[role=\"region\"][aria-label*=\"skip\" i],\n[aria-modal=\"true\"]",
+          "prefill": "nav, footer, script, style, noscript, svg, img[src^='data:'],\n[role=\"alert\"],\n[role=\"banner\"],\n[role=\"dialog\"],\n[role=\"alertdialog\"],\n[role=\"region\"][aria-label*=\"skip\" i],\n[aria-modal=\"true\"]"
+        },
+        "htmlTransformer": {
+          "title": "HTML transformer",
+          "description": "Specify how to transform the HTML to extract meaningful content without any extra fluff, like navigation or modals. The HTML transformation happens after removing and clicking the DOM elements.\n\n- **None** (default) - Only removes the HTML elements specified via 'Remove HTML elements' option.\n\n- **Readable text** - Extracts the main contents of the webpage, without navigation and other fluff.\n\n[Description truncated]",
+          "type": "string",
+          "default": "none",
+          "prefill": "none"
+        },
+        "desiredConcurrency": {
+          "title": "Desired browsing concurrency",
+          "description": "The desired number of web browsers running in parallel. The system automatically scales the number based on the CPU and memory usage. If the initial value is `0`, the Actor picks the number automatically based on the available memory.",
+          "type": "integer",
+          "default": 5
+        },
+        "maxRequestRetries": {
+          "title": "Target page max retries",
+          "description": "The maximum number of times the Actor will retry loading the target web page on error. If the last attempt fails, the page will be skipped in the results.",
+          "type": "integer",
+          "default": 1
+        },
+        "dynamicContentWaitSecs": {
+          "title": "Target page dynamic content timeout",
+          "description": "The maximum time in seconds to wait for dynamic page content to load. The Actor considers the web page as fully loaded once this time elapses or when the network becomes idle.",
+          "type": "integer",
+          "default": 10
+        },
+        "removeCookieWarnings": {
+          "title": "Remove cookie warnings",
+          "description": "If enabled, the Actor attempts to close or remove cookie consent dialogs to improve the quality of extracted text. Note that this setting increases the latency.",
+          "type": "boolean",
+          "default": true
+        },
+        "debugMode": {
+          "title": "Enable debug mode",
+          "description": "If enabled, the Actor will store debugging information into the resulting dataset under the `debug` field.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    "outputSchema": {
+      "crawl": {
+        "httpStatusCode": "number",
+        "httpStatusMessage": "string",
+        "loadedAt": "string",
+        "requestStatus": "string",
+        "uniqueKey": "string"
+      },
+      "metadata": {
+        "jsonLd": [
+          {
+            "@graph": [
+              {
+                "contactPoint": [
+                  {
+                    "@type": "string",
+                    "contactType": "string",
+                    "email": "string",
+                    "telephone": "string"
+                  }
+                ],
+                "sameAs": [
+                  "string"
+                ],
+                "about": {
+                  "@id": "string"
+                },
+                "address": {
+                  "@type": "string",
+                  "addressCountry": "string",
+                  "addressLocality": "string",
+                  "addressRegion": "string",
+                  "postalCode": "string",
+                  "streetAddress": "string"
+                },
+                "geo": {
+                  "latitude": "number",
+                  "longitude": "number",
+                  "@type": "string"
+                },
+                "isPartOf": {
+                  "@id": "string"
+                },
+                "parentOrganization": {
+                  "@type": "string",
+                  "name": "string",
+                  "url": "string"
+                },
+                "publisher": {
+                  "@id": "string"
+                },
+                "@id": "string",
+                "@type": "string",
+                "description": "string",
+                "email": "string",
+                "image": "string | {...}",
+                "logo": "string | {...}",
+                "name": "string",
+                "priceRange": "string",
+                "telephone": "string",
+                "url": "string",
+                "itemListElement": [
+                  {
+                    "position": "number",
+                    "@type": "string",
+                    "name": "string",
+                    "item": "{...} | string",
+                    "nextItem": {
+                      "@id": "string",
+                      "@type": "string",
+                      "name": "string"
+                    },
+                    "previousItem": {
+                      "@id": "string",
+                      "@type": "string",
+                      "name": "string"
+                    },
+                    "@id": "string"
+                  }
+                ],
+                "potentialAction": [
+                  {
+                    "target": "string[] | {...}",
+                    "query-input": {
+                      "valueRequired": "boolean",
+                      "@type": "string",
+                      "valueName": "string"
+                    },
+                    "@type": "string"
+                  }
+                ],
+                "height": "number",
+                "width": "number",
+                "breadcrumb": {
+                  "@id": "string"
+                },
+                "primaryImageOfPage": {
+                  "@id": "string"
+                },
+                "caption": "string",
+                "contentUrl": "string",
+                "dateModified": "string",
+                "datePublished": "string",
+                "inLanguage": "string",
+                "thumbnailUrl": "string",
+                "mainEntity": "{...}[] | {...}",
+                "articleSection": "string[] | string",
+                "wordCount": "number",
+                "author": {
+                  "@id": "string",
+                  "name": "string"
+                },
+                "creator": {
+                  "@id": "string"
+                },
+                "mainEntityOfPage": {
+                  "@id": "string"
+                },
+                "headline": "string",
+                "groups": [
+                  "unknown"
+                ],
+                "memberGroups": [
+                  "unknown"
+                ],
+                "fePreview": "boolean",
+                "noSearch": "boolean",
+                "protected": "boolean",
+                "pageId": "number",
+                "alternateName": "string",
+                "searchIndexer": "string",
+                "title": "string"
+              }
+            ],
+            "publisher": {
+              "logo": {
+                "@type": "string",
+                "url": "string",
+                "height": "string",
+                "width": "string"
+              },
+              "@context": "string",
+              "@type": "string",
+              "name": "string"
+            },
+            "@context": "string",
+            "@type": "string",
+            "author": "string | {...}",
+            "dateModified": "string",
+            "datePublished": "string",
+            "description": "string",
+            "headline": "string",
+            "image": "string | {...}",
+            "name": "string",
+            "openingHours": "string",
+            "url": "string",
+            "educationRequirements": {
+              "@type": "string",
+              "credentialCategory": "string"
+            },
+            "experienceRequirements": {
+              "monthsOfExperience": "number",
+              "@type": "string"
+            },
+            "hiringOrganization": {
+              "@type": "string",
+              "logo": "string",
+              "name": "string",
+              "sameAs": "string"
+            },
+            "identifier": {
+              "@type": "string",
+              "name": "string",
+              "value": "string"
+            },
+            "jobLocation": {
+              "latitude": "number",
+              "longitude": "number",
+              "address": {
+                "streetAddress": "null",
+                "@type": "string",
+                "addressCountry": "string",
+                "addressLocality": "string",
+                "addressRegion": "string"
+              },
+              "@type": "string"
+            },
+            "datePosted": "string",
+            "employmentType": "string",
+            "industry": "string",
+            "skills": "string",
+            "title": "string",
+            "validThrough": "string",
+            "mainEntity": "string | {...}[]",
+            "sameAs": "string | unknown[]",
+            "inLanguage": "string",
+            "mainEntityOfPage": "boolean | string",
+            "alternativeHeadline": "string",
+            "dateCreated": "string",
+            "genre": "string",
+            "keywords": "string",
+            "wordcount": "string"
+          }
+        ],
+        "openGraph": [
+          {
+            "content": "string",
+            "property": "string"
+          }
+        ],
+        "headers": {
+          "set-cookie": "string[] | string",
+          "accept-ch": "string",
+          "accept-ch-lifetime": "string",
+          "accept-ranges": "string",
+          "age": "string",
+          "alt-svc": "string",
+          "cache-control": "string",
+          "cf-cache-status": "string",
+          "cf-ray": "string",
+          "content-encoding": "string",
+          "content-security-policy": "string",
+          "content-type": "string",
+          "cross-origin-opener-policy": "string",
+          "cross-origin-resource-policy": "string",
+          "date": "string",
+          "document-policy": "string",
+          "etag": "string",
+          "expires": "string",
+          "last-modified": "string",
+          "link": "string",
+          "origin-agent-cluster": "string",
+          "permissions-policy": "string",
+          "pragma": "string",
+          "report-to": "string",
+          "reporting-endpoints": "string",
+          "server": "string",
+          "strict-transport-security": "string",
+          "surrogate-control": "string",
+          "surrogate-key": "string",
+          "vary": "string",
+          "x-content-type-options": "string",
+          "x-contextid": "string",
+          "x-fb-connection-quality": "string",
+          "x-fb-debug": "string",
+          "x-frame-options": "string",
+          "x-lambda-id": "string",
+          "x-stack": "string",
+          "x-wf-region": "string",
+          "x-xss-protection": "string",
+          "host-header": "string",
+          "referrer-policy": "string",
+          "x-cache-enabled": "string",
+          "x-cdn-c": "string",
+          "x-httpd-modphp": "string",
+          "x-proxy-cache": "string",
+          "content-length": "string",
+          "x-li-fabric": "string",
+          "x-li-pop": "string",
+          "x-li-proto": "string",
+          "x-li-uuid": "string",
+          "content-language": "string",
+          "nel": "string",
+          "server-timing": "string",
+          "x-analytics": "string",
+          "x-cache": "string",
+          "x-cache-status": "string",
+          "x-client-ip": "string",
+          "x-request-id": "string",
+          "x-akamai-transformed": "string",
+          "back-lae-origin-response-start": "string",
+          "modified-at": "string",
+          "payment": "string",
+          "via": "string",
+          "x-amz-cf-id": "string",
+          "x-amz-cf-pop": "string",
+          "x-organization-slug": "string",
+          "x-ua-device": "string",
+          "wpo-cache-status": "string",
+          "x-lima-id": "string",
+          "x-powered-by": "string",
+          "x-seen-by": "string",
+          "x-served-by": "string",
+          "x-wix-request-id": "string",
+          "x-ws-origin": "string",
+          "x-ws-ratelimit-limit": "string",
+          "x-ws-ratelimit-remaining": "string",
+          "traceresponse": "string",
+          "x-debug-info": "string",
+          "x-drupal-cache": "string",
+          "x-drupal-dynamic-cache": "string",
+          "x-generator": "string",
+          "x-platform-cache": "string",
+          "x-platform-cluster": "string",
+          "x-platform-processor": "string",
+          "x-platform-router": "string",
+          "access-control-allow-credentials": "string",
+          "access-control-allow-headers": "string",
+          "access-control-allow-methods": "string",
+          "transfer-encoding": "string",
+          "x-cache-control": "string",
+          "x-date": "string",
+          "x-rcache": "string",
+          "x-ua-compatible": "string",
+          "contao-cache": "string",
+          "x-content-digest": "string",
+          "x-matched-path": "string",
+          "x-vercel-cache": "string",
+          "x-vercel-id": "string"
+        },
+        "canonicalUrl": "string",
+        "description": "string",
+        "languageCode": "string",
+        "redirectedUrl": "string",
+        "title": "string",
+        "url": "string",
+        "author": "string",
+        "keywords": "string"
+      },
+      "searchResult": {
+        "rank": "number",
+        "description": "string",
+        "resultType": "string",
+        "title": "string",
+        "url": "string"
+      },
+      "markdown": "string",
+      "query": "string",
+      "text": "string"
+    }
+  },
+  "isError": false
+}

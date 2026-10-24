@@ -1,0 +1,19 @@
+{
+  "observedAt": "2026-10-23",
+  "starterDocUrl": "https://docs.google.com/document/d/1k6NGZcCUv7DZJ0kVWwQW419nb-Uz3vDlTyZt7nqdVNY/edit",
+  "localSourceSha256": "7cfd73d71e33a58b957a28d6b6b5440df8ea360e75516a9e22defb652e98dc55",
+  "embeddedLinkCount": 50,
+  "publicFolderInventory": "drive-folder-inventory.json",
+  "officialUrls": [
+    "https://docs.apify.com/mcp",
+    "https://docs.apify.com/agents/plugins",
+    "https://docs.apify.com/agents/skills",
+    "https://docs.apify.com/api/v2/actors-runs-post",
+    "https://docs.apify.com/actors/running/permissions",
+    "https://docs.apify.com/actors/running/tasks",
+    "https://docs.apify.com/integrations/webhooks",
+    "https://docs.apify.com/storage"
+  ],
+  "eventUrl": "https://cal-hacks-13-0.devpost.com/",
+  "secretsCopied": false
+}

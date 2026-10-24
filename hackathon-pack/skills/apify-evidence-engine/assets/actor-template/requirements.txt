@@ -1,0 +1,2 @@
+# Resolve and lock after local SDK validation; this template's cloud build is unverified.
+apify>=4.1,<5

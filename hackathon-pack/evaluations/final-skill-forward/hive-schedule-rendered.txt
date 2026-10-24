@@ -1,0 +1,85 @@
+- link "Skip to content":
+  - /url: "#main"
+- banner:
+  - link "Cal hacks 13.0 home":
+    - /url: /
+  - button "Switch to dark theme":
+    - generic: Switch to dark theme
+  - navigation "Main":
+    - link "schedule":
+      - /url: /schedule
+    - link "map":
+      - /url: /map
+    - link "prizes":
+      - /url: /prizes
+    - link "FAQ":
+      - /url: /faq
+    - link "resources":
+      - /url: /resources
+  - link "sign in":
+    - /url: /login?next=%2Fschedule
+- main:
+  - link "Back to Home":
+    - /url: /
+    - text: Back to Home
+  - paragraph: Cal hacks 13.0 / schedule
+  - paragraph: What’s going on?
+  - heading "schedule" [level=1]
+  - link "TV view ↗":
+    - /url: /tv
+  - button "Filters":
+    - generic: Filters
+  - tablist "Schedule day":
+    - tab "Day 01 · Fri, 10/23" [selected]:
+      - generic: Day 01 · Fri, 10/23
+    - tab "Day 02 · Sat, 10/24":
+      - generic: Day 02 · Sat, 10/24
+    - tab "Day 03 · Sun, 10/25":
+      - generic: Day 03 · Sun, 10/25
+  - generic: Search events
+  - searchbox "Search events"
+  - tabpanel "Day 01 · Fri, 10/23":
+    - region "Today’s Events, CAL HACKS 13.0 DAY 1":
+      - heading "Today’s Events" [level=3]
+      - paragraph: CAL HACKS 13.0 DAY 1
+      - generic: /Time
+      - generic: /Event
+      - generic: /Status
+      - list:
+        - button "1:00 PM BUSES TO PALACE OF FINE ARTS BOARDING. Open event details"
+        - button "1:30 PM CHECK-IN BOARDING. Open event details"
+        - button "3:40 PM CAL BAND PERFORMANCE ON TIME. Open event details"
+        - button "4:00 PM OPENING CEREMONY ON TIME. Open event details"
+        - button "6:00 PM FACTORY WORKSHOP ON TIME. Open event details"
+        - button "6:00 PM MLH WORKSHOP ON TIME. Open event details"
+        - button "6:00 PM TEAM FORMATION MIXER ON TIME. Open event details"
+        - button "6:00 PM DINNER ON TIME. Open event details"
+        - button "7:00 PM FIGMA WORKSHOP ON TIME. Open event details"
+        - button "7:00 PM HYPHENATE WORKSHOP ON TIME. Open event details"
+        - button "7:00 PM MICROSOFT NETWORKING SOCIAL ON TIME. Open event details"
+        - button "7:00 PM CUBSTART FULL-STACK FOUNDATIONS WORKSHOP ON TIME. Open event details"
+        - button "8:00 PM SHOWERS OPEN ON TIME. Open event details"
+        - button "8:00 PM WOMEN IN TECH CAREERS PANEL ON TIME. Open event details"
+        - button "8:00 PM ELASTIC WORKSHOP ON TIME. Open event details"
+        - button "8:00 PM SPACEXAI WORKSHOP ON TIME. Open event details"
+        - button "9:00 PM CLASH ROYALE ON TIME. Open event details"
+        - button "9:30 PM SLEEP AREA OPEN ON TIME. Open event details"
+        - button "10:00 PM MIDNIGHT SNACK ON TIME. Open event details"
+        - button "10:30 PM MIDNIGHT RUN ON TIME. Open event details"
+  - paragraph: All times are Pacific.
+- contentinfo:
+  - link "Hackathons @ Berkeley":
+    - /url: https://hackberkeley.org/
+    - img "Hackathons @ Berkeley"
+  - paragraph: follow us on
+  - list:
+    - link "Instagram":
+      - /url: https://www.instagram.com/calhacks/
+    - link "LinkedIn":
+      - /url: https://www.linkedin.com/company/cal-hacks/posts/
+  - paragraph:
+    - text: made with
+    - img "love"
+    - text: by
+    - generic: hackathons @ berkeley
+- alert

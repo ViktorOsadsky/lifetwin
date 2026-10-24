@@ -1,0 +1,107 @@
+{
+  "finance": {
+    "valid": false,
+    "errors": [
+      "unbalanced:entityA:USD:10000",
+      "unbalanced:entityB:EUR:-10000"
+    ],
+    "scope": "syntactic_evidence_and_balance_only",
+    "posted": false
+  },
+  "backend": {
+    "mode": "SIMULATED PROVIDER; REAL LOCAL SQLITE LEDGER",
+    "first": {
+      "created": true,
+      "state": "queued",
+      "revision": 0
+    },
+    "duplicate": {
+      "created": false,
+      "state": "queued",
+      "revision": 0
+    },
+    "parallel_claims": [
+      "claimed",
+      "stale_revision"
+    ],
+    "after_restart": {
+      "created": false,
+      "state": "uncertain",
+      "revision": 5
+    },
+    "write_retry": "invalid_transition",
+    "provider_purchase_calls": 1,
+    "safe_reconcile_reference": "simulated-provider-reference",
+    "final": {
+      "state": "succeeded",
+      "revision": 6
+    },
+    "changed_payload_same_key": "idempotency_key_payload_conflict",
+    "history": [
+      [
+        0,
+        "queued"
+      ],
+      [
+        1,
+        "running"
+      ],
+      [
+        2,
+        "awaiting_approval"
+      ],
+      [
+        3,
+        "ready"
+      ],
+      [
+        4,
+        "executing"
+      ],
+      [
+        5,
+        "uncertain"
+      ],
+      [
+        6,
+        "succeeded"
+      ]
+    ]
+  },
+  "ml": {
+    "score": {
+      "total": 10,
+      "accepted": 5,
+      "correct": 5,
+      "incorrect": 0,
+      "abstained": 5,
+      "missing_prediction_ids": [
+        "row5",
+        "row6",
+        "row7",
+        "row8",
+        "row9"
+      ],
+      "coverage": 0.5,
+      "accepted_accuracy": 1.0,
+      "task_success": 0.5,
+      "per_label": {
+        "compatible": {
+          "true_positive": 5,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "incompatible": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        }
+      }
+    },
+    "split_audit": "Leaked groups: same-model-family"
+  }
+}

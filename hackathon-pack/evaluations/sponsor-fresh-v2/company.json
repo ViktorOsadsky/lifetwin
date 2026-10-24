@@ -1,0 +1,27 @@
+{
+  "name": "Second Semester Resale LLC",
+  "tenant": "second-semester",
+  "entity": "shop-us",
+  "currency": "USD",
+  "seat": "Close analyst: reconcile source events, propose corrections, maintain exceptions; an independent controller authorizes local journal posting; no bank payout scope",
+  "policy_version": "shop-policy-3",
+  "policy": {
+    "consignment": "Store owns no consigned inventory. Signed contract takes 30% commission and owes consignor 70% of the pre-tax sale. This sale has no tax in the fictional jurisdiction. A full return reverses the original exact commission and consignor liability; no payout without accepted condition and a complete return check.",
+    "closed_period": "March and April are closed. Differences discovered in June are held for independent controller judgment. In this fixture only, controller authorizes a June correction retaining original effective dates; this is not an assertion of generally applicable accounting policy.",
+    "owned_returns": "Quarantined owned goods keep their historical cost until condition and recoverable amount are documented. Fixture policy permits reversal of impairment up to cost when independently inspected; a consigned item never becomes the shop's inventory asset.",
+    "sources_of_record": {"cash": "settled bank statement", "consignment_rights": "signed contract C-1-v2", "posted_balances": "immutable local journal", "condition": "warehouse inspection", "policy": "controller-approved shop-policy-3"}
+  },
+  "sources": [
+    {"id":"C-1", "version":"v2", "effective":"2026-03-01", "arrived":"2026-03-01", "type":"signed_contract", "consignor_share_bps":7000},
+    {"id":"sale-1", "version":"v1", "effective":"2026-03-25", "arrived":"2026-03-25", "gross_minor":20000, "consignor_id":"seller-A", "stock_owner":"seller-A", "tax_minor":0},
+    {"id":"settlement-1", "version":"v1", "effective":"2026-03-27", "arrived":"2026-03-28", "gross_minor":20000, "fee_minor":600, "net_minor":19400, "sale_ref":"sale-1"},
+    {"id":"return-1", "version":"v1", "effective":"2026-04-10", "arrived":"2026-04-10", "sale_ref":"sale-1", "status":"quarantined", "refund_minor":20000, "stock_owner":"seller-A"},
+    {"id":"legacy-april", "version":"v1", "effective":"2026-04-10", "arrived":"2026-06-02", "type":"incomplete_handoff", "posted_payable_reversal_minor":13000, "posted_commission_reversal_minor":7000},
+    {"id":"bank-refund-1", "version":"v1", "effective":"2026-04-12", "arrived":"2026-06-03", "amount_minor":20000, "direction":"debit", "refund_ref":"return-1"},
+    {"id":"owned-Q", "version":"v1", "effective":"2026-06-05", "arrived":"2026-06-05", "stock_owner":"shop-us", "cost_minor":8000, "status":"quarantined", "recoverable_minor":null},
+    {"id":"inspection-Q", "version":"v1", "effective":"2026-06-06", "arrived":"2026-06-06", "recoverable_minor":5000},
+    {"id":"inspection-Q", "version":"v2", "effective":"2026-06-08", "arrived":"2026-06-08", "recoverable_minor":7000, "reason":"repair evidence replaces preliminary inspection"}
+  ],
+  "actors": {"analyst":{"role":"proposer","scope":"shop-us:journal.propose"},"controller":{"role":"controller","scope":"shop-us:journal.approve","simulated":true},"warehouse":{"role":"custody","scope":"condition.evidence"}},
+  "handoff_requirements": ["Controller decides June treatment for late April cash; fiscal reopening is not permitted by this fixture", "Consignor payout remains blocked until return/condition handoff is complete", "Condition staff supplies inspection evidence; analyst cannot invent recovery value", "Bank identity change must be independently verified if introduced"]
+}

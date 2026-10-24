@@ -1,0 +1,36 @@
+{
+  "installed": [
+    {
+      "skill": "creative-web-worlds",
+      "filesVerified": 13,
+      "entrypointSha256": "ec11429debd7f3f8bc7a87cb6f62e9ce165150b03b4add8560288011036ea1c2"
+    },
+    {
+      "skill": "hyphenate-finance-agent",
+      "filesVerified": 9,
+      "entrypointSha256": "edf12ba0f6bc3f0c74f036a985732e96ed453a45e9a8a7155f676f2f21ea79c1"
+    },
+    {
+      "skill": "visa-agentic-commerce",
+      "filesVerified": 7,
+      "entrypointSha256": "bc83dad5304080ff9bd55c4c0c757a9486f0750765c8621a1db1db0daa8a7f21"
+    },
+    {
+      "skill": "apify-evidence-engine",
+      "filesVerified": 13,
+      "entrypointSha256": "34adba2694bd3aff9f782a02ec7c93efcb73d7ce891564e6338612fafa625306"
+    },
+    {
+      "skill": "sponsor-track-builder",
+      "filesVerified": 3,
+      "entrypointSha256": "11f9d2870bd02ce2f018a09d2fd9cc1ac8b3f7d8d75f121c1ad90f32bbd076b9"
+    },
+    {
+      "skill": "hackathon-prize-strategy",
+      "filesVerified": 3,
+      "entrypointSha256": "5d29ebf7e259d271f5e09f9d3ddd9c420e69c25b0fc68529b4fcb5b45d8cf2bf"
+    }
+  ],
+  "allMatch": true,
+  "backupDirectory": "/Users/flare/Documents/ChatGPT/Skills/skill-backups/2026-10-23-motion-starters"
+}

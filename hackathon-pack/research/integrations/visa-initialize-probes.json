@@ -1,0 +1,16 @@
+[
+  {
+    "url": "https://developer.visa.com/mcp",
+    "method": "POST initialize",
+    "status": 401,
+    "contentType": "application/json",
+    "body": "{\"error_description\":\"Bearer token required. Use the resource_metadata URL in the WWW-Authenticate header to discover the authorization server.\"}"
+  },
+  {
+    "url": "https://sandbox.mcp.visa.com/mcp",
+    "method": "POST initialize",
+    "status": 401,
+    "contentType": "text/plain;charset=UTF-8",
+    "body": "UnAuthorized"
+  }
+]

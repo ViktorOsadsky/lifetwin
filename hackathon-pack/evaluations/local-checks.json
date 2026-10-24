@@ -1,0 +1,260 @@
+{
+  "skills": [
+    "apify-evidence-engine",
+    "creative-web-worlds",
+    "hackathon-backend",
+    "hackathon-demo-director",
+    "hackathon-idea-lab",
+    "hackathon-ml-evals",
+    "hackathon-prize-strategy",
+    "hyphenate-finance-agent",
+    "sponsor-track-builder",
+    "visa-agentic-commerce"
+  ],
+  "allPassed": true,
+  "scope": "local tests and local links only; no live authenticated sponsor calls",
+  "checks": [
+    {
+      "check": "all_expected_skills_present",
+      "passed": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "check": "skills/apify-evidence-engine/SKILL.md \u2192 references/operations.md",
+      "passed": true
+    },
+    {
+      "check": "skills/apify-evidence-engine/SKILL.md \u2192 references/starter-pack.md",
+      "passed": true
+    },
+    {
+      "check": "skills/apify-evidence-engine/SKILL.md \u2192 references/actor-build.md",
+      "passed": true
+    },
+    {
+      "check": "apify-evidence-engine:offline tests",
+      "passed": true,
+      "output": "test_bad_poll_delay_rejected_before_network (test_apify.ApifyTests) ... ok\ntest_empty_success_is_valid_empty_dataset (test_apify.ApifyTests) ... ok\ntest_execution_requires_reviewed_identity_before_start (test_apify.ApifyTests) ... ok\ntest_failure_never_fetches_dataset_or_restarts (test_apify.ApifyTests) ... ok\ntest_initial_identity_drift_holds_before_polling (test_apify.ApifyTests) ... ok\ntest_input_is_snapshotted (test_apify.ApifyTests) ... ok\ntest_invalid_budget_blocks_before_network (test_apify.ApifyTests) ... ok\ntest_legitimate_actor_limit_field_is_independent_of_run_limit (test_apify.ApifyTests) ... ok\ntest_limits_are_run_query_not_input (test_apify.ApifyTests) ... ok\ntest_modified_plan_rejected_before_network (test_apify.ApifyTests) ... ok\ntest_poll_exhaustion_aborts_owned_run (test_apify.ApifyTests) ... ok\ntest_readonly_client_rejects_run_tool (test_apify.ApifyTests) ... ok\ntest_returned_identity_drift_holds_without_abort_or_restart (test_apify.ApifyTests) ... ok\ntest_sse_and_json_protocol_frames (test_apify.ApifyTests) ... ok\ntest_tools_pagination (test_apify.ApifyTests) ... ok\ntest_uncertain_start_is_not_retried (test_apify.ApifyTests) ... ok\n\n----------------------------------------------------------------------\nRan 16 tests in 0.001s\n\nOK\n"
+    },
+    {
+      "check": "skills/creative-web-worlds/SKILL.md \u2192 references/source-atlas.md",
+      "passed": true
+    },
+    {
+      "check": "skills/creative-web-worlds/SKILL.md \u2192 references/production-lessons.md",
+      "passed": true
+    },
+    {
+      "check": "skills/creative-web-worlds/SKILL.md \u2192 references/interaction-contracts.md",
+      "passed": true
+    },
+    {
+      "check": "skills/creative-web-worlds/SKILL.md \u2192 references/motion-and-mobile.md",
+      "passed": true
+    },
+    {
+      "check": "skills/creative-web-worlds/SKILL.md \u2192 references/real-3d-recipe.md",
+      "passed": true
+    },
+    {
+      "check": "skills/creative-web-worlds/SKILL.md \u2192 references/craft-review.md",
+      "passed": true
+    },
+    {
+      "check": "skills/creative-web-worlds/references/production-lessons.md \u2192 source-atlas.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-backend/SKILL.md \u2192 scripts/job_ledger.py",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-backend/SKILL.md \u2192 references/runtime-contract.md",
+      "passed": true
+    },
+    {
+      "check": "hackathon-backend:offline tests",
+      "passed": true,
+      "output": "test_changed_payload_same_key_rejected (test_job_ledger.LedgerTests) ... ok\ntest_simultaneous_double_click_reserves_once (test_job_ledger.LedgerTests) ... ok\ntest_stale_revision_cannot_execute_twice (test_job_ledger.LedgerTests) ... ok\ntest_tenant_namespace_separates_jobs (test_job_ledger.LedgerTests) ... ok\ntest_uncertain_outcome_cannot_blind_retry (test_job_ledger.LedgerTests) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.070s\n\nOK\n"
+    },
+    {
+      "check": "skills/hackathon-idea-lab/SKILL.md \u2192 references/experiments.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-idea-lab/SKILL.md \u2192 evals/prompts.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-idea-lab/evals/completed-review.md \u2192 forward-test-response.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-idea-lab/evals/completed-review.md \u2192 ../../../research/ideas/fixtures/xpart-forward-test-response.json",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-idea-lab/evals/completed-review.md \u2192 ../../../research/ideas/idea-audit.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-idea-lab/evals/completed-review.md \u2192 postrevision-response.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-ml-evals/SKILL.md \u2192 scripts/score_predictions.py",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-ml-evals/SKILL.md \u2192 references/training-decisions.md",
+      "passed": true
+    },
+    {
+      "check": "hackathon-ml-evals:offline tests",
+      "passed": true,
+      "output": "test_always_abstain_not_perfect (test_metrics.MetricsTests) ... ok\ntest_disjoint_groups_pass (test_metrics.MetricsTests) ... ok\ntest_duplicate_and_unknown_ids_fail (test_metrics.MetricsTests) ... ok\ntest_empty_truth_cannot_claim_accuracy (test_metrics.MetricsTests) ... ok\ntest_false_compatible_counts_explicitly (test_metrics.MetricsTests) ... ok\ntest_malformed_response_not_hidden_as_abstention (test_metrics.MetricsTests) ... ok\ntest_missing_hard_case_counts_in_denominator (test_metrics.MetricsTests) ... ok\ntest_same_family_leak_rejected (test_metrics.MetricsTests) ... ok\ntest_wrong_prediction_is_error (test_metrics.MetricsTests) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.000s\n\nOK\n"
+    },
+    {
+      "check": "skills/hackathon-prize-strategy/SKILL.md \u2192 references/event-snapshot.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-prize-strategy/references/resource-addendum.md \u2192 event-snapshot.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-prize-strategy/references/resource-addendum.md \u2192 ../../../research/resources-2026-10-23/resource-review.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-prize-strategy/references/resource-addendum.md \u2192 ../../sponsor-track-builder/references/resource-routes.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-prize-strategy/references/resource-addendum.md \u2192 ../../../evaluations/final-skill-forward/hive-sunday-rendered.txt",
+      "passed": true
+    },
+    {
+      "check": "skills/hackathon-prize-strategy/references/event-snapshot.md \u2192 resource-addendum.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hyphenate-finance-agent/SKILL.md \u2192 references/verified-context.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hyphenate-finance-agent/SKILL.md \u2192 scripts/catalog_tools.py",
+      "passed": true
+    },
+    {
+      "check": "skills/hyphenate-finance-agent/SKILL.md \u2192 scripts/finance_checks.py",
+      "passed": true
+    },
+    {
+      "check": "skills/hyphenate-finance-agent/SKILL.md \u2192 scripts/workflow_checks.py",
+      "passed": true
+    },
+    {
+      "check": "skills/hyphenate-finance-agent/SKILL.md \u2192 references/workflow-example.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hyphenate-finance-agent/SKILL.md \u2192 references/evaluation.md",
+      "passed": true
+    },
+    {
+      "check": "skills/hyphenate-finance-agent/references/verified-context.md \u2192 workflow-example.md",
+      "passed": true
+    },
+    {
+      "check": "hyphenate-finance-agent:offline tests",
+      "passed": true,
+      "output": "test_balanced_wrong_account_requires_semantic_review (test_finance.FinanceChecks) ... ok\ntest_cross_currency_net_zero_is_rejected (test_finance.FinanceChecks) ... ok\ntest_cross_entity_net_zero_is_rejected (test_finance.FinanceChecks) ... ok\ntest_evidence_and_replay (test_finance.FinanceChecks) ... ok\ntest_float_bool_and_negative_rejected (test_finance.FinanceChecks) ... ok\ntest_mcp_pagination_not_silently_complete (test_finance.FinanceChecks) ... ok\ntest_openapi_security_and_reference_preserved (test_finance.FinanceChecks) ... ok\ntest_valid_but_no_claim_of_accounting_correctness (test_finance.FinanceChecks) ... ok\ntest_empty_context_fails_closed (test_workflow.WorkflowChecks) ... ok\ntest_history_of_another_snapshot_does_not_grant_current_approval (test_workflow.WorkflowChecks) ... ok\ntest_missing_or_malformed_history_fails_closed (test_workflow.WorkflowChecks) ... ok\ntest_planted_scenarios (test_workflow.WorkflowChecks) ... ok\n\n----------------------------------------------------------------------\nRan 12 tests in 0.002s\n\nOK\n"
+    },
+    {
+      "check": "skills/sponsor-track-builder/SKILL.md \u2192 references/track-recipes.md",
+      "passed": true
+    },
+    {
+      "check": "skills/sponsor-track-builder/SKILL.md \u2192 references/resource-routes.md",
+      "passed": true
+    },
+    {
+      "check": "skills/sponsor-track-builder/references/resource-routes.md \u2192 ../../../research/resources-2026-10-23/resource-review.md",
+      "passed": true
+    },
+    {
+      "check": "skills/sponsor-track-builder/references/track-recipes.md \u2192 resource-routes.md",
+      "passed": true
+    },
+    {
+      "check": "skills/sponsor-track-builder/references/track-recipes.md \u2192 resource-routes.md",
+      "passed": true
+    },
+    {
+      "check": "skills/sponsor-track-builder/references/track-recipes.md \u2192 resource-routes.md",
+      "passed": true
+    },
+    {
+      "check": "skills/sponsor-track-builder/references/track-recipes.md \u2192 resource-routes.md",
+      "passed": true
+    },
+    {
+      "check": "skills/sponsor-track-builder/references/track-recipes.md \u2192 resource-routes.md",
+      "passed": true
+    },
+    {
+      "check": "skills/sponsor-track-builder/references/track-recipes.md \u2192 resource-routes.md",
+      "passed": true
+    },
+    {
+      "check": "skills/sponsor-track-builder/references/track-recipes.md \u2192 resource-routes.md",
+      "passed": true
+    },
+    {
+      "check": "skills/visa-agentic-commerce/SKILL.md \u2192 references/cal-hacks-13.md",
+      "passed": true
+    },
+    {
+      "check": "skills/visa-agentic-commerce/SKILL.md \u2192 references/integration.md",
+      "passed": true
+    },
+    {
+      "check": "skills/visa-agentic-commerce/SKILL.md \u2192 references/commerce-state.md",
+      "passed": true
+    },
+    {
+      "check": "skills/visa-agentic-commerce/references/integration.md \u2192 cal-hacks-13.md",
+      "passed": true
+    },
+    {
+      "check": "skills/visa-agentic-commerce/references/commerce-state.md \u2192 cal-hacks-13.md",
+      "passed": true
+    },
+    {
+      "check": "skills/visa-agentic-commerce/references/cal-hacks-13.md \u2192 integration.md",
+      "passed": true
+    },
+    {
+      "check": "visa-agentic-commerce:offline tests",
+      "passed": true,
+      "output": "test_approved_cart_submits (test_commerce_policy.PolicyTests) ... ok\ntest_cannot_claim_confirmation_without_receipt (test_commerce_policy.PolicyTests) ... ok\ntest_card_fields_and_nested_credentials_blocked (test_commerce_policy.PolicyTests) ... ok\ntest_digest_order_independent (test_commerce_policy.PolicyTests) ... ok\ntest_duplicate_submission_blocked (test_commerce_policy.PolicyTests) ... ok\ntest_each_material_change_requires_new_approval (test_commerce_policy.PolicyTests) ... ok\ntest_environment_bound (test_commerce_policy.PolicyTests) ... ok\ntest_expired_and_future_approval (test_commerce_policy.PolicyTests) ... ok\ntest_forged_consent_denied (test_commerce_policy.PolicyTests) ... ok\ntest_fulfillment_or_variant_change_invalidates_approval (test_commerce_policy.PolicyTests) ... ok\ntest_no_float_or_boolean_money (test_commerce_policy.PolicyTests) ... ok\ntest_parallel_same_request_reserved_once (test_commerce_policy.PolicyTests) ... ok\ntest_terminal_state_cannot_reopen (test_commerce_policy.PolicyTests) ... ok\ntest_timeout_requires_reconciliation (test_commerce_policy.PolicyTests) ... ok\ntest_unaccounted_tax_or_fees_denied (test_commerce_policy.PolicyTests) ... ok\ntest_wrong_signing_key_denied (test_commerce_policy.PolicyTests) ... ok\n\n----------------------------------------------------------------------\nRan 16 tests in 0.105s\n\nOK\n"
+    },
+    {
+      "check": "creative-web-worlds:basket tests",
+      "passed": true,
+      "output": "\u2714 prices use integer cents and quantities update independently (0.33975ms)\n\u2714 quantities stay within 0\u20139, unknown products rejected (0.104458ms)\n\u2714 budget rejects malformed, negative and out-of-range amounts (0.104583ms)\n\u2714 download contains actual selections and total with honest status (8.014209ms)\n\u2139 tests 4\n\u2139 suites 0\n\u2139 pass 4\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 55.87\n"
+    },
+    {
+      "check": "apify-evidence-engine:Actor extraction",
+      "passed": true,
+      "output": "test_aggregate_not_guessed_as_checkout_price (__main__.self_test.<locals>.Tests) ... ok\ntest_graph_and_decimal (__main__.self_test.<locals>.Tests) ... ok\ntest_malformed_block_is_observable (__main__.self_test.<locals>.Tests) ... ok\ntest_missing_price_is_rejected (__main__.self_test.<locals>.Tests) ... ok\ntest_two_offers_and_nonfinite_price (__main__.self_test.<locals>.Tests) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.000s\n\nOK\n"
+    },
+    {
+      "check": "idea:financial-state fixtures",
+      "passed": true,
+      "output": "{\n  \"passed\": 20,\n  \"total\": 20,\n  \"results\": [\n    {\n      \"case\": \"replacement_is_not_cash\",\n      \"passed\": true,\n      \"actual\": [\n        \"replacement_only_no_cash\",\n        0\n      ]\n    },\n    {\n      \"case\": \"unknown_model\",\n      \"passed\": true,\n      \"actual\": [\n        \"review_missing_model\",\n        0\n      ]\n    },\n    {\n      \"case\": \"suffix_is_not_equivalent\",\n      \"passed\": true,\n      \"actual\": [\n        \"no_match_in_this_rule\",\n        0\n      ]\n    },\n    {\n      \"case\": \"brand_conflict\",\n      \"passed\": true,\n      \"actual\": [\n        \"no_match_in_this_rule\",\n        0\n      ]\n    },\n    {\n      \"case\": \"stale_notice\",\n      \"passed\": true,\n      \"actual\": [\n        \"review_stale_source\",\n        0\n      ]\n    },\n    {\n      \"case\": \"reseller_not_assumed_eligible\",\n      \"passed\": true,\n      \"actual\": [\n        \"match_review_program_eligibility\",\n        0\n      ]\n    },\n    {\n      \"case\": \"model_alone_not_enough\",\n      \"passed\": true,\n      \"actual\": [\n        \"review_serial_required\",\n        0\n      ]\n    },\n    {\n      \"case\": \"gift_card_not_payroll_cash\",\n      \"passed\": true,\n      \"actual\": [\n        \"restricted_credit_no_cash\",\n        0\n      ]\n    },\n    {\n      \"case\": \"unapproved_claim_not_cash\",\n      \"passed\": true,\n      \"actual\": [\n        \"cash_claim_not_approved\",\n        0\n      ]\n    },\n    {\n      \"case\": \"approved_not_settled\",\n      \"passed\": true,\n      \"actual\": [\n        \"approved_cash_claim_not_settled\",\n        0\n      ]\n    },\n    {\n      \"case\": \"case_and_space_normalization\",\n      \"passed\": true,\n      \"actual\": [\n        \"replacement_only_no_cash\",\n        0\n      ]\n    },\n    {\n      \"case\": \"duplicate_callback_is_idempotent\",\n      \"passed\": true\n    },\n    {\n      \"case\": \"partial_settlements_sum_in_integer_cents\",\n      \"passed\": true\n    },\n    {\n      \"case\": \"conflicting_duplicate_blocked\",\n      \"passed\": true\n    },\n    {\n      \"case\": \"invalid_money_rejected\",\n      \"passed\": true\n    },\n    {\n      \"case\": \"real_api_record_has_prose_models_and_replace_remedy\",\n      \"passed\": true\n    },\n    {\n      \"case\": \"verified_terms_propose_only_consignor_share_not_full_refund\",\n      \"passed\": true\n    },\n    {\n      \"case\": \"missing_clawback_terms_do_not_invent_consignor_debt\",\n      \"passed\": true\n    },\n    {\n      \"case\": \"unpaid_commission_reversal_is_not_cash_recovery\",\n      \"passed\": true\n    },\n    {\n      \"case\": \"recall_hold_survives_return_flow_and_unapproved_refund\",\n      \"passed\": true\n    }\n  ],\n  \"ablation\": {\n    \"naive_recovered_cash_cents\": 10000,\n    \"correct_spendable_cash_cents\": 0,\n    \"finding\": \"replacement entitlement is not settled cash\"\n  },\n  \"limitations\": [\n    \"Not an LLM accuracy test\",\n    \"Not program eligibility verification\",\n    \"Not customer or willingness-to-pay validation\",\n    \"No external state changed; finance inputs are synthetic\"\n  ]\n}\n"
+    }
+  ]
+}

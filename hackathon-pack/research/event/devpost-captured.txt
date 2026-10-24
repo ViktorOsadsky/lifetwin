@@ -1,0 +1,823 @@
+- banner:
+  - text:                   
+  - navigation:
+    - list:
+      - link "Devpost":
+        - /url: https://devpost.com
+        - img "Devpost"
+    - list:
+      - link "Join a hackathon":
+        - /url: "#"
+        - text: Join a hackathon
+        - generic: 
+        - text: 
+      - text:   
+      - link "Host a hackathon":
+        - /url: "#"
+        - text: Host a hackathon
+        - generic: 
+        - text: 
+      - text:      
+      - link "Resources":
+        - /url: "#"
+        - text: Resources
+        - generic: 
+        - text: 
+    - list:
+      - generic: 
+      - text:  
+    - list:
+      - link "Log in":
+        - /url: https://secure.devpost.com/users/login?ref=top-nav-login
+      - link "Sign up":
+        - /url: https://secure.devpost.com/users/register?ref_content=signup_global_nav&ref_feature=signup&ref_medium=button
+        - generic: Sign up
+- banner:
+  - heading "Cal Hacks 13.0" [level=1]:
+    - link "Cal Hacks 13.0":
+      - /url: https://cal-hacks-13-0.devpost.com/
+      - img "Cal Hacks 13.0"
+  - navigation:
+    - list:
+      - link "Overview":
+        - /url: https://cal-hacks-13-0.devpost.com/
+      - link "My projects":
+        - /url: https://devpost.com/submit-to/29871-cal-hacks-13-0/manage/submissions
+      - link "Participants (212)":
+        - /url: https://cal-hacks-13-0.devpost.com/participants
+      - link "Rules":
+        - /url: https://cal-hacks-13-0.devpost.com/rules
+      - link "Project gallery":
+        - /url: https://cal-hacks-13-0.devpost.com/project-gallery
+      - link "Updates":
+        - /url: https://cal-hacks-13-0.devpost.com/updates
+      - link "Discussions":
+        - /url: https://cal-hacks-13-0.devpost.com/forum_topics
+- heading "Cal Hacks 13.0" [level=1]
+- heading "This year's Cal Hacks is presented by Anthropic, Annapurna Labs, SpacetimeDB, and Hyphenate! Together we'll assemble in SF for a weekend of hacking, friendship, and crazy ideas." [level=3]
+- link "Join hackathon":
+  - /url: https://cal-hacks-13-0.devpost.com/register?flow%5Bdata%5D%5Bchallenge_id%5D=29871&flow%5Bname%5D=register_for_challenge
+- heading "Who can participate" [level=6]
+- list:
+  - listitem: "- Ages 18+ only"
+  - listitem: "- College students only"
+  - listitem: "- Team required: 2 to 4 members"
+  - text: "- All countries/territories, excluding"
+  - generic "Brazil, Crimea, Cuba, Iran, North Korea, Quebec, Russia":
+    - text: standard exceptions
+    - generic: 
+- link "View full rules":
+  - /url: /rules
+- paragraph: Submissions open soon
+- paragraph:
+  - link "View schedule":
+    - /url: https://cal-hacks-13-0.devpost.com/details/dates
+- generic: Oct 23 – 25, 2026
+- generic: 
+- text:   
+- table:
+  - rowgroup:
+    - row "Palace of Fine Arts Public":
+      - cell "Palace of Fine Arts":
+        - generic: 
+        - link "Palace of Fine Arts":
+          - /url: https://maps.google.com/?q=3601%20Lyon%20St%2C%20San%20Francisco%2C%20CA%2094123%2C%20USA
+      - cell "Public":
+        - generic: 
+        - generic: Public
+    - row "$83,328 in cash 212 participants":
+      - cell "$83,328 in cash":
+        - link "$83,328 in cash":
+          - /url: "#prizes"
+          - strong:
+            - generic: $83,328
+          - text: in cash
+      - cell "212 participants":
+        - strong: "212"
+        - text: participants
+- generic: 
+- link "Cal Hacks":
+  - /url: https://devpost.com/hackathons?organization=Cal+Hacks
+  - generic: Cal Hacks
+- generic: 
+- link "Beginner Friendly":
+  - /url: https://devpost.com/hackathons?themes%5B%5D=Beginner+Friendly
+  - generic: Beginner Friendly
+- link "Social Good":
+  - /url: https://devpost.com/hackathons?themes%5B%5D=Social+Good
+  - generic: Social Good
+- link "Open Ended":
+  - /url: https://devpost.com/hackathons?themes%5B%5D=Open+Ended
+  - generic: Open Ended
+- main:
+  - article:
+    - heading "Cal Hacks has always been about empowering students to build without boundaries!" [level=5]
+    - paragraph: "We're so excited to have you join us for our 13th iteration of the world's largest collegiate hackathon! Here are some resources to help you this weekend:"
+    - paragraph:
+      - strong: Live Site
+      - text: ":"
+      - link "Hive Platform":
+        - /url: hive.hackberkeley.org
+    - paragraph:
+      - strong: Mobile Apps
+      - text: ":"
+      - link "iOS App":
+        - /url: https://apps.apple.com/us/app/hackathons-berkeley/id6761351929
+      - text: "|"
+      - link "Android App":
+        - /url: https://play.google.com/store/apps/details?id=io.calhacks.hive&pcampaignid=web_share
+    - paragraph:
+      - strong: "Community Photo Album:"
+      - link "Google Photos":
+        - /url: https://photos.app.goo.gl/BYdzzQJMn45bDYio6
+    - paragraph:
+      - text: We really hope you enjoy the weekend! Feel free to come find us at the concierge desk near the entrence. Chat with any organizers walking around in white event shirts. Use the
+      - emphasis: "#ask-directors"
+      - text: channel on Slack.
+    - paragraph: And, don't forget, go bears 🧸
+  - article:
+    - heading "Requirements" [level=3]
+    - list:
+      - text: Get to the venue by
+      - strong: October 25th @ 8 AM PST.
+      - text: You must've had been accepted and checked in as a hacker to submit.
+      - strong: You must submit your hack by October 25th @ 9 AM PST with your teammates!
+      - text: This is a hard deadline.
+      - listitem: Include an image of your project and GitHub repository for any code to be considered.
+      - listitem: All work must be done during the hackathon
+      - listitem: You will have three minutes to pitch and two minutes for judges to ask questions.
+      - strong: You must have a pre-recorded or live demonstration.
+  - article:
+    - heading "Prizes" [level=3]
+    - generic: $83,328
+    - text: + in prizes
+    - generic: + other prizes
+    - heading "⋆ Cal Hacks First Overall" [level=6]:
+      - generic: ⋆
+      - generic: Cal Hacks First Overall
+    - generic: $3,600
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Macbook Air or Framework Laptop for each member of the team
+    - heading "⋆ Cal Hacks Second Overall" [level=6]:
+      - generic: ⋆
+      - generic: Cal Hacks Second Overall
+    - generic: 1 winner
+    - paragraph: Nintendo Switch 2 for each member of the team
+    - heading "⋆ Cal Hacks Third Overall" [level=6]:
+      - generic: ⋆
+      - generic: Cal Hacks Third Overall
+    - generic: 1 winner
+    - paragraph: Google Intelligent Eyewear for each member of the team
+    - heading "⋆ Cal Hacks Best Beginner Hack" [level=6]:
+      - generic: ⋆
+      - generic: Cal Hacks Best Beginner Hack
+    - generic: 1 winner
+    - paragraph: AirPods 4 for each member of the team
+    - heading "⋆ Cal Hacks Most Creative Project" [level=6]:
+      - generic: ⋆
+      - generic: Cal Hacks Most Creative Project
+    - generic: 1 winner
+    - paragraph: Instax camera plus film for each member of the team
+    - heading "⋆ Cal Hacks Most Technically Advanced Hack" [level=6]:
+      - generic: ⋆
+      - generic: Cal Hacks Most Technically Advanced Hack
+    - generic: 1 winner
+    - paragraph: NuPhy Air60 HE for each member of the team
+    - heading "⋆ Cal Hacks Best Hardware Hack" [level=6]:
+      - generic: ⋆
+      - generic: Cal Hacks Best Hardware Hack
+    - generic: 1 winner
+    - paragraph: Bambu Lab 3D Printer for each member of the team
+    - heading "⋆ Cal Hacks Best People-First Social Impact Hack" [level=6]:
+      - generic: ⋆
+      - generic: Cal Hacks Best People-First Social Impact Hack
+    - generic: 1 winner
+    - paragraph: Apple Watch SE 3 for each member of the team
+    - heading "⋆ Cal Hacks Best Planet-First Social Impact Hack" [level=6]:
+      - generic: ⋆
+      - generic: Cal Hacks Best Planet-First Social Impact Hack
+    - generic: 1 winner
+    - paragraph: America the Beautiful Parks Pass for each member of the team
+    - heading "⋆ Cal Hacks Best Solo Hack" [level=6]:
+      - generic: ⋆
+      - generic: Cal Hacks Best Solo Hack
+    - generic: 1 winner
+    - paragraph: AirPods Pro 3
+    - heading "⋆ Cal Hacks Hacker's Choice" [level=6]:
+      - generic: ⋆
+      - generic: Cal Hacks Hacker's Choice
+    - generic: 1 winner
+    - paragraph: Logitech MX Master 4 for each member of the team
+    - heading "⋆ [MLH] Best Use of Gemini API" [level=6]:
+      - generic: ⋆
+      - generic: "[MLH] Best Use of Gemini API"
+    - generic: 1 winner
+    - paragraph: MLH Swag Kits || It’s time to push the boundaries of what’s possible with AI using Google Gemini. Check out the Gemini API to build AI-powered apps that make your friends say WHOA. So, what can Gemini do for your hackathon project?
+    - paragraph:
+      - text: Understand language like a human and build a chatbot that gives personalized advice
+      - text: Analyze info like a supercomputer and create an app that summarizes complex research papers
+      - text: Generate creative content like code, scripts, music, and more
+      - text: Think of the possibilities… what will you build with the Google Gemini API this weekend?
+    - heading "⋆ [MLH] Best Use of Solana" [level=6]:
+      - generic: ⋆
+      - generic: "[MLH] Best Use of Solana"
+    - generic: 1 winner
+    - paragraph: Assorted Prizes || The world of development is evolving fast and Solana is leading the charge with a network built to handle all of your infrastructure needs. Forget high fees and slow confirmations, it’s time to build applications that are fast, efficient, and scalable.
+    - paragraph: Harness Solana’s core advantages like blazing fast execution and near-zero transaction costs to make your hackathon ideas become real world projects. With Solana, the possibilities are endless.
+    - paragraph:
+      - text: Create a game, social app, or consumer product that relies on instant, high-frequency transactions.
+      - text: Design a sophisticated trading, lending, or decentralized exchange (DEX).
+      - text: Build a prototype for supply chain, identity, or payments that can handle massive, real-world volume.
+      - text: Show us how you can innovate with Solana for a chance to win some cool prizes for you and each member of your team!
+    - heading "⋆ [MLH] Best Use of Tiger Data" [level=6]:
+      - generic: ⋆
+      - generic: "[MLH] Best Use of Tiger Data"
+    - generic: 1 winner
+    - paragraph: Stream Deck Mini || Building high-performance apps under hackathon deadlines shouldn't mean spending half your weekend configuring complex databases or learning obscure query languages. Tiger Data extends PostgreSQL to give student developers an ultra-fast foundation for real-time data, time-series metrics, and complex analytics.
+    - paragraph: Why build with Tiger Data this weekend?
+    - paragraph: "Standard SQL Power: Query massive datasets instantly using the SQL you already know, with no complex NoSQL aggregation pipelines required."
+    - paragraph: "Unified Data Stack: Store relational user profiles and high-frequency metric streams side-by-side in a single database."
+    - paragraph: "Instant Dashboards: Serve lag-free, real-time frontend charts using pre-computed Continuous Aggregates."
+    - paragraph: "90%+ Data Compression: Store millions of events on free-tier cloud instances without running out of disk space."
+    - paragraph: Whether you’re building real-time IoT monitoring, AI-driven analytics dashboards, or financial prediction engines, show us how Tiger Data powers your project. The team that demonstrates the most innovative, impactful, and performance-driven use of Tiger Data will take home some great prizes!
+    - heading "⋆ [MLH] Best Use of Vultr" [level=6]:
+      - generic: ⋆
+      - generic: "[MLH] Best Use of Vultr"
+    - generic: 1 winner
+    - paragraph: M5Stack Official Tab5 || Vultr empowers hackers to bring their high-performance projects to life instantly; providing everything from the speed of one-click deployment and scalable cloud compute, to specialized Vultr Cloud GPUs that can power AI-driven applications. We want you to push the limits of what can be built when infrastructure is no longer the bottleneck!
+    - paragraph: Sign up for a Vultr account today and claim your free cloud credits! Take your next hack to the cloud with Vultr for a chance to win some awesome prizes for you and your team!
+    - heading "⋆ [MLH] Commit Fellowship Prize Category" [level=6]:
+      - generic: ⋆
+      - generic: "[MLH] Commit Fellowship Prize Category"
+    - generic: 1 winner
+    - paragraph: An Interview with the Commit Fellowship Team & a copy of The Lean Startup || Done sitting on your big idea? Enter the Commit Fellowship Prize Category to take your hack beyond the hackathon. Selected winning teams will have the chance to secure a spot in an exclusive, 3-week zero-to-founder sprint hosted by Major League Hacking and Transcend Network. If you’re ready to do the real work of bringing a startup to market, this is for you.
+    - paragraph: "Exclusive Admission: A chance to interview for the highly selective Commit Fellowship 3-week sprint."
+    - paragraph: "Founder Mentorship: Live coaching, peer code reviews, and structured customer discovery sessions."
+    - paragraph: "Launch Perks & Microgrants: Completion opens access to thousands of dollars in cash microgrants and in-kind tooling credits (like AI credits) to keep your post-hackathon momentum going."
+    - paragraph: Qualify by building a working prototype with a team, demonstrate a real problem worth solving, and opt into the Commit Fellowship Prize Category when you submit your project. Once that’s complete, be sure to submit this supplemental form to be considered for the prize category. A winning team from your hackathon will be selected post-event and notified via email.
+    - heading "⋆ [MLH] Best Use of Snowflake API" [level=6]:
+      - generic: ⋆
+      - generic: "[MLH] Best Use of Snowflake API"
+    - generic: 1 winner
+    - paragraph: Arduino Student Kit || Play with industry-leading LLMs on a single account using the Snowflake APIs. Adding AI capabilities into your application can be as simple as a single CURL command to Snowflake’s REST API.
+    - paragraph: Build customized applications, RAG powered chat bots, or embed AI-powered features into your app in half the time with half the hassle. Get started for free with a special, student 120-day Snowflake trial and check out this repository for an example of the Snowflake REST API in action.
+    - heading "⋆ [MLH] Best Domain Name from GoDaddy Registry" [level=6]:
+      - generic: ⋆
+      - generic: "[MLH] Best Domain Name from GoDaddy Registry"
+    - generic: 1 winner
+    - paragraph: Digital Gift Card || GoDaddy Registry is giving you everything you need to be the best hacker no matter where you are. Register your domain name with GoDaddy Registry for a chance to win some amazing prizes!
+    - 'heading "⋆ [Hyphenate] 1st Place The Hyphenated Enterprise: Autonomous Systems for Finance" [level=6]':
+      - generic: ⋆
+      - generic: "[Hyphenate] 1st Place The Hyphenated Enterprise: Autonomous Systems for Finance"
+    - generic: $8,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Cash prizes of 8000$, 5000$, 3000$ for the top 3 teams and expedited interview process for top 5 teams
+    - 'heading "⋆ [Hyphenate] 2nd Place The Hyphenated Enterprise: Autonomous Systems for Finance" [level=6]':
+      - generic: ⋆
+      - generic: "[Hyphenate] 2nd Place The Hyphenated Enterprise: Autonomous Systems for Finance"
+    - generic: $5,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Cash prizes of 8000$, 5000$, 3000$ for the top 3 teams and expedited interview process for top 5 teams
+    - 'heading "⋆ [Hyphenate] 3rd Place The Hyphenated Enterprise: Autonomous Systems for Finance" [level=6]':
+      - generic: ⋆
+      - generic: "[Hyphenate] 3rd Place The Hyphenated Enterprise: Autonomous Systems for Finance"
+    - generic: $3,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Cash prizes of 8000$, 5000$, 3000$ for the top 3 teams and expedited interview process for top 5 teams
+    - heading "⋆ [Visa] Best use of Reimagining Shopping sponsored by Visa" [level=6]:
+      - generic: ⋆
+      - generic: "[Visa] Best use of Reimagining Shopping sponsored by Visa"
+    - generic: $5,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [Fetch.ai] 1st Place Best Use of Fetch.ai" [level=6]:
+      - generic: ⋆
+      - generic: "[Fetch.ai] 1st Place Best Use of Fetch.ai"
+    - generic: $1,500
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [Fetch.ai] 2nd Place Best Use of Fetch.ai" [level=6]:
+      - generic: ⋆
+      - generic: "[Fetch.ai] 2nd Place Best Use of Fetch.ai"
+    - generic: $1,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [Fetch.ai] 3rd Place Best Use of Fetch.ai" [level=6]:
+      - generic: ⋆
+      - generic: "[Fetch.ai] 3rd Place Best Use of Fetch.ai"
+    - generic: $500
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [Microsoft] 1st Place Built for the Real World" [level=6]:
+      - generic: ⋆
+      - generic: "[Microsoft] 1st Place Built for the Real World"
+    - generic: $3,800
+    - text: in cash
+    - generic: 1 winner
+    - paragraph:
+      - text: "Grand Prize:"
+      - text: A Microsoft Surface laptop for each member of the winning team
+      - text: Present your project remotely at a Microsoft Delta/Frontier Co. FDE team tech talk
+      - text: 1:1 mentorship with senior FDEs from Delta/Frontier Co team
+    - heading "⋆ [Microsoft] 2nd Place Microsoft Customer Impact Award" [level=6]:
+      - generic: ⋆
+      - generic: "[Microsoft] 2nd Place Microsoft Customer Impact Award"
+    - generic: $0
+    - text: in cash
+    - generic: 1 winner
+    - paragraph:
+      - text: "2nd place:"
+      - text: Present your project remotely at a Microsoft Delta/Frontier Co. FDE team tech talk
+      - text: 1:1 mentorship with senior FDEs from the Microsoft Delta team
+    - 'heading "⋆ [Meta] Meta/Facebook: Bringing People Closer Together with AI" [level=6]':
+      - generic: ⋆
+      - generic: "[Meta] Meta/Facebook: Bringing People Closer Together with AI"
+    - generic: $0
+    - text: in cash
+    - generic: 1 winner
+    - paragraph:
+      - text: Invitation to advance to the Round 2 Hackathon hosted at Meta's Menlo Park campus.
+      - text: Travel and accommodations provided.
+      - text: Advancement to Round 2 is subject to eligibility verification and compliance with Meta's Round 2 Official Rules.
+      - text: Meta swag bag.
+    - heading "⋆ [Factory] Best Use of the Factory Droid SDK" [level=6]:
+      - generic: ⋆
+      - generic: "[Factory] Best Use of the Factory Droid SDK"
+    - generic: $2,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: $2000 cash, Factory credits, and swag!
+    - heading "⋆ [Armadin] Best Security Hack" [level=6]:
+      - generic: ⋆
+      - generic: "[Armadin] Best Security Hack"
+    - generic: $996
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Apple Headphones (possibly hacking tools)
+    - heading "⋆ [Cartesia] Best Use of Cartesia" [level=6]:
+      - generic: ⋆
+      - generic: "[Cartesia] Best Use of Cartesia"
+    - generic: $1,516
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Meta glasses (still TBD)
+    - heading "⋆ [Convex] Best use of Convex" [level=6]:
+      - generic: ⋆
+      - generic: "[Convex] Best use of Convex"
+    - generic: $1,308
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Teenage Engineering EP-133 K.O. II and a Waveshare ESP32-S3 touch display board
+    - heading "⋆ [Apify] 1st Place Best use of Apify" [level=6]:
+      - generic: ⋆
+      - generic: "[Apify] 1st Place Best use of Apify"
+    - generic: $2,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [Apify] 2nd Place Best use of Apify" [level=6]:
+      - generic: ⋆
+      - generic: "[Apify] 2nd Place Best use of Apify"
+    - generic: $1,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [Apify] 3rd Place Best use of Apify" [level=6]:
+      - generic: ⋆
+      - generic: "[Apify] 3rd Place Best use of Apify"
+    - generic: $800
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [Apify] 4th Place Best use of Apify" [level=6]:
+      - generic: ⋆
+      - generic: "[Apify] 4th Place Best use of Apify"
+    - generic: $400
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [Apify] 5th Place Best use of Apify" [level=6]:
+      - generic: ⋆
+      - generic: "[Apify] 5th Place Best use of Apify"
+    - generic: $400
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [Apify] Best Actor sponsored by Apify" [level=6]:
+      - generic: ⋆
+      - generic: "[Apify] Best Actor sponsored by Apify"
+    - generic: $400
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [Creao AI] 1st Place Best AI-First Disruptor" [level=6]:
+      - generic: ⋆
+      - generic: "[Creao AI] 1st Place Best AI-First Disruptor"
+    - generic: $8,760
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: $3,000 cash / 1 year of CREAO Pro Max ($1,440 value) / Product, technical and founder mentorship / Meet-and-greet with a CREAO founder or member of technical staff / Demo opportunities /Launch support through CREAO's community and content channels / Interview opportunities with CREAO
+    - heading "⋆ [Creao AI] 1st Place Best One-Person Company" [level=6]:
+      - generic: ⋆
+      - generic: "[Creao AI] 1st Place Best One-Person Company"
+    - generic: $8,760
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: $3,000 cash / 1 year of CREAO Pro Max ($1,440 value) / Product, technical and founder mentorship / Meet-and-greet with a CREAO founder or member of technical staff / Demo opportunities /Launch support through CREAO's community and content channels / Interview opportunities with CREAO
+    - heading "⋆ [Creao AI] 1st Place Best Team Empowerment" [level=6]:
+      - generic: ⋆
+      - generic: "[Creao AI] 1st Place Best Team Empowerment"
+    - generic: $8,760
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: $3,000 cash / 1 year of CREAO Pro Max ($1,440 value) / Product, technical and founder mentorship / Meet-and-greet with a CREAO founder or member of technical staff / Demo opportunities /Launch support through CREAO's community and content channels / Interview opportunities with CREAO
+    - heading "⋆ [Bitdeer AI] 1st Place Best Use of Bitdeer AI Model Studio" [level=6]:
+      - generic: ⋆
+      - generic: "[Bitdeer AI] 1st Place Best Use of Bitdeer AI Model Studio"
+    - generic: $500
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: 1st Place — Best Use of Bitdeer AI Model Studio $500 in Bitdeer AI Model Studio credits for the winning team Four gaming mice, one per teammate
+    - heading "⋆ [Bitdeer AI] 2nd Place Best Use of Bitdeer AI Model Studio" [level=6]:
+      - generic: ⋆
+      - generic: "[Bitdeer AI] 2nd Place Best Use of Bitdeer AI Model Studio"
+    - generic: $200
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: 2nd Place $200 in Bitdeer AI Model Studio credits for the winning team One LEGO Technic set for the team to share
+    - heading "⋆ [Elastic] 1st Place Best use of the Elastic Agent Builder on a Serverless instance" [level=6]:
+      - generic: ⋆
+      - generic: "[Elastic] 1st Place Best use of the Elastic Agent Builder on a Serverless instance"
+    - generic: $1,200
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: 1st Place Meta Quest 3S headsets
+    - heading "⋆ [Elastic] 2nd Place Best use of the Elastic Agent Builder on a Serverless instance" [level=6]:
+      - generic: ⋆
+      - generic: "[Elastic] 2nd Place Best use of the Elastic Agent Builder on a Serverless instance"
+    - generic: $1,436
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: 2nd Place Bose QuietComfort headphones
+    - heading "⋆ [Capital One] Best Use of Nessie" [level=6]:
+      - generic: ⋆
+      - generic: "[Capital One] Best Use of Nessie"
+    - generic: $1,200
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: $300 Giftogram per person on winning team
+    - heading "⋆ [CRS] Best Overall CRS Hack" [level=6]:
+      - generic: ⋆
+      - generic: "[CRS] Best Overall CRS Hack"
+    - generic: $1,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [CRS] Best Financial AI Agent" [level=6]:
+      - generic: ⋆
+      - generic: "[CRS] Best Financial AI Agent"
+    - generic: $500
+    - text: in cash
+    - generic: 1 winner
+    - paragraph
+    - heading "⋆ [CRS] Best Identity / Fraud Innovation" [level=6]:
+      - generic: ⋆
+      - generic: "[CRS] Best Identity / Fraud Innovation"
+    - generic: $0
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: An interview with the CRS team for our open forward-deployed engineer role, for each team member
+    - heading "⋆ [CRS] Most Unexpected Use of CRS" [level=6]:
+      - generic: ⋆
+      - generic: "[CRS] Most Unexpected Use of CRS"
+    - generic: $0
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: An interview with the CRS team for our open forward-deployed engineer role, for each team member
+    - heading "⋆ [Moss] Best Use of Moss" [level=6]:
+      - generic: ⋆
+      - generic: "[Moss] Best Use of Moss"
+    - generic: $996
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Airpod Max/pros
+    - heading "⋆ [SpaceXSI] Make it Legendary with SpaceXSI" [level=6]:
+      - generic: ⋆
+      - generic: "[SpaceXSI] Make it Legendary with SpaceXSI"
+    - generic: $400
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Space gives you more to work with than almost any other field. You have access to enormous public datasets, decades of missions, and a literature no human can read all of. Real space data goes in and a legendary project comes out.
+    - paragraph: To be eligible, your project must be built with Cursor. The more you use Cursor, the more likely you are to win. Bonus points, if you use Grok Bot for project planning and team collaboration. Anyone who submits to our challenge will be entered into a raffle for a Cursor Owala water bottle. Every member of the winning team will receive a branded Cursor mechanical keyboard
+    - heading "⋆ [Figma] Best Use Case of Figma" [level=6]:
+      - generic: ⋆
+      - generic: "[Figma] Best Use Case of Figma"
+    - generic: $1,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Amazon Gift Cards (distributed by CalHacks orgs.), Session with Figma Early Career Recruiting Team [to be scheduled]
+    - heading "⋆ [Figma] Best Use Case of Figma Agent" [level=6]:
+      - generic: ⋆
+      - generic: "[Figma] Best Use Case of Figma Agent"
+    - generic: $1,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Amazon Gift Cards (distributed by CalHacks orgs.), Session with Figma Early Career Recruiting Team [to be scheduled]
+    - heading "⋆ [Figma] Most Creative Use Case of Figma Agent" [level=6]:
+      - generic: ⋆
+      - generic: "[Figma] Most Creative Use Case of Figma Agent"
+    - generic: $1,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Amazon Gift Cards (distributed by CalHacks orgs.), Session with Figma Early Career Recruiting Team [to be scheduled]
+    - heading "⋆ [Figma] Best Design" [level=6]:
+      - generic: ⋆
+      - generic: "[Figma] Best Design"
+    - generic: $1,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Amazon Gift Cards (distributed by CalHacks orgs.), Session with Figma Early Career Recruiting Team [to be scheduled]
+    - heading "⋆ [Figma] Most Creative" [level=6]:
+      - generic: ⋆
+      - generic: "[Figma] Most Creative"
+    - generic: $1,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: Amazon Gift Cards (distributed by CalHacks orgs.), Session with Figma Early Career Recruiting Team [to be scheduled]
+    - heading "⋆ [Coinbase] Best Use of x402 by Coinbase" [level=6]:
+      - generic: ⋆
+      - generic: "[Coinbase] Best Use of x402 by Coinbase"
+    - generic: $2,000
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: $500 USDC + recruiter call per team member per track, for each of the two tracks (up to $4000 total)
+    - heading "⋆ [Notability] Best Use of Notability" [level=6]:
+      - generic: ⋆
+      - generic: "[Notability] Best Use of Notability"
+    - generic: $396
+    - text: in cash
+    - generic: 1 winner
+    - paragraph: 1 year of Notability Pro + exclusive company merch
+  - article:
+    - heading "Judges" [level=3]
+    - figure:
+      - img "DDoSKi & his not-so judgy buddies"
+    - paragraph:
+      - strong: DDoSKi & his not-so judgy buddies
+      - text: Cal Hacks 13.0
+  - article:
+    - heading "Judging Criteria" [level=3]
+    - list:
+      - strong: Application
+      - text: Projects should have a feasible real-world use. Could someone realistically adopt this, and would it deliver a clear benefit? Strong submissions identify who they help, what problem they solve, and why people would actually use them.
+      - strong: Intentionality
+      - text: Projects should offer an intuitive, engaging experience for their target users, guided by clear first principles. Every design choice should feel purposeful, with a clear sense of who it's for and why it works the way it does.
+      - strong: Functionality
+      - text: Projects should work as intended, with a live demo that runs smoothly free of major bugs. Submissions should also include a clear, meaningful video demo on devpost for sponsors evaluating asynchronously.
+      - strong: Creativity
+      - text: Projects should show original thinking and a fresh perspective, with inventive problem framing and unexpected combinations of ideas or technologies. Clearly show what makes your project stand out from similar work.
+      - strong: Technical Complexity
+      - text: Teams should show a command of the frameworks and infrastructure behind their project, with sound architectural choices and engineering depth that goes beyond basic implementation.
+  - paragraph:
+    - text: Questions?
+    - link "Email the hackathon manager":
+      - /url: mailto:team@hackberkeley.org
+  - article:
+    - heading "Hackathon sponsors" [level=3]
+    - heading "Anchor Sponsors" [level=5]
+    - link "Annapurna Labs":
+      - /url: https://amazon.jobs/content/en/teams/annapurna-labs
+      - img "Annapurna Labs"
+    - link "Anthropic":
+      - /url: https://www.anthropic.com/
+      - img "Anthropic"
+    - link "Hyphenate":
+      - /url: https://hyphenate.ai/
+      - img "Hyphenate"
+    - link "SpacetimeDB":
+      - /url: https://spacetimedb.com/
+      - img "SpacetimeDB"
+    - heading "Golden Bear Sponsors" [level=5]
+    - link "Fetch AI":
+      - /url: https://www.fetch.ai/
+      - img "Fetch AI"
+    - link "Microsoft":
+      - /url: https://www.microsoft.com/en-us
+      - img "Microsoft"
+    - link "Supercell":
+      - /url: https://supercell.com/en/
+      - img "Supercell"
+    - link "Visa":
+      - /url: https://www.visa.com/en-us
+      - img "Visa"
+    - heading "Silver Sponsors" [level=5]
+    - link "AfterQuery":
+      - /url: https://www.afterquery.com/
+      - img "AfterQuery"
+    - link "Apify":
+      - /url: https://apify.com/
+      - img "Apify"
+    - link "Armadin":
+      - /url: https://www.armadin.com/
+      - img "Armadin"
+    - link "Bitdeer":
+      - /url: https://www.bitdeer.ai/en
+      - img "Bitdeer"
+    - link "Bright Data":
+      - /url: https://brightdata.com/
+      - img "Bright Data"
+    - link "Cartesia":
+      - /url: https://www.cartesia.ai/
+      - img "Cartesia"
+    - link "Convex":
+      - /url: https://www.convex.dev/
+      - img "Convex"
+    - link "Creao AI":
+      - /url: https://creao.ai/
+      - img "Creao AI"
+    - link "Elastic":
+      - /url: https://www.elastic.co/
+      - img "Elastic"
+    - link "Factory AI":
+      - /url: https://factory.com/
+      - img "Factory AI"
+    - link "Meta":
+      - /url: https://www.meta.com/about/
+      - img "Meta"
+    - heading "Bronze Sponsors" [level=5]
+    - link "a16z":
+      - /url: https://a16z.com/college-talent/
+      - img "a16z"
+    - link "Atlassian":
+      - /url: https://www.atlassian.com/
+      - img "Atlassian"
+    - link "Canva":
+      - /url: https://www.canva.com/about/
+      - img "Canva"
+    - link "Capital One":
+      - /url: https://www.capitalone.com/about/
+      - img "Capital One"
+    - link "Citadel":
+      - /url: https://www.citadel.com/
+      - img "Citadel"
+    - link "Coinbase":
+      - /url: https://www.coinbase.com/developer-platform
+      - img "Coinbase"
+    - link "Council Health":
+      - /url: https://council.health/
+      - img "Council Health"
+    - link "CRS Credit":
+      - /url: https://crscreditapi.com/
+      - img "CRS Credit"
+    - link "D.E. Shaw Group":
+      - /url: https://www.deshaw.com/
+      - img "D.E. Shaw Group"
+    - link "Decagon":
+      - /url: https://decagon.ai/
+      - img "Decagon"
+    - link "Engramme AI":
+      - /url: https://www.engramme.com/
+      - img "Engramme AI"
+    - link "Figma":
+      - /url: https://www.figma.com/careers/
+      - img "Figma"
+    - link "Greptile":
+      - /url: https://www.greptile.com/
+      - img "Greptile"
+    - link "Jane Street":
+      - /url: https://www.janestreet.com/
+      - img "Jane Street"
+    - link "Listen Labs":
+      - /url: https://listenlabs.com/
+      - img "Listen Labs"
+    - link "Moonpay":
+      - /url: https://www.moonpay.com/
+      - img "Moonpay"
+    - link "Moss":
+      - /url: https://www.moss.dev/
+      - img "Moss"
+    - link "Notability":
+      - /url: https://notability.com/
+      - img "Notability"
+    - link "Runpod":
+      - /url: https://www.runpod.io/
+      - img "Runpod"
+    - link "Savvy":
+      - /url: https://www.savvywealth.com
+      - img "Savvy"
+    - link "Scale AI":
+      - /url: https://scale.com/
+      - img "Scale AI"
+    - link "Savvy":
+      - /url: https://www.savvywealth.com
+      - img "Savvy"
+    - link "Y Combinator":
+      - /url: https://www.ycombinator.com/
+      - img "Y Combinator"
+    - heading "Partners" [level=5]
+    - link "Adobe":
+      - /url: https://www.adobe.com/
+      - img "Adobe"
+    - link "MLH":
+      - /url: https://www.mlh.com/
+      - img "MLH"
+    - link "Fung Institute for Engineering Leadership":
+      - /url: https://funginstitute.berkeley.edu/
+      - img "Fung Institute for Engineering Leadership"
+    - link "Jukebox":
+      - /url: https://www.jukeboxprint.com/
+      - img "Jukebox"
+    - link "Illumio":
+      - /url: https://www.illumio.com/
+      - img "Illumio"
+    - link "Scale AI":
+      - /url: https://scale.com/
+      - img "Scale AI"
+    - link "The House Fund":
+      - /url: https://thehouse.fund/
+      - img "The House Fund"
+    - link "Wajo AI":
+      - /url: https://wajo.ai/
+      - img "Wajo AI"
+  - paragraph:
+    - text: This site is protected by reCAPTCHA and the Google
+    - link "Privacy Policy":
+      - /url: https://policies.google.com/privacy
+    - text: and
+    - link "Terms of Service":
+      - /url: https://policies.google.com/terms
+    - text: apply.
+- contentinfo:
+  - navigation:
+    - heading "Devpost" [level=4]
+    - list:
+      - link "About":
+        - /url: https://info.devpost.com/about
+      - link "Careers":
+        - /url: https://info.devpost.com/careers
+      - link "Contact":
+        - /url: https://info.devpost.com/contact
+      - link "Help":
+        - /url: https://help.devpost.com/
+  - navigation:
+    - heading "Hackathons" [level=4]
+    - list:
+      - link "Browse hackathons":
+        - /url: https://devpost.com/hackathons
+      - link "Explore projects":
+        - /url: https://devpost.com/software
+      - link "Host a hackathon":
+        - /url: https://info.devpost.com
+      - link "Hackathon guides":
+        - /url: https://info.devpost.com/guides
+  - navigation:
+    - heading "Portfolio" [level=4]
+    - list:
+      - link "Your projects":
+        - /url: https://devpost.com/portfolio/redirect?page=projects
+      - link "Your hackathons":
+        - /url: https://devpost.com/portfolio/redirect?page=hackathons
+      - link "Settings":
+        - /url: https://devpost.com/settings
+  - navigation:
+    - heading "Connect" [level=4]
+    - list:
+      - link "Twitter":
+        - /url: https://twitter.com/devpost
+        - generic: 
+        - text: Twitter
+      - link "Discord":
+        - /url: https://discord.com/invite/HP4BhW3hnp
+        - generic: 
+        - text: Discord
+      - link "Facebook":
+        - /url: https://www.facebook.com/devposthacks
+        - generic: 
+        - text: Facebook
+      - link "LinkedIn":
+        - /url: https://www.linkedin.com/company/devpost/
+        - generic: 
+        - text: LinkedIn
+  - navigation:
+    - generic: © 2026 Devpost, Inc. All rights reserved.
+    - list:
+      - link "Community guidelines":
+        - /url: https://info.devpost.com/legal/community-guidelines
+      - link "Security":
+        - /url: https://info.devpost.com/legal/security
+      - link "CA notice":
+        - /url: https://info.devpost.com/legal/california-consumer-privacy-act
+      - link "Privacy policy":
+        - /url: https://info.devpost.com/legal/privacy-policy
+      - link "Terms of service":
+        - /url: https://info.devpost.com/legal/terms-of-service
+- iframe:
+  - button:

@@ -1,0 +1,21 @@
+test_bad_poll_delay_rejected_before_network (test_apify.ApifyTests) ... ok
+test_empty_success_is_valid_empty_dataset (test_apify.ApifyTests) ... ok
+test_execution_requires_reviewed_identity_before_start (test_apify.ApifyTests) ... ok
+test_failure_never_fetches_dataset_or_restarts (test_apify.ApifyTests) ... ok
+test_initial_identity_drift_holds_before_polling (test_apify.ApifyTests) ... ok
+test_input_is_snapshotted (test_apify.ApifyTests) ... ok
+test_invalid_budget_blocks_before_network (test_apify.ApifyTests) ... ok
+test_legitimate_actor_limit_field_is_independent_of_run_limit (test_apify.ApifyTests) ... ok
+test_limits_are_run_query_not_input (test_apify.ApifyTests) ... ok
+test_modified_plan_rejected_before_network (test_apify.ApifyTests) ... ok
+test_poll_exhaustion_aborts_owned_run (test_apify.ApifyTests) ... ok
+test_readonly_client_rejects_run_tool (test_apify.ApifyTests) ... ok
+test_returned_identity_drift_holds_without_abort_or_restart (test_apify.ApifyTests) ... ok
+test_sse_and_json_protocol_frames (test_apify.ApifyTests) ... ok
+test_tools_pagination (test_apify.ApifyTests) ... ok
+test_uncertain_start_is_not_retried (test_apify.ApifyTests) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.002s
+
+OK

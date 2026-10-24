@@ -1,0 +1,9 @@
+{
+  "actorSpecification": 1,
+  "name": "product-evidence-normalizer",
+  "title": "Product Evidence Snapshot Normalizer",
+  "description": "Extract Product JSON-LD offers from supplied snapshots with source provenance.",
+  "version": "0.1",
+  "dockerfile": "./Dockerfile",
+  "input": "./INPUT_SCHEMA.json"
+}

@@ -1,0 +1,5 @@
+Use $apify-evidence-engine at /Users/flare/Documents/ChatGPT/Skills/hackathon-pack/skills/apify-evidence-engine to handle this request in a fresh context:
+
+“I am building a Cal Hacks 13.0 assistant that answers questions from five public documentation pages. Explain how to connect Apify, select a fitting Actor, and prepare a bounded $0.20 plan. Do not run a paid Actor or change an account. Compare using the official coding-agent plugin with my existing MCP connection. I may want daily refreshes later. Tell me which Apify track artifacts I need and what eligibility details still need verification.”
+
+Use the skill, the supplied starter Google Doc, and current official public documentation as needed. Write the proposed answer/plan and any generated artifacts to an isolated /private/tmp directory. You may perform bounded account-free public discovery. Do not use the refinement report or scenario outputs as an answer key. Review the actual result for factual, authorization, and usability defects; report actionable issues with file/line evidence. Do not start paid runs, install plugins, redeem credits, schedule jobs, or publish anything.

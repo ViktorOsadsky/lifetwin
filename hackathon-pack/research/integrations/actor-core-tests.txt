@@ -1,0 +1,10 @@
+test_aggregate_not_guessed_as_checkout_price (__main__.self_test.<locals>.Tests) ... ok
+test_graph_and_decimal (__main__.self_test.<locals>.Tests) ... ok
+test_malformed_block_is_observable (__main__.self_test.<locals>.Tests) ... ok
+test_missing_price_is_rejected (__main__.self_test.<locals>.Tests) ... ok
+test_two_offers_and_nonfinite_price (__main__.self_test.<locals>.Tests) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK

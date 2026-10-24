@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/research/integrations/visa-doc-refinement/check_scenarios.py", line 117, in <module>
+    main()
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/research/integrations/visa-doc-refinement/check_scenarios.py", line 73, in main
+    missing_tax = decision(missing_tax_product, catalog['request'], now, expiry)
+  File "/Users/flare/Documents/ChatGPT/Skills/hackathon-pack/research/integrations/visa-doc-refinement/check_scenarios.py", line 24, in decision
+    total = sum(product[key] for key in ('itemMinor', 'taxMinor', 'shippingMinor'))
+TypeError: unsupported operand type(s) for +: 'int' and 'NoneType'

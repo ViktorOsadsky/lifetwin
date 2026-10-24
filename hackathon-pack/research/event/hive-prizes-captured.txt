@@ -1,0 +1,458 @@
+- link "Skip to content":
+  - /url: "#main"
+- banner:
+  - link "Cal hacks 13.0 home":
+    - /url: /
+  - button "Switch to dark theme":
+    - generic: Switch to dark theme
+  - navigation "Main":
+    - link "schedule":
+      - /url: /schedule
+    - link "map":
+      - /url: /map
+    - link "prizes":
+      - /url: /prizes
+    - link "FAQ":
+      - /url: /faq
+    - link "resources":
+      - /url: /resources
+  - link "sign in":
+    - /url: /login?next=%2Fprizes
+- main:
+  - link "Back to Home":
+    - /url: /
+    - text: Back to Home
+  - paragraph: Cal hacks 13.0 / prizes
+  - paragraph: Choose your destination
+  - heading "prizes" [level=1]
+  - link "Explore different prizes":
+    - /url: "#prizes"
+    - generic: Explore different prizes
+  - paragraph:
+    - text: Updated
+    - time: Oct 22, 9:47 PM
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cal Hacks
+    - heading "First Overall" [level=2]
+    - paragraph: Your destination
+    - paragraph: MacBook Air 13" M5
+    - paragraph: EXECUTIVE-ROW-2
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cal Hacks
+    - heading "Second Overall" [level=2]
+    - paragraph: Your destination
+    - paragraph: Nintendo Switch 2
+    - paragraph: EXECUTIVE-ROW-3
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cal Hacks
+    - heading "Third Overall" [level=2]
+    - paragraph: Your destination
+    - paragraph: Google Intelligent Eyewear
+    - paragraph: EXECUTIVE-ROW-4
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cal Hacks
+    - heading "Most Creative Hack" [level=2]
+    - paragraph: Your destination
+    - paragraph: Instax camera plus film
+    - paragraph: EXECUTIVE-ROW-5
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cal Hacks
+    - heading "Most Technically Complex Hack" [level=2]
+    - paragraph: Your destination
+    - paragraph: NuPhy Air60 HE
+    - paragraph: EXECUTIVE-ROW-6
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cal Hacks
+    - heading "Best People-First Hack" [level=2]
+    - paragraph: Your destination
+    - paragraph: Apple Watch SE 3
+    - paragraph: EXECUTIVE-ROW-7
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cal Hacks
+    - heading "Best Planet-First Hack" [level=2]
+    - paragraph: Your destination
+    - paragraph: America the Beautiful Parks Pass
+    - paragraph: EXECUTIVE-ROW-8
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cal Hacks
+    - heading "Best Hardware Hack" [level=2]
+    - paragraph: Your destination
+    - paragraph: Bambu Lab A1 Mini
+    - paragraph: EXECUTIVE-ROW-9
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cal Hacks
+    - heading "Best Beginner Hack" [level=2]
+    - paragraph: Your destination
+    - paragraph: AirPods 4
+    - paragraph: EXECUTIVE-ROW-10
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cal Hacks
+    - heading "Best Solo Hack" [level=2]
+    - paragraph: Your destination
+    - paragraph: AirPods Pro 3
+    - paragraph: EXECUTIVE-ROW-11
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cal Hacks
+    - heading "Hacker's Choice" [level=2]
+    - paragraph: Your destination
+    - paragraph: Logitech MX Master 4
+    - paragraph: EXECUTIVE-ROW-12
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Notability
+    - heading "Best Use of Notability (Notability)" [level=2]
+    - paragraph: "Process: Do your notes show how the idea evolved, from first sketch to final build? Detail: Are your notes clear and thorough enough that someone else could follow your thinking? Feature Usage: Does it take full advantage of Notability's features, like handwriting, audio, diagrams, PDFs, and Smart Notes? Relevance: Did Notability play a real role in your build, or was it added after the fact?"
+    - paragraph: Your destination
+    - paragraph: 1 year of Notability Pro + exclusive company merch
+    - paragraph: SPONSOR-ROW-2
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Meta
+    - 'heading "Meta/Facebook: Bringing People Closer Together with AI (Meta Inc)" [level=2]'
+    - paragraph: Projects will be judged on how meaningfully they strengthen human connection, how essential and well-integrated AI is, originality, and the strength of the working demo.
+    - paragraph: Your destination
+    - paragraph: Invitation to advance to the Round 2 Hackathon hosted at Meta's Menlo Park campus (travel and accommodations provided; advancement subject to eligibility verification and compliance with Meta's Round 2 Official Rules); Meta swag bag
+    - paragraph: SPONSOR-ROW-3
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Capital One
+    - heading "Best Use of Nessie (Capital One)" [level=2]
+    - paragraph: Completeness, Creativity, Complexity
+    - paragraph: Your destination
+    - paragraph: $300 Giftogram per person on winning team
+    - paragraph: SPONSOR-ROW-4
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Factory
+    - heading "Best Use of the Factory Droid SDK (Factory)" [level=2]
+    - paragraph: "Eligibility: The project must use the Droid SDK (TypeScript or Python) in a meaningful way. Droid should do real work in the running product, not just help you write code. The repo README should explain where and how Droid is used. What scores well - Droid runs on a trigger you designed, like an event, a schedule, a user action, or another agent. - Thoughtful control over what Droid can touch, with safety built in. - Making Droid's work visible: plans, steps, diffs, and results. What scores poorly - A chatbot wrapper with Droid added on. - Demos that only work in slides. - Projects where we can't tell what the agent did.\""
+    - paragraph: Your destination
+    - paragraph: $2000 cash, Factory credits, and swag
+    - paragraph: SPONSOR-ROW-5
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Fetch.AI
+    - heading "Best Use of Fetch.ai (Fetch.ai)" [level=2]
+    - paragraph: https://www.fetch.ai/events/calhacks-13-0
+    - paragraph: Your destination
+    - paragraph: 1st Prize - $1500; 2nd Prize - $1000; 3rd Prize - $500
+    - paragraph: SPONSOR-ROW-6
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Amardin
+    - heading "Best Security Hack, sponsored by Armadin (Armadin)" [level=2]
+    - paragraph: Coming soon!
+    - paragraph: Your destination
+    - paragraph: Apple Headphones (possibly hacking tools)
+    - paragraph: SPONSOR-ROW-7
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Coinbase
+    - heading "Best Use of x402 by Coinbase (Coinbase)" [level=2]
+    - paragraph: https://drive.google.com/file/d/12TnPLguduV3gh1zY_TJ176XmVDz2RGW9/view?usp=sharing
+    - paragraph: Your destination
+    - paragraph: $500 USDC + recruiter call per team member per track, for each of the two tracks (up to $4000 total)
+    - paragraph: SPONSOR-ROW-8
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Creao AI
+    - heading "Best AI-First Disruptor (Creao AI)" [level=2]
+    - paragraph: https://docs.google.com/document/d/1N1imAn1aBrA1JPoz5X_sjyOsQggUfPvJW2UIIFmdHf4/edit?usp=sharing
+    - paragraph: Your destination
+    - paragraph: "2500; each winning team is invited into CREAO Launchpad: 1 year of CREAO Pro Max ($1,440 value), product/technical/founder mentorship, CREAO meet-and-greet, demo opportunities, launch support and amplification, and career/interview opportunities with CREAO"
+    - paragraph: SPONSOR-ROW-9
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Creao AI
+    - heading "Best One-Person Company (Creao AI)" [level=2]
+    - paragraph: https://docs.google.com/document/d/1N1imAn1aBrA1JPoz5X_sjyOsQggUfPvJW2UIIFmdHf4/edit?usp=sharing
+    - paragraph: Your destination
+    - paragraph: "1500; each winning team is invited into CREAO Launchpad: 1 year of CREAO Pro Max ($1,440 value), product/technical/founder mentorship, CREAO meet-and-greet, demo opportunities, launch support and amplification, and career/interview opportunities with CREAO"
+    - paragraph: SPONSOR-ROW-10
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Creao AI
+    - heading "Best Team Empowerment (Creao AI)" [level=2]
+    - paragraph: https://docs.google.com/document/d/1N1imAn1aBrA1JPoz5X_sjyOsQggUfPvJW2UIIFmdHf4/edit?usp=sharing
+    - paragraph: Your destination
+    - paragraph: "$1000 total cash prize across the tracks; each winning team is invited into CREAO Launchpad: 1 year of CREAO Pro Max ($1,440 value), product/technical/founder mentorship, CREAO meet-and-greet, demo opportunities, launch support and amplification, and career/interview opportunities with CREAO"
+    - paragraph: SPONSOR-ROW-11
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: CRS Credit
+    - heading "CRS Financial Intelligence Challenge (Best Use of CRS Credit API) (CRS Credit)" [level=2]
+    - paragraph: "The only rule: make meaningful use of the CRS sandbox and show it working live in your demo. Judging criteria: 1. Use of CRS: how central CRS data is to the product, not a bolt-on. 2. Working demo: it runs live against the sandbox. 3. Usefulness: it solves a real problem for a person or a business. 4. Creativity: it shows us something we didn't expect. Prizes: - Best Overall CRS Hack ($1,000): the most impressive product built on CRS. - Best Financial AI Agent ($500): an AI agent that does real work with CRS data, using our API or MCP server. - Best Identity / Fraud Innovation (interview with CRS): the best project protecting consumers or businesses from fraud and identity theft. - Most Unexpected Use of CRS (interview with CRS): the \"\"we didn't think of this\"\" prize. Getting started: sandbox keys, docs and test identities are at https://calhacks.crscreditapi.com. Use the provided test identities only. Questions: find us at the CRS booth. We'll connect with the winning teams through Cal Hacks."
+    - paragraph: Your destination
+    - paragraph: "Best Overall CRS Hack: $1,000 (per team); Best Financial AI Agent: $500 (per team); Best Identity / Fraud Innovation: interview with the CRS team for open forward-deployed engineer role, for each team member; Most Unexpected Use of CRS: interview with the CRS team for open forward-deployed engineer role, for each team member"
+    - paragraph: SPONSOR-ROW-12
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Hypenate
+    - 'heading "The Hyphenated Enterprise: Autonomous Systems for Finance (Hyphenate)" [level=2]'
+    - paragraph: "Every submission is judged on the same four questions: 1. Is it real enough? Realistic data, a messy problem, and proof that it works. 2. Would you hire it? For which seats, and would it earn them: limited access, a clean record of its work, and knowing when to ask? 3. Did we see something new? A company, problem or approach we haven't seen made autonomous before. 4. The moment. When it catches what others missed, recovers from something going wrong, or defends a decision when questioned. Teams should bring a demo video that opens with their moment, a live demo at judging (we may ask them to try a scenario of our own), one line on the seats their system fills, and proof it works: what's real, what's simulated, and how they know. More details here: CalHacks_Hyphenate_Track"
+    - paragraph: Your destination
+    - paragraph: Cash prizes of $8000, $5000, $3000 for the top 3 teams; expedited interview process for top 5 teams
+    - paragraph: SPONSOR-ROW-13
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Cartesia
+    - heading "Best Use of Cartesia (Cartesia)" [level=2]
+    - paragraph: "Build a useful voice experience with Cartesia. Voice should be core to the product–not just a feature added for the demo. Other tools are fine; make clear what Cartesia contributes. What to submit • A working demo • A 2-minute, demo-first presentation: one complete user flow, then a brief problem + how you built it • A short README: setup, Cartesia features used, known limitations • Source access for judges (per event rules). No API keys or secrets in the repo Judging criteria (25% each) Problem and originality — Useful, clearly scoped, thoughtfully designed? Use of Cartesia — Meaningfully integrated into the core experience? Voice clear, responsive, and natural? Execution — Main flow works? Likely edge cases handled? Impact and responsibility — Accessibility, privacy, and responsible use considered? We’ll favor a strong working prototype over a large unfinished idea. Ideas • Commute standup — voice-only morning brief you can interrupt while driving (hands-busy) • Ambient / wearable assistant — help without pulling out a phone • Keep-your-voice accessibility — clone for reading aloud or speaking another language • Live coach or translator — low-latency back-and-forth where voice quality matters • Multi-speaker agent — tutor, debate partner, or support sim with distinct voices Docs: https://docs.cartesia.ai Playground: https://play.cartesia.ai"
+    - paragraph: Your destination
+    - paragraph: Meta glasses (still TBD)
+    - paragraph: SPONSOR-ROW-14
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: BitdeerAI
+    - heading "Best Use of Bitdeer AI Model Studio (Bitdeer AI)" [level=2]
+    - paragraph: "Challenge: Best Use of Bitdeer AI Model Studio Build an AI-powered application using Bitdeer AI Model Studio. Projects may include AI agents, developer tools, productivity applications, creative experiences, or other innovative applications. Eligibility requirements Build a working project using Bitdeer AI Model Studio. Clearly demonstrate how Model Studio is used in the application. Submit a brief description of the project and how Model Studio was used. Provide a demo or presentation of the project. Judging criteria Innovation and Creativity — 30% Technical Implementation — 30% Use of Bitdeer AI Model Studio — 20% Impact and Presentation — 20% Judges will evaluate originality, technical execution, meaningful use of Model Studio, and the project's potential value or user impact."
+    - paragraph: Your destination
+    - paragraph: "1st Place: $500 in Bitdeer AI Model Studio credits for the winning team + four gaming mice, one per teammate; 2nd Place: $200 in Bitdeer AI Model Studio credits + one LEGO Technic set for the team to share"
+    - paragraph: SPONSOR-ROW-15
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Figma
+    - heading "TBD (Figma)" [level=2]
+    - paragraph: https://docs.google.com/document/d/1HjzThDGveSLiilIdEPEHq12ZVLZ5eS0T8CQC5_m_-rg/edit?usp=sharing
+    - paragraph: Your destination
+    - paragraph: Amazon Gift Cards (distributed by CalHacks orgs); session with Figma Early Career Recruiting Team [to be scheduled]
+    - paragraph: SPONSOR-ROW-16
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Moss
+    - heading "Best Use of Moss (Moss)" [level=2]
+    - paragraph: "We have 3 main examples we are looking for: 1 - Voice AI: Voice agents that listen, respond, and act in real time 2 - Personal Agent: Agent that remembers you, works across your apps, and autonomously handles everyday tasks. 3 - Social Post: Best engagement"
+    - paragraph: Your destination
+    - paragraph: Airpod Max/pros
+    - paragraph: SPONSOR-ROW-17
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: SpaceXAI
+    - heading "Make it Legendary with SpaceXAI (SpaceXAI)" [level=2]
+    - paragraph: Space gives you more to work with than almost any other field. You have access to enormous public datasets, decades of missions, and a literature no human can read all of. Real space data goes in and a legendary project comes out. To be eligible, your project must be built with Cursor. The more you use Cursor, the more you're likely to win. You must also use the Grok Imagine or Voice API in your project. Bonus points, if you use Grok Bot for project planning and team collaboration.
+    - paragraph: Your destination
+    - paragraph: Custom Cursor Mechanical Keyboard
+    - paragraph: SPONSOR-ROW-18
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Convex
+    - heading "Best use of Convex (Convex)" [level=2]
+    - paragraph: Coming soon!
+    - paragraph: Your destination
+    - paragraph: Teenage Engineering EP-133 K.O. II and a Waveshare ESP32-S3 touch display board
+    - paragraph: SPONSOR-ROW-19
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Microsoft
+    - 'heading "Grand Prize: Built for the Real World (Microsoft)" [level=2]'
+    - paragraph: "Track Challenge: Build a production-minded AI agent that solves a meaningful problem in finance, productivity, healthcare, or another high-impact domain Judging Criteria: Customer understanding Measurable usefulness Path from prototype to production responsible design end to end functionality"
+    - paragraph: Your destination
+    - paragraph: A Microsoft Surface laptop for each member of the winning team; present your project remotely at a Microsoft Delta/Frontier Co. FDE team tech talk; 1:1 mentorship with senior FDEs from the Delta/Frontier Co team
+    - paragraph: SPONSOR-ROW-20
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Microsoft
+    - heading "Microsoft Customer Impact Award (Microsoft)" [level=2]
+    - paragraph: Same as above!
+    - paragraph: Your destination
+    - paragraph: Present your project remotely at a Microsoft Delta/Frontier Co. FDE team tech talk; 1:1 mentorship with senior FDEs from the Microsoft Delta team
+    - paragraph: SPONSOR-ROW-21
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Apify
+    - heading "Best use of Apify (Apify)" [level=2]
+    - paragraph: Top 5 projects using Apify, we also have a best actor award for building an actor for this event. Project must be using Apify in a meaningful way. We will judge the quality of the project as well as other criteria.
+    - paragraph: Your destination
+    - paragraph: "$5,000 total: 1st) $2,000; 2nd) $1,000; 3rd) $800; 4th) $400; 5th) $400"
+    - paragraph: SPONSOR-ROW-22
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Apify
+    - heading "Best Actor sponsored by Apify (Apify)" [level=2]
+    - paragraph: Same as above
+    - paragraph: Your destination
+    - paragraph: $400
+    - paragraph: SPONSOR-ROW-23
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Elastic
+    - heading "Elastic" [level=2]
+    - paragraph: Coming soon!
+    - paragraph: Your destination
+    - paragraph: "1st Place: Meta Quest 3S headsets; 2nd Place: Bose QuietComfort headphones"
+    - paragraph: SPONSOR-ROW-24
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Visa
+    - heading "Best use of Reimagining Shopping sponsored by Visa (Visa)" [level=2]
+    - paragraph: Innovation (25%) – How creative does the solution reimagine the shopping experience? User Experience (25%) – Does the experience feel intuitive, useful, and seamless? Technical Execution (20%) - How effectively has the team implemented AI and supporting technologies? Commerce Impact (15%) - Can the solution improve customer engagement, conversion, loyalty, or merchant outcomes? Trust & Responsibility (15%) - Does the solution address privacy, transparency, security, and responsible use of AI?
+    - paragraph: Your destination
+    - paragraph: $5,000
+    - paragraph: SPONSOR-ROW-25
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Afterquery
+    - heading "AfterQuery" [level=2]
+    - paragraph: Coming soon!
+    - paragraph: Your destination
+    - paragraph: Coming soon!
+    - paragraph: SPONSOR-ROW-26
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Annapurna Labs
+    - heading "Annapurna Labs" [level=2]
+    - paragraph: Coming soon!
+    - paragraph: Your destination
+    - paragraph: Coming soon!
+    - paragraph: SPONSOR-ROW-27
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Anthropic
+    - heading "Anthropic" [level=2]
+    - paragraph: 1. A named community. ""Students"" is too broad. ""Transfer students at Berkeley trying to find housing"" is the right register. 2. A real problem. You have lived it, or you talked to someone who has. 3. It works. One thing done well and usable on Monday beats a broad demo. 4. Thoughtful use of Claude. Claude does something that matters to the solution, and you know where it could go wrong for the people using it.
+    - paragraph: Your destination
+    - paragraph: Coming soon!
+    - paragraph: SPONSOR-ROW-28
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Atlassian
+    - heading "Atlassian" [level=2]
+    - paragraph: The Atlassian Agentic Workforce Challenge [Student Viewable Copy]
+    - paragraph: Your destination
+    - paragraph: Airpod Max
+    - paragraph: SPONSOR-ROW-29
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Bright Data
+    - heading "Best Agent/App Using Public Web Data sponsored by Bright Data" [level=2]
+    - paragraph: Judges will look for products where Bright Data is essential to the core experience; if live public web data were removed, the product would no longer work. Strong submissions solve a clear, real-world problem for a specific user, run live in the demo, handle real web conditions like blocks, slow responses, and empty results, and turn raw data into clean, useful output. Extra credit goes to teams that choose the right Bright Data tools thoughtfully, combine them where it improves the solution, and tell a clear two-minute story using real results from real websites rather than mocked data. Submissions will be disqualified if they scrape behind a login or paywall, collect non-public personal data, use mocked or hardcoded data in the demo, or mention Bright Data only in the README without making it part of the working product.
+    - paragraph: Your destination
+    - paragraph: 1st - $1500 Bright Data credits, $500 amazon card 2nd - $1000 Bright Data credits, $350 amazon card 3rd - $500 Bright Data credits, $250 amazon card
+    - paragraph: SPONSOR-ROW-30
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: Mana
+    - heading "Mana.space" [level=2]
+    - paragraph: "Use Mana meaningfully while building your project. In your submission, say where Mana helped and link one or two Mana pages or chats you used: the app or prototypes you built in Mana, and the chats where Mana planned, wrote or debugged your code. Make each link public so judges can open it (every Mana page and chat can be shared). In your demo, show one moment where Mana changed what you built or how fast you built it. What we'll be looking for: - Meaningful use of Mana (30%): Did Mana let you build something better, or faster, than you could have without it? - Usefulness (25%): Would a real person want this? - Originality (25%): Is it something we have not seen before? - Execution (20%): Does it work live, and could someone else use it? - Bonus (up to +10): Your project lives inside Mana as an app or agent a judge can open and use. A small thing that works beats an ambitious idea that only exists in slides."
+    - paragraph: Your destination
+    - paragraph: Coming soon!
+    - paragraph: SPONSOR-ROW-31
+    - paragraph: build · Explore · create
+  - article:
+    - paragraph: Prize
+    - generic: Awarded by
+    - text: SpaceTime DB
+    - heading "Spacetime" [level=2]
+    - paragraph: "We’d love to see projects where Spacetime is the core real-time backend, especially anything with live shared state, multiplayer interaction, or instant sync between users/agents/systems. That makes it a great fit not just for games, but also for things like chat/community apps, collaborative tools, social experiences, AI agent coordination, live dashboards, trading / financial-style apps, auctions / marketplaces, shared simulations, multiplayer productivity tools, and stream/creator tools. SpacetimeDB’s docs position it around real-time subscriptions, transactional updates, and server-side logic running close to the data, which is why these kinds of apps fit well. We’d be excited by something like a real-time portfolio sim, prediction market, collaborative trading game, shared ops dashboard, multi-user planning tool, or AI systems coordinating in a persistent world state. The main thing we’d want is for SpacetimeDB to be meaningfully used, not just added on the side. A few cool examples already built with / around Spacetime: BitCraft Online / BitCraftPublic Elegon Pogly - a real-time collaborative stream overlay powered by Spacetime official chat app tutorials/templates Video chat app"
+    - paragraph: Your destination
+    - paragraph: Coming soon!
+    - paragraph: SPONSOR-ROW-32
+    - paragraph: build · Explore · create
+- contentinfo:
+  - link "Hackathons @ Berkeley":
+    - /url: https://hackberkeley.org/
+    - img "Hackathons @ Berkeley"
+  - paragraph: follow us on
+  - list:
+    - link "Instagram":
+      - /url: https://www.instagram.com/calhacks/
+    - link "LinkedIn":
+      - /url: https://www.linkedin.com/company/cal-hacks/posts/
+  - paragraph:
+    - text: made with
+    - img "love"
+    - text: by
+    - generic: hackathons @ berkeley
+- alert

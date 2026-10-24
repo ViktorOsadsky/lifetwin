@@ -1,0 +1,41 @@
+Independent fresh-context review — 2026-10-23
+
+Scope and method
+Read candidate creative-web-worlds SKILL.md, motion-and-mobile.md and interaction-contracts.md. Attempted tasks before reading author evaluations. Used Browser plugin in-app browser 2, isolated tabs. Desktop observed at 1280×720; narrow viewport at 390×844. These are desktop viewport emulation results, not real touch-device/keyboard testing. Native wheel scrolling, reverse input, direct navigation, rapid preset changes and reload were exercised. No scores or industry-quality equivalence claim.
+
+What the candidate instructions do well
+The object-to-task relationship is visible: Contact Sheet's physical cover opens into the same selected photographs; Fieldwork's marked petal becomes its inspected crop and note target; Sona carries one sculpture from hero into its control room. The three fixtures differ materially in type, palette, imagery and structure. Contact Sheet narrow editing keeps a sticky spread above the reordered photo rows, so manipulation has an immediately visible result. Sona's final narrow studio frame groups the sculpture, waveform, presets and sliders coherently. Fieldwork's botanical imagery and condensed display type create a stronger subject-specific identity than generic cards.
+
+The cold task found a real weakness despite passing normal save/reload: switching the inspector silently retargeted an unfinished Fieldwork draft. Root corrected it during review. Retest: draft typed for Papaver, browse Lilium, note target remains Papaver, Save creates Papaver/Whole specimen. This validates the existing draft-interruption instruction and the value of a cold reviewer; it does not justify adding blanket undo requirements.
+
+Material skill corrections (two)
+1. Add a brief-priority gate before the complete task contract. The current unconditional create/manipulate/save/export language pulled this visual experiment into download/audio implementation and artifact inspection before the user's visual priority was explicit. Suggested instruction: 'First classify the requested result: visual study, interactive prototype, or production task. Build only the outcome needed to assess that brief. A visual study needs convincing visible responses and coherent states; actual generation, checkout, cloud persistence or export machinery belongs only when requested or essential to the intended judgment.' Preserve honest labels. This is a scope/craft correction, not a license for deceptive buttons.
+
+2. Make intermediate mobile composition an explicit acceptance condition. Current sequence instructions emphasize state, interruption and endpoint but do not force the moving subject, type and available space to be art-directed at the middle. In sona-mobile-middle.jpg the sculpture crosses the large wordmark and Shape studio heading while a roughly 240px empty slab separates them from the waveform. The later studio composition resolves well. Suggested instruction: 'At initial, at least one middle and settled mobile state, inspect subject size/crop, type collisions, whitespace and the useful next view. Revise the interval, scale, anchor or mobile section height when the middle is only transit or creates an unintended overlap. Reversibility alone is not successful choreography.'
+
+Observed reference relationship
+Actually visited https://www.apple.com/airpods-pro/ at the same desktop/narrow sizes; scrolled forward/reverse and used a mobile Sound quality detail control. The selected product detail changes to a purpose-composed cutaway, with its short explanation over the same image. Fieldwork mobile's petal crop is clear and its detail controls sit directly below, but selected-detail prose falls below the first inspection frame. Use the reference as a composition lesson: details deserve their own crop and a concise identifier close to the viewed feature. Do not copy Apple's page length, card system or commercial claims. The reference gallery autoplay also advanced after selection; the reference is not evidence that every interaction is superior.
+
+Actually visited https://excalidraw.com, drew a rectangle, Undo removed it and Redo restored its selection. This established direct manipulation/recovery behavior but does not by itself warrant adding undo everywhere in the fixtures.
+
+Selected evidence
+sona-mobile-entry.jpg / sona-mobile-middle.jpg / sona-mobile-end.jpg / sona-mobile-direct-entry.jpg — actual narrow native-scroll frames and direct-entry endpoint.
+fieldwork-mobile-detail.jpg — petal crop, control and text placement.
+fieldwork-draft-retarget.jpg — original draft wrongly saved as Lilium.
+reference-apple-mobile-detail.jpg — actual selected cutaway and caption.
+reference-excalidraw.jpg — actual restored rectangle.
+
+Earlier task checks, retained for provenance only
+Contact Sheet title After the rain, changed sixth photo, reordered Still water first, selected Full bleed and Fit, then reload preserved these choices. Actual downloaded HTML copied into this directory: 3,924,976 bytes, seven embedded images (cover plus six), embedded font and A5 print CSS. Browser file:// opening was blocked by URL policy; no visual print/PDF fidelity claim. Fieldwork note text export copied here; saved Petal view restored after reload. No further backend/output work pursued after priority clarification.
+
+Remaining limits
+No real-device touch, onscreen keyboard, system reduced-motion preference, frame-rate or accessibility compliance claim. A few screenshots captured immediately after input showed transient layouts; final comparisons used a subsequent settled frame. Root may revise fixtures after these captures. No sites or skills edited by this reviewer.
+
+Targeted correction verification — final appendix
+Read the revised candidate entry and motion reference after root's correction. Both material recommendations are now implemented as reusable instructions:
+- 'Set the direction and fidelity' comes first and explicitly excludes authentication/payment/audio-generation/export pipelines used merely to prove a visual prototype. Real-output checks are conditional on requested fidelity. The entry also limits skill experiments to the smallest representative slice revealing an instruction failure. This removes the scope broadening identified in the cold review.
+- The entry and motion reference explicitly require intermediate mobile composition acceptance, including scale/crop, type collisions, empty travel and the next useful view. The reference records the actual failure and permits a normal-flow poster followed by a live inspector instead of forcing one transported object through all layouts. A detail-composition lesson also now distinguishes a useful close-up from enlargement alone.
+
+Visually inspected root's native 390×844 screenshot at screenshots/sona-mobile-middle-fixed.png (reported scrollY 380). The hero poster remains above its wordmark and the next studio contains its own smaller live form. Neither form crosses the wordmark/heading, and the lower form leads directly into the waveform instead of the earlier empty slab. This visibly corrects the documented midpoint issue. The different mobile route is supported by the revised instruction rather than another easing adjustment.
+
+An optional attempt to reopen the existing review tab for a second live check returned 'Browser is not available: 2'. Therefore this appendix claims instruction inspection and verification of the supplied native screenshot only, not another independent live motion/reversal pass. The earlier live-review observations and limits remain applicable. No further website work or checklist was added.
