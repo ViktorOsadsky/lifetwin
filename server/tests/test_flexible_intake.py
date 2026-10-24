@@ -338,13 +338,25 @@ def confirm(field: str, text: str, service: ConversationService | None = None, *
 @pytest.mark.parametrize(
     "text", ["I was born in 1980", "1980", "nineteen eighty", "born in '80", "I was born 1980."]
 )
-def test_birth_year_alone_asks_which_of_two_ages(text):
+def test_birth_year_alone_works_out_the_age_and_checks_it(text):
+    # Late October: most 1980 birthdays have passed, so 46 is offered and 45 named.
     result = reply("age", text)
-    assert result.state.phase == "asking"
-    assert result.state.pending_profile.model_dump(exclude_none=True) == {}  # never age 80
-    assert "Born in 1980 means you're 45 or 46. Which one?" in result.message
-    follow_up = reply("age", "46", **result.state.model_dump(exclude={"phase", "current_field"}))
-    assert follow_up.state.pending_profile.age == 46
+    assert result.state.phase == "confirming"
+    assert result.state.pending_profile.model_dump(exclude_none=True) == {"age": 46}  # never 80
+    assert result.state.confirmed_profile.age is None  # saved only after a yes
+    assert "Born in 1980: that makes you 46, or 45 if your birthday hasn't come yet" in result.message
+    fixed = asyncio.run(
+        ConversationService(clock=lambda: TODAY).turn(
+            TurnRequest(action="reply", state=result.state, text="45")
+        )
+    )
+    assert fixed.state.pending_profile.age == 45
+
+
+def test_birth_year_early_in_the_year_offers_the_younger_age():
+    result = reply("age", "born in 1980", service=ConversationService(clock=lambda: date(2026, 2, 1)))
+    assert result.state.pending_profile.age == 45
+    assert "or 46 if your birthday has already passed" in result.message
 
 
 @pytest.mark.parametrize(
@@ -357,13 +369,13 @@ def test_birth_year_alone_asks_which_of_two_ages(text):
         ("born on 10/30/1950", 75, 75),  # one age after all; asked only when the readings differ
     ],
 )
-def test_birthday_this_year_names_both_ages(text, low, high):
+def test_birthday_this_year_offers_the_likelier_age(text, low, high):
     result = reply("age", text)
     if low == high:
         assert result.state.pending_profile.age == low
         return
-    assert result.state.pending_profile.age is None
-    assert f"{low} or {high}" in result.message
+    assert result.state.pending_profile.age == high  # late in the year: offered, then checked
+    assert f"makes you {high}, or {low}" in result.message
 
 
 @pytest.mark.parametrize(
@@ -1054,3 +1066,17 @@ def test_grounding_still_accepts_own_answers_beside_someone_else():
 
 def test_hedged_say_is_not_reported_advice():
     assert parse_reply("I'd say 6 hours a night", "sleep_hours") == {"sleep_hours": 6.0}
+
+
+@pytest.mark.parametrize(
+    ("text", "age"),
+    [("Born in 52,", 74), ("I was born in 52.", 74), ("born 48", 78), ("born in the year 61", 65)],
+)
+def test_spoken_two_digit_birth_year_is_a_year_not_an_age(text, age):
+    # Ink writes "born in fifty two" as "Born in 52," with no apostrophe.
+    result = reply("age", text)
+    assert result.state.pending_profile.age == age
+
+
+def test_born_some_years_ago_is_never_read_as_a_birth_year():
+    assert reply("age", "I was born 52 years ago").state.pending_profile.age != 74

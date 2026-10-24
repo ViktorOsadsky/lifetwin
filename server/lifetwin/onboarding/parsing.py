@@ -426,6 +426,12 @@ def _canonical(text: str) -> str:
     s = re.sub(r"\b\d0 ?'?s\b", " decades ", s)
     # A two-digit year is a year, never an age: "born in '80" -> 1980.
     s = re.sub(r"(?<!\d )(?<![\w'])'(\d{2})\b(?!')", r"19\1", s)  # not "5 '10"
+    # Speech-to-text drops the apostrophe: "born in 52" -> 1952 ("born 52 years ago" stays).
+    s = re.sub(
+        r"\bborn (?:in |on )?(?:the year )?(\d{2})\b(?![\d:/']|\.\d|\s?(?:years?|yrs?)\b)",
+        lambda m: f"born in {'20' if int(m.group(1)) <= 8 else '19'}{m.group(1)}",
+        s,
+    )
     s = re.sub(rf"\b{_ORD}(?= of {MONTH}\b)", lambda m: _ordinal(m.group(1), m.group(2)), s)
     s = re.sub(
         rf"\b{MONTH} (?:the )?{_ORD}\b",
@@ -1787,6 +1793,29 @@ def parse_value(field: ProfileField, text: str, *, today: date | None = None) ->
 def _feet(inches: int) -> str:
     feet, rest = divmod(inches, 12)
     return f"{feet} feet" + (f" {rest} inch{'' if rest == 1 else 'es'}" if rest else "")
+
+
+def birth_year_ages(text: str, *, today: date | None = None) -> tuple[int, int, str] | None:
+    """(likelier age, other age, how to say it) for a birth year alone ("born in 1980").
+
+    The year gives two possible ages. After midsummer most birthdays have passed,
+    so the older one is offered first; the read-back lets the person correct it.
+    """
+    today = today or date.today()
+    canonical = _canonical(text)
+    if _doubtful(canonical) or OTHER_PERSON.search(canonical):
+        return None
+    readings = _age_readings(canonical, today) or []
+    if len(readings) != 1 or len(readings[0][0]) != 2:
+        return None
+    ages, span, lead = readings[0]
+    if re.search(r"\d", _blank(canonical, [span])):
+        return None
+    low, high = sorted(ages)
+    if not _validated({"age": low}):
+        return None
+    late = today.timetuple().tm_yday > 182
+    return (high, low, lead) if late else (low, high, lead)
 
 
 def clarify(text: str, field: ProfileField, *, today: date | None = None) -> str | None:

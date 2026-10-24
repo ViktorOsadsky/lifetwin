@@ -87,9 +87,9 @@ void main() {
     await say(t, 'skip', 'How tall');
   });
 
-  testWidgets('a birth year gets the "45 or 46" follow-up, then an answer', (t) async {
+  testWidgets('a birth year is worked out and checked, and can be corrected', (t) async {
     await startTyped(t);
-    await say(t, 'born in 1980', '45 or 46');
+    await say(t, 'born in 1980', 'makes you 46');
     await say(t, '45', 'Age: 45');
     await tapText(t, 'Yes');
   });
@@ -134,8 +134,7 @@ void main() {
     debugPrint('first question after ${DateTime.now().difference(started).inMilliseconds} ms');
 
     const steps = [
-      ('I was born in 1980', '45 or 46'),
-      ('46', 'Age: 46'),
+      ('I was born in 1980', 'makes you 46'),
       ('female', 'female at birth'),
       ("yea that's right", '5 feet 10 inches'),
       ('a buck sixty', '160 pounds'),
@@ -148,7 +147,7 @@ void main() {
     ];
     for (final (answer, expect) in steps) {
       await say(t, answer, expect);
-      if (expect != '45 or 46') await tapText(t, 'Yes');
+      await tapText(t, 'Yes');
       debugPrint('ok: "$answer" -> $expect');
     }
     await waitFor(t, find.text('Continue'));

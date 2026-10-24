@@ -23,6 +23,7 @@ from lifetwin.onboarding.parsing import (
     QUESTION_EXAMPLE_VALUES,
     QUESTIONS,
     approximate,
+    birth_year_ages,
     clarify,
     corrects,
     grounded_candidates,
@@ -381,6 +382,18 @@ class ConversationService:
             # Offered back as a normal answer, so it is still read back and confirmed.
             candidates = parse_reply(QUESTION_EXAMPLE_VALUES[target], target, today=today)
         # A targeted follow-up ("45 or 46?") beats asking the AI helper to guess.
+        # "Born in 1980": work the age out and check it, instead of asking "45 or 46?".
+        birth_note = None
+        if not candidates and target == "age":
+            guess = _safe(birth_year_ages, text, today=today)
+            if guess:
+                likely, other, lead = guess
+                candidates = {"age": likely}
+                when = "hasn't come yet" if likely > other else "has already passed"
+                birth_note = (
+                    f"{lead}: that makes you {likely}, or {other} if your birthday {when} this year. "
+                    f"Is {likely} right? Say yes, or tell me the right age."
+                )
         hint = None if candidates else _safe(clarify, text, target, today=today)
         if not candidates and configured and not hint:
             if request.provider_consent:
@@ -465,6 +478,8 @@ class ConversationService:
         state.pending_profile = HealthProfile.model_validate(pending)
         state.phase = "confirming"
         state.current_field = next(iter(pending)) if len(pending) == 1 else None
+        if birth_note and len(pending) == 1:
+            return respond(birth_note)
         # A middle of a range ("7 or 8 hours") is read back as "about".
         return respond(self._prompt(state, about=set(candidates) if approximate(text) else set()))
 
