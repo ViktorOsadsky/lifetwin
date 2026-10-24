@@ -129,4 +129,12 @@ void main() {
     expect(t.mascotState, 'confirming');
     expect(() => HttpConversationGuide.parseTurn({'message': 'x'}), throwsA(isA<GuideFailure>()));
   });
+
+  test('transcript pieces are joined exactly as Ink sends them (live sequence)', () {
+    expect(CartesiaWire.joinTranscript([" I'", 'm about', ' five', ' foot eight, I think.'], ''),
+        "I'm about five foot eight, I think.");
+    expect(CartesiaWire.joinTranscript([' I weigh'], ' about 160'), 'I weigh about 160');
+    expect(CartesiaWire.joinTranscript([], ''), '');
+  });
 }
+
