@@ -7,7 +7,7 @@
 ///
 /// How the pieces fit:
 ///
-/// * [SwooshRoute] is a non-opaque [PageRouteBuilder]. It does not move the
+/// * [SwooshRoute] is a [PageRouteBuilder] that is see-through while it moves. It does not move the
 ///   page itself: each page reads the route clock and moves its own parts, so
 ///   Room and Onboarding feel like one world rather than two pages.
 /// * [SwooshClock] turns a route animation (0..1, forward or reverse) into
@@ -224,7 +224,9 @@ abstract final class SwooshGeometry {
 class SwooshRoute<T> extends PageRouteBuilder<T> {
   SwooshRoute({required WidgetBuilder builder, this.reducedMotion = false, super.settings})
       : super(
-          opaque: false,
+          // Opaque once it has arrived (a TransitionRoute is see-through only while it
+          // moves), so the Room under it is neither tapped nor read by VoiceOver.
+          opaque: true,
           barrierColor: null,
           maintainState: true,
           pageBuilder: (BuildContext context, Animation<double> a, Animation<double> s) =>
