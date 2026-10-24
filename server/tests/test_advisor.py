@@ -10,7 +10,8 @@ from lifetwin.advisor import router
 from lifetwin.advisor.models import AdvisorRequest, AdvisorResponse
 from lifetwin.advisor.service import build_plan
 from lifetwin.core.models import HealthProfile
-from lifetwin.research.tavily import TavilyResearch
+from lifetwin.research.sources import SOURCES
+from lifetwin.research.tavily import LIMITATIONS, TavilyResearch
 
 
 def plan(**kwargs):
@@ -35,7 +36,7 @@ def test_cited_curated_plan_has_no_fabricated_effects_or_profile_mutation():
     assert "84.5" not in dumped
     assert "prediction" not in dumped
     assert "death_date" not in dumped
-    assert "not zero" in dumped
+    assert "does not mean it will not help" in dumped
 
 
 def test_supplements_are_optional_education_with_no_product_or_dose():
@@ -110,6 +111,51 @@ def test_response_rejects_ungrounded_citations():
     payload["actions"][0]["source_ids"] = ["invented-study"]
     with pytest.raises(ValidationError):
         AdvisorResponse.model_validate(payload)
+
+
+def _cite_smoking_for_sleep(payload):
+    payload["actions"][0]["source_ids"] = [SOURCES["smoking"].id]
+    payload["sources"].append(SOURCES["smoking"].model_dump())
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        _cite_smoking_for_sleep,
+        lambda p: p["research"].update(retrieved_source_ids=["fabricated-study"]),
+        lambda p: p["research"].update(status="retrieved"),
+        lambda p: p["sources"][0].update(url="https://evil.example/x"),
+        lambda p: p["sources"][0].update(title="A study that does not exist"),
+        lambda p: p["research"]["sources"][0].update(url="https://evil.example/x"),
+    ],
+)
+def test_response_rejects_mismatched_or_unreviewed_citations(mutation):
+    payload = plan(topics=["sleep"]).model_dump()
+    mutation(payload)
+    with pytest.raises(ValidationError):
+        AdvisorResponse.model_validate(payload)
+
+
+JARGON = (
+    "unmodeled",
+    "physiological",
+    "experimental",
+    "inputs",
+    "provider",
+    "retrieval",
+    "locally reviewed",
+    "public-health",
+)
+
+
+def test_user_facing_limitations_use_plain_words():
+    texts = [
+        *plan(profile=HealthProfile(age=15)).limitations,
+        plan().mascot_message,
+        *LIMITATIONS.values(),
+    ]
+    for text in texts:
+        assert not any(term in text.lower() for term in JARGON), text
 
 
 def test_advisor_endpoint_contract_and_prediction_rejection():

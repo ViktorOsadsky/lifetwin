@@ -2,12 +2,15 @@
 
 import json
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from lifetwin.quiz import router as quiz_router
+from lifetwin.quiz.models import QuizBankResponse
 from lifetwin.quiz.router import router
 from lifetwin.quiz.service import load_bank, parse_bank_json
 
@@ -73,7 +76,7 @@ def test_filter_limit_and_empty_matches(client):
 
 
 @pytest.mark.parametrize(
-    "query", ["limit=0", "limit=21", "limit=bad", "topic=medical", "difficulty=easy"]
+    "query", ["limit=0", "limit=101", "limit=bad", "topic=medical", "difficulty=easy"]
 )
 def test_invalid_filters_rejected(client, query):
     assert client.get("/api/quiz/questions?" + query).status_code == 422
@@ -85,7 +88,8 @@ def test_detail_unknown_version_and_invalid_id(client):
     assert response.status_code == 200
     assert response.json() == question.model_dump(mode="json")
     assert client.get("/api/quiz/questions/missing-question.v1").status_code == 404
-    assert client.get("/api/quiz/questions/" + question.id.replace(".v1", ".v2")).status_code == 404
+    missing_version = question.id.rsplit(".v", 1)[0] + ".v99"
+    assert client.get("/api/quiz/questions/" + missing_version).status_code == 404
     assert client.get("/api/quiz/questions/invalid").status_code == 422
 
 
@@ -130,3 +134,101 @@ def test_resource_loading_independent_of_working_directory(monkeypatch, tmp_path
     _bundled_bank.cache_clear()
     monkeypatch.chdir(tmp_path)
     assert load_bank().total == 8
+
+
+def test_every_question_can_be_listed_when_bank_exceeds_twenty(client, monkeypatch):
+    base = load_bank()
+    extra = [
+        base.questions[0].model_copy(update={"id": f"extra-question-{index}.v1"})
+        for index in range(25)
+    ]
+    big = QuizBankResponse(bank_version="9.0", total=len(extra), questions=extra)
+    monkeypatch.setattr(quiz_router, "load_bank", lambda: big)
+    payload = client.get("/api/quiz/questions?limit=100").json()
+    assert payload["total"] == 25
+    assert len(payload["questions"]) == 25
+
+
+def test_correct_answers_are_spread_across_option_positions():
+    bank = load_bank()
+    positions = [q.correct_option_id for q in bank.questions]
+    assert max(positions.count(p) for p in set(positions)) <= len(positions) / 2
+
+
+def test_option_text_never_looks_like_an_answer_letter():
+    for question in load_bank().questions:
+        for option in question.options:
+            assert not (
+                len(option.text) > 1 and option.text[0] in "ABCD" and option.text[1] in ":)."
+            ), option.text
+
+
+def test_game_feedback_is_clearly_game_only_and_honest_at_full_health():
+    for question in load_bank().questions:
+        wrong = question.wrong_effect.reduced_motion_text
+        assert "only a game" in wrong
+        assert "real health has not changed" in wrong
+        assert "game health" in wrong
+        correct = question.correct_effect.reduced_motion_text
+        # Game health starts at 100, so a correct answer must not promise a visible change.
+        assert "below 100" in correct
+        for effect in (question.wrong_effect, question.correct_effect, question.review_effect):
+            assert str(abs(effect.game_health_delta)) in effect.reduced_motion_text
+
+
+def test_older_adult_activity_question_covers_balance():
+    question = next(q for q in load_bank().questions if q.id == "activity-missing-piece.v2")
+    correct = next(o for o in question.options if o.id == question.correct_option_id)
+    assert "balance" in correct.text
+    assert "65" in question.scenario
+    assert "older-adults" in question.sources[0].url
+
+
+def test_chicken_explanation_states_not_to_wash():
+    question = next(q for q in load_bank().questions if q.id.startswith("chicken-salad-prep."))
+    assert "Do not wash raw chicken" in question.explanation
+    assert "165 degrees F" in question.explanation
+
+
+SCORING_CASES = Path(__file__).resolve().parents[1] / "content" / "quiz_scoring_cases.json"
+
+
+def replay(case, bank):
+    """Reference reducer for the client's local, game-health-only scoring rules."""
+    rules = bank.local_scoring
+    questions = {question.id: question for question in bank.questions}
+    health = case["start_game_health"]
+    answered, awaiting_review = set(), set()
+    for step in case["steps"]:
+        question = questions[step["question_id"]]
+        effect = None
+        if step["event"] == "answer" and question.id not in answered:
+            answered.add(question.id)
+            if step["option_id"] == question.correct_option_id:
+                effect = question.correct_effect
+            else:
+                effect = question.wrong_effect
+                awaiting_review.add(question.id)
+        elif step["event"] == "review" and question.id in awaiting_review:
+            awaiting_review.discard(question.id)
+            effect = question.review_effect
+        else:
+            assert step["event"] in {"answer", "review", "network_failure"}
+        if effect is not None:
+            health += effect.game_health_delta
+            health = min(max(health, rules.minimum_game_health), rules.maximum_game_health)
+        yield {
+            "game_health": health,
+            "mascot_event": effect.mascot_event if effect else None,
+            "scored": effect is not None,
+        }
+
+
+def test_scoring_vectors_match_reference_reducer():
+    data = json.loads(SCORING_CASES.read_text(encoding="utf-8"))
+    bank = load_bank()
+    assert data["bank_version"] == bank.bank_version
+    assert len(data["cases"]) >= 5
+    for case in data["cases"]:
+        expected = [step["expect"] for step in case["steps"]]
+        assert list(replay(case, bank)) == expected, case["name"]
