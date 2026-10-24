@@ -1,5 +1,16 @@
 # lifetwin
 
+LifeTwin is a playful health scenario simulator with a customizable SVG digital twin, model-backed survival comparisons, and an evidence-backed planning agent. The application is planned; this repository currently contains its specification and implementation guides.
+
+## Start here
+
+- [Master implementation guide](MASTER_PLAN.md): current product decisions, sensitivity search, research/planning, experimental twin, contracts, and delivery gates.
+- [Team splitting document](TEAM_PLAN.md): track owners, sync points, and planned iOS workflow.
+- [Project specification](projectspec.md): survival modeling, data, evaluation, and privacy requirements.
+- [Agent instructions](AGENTS.md): required reading and PR/merge workflow for repository contributors.
+
+The current app direction is Flutter/Dart with a Python backend. Use PRs and merge them into `main`; follow the master guide where it updates earlier stack and design decisions.
+
 ## Agent skills
 
 The [hackathon skill pack](hackathon-pack/START-HERE.md) contains ten reusable agent skills, supporting references, helper scripts, and evaluation evidence.

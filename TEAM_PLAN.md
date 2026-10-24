@@ -2,6 +2,8 @@
 
 How we split [the PRD](projectspec.md) so four people can build in parallel without drifting apart.
 
+Read the [master implementation guide](MASTER_PLAN.md) first for the current cute SVG twin, bounded input search, evidence-backed plan, and experimental-mode requirements. It resolves product/stack differences with the original PRD. This document remains the ownership and sync reference. The `contracts/`, app, and script paths below are planned deliverables until their implementation PRs land.
+
 ## Decisions so far
 
 | Area | Decision |
@@ -10,7 +12,7 @@ How we split [the PRD](projectspec.md) so four people can build in parallel with
 | Training | Python. Victor picks the method (Cox, random survival forest, whatever validates best) |
 | Server | Python. It serves Victor's model and keeps the LLM key off the phone (PRD 15). *Assumed from the two rows above; say so if you disagree* |
 | Advisor input | The user's inputs plus the model's results. May change later |
-| Merging | Fast: merge straight to `main`, no required review. Bad merge → roll back to a checkpoint (below) |
+| Merging | Short branch → PR → merge to `main` after applicable checks and repository protections pass. No extra review required unless repository rules require it. Bad merge → revert through a PR (below) |
 
 Because Victor is free to choose the model, the shared boundary is **the API, not the model file**. Everyone builds against the JSON in [`contracts/`](contracts/). Whatever model sits behind it can change without breaking anyone.
 
@@ -42,7 +44,7 @@ Because Victor is free to choose the model, the shared boundary is **the API, no
    uv run --with jsonschema python contracts/check.py --base-url https://<deployed-api>
    ```
 3. **Changing a contract** = edit the schema, update `stub_server.py`, run `python3 contracts/stub_server.py --write-fixtures`, check passes, and tell the team in chat **before** merging. A contract change merged without telling people is the main way we'd drift.
-4. **Branches are short.** Name them `a/…`, `b/…`, `c/…`, `d/…`. Pull `main` into your branch often and merge back at least at every sync point.
+4. **Branches are short.** Default to `codex/<track>-<task>` (the earlier `a/…`, `b/…`, `c/…`, `d/…` names are legacy conventions). Pull `main` into your branch often and merge through PRs at least at every sync point.
 5. **Sync points** (hours after kickoff): **T+2** Contract Zero, **T+8** every track merged and the stub flow runs on the phone, **T+16** real model behind the API, **T+24** advisor in the app, **T+32** polish and deploy, **T+40** feature freeze (fixes and rehearsal only).
 6. **When Victor's real model lands:** B swaps it in behind the same routes in one merge, regenerates fixtures from the real server and bumps `model_version`. The app shouldn't need any change.
 
@@ -60,13 +62,14 @@ To undo one bad merge (keeps everyone else's later work):
 git revert -m 1 <merge-commit>   # or: git revert <commit> for a non-merge commit
 ```
 
-To get back to a known-good state when `main` is badly broken:
+To recover checkpoint behavior when `main` is badly broken, start from current `main`, then revert the offending commits or restore reviewed files from the checkpoint and open a recovery PR:
 
 ```sh
-git switch -c recover cp-03      # inspect, then merge recover back into main
+git switch -c codex/recover-checkpoint main
+# Revert specific bad changes or restore reviewed paths from cp-03, then open a PR.
 ```
 
-Don't `git reset --hard` and force-push `main`. That throws away every teammate's commits made after the checkpoint.
+Branching from an ancestor checkpoint and merging it back does not undo later changes. Don't `git reset --hard` and force-push `main`. That throws away every teammate's commits made after the checkpoint. Deliver reverts through PRs too.
 
 ## iOS testing
 
