@@ -254,6 +254,32 @@ class VoiceOnboardingController extends ChangeNotifier {
     await _send('reply', text: t);
   }
 
+  /// Tap-to-answer choices for short categorical questions, which voice
+  /// mishears ("female" as "email"). Label shown, and the words sent.
+  /// Empty unless the server is asking (not confirming) one of these fields.
+  List<(String, String)> get quickAnswers {
+    final t = turn;
+    if (t == null || t.complete || t.phase != 'asking' || correcting) return const [];
+    return switch (t.state['current_field']) {
+      'sex' => const [('Female', 'female'), ('Male', 'male')],
+      'diabetes' => const [('Yes', 'yes'), ('No', 'no'), ('Not sure', "I don't know")],
+      'smoking_status' => const [
+        ('I smoke now', 'I smoke now'),
+        ('I used to smoke', 'I used to smoke'),
+        ('I never smoked', 'I have never smoked'),
+      ],
+      _ => const [],
+    };
+  }
+
+  /// A tapped quick answer: stops the mascot or the microphone, then sends the
+  /// same words a person would say.
+  Future<void> submitQuick(String text) async {
+    if (_busy || phase == VoicePhase.interpreting) return;
+    if (phase == VoicePhase.listening) await cancelTalk();
+    await submitTyped(text);
+  }
+
   Future<void> confirm() => _button('confirm');
   Future<void> change() async {
     if (_busy || !confirming || (phase != VoicePhase.idle && phase != VoicePhase.speaking)) return;

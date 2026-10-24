@@ -125,6 +125,38 @@ void main() {
     await waitFor(t, find.text('Continue'));
   });
 
+  testWidgets('the sex and smoking buttons answer without typing', (t) async {
+    await startTyped(t);
+    await say(t, '71', 'Age: 71');
+    await tapText(t, 'Yes');
+    await waitForReply(t, find.text('Female'));
+    await tapText(t, 'Female');
+    await waitForReply(t, find.textContaining('female at birth'));
+    await tapText(t, 'Yes');
+    // Skip height, weight, sleep and exercise to reach the smoking question.
+    await waitForReply(t, find.textContaining('How tall'));
+    for (final next in ['How much do you weigh', 'How many hours', 'How many minutes', 'Do you smoke now']) {
+      await waitFor(t, find.byType(TextField));
+      // The keyboard can swallow the text or a tap; try again until a tap sends it.
+      for (var i = 0; i < 5; i++) {
+        await t.tap(find.byType(TextField));
+        await t.pump(const Duration(milliseconds: 300));
+        await t.enterText(find.byType(TextField), 'skip');
+        await t.pump(const Duration(milliseconds: 600));
+        if (t.widget<TextField>(find.byType(TextField)).controller?.text != 'skip') continue;
+        await tapText(t, 'Send');
+        await t.pump(const Duration(milliseconds: 300));
+        if (t.widget<TextField>(find.byType(TextField)).controller?.text.isEmpty ?? true) break;
+      }
+      await waitForReply(t, find.textContaining(next));
+      await t.pump(const Duration(milliseconds: 1500));
+    }
+    await waitForReply(t, find.text('I used to smoke'));
+    await tapText(t, 'I used to smoke');
+    await waitForReply(t, find.textContaining('smoked in the past'));
+    await tapText(t, 'Yes');
+  });
+
   testWidgets('a whole typed intake with indirect answers', (t) async {
     final started = DateTime.now();
     await t.pumpWidget(const LifeTwinApp());

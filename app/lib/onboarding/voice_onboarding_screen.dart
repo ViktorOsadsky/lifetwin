@@ -249,6 +249,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
         BigButton(label: 'Yes, let the AI helper read it', filled: true, onTap: () => c.setAiHelper(true)),
         const SizedBox(height: 16),
       ],
+      if (c.quickAnswers.isNotEmpty) ...[_quickAnswers(busy), const SizedBox(height: 16)],
       if (c.typing) ..._typingControls(busy) else TalkButton(controller: c),
       const SizedBox(height: 12),
       if (!keyboard) ...[
@@ -264,6 +265,27 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
           ),
       ],
     ];
+  }
+
+  /// Two per row when they fit, one per row when the text is large.
+  Widget _quickAnswers(bool busy) {
+    final answers = c.quickAnswers;
+    // The screen pads 24 on each side. LayoutBuilder can't sit in this scroll view.
+    final width = MediaQuery.sizeOf(context).width - 48;
+    const gap = 12.0;
+    final perRow = MediaQuery.textScalerOf(context).scale(1) > 1.3 ? 1 : 2;
+    final w = (width - gap * (perRow - 1)) / perRow;
+    return Wrap(
+      spacing: gap,
+      runSpacing: gap,
+      children: [
+        for (final (label, say) in answers)
+          SizedBox(
+            width: w,
+            child: BigButton(label: label, filled: false, onTap: busy ? null : () => c.submitQuick(say)),
+          ),
+      ],
+    );
   }
 
   List<Widget> _typingControls(bool busy) => [
