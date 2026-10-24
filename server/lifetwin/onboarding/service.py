@@ -62,7 +62,9 @@ SMOKING_WORDS = {
 
 
 def _plain(value: float, digits: int = 1) -> str:
-    return f"{value:.{digits}f}".rstrip("0").rstrip(".")
+    text = f"{value:.{digits}f}"
+    # Only trim zeros after a decimal point: "170" must not become "17".
+    return text.rstrip("0").rstrip(".") if "." in text else text
 
 
 def _about(value: float, shown: str) -> str:
