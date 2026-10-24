@@ -250,10 +250,19 @@ CLOSINGS: dict[CheckinKind, dict[str, str]] = {
 DONE_AGAIN = "We're all done for now. Thank you!"
 SAME_LEAD = "Same as last time, then. "
 NO_PREVIOUS = "I don't have your last answer to go by. "
-WHY_NOTE = (
-    "I ask so your twin can keep up with how you're doing. Nothing is saved until you say yes."
+# Check-in history lives only on the phone; weekly answers also update the forecast.
+WHY_NOTES: dict[CheckinKind, str] = {
+    "daily": (
+        "I ask so your twin can keep up with how you're doing. Your check-ins stay on your "
+        "phone. Nothing is saved until you say yes."
+    ),
+    "weekly": (
+        "I ask so your twin can keep your forecast up to date. Your check-ins stay on your "
+        "phone. Nothing is saved until you say yes."
+    ),
+}
+PRIVATE_NOTE = (
+    "Your check-ins stay on your phone. LifeTwin's server doesn't keep them. "
+    "Nothing is saved until you say yes."
 )
-PRIVATE_NOTE = "This check-in isn't kept on LifeTwin's server. Nothing is saved until you say yes."
 HOW_ARE_YOU = "I'm a happy bear, thank you for asking! "
-# Said once, then the check-in goes on, when a reply mentions an emergency.
-URGENT_NOTE = "I'm sorry you're going through that. If you need help right now, please call 911. "

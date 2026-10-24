@@ -2859,13 +2859,3 @@ NO_READING = (
 def no_new_reading(text: str) -> bool:
     """ "No", "I haven't had it checked": no blood pressure reading to give."""
     return bool(re.fullmatch(NO_READING, _plain(text)))
-
-
-# A reply that mentions an emergency gets a pointer to help before anything else.
-URGENT = re.compile(
-    r"\bchest pains?\b|\b(?:can't|cannot|can not|couldn't) (?:catch my )?breathe?\b|"
-    r"\btrouble breathing\b|\bshort(?:ness)? of breath\b|\bfell (?:down )?and (?:can't|cannot) "
-    r"get up\b|\b(?:want|wanted|going) to die\b|\bkill myself\b|\bsuicid\w*|"
-    r"\bend (?:it all|my life)\b|\b(?:having|had) a (?:stroke|heart attack)\b",
-    re.I,
-)

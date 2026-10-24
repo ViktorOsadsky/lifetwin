@@ -285,7 +285,8 @@
         "reply",
         "confirm",
         "skip",
-        "cancel"
+        "cancel",
+        "resume"
       ],
       "title": "Action",
       "type": "string"

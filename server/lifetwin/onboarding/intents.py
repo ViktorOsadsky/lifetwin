@@ -35,6 +35,7 @@ from lifetwin.onboarding.parsing import (
     _topic,
     _unhedged,
     is_skip,
+    normalize_text,
 )
 
 # ---------------------------------------------------------------------------
@@ -1022,3 +1023,76 @@ def same_as_before(text: str) -> bool:
         return False
     rest = (words[: match.start()] + " " + words[match.end() :]).split()
     return all(word in SAME_AROUND for word in rest)
+
+
+# ---------------------------------------------------------------------------
+# Emergencies (onboarding and check-ins share this)
+# ---------------------------------------------------------------------------
+
+EMERGENCY_NOTE = "If you need help right now, please call 911."
+# Calm and short: no cheerful filler and no next question while it is on screen.
+EMERGENCY_MESSAGE = (
+    "I'm sorry you're going through that. "
+    + EMERGENCY_NOTE
+    + " We can carry on whenever you're ready."
+)
+RESUME_LEAD = "Okay, let's carry on. "
+# Only obvious phrasings, typed or transcribed. "My heart attack was in 2015", "I'm
+# dying to see my grandkids" and "this pain in my knee" are not among them.
+EMERGENCY = re.compile(
+    r"\bchest pains?\b|\bpains? in (?:my|the) chest\b|\btightness in my chest\b|"
+    r"\bmy chest (?:hurts|is hurting|is (?:really |so |very )?tight|feels (?:tight|heavy))\b|"
+    r"\b(?:can't|cannot|can not|couldn't|could not) (?:breathe|catch my breath|get my breath)\b|"
+    r"\b(?:struggling|trouble|hard|difficulty) (?:to )?breath(?:e|ing)\b|"
+    r"\bhaving a (?:heart attack|stroke)\b|"
+    r"\b(?:think|feel like) (?:i'm|i am|it's|it is) (?:a |having a )?(?:heart attack|stroke)\b|"
+    r"\b(?:fell|fallen|had a fall)(?: down)?,? and (?:i )?(?:can't|cannot|can not) get up\b|"
+    r"\b(?:want|wanna|wants) to die\b|\bwant to be dead\b|\bkill(?:ing)? myself\b(?! laughing)|"
+    r"\bend (?:my life|it all)\b|\bsuicid\w*|\bbetter off dead\b|\bno reason to live\b|"
+    r"\b(?:don't|do not) want to (?:live|be alive)(?: anymore| any more)?\b|"
+    r"\b(?:i think|i feel like) (?:i'm|i am) dying\b|"
+    r"\b(?:won't|will not|can't|cannot) stop (?:the )?bleeding\b|"
+    r"\b(?:call|need|get me|send) (?:an ambulance|911|nine one one)\b"
+)
+# "I had chest pain years ago": history, unless it is said to be happening now.
+HISTORY = re.compile(
+    r"(?<!'ve )(?<!have )(?<!has )\bhad\b|\b(?:was|were|ago|used to|back in|history of|"
+    r"after my|since my|when i was|survived|recovered|years|last (?:year|month|week))\b|"
+    r"\bin (?:19|20)\d\d\b"
+)
+HAPPENING_NOW = re.compile(
+    r"\b(?:now|right now|today|tonight|this (?:morning|afternoon|evening)|all (?:day|morning|night)|"
+    r"just now|still|again)\b"
+)
+RESUME = _units(
+    "continue",
+    "let's continue",
+    "please continue",
+    "ok continue",
+    "okay continue",
+    "okay let's continue",
+    "carry on",
+    "let's carry on",
+    "keep going",
+    "let's keep going",
+    "go on",
+    "go ahead",
+    "i'm ready",
+    "i'm ready now",
+)
+
+
+def emergency(text: str) -> bool:
+    """A reply that says something urgent is happening now ("I've got chest pain")."""
+    words = " ".join(re.sub(r"[^\w'\s.,;!?]", " ", normalize_text(text).lower()).split())
+    for clause in re.split(r"[.,;!?]|\bbut\b", words):
+        if EMERGENCY.search(clause) and (
+            not HISTORY.search(clause) or HAPPENING_NOW.search(clause)
+        ):
+            return True
+    return False
+
+
+def resumes(text: str) -> bool:
+    """ "Continue", "let's carry on": go on with the question that was paused."""
+    return _full(RESUME, phrase(text))

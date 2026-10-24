@@ -1,7 +1,8 @@
 """Stateless check-in contracts: the caller holds the state and the previous answers.
 
-Nothing here is stored server-side. Where check-in history lives is an open owner
-decision, so the client sends the previous answers with every turn.
+Check-in history lives only on the phone (owner ruling); the server stores nothing,
+so the client sends the previous answers with every turn. Weekly answers come back
+as ``profile_update`` for the app to apply to the profile; daily answers are history.
 """
 
 import re
@@ -10,7 +11,7 @@ from typing import Literal
 from pydantic import Field, field_validator, model_validator
 
 from lifetwin.checkin.scripts import SCRIPTS, CheckinField, CheckinKind
-from lifetwin.core.models import ApiModel, CheckinValues
+from lifetwin.core.models import ApiModel, CheckinValues, HealthProfile
 from lifetwin.onboarding.models import MascotEvent
 
 
@@ -54,6 +55,16 @@ class CheckinState(ApiModel):
         return self
 
 
+def profile_update(state: CheckinState) -> HealthProfile:
+    """The confirmed weekly answers that replace profile values; empty for a daily check-in."""
+    if state.kind != "weekly":
+        return HealthProfile()
+    confirmed = state.confirmed.model_dump(exclude_none=True)
+    return HealthProfile.model_validate(
+        {field: value for field, value in confirmed.items() if field in HealthProfile.model_fields}
+    )
+
+
 class CheckinStartRequest(ApiModel):
     kind: CheckinKind
     previous: CheckinValues = Field(default_factory=CheckinValues)
@@ -70,7 +81,8 @@ class CheckinStartRequest(ApiModel):
 
 
 class CheckinTurnRequest(ApiModel):
-    action: Literal["reply", "confirm", "skip", "cancel"]
+    # "resume": the person tapped Continue after an emergency pause.
+    action: Literal["reply", "confirm", "skip", "cancel", "resume"]
     state: CheckinState
     text: str | None = Field(default=None, min_length=1, max_length=2000)
     input_mode: Literal["text", "transcript"] = "text"
@@ -94,6 +106,15 @@ class CheckinResponse(ApiModel):
     provider_status: Literal["not_configured"] = "not_configured"
     voice_status: Literal["deferred", "available", "unavailable"] = "deferred"
     speech_hint: Literal["slower", "louder"] | None = None
+    # The reply said something urgent is happening: the check-in is paused on the same
+    # question. The app shows a "Call 911" button the person taps themselves, and
+    # "Continue" (action "resume", or any reply) goes on where it stopped.
+    emergency: bool = False
+    # Weekly only: the confirmed answers as profile values (same fields, units and
+    # ranges as onboarding). When ``complete`` is true, the app sets each non-null
+    # field on the confirmed profile and reruns the forecast; null fields are left as
+    # they are. Daily check-ins are history only, so this is always empty for them.
+    profile_update: HealthProfile = Field(default_factory=HealthProfile)
     accepted_input_modes: list[Literal["text", "transcript"]] = Field(
         default_factory=lambda: ["text", "transcript"], min_length=2, max_length=2
     )
@@ -101,8 +122,8 @@ class CheckinResponse(ApiModel):
     complete: bool
     limitations: list[str] = Field(
         default_factory=lambda: [
-            "State and previous answers are held by the caller. The server keeps nothing.",
-            "A check-in gives no forecast, score or medical advice.",
+            "Check-in history lives on the phone. The server keeps nothing.",
+            "A check-in gives no score or medical advice; weekly answers update the profile.",
         ],
         max_length=5,
     )

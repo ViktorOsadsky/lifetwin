@@ -35,14 +35,13 @@ from lifetwin.checkin.scripts import (
     QUESTIONS,
     SAME_LEAD,
     SCRIPTS,
-    URGENT_NOTE,
     WEEKLY,
-    WHY_NOTE,
+    WHY_NOTES,
 )
 from lifetwin.checkin.service import CheckinService
 from lifetwin.core.config import Settings
 from lifetwin.core.models import CheckinValues, HealthProfile
-from lifetwin.onboarding.intents import same_as_before
+from lifetwin.onboarding.intents import EMERGENCY_MESSAGE, RESUME_LEAD, same_as_before
 from lifetwin.onboarding.service import (
     LOUDER_LEAD,
     NO_LEAD,
@@ -733,7 +732,7 @@ def test_repeat_slower_louder(text, lead, hint):
 def test_help_why_and_privacy_keep_the_question():
     state = at("daily", "exercise_minutes_today")
     assert say(state, "help").message.startswith(HELP["daily"]["exercise_minutes_today"])
-    assert say(state, "why do you need that").message.startswith(WHY_NOTE)
+    assert say(state, "why do you need that").message.startswith(WHY_NOTES["daily"])
     assert say(state, "is this private?").message.startswith(PRIVATE_NOTE)
     assert say(state, "help").state == state
 
@@ -817,20 +816,165 @@ def test_confirm_and_skip_buttons_check_the_phase():
         SERVICE.turn(CheckinTurnRequest(action="skip", state=read_back("wellbeing", "good")))
 
 
-# --- Emergencies -----------------------------------------------------------------------------
+# --- Privacy ----------------------------------------------------------------------------------
+
+
+def test_privacy_replies_say_check_ins_stay_on_the_phone():
+    for note in (PRIVATE_NOTE, *WHY_NOTES.values()):
+        assert "stay on your phone" in note
+        assert "Nothing is saved until you say yes." in note
+    assert "doesn't keep them" in PRIVATE_NOTE
+    assert "forecast" in WHY_NOTES["weekly"] and "forecast" not in WHY_NOTES["daily"]
+    state = at("weekly", "weight_kg")
+    assert say(state, "why do you ask").message.startswith(WHY_NOTES["weekly"])
+
+
+# --- Weekly answers update the profile; daily answers are history only ---------------------
+
+
+def test_a_weekly_check_in_returns_its_answers_as_a_profile_update():
+    result, _ = run("weekly", LAST_WEEK, ["6 hours", "yes", "none", "yes", "<skip>"])
+    assert result.profile_update.model_dump(exclude_none=True) == {
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 0,
+    }
+    result, _ = run(
+        "weekly",
+        LAST_WEEK,
+        [
+            "6 hours",
+            "yes",
+            "90 minutes",
+            "yes",
+            "2 drinks",
+            "yes",
+            "no",
+            "yes",
+            "158 pounds",
+            "yes",
+            "128 over 78",
+            "yes",
+            "good",
+            "yes",
+        ],
+    )
+    assert result.complete
+    update = result.profile_update
+    assert isinstance(update, HealthProfile)
+    assert same(
+        update.model_dump(exclude_none=True),
+        {
+            "sleep_hours": 6,
+            "exercise_minutes_weekly": 90,
+            "alcohol_drinks_weekly": 2,
+            "smoking_status": "former",
+            "weight_kg": 71.67,
+            "systolic_bp": 128,
+            "diastolic_bp": 78,
+        },
+    )
+    # Applying it is a plain field-by-field replace on the confirmed profile.
+    profile = HealthProfile(age=74, sex="female", height_cm=160, sleep_hours=7, diabetes=False)
+    applied = HealthProfile.model_validate(
+        profile.model_dump() | update.model_dump(exclude_none=True)
+    )
+    assert applied.age == 74 and applied.sleep_hours == 6 and applied.systolic_bp == 128
+
+
+def test_a_daily_check_in_never_updates_the_profile():
+    result, _ = run(
+        "daily",
+        YESTERDAY,
+        ["7 hours", "yes", "30 minutes", "yes", "good", "yes"],
+        local_date="2026-10-19",
+    )
+    assert result.complete
+    assert confirmed(result) == {
+        "sleep_hours_last_night": 7,
+        "exercise_minutes_today": 30,
+        "wellbeing": "good",
+    }
+    assert result.profile_update.model_dump(exclude_none=True) == {}
+
+
+# --- Emergencies ------------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
     "text",
-    ["not great, I've had chest pain all morning", "I can't breathe properly", "I want to die"],
+    [
+        "not great, I've had chest pain all morning",
+        "i think im having a heart attack",
+        "I can't breathe properly",
+        "i cant catch my breath",
+        "my chest hurts",
+        "I fell and I can't get up",
+        "I want to die",
+        "i just want to end it all",
+        "please call an ambulance",
+        "my husband is having a stroke",
+    ],
 )
-def test_an_emergency_gets_a_pointer_to_help_first(text):
-    result = say(at("daily", "wellbeing"), text)
-    assert result.message.startswith(URGENT_NOTE)
+def test_an_emergency_pauses_the_check_in(text):
+    state = at("daily", "wellbeing")
+    result = say(state, text, "transcript")
+    assert result.emergency
+    assert result.message == EMERGENCY_MESSAGE
+    assert "If you need help right now, please call 911." in result.message
+    assert [event.state for event in result.mascot_events] == ["concerned"]
+    # Paused: nothing taken, no next question.
+    assert result.state == state
+    assert "?" not in result.message
 
 
-def test_no_pointer_without_an_emergency():
-    assert not say(at("daily", "wellbeing"), "not great").message.startswith(URGENT_NOTE)
+@pytest.mark.parametrize(
+    ("field", "text", "expected"),
+    [
+        # History, read normally.
+        # Read normally: a year beside the feeling is asked about, like any other number.
+        ("wellbeing", "good, my heart attack was in 2015", None),
+        ("wellbeing", "I'm dying to see my grandkids, I feel great", {"wellbeing": "good"}),
+        ("wellbeing", "not great, this pain in my knee", {"wellbeing": "not_great"}),
+        ("exercise_minutes_today", "no, I had chest pain years ago and I take it easy", None),
+        (
+            "sleep_hours_last_night",
+            "seven hours, killing myself laughing at the tv",
+            {"sleep_hours_last_night": 7},
+        ),
+    ],
+)
+def test_history_and_figures_of_speech_are_not_emergencies(field, text, expected):
+    """Not paused: the reply goes through the normal reading."""
+    result = say(at("daily", field), text)
+    assert not result.emergency
+    assert [event.state for event in result.mascot_events] != ["concerned"]
+    if expected:
+        assert pending(result) == expected
+    else:
+        assert pending(result) == {} and result.state.phase == "asking"
+
+
+def test_continue_resumes_the_same_question():
+    state = at("weekly", "weight_kg", LAST_WEEK)
+    paused = say(state, "I have chest pain")
+    assert paused.emergency
+    for resumed in (
+        SERVICE.turn(CheckinTurnRequest(action="resume", state=paused.state)),
+        say(paused.state, "okay, let's continue"),
+    ):
+        assert not resumed.emergency
+        assert resumed.message == RESUME_LEAD + SERVICE._question(state)
+        assert resumed.state == state
+    # A plain answer after the pause is read as usual.
+    assert same(pending(say(paused.state, "158 pounds")), {"weight_kg": 71.67})
+
+
+def test_an_emergency_during_a_read_back_keeps_the_read_back():
+    state = read_back("sleep_hours_last_night", 7)
+    paused = say(state, "yes but I can't breathe")
+    assert paused.emergency and paused.state == state
+    resumed = SERVICE.turn(CheckinTurnRequest(action="resume", state=paused.state))
+    assert resumed.message == RESUME_LEAD + "I heard you slept 7 hours last night. Is that right?"
 
 
 # --- Whole dialogues --------------------------------------------------------------------------

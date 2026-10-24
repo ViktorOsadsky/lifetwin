@@ -10,12 +10,16 @@ from fastapi import HTTPException
 
 from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.intents import (
+    EMERGENCY_MESSAGE,
+    RESUME_LEAD,
     asks_back,
     clean_reply,
     control_intent,
+    emergency,
     focus,
     keeps_answer,
     read_back_reply,
+    resumes,
 )
 from lifetwin.onboarding.intents import phrase as words_of
 from lifetwin.onboarding.models import (
@@ -96,12 +100,12 @@ WHAT_NOW = re.compile(
 )
 THANKS = re.compile(r"\b(?:thanks|thank you|thank u|ty|cheers|much obliged)\b", re.I)
 PRIVATE_NOTE = (
-    "Your answers stay on your phone and LifeTwin's server. "
-    "They are used for your forecast. Nothing is saved until you say yes."
+    "Your answers stay on your phone. LifeTwin's server uses them for your forecast "
+    "but doesn't keep them. Nothing is saved until you say yes."
 )
 WHY_NOTE = (
-    "I ask so your twin can make your forecast. Your answers stay on your phone "
-    "and LifeTwin's server. Nothing is saved until you say yes."
+    "I ask so your twin can make your forecast. Your answers stay on your phone, and "
+    "LifeTwin's server doesn't keep them. Nothing is saved until you say yes."
 )
 HELPER_NOTE = "The AI helper reads an answer only if you say it's okay."
 SKIP_NOTE = 'If you\'d rather not answer, just say "skip".'
@@ -283,7 +287,7 @@ class ConversationService:
             # Room chatter around the answer goes before anything else reads it.
             text = focus(text, heard_for, transcript=voice, confirming=state.phase == "confirming")
 
-        def respond(message: str, hint: str | None = None) -> TurnResponse:
+        def respond(message: str, hint: str | None = None, urgent: bool = False) -> TurnResponse:
             reaction = {
                 "idle": "idle",
                 "asking": "asking",
@@ -297,9 +301,16 @@ class ConversationService:
                 guide_mode=mode,
                 provider_status=provider_status,
                 complete=state.phase == "ready",
-                mascot_events=[MascotEvent(state=reaction, caption=message)],
+                mascot_events=[
+                    MascotEvent(state="concerned" if urgent else reaction, caption=message)
+                ],
                 speech_hint=hint,
+                emergency=urgent,
             )
+
+        if action in {"reply", "correct"} and emergency(text):
+            # Nothing else happens this turn: no value, no next question, no cheer.
+            return respond(EMERGENCY_MESSAGE, urgent=True)
 
         if action == "cancel":
             # Clear drafts and supplied health data from the returned session.
@@ -317,6 +328,9 @@ class ConversationService:
             )
         if state.phase in {"idle", "cancelled"}:
             self._invalid("Please start the conversation first.")
+        if action == "resume" or (action == "reply" and resumes(text)):
+            # "Continue" after a pause: the same question or read-back again.
+            return respond(RESUME_LEAD + self._prompt(state))
         read_back = None  # how a reply to a read-back is read, when not left to the reply
         if action == "reply" and state.phase == "ready" and WHAT_NOW.fullmatch(words_of(text)):
             return respond(DONE_LEAD)

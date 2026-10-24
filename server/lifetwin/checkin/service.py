@@ -18,6 +18,7 @@ from lifetwin.checkin.models import (
     CheckinStartRequest,
     CheckinState,
     CheckinTurnRequest,
+    profile_update,
 )
 from lifetwin.checkin.scripts import (
     CLOSINGS,
@@ -32,19 +33,22 @@ from lifetwin.checkin.scripts import (
     PRIVATE_NOTE,
     QUESTIONS,
     SAME_LEAD,
-    URGENT_NOTE,
     WEEKLY,
-    WHY_NOTE,
+    WHY_NOTES,
     CheckinField,
 )
 from lifetwin.core.models import CheckinValues
 from lifetwin.onboarding.intents import (
+    EMERGENCY_MESSAGE,
+    RESUME_LEAD,
     asks_back,
     clean_reply,
     control_intent,
+    emergency,
     focus,
     keeps_answer,
     read_back_reply,
+    resumes,
     same_as_before,
 )
 from lifetwin.onboarding.intents import phrase as words_of
@@ -52,7 +56,6 @@ from lifetwin.onboarding.models import MascotEvent
 from lifetwin.onboarding.parsing import (
     BP_FIELDS,
     CHECKIN_BASE,
-    URGENT,
     approximate,
     checkin_clarify,
     checkin_smoking,
@@ -258,11 +261,13 @@ class CheckinService:
         action = request.action
         text = clean_reply(normalize_text(request.text or ""))
         voice = request.input_mode == "transcript"
-        # An emergency is answered first, whatever else the reply holds.
-        urgent = URGENT_NOTE if action == "reply" and _safe(URGENT.search, text) else ""
 
         def respond(message: str, hint: str | None = None) -> CheckinResponse:
-            return self._respond(state, urgent + message, hint)
+            return self._respond(state, message, hint)
+
+        if action == "reply" and state.phase != "cancelled" and _safe(emergency, text):
+            # The check-in pauses on the same question: no value, no next question.
+            return self._respond(state, EMERGENCY_MESSAGE, urgent=True)
 
         if action == "cancel":
             state = CheckinState(
@@ -274,6 +279,9 @@ class CheckinService:
             return respond("We can stop here. Nothing was saved. We can check in another time.")
         if state.phase == "cancelled":
             self._invalid("Please start the check-in again.")
+        if action == "resume" or (action == "reply" and resumes(text)):
+            # "Continue" after a pause: the same question or read-back again.
+            return respond(RESUME_LEAD + self._prompt(state))
         field = state.current_field
         if action == "reply" and field and state.phase in {"asking", "confirming"}:
             # Room chatter around the answer goes before anything else reads it.
@@ -304,7 +312,7 @@ class CheckinService:
             if kind == "help":
                 return respond(self._help(state))
             if kind in {"why", "private"}:
-                note = WHY_NOTE if kind == "why" else PRIVATE_NOTE
+                note = WHY_NOTES[state.kind] if kind == "why" else PRIVATE_NOTE
                 return respond(note + " " + self._prompt(state))
             if kind == "ask" and field and not asks_back(text, field, transcript=voice):
                 kind = None  # chatter worded like a question, beside the answer
@@ -482,7 +490,7 @@ class CheckinService:
     # -- helpers -----------------------------------------------------------------
 
     def _respond(
-        self, state: CheckinState, message: str, hint: str | None = None
+        self, state: CheckinState, message: str, hint: str | None = None, urgent: bool = False
     ) -> CheckinResponse:
         reaction = {
             "asking": "asking",
@@ -494,8 +502,10 @@ class CheckinService:
             state=state,
             message=message,
             complete=state.phase == "ready",
-            mascot_events=[MascotEvent(state=reaction, caption=message)],
+            mascot_events=[MascotEvent(state="concerned" if urgent else reaction, caption=message)],
             speech_hint=hint,
+            emergency=urgent,
+            profile_update=profile_update(state),
         )
 
     @staticmethod

@@ -295,6 +295,185 @@
       "title": "CheckinValues",
       "type": "object"
     },
+    "HealthProfile": {
+      "additionalProperties": false,
+      "description": "Explicitly supplied metric inputs; no risk or lifespan inference.",
+      "properties": {
+        "age": {
+          "anyOf": [
+            {
+              "maximum": 120,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age"
+        },
+        "alcohol_drinks_weekly": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alcohol Drinks Weekly"
+        },
+        "diabetes": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diabetes"
+        },
+        "diastolic_bp": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 20,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diastolic Bp"
+        },
+        "exercise_minutes_weekly": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exercise Minutes Weekly"
+        },
+        "height_cm": {
+          "anyOf": [
+            {
+              "maximum": 280,
+              "minimum": 50,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Height Cm"
+        },
+        "sex": {
+          "anyOf": [
+            {
+              "enum": [
+                "female",
+                "male"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sex"
+        },
+        "sleep_hours": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours"
+        },
+        "smoking_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "never",
+                "former",
+                "current",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Smoking Status"
+        },
+        "systolic_bp": {
+          "anyOf": [
+            {
+              "maximum": 300,
+              "minimum": 40,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Systolic Bp"
+        },
+        "weight_kg": {
+          "anyOf": [
+            {
+              "maximum": 700,
+              "minimum": 10,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weight Kg"
+        }
+      },
+      "required": [
+        "age",
+        "sex",
+        "height_cm",
+        "weight_kg",
+        "sleep_hours",
+        "exercise_minutes_weekly",
+        "smoking_status",
+        "alcohol_drinks_weekly",
+        "diabetes",
+        "systolic_bp",
+        "diastolic_bp"
+      ],
+      "title": "HealthProfile",
+      "type": "object"
+    },
     "MascotEvent": {
       "additionalProperties": false,
       "properties": {
@@ -310,7 +489,8 @@
             "thinking",
             "confirming",
             "celebrating",
-            "idle"
+            "idle",
+            "concerned"
           ],
           "title": "State",
           "type": "string"
@@ -345,6 +525,11 @@
       "title": "Complete",
       "type": "boolean"
     },
+    "emergency": {
+      "default": false,
+      "title": "Emergency",
+      "type": "boolean"
+    },
     "guide_mode": {
       "const": "guided",
       "default": "guided",
@@ -373,6 +558,9 @@
       "minLength": 1,
       "title": "Message",
       "type": "string"
+    },
+    "profile_update": {
+      "$ref": "#/$defs/HealthProfile"
     },
     "provider_status": {
       "const": "not_configured",
@@ -424,6 +612,8 @@
     "provider_status",
     "voice_status",
     "speech_hint",
+    "emergency",
+    "profile_update",
     "accepted_input_modes",
     "mascot_events",
     "complete",

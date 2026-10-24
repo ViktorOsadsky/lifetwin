@@ -767,5 +767,171 @@
       "status": "error",
       "code": "invalid_request"
     }
+  },
+  {
+    "name": "onboarding-emergency-pause",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "i think im having a heart attack",
+      "input_mode": "transcript",
+      "state": {
+        "phase": "asking",
+        "current_field": "age"
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "emergency": true,
+      "complete": false,
+      "message": "I'm sorry you're going through that. If you need help right now, please call 911. We can carry on whenever you're ready.",
+      "mascot_events": {
+        "$each": {
+          "state": "concerned"
+        }
+      },
+      "state": {
+        "phase": "asking",
+        "current_field": "age",
+        "pending_profile": {
+          "age": null
+        }
+      }
+    }
+  },
+  {
+    "name": "checkin-emergency-pause",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "not great, I have chest pain",
+      "state": {
+        "kind": "daily",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours_last_night",
+          "exercise_minutes_today",
+          "wellbeing"
+        ],
+        "current_field": "wellbeing",
+        "skipped_fields": [
+          "sleep_hours_last_night",
+          "exercise_minutes_today"
+        ]
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "emergency": true,
+      "complete": false,
+      "message": "I'm sorry you're going through that. If you need help right now, please call 911. We can carry on whenever you're ready.",
+      "mascot_events": {
+        "$each": {
+          "state": "concerned"
+        }
+      },
+      "state": {
+        "phase": "asking",
+        "current_field": "wellbeing",
+        "pending": {
+          "wellbeing": null
+        }
+      }
+    }
+  },
+  {
+    "name": "checkin-resume-after-pause",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "resume",
+      "state": {
+        "kind": "daily",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours_last_night",
+          "exercise_minutes_today",
+          "wellbeing"
+        ],
+        "current_field": "wellbeing",
+        "skipped_fields": [
+          "sleep_hours_last_night",
+          "exercise_minutes_today"
+        ]
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "emergency": false,
+      "message": "Okay, let's carry on. And how are you feeling today: good, okay, or not great?",
+      "state": {
+        "phase": "asking",
+        "current_field": "wellbeing"
+      }
+    }
+  },
+  {
+    "name": "checkin-weekly-profile-update",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "confirm",
+      "state": {
+        "kind": "weekly",
+        "phase": "confirming",
+        "questions": [
+          "sleep_hours",
+          "exercise_minutes_weekly",
+          "alcohol_drinks_weekly",
+          "smoking_status",
+          "weight_kg",
+          "systolic_bp",
+          "wellbeing"
+        ],
+        "current_field": "wellbeing",
+        "confirmed": {
+          "sleep_hours": 6,
+          "exercise_minutes_weekly": 90,
+          "weight_kg": 71.67
+        },
+        "pending": {
+          "wellbeing": "good"
+        },
+        "skipped_fields": [
+          "alcohol_drinks_weekly",
+          "smoking_status",
+          "systolic_bp",
+          "diastolic_bp"
+        ]
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": true,
+      "state": {
+        "phase": "ready",
+        "confirmed": {
+          "wellbeing": "good"
+        }
+      },
+      "profile_update": {
+        "sleep_hours": 6.0,
+        "exercise_minutes_weekly": 90,
+        "weight_kg": 71.67,
+        "alcohol_drinks_weekly": null,
+        "systolic_bp": null,
+        "age": null
+      }
+    }
   }
 ]
