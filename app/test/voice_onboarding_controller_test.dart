@@ -274,6 +274,19 @@ void main() {
     expect(r.c.notice, healthNoneNotice);
   });
 
+  test('an empty Health result after the last question adds no "keep asking" notice', () async {
+    final r = Rig();
+    await r.c.answerConsent(false);
+    await r.c.submitTyped('70');
+    await r.c.confirm();
+    expect(r.c.phase, VoicePhase.done);
+    final before = r.guide.calls.length;
+    expect(await r.c.importHealth({}), isFalse);
+    expect(r.guide.calls.length, before);
+    expect(r.c.notice, isNull);
+    expect(r.c.phase, VoicePhase.done);
+  });
+
   test('a rejected Health import shows the server reason and keeps the conversation', () async {
     final r = Rig();
     await r.c.answerConsent(false);
