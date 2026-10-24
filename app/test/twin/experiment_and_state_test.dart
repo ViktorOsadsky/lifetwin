@@ -98,7 +98,7 @@ void main() {
         'smoking_status 1.0-2.0 step 1.0 choice now 2.0',
         'vigorous_recreation_min_week 0.0-300.0 step 15.0 min/week now 0.0',
         'moderate_recreation_min_week 60.0-600.0 step 15.0 min/week now 60.0',
-        'sleep_hours 6.0-9.0 step 0.5 h/night now 6.0',
+        'sleep_hours 6.0-8.0 step 0.5 h/night now 6.0',
         'sedentary_min_day 60.0-480.0 step 30.0 min/day now 480.0',
         'weight_kg 91.875-91.875 step 0.0 kg now 91.875',
       ]);
@@ -173,14 +173,16 @@ void main() {
       expect(e.result.warnings.single, contains('do not estimate intervention effects')); // sitting
     });
 
-    test('sleep: only short sleepers, and above 8 h is "Not counted" with no number', () {
+    test('sleep: only short sleepers, and never above 8 h', () {
       final e = experimentFor(smoker)..set(LeverId.sleepHours, 9);
-      expect(e.result.status, 'not_counted');
-      expect(e.result.difference5, isNull);
-      expect(e.result.notCounted.single.reason, LeverReason.sleepAbove8);
+      expect(e.lever(LeverId.sleepHours).value, 8); // capped at 8 h
+      expect(e.result.status, 'available');
+      expect(e.result.levers.single.counted, isTrue);
+      final at8 = e.result.difference5!;
       e.set(LeverId.sleepHours, 7);
       expect(e.result.status, 'available');
       expect(e.result.difference5, greaterThan(0));
+      expect(at8, closeTo(e.result.difference5!, 1e-9)); // 7–8 h is the model's flat range
 
       final rested = experimentFor({...smoker, 'sleep_hours': 7.5, 'smoking_status': 'former'});
       expect(rested.lever(LeverId.sleepHours).reason, LeverReason.notShortSleeper);

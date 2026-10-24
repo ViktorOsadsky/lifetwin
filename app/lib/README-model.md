@@ -123,6 +123,7 @@ The store is one JSON document, written by the iOS runner (`ios/Runner/AppDelega
 `applyCheckinResponse(profile, response, localDate:)` follows `contracts/checkin.schema.json` on `codex/d-twin-checkins`. It is tested against those fixtures (`test/fixtures/checkin_contract_cases.json`, copied from 92779c9).
 
 - **Weekly, `complete: true`:** every non-null `profile_update` field is set on the profile, and null fields are left as they are. The forecast is then recomputed.
+- **"Not sure":** an `unknown` / `not_sure` answer never replaces a known value. It only fills a gap. The same rule applies to `saveConversationProfile` (`keepKnownAnswers`).
 - **Daily:** history only (`CheckinRecord`).
 - **`emergency: true`:** sets `CheckinOutcome.emergency`. It is never stored. The twin shows `concerned` until `clearEmergency()`.
 - **Weekly summary:** when a weekly check-in's confirmed answers cover all four behaviour fields (`sleep_hours`, `vigorous_recreation_min_week`, `moderate_recreation_min_week`, `sedentary_min_day`), a summary row is stored for the Monday–Sunday week that has ended by the end of the check-in day. Today's weekly script asks only `exercise_minutes_weekly`, so no row is made yet.
@@ -147,7 +148,7 @@ e.reset();                     // or e.reset(LeverId.vigorous)
 | `smoking_status` | `choice` | options 2 "Smokes now", 1 "Quit" | – | current smoker (2) only |
 | `vigorous_recreation_min_week` | `min/week` | current – 300 | 15 | current < 300 |
 | `moderate_recreation_min_week` | `min/week` | current – 600 | 15 | current < 600 |
-| `sleep_hours` | `h/night` | current – 9 | 0.5 | current < 7 h; above 8 h is "Not counted" |
+| `sleep_hours` | `h/night` | current – 8 | 0.5 | current < 7 h; never above 8 h (the model lowers the estimate there) |
 | `sedentary_min_day` | `min/day` | 60 – current | 30 | current ≥ 90 |
 | `weight_kg` | `kg` | – | – | never (`weight_not_a_lever`), with the model card BMI caveat |
 
@@ -178,12 +179,10 @@ Levers only move the way guidance points. Less exercise, more sitting, and weigh
 **Rules:**
 
 - The result is always one `LifeTwinEngine.compare()` of the full alternative profile. Single-lever effects are never summed.
-- A moved lever is "Not counted" (`counted: false`, no number for it, and it is left out of the alternative) when:
-  - it is sleep above 8 h (`sleep_above_8`); or
-  - its own contrast lowers modeled survival even though the move follows guidance (`counter_intuitive`).
+- A moved lever is "Not counted" (`counted: false`, no number for it, and it is left out of the alternative) when its own contrast lowers modeled survival even though the move follows guidance (`counter_intuitive`).
 - **Rounding is the UI's job.** For example, "less than 1 in 100" plus one decimal when |pp| < 1. Activity is log-scaled, so small additions matter most for inactive people, and the raw pp shows this.
 
-**Lever reasons:** `missing_input`, `not_current_smoker`, `not_short_sleeper`, `sleep_above_8`, `already_high`, `already_low`, `weight_not_a_lever`, `counter_intuitive`.
+**Lever reasons:** `missing_input`, `not_current_smoker`, `not_short_sleeper`, `already_high`, `already_low`, `weight_not_a_lever`, `counter_intuitive`.
 
 ## Twin state (`twin_state.dart`)
 

@@ -28,9 +28,6 @@ abstract final class LeverReason {
   /// Sleep: only short sleepers (under 7 h) are offered more sleep.
   static const notShortSleeper = 'not_short_sleeper';
 
-  /// Sleep above 8 h: the model's long-sleep term likely reflects illness; not advice.
-  static const sleepAbove8 = 'sleep_above_8';
-
   /// Exercise already at the top of the lever's range.
   static const alreadyHigh = 'already_high';
 
@@ -51,9 +48,6 @@ const _reasonText = {
   LeverReason.missingInput: 'We need this answer before you can try changing it.',
   LeverReason.notASmoker: 'Only quitting smoking is offered here.',
   LeverReason.notShortSleeper: 'More sleep is only tried for people sleeping under 7 hours.',
-  LeverReason.sleepAbove8:
-      'Above 8 hours the model links more sleep with lower survival, which likely reflects '
-      'illness. That is not advice, so it is not counted.',
   LeverReason.alreadyHigh: 'You are already at the top of this range.',
   LeverReason.alreadyLow: 'Your sitting time is already low.',
   LeverReason.weightNotALever:
@@ -325,7 +319,6 @@ class TwinExperiment extends ChangeNotifier {
   /// the result always comes from one compare() of the full alternative profile.
   LeverFlag _flag(ExperimentLever l) {
     LeverFlag no(String reason) => LeverFlag(id: l.id, counted: false, reason: reason);
-    if (l.id == LeverId.sleepHours && l.value! > 8) return no(LeverReason.sleepAbove8);
     final c = engine.compare({
       'current_profile': _base,
       'alternative_profile': _apply([l]),
@@ -374,8 +367,8 @@ List<ExperimentLever> _buildLevers(TwinAssessment a, Map<String, dynamic> app, L
     final c = num_(used[id]);
     if (c == null) return off(id, label, unit, c, LeverReason.missingInput);
     if (c >= 7) return off(id, label, unit, c, LeverReason.notShortSleeper);
-    // Up to 9 h so the UI can show that above 8 h is not counted.
-    return on(id, label, unit, c, c, 9, 0.5);
+    // Up to 8 h: above it the model lowers the estimate (long-sleep term), which is not advice.
+    return on(id, label, unit, c, c, 8, 0.5);
   }
 
   ExperimentLever more(String id, String label, double cap) {
