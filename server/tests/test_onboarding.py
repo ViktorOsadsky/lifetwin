@@ -1131,6 +1131,20 @@ def test_import_says_when_the_current_question_was_not_in_the_health_app(client)
     assert "didn't have your weight" in result["message"]
 
 
+def test_document_import_names_the_document_and_skips_those_questions(client):
+    values = {"height_cm": 167.6, "smoking_status": "former", "diabetes": True}
+    result = turn(
+        client, "import", asking("smoking_status"), values=values, import_source="document"
+    )
+    confirmed = result["state"]["confirmed_profile"]
+    assert confirmed["smoking_status"] == "former" and confirmed["diabetes"] is True
+    assert result["state"]["current_field"] not in values
+    assert "from your document" in result["message"]
+    assert "Apple Health" not in result["message"]
+    result = turn(client, "import", asking("weight_kg"), values=values, import_source="document")
+    assert "Your document didn't show your weight" in result["message"]
+
+
 def test_import_that_answers_the_current_question_does_not_repeat_it(client):
     result = turn(client, "import", asking("weight_kg"), values={"weight_kg": 70})
     assert result["state"]["current_field"] != "weight_kg"

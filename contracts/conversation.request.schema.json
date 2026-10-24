@@ -280,6 +280,15 @@
       "default": null,
       "title": "Field"
     },
+    "import_source": {
+      "default": "apple_health",
+      "enum": [
+        "apple_health",
+        "document"
+      ],
+      "title": "Import Source",
+      "type": "string"
+    },
     "input_mode": {
       "default": "text",
       "enum": [

@@ -35,6 +35,8 @@ const voiceTroubleNotice = "I couldn't use the voice just now. You can try again
 const speakTroubleNotice = "I couldn't say that out loud. You can read my words above.";
 const healthWaitNotice = 'Please answer Yes or No first. Then you can add your Apple Health answers.';
 const healthNoneNotice = "No Apple Health answers were added, so I'll keep asking you. That's okay.";
+const documentWaitNotice = 'Please answer Yes or No first. Then you can add the answers from your document.';
+const documentNoneNotice = "No answers from your document were added, so I'll keep asking you. That's okay.";
 const healthRejectedPrefix = "I couldn't add your Apple Health answers. ";
 
 /// Runs the conversation loop. The server decides what happens; this class only
@@ -183,7 +185,9 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- Apple Health --------------------------------------------------------
 
-  Map<String, num>? _pendingHealth;
+  /// Confirmed Apple Health or document answers waiting for the conversation to start.
+  Map<String, Object>? _pendingHealth;
+  String _pendingSource = 'apple_health';
 
   /// True while Apple Health values wait for the conversation to start.
   bool get hasPendingHealth => _pendingHealth != null;
@@ -197,24 +201,38 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// True when the values were taken: queued for the start, or sent and accepted. False
   /// when nothing was added (none checked, busy, an answer still being confirmed, or the
   /// server refused them or could not be reached); the reason is in [notice].
-  Future<bool> importHealth(Map<String, num> values) async {
+  Future<bool> importHealth(Map<String, num> values) =>
+      _importConfirmed(values, source: 'apple_health', none: healthNoneNotice, wait: healthWaitNotice);
+
+  /// Adds answers the person confirmed one by one from an uploaded document
+  /// (app/lib/documents/). Same rules as [importHealth]; a separate source.
+  Future<bool> importDocument(Map<String, Object> values) =>
+      _importConfirmed(values, source: 'document', none: documentNoneNotice, wait: documentWaitNotice);
+
+  Future<bool> _importConfirmed(
+    Map<String, Object> values, {
+    required String source,
+    required String none,
+    required String wait,
+  }) async {
     if (turn == null) {
       if (values.isEmpty) return false;
       _pendingHealth = {...?_pendingHealth, ...values};
+      _pendingSource = source;
       return true;
     }
     if (_busy) return false;
     if (values.isEmpty) {
-      _set(() => notice = healthNoneNotice);
+      _set(() => notice = none);
       return false;
     }
     if (confirming) {
-      _set(() => notice = healthWaitNotice);
+      _set(() => notice = wait);
       return false;
     }
     await _stopSpeech();
     final before = turn;
-    await _send('import', values: values);
+    await _send('import', values: values, importSource: source);
     return notice == null && !identical(turn, before);
   }
 
@@ -459,7 +477,13 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- server turn -----------------------------------------------------------
 
-  Future<void> _send(String action, {String? text, bool fromTranscript = false, Map<String, num>? values}) async {
+  Future<void> _send(
+    String action, {
+    String? text,
+    bool fromTranscript = false,
+    Map<String, Object>? values,
+    String? importSource,
+  }) async {
     if (_busy) return;
     if (turn == null && action != 'start') {
       // The first question never arrived (e.g. no network), so there is nothing to answer
@@ -486,6 +510,7 @@ class VoiceOnboardingController extends ChangeNotifier {
             fromTranscript: fromTranscript,
             values: values,
             aiHelper: aiHelper,
+            importSource: importSource,
           )
           .timeout(_turnLimit);
     } on GuideRejected catch (e) {
@@ -501,7 +526,8 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() {
         phase = VoicePhase.idle;
         notice = e is GuideTooBusy ? e.message : noNetworkNotice;
-        _retry = () => _send(action, text: text, fromTranscript: fromTranscript, values: values);
+        _retry = () =>
+            _send(action, text: text, fromTranscript: fromTranscript, values: values, importSource: importSource);
       });
       if (!typing) await _speakNotice(notice!);
       return;
@@ -517,7 +543,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (action == 'start' && pending != null) {
       // The answer to the import asks the first open question, so only it is spoken.
       _pendingHealth = null;
-      return _send('import', values: pending);
+      return _send('import', values: pending, importSource: _pendingSource);
     }
     if (!typing && voiceUsable && !screenReader) await _speak(t.message);
   }
