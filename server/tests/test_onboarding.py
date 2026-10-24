@@ -217,7 +217,7 @@ def test_provider_failure_or_non_evidence_never_fills_profile(quote, error):
         text="My current weight is 70 kg",
         provider_consent=True,
     )
-    assert result.provider_status == "unavailable"
+    assert result.provider_status == ("unavailable" if error else "used")
     assert result.guide_mode == "guided"
     assert result.state.pending_profile.weight_kg is None
 
@@ -330,7 +330,6 @@ def test_blank_provider_configuration_never_calls_network():
         "I do not weigh 70 kg.",
         "I weighed 70 kg ten years ago.",
         "Maybe I weigh 70 kg.",
-        "My current weight is about 70 kg.",
         "I might weigh 70 kg.",
         "Weight: 70 kg and 80 kg",
         "Weight: 70 kg; weight: 80 kg",
@@ -351,7 +350,7 @@ def test_provider_span_cannot_drop_context_or_select_numeric_substring(text):
     assert result.state.phase == "asking"
     assert result.state.pending_profile.model_dump(exclude_none=True) == {}
     assert result.state.confirmed_profile.model_dump(exclude_none=True) == {}
-    assert result.provider_status == "unavailable"
+    assert result.provider_status == "used"
 
 
 @pytest.mark.parametrize(
@@ -511,7 +510,7 @@ def test_provider_cannot_turn_bare_weight_into_blood_pressure():
     )
     assert result.state.phase == "asking"
     assert result.state.pending_profile.model_dump(exclude_none=True) == {}
-    assert result.provider_status == "unavailable"
+    assert result.provider_status == "used"
     assert "160 pounds or 160 kilograms" in result.message
 
 
@@ -720,9 +719,9 @@ def test_skip_word_correction_without_saved_value_changes_nothing(client):
     ("field", "text", "expected"),
     [
         ("weight_kg", "160", "Is that 160 pounds or 160 kilograms?"),
-        ("weight_kg", "about 160 pounds", "Your best guess is fine."),
+        ("weight_kg", "about 160", "Is that 160 pounds or 160 kilograms?"),
         ("height_cm", "70", "Is that inches or centimeters?"),
-        ("height_cm", "about 170", "Your best guess is fine."),
+        ("height_cm", "about 170", "Is that inches or centimeters?"),
     ],
 )
 def test_unitless_or_approximate_number_gets_specific_follow_up(client, field, text, expected):
@@ -847,7 +846,47 @@ def test_chat_completions_request_shape_and_good_extraction():
     assert body["messages"][1]["content"] == "I weigh 70 kg"
     assert body["response_format"]["type"] == "json_schema"
     assert body["response_format"]["json_schema"]["schema"]["properties"]["candidates"]
+    assert body["reasoning_effort"] == "minimal"
     assert SECRET not in request.content.decode()
+
+
+def test_chat_completions_reasoning_effort_can_be_omitted():
+    """Observed live: without a limit, Muse spent all tokens reasoning and returned no content."""
+    seen = []
+
+    def handle(request):
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json=chat_body(GOOD))
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            provider = ChatCompletionsExtractor(
+                base_url="https://api.meta.ai/v1",
+                api_key=SECRET,
+                model="m",
+                reasoning_effort="",
+                client=client,
+            )
+            return await provider.extract("I weigh 70 kg", "weight_kg")
+
+    asyncio.run(run())
+    assert "reasoning_effort" not in seen[0]
+
+
+def test_chat_completions_truncated_reasoning_reply_falls_back():
+    def handle(request):
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {"finish_reason": "length", "message": {"role": "assistant", "content": None}}
+                ]
+            },
+        )
+
+    response = run_chat(handle)
+    assert response.provider_status != "used"
+    assert response.state.pending_profile.weight_kg is None
 
 
 def test_chat_completions_good_extraction_flows_through_service():
@@ -863,7 +902,7 @@ def test_chat_completions_output_still_goes_through_grounding():
     result = run_chat(
         lambda _: httpx.Response(200, json=chat_body(bad)), text="160", asked="weight_kg"
     )
-    assert result.provider_status == "unavailable"
+    assert result.provider_status == "used"
     assert result.guide_mode == "guided"
     assert result.state.pending_profile.model_dump(exclude_none=True) == {}
 
@@ -952,3 +991,53 @@ def test_llm_provider_selection_and_capabilities(monkeypatch):
     assert isinstance(extractor, ChatCompletionsExtractor)
     assert extractor._base_url == "https://api.meta.ai/v1"
     assert Settings(_env_file=None, LLM_PROVIDER="").llm_provider == "openai"
+
+
+def test_answered_but_no_value_does_not_claim_the_helper_is_unavailable():
+    """Observed live with Muse: an empty extraction was reported as an outage."""
+    service = ConversationService(FakeExtractor(quote="90 kg"))
+    result = service_turn(
+        service,
+        action="reply",
+        state={"phase": "asking", "current_field": "weight_kg"},
+        text="My current weight is 70 kg",
+        provider_consent=True,
+    )
+    assert result.provider_status == "used"
+    assert "isn't available" not in result.message
+
+
+@pytest.mark.parametrize(
+    ("field", "text", "expected"),
+    [
+        ("height_cm", "five foot eight", {"height_cm": 172.72}),
+        ("sleep_hours", "seven hours", {"sleep_hours": 7.0}),
+        ("sleep_hours", "seven and a half hours", {"sleep_hours": 7.5}),
+        ("weight_kg", "a hundred and seventy pounds", {"weight_kg": 77.1107}),
+        ("exercise_minutes_weekly", "half an hour a week", {"exercise_minutes_weekly": 30}),
+        ("smoking_status", "I quit smoking back in 1990", {"smoking_status": "former"}),
+        ("smoking_status", "I stopped smoking years ago", {"smoking_status": "former"}),
+        ("smoking_status", "I never quit", {}),
+    ],
+)
+def test_spoken_number_words_and_quitting_are_understood(field, text, expected):
+    """Voice transcripts spell numbers out, and "I quit" answers the smoking question."""
+    assert parse_value(field, text) == expected
+
+
+@pytest.mark.parametrize(
+    ("field", "text", "value"),
+    [
+        ("weight_kg", "about 160 pounds", 72.5748),
+        ("height_cm", "Oh, I'm about five foot eight I think", 172.72),
+        ("sleep_hours", "I usually get about seven hours", 7.0),
+        ("weight_kg", "Hmm, I weigh around 170 pounds these days", 77.1107),
+        ("exercise_minutes_weekly", "I do about two hours of walking a week", 120),
+    ],
+)
+def test_everyday_approximate_answers_go_to_confirmation(client, field, text, value):
+    """Older adults answer "about 160 pounds"; the read-back confirmation is the safety net."""
+    result = turn(client, "reply", asking(field), text=text)
+    assert result["state"]["phase"] == "confirming"
+    assert result["state"]["pending_profile"][field] == value
+    assert result["state"]["confirmed_profile"][field] is None
