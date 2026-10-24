@@ -78,8 +78,9 @@ class TwinRepository extends ChangeNotifier {
 
   /// Keeps the answers a Mochi conversation confirmed (the whole confirmed profile it
   /// returns) and recomputes. Call only with a conversation's confirmed values.
+  /// An unknown ("not sure") answer keeps the known value already on the phone.
   Future<TwinAssessment> saveConversationProfile(Map<String, dynamic> confirmed) async {
-    await store._saveProfile(confirmed);
+    await store._saveProfile(keepKnownAnswers(store.profile, confirmed));
     return _refresh();
   }
 

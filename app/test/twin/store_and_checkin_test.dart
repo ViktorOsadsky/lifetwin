@@ -193,6 +193,21 @@ void main() {
       expect(o.emergency, isFalse);
     });
 
+    test('"not sure" never overwrites a known answer; it only fills a gap', () {
+      final r = responseFor('checkin-weekly-profile-update');
+      r['profile_update'] = {'smoking_status': 'unknown', 'sleep_hours': 6.0};
+      final known = applyCheckinResponse({...fullProfile, 'smoking_status': 'current'}, r, localDate: monday);
+      expect(known.profile['smoking_status'], 'current');
+      expect(known.profile['sleep_hours'], 6.0);
+      expect(known.changedFields, ['sleep_hours']);
+      final gap = applyCheckinResponse({...fullProfile}..remove('smoking_status'), r, localDate: monday);
+      expect(gap.profile['smoking_status'], 'unknown');
+      expect(keepKnownAnswers({'smoking_status': 'never', 'age': 50}, {'smoking_status': 'not_sure', 'age': 51}), {
+        'smoking_status': 'never',
+        'age': 51,
+      });
+    });
+
     test('a weekly check-in still going changes nothing', () {
       final o = applyCheckinResponse(fullProfile, responseFor('checkin-weekly-confirm'), localDate: monday);
       expect(o.profile, fullProfile);
@@ -325,6 +340,14 @@ void main() {
       expect(a.source, 'weekly_summaries');
       expect(a.inputProvenance['window_start'], '2026-10-19');
       expect(a.profileUsed['moderate_recreation_min_week'], 165);
+    });
+
+    test("a conversation's 'not sure' keeps the known answer on the phone", () async {
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      await repo.saveConversationProfile({...fullProfile, 'smoking_status': 'former'});
+      final a = await repo.saveConversationProfile({...fullProfile, 'smoking_status': 'unknown'});
+      expect(repo.profile['smoking_status'], 'former');
+      expect(a.status, 'available');
     });
 
     test('the emergency flag shows on the twin until cleared', () async {

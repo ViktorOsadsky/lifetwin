@@ -30,6 +30,20 @@ const updatableProfileFields = {
   'moderate_recreation_min_week',
 };
 
+/// An answer that says "I don't know" (`unknown`, `not_sure`), not a value.
+bool isUnknownAnswer(Object? v) =>
+    v is String && const {'unknown', 'not_sure', 'not sure'}.contains(v.trim().toLowerCase());
+
+bool isKnownAnswer(Object? v) => v != null && !isUnknownAnswer(v);
+
+/// [incoming] laid over [stored], except that an unknown answer never replaces a known
+/// stored value (owner ruling). For conversation profiles and check-in updates alike.
+Map<String, dynamic> keepKnownAnswers(Map<String, dynamic> stored, Map<String, dynamic> incoming) => {
+  ...incoming,
+  for (final e in incoming.entries)
+    if (isUnknownAnswer(e.value) && isKnownAnswer(stored[e.key])) e.key: stored[e.key],
+};
+
 class CheckinOutcome {
   const CheckinOutcome({
     required this.profile,
@@ -83,6 +97,8 @@ CheckinOutcome applyCheckinResponse(
   final changed = <String>[];
   for (final e in update.entries) {
     if (e.value == null || !updatableProfileFields.contains(e.key)) continue;
+    // "Not sure" never replaces a known answer; it only fills a gap.
+    if (isUnknownAnswer(e.value) && isKnownAnswer(next[e.key])) continue;
     if (next[e.key] != e.value) changed.add(e.key);
     next[e.key] = e.value;
   }
