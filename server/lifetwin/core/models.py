@@ -30,7 +30,8 @@ class HealthProfile(ApiModel):
     """Explicitly supplied metric inputs; no risk or lifespan inference."""
 
     age: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=120)
-    sex: Literal["female", "male", "intersex", "prefer_not_to_say"] | None = None
+    # Sex at birth: the training data (NHANES) records only these two.
+    sex: Literal["female", "male"] | None = None
     height_cm: float | None = Field(default=None, ge=50, le=280)
     weight_kg: float | None = Field(default=None, ge=10, le=700)
     sleep_hours: float | None = Field(default=None, ge=0, le=24)

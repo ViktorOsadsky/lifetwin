@@ -78,7 +78,7 @@ def test_labeled_multi_answer_and_metric_conversion_are_explicit(client):
 
 
 @pytest.mark.parametrize(
-    "text", ["170", "about 170", "I lost 5 kg", "-5 kg", "7000 kg", "if I weighed 70 kg"]
+    "text", ["70", "about 70", "I lost 5 kg", "-5 kg", "7000 kg", "if I weighed 70 kg"]
 )
 def test_ambiguous_out_of_range_or_hypothetical_weight_stays_unknown(client, text):
     state = ConversationState(phase="asking", current_field="weight_kg").model_dump()
@@ -96,7 +96,7 @@ def test_ambiguous_out_of_range_or_hypothetical_weight_stays_unknown(client, tex
         ("height_cm", "5 ft 14 in", {}),
         ("age", "35.5", {}),
         ("exercise_minutes_weekly", "2 hours per week", {"exercise_minutes_weekly": 120}),
-        ("exercise_minutes_weekly", "30 minutes per day", {}),
+        ("exercise_minutes_weekly", "30 minutes per day", {"exercise_minutes_weekly": 210}),
         ("alcohol_drinks_weekly", "I don't drink", {"alcohol_drinks_weekly": 0.0}),
         ("smoking_status", "I don't smoke", {}),
         ("smoking_status", "I quit smoking", {"smoking_status": "former"}),
@@ -168,7 +168,8 @@ def test_bad_transitions_and_oversized_or_inconsistent_inputs_are_rejected(clien
 
 # The keyless parser reads "My current weight is 70 kg" by itself now, so the provider
 # path is exercised with a reply it does not read alone: the age is a second number.
-PROVIDER_TEXT = "I'm 72 years old and I weigh 70 kg"
+# Chatter the keyless parser refuses (someone else is mentioned), so the provider is asked.
+PROVIDER_TEXT = "Well, my grandson keeps asking, but I weigh 70 kg"
 
 
 class FakeExtractor:
@@ -279,6 +280,8 @@ def test_openai_adapter_uses_structured_outputs_no_storage_and_validates_complet
     assert requests[0]["store"] is False
     assert requests[0]["text"]["format"]["type"] == "json_schema"
     assert requests[0]["text"]["format"]["strict"] is True
+    assert requests[0]["input"] == "I weigh 70 kg"
+    assert QUESTIONS["weight_kg"] in requests[0]["instructions"]
 
 
 @pytest.mark.parametrize(
@@ -340,7 +343,7 @@ def test_blank_provider_configuration_never_calls_network():
         "Weight: 70 kg and 80 kg",
         "Weight: 70 kg; weight: 80 kg",
         "I used to weigh 70 kg, but I do not know my current weight.",
-        "I weigh 170 kg.",
+        "I weigh 170 kg, I'm told",
     ],
 )
 def test_provider_span_cannot_drop_context_or_select_numeric_substring(text):
@@ -510,14 +513,15 @@ def test_grounding_accepts_other_field_when_clause_names_it(asked, field, text, 
 
 
 def test_provider_cannot_turn_bare_weight_into_blood_pressure():
-    service = ConversationService(FakeExtractor(quote="160", field="systolic_bp"))
+    service = ConversationService(FakeExtractor(quote="60", field="systolic_bp"))
     result = service_turn(
-        service, action="reply", state=asking("weight_kg"), text="160", provider_consent=True
+        service, action="reply", state=asking("weight_kg"), text="60", provider_consent=True
     )
     assert result.state.phase == "asking"
     assert result.state.pending_profile.model_dump(exclude_none=True) == {}
-    assert result.provider_status == "used"
-    assert "160 pounds or 160 kilograms" in result.message
+    # The unit question is asked directly; the helper is not asked to guess.
+    assert result.provider_status == "not_needed"
+    assert "60 pounds or 60 kilograms" in result.message
 
 
 # d-intake-2: the confirmation is readable and repeats the person's own unit.
@@ -531,7 +535,6 @@ def test_provider_cannot_turn_bare_weight_into_blood_pressure():
         ("systolic_bp", "120/80", "Blood pressure: 120 over 80"),
         ("exercise_minutes_weekly", "150 minutes", "Exercise: 150 minutes a week"),
         ("smoking_status", "never", "Smoking: never smoked"),
-        ("sex", "prefer not to say", "Sex: prefer not to say"),
     ],
 )
 def test_confirmation_message_is_plain_language(client, field, text, expected):
@@ -663,10 +666,17 @@ def test_plain_no_to_blood_pressure_skips(client, field):
     assert "didn't understand" not in result["message"]
 
 
-def test_prefer_not_to_say_records_sex_instead_of_skipping(client):
+def test_prefer_not_to_say_skips_sex(client):
+    # Sex at birth is female or male only (the training data has nothing else).
     result = turn(client, "reply", asking("sex"), text="I'd rather not say")
-    assert result["state"]["pending_profile"]["sex"] == "prefer_not_to_say"
-    assert "sex" not in result["state"]["skipped_fields"]
+    assert result["state"]["pending_profile"].get("sex") is None
+    assert "sex" in result["state"]["skipped_fields"]
+
+
+def test_intersex_answer_explains_the_two_options(client):
+    result = turn(client, "reply", asking("sex"), text="I was born intersex")
+    assert result["state"]["pending_profile"].get("sex") is None
+    assert "female or male at birth" in result["message"]
 
 
 def test_blood_pressure_question_asks_for_a_value():
@@ -720,14 +730,16 @@ def test_skip_word_correction_without_saved_value_changes_nothing(client):
     assert "Nothing has changed" in result["message"] and "cancel" not in result["message"]
 
 
-# d-intake-9: unitless numbers get a unit follow-up, never an assumed unit.
+# d-intake-9: a unitless number with two plausible units gets a unit follow-up.
+# (A bare 90+ weight is proposed as pounds and a bare 120-219 height as cm; see
+# test_flexible_intake.py.)
 @pytest.mark.parametrize(
     ("field", "text", "expected"),
     [
-        ("weight_kg", "160", "Is that 160 pounds or 160 kilograms?"),
-        ("weight_kg", "about 160", "Is that 160 pounds or 160 kilograms?"),
+        ("weight_kg", "70", "Is that 70 pounds or 70 kilograms?"),
+        ("weight_kg", "about 70", "Is that 70 pounds or 70 kilograms?"),
         ("height_cm", "70", "Is that inches or centimeters?"),
-        ("height_cm", "about 170", "Is that inches or centimeters?"),
+        ("height_cm", "about 70", "Is that inches or centimeters?"),
     ],
 )
 def test_unitless_or_approximate_number_gets_specific_follow_up(client, field, text, expected):
@@ -768,11 +780,13 @@ def test_everyday_categorical_answers(field, text, expected):
     assert parse_reply(text, field) == {field: expected}
 
 
-# d-intake-11: daily exercise is never silently converted; small bare numbers clarify.
-def test_daily_exercise_asks_for_days_then_accepts_explicit_total(client):
+# d-intake-11: "a day" is proposed as every day and read back; stated days win.
+# (Superseded: "30 minutes a day" used to ask how many days a week.)
+def test_daily_exercise_proposes_every_day_then_accepts_explicit_total(client):
     result = turn(client, "reply", asking("exercise_minutes_weekly"), text="30 minutes a day")
-    assert result["state"]["phase"] == "asking"
-    assert "How many days a week" in result["message"]
+    assert result["state"]["phase"] == "confirming"
+    assert result["state"]["confirmed_profile"]["exercise_minutes_weekly"] is None
+    assert "210 minutes a week" in result["message"]
     result = turn(
         client,
         "reply",
@@ -850,6 +864,8 @@ def test_chat_completions_request_shape_and_good_extraction():
     assert body["model"] == "muse-spark-1.3-contributor"
     assert [m["role"] for m in body["messages"]] == ["system", "user"]
     assert body["messages"][1]["content"] == "I weigh 70 kg"
+    # The question gives a short reply its meaning; the reply itself stays the only user text.
+    assert QUESTIONS["weight_kg"] in body["messages"][0]["content"]
     assert body["response_format"]["type"] == "json_schema"
     assert body["response_format"]["json_schema"]["schema"]["properties"]["candidates"]
     assert body["reasoning_effort"] == "minimal"
@@ -904,11 +920,11 @@ def test_chat_completions_good_extraction_flows_through_service():
 
 
 def test_chat_completions_output_still_goes_through_grounding():
-    bad = '{"candidates":[{"field":"systolic_bp","quote":"160"}]}'
+    bad = '{"candidates":[{"field":"systolic_bp","quote":"60"}]}'
     result = run_chat(
-        lambda _: httpx.Response(200, json=chat_body(bad)), text="160", asked="weight_kg"
+        lambda _: httpx.Response(200, json=chat_body(bad)), text="60", asked="weight_kg"
     )
-    assert result.provider_status == "used"
+    assert result.provider_status == "not_needed"  # the unit question comes first
     assert result.guide_mode == "guided"
     assert result.state.pending_profile.model_dump(exclude_none=True) == {}
 

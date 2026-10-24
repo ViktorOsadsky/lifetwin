@@ -1,6 +1,7 @@
 """Explicit candidate/confirmation transitions for text and final transcripts."""
 
 import asyncio
+import logging
 import re
 from collections.abc import Callable
 from datetime import date
@@ -19,14 +20,29 @@ from lifetwin.onboarding.parsing import (
     BP_ORDER_MESSAGE,
     EXAMPLES,
     FRIENDLY_LABELS,
+    QUESTION_EXAMPLE_VALUES,
     QUESTIONS,
+    approximate,
     clarify,
+    corrects,
     grounded_candidates,
     is_skip,
     normalize_text,
     parse_reply,
 )
 from lifetwin.onboarding.providers import ExtractionUnavailable, Extractor
+
+logger = logging.getLogger(__name__)
+
+
+def _safe(read, *args, **kwargs):
+    """A parser failure is a reply not understood, never a 500; only the type is logged."""
+    try:
+        return read(*args, **kwargs)
+    except Exception as exc:  # noqa: BLE001 - any parser bug must degrade to a follow-up
+        logger.warning("intake parser failed: %s", type(exc).__name__)
+        return None
+
 
 # Only these exact replies confirm pending answers; anything vaguer re-asks.
 AFFIRMATIVES = {
@@ -61,21 +77,34 @@ AFFIRMATIVES = {
     "that sounds right",
 }
 # "yes but 6 ft" both confirms and corrects; it changes nothing and asks again.
+# "Yeah, that's right" said to "For example, 5 feet 10 inches" means the example fits.
+EXAMPLE_YES = re.compile(
+    r"(?:(?:yes|yeah|yea|yep|yup|uh huh|sure|right|correct|exactly)\s*)+"
+    r"(?:(?:that's|thats|that is|it's|its)\s+(?:right|correct|me|it|true|about right))?"
+    r"|(?:that's|thats|that is|it's|its)\s+(?:right|correct|me|it|true|about right)"
+)
 MIXED_YES = re.compile(r"(?:yes|yeah|yep|yup|correct)\b.*(?:\d|\b(?:but|no|not|actually)\b)")
 NEGATIVE = re.compile(r"(?:no|nope)\b\s*(?:(?:it's|it is|actually|i meant)\b\s*)?(.*)")
 BOTH_BP = ["systolic_bp", "diastolic_bp"]
 BOTH_BP_MESSAGE = 'Please tell me both blood pressure numbers, for example "120 over 80".'
 SEX_WORDS = {
-    "female": "woman (female)",
-    "male": "man (male)",
-    "intersex": "intersex",
-    "prefer_not_to_say": "prefer not to say",
+    "female": "female at birth",
+    "male": "male at birth",
 }
 SMOKING_WORDS = {
     "never": "never smoked",
     "former": "smoked in the past",
     "current": "smoke now",
     "unknown": "not sure",
+}
+
+
+ESTIMATED = {
+    "height_cm",
+    "weight_kg",
+    "sleep_hours",
+    "exercise_minutes_weekly",
+    "alcohol_drinks_weekly",
 }
 
 
@@ -117,8 +146,11 @@ def _weight(kg: float) -> str:
     return _both(metric, imperial, not _about(kg, shown_kg), not _about(pounds, shown_lb))
 
 
-def describe(values: dict) -> str:
-    """Plain-language summary in the person's own unit, metric value beside it."""
+def describe(values: dict, about: set[str] = frozenset()) -> str:
+    """Plain-language summary in the person's own unit, metric value beside it.
+
+    Fields in ``about`` were estimated (the middle of a range) and say so.
+    """
     parts = []
     for field, value in values.items():
         if field == "diastolic_bp" and "systolic_bp" in values:
@@ -140,6 +172,8 @@ def describe(values: dict) -> str:
             "diastolic_bp": str,
         }[field](value)
         label = FRIENDLY_LABELS[field]
+        if field in about and field in ESTIMATED and not shown.startswith("about "):
+            shown = "about " + shown
         parts.append(f"{label[0].upper()}{label[1:]}: {shown}")
     return "; ".join(parts)
 
@@ -299,7 +333,7 @@ class ConversationService:
             pending_fields = list(state.pending_profile.model_dump(exclude_none=True))
             if pending_fields == BOTH_BP:
                 # A pending reading is corrected as a whole pair, never one guessed half.
-                if len(parse_reply(text, "systolic_bp", today=today)) != 2:
+                if len(_safe(parse_reply, text, "systolic_bp", today=today) or {}) != 2:
                     return respond(BOTH_BP_MESSAGE + " Nothing has changed.")
                 pending_fields = ["systolic_bp"]
             if len(pending_fields) != 1:
@@ -333,13 +367,29 @@ class ConversationService:
                 state.skipped_fields.append(target)
             self._advance(state)
             return respond("I'll leave that unknown. " + self._prompt(state))
-        candidates = parse_reply(text, target, today=today)
-        if not candidates and configured:
+        candidates = _safe(parse_reply, text, target, today=today) or {}
+        phrase = " ".join(text.lower().replace(",", " ").rstrip(".!?").split())
+        # Only a fresh answer can mean the question's example: "no, that's right" during
+        # a read-back is not a yes to "5 feet 10 inches".
+        asking = action == "reply" and state.phase == "asking"
+        if (
+            not candidates
+            and asking
+            and target in QUESTION_EXAMPLE_VALUES
+            and EXAMPLE_YES.fullmatch(phrase)
+        ):
+            # Offered back as a normal answer, so it is still read back and confirmed.
+            candidates = parse_reply(QUESTION_EXAMPLE_VALUES[target], target, today=today)
+        # A targeted follow-up ("45 or 46?") beats asking the AI helper to guess.
+        hint = None if candidates else _safe(clarify, text, target, today=today)
+        if not candidates and configured and not hint:
             if request.provider_consent:
                 try:
                     async with asyncio.timeout(self.timeout):
                         extraction = await self.extractor.extract(text, target)
-                    candidates = grounded_candidates(text, extraction, target, today=today)
+                    candidates = (
+                        _safe(grounded_candidates, text, extraction, target, today=today) or {}
+                    )
                     # The helper answered; finding no usable value is not an outage.
                     provider_status = "used"
                     if candidates:
@@ -348,6 +398,14 @@ class ConversationService:
                     provider_status = "unavailable"
             else:
                 provider_status = "consent_required"
+        # A saved answer changes only when asked for by name or corrected explicitly
+        # ("actually I'm 71, not 72"); "7 hours, oh man" can never rewrite sex.
+        saved = state.confirmed_profile.model_dump(exclude_none=True)
+        candidates = {
+            field: value
+            for field, value in candidates.items()
+            if field not in saved or field == request.field or corrects(text, field)
+        }
         lone_bottom = list(candidates) == ["diastolic_bp"] and (
             state.confirmed_profile.systolic_bp is None
             and state.pending_profile.systolic_bp is None
@@ -371,7 +429,7 @@ class ConversationService:
                 )
             elif provider_status == "unavailable":
                 notice = "The AI helper isn't available right now, but we can keep going. "
-            hint = BOTH_BP_MESSAGE if lone_bottom else clarify(text, target)
+            hint = BOTH_BP_MESSAGE if lone_bottom else hint
             if state.phase == "confirming":
                 return respond(
                     notice
@@ -407,7 +465,8 @@ class ConversationService:
         state.pending_profile = HealthProfile.model_validate(pending)
         state.phase = "confirming"
         state.current_field = next(iter(pending)) if len(pending) == 1 else None
-        return respond(self._prompt(state))
+        # A middle of a range ("7 or 8 hours") is read back as "about".
+        return respond(self._prompt(state, about=set(candidates) if approximate(text) else set()))
 
     @staticmethod
     def _bp_ordered(state: ConversationState, pending: dict) -> bool:
@@ -429,12 +488,12 @@ class ConversationService:
         state.phase = "asking" if state.current_field else "ready"
 
     @staticmethod
-    def _prompt(state: ConversationState) -> str:
+    def _prompt(state: ConversationState, about: set[str] | None = None) -> str:
         if state.phase == "confirming":
             pending = state.pending_profile.model_dump(exclude_none=True)
             return (
                 "Here is what I heard. "
-                + describe(pending)
+                + describe(pending, about or set())
                 + ". Is that right? Say yes, or tell me the right answer."
             )
         if state.phase == "ready":

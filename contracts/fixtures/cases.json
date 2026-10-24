@@ -299,7 +299,7 @@
     "request_schema": "conversation.request.schema.json",
     "request": {
       "action": "reply",
-      "text": "about 170",
+      "text": "about 70",
       "state": {
         "phase": "asking",
         "current_field": "height_cm"

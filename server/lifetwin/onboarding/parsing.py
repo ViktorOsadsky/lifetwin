@@ -19,7 +19,9 @@ back for confirmation. Categorical answers use synonym families, and a
 diagnosis is never inferred from casual language.
 """
 
+import calendar
 import re
+import unicodedata
 from datetime import date
 
 from pydantic import ValidationError
@@ -29,7 +31,7 @@ from lifetwin.onboarding.models import ExtractionResult, ProfileField
 
 QUESTIONS: dict[ProfileField, str] = {
     "age": "How old are you? You can skip any question you don't know.",
-    "sex": 'Are you a woman or a man? You can also say intersex, or "prefer not to say".',
+    "sex": "What sex were you at birth: female or male?",
     "height_cm": "How tall are you? For example, 5 feet 10 inches, or 178 cm.",
     "weight_kg": "How much do you weigh? For example, 160 pounds, or 72 kg.",
     "sleep_hours": "How many hours do you usually sleep each night? For example, 7 hours.",
@@ -69,9 +71,18 @@ FRIENDLY_LABELS: dict[ProfileField, str] = {
     "systolic_bp": "top blood pressure number",
     "diastolic_bp": "bottom blood pressure number",
 }
+# The value each question's own example stands for, so "yes, that's right" said
+# right after it can be offered back for confirmation.
+QUESTION_EXAMPLE_VALUES: dict[ProfileField, str] = {
+    "height_cm": "5 feet 10 inches",
+    "weight_kg": "160 pounds",
+    "sleep_hours": "7 hours",
+    "exercise_minutes_weekly": "150 minutes",
+    "alcohol_drinks_weekly": "3 drinks",
+}
 EXAMPLES: dict[ProfileField, str] = {
     "age": '"I\'m 72"',
-    "sex": '"a woman"',
+    "sex": '"female"',
     "height_cm": '"5 feet 10 inches"',
     "weight_kg": '"160 pounds"',
     "sleep_hours": '"7 hours"',
@@ -167,7 +178,7 @@ BP_ORDER_MESSAGE = (
 # the clause itself names that field: bare "160" for weight is not systolic.
 FIELD_CUES: dict[ProfileField, str] = {
     "age": r"\b(?:age|years?|yrs?|old)\b",
-    "sex": r"\b(?:sex|female|male|intersex|woman|man)\b",
+    "sex": r"\b(?:sex|female|male|woman|man)\b",
     "height_cm": r"height|tall|cm\b|centimet|met(?:er|re)|\d\s*m\b|ft\b|feet|foot|inch|\d\s*in\b|['\"]",
     "weight_kg": r"weigh|kg\b|kilo|lbs?\b|pound|stone",
     "sleep_hours": r"sleep|night",
@@ -202,12 +213,34 @@ QUOTES = str.maketrans(
 FRACTIONS = {"\u00bd": " and a half", "\u00bc": " and a quarter", "\u00be": " and three quarters"}
 
 
+# Contractions typed or transcribed without the apostrophe ("i dont drink").
+# "ill" is "I'll" only before a verb, since "I'm ill" is a word of its own.
+APOSTROPHES = [
+    (r"\b(do|does|did|have|has|is|was|were|are|could|would|should|had|must|need)nt\b", r"\1n't"),
+    (r"\bcant\b", "can't"),
+    (r"\bwont\b", "won't"),
+    (r"\bim\b", "i'm"),
+    (r"\bive\b", "i've"),
+    (r"\bid\b", "i'd"),
+    (r"\bill(?= (?:be|turn|have|say|go|need|try)\b)", "i'll"),
+    (r"\b(that|it|what|there|he|she)s\b", r"\1's"),
+    (r"\b(they|you)re\b", r"\1're"),
+]
+
+
 def normalize_text(text: str) -> str:
-    """Map smart punctuation (iOS default), primes and fraction glyphs; collapse spaces."""
+    """Map smart punctuation (iOS default), primes, fraction glyphs and missing
+    apostrophes; collapse spaces."""
     text = text.translate(QUOTES)
     text = text.replace("''", '"')  # 5'4'' typed with two apostrophes
     for glyph, words in FRACTIONS.items():
         text = text.replace(glyph, words)
+    for pattern, spelled in APOSTROPHES:
+        text = re.sub(pattern, spelled, text, flags=re.I)
+    # Other scripts' digits ("١٢") become ASCII, so every rule reads them alike.
+    text = re.sub(
+        r"[^\x00-\x7f]", lambda m: str(unicodedata.decimal(m.group(), "")) or m.group(), text
+    )
     return " ".join(text.split())
 
 
@@ -310,6 +343,58 @@ def _half(match: re.Match, extra: float) -> str:
     return f"{float(match.group(1)) + extra:g}"
 
 
+MONTH = (
+    r"(january|february|march|april|may|june|july|august|september|october|november|december"
+    r"|jan|feb|mar|apr|jun|jul|aug|sept|sep|oct|nov|dec)"
+)
+ORDINALS = {
+    word: n
+    for n, word in enumerate(
+        "first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth "
+        "thirteenth fourteenth fifteenth sixteenth seventeenth eighteenth nineteenth".split(),
+        1,
+    )
+} | {"twentieth": 20, "thirtieth": 30}
+_ORD = rf"(?:(twenty|thirty) )?({'|'.join(ORDINALS)})"
+
+
+def _ordinal(tens: str | None, word: str) -> str:
+    return str({"twenty": 20, "thirty": 30}.get(tens or "", 0) + ORDINALS[word])
+
+
+# Containers become drink counts: a 750 ml bottle of wine is 5 glasses. Once a
+# weekend, they are that many a week ("a six-pack on weekends" -> 6). A leading
+# "a" is kept, so "a bottle of wine" still asks how often, like "a glass of wine".
+WINE = r"(?:(?:red|white|rose|house) )?wine"
+CONTAINERS = [
+    # "half a bottle of wine" with no how-often is asked about, like "a glass of wine".
+    (rf"\b(?P<a>)half (?:a )?bottle of {WINE}", lambda m: 2.5, "glasses of wine"),
+    (
+        rf"\b(?:(?P<a>a )|(\d) )bottles? of {WINE}",
+        lambda m: 5 * int(m.group(2) or 1),
+        "glasses of wine",
+    ),
+    (
+        r"\b(?:(?P<a>a )|(\d) )?(6|12|18|24|30) packs?(?: of (?:beers?|cans))?",
+        lambda m: int(m.group(3)) * int(m.group(2) or 1),
+        "beers",
+    ),
+]
+WEEKEND_ONCE = r"(?P<weekend> (?:on|at|over) (?:the )?weekends?\b)?"
+
+
+def _containers(s: str) -> str:
+    def rewrite(m: re.Match, count, noun: str) -> str:
+        if m.group("weekend"):
+            return f"{count(m):g} {noun} a week"
+        article = "a " if m.group("a") is not None else ""
+        return f"{article}{count(m):g} {noun}"
+
+    for pattern, count, noun in CONTAINERS:
+        s = re.sub(pattern + WEEKEND_ONCE, lambda m, c=count, n=noun: rewrite(m, c, n), s)
+    return s
+
+
 UNIT_SPELLINGS = [
     (r"\b(?:pounds?|lbs?)\b", "lb"),
     (r"\b(?:kilogram(?:me)?s?|kilos?|kgs?)\b", "kg"),
@@ -339,9 +424,39 @@ def _canonical(text: str) -> str:
     s = re.sub(r"\b(lbs?|ft|in|yrs?|hrs?|mins?|kgs?|cms?|approx|st)\.", r"\1", s)
     # Decades are ranges, not ages: "in my 70s", "seventies".
     s = re.sub(r"\b\d0 ?'?s\b", " decades ", s)
+    # A two-digit year is a year, never an age: "born in '80" -> 1980.
+    s = re.sub(r"(?<!\d )(?<![\w'])'(\d{2})\b(?!')", r"19\1", s)  # not "5 '10"
+    s = re.sub(rf"\b{_ORD}(?= of {MONTH}\b)", lambda m: _ordinal(m.group(1), m.group(2)), s)
+    s = re.sub(
+        rf"\b{MONTH} (?:the )?{_ORD}\b",
+        lambda m: f"{m.group(1)} {_ordinal(m.group(2), m.group(3))}",
+        s,
+    )
+    s = re.sub(r"\ba buck(?: and)? (\d{2})\b", r"1\1", s)  # "a buck sixty", "a buck 60"
+    s = re.sub(
+        r"\b(a|one|two) hundred(?: and)? (\d{2})\b",
+        lambda m: str({"a": 1, "one": 1, "two": 2}[m.group(1)] * 100 + int(m.group(2))),
+        s,
+    )  # "a hundred 30"
+    s = re.sub(r"\ba couple(?: of)? (?=[a-z0-9])", "2 ", s)
+    s = re.sub(r"\ba buck(?: and)? (?=[a-z])", "one hundred ", s)
     s = NUMBER_RUN.sub(
         lambda m: _read_run(m.group(0).split(), bool(ADJECTIVAL.match(s, m.end()))), s
     )
+    # "two years shy of 70" -> 68
+    s = re.sub(
+        r"\b(a|\d{1,2}) years? (?:shy|short|away) (?:of|from) (\d{2,3})\b",
+        lambda m: str(int(m.group(2)) - (1 if m.group(1) == "a" else int(m.group(1)))),
+        s,
+    )
+    # Spoken clock times: "half past nine", "ten thirty to six thirty".
+    s = re.sub(r"\bhalf past (\d{1,2})\b", r"\1:30", s)
+    s = re.sub(r"\b(?:a )?quarter past (\d{1,2})\b", r"\1:15", s)
+    s = re.sub(r"\b(\d{1,2}) (15|30|45)(?= (?:to|till|until)\b)", r"\1:\2", s)
+    s = re.sub(
+        r"\b(to|till|until) (\d{1,2}) (15|30|45)\b(?! ?(?:minute|hour|min)s?\b)", r"\1 \2:\3", s
+    )
+    s = re.sub(r"(?<=\d) slash (?=\d)", "/", s)
     s = re.sub(r"(\d)\s*'\s*(?=\d)", r"\1 ft ", s)  # 5'4
     s = re.sub(r"(\d)\s*'(?!s\b)", r"\1 ft", s)
     s = re.sub(r'(\d)\s*"', r"\1 inch", s)
@@ -357,7 +472,7 @@ def _canonical(text: str) -> str:
     s = re.sub(r"(?<![\d.])\.(\d)", r"0.\1", s)
     for pattern, unit in UNIT_SPELLINGS:
         s = re.sub(pattern, unit, s)
-    return " ".join(s.split())
+    return " ".join(_containers(s).split())
 
 
 # ---------------------------------------------------------------------------
@@ -374,6 +489,7 @@ HEDGES = re.compile(
     r"at the moment|currently|usually|normally|typically|generally|on average)\b"
 )
 QUESTION = re.compile(r"\?")
+MAYBE = re.compile(r"\b(?:maybe|probably|perhaps|possibly)\s+(?:(?:about|around)\s+)?")
 UNCERTAIN = re.compile(
     r"\b(?:maybe|may be|might|perhaps|possibly|probably|unsure|either|dunno|guessing|"
     r"not (?:really |quite |too |entirely |exactly )?(?:sure|certain)|"
@@ -383,7 +499,8 @@ UNCERTAIN = re.compile(
 )
 HYPOTHETICAL = re.compile(
     r"\b(?:if|unless|would|wouldn't|could|couldn't|should|wish|hope|hoping|hopefully|"
-    r"want to|wanna|like to|goal|aim|aiming|target|suppose|supposed|imagine|pretend|"
+    r"want|wants|wanted|want to|wanna|like to|goal|aim|aiming|target|suppose|supposed|"
+    r"imagine|pretend|ought to|meant to|"
     r"ideally|planning|plan to|trying to|i'd)\b"
 )
 VAGUE = re.compile(
@@ -393,15 +510,40 @@ VAGUE = re.compile(
     r"a lot|lots|a little|a bit|a few|a couple|couple of|several|socially|on occasion|"
     r"or more|or less|at least|at most|up to|more than|less than|fewer than|over|under|"
     r"above|below|plus|ish|odd|range|decades|twenties|thirties|forties|fifties|sixties|"
-    r"seventies|eighties|nineties|on a (?:good|bad) night|(?:good|bad) nights?|every other|"
-    r"alternate|every few|fortnight\w*|rarely|seldom|hardly|when|whenever)\b"
+    r"seventies|eighties|nineties|on a (?:good|bad) night|(?:good|bad) nights?|"
+    r"every other(?! days?\b)|shy of|short of|north of|south of|side of|"
+    r"alternate|every few|fortnight\w*|rarely|seldom|hardly|when|whenever|"
+    r"except|apart from|other than|excluding)\b"
+)
+PEOPLE = (
+    r"(?:wife|husband|hubby|partner|spouse|son|daughter|better half|other half|missus|missis|"
+    r"mrs|wifey|old man|old lady|mother|mom|mum|mommy|father|dad|daddy|papa|brother|sister|"
+    r"twin|friend|neighbou?r|kids?|child|children|grandson|granddaughter|grandkids?|"
+    r"grandchild(?:ren)?|grandma|grandpa|granny|grandmother|grandfather|boyfriend|girlfriend|"
+    r"cousin|aunt|uncle|niece|nephew|dog|cat|family|parents?)"
+)
+# A relative as the subject even without "my": "Dad is 90", "hubby has diabetes".
+KIN = (
+    r"(?:wife|husband|hubby|missus|missis|wifey|spouse|partner|son|daughter|mother|mom|mum|"
+    r"father|dad|brother|sister|twin|grandma|grandpa|granny|grandmother|grandfather|"
+    r"boyfriend|girlfriend)"
 )
 OTHER_PERSON = re.compile(
-    r"\b(?:my|our|his|her|their)\s+(?:wife|husband|hubby|partner|spouse|son|daughter|"
-    r"mother|mom|mum|father|dad|brother|sister|friend|neighbou?r|kids?|child|children|"
-    r"grandson|granddaughter|grandkids?|grandchild(?:ren)?|boyfriend|girlfriend|cousin|"
-    r"aunt|uncle|niece|nephew|dog|cat|family|parents?)(?:'s)?\b|\b(?:he|she|he's|she's|hers)\b"
+    rf"\b(?:my|our|his|her|their|your)\s+{PEOPLE}(?:'s)?\b"
+    r"|\bthe (?:wife|husband|missus|missis|mrs|old man|old lady|other half|better half|kids)\b"
+    rf"|\b{KIN}(?:'s\b|\s+(?:is|was|has|had|does|did|weighs|sleeps|drinks|smokes|walks|says|"
+    r"said|turned|turns|gets)\b)|\b(?:he|she|he's|she's|hers|him)\b"
 )
+# "Bob is 75": a name as the subject (only visible while the reply keeps its capitals).
+NAME_SUBJECT = re.compile(
+    r"\b(?!(?:I|It|Its|That|This|There|Here|My|Mine|Yes|Yeah|Yep|No|Nope|Nah|Well|Oh|So|Um|"
+    r"Uh|Hmm|The|We|They|You|Doctor|Dr|Female|Male|Woman|Man|Never|Not|Just|About|Around|"
+    r"Maybe|Probably|Mostly|Usually|Normal|Everything|Nothing|None|Today|Weight|Height|Age|"
+    r"Sleep|Exercise|Alcohol|Smoking|Diabetes|Blood|Pressure|Monday|Tuesday|Wednesday|"
+    r"Thursday|Friday|Saturday|Sunday)\b)[A-Z][a-z]+(?:'s)?\s+(?:is|was|has|weighs|sleeps|"
+    r"drinks|smokes|walks|does|turned|turns)\b"
+)
+FIRST_PERSON = re.compile(r"\b(?:i|i'm|i've|i'd|i'll|me|my|mine|myself)\b")
 NEGATION = re.compile(r"\b(?:not|no|never|none|nothing|without|nor|neither)\b|n't\b")
 PAST_OLD = re.compile(
     r"\b(?:ago|used to|use to|back then|back in|in my prime|when i was|in my youth|"
@@ -417,6 +559,7 @@ CHANGE = re.compile(
 )
 # "3 hours a week, but not lately": the stated habit is not the current one.
 NOT_CURRENT = re.compile(
+    r"\bbut\s+(?:now|these days|nowadays|today|lately)\b|\bnow\s+(?:it's|it is|i'm|i am|they)\b|"
     r"\b(?:not|no longer)\s+(?:lately|recently|anymore|any more|now|these days|nowadays|"
     r"at the moment|right now)\b|\b(?:haven't|hasn't|have not|didn't)\s+(?:lately|recently)\b"
 )
@@ -509,13 +652,52 @@ def _context(text: str, spans: list[tuple[int, int]]) -> str:
     return _blank(text, spans)[lo:hi]
 
 
+# Anywhere in a reply, these make a number someone's past, goal or advice instead of
+# the person's usual value now: "160 pounds, before my surgery", "I need 8 hours".
+PAST_SPOIL = re.compile(
+    r"\b(?:ago|back then|back in|a while back|years back|originally|shrunk|shrank|"
+    r"used to(?: be)?(?=\s*(?:$|[,.;!]))|before (?:my|the|i|we|that|it)|at (?:my|our) wedding|"
+    r"in (?:high )?school|in college|in the (?:army|navy|service|military|marines|war)|"
+    r"in my (?:youth|prime|decades)|when i was|back when|in (?:19|20)\d\d|not since|"
+    r"(?:until|till) (?:my|the|i|we)|(?:and|then|but) (?:then )?i (?:quit|stopped|gave up)"
+    r"(?! smoking))\b"
+)
+ADVICE = re.compile(
+    r"\b(?:need|needs|needed|recommend\w*|advised?|allowed|ideal|ideally|normal is|normal's|"
+    r"normal for|ought|feel|feels|look|looks|in my dreams|dream)\b"
+)
+# Sleep, exercise and drinks are the person's own habit, so a doctor's word is advice.
+REPORTED = re.compile(r"\b(?:says|said|tells me|told me)\b")  # not "I'd say 6"
+HABITS = {"sleep_hours", "exercise_minutes_weekly", "alcohol_drinks_weekly"}
+SEASONAL = re.compile(
+    r"\b(?:in|during) (?:the )?(?:summer|winter|spring|fall|autumn)(?:time)?\b|\bin season\b"
+)
+
+
+def _spoiled(field: str, rest: str) -> bool:
+    """Words outside the value that make it not the person's usual value now."""
+    if field != "age" and PAST_SPOIL.search(rest):
+        return True
+    if ADVICE.search(rest) or (
+        field in HABITS and (REPORTED.search(rest) or SEASONAL.search(rest))
+    ):
+        return True
+    return field == "alcohol_drinks_weekly" and bool(re.search(NON_ALCOHOL, rest))
+
+
 def _clean_measurement(field: str, text: str, spans: list[tuple[int, int]]) -> bool:
     """Whether the value found at ``spans`` is the reply's only, current, own answer."""
-    rest = _blank(text, spans)
+    # "maybe 60": right before the one number, maybe is a hedge (it is read back);
+    # "maybe I weigh 70" doubts the whole statement.
+    starts = {start for start, _ in spans}
+    hedged = [m.span() for m in MAYBE.finditer(text) if m.end() in starts]
+    rest = _blank(text, spans + hedged)
     if re.search(r"\d", rest) or NOT_CURRENT.search(rest):
         return False
     whole = _unhedged(rest)
     if _doubtful(rest) or VAGUE.search(whole) or OTHER_PERSON.search(whole):
+        return False
+    if _spoiled(field, rest):
         return False
     local_raw = _context(text, spans)
     local = _unhedged(local_raw)
@@ -541,7 +723,7 @@ N = rf"(?<![\d.])(?<!-){NUM}(?!\d)"
 FOLLOW = (
     r"(?=\s*(?:$|[,;:.!?)\-]|(?:and|but|now|last|as|going|this|in|on|since|today|already|"
     r"so|thank|thanks|yes|yeah|actually|exactly|i|or|give|more|these|nowadays|right|at|"
-    r"then|myself|still|tops)\b))"
+    r"then|myself|still|tops|next|come)\b))"
 )
 # After the inches of "5 ft 10" or the pounds of "11 stone 4", no other unit may follow.
 NOT_UNIT = r"(?!\s?(?:ft|cm|m|kg|stone|hour|minute|year|mmhg|over|on \d|/)\b)"
@@ -583,81 +765,197 @@ MONTHS = {
     "nov": 11,
     "dec": 12,
 }
-MONTH = (
-    r"(january|february|march|april|may|june|july|august|september|october|november|december"
-    r"|jan|feb|mar|apr|jun|jul|aug|sept|sep|oct|nov|dec)"
+MONTH_TITLES = (
+    "January February March April May June July August September October November December"
+).split()
+MONTH_WORD = MONTH.replace("(", "(?:", 1)
+# A date is a birth date after "born" or "my birthday is", or as the whole reply:
+# "1980 was a good year" and "class of '98" are not.
+BORN = r"(?:(?:i was |i'm |i am )?born|(?:my )?(?:birthday|date of birth|birth date|dob)(?: is)?)"
+NAMED_DATE = (
+    rf"(?P<m1>{MONTH_WORD}) (?P<d1>\d{{1,2}})(?:st|nd|rd|th)?,? (?:in )?(?P<y1>\d{{4}})"
+    rf"|(?:the )?(?P<d2>\d{{1,2}})(?:st|nd|rd|th)? (?:of )?(?P<m2>{MONTH_WORD}),? (?:in )?(?P<y2>\d{{4}})"
 )
-BIRTH = (
-    rf"(?:i was |i'm |i am )?born (?:on )?(?:{MONTH} (\d{{1,2}})(?:st|nd|rd|th)?,? (?:in )?(\d{{4}})"
-    rf"|(?:the )?(\d{{1,2}})(?:st|nd|rd|th)? (?:of )?{MONTH},? (?:in )?(\d{{4}}))"
+NUMERIC_DATE = (
+    r"(?<![\d/.])(?:(?P<a>\d{1,2})(?P<sep>[/.-])(?P<b>\d{1,2})(?P=sep)(?P<y>\d{4}|\d{2})"
+    r"|(?P<iy>\d{4})-(?P<im>\d{1,2})-(?P<id>\d{1,2}))(?![\d/]|\.\d)"
+)
+MONTH_YEAR = rf"(?P<m>{MONTH_WORD}),? (?:of |in )?(?P<y>\d{{4}})"
+YEAR_ONLY = r"(?:the year )?(?P<y>1[89]\d\d|20[0-2]\d)(?!\d|\.\d)"
+# "I'm 46 this year": the birthday may or may not have passed yet.
+THIS_YEAR = (
+    r"(?:\bi turn |(?<!be )(?<!turning )(?<![\d.]))(?P<n>\d{1,3})(?:\s?year(?: old)?)?"
+    r" this (?P<unit>year|month|week)\b"
 )
 FUTURE_AGE = (
     r"(?:\b(?:i'll|i will|i'm going to|i am going to|i'm gonna|going to|gonna)\s+(?:be|turn)\s+"
-    r"(\d{1,3})(?![\d.])|\b(?:i'm\s+|i am\s+)?turning\s+(\d{1,3})(?![\d.]))"
+    r"(\d{1,3})(?![\d.])|\b(?:i'm\s+|i am\s+)?turning\s+(\d{1,3})(?![\d.])|\bi turn\s+(\d{1,3})(?![\d.]))"
     r"(?:\s+in\s+(?:\d{1,2}|a)\s+(?:days?|weeks?|months?))?"
 )
 # "I just had my 70th birthday"
 BIRTHDAY = r"\b(?:had|celebrated|turned)\s+my\s+(\d{2,3})(?:st|nd|rd|th)\s+birthday\b"
+# "70 next week", "76 in March": a birthday still to come.
+WHEN = (
+    rf"(?:(?:\d{{1,2}}|a|an)\s(?:days?|weeks?|months?|year)|year|month|week|birthday|"
+    rf"(?:my\s)?(?:next\s)?birthday|christmas|(?:next\s)?(?:monday|tuesday|wednesday|thursday|"
+    rf"friday|saturday|sunday)|(?:the\s)?(?:spring|summer|fall|autumn|winter)|{MONTH_WORD})\b"
+)
 AGE = (
     rf"(?<![\d.])(?<!-)(?<!going on )(\d{{1,3}})(?![\d.]\d)"
     rf"(?:\s?year(?:\s(?:old|young|of age))?|{FOLLOW})(?:,?\s?going on\s(\d{{1,3}}))?"
+    rf"(?:\s(next|in|this|on|come|come next|by)\s{WHEN})?"
 )
 
 
-def _age(text: str, today: date) -> Found:
-    def birth(match: re.Match):
-        month_name, day, year = match.group(1), match.group(2), match.group(3)
-        if month_name is None:
-            day, month_name, year = match.group(4), match.group(5), match.group(6)
-        try:
-            born = date(int(year), MONTHS[month_name[:3]], int(day))
-        except ValueError:
-            return None
-        if born > today:
-            return None
-        return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+def _dated(pattern: str) -> str:
+    return (
+        rf"(?:\b{BORN}\s(?:on\s|in\s)?|(?P<alone>^)(?:on\s|in\s)?)(?:{pattern})(?(alone)[\s.!]*$)"
+    )
 
+
+def _born(year: int, month: int, day: int, today: date) -> int | None:
+    try:
+        born = date(year, month, day)
+    except ValueError:
+        return None
+    if born > today:
+        return None
+    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+
+def _span_ages(year: int, month: int | None, today: date) -> set[int]:
+    """Ages for a birth known only to the month or year: the earliest and latest day."""
+    first, last = (month or 1, 1), (month or 12, calendar.monthrange(year, month or 12)[1])
+    return {
+        age for age in (_born(year, *first, today), _born(year, *last, today)) if age is not None
+    }
+
+
+def _age_readings(text: str, today: date) -> list[tuple[set[int], tuple[int, int], str]] | None:
+    """(possible ages, span, how to say it) for each birth date or "46 this year".
+
+    A full date gives one age; a month in the current month, a year alone or a
+    turning-this-year gives the two ages either side of the birthday. None when
+    a date is impossible.
+    """
+    readings: list[tuple[set[int], tuple[int, int], str]] = []
+
+    def year(digits: str) -> int:
+        return int(digits) if len(digits) == 4 else 1900 + int(digits)
+
+    for pattern in (NAMED_DATE, NUMERIC_DATE, MONTH_YEAR, YEAR_ONLY, THIS_YEAR):
+        rest = _blank(text, [span for _, span, _ in readings])
+        regex = pattern if pattern is THIS_YEAR else _dated(pattern)
+        for m in re.finditer(regex, rest):
+            groups = m.groupdict()
+            if pattern is NAMED_DATE:
+                name = groups["m1"] or groups["m2"]
+                ages = {
+                    _born(
+                        int(groups["y1"] or groups["y2"]),
+                        MONTHS[name[:3]],
+                        int(groups["d1"] or groups["d2"]),
+                        today,
+                    )
+                }
+                lead = ""
+            elif pattern is NUMERIC_DATE:
+                if groups["iy"]:
+                    ages = {_born(int(groups["iy"]), int(groups["im"]), int(groups["id"]), today)}
+                else:
+                    a, b, born_year = int(groups["a"]), int(groups["b"]), year(groups["y"])
+                    # Month first (US), unless only day first is a real date.
+                    ages = {_born(born_year, a, b, today), _born(born_year, b, a, today)}
+                    ages = ages - {None} or ages
+                lead = "Born on " + "{a}{sep}{b}{sep}{y}".format(**groups)
+            elif pattern is MONTH_YEAR:
+                month = MONTHS[groups["m"][:3]]
+                ages = _span_ages(int(groups["y"]), month, today)
+                lead = f"Born in {MONTH_TITLES[month - 1]} {groups['y']}"
+            elif pattern is YEAR_ONLY:
+                ages = _span_ages(int(groups["y"]), None, today)
+                lead = f"Born in {groups['y']}"
+            else:
+                n = int(groups["n"])
+                ages = {n - 1, n}
+                lead = f"Turning {n} this {groups['unit']}"
+            if not ages or None in ages:
+                return None
+            readings.append((ages, m.span(), lead))
+    return readings
+
+
+def _age(text: str, today: date) -> Found:
     def current(match: re.Match):
         # "I retired at 65", "since 60": the age at some event, not now.
-        if re.search(
-            r"\b(?:at|since|until|till|by|after|before|from|when)\s+(?:the\s+)?"
-            r"(?:age\s+(?:of\s+)?)?$",
-            text[: match.start()],
-        ):
+        before = text[: match.start()]
+        # "the year I turned 65", "when I turned 65": an event, not today's age.
+        if re.search(r"\b(?:when|the year|after|before|since|once)\s+i\s+turned\s+$", before):
             return None
-        # "76 next month", "73 this year": a birthday still to come, so unclear.
-        if re.match(
-            r"\s*(?:this|next|in)\s+(?:year|month|week|spring|summer|fall|autumn|winter|"
-            r"january|february|march|april|may|june|july|august|september|october|november|"
-            r"december)\b",
-            text[match.end() :],
+        if re.search(
+            r"\b(?:at|since|until|till|by|after|before|from|when|for)\s+"
+            r"(?:(?:the|about|around|almost|nearly|over)\s+)?"
+            r"(?:age\s+(?:of\s+)?)?$",
+            before,
         ):
             return None
         value = int(match.group(1))
+        # "on the wrong side of 70", "shy of 70": a comparison, not an age.
+        if re.search(r"\b(?:side|shy|short|north|south) of\s+$", before):
+            return None
+        # "almost 80", "pushing 80": still 79.
+        if re.search(r"\b(?:almost|nearly|pushing|close to|coming up on|approaching)\s+$", before):
+            return value - 1 if not match.group(3) else None
         # "I'm 79, going on 80" describes the same age; any other pair is ambiguous.
         if match.group(2) and int(match.group(2)) != value + 1:
             return None
+        if match.group(3) == "this":
+            return None  # asked as two ages by clarify
+        # "70 next week": still 69 today; "turned 70 in March" is 70.
+        if match.group(3) and not re.search(r"\bturned\s+$", before):
+            return value - 1
         return value
 
     def turning(match: re.Match):
         # "I'll be 77 in March": still 76 today.
-        return int(match.group(1) or match.group(2)) - 1
+        return int(match.group(1) or match.group(2) or match.group(3)) - 1
 
+    readings = _age_readings(text, today)
+    if readings is None:
+        return None
+    dated = [span for _, span, _ in readings]
+    sure = [(min(ages), span) for ages, span, _ in readings if len(ages) == 1]
     found = _combine(
-        _collect(BIRTH, text, birth), _collect(BIRTHDAY, text, lambda m: int(m.group(1)))
+        ([value for value, _ in sure], [span for _, span in sure]),
+        _collect(BIRTHDAY, _blank(text, dated), lambda m: int(m.group(1))),
     )
+    for pattern, read in ((FUTURE_AGE, turning), (AGE, current)):
+        if found is None:
+            return None
+        found = _combine(found, _collect(pattern, _blank(text, dated + found[1]), read))
     if found is None:
         return None
-    found = _combine(found, _collect(FUTURE_AGE, _blank(text, found[1]), turning))
-    if found is None:
-        return None
-    return _combine(found, _collect(AGE, _blank(text, found[1]), current))
+    unsure = [(ages, span) for ages, span, _ in readings if len(ages) > 1]
+    if unsure:
+        # "I'm 72, born in 1954": a stated age settles which side of the birthday.
+        if not found[0] or any(value not in ages for ages, _ in unsure for value in found[0]):
+            return None
+        found = (found[0], found[1] + [span for _, span in unsure])
+    return found
 
 
 FEET = (
     rf"(?<![\d.])(?<!-)(\d)\s?ft(?:,?\s?(?:and\s)?(\d{{1,2}}(?:\.\d{{1,6}})?)(?!\d){NOT_UNIT}"
     r"(?:\s?inch\b)?)?(?:\s(?:even|flat|exactly))?"
 )
+_FT_IN = r"([4-7])(?:\s?ft\s?|\s)(\d{1,2})(?:\s?inch)?"
+HEIGHT_EITHER = rf"(?<![\d.])(?<!-){_FT_IN}\s(?:or|to|-)\s{_FT_IN}(?![\d.])"
+# "5 and a half feet" (canonical "5.5 ft")
+FEET_DECIMAL = r"(?<![\d.])(?<!-)(\d\.(?:25|5|75))\s?ft\b(?!\s?\d)"
+# Speech to text writes "five ten" as "510"; nothing else that size is a height.
+SPOKEN_HEIGHT = rf"(?<![\d.])(?<!-)([4-7])(0[1-9]|1[01])(?![\d.]){FOLLOW}"
+# A bare 120-219 can only be centimeters.
+BARE_CM = rf"(?<![\d.])(?<!-)(1[2-9]\d|2[01]\d)(?![\d.]){FOLLOW}"
 HEIGHT_PAIR = (
     r"(?<![\d.])(?<!-)([4-7])(?:\s|\s?-\s?)(\d{1,2}(?:\.5)?)(?![\d.])"
     r"(?!\s?(?:ft|inch|cm|m|kg|lb|stone|hour|minute|year|over|/|on|to|or|and)\b)"
@@ -669,7 +967,18 @@ def _height(text: str, today: date) -> Found:
         inches = float(match.group(2) or 0)
         return None if inches >= 12 else int(match.group(1)) * 30.48 + inches * 2.54
 
+    def either(match: re.Match):
+        low, high = (int(match.group(i)) * 12 + int(match.group(i + 1)) for i in (1, 3))
+        ok = 0 < high - low <= 1 and int(match.group(2)) < 12 and int(match.group(4)) < 12
+        return (low + high) / 2 * 2.54 if ok else None
+
+    # "5 7 or 5 8": an inch apart reads as the middle, like "7 or 8 hours".
+    found = _collect(HEIGHT_EITHER, text, either)
+    if found is None:
+        return None
+    text = _blank(text, found[1])
     found = _combine(
+        found,
         _collect(FEET, text, feet),
         # "1 m 68", "one metre sixty-eight"
         _collect(
@@ -681,14 +990,21 @@ def _height(text: str, today: date) -> Found:
     rest = _blank(text, found[1])
     found = _combine(
         found,
+        _collect(FEET_DECIMAL, rest, lambda m: float(m.group(1)) * 30.48),
         _collect(rf"{N}(?:,?\s+in)?\s?cm\b", rest, lambda m: float(m.group(1))),
         _collect(rf"{N}\s?m\b", rest, lambda m: float(m.group(1)) * 100),
         _collect(rf"{N}\s?inch\b", rest, lambda m: float(m.group(1)) * 2.54),
     )
-    if found is None or found[0]:
-        return found
     # "six two", "five-eight": two bare numbers answering the height question.
-    return _collect(HEIGHT_PAIR, text, feet)
+    for pattern, read in (
+        (HEIGHT_PAIR, feet),
+        (SPOKEN_HEIGHT, feet),
+        (BARE_CM, lambda m: float(m.group(1))),
+    ):
+        if found is None or found[0]:
+            return found
+        found = _collect(pattern, text, read)
+    return found
 
 
 STONE = rf"{N}\s?stone\b(?:,?\s?(?:and\s)?(\d{{1,2}}(?:\.\d{{1,6}})?)(?!\d){NOT_UNIT}(?:\s?lb\b)?)?"
@@ -700,15 +1016,45 @@ def _weight(text: str, today: date) -> Found:
         pounds = float(match.group(2) or 0)
         return None if pounds >= 14 else (float(match.group(1)) * 14 + pounds) * LB_PER_KG
 
-    found = _collect(STONE, text, stone)
+    def bare(match: re.Match):
+        # US default: a bare adult weight is pounds (read back before saving).
+        # Under 90 could be either unit, so it is asked about.
+        pounds = float(match.group(1))
+        return pounds * LB_PER_KG if 90 <= pounds <= 450 else None
+
+    def spread(match: re.Match):
+        # "between 150 and 160": a close range reads as its middle.
+        low, high, unit = (
+            float(match.group(1) or match.group(2)),
+            float(match.group(3)),
+            match.group(4),
+        )
+        if unit is None and high < 90:
+            return None
+        width = 5 if unit == "kg" else 10
+        middle = (low + high) / 2
+        return None if not 0 < high - low <= width else middle * (1 if unit == "kg" else LB_PER_KG)
+
+    found = _combine(
+        _collect(
+            rf"(?:\bbetween\s+{N}(?:\s?(?:lb|kg))?\s+and|{N}(?:\s?(?:lb|kg))?\s?(?:to|-))\s?{NUM}"
+            rf"(?!\d)(?:\s?(lb|kg)\b|{FOLLOW})",
+            text,
+            spread,
+        ),
+    )
+    found = _combine(found, _collect(STONE, _blank(text, found[1] if found else []), stone))
     if found is None:
         return None
     rest = _blank(text, found[1])
-    return _combine(
+    found = _combine(
         found,
         _collect(rf"{N}(?:,?\s+in)?\s?kg\b", rest, lambda m: float(m.group(1))),
         _collect(rf"{N}(?:,?\s+in)?\s?lb\b", rest, lambda m: float(m.group(1)) * LB_PER_KG),
     )
+    if found is None or found[0]:
+        return found
+    return _collect(rf"{N}{FOLLOW}", text, bare)
 
 
 TIME = r"(\d{1,2})(?::(\d{2}))?(?:\s?(am|pm|o'clock))?(?![\d.:])(?!\s?(?:hour|minute)\b)"
@@ -717,6 +1063,9 @@ BEDTIME = (
     rf"(?:(?:by|at|around|about|from)\s+)?{TIME}[^\d]{{0,30}}?\b(?:up|awake|wake(?:\s+up)?|"
     rf"get\s+up|rise|until|till|to)\b(?:\s+[a-z']+){{0,2}}?\s+(?:(?:by|at|around|about)\s+)?{TIME}"
 )
+# "midnight to 7", "11 till 5:30", "10 to 6": bedtime to waking without saying bed.
+# "7 to 8" counts up, so it stays a range of hours.
+CLOCK_RANGE = rf"(?<![\d.:])(?:\bfrom\s+)?{TIME}\s?(?:to|till|until|-)\s?{TIME}"
 NIGHT = r"(?=\s*(?:a|per|each|every|at)\s+night\b)"
 
 
@@ -760,6 +1109,15 @@ def _sleep(text: str, today: date) -> Found:
         return float(match.group(1)) + float(match.group(2) or 0) / 60
 
     found = _collect(BEDTIME, text, bedtime)
+    if found is not None:
+        for m in re.finditer(CLOCK_RANGE, _blank(text, found[1])):
+            if not any(m.group(i) for i in (2, 3, 5, 6)) and int(m.group(1)) <= int(m.group(4)):
+                continue
+            hours = bedtime(m)
+            if hours is None:
+                return None
+            found[0].append(hours)
+            found[1].append(m.span())
     for pattern, read in (
         (
             rf"(?:\bbetween\s+{N}(?:\s?hour)?\s?and|{N}(?:\s?hour)?\s?(?:to|or|-))\s?{NUM}(?!\d)"
@@ -785,13 +1143,19 @@ def _sleep(text: str, today: date) -> Found:
     return _collect(rf"{N}(?:{FOLLOW}|{NIGHT})", text, bare)
 
 
-DURATION = rf"{N}\s?(minute|hour)\b(?:,?\s?(?:and\s)?(\d{{1,2}})\s?minute\b)?"
+# "30 to 40 minutes" (a close range, read as its middle), "an hour and fifteen minutes"
+DURATION = (
+    rf"(?:{N}\s?(?:to|-|or)\s?)?{N}\s?(minute|hour)\b(?:,?\s?(?:and\s)?(\d{{1,2}})\s?minute\b)?"
+)
 FREQUENCY = (
     r"\b(?:days?|daily|weeks?|weekly|months?|monthly|years?|yearly|mornings?|evenings?|nights?|"
     r"nightly|weekends?|weekdays?|times?|once|twice|other|sessions?|class(?:es)?|each|every|per)\b"
 )
 ACTIVITY = r"(?:\s+of\s+[a-z]+(?:\s+[a-z]+)?)?"
-WEEKLY = rf"{ACTIVITY}\s*(?:a|per|each|every|/|in a|in the)\s*week\b"
+WEEKLY = (
+    rf"{ACTIVITY}\s*(?:(?:a|per|each|every|/|in a|in the)\s*week\b|"
+    r"(?:in\s+)?(?:total|all together|altogether|all told|in all)\b)"
+)
 DAILY_RATE = rf"{ACTIVITY}\s*(?:a|per)\s+day\b"
 DAY_NAMES = r"\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?\b"
 EVERY_DAY = (
@@ -804,6 +1168,11 @@ def _times_per_week(text: str) -> tuple[list[int], list[tuple[int, int]]]:
     """How many days a week a routine happens: "twice a week", "every day", "Saturday"."""
     counts, spans = [], []
     times = {"once": 1, "twice": 2, "thrice": 3}
+    # "every other day", "every 3 days": 7 / n days a week.
+    for match in re.finditer(r"\bevery (?:(other|second)|([2-7])) days?\b", text):
+        counts.append(7 / (2 if match.group(1) else int(match.group(2))))
+        spans.append(match.span())
+    text = _blank(text, spans)
     for match in re.finditer(
         r"\b(?:(once|twice|thrice)|(\d) ?(?:times?|x))\s+(?:a|per|each|every|in a)\s+week\b", text
     ):
@@ -817,6 +1186,14 @@ def _times_per_week(text: str) -> tuple[list[int], list[tuple[int, int]]]:
         spans.append(match.span())
     for match in re.finditer(EVERY_DAY, text):
         counts.append(7)
+        spans.append(match.span())
+    # The question is per week, so "3 times" and "4 days" are a week's count.
+    for match in re.finditer(
+        r"\b(?:(once|twice|thrice)|(\d) ?(?:times?|x|days?))\b"
+        r"(?!\s+(?:a|per|each|every|in a|of the)\s+(?:day|month|year)\b)(?!\s+ago\b)",
+        _blank(text, spans),
+    ):
+        counts.append(times.get(match.group(1)) or int(match.group(2)))
         spans.append(match.span())
     for pattern, days in (
         (r"\b(?:on\s+|at\s+|every\s+|each\s+)?(?:the\s+)?weekends?\b", 2),
@@ -846,7 +1223,26 @@ def _zero(field: str, text: str) -> Found:
     return [0], [(0, len(text))]
 
 
-def _exercise(text: str, today: date) -> Found:
+def _sessions(text: str) -> Found:
+    """ "A 30 minute walk 4 days and 1 hour of tai chi on Saturday": each part with
+    its own duration and how often, added up."""
+    total, spans, offset = 0.0, [], 0
+    segments = re.split(r"(\band\b|\bplus\b|[,;])", text)
+    if len(segments) < 3:
+        return None  # "45 minutes or an hour", "30 minutes then 20": asked about
+    for segment in segments:
+        if segment.strip() and not re.fullmatch(r"and|plus|[,;]", segment.strip()):
+            found = _exercise(segment, date.min, nested=True)
+            # Every part needs its own how-often, or the sum is a guess.
+            if not found or not (re.search(FREQUENCY, segment) or re.search(DAY_NAMES, segment)):
+                return None
+            total += found[0][0]
+            spans += [(start + offset, end + offset) for start, end in found[1]]
+        offset += len(segment)
+    return [total], spans
+
+
+def _exercise(text: str, today: date, nested: bool = False) -> Found:
     if _twice_daily(text):
         return None
     durations = list(re.finditer(DURATION, text))
@@ -860,24 +1256,33 @@ def _exercise(text: str, today: date) -> Found:
             return None
         zero = re.search(
             r"\b(?:none|nothing|zero|not a thing|not any|no exercise|nada|zilch)\b|"
-            r"\b(?:don't|do not|never)\s+(?:do\s+any(?:thing)?|exercise|work\s+out)\b",
+            r"\b(?:don't|do not|never)\s+(?:do\s+any(?:thing)?|exercise|work\s+out)\b|"
+            r"^(?:no )?i (?:don't|do not)$",
             text,
         )
         vague = re.search(r"\b(?:much|a lot|often|enough|regularly|as much|very)\b", text)
         return _zero("exercise_minutes_weekly", text) if zero and not vague else None
     if len(durations) != 1:
-        return None
+        return None if nested else _sessions(text)
     duration = durations[0]
-    minutes = float(duration.group(1)) * (60 if duration.group(2) == "hour" else 1)
-    if duration.group(3):
-        if duration.group(2) != "hour":
+    hours = duration.group(3) == "hour"
+    value = float(duration.group(2))
+    if duration.group(1):
+        low = float(duration.group(1))
+        if not 0 < value - low <= (0.5 if hours else 15):
             return None
-        minutes += int(duration.group(3))  # "an hour and fifteen minutes"
+        value = (low + value) / 2
+    minutes = value * (60 if hours else 1)
+    if duration.group(4):
+        if not hours:
+            return None
+        minutes += int(duration.group(4))  # "an hour and fifteen minutes"
     spans = [duration.span()]
-    tail = re.match(WEEKLY, text[duration.end() :]) or re.match(DAILY_RATE, text[duration.end() :])
+    after = text[duration.end() :]
+    weekly, daily = re.match(WEEKLY, after), re.match(DAILY_RATE, after)
+    tail = weekly or daily
     if tail:
         spans.append((duration.end(), duration.end() + tail.end()))
-    # "twice a day for 20 minutes": a per-day amount, which still needs days a week.
     per_day = re.search(
         r"\b(?:(once|twice|thrice)|(\d) times?)\s+(?:a|per|each)\s+day\b", _blank(text, spans)
     )
@@ -892,13 +1297,16 @@ def _exercise(text: str, today: date) -> Found:
     if len(set(counts)) > 1:
         return None
     spans += count_spans
-    if tail and "week" in tail.group(0):
+    if weekly:
         return ([minutes], spans) if not counts else None
     if counts:
         return [minutes * counts[0]], spans
-    # Hours without how often ("an hour"), per day without days, or any other
-    # frequency ("every other day", "a 45 minute class") are asked about.
-    if tail or per_day or duration.group(2) == "hour" or re.search(FREQUENCY, _blank(text, spans)):
+    # "an hour a day", "twice a day for 20 minutes": every day, read back to confirm.
+    if (daily or per_day) and not re.search(FREQUENCY, _blank(text, spans)):
+        return [minutes * 7], spans
+    # Hours without how often ("an hour") or any other frequency ("every other
+    # day", "a 45 minute class") are asked about.
+    if daily or per_day or hours or re.search(FREQUENCY, _blank(text, spans)):
         return None
     return [minutes], spans
 
@@ -923,15 +1331,32 @@ ZERO_DRINKS = (
 )
 
 
+# Not alcohol: "8 glasses of water a day" is never 56 drinks.
+NON_ALCOHOL = (
+    r"\b(?:water|sodas?|pop|soft drinks?|coffees?|espressos?|lattes?|cappuccinos?|decaf|milk|"
+    r"teas?|juices?|lemonade|seltzer|colas?|cokes?|pepsi|ginger ale|smoothies?|shakes?|cocoa|"
+    r"hot chocolate|non ?alcoholic|alcohol free|mocktails?|kombucha)\b"
+)
+# "I don't drink beer, just wine", "none on weekdays", "never drink alone": not none.
+ZERO_QUALIFIED = (
+    r"\b(?:beer|wine|spirits|liquor|whiske?y|vodka|weekdays?|weekends?|during|alone|drive|"
+    r"driving|just|only|except|but|unless|until|week|home|out|much|a lot|often|very|heavily|"
+    r"as much)\b|\bnot\s+(?:sober|teetotal\w*|a non ?drinker)\b"
+)
+
+
 def _alcohol(text: str, today: date) -> Found:
     # "I quit drinking 20 years ago": the years describe the quitting, not a count.
-    quit_time = r"\b\d+\s+year\s+ago\b|\b(?:in|since|back in)\s+'?\d{2,4}\b"
-    if _twice_daily(text):
+    quit_time = (
+        r"\b\d+\s+year\s+ago\b|\b(?:in|since|back in)\s+'?\d{2,4}\b|"
+        r"\b(?:sober|dry|quit|stopped)\s+(?:for\s+)?\d+\s+year(?:\s+now)?\b"
+    )
+    if _twice_daily(text) or re.search(NON_ALCOHOL, text):
         return None
     zero = re.search(ZERO_DRINKS, text)
     if zero and not re.search(r"\d", re.sub(quit_time, " ", text)):
-        vague = re.search(r"\b(?:much|a lot|often|very|heavily|as much|only|except|but)\b", text)
-        return None if vague else _zero("alcohol_drinks_weekly", text)
+        qualified = re.search(ZERO_QUALIFIED, re.sub(quit_time, " ", text))
+        return None if qualified else _zero("alcohol_drinks_weekly", text)
     counts, spans, article = [], [], False
     for pattern, read in (
         (
@@ -957,6 +1382,7 @@ def _alcohol(text: str, today: date) -> Found:
             spans.append(match.span())
     if len(counts) != 1:
         return None
+    article = article or bool(re.search(r"\ba \d", text))  # "a bottle of wine", rewritten
     rest = _blank(text, spans)
     if re.search(r"\b(?:a|per|each|every)\s+(?:month|year)\b|\bmonthly\b|\bweekends?\b", rest):
         return None
@@ -991,7 +1417,8 @@ NUMERIC = {
 # Blood pressure
 # ---------------------------------------------------------------------------
 
-BP_PAIR = r"(?<![\d.])(?<!-)(\d{2,3})\s?(?:/|over|on)\s?(\d{2,3})(?![\d.]\d)(?:\s?mmhg)?"
+# "120 over 80", "120/80", spoken without a joiner: "130 80"
+BP_PAIR = r"(?<![\d.])(?<!-)(\d{2,3})(?:\s?(?:/|over|on)\s?|\s)(\d{2,3})(?![\d.]\d)(?:\s?mmhg)?"
 BP_SINGLE = rf"(?<![\d.])(?<!-)(\d{{2,3}})(?![\d.]\d)(?:\s?mmhg\b|{FOLLOW})"
 # "The top number is 130 and the bottom is 85", "systolic 130, diastolic 85"
 BP_LABELED = (
@@ -1055,33 +1482,43 @@ def _own_clauses(text: str) -> list[tuple[str, str]]:
     ]
 
 
+AT_BIRTH = re.compile(r"\b(?:born|at birth|assigned)\b")
 PREFER_NOT = re.compile(r"\b(?:prefer not to|rather not)(?:\s+(?:say|answer|tell))?\b")
 SEX_FAMILIES = {
-    "female": r"\b(?:female|woman|lady|gal|girl|(?:grand)?mother|grandma|granny|widow|wife)\b",
+    # "wife" and "husband" describe a partner ("I have a wife"), never the person.
+    "female": r"\b(?:female|woman|lady|gal|girl|(?:grand)?mother|grandma|granny|widow)\b",
     "male": (
         r"\b(?:male|man|guy|gentleman|gent|fella|fellow|chap|bloke|boy|(?:grand)?father|grandpa|"
-        r"widower|husband)\b"
+        r"widower)\b"
     ),
-    "intersex": r"\bintersex\b",
 }
+# The forecast can only use female or male at birth; say so instead of guessing.
+OTHER_SEX = re.compile(r"\b(?:intersex|non ?binary|both|neither|other)\b")
+
+
+# "oh man", "man, that's personal", "7, man": exclamations, not answers.
+INTERJECTION = (
+    r"\b(?:oh|aw|ah|ooh|man oh|boy oh) (?:man|boy)\b|^(?:man|boy)\b(?=\s*,)|,\s*(?:man|boy)\s*$"
+)
+PARTNER = r"\b(?:married|wedded)\b|\b(?:have|got|with) an? (?:wife|husband|man|woman|boyfriend|girlfriend)\b"
 
 
 def _sex(text: str) -> str | None:
     phrase = _plain(text)
-    if phrase in SEX_PREFER_NOT or phrase == "prefer_not_to_say":
-        return "prefer_not_to_say"
     if phrase in {"f", "m"}:
         return {"f": "female", "m": "male"}[phrase]
-    if _doubtful(text):
+    text = re.sub(INTERJECTION, " ", text)
+    if _doubtful(text) or re.search(PARTNER, text):
         return None
     families: set[str] = set()
     for clause, _ in _own_clauses(text):
         found = {family for family, pattern in SEX_FAMILIES.items() if re.search(pattern, clause)}
         if found and (NEGATION.search(clause) or re.search(r"\b(?:used to|called)\b", clause)):
             return None
+        # The question asks for sex at birth, so "born male" outweighs anything said after it.
+        if len(found) == 1 and AT_BIRTH.search(clause):
+            return found.pop()
         families |= found
-    if PREFER_NOT.search(text) and not families:
-        return "prefer_not_to_say"
     return families.pop() if len(families) == 1 else None
 
 
@@ -1091,10 +1528,21 @@ QUIT_ATTEMPT = (
     r"need to|should|thinking (?:about|of)|hope to|hoping to|can't|cannot|couldn't|never|"
     r"didn't|did not|haven't|have not|won't)\s+(?:quit(?:ting)?|stop(?:ping)?|give up|giving up)\b"
 )
+# "I quit my job", "stopped drinking": quitting something else is no smoking answer.
+NOT_SMOKING_OBJECT = (
+    r"(?!\s+(?:my|his|her|our|their|work\w*|job|drink\w*|alcohol|booze|eating|coffee|sugar|"
+    r"the (?!cig|smok|habit|tobacco|pipe)))"
+)
 FORMER = (
-    r"\b(?:quit|quitted|stopped|gave up|given up|used to|use to|former|formerly|ex smoker|"
+    r"\b(?:(?:quit|quitted|stopped|gave up|given up)" + NOT_SMOKING_OBJECT + r"|used to|use to|"
+    r"former|formerly|ex smoker|"
     r"gave (?:it|them|those|cigarettes|smoking) up|kicked the habit|was a smoker|"
-    r"in the past|not since|haven't smoked (?:since|in))\b|\bsmoked\b[^,.;]*\buntil\b"
+    r"in the past|not since|haven't smoked (?:since|in)|(?:don't|do not|no longer) smoke "
+    r"(?:anymore|any more))\b|\bsmoked\b[^,.;]*\buntil\b|"
+    # "I haven't had one since 1988", "I smoked in the army"
+    r"\bhaven't (?:had|touched|smoked)\b[^,.;]*\b(?:since|in)\b|"
+    r"\bsmoked\b[^,.;]*\b(?:in the (?:army|navy|service|military|war)|in (?:college|school)|"
+    r"as a (?:kid|teen\w*|young\w*)|in my (?:youth|decades)|years ago|back then|during)\b"
 )
 CURRENT = (
     r"\b(?:i smoke|i'm smoking|i am smoking|still smoke|currently|current|"
@@ -1143,16 +1591,46 @@ NEVER_WORDS = {
     "tobacco",
     "them",
     "it",
+    "nope",
+    "nah",
     "oh",
     "well",
 }
+
+
+# "I quit when my daughter was born": someone else only dates the person's own habit.
+_IN_CLAUSE = r"(?:(?!\b(?:but|and|though|although|except)\b)[^,;.!?])"
+LIFE_EVENT = (
+    rf"\b(when|after|before|since|until|till)\b{_IN_CLAUSE}*?\b(?:my|our)\s+(?:\w+\s+)?"
+    rf"{PEOPLE}\b{_IN_CLAUSE}*"
+)
+
+
+QUIT_INTENT = (
+    r"\b(?:trying to|try to|want to|wanting to|wanna|going to|gonna|plan(?:ning)? to|need to|"
+    r"thinking (?:about|of)|hope to|hoping to)\s+(?:quit(?:ting)?|stop(?:ping)?|give up)\b"
+    r"(?!\s+(?:drinking|alcohol|booze|eating|sugar))"
+)
+# Cigars and pipes are smoking too: "never smoked cigarettes, only cigars".
+CIGARS_NOW = (
+    r"\b(?:only|now|just|still)\b[^,.;]*\b(?:cigars?|cigarillos?|pipes?)\b|"
+    r"\b(?:cigars?|cigarillos?|pipes?)\b(?:[^,.;]*|,\s*)\b(?:only|now|yes|still)\b"
+)
+RESUMED = (
+    r"\b(?:started|starting|smoking|smoke) (?:up )?again\b|\bback (?:to|on) (?:smoking|cigarettes|"
+    r"the cigarettes)\b|\brelapsed\b|\bpicked (?:it|them) back up\b"
+)
 
 
 def _smoking(text: str) -> str | None:
     phrase = _plain(text)
     if phrase in SEX_PREFER_NOT or phrase == "unknown":
         return "unknown"
+    # "trying to quit", "I want to quit": still smoking.
+    attempt = re.search(QUIT_INTENT, text)
     text = re.sub(QUIT_ATTEMPT, " ", text)
+    text = re.sub(LIFE_EVENT, r"\1 then ", text)
+    text = re.sub(r"\bnot (?:once|even once|1 time|a single time)\b", "never", text)
     # Vaping and cannabis are not tobacco smoking; those answers get a follow-up.
     not_tobacco = (
         r"\bvap\w*|\be ?cig\w*|\bjuul\b|\bmarijuana\b|\bweed\b|\bpot\b|\bcannabis\b|\bjoints?\b"
@@ -1165,12 +1643,22 @@ def _smoking(text: str) -> str | None:
         return None
     # "I used to smoke a pack a day": habits told inside a quitting clause are the past.
     present = _blank(own, [(a, b) for a, b, _ in _clauses(own) if re.search(FORMER, own[a:b])])
+    # "I smoked a pack a day" may be long past; "I've smoked" is still going.
+    past = re.search(r"(?<!'ve )(?<!have )(?<!has )\bsmoked\b", present)
     current = (
         re.search(CURRENT, present)
-        or re.search(SMOKING_RATE, present)
+        or (re.search(SMOKING_RATE, present) and not past)
         or re.search(OCCASIONAL, present)
     )
+    current = current or attempt
+    if re.search(CIGARS_NOW, own):
+        return "current"
     never = [clause for clause in clauses if re.search(r"\bnever\b", clause)]
+    # "I used to smoke but started again": the last change counts.
+    resumed = [m.start() for m in re.finditer(RESUMED, own)]
+    if resumed and not never:
+        stopped = [m.start() for m in re.finditer(FORMER, own)]
+        return "current" if max(resumed) > max(stopped, default=-1) else None
     if re.search(FORMER, own):
         return None if current or never else "former"
     if never:
@@ -1187,7 +1675,7 @@ DIABETES_UNCLEAR = (
     r"\bpre ?diabet\w*|\bborderline\b|\bgestational\b|\bpregnan\w*|\bat risk\b|\brisk of\b|"
     r"\bfamily history\b|\bruns in\b|\bremission\b|\breversed\b|\bcured\b|\bwent away\b|"
     r"\bused to\b|(?<!'ve )(?<!have )\bhad (?:it|diabetes)\b|\bwas diabetic\b|\bno longer\b|"
-    r"\banymore\b|"
+    r"\banymore\b|\bruled (?:it |that )?out\b|\binsipidus\b|\bpcos\b|\bpolycystic\b|"
     r"\btest(?:ing|ed)? (?:me|for)\b|\bwaiting\b|\bresults?\b|\binsulin resist\w*|"
     r"\bhigh (?:blood )?sugar\b|\bsugar(?:'s| is) (?:a little |a bit |slightly )?high\b"
 )
@@ -1240,17 +1728,31 @@ def is_skip(text: str, field: ProfileField) -> bool:
     phrase = _plain(text)
     if field == "smoking_status" and (phrase == "unknown" or phrase in SEX_PREFER_NOT):
         return False
-    if field == "sex" and phrase in SEX_PREFER_NOT:
-        return False
+    if field == "sex" and (phrase in SEX_PREFER_NOT or PREFER_NOT.search(phrase)):
+        return True  # there is no "prefer not to say" answer; it is a skip
     if field in BP_FIELDS and phrase in BP_NO:
         return True
     return phrase in SKIP_WORDS
 
 
+MEASURE_UNIT = r"(?:year old|year|ft|inch|cm|m|kg|lb|stone|hour|minute|drinks?)"
+# "I'm 71, not 72", "not 72, 71": the number after "not" is the one being replaced.
+# ("5 10 no 6 foot" names the new value instead; two values are asked about.)
+CORRECTED = (
+    rf"(?:,\s*)?\bnot\s+{NUM}(?:\s?{MEASURE_UNIT})?(?:\s{NUM}(?:\s?{MEASURE_UNIT})?)?"
+    r"(?=\s*(?:$|[,;.!]|but\b))"
+)
+
+
+def _drop_correction(text: str) -> str:
+    dropped = re.sub(CORRECTED, " ", text)
+    return dropped if re.search(r"\d", dropped) else text
+
+
 def parse_value(field: ProfileField, text: str, *, today: date | None = None) -> dict:
     """Accept explicit, current, single answers; do not guess units or diagnoses."""
     today = today or date.today()
-    canonical = _canonical(text)
+    canonical = _drop_correction(_canonical(text))
     if field in BP_FIELDS:
         return _blood_pressure(field, canonical)
     if field == "sex":
@@ -1271,7 +1773,9 @@ def parse_value(field: ProfileField, text: str, *, today: date | None = None) ->
     if not _clean_measurement(field, canonical, spans):
         return {}
     result: float | int = values[0]
-    if field in {"age", "exercise_minutes_weekly"}:
+    if field == "exercise_minutes_weekly":
+        result = int(round(result))  # "25 minutes every 3 days": an estimate, read back
+    elif field == "age":
         if abs(result - round(result)) > 1e-6:
             return {}
         result = int(round(result))
@@ -1280,15 +1784,48 @@ def parse_value(field: ProfileField, text: str, *, today: date | None = None) ->
     return _validated({field: result})
 
 
-def clarify(text: str, field: ProfileField) -> str | None:
-    """Field-specific follow-up for an answer that is close but not safe to read."""
+def _feet(inches: int) -> str:
+    feet, rest = divmod(inches, 12)
+    return f"{feet} feet" + (f" {rest} inch{'' if rest == 1 else 'es'}" if rest else "")
+
+
+def clarify(text: str, field: ProfileField, *, today: date | None = None) -> str | None:
+    """Field-specific follow-up for an answer that is close but not safe to read.
+
+    An answer with exactly two readings gets a question that names both.
+    """
+    if LONG_NUMBER.search(normalize_text(text)):
+        return None
     canonical = _canonical(text)
     if _doubtful(canonical) or OTHER_PERSON.search(canonical):
         return None
+    if field == "alcohol_drinks_weekly" and re.search(NON_ALCOHOL, canonical):
+        return (
+            "I only count alcoholic drinks, like beer, wine or spirits. "
+            'How many of those do you have in a week? If none, just say "none".'
+        )
+    if field in HABITS and SEASONAL.search(canonical):
+        return "How much is that in a usual week, all year round?"
+    # A past value, goal or advice gets no unit or how-often question.
+    if _spoiled(field, canonical) or NOT_CURRENT.search(canonical):
+        return None
+    if field == "sex" and OTHER_SEX.search(canonical):
+        return (
+            "For the forecast I can only use female or male at birth. "
+            'Which fits best? If you\'d rather not say, just say "skip".'
+        )
+    if field == "age":
+        readings = _age_readings(canonical, today or date.today()) or []
+        if len(readings) == 1 and len(readings[0][0]) == 2:
+            ages, span, lead = readings[0]
+            low, high = sorted(ages)
+            if not re.search(r"\d", _blank(canonical, [span])) and _validated({"age": low}):
+                return f"{lead} means you're {low} or {high}. Which one?"
     numbers = re.findall(rf"(?<![\d.]){NUM}(?!\d)", canonical)
     bare = None
     if len(numbers) == 1 and re.search(
-        rf"(?<![\d.]){NUM}(?!\d)(?!\s?(?:ft|inch|cm|m|kg|lb|stone|hour|minute|year|over|/|drinks?)\b)",
+        rf"(?<![\d.]){NUM}(?!\d)"
+        r"(?!\s?(?:ft|inch|cm|m|kg|lb|stone|hour|minute|year|over|/|drinks?|times?|x|days?)\b)",
         canonical,
     ):
         bare = numbers[0]
@@ -1296,6 +1833,12 @@ def clarify(text: str, field: ProfileField) -> str | None:
         return (
             f"Is that {bare} pounds or {bare} kilograms? Please say the number "
             f'with the unit, like "{bare} pounds".'
+        )
+    if field == "height_cm" and bare and re.fullmatch(r"4[89]|[56]\d", bare):
+        # "62": 6 feet 2 inches, or 62 inches.
+        return (
+            f"Do you mean {_feet(int(bare[0]) * 12 + int(bare[1]))}, or {bare} inches "
+            f"({_feet(int(bare))})?"
         )
     if field == "height_cm" and bare:
         return (
@@ -1323,8 +1866,16 @@ def clarify(text: str, field: ProfileField) -> str | None:
             )
     if (
         field == "alcohol_drinks_weekly"
-        and not numbers
-        and re.search(rf"\b(?:a|an)\s+{SIZE}{DRINK}", canonical)
+        and len(numbers) == 1
+        and re.search(r"\bweekends?\b", canonical)
+    ):
+        n = float(numbers[0])
+        return (
+            f"Is that {n:g} drinks over the whole weekend, or {n:g} on each day ({2 * n:g} in all)?"
+        )
+    if field == "alcohol_drinks_weekly" and (
+        (not numbers and re.search(rf"\b(?:a|an)\s+{SIZE}{DRINK}", canonical))
+        or re.fullmatch(rf"(?:\D*\s)?a \d+(?:\.\d+)? {DRINK}\D*", canonical)  # "a bottle of wine"
     ):
         return (
             "How many days a week do you have that? You can say, for example, "
@@ -1351,37 +1902,151 @@ def _validated(values: dict) -> dict:
         return {}
 
 
+LABELED = r"\s*([a-z_ ]+?)\s*[:=]\s*(.+)\s*"
+CORRECTION_CUE = r"\b(?:actually|i meant|sorry)\b|\bnot\s+\d"
+SELF_AGE = r"\b(?:i'm|i am)\s+\d{2,3}(?![\d.])(?!\s?(?:ft|inch|cm|m|kg|lb|stone|hour|minute)\b)"
+SEX_CUE = r"\b(?:female|male|woman|man)\b"
+# Beside another answer, "man" is often an exclamation ("7 hours, oh man").
+SEX_CUE_OTHER = r"\b(?:female|male)\b|\b(?:i'm|i am) an? (?:wo)?man\b|^an? (?:wo)?man$"
+# "74 male", "female 68": a sex word and a bare number are two answers.
+SEX_AND_NUMBER = (
+    r"\b(\d{2,3}) (?=(?:female|male|woman|man)\b)|\b(female|male|woman|man) (?=\d{2,3}\b)"
+)
+
+
+def _part_fields(part: str, asked: ProfileField, several: bool) -> set[str]:
+    """The fields one part of a reply names, by topic words, else by units."""
+    text = _canonical(part)
+    named = {topic for topic, cue in TOPICS.items() if re.search(cue, text)}
+    named |= {"sex"} if re.search(SEX_CUE if asked == "sex" else SEX_CUE_OTHER, text) else set()
+    if not named:
+        # "for ten years" is how long, never an age.
+        named = {t for t, cue in TOPIC_UNITS.items() if t != "age" and re.search(cue, text)}
+    # "I'm 70" is an age beside another answer, as a correction ("actually I'm 71,
+    # not 72"), or where the question has no number for an answer ("female and 68").
+    bare_age = (
+        re.fullmatch(r"(?:i'm |i am )?\d{2,3}(?: year(?: old)?)?", text) and asked in CATEGORICAL
+    )
+    if not named and asked != "age" and (bare_age or re.search(SELF_AGE, text)):
+        if bare_age or several or re.search(CORRECTION_CUE, text) or asked in CATEGORICAL:
+            return {"age"}
+    # A number for a question nobody asked needs its unit: "class of 1998" is no exercise.
+    named = {
+        topic
+        for topic in named
+        if topic in CATEGORICAL | {_topic(asked), "alcohol_drinks_weekly"}
+        or re.search(TOPIC_UNITS[topic], text)
+    }
+    bp = asked if asked in BP_FIELDS else "systolic_bp"
+    return {bp if topic == "blood_pressure" else topic for topic in named}
+
+
+# No answer has seven digits in a row; refusing them early keeps huge inputs cheap.
+LONG_NUMBER = re.compile(r"\d{7,}")
+# Sentence ends, but not the dot of "5 ft. 7 in."
+SENTENCE_END = (
+    r"(?<!\bft)(?<!\bin)(?<!\blb)(?<!\blbs)(?<!\bst)(?<!\bdr)(?<!\bmr)(?<!\bmrs)[.!?]+(?=\s|$)"
+)
+
+
+def _others(text: str) -> bool:
+    # "quit when my daughter was born": someone else only dates the person's own answer.
+    plain = re.sub(LIFE_EVENT, r"\1 then ", _canonical(text))
+    return bool(OTHER_PERSON.search(plain) or NAME_SUBJECT.search(text))
+
+
+def _mine(text: str) -> bool:
+    """Whether the words say "I" or "my" outside any mention of someone else
+    (a hedge such as "I mean" or "I think" does not count)."""
+    own = OTHER_PERSON.sub(" ", _canonical(text))
+    own = _unhedged(re.sub(r"\bi mean\b|\bnot (?:me|mine|my\w*)\b", " ", own))
+    return bool(FIRST_PERSON.search(own))
+
+
+def corrects(text: str, field: ProfileField) -> bool:
+    """An explicit correction that names the field: "actually I'm 71, not 72"."""
+    canonical = _canonical(normalize_text(text))
+    if not re.search(CORRECTION_CUE, canonical):
+        return False
+    if field == "age" and re.search(SELF_AGE, canonical):
+        return True
+    cues = [TOPICS.get(_topic(field), NOTHING), TOPIC_UNITS.get(_topic(field), NOTHING)]
+    if field == "sex":
+        cues.append(r"\b(?:female|male)\b")
+    return any(re.search(cue, canonical) for cue in cues)
+
+
+# Two numbers joined as alternatives or a range: the value is their middle.
+RANGE = re.compile(
+    r"\b(?:about|around|roughly|approximately|approx|give or take|or so)\b|"
+    r"\bbetween\b|(?<![:\d])\d+(?:\.\d+)?(?: [a-z]+){0,2} (?:or|to|-) (?:an? |\d)|\ban? \w+ or \d"
+)
+
+
+def approximate(text: str) -> bool:
+    return bool(RANGE.search(_canonical(normalize_text(text))))
+
+
 def parse_reply(text: str, field: ProfileField, *, today: date | None = None) -> dict:
-    """Handle a short answer or several explicitly labeled clauses."""
+    """Handle a short answer, or clauses that each say what they answer.
+
+    A clause names another field by its topic or unit ("I weigh 160 pounds" to
+    the age question); clauses only about someone else are left out.
+    """
     text = normalize_text(text)
+    if LONG_NUMBER.search(text):
+        return {}
+    # "I'm 70. My wife, 72": sentences about someone else are left out, and what is
+    # left must be said about oneself ("No. My mother, yes." answers nothing).
+    sentences = [part for part in re.split(SENTENCE_END, text) if part.strip()]
+    if any(_others(part) for part in sentences):
+        mine = (
+            [part for part in sentences if not _others(part)] if len(sentences) > 1 else sentences
+        )
+        # "no, but my husband does": a no set against someone else is the person's own.
+        contrast = re.match(r"\W*(?:no|nope|never|not me)\b[^.]*\bbut\b", _canonical(text))
+        if not mine or not (_mine(" ".join(mine)) or (len(sentences) == 1 and contrast)):
+            return {}
+        text = ". ".join(part.strip() for part in mine)
     # One measurement may contain commas or "and" ("5 feet, 10 inches").
     whole = parse_value(field, text, today=today)
-    if whole:
-        return whole
-    parts = re.split(r"[;,]|\s+and\s+", text, flags=re.I)
+    split = re.sub(SEX_AND_NUMBER, lambda m: (m.group(1) or m.group(2)) + ", ", text, flags=re.I)
+    parts = [part for part in re.split(r"[;,]|\s+and\s+", split, flags=re.I) if part.strip()]
+    labeled = any(re.fullmatch(LABELED, part, re.I) for part in parts)
+    own = [part for part in parts if not _others(part)]
+    dropped = bool(own) and len(own) < len(parts) and not labeled
+    parts = own if dropped else parts
+    several = len(parts) > 1
     values: dict = {}
     for part in parts:
-        if not part.strip():
-            continue
-        label = re.fullmatch(r"\s*([a-z_ ]+?)\s*[:=]\s*(.+)\s*", part, re.I)
+        label = re.fullmatch(LABELED, part, re.I)
         if label:
             target = LABELS.get(label.group(1).lower())
             if target is None:
                 return {}
-            parsed = parse_value(target, label.group(2), today=today)
-        elif len(parts) == 1:
-            parsed = parse_value(field, part, today=today)
+            part = label.group(2)
         else:
+            named = _part_fields(part, field, several)
+            if not several and not dropped and (not named or field in named):
+                return whole
             # Unlabeled leftovers may contradict a labeled measurement. Never
-            # discard "80 kg" from "weight: 70 kg and 80 kg", for example.
-            return {}
+            # discard "80" from "weight: 70 kg and 80", for example.
+            target = (
+                field
+                if field in named or (not named and not labeled)
+                else next(iter(named))
+                if len(named) == 1
+                else None
+            )
+        parsed = parse_value(target, part, today=today) if target else {}
         if not parsed:
-            return {}
-        # Contradictory repeated values require clarification of the whole turn.
+            return whole
+        # Contradictory repeated values require clarification of the whole turn,
+        # unless the reply read as one answer ("30 minutes 4 days and an hour on Saturday").
         if any(key in values and values[key] != val for key, val in parsed.items()):
-            return {}
+            return whole
         values.update(parsed)
-    return values
+    return values if whole.items() <= values.items() else {}
 
 
 RAW_BREAK = re.compile(
@@ -1405,6 +2070,21 @@ def _raw_clause(text: str, start: int, end: int) -> tuple[int, int]:
     return lo, hi
 
 
+def _raw_spans(text: str) -> list[tuple[int, int]]:
+    breaks = [0, *(m.end() for m in RAW_BREAK.finditer(text))]
+    ends = [m.start() for m in RAW_BREAK.finditer(text)] + [len(text)]
+    return list(zip(breaks, ends, strict=True))
+
+
+def _categorical_blocked(field: str, text: str) -> bool:
+    """Words anywhere in the reply that make a quoted yes/no or category unsafe."""
+    if field == "diabetes":
+        return bool(re.search(DIABETES_UNCLEAR, text))
+    if field == "sex":
+        return bool(re.search(PARTNER, text) or OTHER_SEX.search(text))
+    return bool(re.search(CIGARS_NOW, text) or re.search(RESUMED, text))
+
+
 def grounded_candidates(
     text: str, extraction: ExtractionResult, asked: ProfileField, *, today: date | None = None
 ) -> dict:
@@ -1420,7 +2100,11 @@ def grounded_candidates(
     become a blood pressure.
     """
     text = normalize_text(text)
-    if _doubtful(_canonical(text)):
+    if (
+        LONG_NUMBER.search(text)
+        or _doubtful(_canonical(text))
+        or NOT_CURRENT.search(_canonical(text))
+    ):
         return {}
     values: dict = {}
     covered: list[tuple[int, int]] = []
@@ -1461,15 +2145,33 @@ def grounded_candidates(
                 TOPICS.get(candidate.field, NOTHING), context
             ):
                 return {}
+            # The quote's whole clause must read the same: "80 come next Friday" is 79.
+            said = parse_value(candidate.field, text[lo:hi], today=today).get(candidate.field)
+            if said is not None and said != quote_values[candidate.field]:
+                return {}
         if any(key in values and values[key] != value for key, value in quote_values.items()):
             return {}
         covered += occurrences
         values.update(quote_values)
+    # The rest of the reply may not make the values someone else's, past, a goal or
+    # advice: "160 pounds. That's what my wife weighs.", "7 hours. Sometimes less."
+    clauses = [text[lo:hi] for lo, hi in _raw_spans(text)]
+    if any(_others(clause) for clause in clauses):
+        if not _mine(" ".join(clause for clause in clauses if not _others(clause))):
+            return {}
+    rest = _canonical(_blank(text, covered))
+    for field, value in values.items():
+        if field in CATEGORICAL:
+            if _categorical_blocked(field, rest):
+                return {}
+            settled = parse_reply(text, field, today=today).get(field)
+            if settled is not None and settled != value:
+                return {}
+        elif _spoiled(field, rest) or VAGUE.search(_unhedged(rest)):
+            return {}
     # Clauses the provider did not quote may not hold a competing answer.
     topics = {_topic(field) for field in values}
-    breaks = [0, *(m.end() for m in RAW_BREAK.finditer(text))]
-    ends = [m.start() for m in RAW_BREAK.finditer(text)] + [len(text)]
-    for lo, hi in zip(breaks, ends, strict=True):
+    for lo, hi in _raw_spans(text):
         if not text[lo:hi].strip() or any(s < hi and lo < e for s, e in covered):
             continue
         clause = _canonical(text[lo:hi])
