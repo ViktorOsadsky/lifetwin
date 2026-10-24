@@ -225,7 +225,7 @@ class CartesiaSpeechInput implements SpeechInput {
   bool _forceNewToken = false;
   void Function(String)? _onCaption;
 
-  String get _caption => [..._finals, if (_partial.isNotEmpty) _partial].join(' ').trim();
+  String get _caption => CartesiaWire.joinTranscript(_finals, _partial);
 
   @override
   Future<void> start(void Function(String text) onCaption) async {
@@ -245,7 +245,7 @@ class CartesiaSpeechInput implements SpeechInput {
       switch (CartesiaWire.parseStt(m)) {
         case SttTranscript(:final text, :final isFinal):
           if (isFinal) {
-            if (text.trim().isNotEmpty) _finals.add(text.trim());
+            if (text.isNotEmpty) _finals.add(text);
             _partial = '';
           } else {
             _partial = text;

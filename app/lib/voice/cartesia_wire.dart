@@ -40,6 +40,11 @@ class CartesiaWire {
   static String ttsCancel(String contextId) => jsonEncode({'context_id': contextId, 'cancel': true});
 
   static const sttFinalize = 'finalize';
+
+  /// Ink sends final pieces as deltas that already carry their own spacing
+  /// (observed live: " I'", "m about", " five", " foot eight, I think."), so they
+  /// are joined exactly as received. Adding or trimming spaces breaks words.
+  static String joinTranscript(List<String> finals, String partial) => (finals.join() + partial).trim();
   static const sttClose = 'close';
 
   static TtsEvent parseTts(String raw, {String? contextId}) {
