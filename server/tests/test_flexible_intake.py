@@ -272,3 +272,25 @@ def test_more_spoken_confirmations_confirm(text):
     pending = reply("height_cm", "5 ft 10 in", service).state
     result = asyncio.run(service.turn(TurnRequest(action="reply", state=pending, text=text)))
     assert result.state.confirmed_profile.height_cm == pytest.approx(177.8)
+
+
+def test_bare_top_number_asks_for_the_whole_reading():
+    """Held-out finding: a bare "120" to the blood-pressure question was taken as the top number."""
+    from fastapi.testclient import TestClient
+
+    from lifetwin.app import create_app
+
+    result = (
+        TestClient(create_app())
+        .post(
+            "/api/onboarding/turn",
+            json={
+                "action": "reply",
+                "state": {"phase": "asking", "current_field": "systolic_bp"},
+                "text": "120",
+            },
+        )
+        .json()
+    )
+    assert result["state"]["pending_profile"]["systolic_bp"] is None
+    assert result["state"]["phase"] == "asking"

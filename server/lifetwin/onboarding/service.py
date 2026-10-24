@@ -352,6 +352,14 @@ class ConversationService:
             state.confirmed_profile.systolic_bp is None
             and state.pending_profile.systolic_bp is None
         )
+        # A bare "120" to the blood-pressure question is half a reading: ask for both.
+        # A stated top number ("the top number is 130") is explicit and still accepted.
+        lone_bottom = lone_bottom or (
+            list(candidates) == ["systolic_bp"]
+            and re.fullmatch(r"\d{2,3}", text.strip(" .!?"))
+            and state.confirmed_profile.diastolic_bp is None
+            and state.pending_profile.diastolic_bp is None
+        )
         if lone_bottom:
             # A bottom number alone can only be checked against a known top number.
             candidates, mode = {}, "guided"
