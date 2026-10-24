@@ -93,6 +93,7 @@ void main() {
     await waitFor(t, find.text('Continue'));
     expect(ctl(t).confirmedProfile.values.whereType<Object>(), isEmpty);
     await tapText(t, 'Continue');
+    await askTheBall(t);
     await waitFor(t, find.textContaining("I can't make a forecast for you yet."));
     expect(find.textContaining('still living'), findsNothing);
   });

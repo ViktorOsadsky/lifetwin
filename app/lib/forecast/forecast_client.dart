@@ -29,6 +29,7 @@ class Forecast {
     this.filledIn = const [],
     this.reason,
     this.limitations = const [],
+    this.curve = const [],
   });
 
   final bool supported;
@@ -44,6 +45,9 @@ class Forecast {
   /// Why there is no forecast, when [supported] is false.
   final String? reason;
   final List<String> limitations;
+
+  /// The model's monthly curve up to [maxHorizonYears], as returned.
+  final List<({double years, double survival})> curve;
 
   /// "about 93": out of 100 people, at the longest supported horizon.
   int outOf100(int years) => (100 * (survival[years] ?? 0)).round();
@@ -74,6 +78,11 @@ class Forecast {
         for (final l in (json['limitations'] as List? ?? const []))
           if (l is String) l,
       ],
+      curve: [
+        for (final p in (json['curve'] as List? ?? const []))
+          if (p is Map && p['years'] is num && p['survival'] is num)
+            (years: (p['years'] as num).toDouble(), survival: (p['survival'] as num).toDouble()),
+      ],
     );
   }
 }
@@ -84,8 +93,11 @@ abstract class ForecastClient {
 }
 
 class ForecastFailure implements Exception {
-  const ForecastFailure(this.message, {this.plain});
+  const ForecastFailure(this.message, {this.plain, this.modelMissing = false});
   final String message;
+
+  /// The server has no model installed yet (HTTP 501): "still learning".
+  final bool modelMissing;
 
   /// A message from the server that is safe and useful to show.
   final String? plain;
@@ -116,7 +128,11 @@ class HttpForecastClient implements ForecastClient {
           )
           .timeout(const Duration(seconds: 20));
       if (r.statusCode == 501) {
-        throw const ForecastFailure('model not installed', plain: 'The forecast is not set up on this server yet.');
+        throw const ForecastFailure(
+          'model not installed',
+          plain: 'The forecast is not set up on this server yet.',
+          modelMissing: true,
+        );
       }
       if (r.statusCode != 200) throw ForecastFailure('HTTP ${r.statusCode}', plain: _reason(r.bodyBytes));
       return Forecast.parse(jsonDecode(utf8.decode(r.bodyBytes)));

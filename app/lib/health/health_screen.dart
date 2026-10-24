@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../theme/lifetwin_theme.dart';
-import '../widgets/lt_buttons.dart';
-import '../widgets/lt_icons.dart';
-import '../widgets/lt_progress.dart';
-import '../widgets/lt_text_link.dart';
-import '../widgets/pip.dart';
-import '../widgets/scene_paper.dart';
-import '../widgets/speech_bubble.dart';
+import '../ui/theme.dart';
+import '../ui/twin_appearance.dart';
+import '../ui/widgets/widgets.dart';
+import '../widgets/whole_word_text.dart';
 
 import 'health_reader.dart';
 import 'health_sample.dart';
@@ -30,13 +26,22 @@ class HealthImportResult {
 
 /// One question per screen, large type, two big choices.
 class HealthImportScreen extends StatefulWidget {
-  const HealthImportScreen({super.key, required this.onDone, this.reader, this.now});
+  const HealthImportScreen({
+    super.key,
+    required this.onDone,
+    this.reader,
+    this.now,
+    this.appearance = const TwinAppearance(),
+  });
 
   final void Function(HealthImportResult result) onDone;
 
   /// Defaults to the real Apple Health reader; tests pass a fake.
   final HealthReader? reader;
   final DateTime Function()? now;
+
+  /// Cosmetic look of the twin beside the words.
+  final TwinAppearance appearance;
 
   @override
   State<HealthImportScreen> createState() => _HealthImportScreenState();
@@ -117,24 +122,21 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: LtColors.paper,
-      body: SafeArea(
+    return ModeScaffold(
+      mode: LtMode.onboarding,
+      child: _Twin(
+        appearance: widget.appearance,
         child: switch (_step) {
           _Step.intro => _Page(
-            title: "Use your iPhone's Health app?",
+            title: 'Use Apple Health?',
             body:
-                'I can read your height, weight, exercise, sleep and blood pressure from the Health app, '
+                'I can read your height, weight, exercise, sleep and blood pressure from Apple Health, '
                 "so you don't have to type them.\n\n"
                 "I'll check each one with you, and only the ones you say are right are used.",
-            primary: ('Yes, use my Health app', _start),
+            primary: ('Yes, use Apple Health', _start),
             secondary: ("No thanks, I'll answer myself", _skip),
           ),
-          _Step.reading => const _Page(
-            title: 'Reading your Health app…',
-            body: 'This takes a few seconds.',
-            busy: true,
-          ),
+          _Step.reading => const _Page(title: 'Reading Apple Health…', body: 'This takes a few seconds.', busy: true),
           _Step.confirm => _Page(
             title: 'Question ${_index + 1} of ${_candidates.length}',
             step: (_index + 1, _candidates.length),
@@ -146,13 +148,13 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
           _Step.nothingFound => _Page(
             title: "I couldn't find any readings",
             body:
-                "That's okay. Either the Health app has no readings yet, or it isn't sharing them with LifeTwin. "
-                'You can change that later in the Health app. For now, I will ask you instead.',
+                "That's okay. Either Apple Health has no readings yet, or it isn't sharing them with LifeTwin. "
+                'You can change that later in Apple Health. For now, I will ask you instead.',
             primary: ('Continue', _finish),
           ),
           _Step.done => _Page(
             title: 'Thank you',
-            mood: PipMood.pleased,
+            mood: TwinMood.pleased,
             body: _confirmed.isEmpty
                 ? 'I will ask you about each one instead.'
                 : 'You checked ${_confirmed.length} ${_confirmed.length == 1 ? 'reading' : 'readings'}.'
@@ -166,9 +168,21 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
   }
 }
 
+/// Passes the twin's look down to each step.
+class _Twin extends InheritedWidget {
+  const _Twin({required this.appearance, required super.child});
+  final TwinAppearance appearance;
+
+  static TwinAppearance of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_Twin>()?.appearance ?? const TwinAppearance();
+
+  @override
+  bool updateShouldNotify(_Twin old) => old.appearance != appearance;
+}
+
 /// One step of the import, in the conversation's style: a title (or the question
-/// count), Pip's words in a bubble with Pip on the paper below, and the big
-/// buttons pinned at the bottom.
+/// count), the twin's words in a bubble with the twin beside them, and the big
+/// buttons pinned at the bottom on the sheet.
 class _Page extends StatelessWidget {
   const _Page({
     required this.title,
@@ -178,7 +192,7 @@ class _Page extends StatelessWidget {
     this.back,
     this.busy = false,
     this.step,
-    this.mood = PipMood.asking,
+    this.mood = TwinMood.asking,
   });
 
   final String title;
@@ -190,103 +204,93 @@ class _Page extends StatelessWidget {
 
   /// (question, of) when the title is "Question N of M": shown as the progress line.
   final (int, int)? step;
-  final PipMood mood;
+  final TwinMood mood;
 
-  static Widget _pad(Widget child) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: LtSpace.gutter),
-    child: child,
-  );
+  static Widget _pad(Widget child) => Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: child);
 
   @override
   Widget build(BuildContext context) {
     final big = MediaQuery.textScalerOf(context).scale(1) > 1.3;
-    final pip = Pip(mood: mood, height: big ? 70 : 104);
+    final twin = TwinSprite(appearance: _Twin.of(context), pose: mood.pose, height: big ? 80 : 120);
     return LayoutBuilder(
       builder: (context, box) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Words scroll; Pip's scene sits at the bottom, just above the buttons.
+          // The words scroll; the buttons stay in reach.
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, area) => SingleChildScrollView(
-                padding: const EdgeInsets.only(top: LtSpace.xl),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: (area.maxHeight - LtSpace.xl).clamp(0, double.infinity)),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (step case (final n, final of))
-                            _pad(
-                              Semantics(
-                                header: true,
-                                child: LtStepProgress(step: n, total: of, trailing: big ? pip : null),
-                              ),
-                            )
-                          else
-                            _pad(
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Semantics(header: true, child: Text(title, style: LtText.title)),
-                                  ),
-                                  if (big) pip,
-                                ],
-                              ),
-                            ),
-                          const SizedBox(height: LtSpace.xl),
-                          _pad(
-                            SpeechBubble(
-                              tail: big ? BubbleTail.none : BubbleTail.down,
-                              child: Semantics(
-                                liveRegion: true,
-                                container: true,
-                                child: Text(body, style: step == null ? LtText.body : LtText.bubble),
-                              ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 20, bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (step case (final n, final of))
+                    _pad(
+                      Semantics(
+                        header: true,
+                        child: StepProgress(step: n, total: of),
+                      ),
+                    )
+                  else
+                    _pad(Semantics(header: true, child: WholeWordText(title, style: LtText.display(30)))),
+                  const SizedBox(height: 16),
+                  _pad(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        twin,
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Semantics(
+                            liveRegion: true,
+                            container: true,
+                            child: Bubble(
+                              text: body,
+                              tail: BubbleTail.left,
+                              tailAt: 1,
+                              fontSize: step == null ? 20 : 24,
                             ),
                           ),
-                          if (busy) ...[
-                            const SizedBox(height: LtSpace.xl),
-                            const Center(child: CircularProgressIndicator(strokeWidth: 5)),
-                          ],
-                          const SizedBox(height: LtSpace.lg),
-                        ],
-                      ),
-                      if (!big) ScenePaper(height: 132, child: Positioned(left: 62, bottom: 6, child: pip)),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  if (busy) ...[
+                    const SizedBox(height: 24),
+                    const Center(child: CircularProgressIndicator(strokeWidth: 5, color: LtColors.ink)),
+                  ],
+                ],
               ),
             ),
           ),
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: box.maxHeight * 0.6),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(LtSpace.gutter, LtSpace.sm, LtSpace.gutter, LtSpace.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (primary case (final label, final onTap)) LtPrimaryButton(label: label, onPressed: onTap),
-                  if (secondary case (final label, final onTap)) ...[
-                    const SizedBox(height: LtSpace.buttonGap),
-                    LtSecondaryButton(label: label, onPressed: onTap),
-                  ],
-                  if (back != null) ...[
-                    const SizedBox(height: LtSpace.xs),
-                    Center(
-                      child: LtTextLink(
-                        label: 'Go back',
-                        icon: const LtIcon(LtIconKind.back, size: 26, strokeWidth: 2.8),
-                        onPressed: back,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+              child: primary == null && secondary == null && back == null
+                  ? const SizedBox.shrink()
+                  : Sheet(
+                      padding: EdgeInsets.zero,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (primary case (final label, final onTap))
+                              LipButton(label: label, height: 72, onTap: onTap),
+                            if (secondary case (final label, final onTap)) ...[
+                              const SizedBox(height: 12),
+                              LipButton(label: label, kind: LipKind.secondary, height: 72, onTap: onTap),
+                            ],
+                            if (back != null) ...[
+                              const SizedBox(height: 4),
+                              Center(
+                                child: LinkButton(label: 'Go back', icon: Icons.undo_rounded, onTap: back),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
-                  ],
-                ],
-              ),
             ),
           ),
         ],

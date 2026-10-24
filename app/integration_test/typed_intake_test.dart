@@ -20,12 +20,18 @@ Future<void> tapText(WidgetTester t, String label) async {
   final f = find.text(label);
   await waitFor(t, f);
   // These links ignore taps for 0.7 s after a new question, so a double tap can't act twice.
-  if (const {'Skip this question', 'Go back', 'Use my Health app instead'}.contains(label)) {
+  if (const {'Skip this question', 'Go back', 'Use my Apple Health', 'Never mind'}.contains(label)) {
     await Future<void>.delayed(const Duration(milliseconds: 800));
   }
   await t.ensureVisible(f.first);
   await t.pump();
   await t.tap(f.first);
+  // The Room's Talk swooshes the conversation in (720 ms); its buttons move until then.
+  if (const {'Talk', 'Go back to my answers'}.contains(label)) {
+    for (var i = 0; i < 10; i++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
+  }
 }
 
 /// Like [waitFor], but if the server says "too many tries" (60 requests a
@@ -58,7 +64,7 @@ Future<void> say(WidgetTester t, String answer, String expect) async {
 /// Opens the app, chooses typing, and waits for the first question.
 Future<void> startTyped(WidgetTester t, {bool aiHelper = false}) async {
   await t.pumpWidget(const LifeTwinApp());
-  await tapText(t, 'Talk with Pip');
+  await tapText(t, 'Talk');
   await tapText(t, "No, I'll type");
   // The AI question ignores taps for a moment, so a double tap can't answer it.
   await Future<void>.delayed(const Duration(milliseconds: 800));
@@ -176,7 +182,7 @@ void main() {
   testWidgets('a whole typed intake with indirect answers', (t) async {
     final started = DateTime.now();
     await t.pumpWidget(const LifeTwinApp());
-    await tapText(t, 'Talk with Pip');
+    await tapText(t, 'Talk');
     await tapText(t, "No, I'll type");
     await Future<void>.delayed(const Duration(milliseconds: 800));
     await tapText(t, 'Not now');

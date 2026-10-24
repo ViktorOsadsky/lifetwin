@@ -12,7 +12,7 @@ void main() {
 
   testWidgets('server stopped and restarted: plain message, Try again, nothing lost', (t) async {
     await t.pumpWidget(const LifeTwinApp());
-    await tapText(t, 'Talk with Pip');
+    await tapText(t, 'Talk');
     await tapText(t, "No, I'll type");
     await readQuestion(t);
     await tapText(t, 'Not now');

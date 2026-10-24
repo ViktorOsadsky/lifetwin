@@ -3,13 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/main.dart';
+import 'package:lifesim/room/room_screen.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
 import 'package:lifesim/voice/fakes.dart';
 import 'package:lifesim/voice/speech.dart';
-import 'package:lifesim/widgets/lip_button.dart';
-import 'package:lifesim/widgets/lt_buttons.dart';
-import 'package:lifesim/widgets/lt_text_link.dart';
+import 'package:lifesim/ui/widgets/widgets.dart';
 
 class Rig {
   final guide = FakeConversationGuide();
@@ -74,9 +73,9 @@ void main() {
       await t.pumpAndSettle();
       expect(r.guide.calls.single['action'], 'start');
       expect(r.c.aiHelper, isFalse);
-      // The first question's "Use my Health app instead" sits where "Not now" was.
-      if (find.text('Use my Health app instead').hitTestable().evaluate().isNotEmpty) {
-        await t.tapAt(t.getCenter(find.text('Use my Health app instead')));
+      // The first question's Health chip must not catch a second tap meant for "Not now".
+      if (find.text('Use my Apple Health').hitTestable().evaluate().isNotEmpty) {
+        await t.tapAt(t.getCenter(find.text('Use my Apple Health')));
         await t.pumpAndSettle();
         expect(r.health, isFalse, reason: 'a second tap opened the Health import');
       }
@@ -119,7 +118,10 @@ void main() {
       expect(
         t
             .getSize(
-              find.ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is LipButton || w is LtTextLink)),
+              find.ancestor(
+                of: find.text(label),
+                matching: find.byWidgetPredicate((w) => w is LipButton || w is LinkButton),
+              ),
             )
             .height,
         greaterThanOrEqualTo(72),
@@ -135,7 +137,7 @@ void main() {
     expect(find.text('Tap to talk'), findsNothing);
     expect(r.output.spoken, isEmpty);
     await t.pump(const Duration(milliseconds: 700)); // the first question's Health link ignores a second tap at first
-    await t.tap(find.text('Use my Health app instead'));
+    await t.tap(find.text('Use my Apple Health'));
     expect(r.health, true);
     await t.enterText(find.byType(TextField), '70');
     await t.tap(find.text('Send'));
@@ -216,20 +218,20 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('app starts on the Room; Talk with Pip opens the voice screen and Apple Health import', (t) async {
+  testWidgets('app starts on the Room; Talk opens the voice screen and Apple Health import', (t) async {
     final r = Rig();
     await t.pumpWidget(LifeTwinApp(controller: r.c));
-    expect(find.text('Your room'), findsOneWidget);
-    await t.tap(find.text('Talk with Pip'));
+    expect(find.byType(RoomScreen), findsOneWidget);
+    await t.tap(find.text('Talk'));
     await t.pumpAndSettle();
     expect(find.text('Talk with me?'), findsOneWidget);
     await choose(t, "No, I'll type");
     await t.pump(const Duration(milliseconds: 700)); // the first question's Health link ignores a second tap at first
-    await t.ensureVisible(find.text('Use my Health app instead'));
+    await t.ensureVisible(find.text('Use my Apple Health'));
     await t.pumpAndSettle();
-    await t.tap(find.text('Use my Health app instead'));
+    await t.tap(find.text('Use my Apple Health'));
     await t.pumpAndSettle();
-    expect(find.text("Use your iPhone's Health app?"), findsOneWidget);
+    expect(find.text('Use Apple Health?'), findsOneWidget);
   });
 
   testWidgets('AI helper consent explains where answers go; yes turns it on for every turn', (t) async {
@@ -250,7 +252,10 @@ void main() {
       expect(
         t
             .getSize(
-              find.ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is LipButton || w is LtTextLink)),
+              find.ancestor(
+                of: find.text(label),
+                matching: find.byWidgetPredicate((w) => w is LipButton || w is LinkButton),
+              ),
             )
             .height,
         greaterThanOrEqualTo(72),
@@ -261,8 +266,8 @@ void main() {
     await t.pumpAndSettle();
     expect(r.c.aiHelper, isTrue);
     expect(r.guide.calls.single['aiHelper'], isTrue);
-    // The switch lives in Settings, not on the question screen.
-    expect(find.textContaining('AI helper'), findsNothing);
+    // The chip says so on the question screen, and Settings agrees.
+    expect(find.text('AI helper: On'), findsOneWidget);
     await t.ensureVisible(find.text('Settings'));
     await t.tap(find.text('Settings'));
     await t.pumpAndSettle();
@@ -358,7 +363,9 @@ void main() {
     final talk = find.text('Talk instead');
     await t.ensureVisible(talk);
     expect(
-      t.getSize(find.ancestor(of: talk, matching: find.byWidgetPredicate((w) => w is LipButton || w is LtTextLink))).height,
+      t
+          .getSize(find.ancestor(of: talk, matching: find.byWidgetPredicate((w) => w is LipButton || w is LinkButton)))
+          .height,
       greaterThanOrEqualTo(56),
     );
     await t.tap(talk);
@@ -422,7 +429,9 @@ void main() {
     final hide = find.text('Hide keyboard');
     expect(hide, findsOneWidget);
     expect(
-      t.getSize(find.ancestor(of: hide, matching: find.byWidgetPredicate((w) => w is LipButton || w is LtTextLink))).height,
+      t
+          .getSize(find.ancestor(of: hide, matching: find.byWidgetPredicate((w) => w is LipButton || w is LinkButton)))
+          .height,
       greaterThanOrEqualTo(72),
     );
     await t.ensureVisible(hide);
@@ -435,7 +444,7 @@ void main() {
     );
     // Tapping empty space also unfocuses.
     await t.showKeyboard(find.byType(TextField));
-    await t.tapAt(const Offset(195, 300));
+    await t.tapAt(const Offset(40, 150)); // the window, beside the twin
     await t.pump();
     expect(FocusManager.instance.primaryFocus?.context?.widget is EditableText, isFalse);
     // The keyboard's own send key still sends.
@@ -499,19 +508,19 @@ void main() {
       testWidgets('${e.key}: each button sends its words, then the read-back appears', (t) async {
         for (final (label, say) in e.value) {
           final (guide, c, _) = await open(t, e.key);
-          await t.tap(find.widgetWithText(LtSecondaryButton, label));
+          await t.tap(quickButton(label));
           await t.pumpAndSettle();
           expect(guide.calls.last, {'action': 'reply', 'text': say});
           expect(c.confirming, isTrue);
           expect(find.text('No, change it'), findsOneWidget);
-          expect(find.widgetWithText(LtSecondaryButton, label), findsNothing);
+          expect(quickButton(label), findsNothing);
           await t.pumpWidget(const SizedBox());
         }
       });
 
       testWidgets('${e.key}: buttons are tall and sit two per row at 390 wide', (t) async {
         await open(t, e.key);
-        final rects = [for (final (label, _) in e.value) t.getRect(find.widgetWithText(LtSecondaryButton, label))];
+        final rects = [for (final (label, _) in e.value) t.getRect(quickButton(label))];
         for (final r in rects) {
           expect(r.height, greaterThanOrEqualTo(72));
         }
@@ -523,10 +532,10 @@ void main() {
       testWidgets('${e.key}: no overflow at text scale 2.0, buttons stack', (t) async {
         await open(t, e.key, scale: 2.0);
         for (final (label, _) in e.value) {
-          await t.ensureVisible(find.widgetWithText(LtSecondaryButton, label));
+          await t.ensureVisible(quickButton(label));
         }
-        final first = t.getRect(find.widgetWithText(LtSecondaryButton, e.value[0].$1));
-        final second = t.getRect(find.widgetWithText(LtSecondaryButton, e.value[1].$1));
+        final first = t.getRect(quickButton(e.value[0].$1));
+        final second = t.getRect(quickButton(e.value[1].$1));
         expect(second.top, greaterThan(first.top));
         expect(t.takeException(), isNull);
       });
@@ -578,13 +587,17 @@ void main() {
       guide.hold = Completer<void>();
       await t.tap(find.text('Female'));
       await t.pump();
-      final b = t.widget<LtSecondaryButton>(find.widgetWithText(LtSecondaryButton, 'Male'));
-      expect(b.onPressed, isNull);
+      final b = t.widget<LipButton>(quickButton('Male'));
+      expect(b.onTap, isNull);
       guide.hold!.complete();
       await t.pumpAndSettle();
     });
   });
 }
+
+/// A quick answer: a cream (secondary) button, unlike the read-back's mint Yes.
+Finder quickButton(String label) =>
+    find.byWidgetPredicate((w) => w is LipButton && w.label == label && w.kind == LipKind.secondary);
 
 class FieldGuide implements ConversationGuide {
   FieldGuide(this.field);

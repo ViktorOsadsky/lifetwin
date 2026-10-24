@@ -4,16 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../theme/lifetwin_theme.dart';
-import '../widgets/lip_button.dart';
-import '../widgets/lt_buttons.dart';
-import '../widgets/lt_icons.dart';
-import '../widgets/lt_progress.dart';
-import '../widgets/lt_text_link.dart';
-import '../widgets/pip.dart';
-import '../widgets/scene_paper.dart';
+import '../forecast/profile_labels.dart';
+import '../health/readback.dart' show usesImperial;
+import '../ui/swoosh_route.dart';
+import '../ui/theme.dart';
+import '../ui/twin_appearance.dart';
+import '../ui/twin_assets.dart';
+import '../ui/widgets/widgets.dart';
 import '../voice/speech.dart';
-import '../widgets/speech_bubble.dart';
+import '../widgets/whole_word_text.dart';
 import 'voice_onboarding_controller.dart';
 
 /// Fields whose answer is a number: the keyboard opens on the number pad.
@@ -26,48 +25,22 @@ Future<void> openAppSettings() async {
   } catch (_) {}
 }
 
-/// Text is enlarged enough that the layout changes (Pip moves to the corner,
-/// buttons stack): QuestionLargeText.dc.html.
+/// Text is enlarged enough that the layout changes: the window shrinks, the
+/// bubble moves under it and buttons stack.
 bool largeText(BuildContext context) => MediaQuery.textScalerOf(context).scale(1) > 1.3;
 
-/// The screen's side gutter. Scenes are drawn edge to edge, so padding is per row.
+/// The screen's side gutter.
+const double _gutter = 16;
+
 Widget _pad(Widget child) => Padding(
-  padding: const EdgeInsets.symmetric(horizontal: LtSpace.gutter),
+  padding: const EdgeInsets.symmetric(horizontal: _gutter),
   child: child,
 );
 
-/// Pip standing on the paper strip under a speech bubble (Question.dc.html).
-/// [beside] (Hear it again, Speaking… Stop) sits on the strip to Pip's right.
-class PipScene extends StatelessWidget {
-  const PipScene({super.key, this.mood = PipMood.asking, this.beside});
-  final PipMood mood;
-  final Widget? beside;
-
-  @override
-  Widget build(BuildContext context) {
-    final pip = Positioned(left: 62, bottom: 6, child: Pip(mood: mood, height: 104));
-    if (beside == null) return ScenePaper(height: 132, child: pip);
-    return SizedBox(
-      height: 132,
-      child: Stack(
-        children: [
-          const Positioned.fill(child: ScenePaper(height: 132)),
-          pip,
-          // Low on the strip, clear of the lavender squiggle.
-          Positioned(
-            left: 172,
-            right: 8,
-            bottom: 8,
-            child: Align(alignment: AlignmentDirectional.centerStart, child: beside),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Mascot conversation by voice or typing. One action per screen, large type,
-/// captions always on, nothing disappears by itself.
+/// Mascot conversation by voice or typing (V-2 / V-3). One action per screen,
+/// large type, captions always on, nothing disappears by itself. The twin
+/// stands in the window; its words are in the bubble; the controls sit on
+/// the sheet at the bottom, always in reach.
 class VoiceOnboardingScreen extends StatefulWidget {
   const VoiceOnboardingScreen({
     super.key,
@@ -75,6 +48,7 @@ class VoiceOnboardingScreen extends StatefulWidget {
     required this.onDone,
     this.onUseHealth,
     this.onOpenSettings = openAppSettings,
+    this.appearance = const TwinAppearance(),
   });
 
   final VoiceOnboardingController controller;
@@ -82,11 +56,14 @@ class VoiceOnboardingScreen extends StatefulWidget {
   /// Called with the confirmed profile when the conversation is finished.
   final void Function(Map<String, dynamic> confirmedProfile) onDone;
 
-  /// Opens the Apple Health import. The button is hidden when null.
+  /// Opens the Apple Health import. The chip is hidden when null.
   final VoidCallback? onUseHealth;
 
   /// Opens the phone's Settings app after the microphone was not allowed.
   final Future<void> Function() onOpenSettings;
+
+  /// Cosmetic look of the twin in the window.
+  final TwinAppearance appearance;
 
   @override
   State<VoiceOnboardingScreen> createState() => _VoiceOnboardingScreenState();
@@ -119,18 +96,23 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     c.answerConsent(voice, aiHelper: aiHelper);
   }
 
-  /// The same after each new question for the links that stay in place from one
+  /// The same after each new question for the controls that stay in place from one
   /// question to the next: a double tap on "Skip this question" or "Go back" must not
-  /// also skip (or reopen) the next one unseen, and the first question's "Use my Health
-  /// app instead", which sits where "Not now" was, must not open the Health import.
+  /// also skip (or reopen) the next one unseen, and the first question's Health chip
+  /// must not open the Health import.
   Timer? _turnLock;
   late GuideTurn? _shownTurn = c.turn;
 
   bool get _justChanged => _turnLock?.isActive ?? false;
+  late bool _shownCorrecting = c.correcting;
+
+  void _keepAnswer() {
+    if (!_justChanged) c.keepAnswer();
+  }
 
   final _noticeKey = GlobalKey(debugLabel: 'notice');
   final _quickKey = GlobalKey(debugLabel: 'quick answers');
-  final _lineKey = GlobalKey(debugLabel: "Pip's line");
+  final _lineKey = GlobalKey(debugLabel: "the twin's line");
 
   /// The controls scroll when the text is very large; each new turn starts at the top, so
   /// its first button (Yes, the quick answers) is not left scrolled out of sight.
@@ -152,7 +134,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     Navigator.of(context).maybePop();
   }
 
-  /// However the screen is left (Home, swipe-back), the microphone closes and Pip stops.
+  /// However the screen is left (Home, swipe-back), the microphone closes and speech stops.
   void _left(bool didPop, Object? result) {
     if (!didPop) return;
     c.cancelTalk();
@@ -178,11 +160,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     WidgetsBinding.instance.addObserver(this);
   }
 
-  /// Leaving LifeTwin (home screen, another app, a call) closes the microphone and stops
-  /// Pip: nothing is heard or said while the app is not on screen, and words heard so far
-  /// are dropped, not sent. Coming back shows the same question, ready to answer.
   /// The keyboard going up or down (or a rotation) resizes the story: once it settles,
-  /// the end of Pip's line is brought back into view.
+  /// the end of the twin's line is brought back into view.
   Timer? _resized;
 
   @override
@@ -193,6 +172,9 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     });
   }
 
+  /// Leaving LifeTwin (home screen, another app, a call) closes the microphone and stops
+  /// speech: nothing is heard or said while the app is not on screen, and words heard so
+  /// far are dropped, not sent. Coming back shows the same question, ready to answer.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Every way out passes through hidden (before paused), so this runs once.
@@ -236,10 +218,16 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     final listening = c.phase == VoicePhase.listening;
     if (listening != _wasListening) HapticFeedback.mediumImpact();
     _wasListening = listening;
-    // The controls take the lower part of the screen, so with large text the story above
-    // them is short. A new turn scrolls the end of Pip's line (where the question or "Is
-    // that right?" is) into view; then, when there is room, the quick answers under it. A
-    // new notice scrolls into view with its button.
+    // With large text the story above the controls is short. A new turn scrolls the end
+    // of the twin's line (the question or "Is that right?") into view; then, when there
+    // is room, the quick answers under it. A new notice scrolls into view with its button.
+    // "No, change it" swaps the read-back's buttons for the typing box and "Never mind" in
+    // the same place: a double tap must not undo the change it just made.
+    if (c.correcting != _shownCorrecting) {
+      _shownCorrecting = c.correcting;
+      _turnLock?.cancel();
+      _turnLock = Timer(secondTapGuard, () {});
+    }
     if (!identical(c.turn, _shownTurn)) {
       _shownTurn = c.turn;
       _turnLock?.cancel();
@@ -269,62 +257,228 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     c.submitTyped(t);
   }
 
-  /// Pip listens while the microphone is open, is pleased after an answer was
-  /// taken ("Got it.") or while reading it back, and asks otherwise.
-  PipMood get _mood {
-    if (c.phase == VoicePhase.listening) return PipMood.listening;
+  TwinMood get _mood {
+    if (c.phase == VoicePhase.listening) return TwinMood.listening;
     if (c.phase == VoicePhase.done || (c.confirming && !c.correcting) || c.mascotLine.startsWith('Got it')) {
-      return PipMood.pleased;
+      return TwinMood.pleased;
     }
-    return PipMood.asking;
+    return TwinMood.asking;
   }
+
+  bool get _keyboard => MediaQuery.viewInsetsOf(context).bottom > 0;
 
   @override
   Widget build(BuildContext context) {
-    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
     return PopScope(
       onPopInvokedWithResult: _left,
-      child: Scaffold(
-        backgroundColor: LtColors.paper,
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Always the same place, clearly named; hidden only while the keyboard is up.
-              if (!keyboard)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: LtTextLink(
-                      label: 'Home',
-                      icon: const LtIcon(LtIconKind.home, size: 28, strokeWidth: 2.6),
-                      onPressed: _home,
+      child: SwooshStage(
+        builder: (context, frame) {
+          // During the swoosh the Room shows through until the mint wash is in.
+          final route = ModalRoute.of(context)?.animation;
+          final reduced = MediaQuery.disableAnimationsOf(context);
+          final wash = reduced || route == null ? 1.0 : const Interval(0, 0.3).transform(route.value);
+          final window = reduced || route == null ? 1.0 : const Interval(0.12, 0.4).transform(route.value);
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Stack(
+              children: [
+                Positioned.fill(
+                  child: Opacity(
+                    opacity: wash,
+                    child: DecoratedBox(decoration: BoxDecoration(gradient: LtMode.onboarding.gradient)),
+                  ),
+                ),
+                SafeArea(
+                  // Tapping anywhere that is not a control puts the keyboard away.
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    // Not a control for VoiceOver (it would be an unnamed, screen-sized button);
+                    // "Hide keyboard" does the same for everyone.
+                    excludeFromSemantics: true,
+                    onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                    child: ListenableBuilder(
+                      listenable: c,
+                      builder: (context, _) => c.askingVoice
+                          ? _voiceAgain(frame, window)
+                          : c.phase == VoicePhase.consent && c.turn == null && !c.canRetry
+                          ? _consent(frame, window)
+                          : _talk(frame, window),
                     ),
                   ),
                 ),
-              Expanded(
-                // Tapping anywhere that is not a control puts the keyboard away.
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  // Not a control for VoiceOver (it would be an unnamed, screen-sized button);
-                  // "Hide keyboard" does the same for everyone.
-                  excludeFromSemantics: true,
-                  onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-                  child: ListenableBuilder(
-                    listenable: c,
-                    builder: (context, _) =>
-                        !c.askingVoice && !(c.phase == VoicePhase.consent && c.turn == null && !c.canRetry)
-                        ? _talk(context)
-                        : c.askingVoice
-                        ? _voiceAgain(context)
-                        : _consent(context),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// The painted window: the twin on the room plate, Home in the corner and, when
+  /// [bubble] is set, the twin's words beside it.
+  Widget _window(SwooshFrame frame, double opacity, {required bool compact, Widget? bubble}) {
+    final mood = _mood;
+    return Opacity(
+      opacity: opacity,
+      child: SizedBox(
+        height: compact ? 150 : 250,
+        child: PlateWindow(
+          name: widget.appearance.name,
+          showBanner: !compact,
+          plate: PlateScene(
+            asset: ScenePlate.room.asset,
+            focus: const Offset(0.5, 0.554),
+            focusTarget: Offset(compact ? 0.5 : 0.28, 0.86),
+            zoom: 1.38,
+            twinBuilder: (feet, scale, box) => plantTwin(
+              feet,
+              TwinSprite(
+                appearance: widget.appearance,
+                pose: mood.pose,
+                height: (185 * scale).clamp(60.0, box.height * 0.82 < 60 ? 60.0 : box.height * 0.82),
+                hero: true,
+                isRoom: false,
+              ),
+            ),
+          ),
+          overlay: LayoutBuilder(
+            builder: (context, box) => Stack(
+              children: [
+                if (bubble != null)
+                  Positioned(
+                    top: 26,
+                    right: 8,
+                    width: box.maxWidth * 0.6,
+                    child: Opacity(
+                      opacity: frame.bubbleOpacity.clamp(0.0, 1.0),
+                      child: Transform.scale(
+                        scale: frame.bubbleScale,
+                        alignment: Alignment.centerLeft,
+                        child: Align(alignment: Alignment.topLeft, child: bubble),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The twin's words. Short ones sit in the window beside the twin; long ones, large
+  /// text and a crowded screen put them under the window at full width.
+  Widget _bubble(String line, {required bool inWindow, bool header = false}) {
+    final long = line.length > 80;
+    return Semantics(
+      key: _lineKey,
+      liveRegion: !header,
+      container: true,
+      child: Bubble(
+        text: line,
+        tail: inWindow ? BubbleTail.left : BubbleTail.none,
+        tailAt: 0.3,
+        header: header,
+        fontSize: long ? 20 : (inWindow && line.length > 24 ? 22 : 26),
+      ),
+    );
+  }
+
+  /// The shared page: the story (window, words, notices) scrolls; the sheet with the
+  /// controls stays at the bottom. "Hide keyboard" sits outside the sheet's scroll
+  /// area so it can never be clipped.
+  Widget _page({
+    required SwooshFrame frame,
+    required double windowOpacity,
+    required String line,
+    required List<Widget> story,
+    required List<Widget> controls,
+    List<Widget> top = const [],
+    Widget? trailing,
+    bool header = false,
+    bool crowded = false,
+    bool hideKeyboard = false,
+  }) {
+    final keyboard = _keyboard;
+    final compact = largeText(context) || crowded;
+    final inWindow = line.isNotEmpty && !compact && !keyboard && line.length <= 70;
+    return LayoutBuilder(
+      builder: (context, box) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Home always in the same place, clearly named; hidden only while the keyboard is up.
+          if (!keyboard)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 8, 0),
+              child: Row(
+                children: [
+                  Opacity(
+                    opacity: frame.backOpacity.clamp(0.0, 1.0),
+                    child: Transform.scale(
+                      scale: frame.backScale,
+                      child: RoundBackButton(label: 'Home', icon: Icons.home_rounded, onTap: _home),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Align(alignment: Alignment.centerRight, child: trailing ?? const SizedBox.shrink()),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            // Keyed, like the sheet: the rows around them come and go with the keyboard, and
+            // the typing box inside must keep its state (and focus) when they do.
+            key: const ValueKey('story'),
+            child: _StoryScroll(
+              children: [
+                // With the keyboard up the room goes to the question and the typing box.
+                if (!keyboard)
+                  _pad(
+                    _window(
+                      frame,
+                      windowOpacity,
+                      compact: compact,
+                      bubble: inWindow ? _bubble(line, inWindow: true, header: header) : null,
+                    ),
+                  ),
+                if (!keyboard) const SizedBox(height: 10),
+                ...top,
+                if (line.isNotEmpty && !inWindow) ...[_pad(_bubble(line, inWindow: false, header: header))],
+                ...story,
+              ],
+            ),
+          ),
+          ConstrainedBox(
+            key: const ValueKey('sheet'),
+            constraints: BoxConstraints(maxHeight: box.maxHeight * (hideKeyboard ? 0.5 : 0.6)),
+            child: SwooshSheetTransform(
+              frame: frame,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(10, 0, 10, hideKeyboard ? 6 : 10),
+                child: Sheet(
+                  padding: EdgeInsets.zero,
+                  child: SingleChildScrollView(
+                    controller: _controlsScroll,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: controls),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          if (hideKeyboard)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(_gutter, 0, _gutter, 12),
+              child: LipButton(
+                label: 'Hide keyboard',
+                icon: Icons.keyboard_hide_rounded,
+                kind: LipKind.secondary,
+                height: 72,
+                onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -333,53 +487,44 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       'You can talk to me, or type. While you talk, your voice is sent to Cartesia, '
       'a speech service, to turn it into words.';
 
-  /// A consent question: title, Pip's words in a bubble, Pip on the paper, two big buttons.
-  Widget _question(BuildContext context, {required String title, required String body, required List<Widget> buttons}) {
-    // The words scroll; the two buttons stay at the bottom, always in reach.
-    return LayoutBuilder(
-      builder: (context, box) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: _StoryScroll(
-              top: [
-                _pad(Semantics(header: true, child: Text(title, style: LtText.title))),
-                const SizedBox(height: LtSpace.xl),
-                _pad(SpeechBubble(child: Text(body, style: LtText.body))),
-              ],
-              bottom: const PipScene(),
-            ),
-          ),
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: box.maxHeight * 0.6),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(LtSpace.gutter, LtSpace.sm, LtSpace.gutter, LtSpace.gutter),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: buttons),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  /// A consent question: the question in the bubble, the plain facts under it, two
+  /// big buttons on the sheet.
+  Widget _question(
+    SwooshFrame frame,
+    double windowOpacity, {
+    required String title,
+    required String body,
+    required List<Widget> buttons,
+  }) => _page(
+    frame: frame,
+    windowOpacity: windowOpacity,
+    line: title,
+    header: true,
+    story: [
+      const SizedBox(height: 4),
+      _pad(_Card(child: Text(body, style: LtText.body(size: 19)))),
+      const SizedBox(height: 12),
+    ],
+    controls: buttons,
+  );
 
-  Widget _consent(BuildContext context) {
+  Widget _consent(SwooshFrame frame, double w) {
     final voice = _voiceChoice;
-    if (voice != null) return _aiConsent(context, voice);
+    if (voice != null) return _aiConsent(frame, w, voice);
     return _question(
-      context,
+      frame,
+      w,
       title: 'Talk with me?',
       body: _voiceCopy,
       buttons: [
-        LtPrimaryButton(
-          label: "Yes, I'll talk",
-          icon: const LtIcon(LtIconKind.mic, size: 36),
-          onPressed: () => _chooseVoice(true),
-        ),
-        const SizedBox(height: LtSpace.buttonGap),
-        LtSecondaryButton(
+        LipButton(label: "Yes, I'll talk", icon: Icons.mic_none_rounded, height: 72, onTap: () => _chooseVoice(true)),
+        const SizedBox(height: 14),
+        LipButton(
           label: "No, I'll type",
-          icon: const LtIcon(LtIconKind.keyboard),
-          onPressed: () => _chooseVoice(false),
+          icon: Icons.keyboard_outlined,
+          kind: LipKind.secondary,
+          height: 72,
+          onTap: () => _chooseVoice(false),
         ),
       ],
     );
@@ -387,77 +532,55 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
 
   /// Same question as the first screen, asked when someone who started by
   /// typing wants to talk.
-  Widget _voiceAgain(BuildContext context) => _question(
-    context,
+  Widget _voiceAgain(SwooshFrame frame, double w) => _question(
+    frame,
+    w,
     title: 'Talk with me?',
     body: _voiceCopy,
     buttons: [
-      LtPrimaryButton(
+      LipButton(
         label: "Yes, I'll talk",
-        icon: const LtIcon(LtIconKind.mic, size: 36),
-        onPressed: () => c.answerVoiceAgain(true),
+        icon: Icons.mic_none_rounded,
+        height: 72,
+        onTap: () => c.answerVoiceAgain(true),
       ),
-      const SizedBox(height: LtSpace.buttonGap),
-      LtSecondaryButton(
+      const SizedBox(height: 14),
+      LipButton(
         label: 'Keep typing',
-        icon: const LtIcon(LtIconKind.keyboard),
-        onPressed: () => c.answerVoiceAgain(false),
+        icon: Icons.keyboard_outlined,
+        kind: LipKind.secondary,
+        height: 72,
+        onTap: () => c.answerVoiceAgain(false),
       ),
     ],
   );
 
   /// Second question: may an AI helper read the answers? "Not now" works
-  /// fully, and it can be turned on later in Settings.
-  Widget _aiConsent(BuildContext context, bool voice) => _question(
-    context,
+  /// fully, and it can be turned on later.
+  Widget _aiConsent(SwooshFrame frame, double w, bool voice) => _question(
+    frame,
+    w,
     title: 'Let an AI helper read hard answers?',
     body:
         "If I can't understand an answer, an AI service can read your words. "
         "It's off unless you say yes. You can change this in Settings.",
     buttons: [
-      LtPrimaryButton(
+      LipButton(
         label: 'Yes, turn it on',
-        icon: const LtIcon(LtIconKind.check, size: 38, strokeWidth: 2.8),
-        onPressed: () => _answerAi(voice, aiHelper: true),
+        icon: Icons.check_rounded,
+        height: 72,
+        onTap: () => _answerAi(voice, aiHelper: true),
       ),
-      const SizedBox(height: LtSpace.buttonGap),
-      LtSecondaryButton(label: 'Not now', onPressed: () => _answerAi(voice)),
+      const SizedBox(height: 14),
+      LipButton(label: 'Not now', kind: LipKind.secondary, height: 72, onTap: () => _answerAi(voice)),
     ],
   );
 
-  /// The conversation: everything about the question scrolls; the controls stay
-  /// at the bottom. "Hide keyboard" sits outside the controls' scroll area so
-  /// it can never be clipped.
-  Widget _talk(BuildContext context) {
-    // Read above the Scaffold: inside its body the keyboard inset is already removed.
-    final keyboard = MediaQuery.viewInsetsOf(this.context).bottom > 0;
-    final hideKeyboard = keyboard && _showsTypingBox;
-    return LayoutBuilder(
-      builder: (context, box) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: _story(context, keyboard)),
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: box.maxHeight * (hideKeyboard ? 0.5 : 0.6)),
-            child: SingleChildScrollView(
-              controller: _controlsScroll,
-              padding: EdgeInsets.fromLTRB(LtSpace.gutter, LtSpace.sm, LtSpace.gutter, hideKeyboard ? 8 : 16),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _controls(context, keyboard)),
-            ),
-          ),
-          if (hideKeyboard)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(LtSpace.gutter, 0, LtSpace.gutter, 12),
-              child: LtSecondaryButton(
-                label: 'Hide keyboard',
-                icon: const LtIcon(LtIconKind.keyboard, size: 30),
-                minHeight: LtSize.minButton,
-                onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
-              ),
-            ),
-        ],
-      ),
-    );
+  /// The value being read back, big, so it can be checked by eye (V-3).
+  String get _readBackValue {
+    final pending = Map<String, dynamic>.from((c.state?['pending_profile'] as Map?) ?? const {});
+    final imperial = usesImperial(WidgetsBinding.instance.platformDispatcher.locale.countryCode);
+    return [for (final (_, l) in profileLabels(pending, imperial: imperial)) l].join(' · ');
   }
 
   /// Typing: quick answers stay under the question. By voice they join the controls.
@@ -465,111 +588,61 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
 
   bool get _showsTypingBox => c.typing && c.phase != VoicePhase.done && (!c.confirming || c.correcting);
 
-  /// Progress, Pip and its words, what was heard, and any notice. Scrolls; Pip's
-  /// paper scene sits at the bottom, just above the controls (Question.dc.html).
-  Widget _story(BuildContext context, bool keyboard) {
+  Widget _talk(SwooshFrame frame, double windowOpacity) {
+    final keyboard = _keyboard;
     final busy = c.phase == VoicePhase.interpreting;
     final line = c.mascotLine.isEmpty ? (busy ? 'One moment…' : '') : c.mascotLine;
-    final big = largeText(context);
     final listening = c.phase == VoicePhase.listening;
-    final mood = _mood;
     final n = c.questionNumber;
-    // By voice the quick answers sit with the controls (QuickAnswer.dc.html).
     final quick = _quickInStory;
-    // The read-back has three choices below it, so its "You said:" line needs the room.
+    // The read-back, a notice, the quick answers or the live caption need the room:
+    // the window then shrinks so the words and buttons keep it.
     final readBack = c.confirming && !c.correcting && c.caption.isNotEmpty;
-    final more = readBack || c.notice != null || quick;
-    // While listening Pip sits beside the question (Listening.dc.html). Otherwise it
-    // stands under the bubble (Question.dc.html), unless the text is large or more is
-    // on screen (a read-back with its caption, a notice): then it sits small in the corner
-    // (QuestionLargeText.dc.html) so the words and buttons keep the room. With the
-    // keyboard up the room goes to the question and the typing box.
-    final beside = listening && !big && !keyboard;
-    final corner = !keyboard && (big || (more && !beside));
-    final scene = line.isNotEmpty && !corner && !keyboard && !beside;
+    final crowded = readBack || c.notice != null || quick || (listening && c.caption.isNotEmpty);
     final links = c.phase != VoicePhase.done && !keyboard;
     final voiceLine = c.phase == VoicePhase.speaking
         ? _speaking()
         : c.canHearAgain && !listening
-        ? LtTextLink(label: 'Hear it again', icon: const LtIcon(LtIconKind.speaker, size: 28), onPressed: c.hearAgain)
+        ? LinkButton(label: 'Hear it again', icon: Icons.volume_up_rounded, onTap: c.hearAgain)
         : null;
-    // Settings (and the small Pip) share the "Question N of 11" row.
-    final trailing = corner || links
-        ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (corner) Pip(mood: mood, height: big ? 70 : 48),
-              if (links)
-                Flexible(
-                  child: LtTextLink(label: 'Settings', onPressed: _openSettings),
-                ),
-            ],
-          )
-        : null;
-    return _StoryScroll(
+    final goBack = !keyboard && c.canGoBack;
+    return _page(
+      frame: frame,
+      windowOpacity: windowOpacity,
+      line: line,
+      crowded: crowded,
+      hideKeyboard: keyboard && _showsTypingBox,
+      trailing: links ? LinkButton(label: 'Settings', icon: Icons.settings_outlined, onTap: _openSettings) : null,
       top: [
-        // "Go back" at the top left, where the artboards keep "Back".
-        // Also once done, so an answer can still be changed (or a skipped one added).
-        if (!keyboard && c.canGoBack)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: LtTextLink(
-                label: 'Go back',
-                icon: const LtIcon(LtIconKind.back, size: 26, strokeWidth: 2.8),
-                onPressed: _goBack,
-              ),
+        // "Go back" (also once done, so an answer can still be changed or a skipped one
+        // added), then the progress.
+        if (goBack)
+          _pad(
+            Align(
+              alignment: Alignment.centerLeft,
+              child: LinkButton(label: 'Go back', icon: Icons.undo_rounded, onTap: _goBack),
             ),
           ),
-        // With the keyboard up only the question shows above the typing box.
         if (n != null && !keyboard) ...[
-          _pad(LtStepProgress(step: n, total: VoiceOnboardingController.questionCount, trailing: trailing)),
-          const SizedBox(height: LtSpace.lg),
-        ] else if (trailing != null) ...[
-          _pad(Align(alignment: AlignmentDirectional.centerEnd, child: trailing)),
-          const SizedBox(height: LtSpace.sm),
+          _pad(StepProgress(step: n, total: VoiceOnboardingController.questionCount)),
+          const SizedBox(height: 12),
         ],
-        // Mascot line: always visible as a caption, announced when it changes.
-        _pad(
-          Semantics(
-            key: _lineKey,
-            liveRegion: true,
-            container: true,
-            child: line.isEmpty
-                ? const SizedBox.shrink()
-                : beside
-                ? Row(
-                    children: [
-                      Pip(mood: mood, height: 100),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: SpeechBubble(
-                          tail: BubbleTail.left,
-                          tailOffset: 22,
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                          radius: const BorderRadius.all(Radius.circular(24)),
-                          child: _line(line, short: LtText.bubble),
-                        ),
-                      ),
-                    ],
-                  )
-                : SpeechBubble(
-                    tail: scene ? BubbleTail.down : BubbleTail.none,
-                    child: _line(line, short: keyboard ? LtText.bubble : null),
-                  ),
-          ),
-        ),
-        if (!scene) ...[
-          const SizedBox(height: LtSpace.md),
-          if (voiceLine != null) _pad(Align(alignment: AlignmentDirectional.centerStart, child: voiceLine)),
+      ],
+      story: [
+        if (c.confirming && !c.correcting && _readBackValue.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          _pad(_ValueCard(text: _readBackValue)),
+        ],
+        if (voiceLine != null) ...[
+          const SizedBox(height: 4),
+          _pad(Align(alignment: Alignment.centerLeft, child: voiceLine)),
         ],
         if (c.caption.isNotEmpty && !keyboard) ...[
-          const SizedBox(height: LtSpace.sm),
+          const SizedBox(height: 8),
           _pad(listening ? _hearing() : _youSaid()),
         ],
         if (c.notice != null) ...[
-          const SizedBox(height: LtSpace.lg),
+          const SizedBox(height: 14),
           _pad(
             _NoticeBox(
               key: _noticeKey,
@@ -579,144 +652,135 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
             ),
           ),
         ],
-        if (quick) ...[
-          const SizedBox(height: LtSpace.lg),
-          KeyedSubtree(key: _quickKey, child: _pad(_quickAnswers(busy))),
-        ],
+        if (quick) ...[const SizedBox(height: 14), KeyedSubtree(key: _quickKey, child: _pad(_quickAnswers(busy)))],
+        const SizedBox(height: 8),
       ],
-      bottom: scene ? PipScene(mood: mood, beside: voiceLine) : null,
+      controls: _controls(keyboard),
     );
-  }
-
-  /// The mascot's words. Lines over 80 characters use the smaller body style. A
-  /// read-back ends with "Is that right?" set apart in bold, as on Readback.dc.html.
-  Widget _line(String line, {TextStyle? short}) {
-    const ask = 'Is that right?';
-    if (c.confirming && !c.correcting && line.endsWith(ask) && line.length > ask.length) {
-      return Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(text: line.substring(0, line.length - ask.length).trimRight(), style: LtText.body),
-            const TextSpan(text: '\n'),
-            TextSpan(text: ask, style: short ?? LtText.question),
-          ],
-        ),
-      );
-    }
-    return Text(line, style: line.length > 80 ? LtText.body : (short ?? LtText.question));
   }
 
   Widget _speaking() => Wrap(
     crossAxisAlignment: WrapCrossAlignment.center,
-    spacing: LtSpace.md,
+    spacing: 12,
     children: [
-      Text('Speaking…', style: LtText.label),
-      LtTextLink(label: 'Stop', icon: const LtIcon(LtIconKind.stop, size: 26), onPressed: c.stopSpeaking),
+      WholeWordText('Speaking…', style: LtText.body(size: 18, weight: FontWeight.w700)),
+      LinkButton(label: 'Stop', icon: Icons.stop_circle_outlined, onTap: c.stopSpeaking),
     ],
   );
 
-  /// The live caption, large, in its own card (Listening.dc.html).
+  /// The live caption, large, in its own card.
   Widget _hearing() => Semantics(
     liveRegion: true,
     container: true,
-    child: Container(
-      padding: const EdgeInsets.fromLTRB(22, 16, 22, 18),
-      decoration: const BoxDecoration(
-        color: LtColors.white,
-        borderRadius: LtRadii.card,
-        border: Border.fromBorderSide(LtOutline.side),
-      ),
+    child: _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Flexible(child: Text('Hearing:', style: LtText.label)),
-              const SizedBox(width: LtSpace.md),
+              Flexible(
+                child: WholeWordText('Hearing:', style: LtText.body(size: 18, weight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 12),
               const ExcludeSemantics(child: _SoundBars()),
             ],
           ),
-          const SizedBox(height: LtSpace.sm),
-          Text(c.caption, style: LtText.question.copyWith(fontSize: 32)),
+          const SizedBox(height: 8),
+          Text(c.caption, style: LtText.display(32)),
         ],
       ),
     ),
   );
 
-  Widget _youSaid() => Semantics(liveRegion: true, child: Text('You said: ${c.caption}', style: LtText.body));
+  Widget _youSaid() => Semantics(liveRegion: true, child: Text('You said: ${c.caption}', style: LtText.body(size: 19)));
 
-  List<Widget> _controls(BuildContext context, bool keyboard) {
+  List<Widget> _controls(bool keyboard) {
     final busy = c.phase == VoicePhase.interpreting;
     if (c.phase == VoicePhase.done) {
       return [
-        LtPrimaryButton(label: 'Continue', onPressed: () => widget.onDone(c.confirmedProfile)),
-        if (widget.onUseHealth != null) ...[
-          const SizedBox(height: LtSpace.buttonGap),
-          LtSecondaryButton(label: 'Use my Health app', onPressed: widget.onUseHealth!),
-        ],
+        LipButton(label: 'Continue', height: 72, onTap: () => widget.onDone(c.confirmedProfile)),
+        if (widget.onUseHealth != null) ...[const SizedBox(height: 14), _healthButton()],
       ];
     }
     if (c.confirming && c.correcting) {
       return [
-        Text('Okay. What is the right answer?', style: LtText.bodyStrong),
-        const SizedBox(height: LtSpace.lg),
+        WholeWordText('Okay. What is the right answer?', style: LtText.body(size: 20, weight: FontWeight.w700)),
+        const SizedBox(height: 14),
         ..._answerControls(busy, keyboard),
         if (!busy && !keyboard) ...[
-          const SizedBox(height: LtSpace.buttonGap),
-          LtSecondaryButton(label: 'Never mind', onPressed: c.keepAnswer),
+          const SizedBox(height: 12),
+          LipButton(label: 'Never mind', kind: LipKind.secondary, height: 72, onTap: _keepAnswer),
         ],
-        if (!keyboard) ..._more(),
+        if (!keyboard) _switchMode(),
       ];
     }
     if (c.confirming) {
       return [
-        LtPrimaryButton(
-          label: 'Yes',
-          icon: const LtIcon(LtIconKind.check, size: 38, strokeWidth: 2.8),
-          onPressed: busy ? null : c.confirm,
-        ),
-        const SizedBox(height: LtSpace.buttonGap),
-        LtSecondaryButton(
+        LipButton(label: 'Yes', icon: Icons.check_rounded, height: 72, onTap: busy ? null : c.confirm),
+        const SizedBox(height: 12),
+        LipButton(
           label: 'No, change it',
-          icon: const LtIcon(LtIconKind.pencil, size: 32, strokeWidth: 2.2),
-          onPressed: busy ? null : c.change,
+          icon: Icons.edit_rounded,
+          kind: LipKind.secondary,
+          height: 72,
+          onTap: busy ? null : c.change,
         ),
         // By voice, the person can also just say yes, no, or the right answer.
-        if (!c.typing) ...[const SizedBox(height: LtSpace.sm), TalkButton(controller: c, compact: true)],
-        // Readback.dc.html has only Yes, "No, change it" and Talk; switching is a link here.
-        Center(
-          child: LtTextLink(
-            label: c.typing ? 'Talk instead' : 'Type instead',
-            icon: LtIcon(c.typing ? LtIconKind.mic : LtIconKind.keyboard, size: 28),
-            onPressed: () => c.setTyping(!c.typing),
-          ),
-        ),
+        if (!c.typing) ...[const SizedBox(height: 4), TalkButton(controller: c, compact: true)],
+        _switchMode(),
       ];
     }
     final quick = !c.typing && c.quickAnswers.isNotEmpty;
     return [
       // The offer after an answer the server could not read, first so it is seen.
       if (c.helperWouldHelp && !busy) ...[
-        LtSecondaryButton(label: 'Yes, let the AI helper read it', onPressed: () => c.setAiHelper(true)),
-        const SizedBox(height: LtSpace.buttonGap),
+        LipButton(
+          label: 'Yes, let the AI helper read it',
+          kind: LipKind.secondary,
+          height: 72,
+          onTap: () => c.setAiHelper(true),
+        ),
+        const SizedBox(height: 12),
       ],
-      if (quick) ...[_quickAnswers(busy), const SizedBox(height: LtSpace.sm)],
+      if (quick) ...[_quickAnswers(busy), const SizedBox(height: 8)],
       // With quick answers on screen they are the big choices; Talk is the smaller one.
       if (quick) TalkButton(controller: c, compact: true) else ..._answerControls(busy, keyboard),
-      if (!keyboard) ...[const SizedBox(height: LtSpace.buttonGap), _switchMode()],
-      const SizedBox(height: LtSpace.xs),
-      Center(
-        child: LtTextLink(label: 'Skip this question', onPressed: busy ? null : _skip),
-      ),
-      if (!keyboard) ..._minor(),
+      // On the first question: Apple Health instead of answering, right under Talk (or Send).
+      if (!keyboard && widget.onUseHealth != null && c.questionNumber == 1 && c.phase != VoicePhase.listening) ...[
+        const SizedBox(height: 12),
+        _healthButton(),
+      ],
+      if (!keyboard) _switchMode(),
+      LinkButton(label: 'Skip this question', onTap: busy ? null : _skip),
+      if (!keyboard) ..._chips(),
     ];
   }
+
+  /// V-2's chip: the AI helper switch.
+  List<Widget> _chips() => [
+    const SizedBox(height: 10),
+    LtToggleChip(
+      label: c.aiHelper ? 'AI helper: On' : 'AI helper: Off',
+      semanticLabel: 'AI helper',
+      icon: Icons.auto_awesome_outlined,
+      value: c.aiHelper,
+      onChanged: (on) => c.setAiHelper(on),
+    ),
+  ];
+
+  /// A plain heart, never Apple's Health app icon (HealthKit guidelines).
+  Widget _healthButton() => LipButton(
+    label: 'Use my Apple Health',
+    icon: Icons.favorite_border_rounded,
+    kind: LipKind.secondary,
+    height: 64,
+    onTap: _useHealth,
+  );
 
   /// The typing box and Send, or the Talk button.
   List<Widget> _answerControls(bool busy, bool keyboard) {
     if (!c.typing) return [TalkButton(controller: c)];
     final field = c.state?['current_field'];
-    const border = OutlineInputBorder(borderRadius: LtRadii.tile, borderSide: LtOutline.side);
     return [
       TextField(
         // Keyed and given a lasting focus node: the rest of this column
@@ -728,54 +792,40 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         // Read-only (not disabled) while waiting, so focus is never taken away.
         readOnly: busy,
         keyboardType: numberFields.contains(field) ? const TextInputType.numberWithOptions(decimal: true) : null,
-        style: LtText.bubble,
+        style: LtText.body(size: 22),
         cursorColor: LtColors.ink,
         textInputAction: TextInputAction.send,
         onSubmitted: (_) => _send(),
         minLines: 1,
         maxLines: 3,
+        // With large text a one-line floating label would be cut off; a hint can wrap.
         decoration: InputDecoration(
-          labelText: 'Type your answer',
-          labelStyle: LtText.body.copyWith(color: LtColors.ink),
-          floatingLabelStyle: LtText.label,
-          filled: true,
-          fillColor: LtColors.white,
+          labelText: largeText(context) ? null : 'Type your answer',
+          hintText: largeText(context) ? 'Type your answer' : null,
+          hintMaxLines: 3,
+          labelStyle: LtText.body(size: 18),
           contentPadding: const EdgeInsets.all(18),
-          border: border,
-          enabledBorder: border,
-          focusedBorder: const OutlineInputBorder(
-            borderRadius: LtRadii.tile,
-            borderSide: BorderSide(color: LtColors.ink, width: LtOutline.selected),
-          ),
         ),
       ),
-      const SizedBox(height: LtSpace.buttonGap),
-      LtPrimaryButton(
+      const SizedBox(height: 12),
+      LipButton(
         key: const ValueKey('send'),
         label: busy ? 'One moment…' : 'Send',
-        // Shorter with the keyboard up, so Send stays above it; never under 72 pt.
-        minHeight: keyboard ? LtSize.minButton : null,
-        onPressed: busy ? null : _send,
+        icon: busy ? null : Icons.send_rounded,
+        height: 72,
+        onTap: busy ? null : _send,
       ),
     ];
   }
 
-  Widget _switchMode() => LtSecondaryButton(
-    label: c.typing ? 'Talk instead' : 'Type instead',
-    icon: LtIcon(c.typing ? LtIconKind.mic : LtIconKind.keyboard),
-    onPressed: () => c.setTyping(!c.typing),
+  /// "Type instead" (V-2) or "Talk instead": the same underlined link either way.
+  Widget _switchMode() => Center(
+    child: LinkButton(
+      label: c.typing ? 'Talk instead' : 'Type instead',
+      icon: c.typing ? Icons.mic_none_rounded : Icons.keyboard_outlined,
+      onTap: () => c.setTyping(!c.typing),
+    ),
   );
-
-  /// Talk/Type instead. (Go back and Settings are links at the top.)
-  List<Widget> _more() => [const SizedBox(height: LtSpace.buttonGap), _switchMode()];
-
-  /// On the first question only: the Health app instead of answering.
-  List<Widget> _minor() => [
-    if (widget.onUseHealth != null && c.questionNumber == 1 && !c.confirming && c.phase != VoicePhase.listening)
-      Center(
-        child: LtTextLink(label: 'Use my Health app instead', onPressed: _useHealth),
-      ),
-  ];
 
   void _openSettings() {
     showModalBottomSheet<void>(
@@ -783,33 +833,40 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       showDragHandle: true,
       isScrollControlled: true,
       backgroundColor: LtColors.paper,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(LtRadii.panel))),
       builder: (sheet) => SafeArea(
         child: ListenableBuilder(
           listenable: c,
           builder: (sheet, _) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(LtSpace.gutter, 0, LtSpace.gutter, LtSpace.gutter),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Semantics(header: true, child: Text('Settings', style: LtText.title)),
-                  const SizedBox(height: LtSpace.lg),
+                  Semantics(header: true, child: WholeWordText('Settings', style: LtText.display(30))),
+                  const SizedBox(height: 16),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text('AI helper', style: LtText.bodyStrong),
-                    subtitle: Text('Reads answers I can’t understand', style: LtText.bodySmall),
+                    activeTrackColor: LtColors.mint,
+                    activeThumbColor: LtColors.ink,
+                    title: WholeWordText('AI helper', style: LtText.body(size: 20, weight: FontWeight.w700)),
+                    subtitle: Text('Reads answers I can’t understand', style: LtText.body()),
                     value: c.aiHelper,
                     onChanged: (on) => c.setAiHelper(on),
                   ),
-                  const SizedBox(height: LtSpace.lg),
-                  Text('Answer by', style: LtText.bodyStrong),
+                  const SizedBox(height: 16),
+                  WholeWordText('Answer by', style: LtText.body(size: 20, weight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   SegmentedButton<bool>(
                     showSelectedIcon: false,
                     style: ButtonStyle(
-                      minimumSize: const WidgetStatePropertyAll(Size(0, LtSize.smallTap)),
-                      textStyle: WidgetStatePropertyAll(LtText.label),
-                      side: const WidgetStatePropertyAll(LtOutline.side),
+                      minimumSize: const WidgetStatePropertyAll(Size(0, 56)),
+                      textStyle: WidgetStatePropertyAll(LtText.body(size: 18, weight: FontWeight.w700)),
+                      foregroundColor: const WidgetStatePropertyAll(LtColors.ink),
+                      backgroundColor: WidgetStateProperty.resolveWith(
+                        (s) => s.contains(WidgetState.selected) ? LtColors.mint : LtColors.paper,
+                      ),
+                      side: const WidgetStatePropertyAll(BorderSide(color: LtColors.control, width: LtBorders.control)),
                     ),
                     segments: const [
                       ButtonSegment(value: false, label: Text('Talk'), icon: Icon(Icons.mic)),
@@ -822,8 +879,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
                       c.setTyping(s.first);
                     },
                   ),
-                  const SizedBox(height: LtSpace.xxl),
-                  LtPrimaryButton(label: 'Done', onPressed: () => Navigator.of(sheet).pop()),
+                  const SizedBox(height: 28),
+                  LipButton(label: 'Done', height: 72, onTap: () => Navigator.of(sheet).pop()),
                 ],
               ),
             );
@@ -836,50 +893,96 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   /// Two per row when they fit, one per row when the text is large.
   Widget _quickAnswers(bool busy) {
     final answers = c.quickAnswers;
-    final width = MediaQuery.sizeOf(context).width - 2 * LtSpace.gutter;
-    const gap = LtSpace.md;
-    final perRow = largeText(context) ? 1 : 2;
-    final w = (width - gap * (perRow - 1)) / perRow;
-    return Wrap(
-      spacing: gap,
-      runSpacing: gap,
-      children: [
-        for (final (label, say) in answers)
-          SizedBox(
-            width: w,
-            child: LtSecondaryButton(label: label, onPressed: busy ? null : () => c.submitQuick(say)),
-          ),
-      ],
+    return LayoutBuilder(
+      builder: (context, box) {
+        const gap = 12.0;
+        final perRow = largeText(context) ? 1 : 2;
+        final w = (box.maxWidth - gap * (perRow - 1)) / perRow;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final (label, say) in answers)
+              SizedBox(
+                width: w,
+                child: LipButton(
+                  label: label,
+                  kind: LipKind.secondary,
+                  height: 72,
+                  onTap: busy ? null : () => c.submitQuick(say),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
 
-/// A scrolling column: [top] from the top, [bottom] (Pip's scene) pushed down to
-/// the bottom edge when there is room, and simply after [top] when there is not.
+/// A scrolling column whose content starts at the top.
 class _StoryScroll extends StatelessWidget {
-  const _StoryScroll({required this.top, this.bottom});
-  final List<Widget> top;
-  final Widget? bottom;
-
-  static const _padTop = LtSpace.sm, _padBottom = LtSpace.sm;
+  const _StoryScroll({required this.children});
+  final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, box) => SingleChildScrollView(
-      padding: const EdgeInsets.only(top: _padTop, bottom: _padBottom),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: (box.maxHeight - _padTop - _padBottom).clamp(0, double.infinity)),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget build(BuildContext context) => SingleChildScrollView(
+    padding: const EdgeInsets.only(top: 8, bottom: 8),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+  );
+}
+
+/// A paper card for plain words under the window.
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+    decoration: BoxDecoration(
+      color: LtColors.paper,
+      borderRadius: BorderRadius.circular(LtRadii.tile),
+      border: Border.all(color: LtColors.container, width: LtBorders.container),
+    ),
+    child: child,
+  );
+}
+
+/// The read-back value, big, so people can confirm by eye (V-3).
+class _ValueCard extends StatelessWidget {
+  const _ValueCard({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Your answer: $text',
+      excludeSemantics: true,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 80),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: LtColors.mintWash,
+          borderRadius: BorderRadius.circular(LtRadii.tile),
+          border: Border.all(color: LtColors.controlOnMint, width: LtBorders.control),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: top),
-            ?bottom,
+            const Icon(Icons.check_circle_outline_rounded, size: 32, color: LtColors.ink),
+            const SizedBox(width: 12),
+            Flexible(
+              child: WholeWordText(
+                text,
+                textAlign: TextAlign.center,
+                style: LtText.display(text.length <= 12 ? 36 : 28),
+              ),
+            ),
           ],
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// The five lavender bars beside "Hearing:". Still, so nothing moves with reduced motion.
@@ -902,8 +1005,8 @@ class _SoundBars extends StatelessWidget {
 }
 
 /// Tap to start talking and tap again when done; holding and letting go also works.
-/// [compact] is the read-back's smaller Talk (Readback.dc.html), under Yes and
-/// "No, change it", so Yes stays the one big mint button.
+/// [compact] is the read-back's smaller Talk, under Yes and "No, change it", so Yes
+/// stays the one big mint button.
 class TalkButton extends StatefulWidget {
   const TalkButton({super.key, required this.controller, this.compact = false});
   final VoiceOnboardingController controller;
@@ -946,18 +1049,6 @@ class _TalkButtonState extends State<TalkButton> {
     c.cancelTalk();
   }
 
-  /// Taps are handled by the Listener above; the face only shows the press.
-  static void _noop() {}
-
-  LipStyle _style({required bool listening}) => LipStyle(
-    face: listening ? LtColors.listening : LtColors.mint,
-    lip: listening ? LtColors.listeningLip : LtColors.mintDeep,
-    radius: LtRadii.primary,
-    lipDepth: LtLip.primary,
-    minHeight: widget.compact ? LtSize.minButton : LtSize.primaryButton,
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-  );
-
   @override
   Widget build(BuildContext context) {
     final listening = c.phase == VoicePhase.listening;
@@ -969,15 +1060,14 @@ class _TalkButtonState extends State<TalkButton> {
         ? 'Tap to answer'
         : 'Tap to talk';
     final big = largeText(context);
-    final ink = busy ? LipStyle.disabledOutline : LtColors.ink;
 
-    Widget lay(Widget icon, Widget text, {double gap = 18}) => big
+    Widget lay(Widget icon, Widget text) => big
         ? Column(mainAxisSize: MainAxisSize.min, children: [icon, const SizedBox(height: 6), text])
         : Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               icon,
-              SizedBox(width: gap),
+              const SizedBox(width: 16),
               Flexible(child: text),
             ],
           );
@@ -985,42 +1075,49 @@ class _TalkButtonState extends State<TalkButton> {
     final Widget face;
     if (listening) {
       final dot = MediaQuery.disableAnimationsOf(context) ? const RecordingDot() : const _Pulse(child: RecordingDot());
-      face = LipButton(
-        style: _style(listening: true),
-        onPressed: _noop,
+      face = LipSurface(
+        kind: LipKind.active,
+        minHeight: widget.compact ? 72 : 88,
+        lip: 5,
+        pressed: true,
+        radius: 30,
         child: lay(
           dot,
           Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: big ? CrossAxisAlignment.center : CrossAxisAlignment.start,
             children: [
-              Text('Listening…', style: LtText.primaryButton),
-              Text(
+              WholeWordText('Listening…', style: LtText.display(26)),
+              WholeWordText(
                 'tap when done${left == null ? '' : ' ($left s left)'}',
                 textAlign: big ? TextAlign.center : TextAlign.start,
-                style: LtText.bodyStrong,
+                style: LtText.body(size: 18, weight: FontWeight.w700),
               ),
             ],
           ),
-          gap: 20,
         ),
       );
     } else if (widget.compact) {
-      // Read-back: the underlined "Talk" link of the artboard, at least 56 pt tall.
+      // Read-back and quick answers: an underlined "Tap to talk", at least 56 pt tall.
+      final ink = busy ? LtColors.control : LtColors.ink;
       face = ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: LtSize.smallTap, minWidth: double.infinity),
+        constraints: const BoxConstraints(minHeight: 56, minWidth: double.infinity),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Opacity(opacity: busy ? .5 : 1, child: const LtIcon(LtIconKind.mic, size: 28)),
-              const SizedBox(width: LtSpace.sm),
+              Icon(Icons.mic_none_rounded, size: 26, color: ink),
+              const SizedBox(width: 8),
               Flexible(
-                child: Text(
+                child: WholeWordText(
                   label,
                   textAlign: TextAlign.center,
-                  style: LtText.link.copyWith(color: ink, decorationColor: ink),
+                  style: LtText.body(
+                    size: 18,
+                    weight: FontWeight.w700,
+                    color: ink,
+                  ).copyWith(decoration: TextDecoration.underline, decorationThickness: 2, decorationColor: ink),
                 ),
               ),
             ],
@@ -1028,32 +1125,28 @@ class _TalkButtonState extends State<TalkButton> {
         ),
       );
     } else {
-      // Question.dc.html: mic in a white circle, label beside it (above it with large text).
+      // V-2: the 88 pt mint button, the mic in a paper circle beside the words.
       final mic = Opacity(
         opacity: busy ? .5 : 1,
         child: Container(
-          width: 58,
-          height: 58,
+          width: 54,
+          height: 54,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: LtColors.white,
+            color: LtColors.paper,
             shape: BoxShape.circle,
-            border: Border.all(color: ink, width: LtOutline.width),
+            border: Border.all(color: LtColors.controlOnMint, width: LtBorders.control),
           ),
-          child: const LtIcon(LtIconKind.mic, size: 32),
+          child: const Icon(Icons.mic_none_rounded, size: 32, color: LtColors.ink),
         ),
       );
-      face = LipButton(
-        style: _style(listening: false),
-        onPressed: busy ? null : _noop,
-        child: lay(
-          mic,
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: LtText.primaryButton.copyWith(color: ink),
-          ),
-        ),
+      face = LipSurface(
+        kind: LipKind.primary,
+        minHeight: 88,
+        lip: 5,
+        radius: 30,
+        enabled: !busy,
+        child: lay(mic, WholeWordText(label, textAlign: TextAlign.center, style: LtText.display(26))),
       );
     }
 
@@ -1076,7 +1169,7 @@ class _TalkButtonState extends State<TalkButton> {
   }
 }
 
-/// The red "recording" dot shown while the microphone is open (Listening.dc.html).
+/// The red "recording" dot shown while the microphone is open.
 class RecordingDot extends StatelessWidget {
   const RecordingDot({super.key});
 
@@ -1086,7 +1179,7 @@ class RecordingDot extends StatelessWidget {
     height: 28,
     margin: const EdgeInsets.all(8), // room for the halo
     decoration: const BoxDecoration(
-      color: LtColors.recording,
+      color: Color(0xFFD7402B),
       shape: BoxShape.circle,
       boxShadow: [BoxShadow(color: Color(0x38D7402B), spreadRadius: 8)],
     ),
@@ -1128,23 +1221,29 @@ class _NoticeBox extends StatelessWidget {
       liveRegion: true,
       container: true,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-        decoration: const BoxDecoration(
-          color: LtColors.lavenderWash,
-          borderRadius: LtRadii.card,
-          border: Border.fromBorderSide(LtOutline.side),
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+        decoration: BoxDecoration(
+          color: LtColors.cream,
+          borderRadius: BorderRadius.circular(LtRadii.tile),
+          border: Border.all(color: LtColors.control, width: LtBorders.control),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(message, style: LtText.bodyStrong),
+            Text(message, style: LtText.body(size: 19, weight: FontWeight.w700)),
             if (onRetry != null) ...[
-              const SizedBox(height: LtSpace.lg),
-              LtSecondaryButton(label: 'Try again', onPressed: onRetry),
+              const SizedBox(height: 14),
+              LipButton(
+                label: 'Try again',
+                icon: Icons.refresh_rounded,
+                kind: LipKind.secondary,
+                height: 72,
+                onTap: onRetry,
+              ),
             ],
             if (onOpenSettings != null) ...[
-              const SizedBox(height: LtSpace.lg),
-              LtSecondaryButton(label: 'Open Settings', onPressed: onOpenSettings),
+              const SizedBox(height: 14),
+              LipButton(label: 'Open Settings', kind: LipKind.secondary, height: 72, onTap: onOpenSettings),
             ],
           ],
         ),

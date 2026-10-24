@@ -7,12 +7,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
-import 'package:lifesim/theme/lifetwin_theme.dart';
+import 'package:lifesim/ui/theme.dart';
+import 'package:lifesim/ui/twin_assets.dart';
 import 'package:lifesim/voice/fakes.dart';
 import 'package:lifesim/voice/speech.dart';
-import 'package:lifesim/widgets/lip_button.dart';
-import 'package:lifesim/widgets/lt_text_link.dart';
-import 'package:lifesim/widgets/pip.dart';
+import 'package:lifesim/ui/widgets/widgets.dart';
 
 const fields = [
   'age',
@@ -115,6 +114,7 @@ class Rig {
   final output = FakeSpeechOutput();
   late final c = VoiceOnboardingController(guide: guide, input: input, output: output);
   int settingsOpened = 0;
+  int healthOpened = 0;
 
   FakeSpeechInput get fakeInput => input as FakeSpeechInput;
   List<Map<String, dynamic>> get calls =>
@@ -142,7 +142,7 @@ class Rig {
             child: VoiceOnboardingScreen(
               controller: c,
               onDone: (_) {},
-              onUseHealth: health ? () {} : null,
+              onUseHealth: health ? () => healthOpened++ : null,
               onOpenSettings: () async => settingsOpened++,
             ),
           ),
@@ -170,7 +170,7 @@ class Rig {
 
 /// The tappable control (a lip button or a text link) that shows [label].
 Finder button(String label) => find
-    .ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is LipButton || w is LtTextLink))
+    .ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is LipButton || w is LinkButton))
     .first;
 
 /// The Talk button's words. While listening they are two lines ("Listening…" over
@@ -180,7 +180,11 @@ String talkLabel(WidgetTester t) => t
     .map((w) => w.data)
     .join(' ');
 
-PipMood pipMood(WidgetTester t) => t.widget<Pip>(find.byType(Pip)).mood;
+/// The twin's pose in the window (one sprite on screen).
+TwinPose twinPose(WidgetTester t) => t.widget<TwinSprite>(find.byType(TwinSprite)).pose;
+
+/// The painted window's height: 250 at full size, 150 when it makes room.
+double windowHeight(WidgetTester t) => t.getSize(find.byType(PlateWindow)).height;
 
 Future<void> tapTalk(WidgetTester t) async {
   await t.ensureVisible(find.byType(TalkButton));
@@ -288,7 +292,7 @@ void main() {
       expect(t.takeException(), isNull);
       // Lines over 80 characters use the smaller style.
       final style = t.widget<Text>(find.text(long)).style!;
-      expect(style.fontSize, LtText.body.fontSize);
+      expect(style.fontSize, 20);
     });
 
     testWidgets('a short line keeps the large style', (t) async {
@@ -296,22 +300,23 @@ void main() {
       await r.pump(t);
       await r.start(t, voice: false);
       final line = find.text('Question about age?');
-      expect(t.widget<Text>(line).style!.fontSize, LtText.question.fontSize);
-      // Pip stands under the question at full size.
-      expect(find.byType(Pip), findsOneWidget);
-      expect(t.getSize(find.byType(Pip)).height, 104);
-      expect(t.getRect(find.byType(Pip)).top, greaterThan(t.getRect(line).bottom));
+      expect(t.widget<Text>(line).style!.fontSize, 26);
+      // The question sits in the full-size window, beside the twin.
+      expect(find.byType(TwinSprite), findsOneWidget);
+      expect(windowHeight(t), greaterThanOrEqualTo(200));
+      final window = t.getRect(find.byType(PlateWindow));
+      expect(window.contains(t.getRect(line).center), isTrue);
     });
 
     for (final scale in [1.5, 2.0]) {
-      testWidgets('at text scale $scale Pip moves small into the corner and nothing overflows', (t) async {
+      testWidgets('at text scale $scale the window shrinks, the words go under it and nothing overflows', (t) async {
         final r = Rig(guide: StepGuide(message: long));
         await r.pump(t, scale: scale);
         await r.start(t, voice: false);
-        // With large text Pip takes no room the words need (QuestionLargeText.dc.html).
-        expect(find.byType(Pip), findsOneWidget);
-        expect(t.getSize(find.byType(Pip)).height, 70);
-        expect(t.getRect(find.byType(Pip)).bottom, lessThanOrEqualTo(t.getRect(find.text(long)).top));
+        // With large text the twin takes no room the words need.
+        expect(find.byType(TwinSprite), findsOneWidget);
+        expect(windowHeight(t), lessThanOrEqualTo(150));
+        expect(t.getRect(find.byType(PlateWindow)).bottom, lessThanOrEqualTo(t.getRect(find.text(long)).top));
         expect(t.takeException(), isNull);
         await t.ensureVisible(find.text('Send'));
         expect(t.takeException(), isNull);
@@ -331,6 +336,8 @@ void main() {
       expect(find.text('Hear it again'), findsNothing);
       expect(talkLabel(t), 'Tap to answer');
       expect(t.getSize(button('Stop')).height, greaterThanOrEqualTo(56));
+      await t.ensureVisible(find.text('Stop')); // the Apple Health button leaves the story less room
+      await t.pump();
       await t.tap(find.text('Stop'));
       await t.pumpAndSettle();
       expect(r.output.stops, 1);
@@ -631,37 +638,70 @@ void main() {
     });
   });
 
-  group('8. fewer controls', () {
-    testWidgets('AI helper and Talk/Type live in Settings; Health only on the first question', (t) async {
+  group('8. controls', () {
+    testWidgets('the AI helper chip and Settings switch stay in step; Apple Health only on the first question', (
+      t,
+    ) async {
       final r = Rig(guide: StepGuide());
       await r.pump(t);
       await r.start(t, voice: false);
-      expect(find.textContaining('AI helper'), findsNothing);
-      expect(find.text('Use my Health app instead'), findsOneWidget);
-      expect(find.widgetWithText(LipButton, 'Talk instead'), findsOneWidget);
+      expect(find.text('AI helper: Off'), findsOneWidget);
+      expect(find.text('Use my Apple Health'), findsOneWidget);
+      // A full-width button right under Send, above "Talk instead".
+      final health = t.getRect(button('Use my Apple Health'));
+      expect(health.height, greaterThanOrEqualTo(56));
+      expect(health.top, greaterThanOrEqualTo(t.getRect(button('Send')).bottom));
+      expect(health.bottom, lessThanOrEqualTo(t.getRect(button('Talk instead')).top));
+      expect(find.widgetWithText(LinkButton, 'Talk instead'), findsOneWidget);
 
       await tapText(t, 'Settings');
       await t.tap(find.byType(Switch));
       await t.pumpAndSettle();
       expect(r.c.aiHelper, isTrue);
       await tapText(t, 'Done');
+      expect(find.text('AI helper: On'), findsOneWidget);
+      await tapText(t, 'AI helper: On');
+      expect(r.c.aiHelper, isFalse);
 
       await t.enterText(find.byType(TextField), '70');
       await t.tap(find.text('Send'));
       await t.pumpAndSettle();
       await t.tap(find.text('Yes'));
       await t.pumpAndSettle();
-      expect(find.text('Use my Health app instead'), findsNothing);
+      expect(find.text('Use my Apple Health'), findsNothing);
     });
+
+    for (final scale in [1.0, 3.1]) {
+      testWidgets('scale $scale: "Use my Apple Health" sits under Tap to talk, above Type instead, and opens', (
+        t,
+      ) async {
+        final r = Rig();
+        await r.pump(t, scale: scale);
+        await r.start(t, voice: true);
+        expect(t.takeException(), isNull);
+        final health = button('Use my Apple Health');
+        await t.ensureVisible(health);
+        await t.pumpAndSettle();
+        expect(t.getSize(health).height, greaterThanOrEqualTo(56));
+        expect(t.getRect(health).top, greaterThanOrEqualTo(t.getRect(find.byType(TalkButton)).bottom));
+        await t.ensureVisible(button('Type instead'));
+        await t.pumpAndSettle();
+        expect(t.getRect(button('Type instead')).top, greaterThanOrEqualTo(t.getRect(health).bottom));
+        await t.ensureVisible(health);
+        await t.pumpAndSettle();
+        await t.tap(health);
+        expect(r.healthOpened, 1);
+      });
+    }
 
     testWidgets('Talk instead and Type instead look the same', (t) async {
       final r = Rig();
       await r.pump(t);
       await r.start(t, voice: true);
-      expect(find.widgetWithText(LipButton, 'Type instead'), findsOneWidget);
+      expect(find.widgetWithText(LinkButton, 'Type instead'), findsOneWidget);
       final size = t.getSize(button('Type instead'));
       await tapText(t, 'Type instead');
-      expect(find.widgetWithText(LipButton, 'Talk instead'), findsOneWidget);
+      expect(find.widgetWithText(LinkButton, 'Talk instead'), findsOneWidget);
       expect(t.getSize(button('Talk instead')).height, size.height);
     });
 
@@ -848,33 +888,32 @@ void main() {
     });
   });
 
-  group('Pip', () {
-    testWidgets(
-      'asks while a question shows, listens while the mic is on, is pleased on the read-back and after "Got it"',
-      (t) async {
-        final r = Rig(guide: StepGuide());
-        r.fakeInput.captions = ['I am 70'];
-        await r.pump(t);
-        await r.start(t, voice: true);
-        expect(pipMood(t), PipMood.asking);
-        await tapTalk(t);
-        expect(r.c.phase, VoicePhase.listening);
-        expect(pipMood(t), PipMood.listening);
-        // Listening: Pip sits beside the question, the caption card shows the words large.
-        expect(find.text('Hearing:'), findsOneWidget);
-        await tapTalk(t);
-        await t.pumpAndSettle();
-        expect(r.c.confirming, isTrue);
-        expect(pipMood(t), PipMood.pleased);
-        await t.tap(find.text('Yes'));
-        await t.pumpAndSettle();
-        expect(r.c.mascotLine, startsWith('Got it.'));
-        expect(pipMood(t), PipMood.pleased);
-        await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
-        await tapText(t, 'Skip this question');
-        expect(pipMood(t), PipMood.asking);
-      },
-    );
+  group('the twin', () {
+    testWidgets('waves while a question shows, thinks while the mic is on, jumps on the read-back and after "Got it"', (
+      t,
+    ) async {
+      final r = Rig(guide: StepGuide());
+      r.fakeInput.captions = ['I am 70'];
+      await r.pump(t);
+      await r.start(t, voice: true);
+      expect(twinPose(t), TwinMood.asking.pose);
+      await tapTalk(t);
+      expect(r.c.phase, VoicePhase.listening);
+      expect(twinPose(t), TwinMood.listening.pose);
+      // Listening: the caption card shows the words large.
+      expect(find.text('Hearing:'), findsOneWidget);
+      await tapTalk(t);
+      await t.pumpAndSettle();
+      expect(r.c.confirming, isTrue);
+      expect(twinPose(t), TwinMood.pleased.pose);
+      await t.tap(find.text('Yes'));
+      await t.pumpAndSettle();
+      expect(r.c.mascotLine, startsWith('Got it.'));
+      expect(twinPose(t), TwinMood.pleased.pose);
+      await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
+      await tapText(t, 'Skip this question');
+      expect(twinPose(t), TwinMood.asking.pose);
+    });
 
     testWidgets('the live caption is large while listening', (t) async {
       final input = LiveInput()..transcript = 'about five foot ten';
@@ -895,18 +934,18 @@ void main() {
       await t.pumpAndSettle();
     });
 
-    testWidgets('scale 2.0: question, listening and read-back fit, with Pip small in the corner', (t) async {
+    testWidgets('scale 2.0: question, listening and read-back fit, with the window made small', (t) async {
       final r = Rig(guide: StepGuide());
       r.fakeInput.captions = ['I am 70'];
       await r.pump(t, scale: 2.0);
       await r.start(t, voice: true);
       expect(t.takeException(), isNull);
-      expect(t.getSize(find.byType(Pip)).height, 70);
+      expect(windowHeight(t), lessThanOrEqualTo(150));
       expect(t.getRect(find.byType(TalkButton)).bottom, lessThanOrEqualTo(844));
       await tapTalk(t);
       expect(r.c.phase, VoicePhase.listening);
       expect(t.takeException(), isNull);
-      expect(t.getSize(find.byType(Pip)).height, 70);
+      expect(windowHeight(t), lessThanOrEqualTo(150));
       await tapTalk(t);
       await t.pumpAndSettle();
       expect(r.c.confirming, isTrue);
@@ -915,21 +954,16 @@ void main() {
       expect(t.getSize(button('Yes')).height, greaterThanOrEqualTo(72));
     });
 
-    testWidgets('reduced motion: Pip does not bob or cross-fade', (t) async {
+    testWidgets('reduced motion: nothing keeps moving', (t) async {
       final r = Rig();
       await r.pump(t);
       await r.start(t, voice: true);
-      final pip = t.widget<Pip>(find.byType(Pip));
-      expect(pip.bob, isFalse);
-      final switcher = t.widget<AnimatedSwitcher>(
-        find.descendant(of: find.byType(Pip), matching: find.byType(AnimatedSwitcher)),
-      );
-      expect(switcher.duration, Duration.zero);
+      expect(t.hasRunningAnimations, isFalse);
     });
   });
 
   group('14. looks', () {
-    testWidgets('"You said:" is not italic; buttons have a 3 pt ink outline; links are ink and underlined', (t) async {
+    testWidgets('"You said:" is not italic; button words are ink; links are ink and underlined', (t) async {
       final r = Rig();
       await r.pump(t);
       await r.start(t, voice: false);
@@ -940,8 +974,6 @@ void main() {
       expect(said.style?.fontStyle, isNot(FontStyle.italic));
 
       for (final label in ['Send', 'Talk instead']) {
-        final face = t.widget<LipButton>(button(label)).style;
-        expect(face.outline, greaterThanOrEqualTo(3), reason: label);
         expect(t.widget<Text>(find.text(label)).style?.color, LtColors.ink, reason: label);
       }
       final skip = t.widget<Text>(find.text('Skip this question')).style!;

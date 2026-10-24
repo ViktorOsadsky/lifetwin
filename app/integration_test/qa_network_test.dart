@@ -22,22 +22,22 @@ void main() {
     await startTyped(t);
     await answerAll(t);
     await tapText(t, 'Continue');
+    await askTheBall(t);
     await waitFor(t, find.textContaining('were still living 5 years later'));
-    expect(find.textContaining('date'), findsWidgets); // "not a date"
-    await tapText(t, 'Back');
-    await waitFor(t, find.text('Your room'));
-    expect(find.text(RoomScreen.returningGreeting), findsOneWidget);
-    await tapText(t, 'See my forecast');
+    await tapRound(t, 'Back');
+    await waitFor(t, find.byType(RoomScreen));
+    expect(find.textContaining('in 100'), findsWidgets); // the outlook card shows the real forecast
+    await openFortune(t);
     await waitFor(t, find.textContaining('were still living 5 years later'));
-    await tapText(t, 'Back');
-    await waitFor(t, find.text('Your room'));
+    await tapRound(t, 'Back');
+    await waitFor(t, find.byType(RoomScreen));
   });
 
   testWidgets('server down before the first question: Try again starts the talk', (t) async {
     await qaReset();
     await qaMode('down');
     await t.pumpWidget(const LifeTwinApp());
-    await tapText(t, 'Talk with Pip');
+    await tapText(t, 'Talk');
     await tapText(t, "No, I'll type");
     await readQuestion(t);
     await tapText(t, 'Not now');
@@ -155,6 +155,7 @@ void main() {
     await answerAll(t);
     await qaMode('500', path: '/api/predict', times: 1);
     await tapText(t, 'Continue');
+    await askTheBall(t);
     await waitFor(t, find.text("I couldn't get your forecast just now."));
     expect(find.textContaining('Something went wrong on our side'), findsOneWidget);
     await qaMode('html', path: '/api/predict', times: 1);
@@ -168,8 +169,8 @@ void main() {
     await waitFor(t, find.textContaining('Too many tries'));
     await tapText(t, 'Try again');
     await waitFor(t, find.textContaining('were still living 5 years later'));
-    await tapText(t, 'Back');
-    await waitFor(t, find.text('Your room'));
+    await tapRound(t, 'Back');
+    await waitFor(t, find.byType(RoomScreen));
   });
 
   testWidgets('unsupported forecast (age 85, sex skipped): plain reason and a way to add the answer', (t) async {
@@ -185,6 +186,7 @@ void main() {
       await settled(t);
     }
     await tapText(t, 'Continue');
+    await askTheBall(t);
     await waitFor(t, find.textContaining("I can't make a forecast for you yet."));
     expect(find.textContaining('sex at birth'), findsOneWidget);
     expect(find.textContaining('still living'), findsNothing);
@@ -203,6 +205,7 @@ void main() {
     await waitFor(t, find.textContaining('female at birth'));
     await yes(t, 'Continue');
     await tapText(t, 'Continue');
+    await askTheBall(t);
     // Still unsupported for age 85, with its own plain reason.
     await waitFor(t, find.textContaining('above 80'));
   });

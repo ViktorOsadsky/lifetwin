@@ -1,25 +1,29 @@
 import 'package:flutter/material.dart';
 
+import 'customize/customize_screen.dart';
 import 'forecast/forecast_client.dart';
 import 'forecast/forecast_screen.dart';
+import 'forecast/fortune_ceremony_screen.dart';
 import 'health/health_reader.dart';
 import 'health/health_screen.dart';
 import 'health/health_summary.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'onboarding/voice_onboarding_screen.dart';
 import 'room/room_screen.dart';
-import 'theme/lifetwin_theme.dart';
+import 'ui/swoosh_route.dart';
+import 'ui/theme.dart';
+import 'ui/twin_appearance.dart';
 import 'voice/cartesia_speech.dart';
 import 'voice/http_conversation_guide.dart';
 import 'voice/voice_token.dart';
 
 void main() => runApp(const LifeTwinApp());
 
-/// Temporary host until Track C's game shell lands: the Room is the start screen; its
-/// buttons lead to the mascot conversation (which can open the Apple Health import) and
-/// the forecast. The confirmed profile is kept in memory for this session only.
+/// The game shell: the Room is home; Talk opens the mascot conversation
+/// (with the Apple Health import), Fortune the magic ball, Customize the look.
+/// The confirmed profile is kept in memory for this session only.
 class LifeTwinApp extends StatefulWidget {
-  const LifeTwinApp({super.key, this.controller, this.forecastClient, this.healthReader});
+  const LifeTwinApp({super.key, this.controller, this.forecastClient, this.healthReader, this.appearance});
 
   /// Tests pass a controller built from fakes.
   final VoiceOnboardingController? controller;
@@ -30,19 +34,31 @@ class LifeTwinApp extends StatefulWidget {
   /// Tests pass a fake; otherwise Apple Health.
   final HealthReader? healthReader;
 
+  /// Tests may pass the look; otherwise the default bear in the Cal hat.
+  final ValueNotifier<TwinAppearance>? appearance;
+
   @override
   State<LifeTwinApp> createState() => _LifeTwinAppState();
 }
 
 class _LifeTwinAppState extends State<LifeTwinApp> {
-  // Start finding the server now, while the consent questions are on screen.
+  // Start finding the server now, while the Room is on screen.
   late final ApiBase _api = ApiBase()..url().ignore();
   late final VoiceOnboardingController _controller = widget.controller ?? _live(_api);
   late final ForecastClient _forecast = widget.forecastClient ?? HttpForecastClient(base: _api);
 
+  /// Cosmetic only; never merged into the confirmed profile.
+  late final ValueNotifier<TwinAppearance> _look = widget.appearance ?? ValueNotifier(const TwinAppearance());
+
+  /// Profile keys that came from Apple Health, to label their source.
+  final _healthKeys = <String>{};
+
   /// The answers a forecast uses: whatever the conversation holds now, once finished.
   /// Read live, so "start over" or a changed answer never leaves an older forecast behind.
   Map<String, dynamic>? get _profile => _controller.turn?.complete == true ? _controller.confirmedProfile : null;
+
+  /// The last supported forecast, for the Room's outlook card.
+  final _outlook = ValueNotifier<Forecast?>(null);
 
   static VoiceOnboardingController _live(ApiBase api) {
     final tokens = VoiceTokenProvider(base: api);
@@ -56,8 +72,84 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   @override
   void dispose() {
     _controller.dispose();
+    if (widget.appearance == null) _look.dispose();
+    _outlook.dispose();
     super.dispose();
   }
+
+  void _toRoom(BuildContext context) => Navigator.of(context).popUntil((r) => r.isFirst);
+
+  /// The conversation, swooshing up from the Room.
+  void _talk(BuildContext context) => SwooshRoute.push<void>(
+    context,
+    (talkContext) => VoiceOnboardingScreen(
+      controller: _controller,
+      appearance: _look.value,
+      onUseHealth: () => _health(talkContext),
+      onDone: (_) => _ceremony(talkContext, fromTalk: true),
+    ),
+  );
+
+  /// The Apple Health import, from the conversation or the Room. From the Room, before the
+  /// conversation started, the checked values wait for its first question.
+  void _health(BuildContext context) => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => HealthImportScreen(
+        reader: widget.healthReader,
+        onDone: (result) async {
+          Navigator.of(context).pop();
+          // Each value was already checked on the Health screen ("Is this accurate?").
+          final values = {for (final c in result.confirmed) c.field.profileKey: c.value};
+          // Only once the values were taken (sent and accepted, or queued for the start of
+          // the talk) are they labelled "Apple Health" and does the Room's pill go away.
+          if (await _controller.importHealth(values) && mounted) setState(() => _healthKeys.addAll(values.keys));
+        },
+      ),
+    ),
+  );
+
+  /// The ceremony, then the fortune. From the intake's Continue ([fromTalk]) the
+  /// conversation is dropped, so Back lands on the Room; from the Room it is pushed.
+  /// Completes when the person is back on the Room.
+  Future<void> _ceremony(BuildContext context, {bool fromTalk = false}) {
+    final nav = Navigator.of(context);
+    final route = MaterialPageRoute<void>(
+      builder: (ceremonyContext) => FortuneCeremonyScreen(
+        appearance: _look.value,
+        onBack: () => _toRoom(ceremonyContext),
+        onAsk: () => Navigator.of(ceremonyContext).pushReplacement(
+          PageRouteBuilder<void>(
+            transitionDuration: const Duration(milliseconds: 400),
+            pageBuilder: (forecastContext, _, _) => ForecastScreen(
+              client: _forecast,
+              profile: _profile ?? const {},
+              appearance: _look.value,
+              healthKeys: {..._healthKeys},
+              onResult: (f) {
+                if (f.supported) _outlook.value = f;
+              },
+              // The mascot speaks only if the person chose voice and it still works.
+              speech: _controller.voiceUsable && !_controller.typing ? _controller.output : null,
+              onBack: () => _toRoom(forecastContext),
+              // "Go back to my answers": the conversation, where an answer can be changed.
+              onAnswers: () {
+                _toRoom(forecastContext);
+                _talk(forecastContext);
+              },
+            ),
+            transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
+          ),
+        ),
+      ),
+    );
+    return fromTalk ? nav.pushAndRemoveUntil(route, (r) => r.isFirst) : nav.push(route);
+  }
+
+  void _customize(BuildContext context) => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => CustomizeScreen(appearance: _look, onDone: () => Navigator.of(context).pop()),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -68,60 +160,15 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       home: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) => RoomScreen(
+          appearance: _look,
           hasProfile: _profile != null,
+          onUseHealth: _healthKeys.isEmpty ? () => _health(context) : null,
           onTalk: () => _talk(context),
-          onForecast: () => _showForecast(context, replaceStack: false),
+          onCustomize: () => _customize(context),
+          onFortune: () => _ceremony(context),
+          outlook: _outlook,
         ),
       ),
     );
-  }
-
-  /// [replace] swaps the forecast for the conversation ("Go back to my answers").
-  void _talk(BuildContext context, {bool replace = false}) {
-    final nav = Navigator.of(context);
-    final route = MaterialPageRoute<void>(
-      builder: (talkContext) => VoiceOnboardingScreen(
-        controller: _controller,
-        onUseHealth: () => Navigator.of(talkContext).push(
-          MaterialPageRoute<void>(
-            builder: (_) => HealthImportScreen(
-              reader: widget.healthReader,
-              onDone: (result) {
-                Navigator.of(talkContext).pop();
-                // Each value was already checked on the Health screen ("Is this accurate?").
-                _controller.importHealth({for (final c in result.confirmed) c.field.profileKey: c.value});
-              },
-            ),
-          ),
-        ),
-        onDone: (_) => _showForecast(talkContext, replaceStack: true),
-      ),
-    );
-    if (replace) {
-      nav.pushReplacement(route);
-    } else {
-      nav.push(route);
-    }
-  }
-
-  /// From the intake's Continue ([replaceStack]) the conversation is dropped, so the
-  /// forecast's Back lands on the Room; from the Room it is simply pushed.
-  void _showForecast(BuildContext context, {required bool replaceStack}) {
-    final route = MaterialPageRoute<void>(
-      builder: (forecastContext) => ForecastScreen(
-        client: _forecast,
-        profile: _profile!,
-        // The mascot speaks only if the person chose voice and it still works.
-        speech: _controller.voiceUsable && !_controller.typing ? _controller.output : null,
-        onBack: () => Navigator.of(forecastContext).pop(),
-        onAnswers: () => _talk(forecastContext, replace: true),
-      ),
-    );
-    final nav = Navigator.of(context);
-    if (replaceStack) {
-      nav.pushAndRemoveUntil(route, (r) => r.isFirst);
-    } else {
-      nav.push(route);
-    }
   }
 }

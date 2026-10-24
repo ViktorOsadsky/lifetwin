@@ -30,7 +30,7 @@ void main() {
     );
     await qaReset();
     await t.pumpWidget(LifeTwinApp(controller: c));
-    await tapText(t, 'Talk with Pip');
+    await tapText(t, 'Talk');
     await tapText(t, "Yes, I'll talk");
     await readQuestion(t);
     await tapText(t, 'Not now');
