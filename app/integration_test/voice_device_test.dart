@@ -20,6 +20,7 @@ import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
 import 'package:lifesim/voice/speech.dart';
+import 'package:lifesim/widgets/lip_button.dart';
 
 const harnessUrl = String.fromEnvironment('VOICE_HARNESS_URL', defaultValue: 'http://169.254.4.42:8099');
 
@@ -101,7 +102,7 @@ Future<bool> tapFinder(WidgetTester t, Finder f, {int seconds = 20}) async {
 }
 
 Future<bool> tapButton(WidgetTester t, String label, {int seconds = 20}) =>
-    tapFinder(t, find.widgetWithText(BigButton, label), seconds: seconds);
+    tapFinder(t, find.widgetWithText(LipButton, label), seconds: seconds);
 
 /// Waits for the server's next turn (or a notice). Taps "Try again" after a
 /// rate-limit, as a person would.

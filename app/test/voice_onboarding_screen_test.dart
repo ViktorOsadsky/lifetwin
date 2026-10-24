@@ -7,6 +7,9 @@ import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
 import 'package:lifesim/voice/fakes.dart';
 import 'package:lifesim/voice/speech.dart';
+import 'package:lifesim/widgets/lip_button.dart';
+import 'package:lifesim/widgets/lt_buttons.dart';
+import 'package:lifesim/widgets/lt_text_link.dart';
 
 class Rig {
   final guide = FakeConversationGuide();
@@ -68,7 +71,7 @@ void main() {
       expect(
         t
             .getSize(
-              find.ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton)),
+              find.ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is LipButton || w is LtTextLink)),
             )
             .height,
         greaterThanOrEqualTo(72),
@@ -104,8 +107,10 @@ void main() {
     r.input.captions = ['I am 70'];
     await t.tap(find.text('Tap to talk')); // quick tap = start
     await t.pumpAndSettle();
-    expect(find.textContaining('Hearing: I am 70'), findsOneWidget);
-    expect(find.textContaining('Listening… tap when done'), findsOneWidget);
+    expect(find.text('Hearing:'), findsOneWidget);
+    expect(find.text('I am 70'), findsOneWidget);
+    expect(find.text('Listening…'), findsOneWidget);
+    expect(find.text('tap when done'), findsOneWidget);
     await t.tap(find.byType(TalkButton)); // second tap = stop
     await t.pumpAndSettle();
     expect(r.guide.calls.last['text'], 'I am 70');
@@ -167,6 +172,8 @@ void main() {
     await t.pumpWidget(LifeTwinApp(controller: r.c));
     expect(find.text('Talk with me?'), findsOneWidget);
     await choose(t, "No, I'll type");
+    await t.ensureVisible(find.text('Use my Health app instead'));
+    await t.pumpAndSettle();
     await t.tap(find.text('Use my Health app instead'));
     await t.pumpAndSettle();
     expect(find.text("Use your iPhone's Health app?"), findsOneWidget);
@@ -190,7 +197,7 @@ void main() {
       expect(
         t
             .getSize(
-              find.ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton)),
+              find.ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is LipButton || w is LtTextLink)),
             )
             .height,
         greaterThanOrEqualTo(72),
@@ -297,7 +304,7 @@ void main() {
     final talk = find.text('Talk instead');
     await t.ensureVisible(talk);
     expect(
-      t.getSize(find.ancestor(of: talk, matching: find.byWidgetPredicate((w) => w is ButtonStyleButton))).height,
+      t.getSize(find.ancestor(of: talk, matching: find.byWidgetPredicate((w) => w is LipButton || w is LtTextLink))).height,
       greaterThanOrEqualTo(56),
     );
     await t.tap(talk);
@@ -361,7 +368,7 @@ void main() {
     final hide = find.text('Hide keyboard');
     expect(hide, findsOneWidget);
     expect(
-      t.getSize(find.ancestor(of: hide, matching: find.byWidgetPredicate((w) => w is ButtonStyleButton))).height,
+      t.getSize(find.ancestor(of: hide, matching: find.byWidgetPredicate((w) => w is LipButton || w is LtTextLink))).height,
       greaterThanOrEqualTo(72),
     );
     await t.ensureVisible(hide);
@@ -437,19 +444,19 @@ void main() {
       testWidgets('${e.key}: each button sends its words, then the read-back appears', (t) async {
         for (final (label, say) in e.value) {
           final (guide, c, _) = await open(t, e.key);
-          await t.tap(find.widgetWithText(OutlinedButton, label));
+          await t.tap(find.widgetWithText(LtSecondaryButton, label));
           await t.pumpAndSettle();
           expect(guide.calls.last, {'action': 'reply', 'text': say});
           expect(c.confirming, isTrue);
           expect(find.text('No, change it'), findsOneWidget);
-          expect(find.widgetWithText(OutlinedButton, label), findsNothing);
+          expect(find.widgetWithText(LtSecondaryButton, label), findsNothing);
           await t.pumpWidget(const SizedBox());
         }
       });
 
       testWidgets('${e.key}: buttons are tall and sit two per row at 390 wide', (t) async {
         await open(t, e.key);
-        final rects = [for (final (label, _) in e.value) t.getRect(find.widgetWithText(OutlinedButton, label))];
+        final rects = [for (final (label, _) in e.value) t.getRect(find.widgetWithText(LtSecondaryButton, label))];
         for (final r in rects) {
           expect(r.height, greaterThanOrEqualTo(72));
         }
@@ -461,10 +468,10 @@ void main() {
       testWidgets('${e.key}: no overflow at text scale 2.0, buttons stack', (t) async {
         await open(t, e.key, scale: 2.0);
         for (final (label, _) in e.value) {
-          await t.ensureVisible(find.widgetWithText(OutlinedButton, label));
+          await t.ensureVisible(find.widgetWithText(LtSecondaryButton, label));
         }
-        final first = t.getRect(find.widgetWithText(OutlinedButton, e.value[0].$1));
-        final second = t.getRect(find.widgetWithText(OutlinedButton, e.value[1].$1));
+        final first = t.getRect(find.widgetWithText(LtSecondaryButton, e.value[0].$1));
+        final second = t.getRect(find.widgetWithText(LtSecondaryButton, e.value[1].$1));
         expect(second.top, greaterThan(first.top));
         expect(t.takeException(), isNull);
       });
@@ -516,7 +523,7 @@ void main() {
       guide.hold = Completer<void>();
       await t.tap(find.text('Female'));
       await t.pump();
-      final b = t.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Male'));
+      final b = t.widget<LtSecondaryButton>(find.widgetWithText(LtSecondaryButton, 'Male'));
       expect(b.onPressed, isNull);
       guide.hold!.complete();
       await t.pumpAndSettle();

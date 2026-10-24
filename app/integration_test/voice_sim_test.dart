@@ -16,6 +16,7 @@ import 'package:lifesim/voice/cartesia_speech.dart';
 import 'package:lifesim/voice/http_conversation_guide.dart';
 import 'package:lifesim/voice/speech.dart';
 import 'package:lifesim/voice/voice_token.dart';
+import 'package:lifesim/widgets/lip_button.dart';
 
 import 'support/sim_support.dart';
 
@@ -69,7 +70,7 @@ Future<bool> tapFinder(WidgetTester t, Finder f, {int seconds = 20}) async {
 }
 
 Future<bool> tapButton(WidgetTester t, String label, {int seconds = 20}) =>
-    tapFinder(t, find.widgetWithText(BigButton, label), seconds: seconds);
+    tapFinder(t, find.widgetWithText(LipButton, label), seconds: seconds);
 
 Future<bool> waitForTurn(WidgetTester t, GuideTurn? before, {int seconds = 60}) async {
   final c = ctl(t);

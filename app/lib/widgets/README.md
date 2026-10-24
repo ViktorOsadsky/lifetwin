@@ -24,10 +24,13 @@ The design is a proposal and will change. To apply a change:
 | `Twin` | `twin.dart` | 1 Room, the waving twin |
 | `ScenePaper` (`room`, `strip`) | `scene_paper.dart` | 1 Room background (room), 2 Question bottom strip (strip) |
 | `MagicBallBadge` | `magic_ball_badge.dart` | 6 Fortune header "Pip beside the magic ball" |
-| `LtIcon` (back, check, info) | `lt_icons.dart` | 2–6 line icons |
+| `LtIcon` (back, check, info, mic, keyboard, pencil, speaker, stop) | `lt_icons.dart` | 2–6 line icons; mic, keyboard, pencil from Question/Readback (arcs drawn as cubics) |
+| `LtStepProgress` | `lt_progress.dart` | 2–4 "Question 3 of 11" and its 11 segments |
 | `ShapeView`, `ShapePainter`, `parseSvgPath` | `vector/shapes.dart` | (renderer for the drawings) |
 
-Used so far by `lib/forecast/forecast_screen.dart` (artboard 6, Fortune).
+Used by `lib/forecast/forecast_screen.dart` (artboard 6, Fortune),
+`lib/onboarding/voice_onboarding_screen.dart` (Question, Listening, Readback, QuickAnswer,
+QuestionLargeText; consent screens) and `lib/health/health_screen.dart`.
 
 Rules the parts keep: primary buttons 96 pt, secondary 78 pt, nothing a "button" under
 72 pt, small controls (Back, links) at least 56 pt; selection is never shown by color

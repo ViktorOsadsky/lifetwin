@@ -288,6 +288,8 @@ void main() {
     await t.pumpWidget(LifeTwinApp(controller: c, forecastClient: forecast));
     await t.tap(find.text("No, I'll type"));
     await t.pumpAndSettle();
+    await t.ensureVisible(find.text('Not now'));
+    await t.pumpAndSettle();
     await t.tap(find.text('Not now'));
     await t.pumpAndSettle();
     await t.enterText(find.byType(TextField), '70');
