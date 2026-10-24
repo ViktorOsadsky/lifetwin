@@ -303,8 +303,7 @@ void main() {
     await t.pumpAndSettle();
     expect(forecast.calls.single, {'age': 70});
     expect(find.text(sentence), findsOneWidget);
-    await t.scrollUntilVisible(find.text('Go back to my answers'), 200, scrollable: find.byType(Scrollable).first);
-    await t.tap(find.text('Go back to my answers'));
+    await t.tap(find.text('Back'));
     await t.pumpAndSettle();
     // Back from the forecast lands on the Room, which now greets a returning person.
     expect(find.text('Your room'), findsOneWidget);

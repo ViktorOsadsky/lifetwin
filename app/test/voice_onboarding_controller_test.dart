@@ -153,6 +153,18 @@ void main() {
     expect(r.c.mascotLine, 'How old are you?');
   });
 
+  test('once done, Go back reopens the last answer so it can be changed', () async {
+    final r = Rig();
+    await r.c.answerConsent(false);
+    await r.c.submitTyped('70');
+    await r.c.confirm();
+    expect(r.c.phase, VoicePhase.done);
+    expect(r.c.canGoBack, isTrue);
+    await r.c.goBack();
+    expect(r.guide.calls.last['text'], 'go back');
+    expect(r.c.phase, VoicePhase.idle);
+  });
+
   test('Type instead keeps the conversation; voice declined starts in typing', () async {
     final r = Rig();
     await r.c.answerConsent(true);

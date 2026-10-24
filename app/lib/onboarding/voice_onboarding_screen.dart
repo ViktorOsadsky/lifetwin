@@ -357,7 +357,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
     return _StoryScroll(
       top: [
         // "Go back" at the top left, where the artboards keep "Back".
-        if (links && c.canGoBack)
+        // Also once done, so an answer can still be changed (or a skipped one added).
+        if (!keyboard && c.canGoBack)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Align(

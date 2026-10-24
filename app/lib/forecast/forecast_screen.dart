@@ -33,6 +33,7 @@ class ForecastScreen extends StatefulWidget {
     required this.client,
     required this.profile,
     required this.onBack,
+    this.onAnswers,
     this.speech,
   });
 
@@ -41,6 +42,10 @@ class ForecastScreen extends StatefulWidget {
   /// The confirmed answers. Sent as they are; nothing is guessed here.
   final Map<String, dynamic> profile;
   final VoidCallback onBack;
+
+  /// "Go back to my answers": back to the conversation, where an answer can be changed or
+  /// a skipped one added. Falls back to [onBack] when not given.
+  final VoidCallback? onAnswers;
 
   /// Set when voice is on; the mascot then says its sentence aloud.
   final SpeechOutput? speech;
@@ -116,6 +121,11 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
     widget.onBack();
   }
 
+  void _answers() {
+    if (_spoke) widget.speech?.stop();
+    (widget.onAnswers ?? widget.onBack)();
+  }
+
   @override
   void dispose() {
     if (_spoke) widget.speech?.stop();
@@ -156,7 +166,7 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
               else
                 FadeTransition(
                   opacity: _reveal,
-                  child: _Result(forecast: f, onBack: _back, speech: widget.speech),
+                  child: _Result(forecast: f, onAnswers: _answers, speech: widget.speech),
                 ),
             ],
           ),
@@ -177,7 +187,7 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
   List<Widget> _unsupported(Forecast f) => [
     _PipSays(unsupportedSentence(f)),
     const SizedBox(height: LtSpace.md),
-    _Pad(LtPrimaryButton(label: 'Go back to my answers', onPressed: _back)),
+    _Pad(LtPrimaryButton(label: 'Go back to my answers', onPressed: _answers)),
   ];
 }
 
@@ -192,10 +202,10 @@ class _Pad extends StatelessWidget {
 }
 
 class _Result extends StatefulWidget {
-  const _Result({required this.forecast, required this.onBack, this.speech});
+  const _Result({required this.forecast, required this.onAnswers, this.speech});
 
   final Forecast forecast;
-  final VoidCallback onBack;
+  final VoidCallback onAnswers;
   final SpeechOutput? speech;
 
   @override
@@ -252,7 +262,7 @@ class _ResultState extends State<_Result> {
           ),
           const SizedBox(height: LtSpace.buttonGap),
         ],
-        _Pad(LtPrimaryButton(label: 'Go back to my answers', onPressed: widget.onBack)),
+        _Pad(LtPrimaryButton(label: 'Go back to my answers', onPressed: widget.onAnswers)),
         const SizedBox(height: LtSpace.xl),
         _Pad(Text('Model ${f.modelVersion}', style: LtText.caption)),
       ],

@@ -148,8 +148,9 @@ class VoiceOnboardingController extends ChangeNotifier {
     return (_doneFields.length + 1).clamp(1, questionCount);
   }
 
-  /// "Go back" reopens the answer before this question.
-  bool get canGoBack => turn != null && !turn!.complete && !confirming && _doneFields.isNotEmpty;
+  /// "Go back" reopens the answer before this question; once done, the last one, so an
+  /// answer can still be changed or a skipped one added.
+  bool get canGoBack => turn != null && !confirming && _doneFields.isNotEmpty;
 
   void _set(void Function() change) {
     change();
@@ -386,7 +387,7 @@ class VoiceOnboardingController extends ChangeNotifier {
   Future<void> _button(String action, {String? text}) async {
     if (_busy) return;
     if (phase == VoicePhase.listening) await cancelTalk();
-    if (phase != VoicePhase.idle && phase != VoicePhase.speaking) return;
+    if (phase != VoicePhase.idle && phase != VoicePhase.speaking && phase != VoicePhase.done) return;
     await _stopSpeech();
     await _send(action, text: text);
   }

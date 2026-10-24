@@ -36,7 +36,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   late final VoiceOnboardingController _controller = widget.controller ?? _live(_api);
   late final ForecastClient _forecast = widget.forecastClient ?? HttpForecastClient(base: _api);
 
-  Map<String, dynamic>? _profile;
+  /// The answers a forecast uses: whatever the conversation holds now, once finished.
+  /// Read live, so "start over" or a changed answer never leaves an older forecast behind.
+  Map<String, dynamic>? get _profile => _controller.turn?.complete == true ? _controller.confirmedProfile : null;
 
   static VoiceOnboardingController _live(ApiBase api) {
     final tokens = VoiceTokenProvider(base: api);
@@ -59,8 +61,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       title: 'LifeTwin',
       debugShowCheckedModeBanner: false,
       theme: lifeTwinTheme(),
-      home: Builder(
-        builder: (context) => RoomScreen(
+      home: ListenableBuilder(
+        listenable: _controller,
+        builder: (context, _) => RoomScreen(
           hasProfile: _profile != null,
           onTalk: () => _talk(context),
           onForecast: () => _showForecast(context, replaceStack: false),
@@ -69,29 +72,31 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     );
   }
 
-  void _talk(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (talkContext) => VoiceOnboardingScreen(
-          controller: _controller,
-          onUseHealth: () => Navigator.of(talkContext).push(
-            MaterialPageRoute<void>(
-              builder: (_) => HealthImportScreen(
-                onDone: (result) {
-                  Navigator.of(talkContext).pop();
-                  // Each value was already checked on the Health screen ("Is this accurate?").
-                  _controller.importHealth({for (final c in result.confirmed) c.field.profileKey: c.value});
-                },
-              ),
+  /// [replace] swaps the forecast for the conversation ("Go back to my answers").
+  void _talk(BuildContext context, {bool replace = false}) {
+    final nav = Navigator.of(context);
+    final route = MaterialPageRoute<void>(
+      builder: (talkContext) => VoiceOnboardingScreen(
+        controller: _controller,
+        onUseHealth: () => Navigator.of(talkContext).push(
+          MaterialPageRoute<void>(
+            builder: (_) => HealthImportScreen(
+              onDone: (result) {
+                Navigator.of(talkContext).pop();
+                // Each value was already checked on the Health screen ("Is this accurate?").
+                _controller.importHealth({for (final c in result.confirmed) c.field.profileKey: c.value});
+              },
             ),
           ),
-          onDone: (profile) {
-            setState(() => _profile = profile);
-            _showForecast(talkContext, replaceStack: true);
-          },
         ),
+        onDone: (_) => _showForecast(talkContext, replaceStack: true),
       ),
     );
+    if (replace) {
+      nav.pushReplacement(route);
+    } else {
+      nav.push(route);
+    }
   }
 
   /// From the intake's Continue ([replaceStack]) the conversation is dropped, so the
@@ -104,6 +109,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
         // The mascot speaks only if the person chose voice and it still works.
         speech: _controller.voiceUsable && !_controller.typing ? _controller.output : null,
         onBack: () => Navigator.of(forecastContext).pop(),
+        onAnswers: () => _talk(forecastContext, replace: true),
       ),
     );
     final nav = Navigator.of(context);
