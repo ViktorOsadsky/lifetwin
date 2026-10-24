@@ -15,9 +15,12 @@ router = APIRouter(prefix="/quiz", tags=["quiz"])
 def questions(
     topic: QuizTopic | None = None,
     difficulty: QuizDifficulty | None = None,
-    limit: Annotated[int, Query(ge=1, le=20)] = 20,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> QuizBankResponse:
-    """Answers are intentionally included for local/offline educational play."""
+    """Answers are intentionally included for local/offline educational play.
+
+    The limit reaches the bank maximum, so every matching question can be listed.
+    """
     bank = load_bank()
     matches = [
         question

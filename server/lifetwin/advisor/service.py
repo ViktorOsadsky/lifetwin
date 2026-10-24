@@ -3,7 +3,7 @@
 from lifetwin.advisor.models import AdvisorRequest, AdvisorResponse, PlanAction
 from lifetwin.research.models import ResearchResult, ResearchTopic
 from lifetwin.research.sources import SOURCES, curated_sources
-from lifetwin.research.tavily import TavilyResearch
+from lifetwin.research.tavily import LIMITATIONS, TavilyResearch
 
 _COPY: dict[ResearchTopic, tuple[str, str, str]] = {
     "physical_activity": (
@@ -54,7 +54,7 @@ async def build_plan(
         research = ResearchResult(
             status="not_requested",
             sources=sources,
-            limitation="Web research was not requested. No external provider was contacted.",
+            limitation=LIMITATIONS["not_requested"],
         )
     actions = []
     for topic in request.topics:
@@ -70,22 +70,25 @@ async def build_plan(
             )
         )
     limitations = [
-        "This is a curated educational plan, not a personalized diagnosis or treatment plan.",
-        "Actions follow your selected topic order; they are not ranked by predicted benefit.",
-        "Effects are unmodeled, not zero. No physiological change is assumed from completing "
-        "an action, and no confirmed measurements or experimental inputs are changed.",
-        "Web queries contain fixed public-health topics only. Your profile is not sent "
-        "to research providers. Retrieved content cannot change this reviewed plan.",
+        "These are general tips from trusted health websites. "
+        "They are not a diagnosis or a treatment plan.",
+        "The tips are in the order you picked the topics. "
+        "They are not ranked by how much they might help.",
+        "We have not measured how much each tip could help you. "
+        "That does not mean it will not help.",
+        "Following a tip does not change the health details you gave us.",
+        "When we check websites, we only open the same trusted pages for everyone. "
+        "We never send your health details. What we find online cannot change your tips.",
     ]
     if request.profile is not None and request.profile.age is not None:
         if request.profile.age < 18:
             limitations.append(
-                "Age-specific targets are not assigned. A parent, guardian, or pediatric "
-                "care team can help adapt educational activities to a young person's needs."
+                "We do not set age-based goals for young people. A parent, guardian, or "
+                "pediatric care team can help choose activities that suit a young person."
             )
     return AdvisorResponse(
-        mascot_message="Let's choose a small step to explore! These ideas come from "
-        "public-health guidance. You decide which fits your life.",
+        mascot_message="Let's pick one small step! These ideas come from trusted health "
+        "websites. You choose what fits your life.",
         actions=actions,
         sources=sources,
         research=research,

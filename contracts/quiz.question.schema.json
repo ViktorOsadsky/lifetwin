@@ -1,0 +1,200 @@
+{
+  "$defs": {
+    "GameEffect": {
+      "additionalProperties": false,
+      "properties": {
+        "game_health_delta": {
+          "maximum": 10,
+          "minimum": -10,
+          "title": "Game Health Delta",
+          "type": "integer"
+        },
+        "mascot_event": {
+          "enum": [
+            "quiz_sick",
+            "quiz_recovering"
+          ],
+          "title": "Mascot Event",
+          "type": "string"
+        },
+        "reduced_motion_text": {
+          "maxLength": 180,
+          "minLength": 1,
+          "title": "Reduced Motion Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "game_health_delta",
+        "mascot_event",
+        "reduced_motion_text"
+      ],
+      "title": "GameEffect",
+      "type": "object"
+    },
+    "QuizOption": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-d]$",
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 400,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "title": "QuizOption",
+      "type": "object"
+    },
+    "QuizSource": {
+      "additionalProperties": false,
+      "properties": {
+        "accessed_on": {
+          "format": "date",
+          "title": "Accessed On",
+          "type": "string"
+        },
+        "publisher": {
+          "enum": [
+            "CDC",
+            "FDA"
+          ],
+          "title": "Publisher",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "publisher",
+        "url",
+        "accessed_on"
+      ],
+      "title": "QuizSource",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "correct_effect": {
+      "$ref": "#/$defs/GameEffect"
+    },
+    "correct_option_id": {
+      "pattern": "^[a-d]$",
+      "title": "Correct Option Id",
+      "type": "string"
+    },
+    "difficulty": {
+      "enum": [
+        "moderate",
+        "challenging"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "explanation": {
+      "maxLength": 1200,
+      "minLength": 20,
+      "title": "Explanation",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-z][a-z0-9-]{2,60}\\.v[1-9][0-9]{0,2}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "options": {
+      "items": {
+        "$ref": "#/$defs/QuizOption"
+      },
+      "maxItems": 4,
+      "minItems": 3,
+      "title": "Options",
+      "type": "array"
+    },
+    "review_effect": {
+      "$ref": "#/$defs/GameEffect"
+    },
+    "review_status": {
+      "const": "reviewed",
+      "title": "Review Status",
+      "type": "string"
+    },
+    "reviewed_on": {
+      "format": "date",
+      "title": "Reviewed On",
+      "type": "string"
+    },
+    "scenario": {
+      "maxLength": 1000,
+      "minLength": 20,
+      "title": "Scenario",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/QuizSource"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "title": "Sources",
+      "type": "array"
+    },
+    "topic": {
+      "enum": [
+        "nutrition",
+        "food_safety",
+        "activity"
+      ],
+      "title": "Topic",
+      "type": "string"
+    },
+    "wrong_effect": {
+      "$ref": "#/$defs/GameEffect"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "topic",
+    "difficulty",
+    "scenario",
+    "options",
+    "correct_option_id",
+    "explanation",
+    "sources",
+    "review_status",
+    "reviewed_on",
+    "wrong_effect",
+    "correct_effect",
+    "review_effect"
+  ],
+  "title": "QuizQuestion",
+  "type": "object"
+}

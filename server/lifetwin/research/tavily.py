@@ -1,8 +1,9 @@
-"""Bounded Tavily search/extract, with no raw-profile or arbitrary-URL input.
+"""Bounded Tavily extract of reviewed pages, with no raw-profile or arbitrary-URL input.
 
-API reference: https://docs.tavily.com/documentation/api-reference/endpoint/search
-and /extract. Raw retrieval only confirms that a reviewed source was returned;
-it is not evidence validation and cannot rewrite the reviewed educational plan.
+API reference: https://docs.tavily.com/documentation/api-reference/endpoint/extract.
+The reviewed URLs are fixed, so no search step is needed: one extract call checks
+that those pages are reachable. Retrieval is not evidence validation and cannot
+rewrite the reviewed educational plan.
 """
 
 import asyncio
@@ -11,35 +12,51 @@ from urllib.parse import urlsplit
 
 import httpx
 
-from lifetwin.research.models import ResearchResult, ResearchTopic
-from lifetwin.research.sources import SOURCES, TOPIC_QUERIES, curated_sources
+from lifetwin.research.models import ResearchResult, ResearchStatus, ResearchTopic
+from lifetwin.research.sources import SOURCES, curated_sources
 
-MAX_QUERIES = 3
+MAX_TOPICS = 3
 MAX_PAGES = 5
 MAX_RESPONSE_BYTES = 256_000
 MAX_PAGE_CHARS = 40_000
 ALLOWED_HOSTS = frozenset({"www.cdc.gov", "www.niddk.nih.gov", "ods.od.nih.gov"})
+
+REVIEWED_NOTE = "Your tips still come from health websites our team already reviewed."
+LIMITATIONS: dict[ResearchStatus, str] = {
+    "not_requested": f"We did not go online for this plan. {REVIEWED_NOTE}",
+    "unconfigured": f"Website checking is not set up, so we did not go online. {REVIEWED_NOTE}",
+    "unavailable": f"We could not check the websites right now. {REVIEWED_NOTE}",
+    "partial": f"We could check only some of the health websites right now. {REVIEWED_NOTE}",
+    "retrieved": "We checked that the health websites are online. The tips themselves were "
+    "already reviewed by our team.",
+}
 
 
 class _InvalidProviderResponse(Exception):
     """Internal marker only; provider content must not appear in error output."""
 
 
-def _reviewed_url(value: object, permitted: set[str]) -> str | None:
-    if not isinstance(value, str) or value not in permitted:
+def _page_key(value: object) -> str | None:
+    """Compare page URLs while tolerating a trailing slash or index.html suffix."""
+    if not isinstance(value, str) or len(value) > 500:
         return None
-    parsed = urlsplit(value)
+    try:
+        parsed = urlsplit(value)
+        port = parsed.port
+    except ValueError:
+        return None
     if (
         parsed.scheme != "https"
         or parsed.hostname not in ALLOWED_HOSTS
         or parsed.username is not None
         or parsed.password is not None
-        or parsed.port is not None
+        or port is not None
         or parsed.query
         or parsed.fragment
     ):
         return None
-    return value
+    path = parsed.path.removesuffix("/index.html").removesuffix("/")
+    return f"{parsed.hostname}{path}"
 
 
 class TavilyResearch:
@@ -75,22 +92,20 @@ class TavilyResearch:
         return payload
 
     async def research(self, topics: list[ResearchTopic]) -> ResearchResult:
-        if not topics or len(topics) > MAX_QUERIES or len(set(topics)) != len(topics):
+        if not topics or len(topics) > MAX_TOPICS or len(set(topics)) != len(topics):
             raise ValueError("Research requires one to three distinct reviewed topics.")
         if any(topic not in SOURCES for topic in topics):
             raise ValueError("Only reviewed research topics are supported.")
         sources = curated_sources(topics)
         if not self._api_key:
             return ResearchResult(
-                status="unconfigured",
-                sources=sources,
-                limitation="Web research is unconfigured. These are locally reviewed sources; "
-                "no provider was contacted.",
+                status="unconfigured", sources=sources, limitation=LIMITATIONS["unconfigured"]
             )
 
-        queries = 0
-        pages = 0
-        retrieved: list[str] = []
+        # Only the fixed reviewed page URLs leave the server: no query text at all.
+        urls = [source.url for source in sources]
+        source_by_key = {_page_key(source.url): source.id for source in sources}
+        found: set[str] = set()
         try:
             async with asyncio.timeout(self._total_timeout):
                 async with httpx.AsyncClient(
@@ -101,97 +116,54 @@ class TavilyResearch:
                     trust_env=False,
                     transport=self._transport,
                 ) as client:
-                    candidates: dict[str, str] = {}
-                    for topic in topics:
-                        source = SOURCES[topic]
-                        queries += 1
-                        payload = await self._post(
-                            client,
-                            "/search",
-                            {
-                                "query": TOPIC_QUERIES[topic],
-                                "topic": "general",
-                                "search_depth": "basic",
-                                "max_results": MAX_PAGES,
-                                "include_domains": [urlsplit(source.url).hostname],
-                                "include_answer": False,
-                                "include_raw_content": False,
-                                "include_images": False,
-                                "auto_parameters": False,
-                            },
-                        )
-                        rows = payload.get("results")
-                        if not isinstance(rows, list) or len(rows) > MAX_PAGES:
-                            raise _InvalidProviderResponse
-                        for row in rows:
-                            if not isinstance(row, dict):
-                                raise _InvalidProviderResponse
-                            url = _reviewed_url(row.get("url"), {source.url})
-                            if url is not None:
-                                candidates[url] = source.id
-
-                    if candidates:
-                        urls = list(candidates)[:MAX_PAGES]
-                        pages = len(urls)
-                        extracted = await self._post(
-                            client,
-                            "/extract",
-                            {
-                                "urls": urls,
-                                "extract_depth": "basic",
-                                "format": "text",
-                                "include_images": False,
-                            },
-                        )
-                        rows = extracted.get("results")
-                        failed_rows = extracted.get("failed_results", [])
-                        if (
-                            not isinstance(rows, list)
-                            or len(rows) > MAX_PAGES
-                            or not isinstance(failed_rows, list)
-                            or len(failed_rows) > MAX_PAGES
-                        ):
-                            raise _InvalidProviderResponse
-                        failed_urls = {
-                            row.get("url")
-                            for row in failed_rows
-                            if isinstance(row, dict) and isinstance(row.get("url"), str)
-                        }
-                        for row in rows:
-                            if not isinstance(row, dict):
-                                raise _InvalidProviderResponse
-                            url = _reviewed_url(row.get("url"), set(urls))
-                            content = row.get("raw_content")
-                            # Content is deliberately discarded, never interpolated into
-                            # prompts, returned to clients, logged, or used as instructions.
-                            if (
-                                url is not None
-                                and url not in failed_urls
-                                and isinstance(content, str)
-                                and 20 <= len(content.strip()) <= MAX_PAGE_CHARS
-                                and candidates[url] not in retrieved
-                            ):
-                                retrieved.append(candidates[url])
+                    extracted = await self._post(
+                        client,
+                        "/extract",
+                        {
+                            "urls": urls,
+                            "extract_depth": "basic",
+                            "format": "text",
+                            "include_images": False,
+                        },
+                    )
+            rows = extracted.get("results")
+            failed_rows = extracted.get("failed_results", [])
+            if (
+                not isinstance(rows, list)
+                or len(rows) > MAX_PAGES
+                or not isinstance(failed_rows, list)
+                or len(failed_rows) > MAX_PAGES
+            ):
+                raise _InvalidProviderResponse
+            failed_keys = {
+                _page_key(row.get("url")) for row in failed_rows if isinstance(row, dict)
+            }
+            for row in rows:
+                if not isinstance(row, dict):
+                    raise _InvalidProviderResponse
+                key = _page_key(row.get("url"))
+                content = row.get("raw_content")
+                # Content is deliberately discarded, never interpolated into
+                # prompts, returned to clients, logged, or used as instructions.
+                if (
+                    key in source_by_key
+                    and key not in failed_keys
+                    and isinstance(content, str)
+                    and 20 <= len(content.strip()) <= MAX_PAGE_CHARS
+                ):
+                    found.add(source_by_key[key])
         except (httpx.HTTPError, TimeoutError, _InvalidProviderResponse):
-            # No provider exception strings, keys, response bodies, or queries in logs.
-            return ResearchResult(
-                status="unavailable",
-                sources=sources,
-                query_count=queries,
-                page_count=pages,
-                limitation="Web research did not complete. The plan uses locally reviewed "
-                "guidance; no fresh evidence has been established.",
-            )
+            # No provider exception strings, keys, response bodies, or URLs in logs.
+            found = set()
 
-        status = "retrieved" if len(retrieved) == len(sources) else "partial"
+        retrieved = [source.id for source in sources if source.id in found]
+        status: ResearchStatus = "retrieved" if len(retrieved) == len(sources) else "partial"
         if not retrieved:
             status = "unavailable"
         return ResearchResult(
             status=status,
             sources=sources,
             retrieved_source_ids=retrieved,
-            query_count=queries,
-            page_count=pages,
-            limitation="Provider retrieval checks source availability only. Plan claims "
-            "remain locally reviewed guidance, not a fresh medical evidence review.",
+            page_count=len(urls),
+            limitation=LIMITATIONS[status],
         )

@@ -1,0 +1,11 @@
+# Fresh-context build → separate critique → instruction revision
+
+Use for substantial skill refinement when agents are authorized. Keep experiments bounded: one representative screen plus its meaningful state/sheet, not a full product. Freeze the exact skill folder used, including linked references and resources; record that revision, not just the entrypoint.
+
+Give a fresh builder a realistic brief, the frozen skill and minimum raw assets/toolchain information. Withhold previous designs, suspected failure, desired patch and critic conclusions. Ask for the actual target implementation and evidence, not a rationale alone.
+
+Give a separate fresh critic the brief, actual rendered images and enough source/runtime evidence to distinguish visible defects from untested behavior. Record the app/source and capture revision together. If source changes during review, retain the original observations and reinspect the regenerated frames; stale captures cannot validate the newer code. Do not prime it with the builder's self-rating or intended lesson. Have it name specific locations and consequences, compare relevant primary examples, and separate direct observation from inference. Ask which failures recur across viewports and which could be caused by skill instructions. It may conclude the code needs a local correction rather than a new universal rule.
+
+Review the artifacts yourself. Prioritize the biggest observed craft or interaction gap; change the source instruction only when that could improve future decisions. Render the corrected slice and record what changed. Preserve independent critique even if it disagrees with the author.
+
+Run a new fresh builder with the revised skill. Where a before/after claim matters, repeat the same brief with a fresh builder and the revised frozen skill; keep different-brief trials as transfer evidence rather than attributing every difference to the instruction. Include a held-out brief with a different composition/material demand to detect overfitting to one pastel pet or one code template. Test real Flutter when Flutter is requested. Track version, brief, reference use, captures, observed failures, instruction revision and remaining limits. Passing tests and confident review scores are not a stopping criterion; stop when the requested scope is demonstrated and material gaps are resolved or clearly reported.

@@ -9,7 +9,7 @@ For the audited functionality inventory, verified refinements and specific remai
 From the repository root, using Python 3.11 and [uv](https://docs.astral.sh/uv/):
 
 ```sh
-uv sync --frozen --python 3.11
+uv sync --locked --python 3.11
 # Optional: copy .env.example to .env; leave provider fields empty for keyless use.
 uv run uvicorn lifetwin.app:app --host 127.0.0.1 --port 8000 --no-access-log
 ```

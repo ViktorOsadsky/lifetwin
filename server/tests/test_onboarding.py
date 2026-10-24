@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding import ConversationService, OpenAIExtractor, router
 from lifetwin.onboarding.models import ConversationState, ExtractionResult, TurnRequest
-from lifetwin.onboarding.parsing import grounded_candidates, parse_reply, parse_value
+from lifetwin.onboarding.parsing import QUESTIONS, grounded_candidates, parse_reply, parse_value
 from lifetwin.onboarding.providers import ExtractionUnavailable
 
 
@@ -155,9 +155,7 @@ def test_bad_transitions_and_oversized_or_inconsistent_inputs_are_rejected(clien
     )
     state = turn(client, "reply", turn(client, "start")["state"], text="35")["state"]
     assert (
-        client.post(
-            "/api/onboarding/turn", json={"action": "reply", "state": state, "text": "36"}
-        ).status_code
+        client.post("/api/onboarding/turn", json={"action": "skip", "state": state}).status_code
         == 409
     )
 
@@ -165,17 +163,18 @@ def test_bad_transitions_and_oversized_or_inconsistent_inputs_are_rejected(clien
 class FakeExtractor:
     configured = True
 
-    def __init__(self, *, quote="70 kg", error=False):
+    def __init__(self, *, quote="70 kg", error=False, field="weight_kg"):
         self.calls = 0
         self.quote = quote
         self.error = error
+        self.field = field
 
     async def extract(self, text, field):
         self.calls += 1
         if self.error:
             raise ExtractionUnavailable()
         return ExtractionResult.model_validate(
-            {"candidates": [{"field": "weight_kg", "quote": self.quote}]}
+            {"candidates": [{"field": self.field, "quote": self.quote}]}
         )
 
 
@@ -361,7 +360,7 @@ def test_provider_span_cannot_drop_context_or_select_numeric_substring(text):
 )
 def test_grounding_requires_field_context_full_tokens_and_all_clauses(text, field, quote):
     extraction = ExtractionResult.model_validate({"candidates": [{"field": field, "quote": quote}]})
-    assert grounded_candidates(text, extraction) == {}
+    assert grounded_candidates(text, extraction, field) == {}
 
 
 @pytest.mark.parametrize(
@@ -396,7 +395,8 @@ def test_multi_pending_correction_requires_field_and_never_guesses(client):
     assert result["state"]["current_field"] is None
     pending = result["state"]["pending_profile"]
     result = turn(client, "correct", result["state"], text="80 kg")
-    assert "Choose the field" in result["message"]
+    assert "Which one do you want to change?" in result["message"]
+    assert "age, weight" in result["message"]
     assert result["state"]["pending_profile"] == pending
     result = turn(client, "correct", result["state"], field="weight_kg", text="80 kg")
     assert result["state"]["pending_profile"]["weight_kg"] == 80
@@ -464,3 +464,317 @@ def test_owned_extractor_client_does_not_trust_proxy_environment_and_is_closed(m
 
     asyncio.run(run())
     assert len(clients) == 1 and clients[0].is_closed
+
+
+def asking(field, **values):
+    return ConversationState(phase="asking", current_field=field, **values).model_dump()
+
+
+# d-intake-1: a provider cannot move a bare number to a field nobody asked about.
+@pytest.mark.parametrize(
+    ("asked", "field", "text"),
+    [
+        ("height_cm", "age", "70"),
+        ("weight_kg", "systolic_bp", "160"),
+        ("sleep_hours", "alcohol_drinks_weekly", "7"),
+        ("smoking_status", "diabetes", "no"),
+    ],
+)
+def test_grounding_rejects_unnamed_quote_for_another_field(asked, field, text):
+    extraction = ExtractionResult.model_validate({"candidates": [{"field": field, "quote": text}]})
+    assert grounded_candidates(text, extraction, asked) == {}
+    assert grounded_candidates(text, extraction, field) != {}
+
+
+@pytest.mark.parametrize(
+    ("asked", "field", "text", "expected"),
+    [
+        ("weight_kg", "systolic_bp", "my systolic is 160", {"systolic_bp": 160}),
+        ("height_cm", "age", "I am 70 years old", {"age": 70}),
+        ("sleep_hours", "alcohol_drinks_weekly", "7 drinks", {"alcohol_drinks_weekly": 7.0}),
+    ],
+)
+def test_grounding_accepts_other_field_when_clause_names_it(asked, field, text, expected):
+    extraction = ExtractionResult.model_validate({"candidates": [{"field": field, "quote": text}]})
+    assert grounded_candidates(text, extraction, asked) == expected
+
+
+def test_provider_cannot_turn_bare_weight_into_blood_pressure():
+    service = ConversationService(FakeExtractor(quote="160", field="systolic_bp"))
+    result = service_turn(
+        service, action="reply", state=asking("weight_kg"), text="160", provider_consent=True
+    )
+    assert result.state.phase == "asking"
+    assert result.state.pending_profile.model_dump(exclude_none=True) == {}
+    assert result.provider_status == "unavailable"
+    assert "160 pounds or 160 kilograms" in result.message
+
+
+# d-intake-2: the confirmation is readable and repeats the person's own unit.
+@pytest.mark.parametrize(
+    ("field", "text", "expected"),
+    [
+        ("weight_kg", "160 lbs", "Weight: 160 pounds (about 72.6 kg)"),
+        ("weight_kg", "70 kg", "Weight: 70 kg (about 154.3 pounds)"),
+        ("height_cm", "5 ft 10 in", "Height: 5 feet 10 inches (about 178 cm)"),
+        ("height_cm", "178 cm", "Height: 178 cm (about 5 feet 10 inches)"),
+        ("systolic_bp", "120/80", "Blood pressure: 120 over 80"),
+        ("exercise_minutes_weekly", "150 minutes", "Exercise: 150 minutes a week"),
+        ("smoking_status", "never", "Smoking: never smoked"),
+        ("sex", "prefer not to say", "Sex: prefer not to say"),
+    ],
+)
+def test_confirmation_message_is_plain_language(client, field, text, expected):
+    message = turn(client, "reply", asking(field), text=text)["message"]
+    assert expected in message
+    assert "_" not in message
+    assert "Metric fields" not in message
+    assert "Is that right? Say yes, or tell me the right answer." in message
+
+
+def test_several_pending_and_correction_messages_use_plain_labels(client):
+    result = turn(client, "reply", asking("age"), text="age: 35; weight: 70 kg")
+    assert "_" not in result["message"]
+    message = turn(client, "correct", result["state"], text="80 kg")["message"]
+    assert "age, weight" in message and "_" not in message
+    message = turn(client, "correct", result["state"], field="systolic_bp", text="weight: 80 kg")[
+        "message"
+    ]
+    assert "top blood pressure number" in message and "_" not in message
+
+
+# d-intake-3: spoken yes/no while confirming never returns 409.
+@pytest.mark.parametrize("text", ["yes", "Yes.", "yes, that's right", "Correct", "that’s right"])
+def test_plain_yes_while_confirming_confirms(client, text):
+    pending = turn(client, "reply", asking("height_cm"), text="5 ft 10 in")["state"]
+    result = turn(client, "reply", pending, text=text)
+    assert result["state"]["confirmed_profile"]["height_cm"] == pytest.approx(177.8)
+    assert result["state"]["phase"] == "asking"
+
+
+@pytest.mark.parametrize("text", ["No, it's 6 ft", "no 6 feet", "Nope, 6 foot"])
+def test_no_with_value_while_confirming_corrects_pending(client, text):
+    pending = turn(client, "reply", asking("height_cm"), text="5 ft 10 in")["state"]
+    result = turn(client, "reply", pending, text=text)
+    assert result["state"]["phase"] == "confirming"
+    assert result["state"]["pending_profile"]["height_cm"] == pytest.approx(182.88)
+    assert result["state"]["confirmed_profile"]["height_cm"] is None
+
+
+@pytest.mark.parametrize("text", ["maybe", "no", "ok", "yes but 6 ft", "I think so"])
+def test_ambiguous_reply_while_confirming_changes_nothing(client, text):
+    pending = turn(client, "reply", asking("height_cm"), text="5 ft 10 in")["state"]
+    result = turn(client, "reply", pending, text=text)
+    assert result["state"] == pending
+    assert "nothing has changed" in result["message"].lower()
+
+
+def test_pending_blood_pressure_pair_is_corrected_as_a_pair(client):
+    pending = turn(client, "reply", asking("systolic_bp"), text="120 over 80")["state"]
+    result = turn(client, "reply", pending, text="no, 130 over 85")
+    assert result["state"]["pending_profile"]["systolic_bp"] == 130
+    assert result["state"]["pending_profile"]["diastolic_bp"] == 85
+    result = turn(client, "reply", pending, text="no, 130")
+    assert result["state"] == pending
+    assert "both blood pressure numbers" in result["message"]
+
+
+# d-intake-4: common US height forms.
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("5'10", 177.8),
+        ("5'10\"", 177.8),
+        ("5 foot 10", 177.8),
+        ("5 feet 10", 177.8),
+        ("5 feet, 10 inches", 177.8),
+        ("5 feet and 10 inches", 177.8),
+        ("5 ft. 10 in.", 177.8),
+        ("70 inches", 177.8),
+        ("6 feet tall", 182.88),
+        ("5′10″", 177.8),
+        ("I'm 6 foot", 182.88),
+    ],
+)
+def test_us_height_forms(text, expected):
+    assert parse_reply(text, "height_cm") == {"height_cm": pytest.approx(expected)}
+
+
+@pytest.mark.parametrize("text", ["5 feet 14", "5 ft 14 in", "5 feet, 10 inches, 6 feet"])
+def test_impossible_or_contradictory_heights_still_clarify(text):
+    assert parse_reply(text, "height_cm") == {}
+
+
+def test_and_a_half_stays_one_measurement():
+    assert parse_reply("6 and a half hours", "sleep_hours") == {"sleep_hours": 6.5}
+
+
+# d-intake-5: iOS smart punctuation.
+@pytest.mark.parametrize(
+    ("field", "text", "expected"),
+    [
+        ("age", "I’m 75", {"age": 75}),
+        ("height_cm", "I’m 5 ft 10 in", {"height_cm": 177.8}),
+        ("alcohol_drinks_weekly", "I don’t drink", {"alcohol_drinks_weekly": 0.0}),
+        ("sex", "I’m male", {"sex": "male"}),
+    ],
+)
+def test_curly_apostrophes_parse(field, text, expected):
+    assert parse_reply(text, field) == expected
+
+
+def test_curly_apostrophe_skip_word_skips(client):
+    result = turn(client, "reply", asking("systolic_bp"), text="I don’t know")
+    assert "systolic_bp" in result["state"]["skipped_fields"]
+
+
+# d-intake-6: natural ways to say "I don't know".
+@pytest.mark.parametrize(
+    "text",
+    [
+        "don't know",
+        "I'm not sure",
+        "no idea",
+        "pass",
+        "next",
+        "I'd rather not say",
+        "skip this one",
+    ],
+)
+def test_expanded_skip_words(client, text):
+    result = turn(client, "reply", asking("weight_kg"), text=text)
+    assert "weight_kg" in result["state"]["skipped_fields"]
+
+
+@pytest.mark.parametrize("field", ["systolic_bp", "diastolic_bp"])
+def test_plain_no_to_blood_pressure_skips(client, field):
+    result = turn(client, "reply", asking(field), text="No")
+    assert field in result["state"]["skipped_fields"]
+    assert "didn't understand" not in result["message"]
+
+
+def test_prefer_not_to_say_records_sex_instead_of_skipping(client):
+    result = turn(client, "reply", asking("sex"), text="I'd rather not say")
+    assert result["state"]["pending_profile"]["sex"] == "prefer_not_to_say"
+    assert "sex" not in result["state"]["skipped_fields"]
+
+
+def test_blood_pressure_question_asks_for_a_value():
+    assert QUESTIONS["systolic_bp"].startswith("What is your blood pressure?")
+    assert "120 over 80" in QUESTIONS["systolic_bp"]
+
+
+# d-intake-7: spoken pairs and impossible readings.
+def test_spoken_blood_pressure_pair():
+    assert parse_reply("120 over 80", "systolic_bp") == {"systolic_bp": 120, "diastolic_bp": 80}
+    assert parse_reply("my blood pressure is 120 over 80", "systolic_bp") == {
+        "systolic_bp": 120,
+        "diastolic_bp": 80,
+    }
+
+
+@pytest.mark.parametrize("text", ["80/120", "80 over 120", "90/90"])
+def test_reversed_blood_pressure_pair_asks_to_check(client, text):
+    assert parse_reply(text, "systolic_bp") == {}
+    result = turn(client, "reply", asking("systolic_bp"), text=text)
+    assert result["state"]["phase"] == "asking"
+    assert "top number is usually the bigger one" in result["message"]
+
+
+def test_diastolic_must_be_below_confirmed_systolic(client):
+    state = asking("diastolic_bp", confirmed_profile=HealthProfile(systolic_bp=70))
+    result = turn(client, "reply", state, text="90")
+    assert result["state"]["phase"] == "asking"
+    assert result["state"]["pending_profile"]["diastolic_bp"] is None
+    assert "top number is usually the bigger one" in result["message"]
+
+
+# d-intake-8: a confirmed answer can be withdrawn without erasing everything.
+def test_confirmed_answer_can_be_withdrawn_to_blank(client):
+    others = [field for field in HealthProfile.model_fields if field != "diabetes"]
+    state = ConversationState(
+        phase="ready", confirmed_profile=HealthProfile(diabetes=True), skipped_fields=others
+    ).model_dump()
+    result = turn(client, "correct", state, field="diabetes", text="not sure")
+    assert result["state"]["confirmed_profile"]["diabetes"] is None
+    assert "diabetes" in result["state"]["skipped_fields"]
+    assert result["state"]["phase"] == "ready"
+    assert "removed your diabetes answer" in result["message"]
+    assert "cancel" not in result["message"]
+
+
+def test_skip_word_correction_without_saved_value_changes_nothing(client):
+    state = asking("age")
+    result = turn(client, "correct", state, field="weight_kg", text="not sure")
+    assert result["state"] == state
+    assert "Nothing has changed" in result["message"] and "cancel" not in result["message"]
+
+
+# d-intake-9: unitless numbers get a unit follow-up, never an assumed unit.
+@pytest.mark.parametrize(
+    ("field", "text", "expected"),
+    [
+        ("weight_kg", "160", "Is that 160 pounds or 160 kilograms?"),
+        ("weight_kg", "about 160 pounds", "Your best guess is fine."),
+        ("height_cm", "70", "Is that inches or centimeters?"),
+        ("height_cm", "about 170", "Your best guess is fine."),
+    ],
+)
+def test_unitless_or_approximate_number_gets_specific_follow_up(client, field, text, expected):
+    result = turn(client, "reply", asking(field), text=text)
+    assert result["state"]["phase"] == "asking"
+    assert expected in result["message"]
+    assert "units" not in result["message"]
+
+
+def test_start_and_fallback_messages_avoid_jargon(client):
+    start = turn(client, "start")["message"]
+    assert "You can type or talk to me." in start
+    assert "transcript" not in start
+    message = turn(client, "reply", asking("age"), text="purple")["message"]
+    assert "listed category" not in message and "units" not in message
+
+
+# d-intake-10: everyday categorical answers.
+@pytest.mark.parametrize(
+    ("field", "text", "expected"),
+    [
+        ("sex", "woman", "female"),
+        ("sex", "a woman", "female"),
+        ("sex", "I'm a woman", "female"),
+        ("sex", "man", "male"),
+        ("smoking_status", "I never smoked", "never"),
+        ("smoking_status", "I've never smoked", "never"),
+        ("smoking_status", "I used to smoke", "former"),
+        ("smoking_status", "I quit", "former"),
+        ("diabetes", "nope", False),
+        ("diabetes", "no, I don't", False),
+        ("exercise_minutes_weekly", "none", 0),
+        ("exercise_minutes_weekly", "I don't exercise", 0),
+        ("exercise_minutes_weekly", "0", 0),
+    ],
+)
+def test_everyday_categorical_answers(field, text, expected):
+    assert parse_reply(text, field) == {field: expected}
+
+
+# d-intake-11: daily exercise is never silently converted; small bare numbers clarify.
+def test_daily_exercise_asks_for_days_then_accepts_explicit_total(client):
+    result = turn(client, "reply", asking("exercise_minutes_weekly"), text="30 minutes a day")
+    assert result["state"]["phase"] == "asking"
+    assert "How many days a week" in result["message"]
+    result = turn(
+        client,
+        "reply",
+        asking("exercise_minutes_weekly"),
+        text="30 minutes a day, 5 days a week",
+    )
+    assert result["state"]["pending_profile"]["exercise_minutes_weekly"] == 150
+    assert "150 minutes a week" in result["message"]
+
+
+def test_bare_small_exercise_number_is_not_read_as_minutes(client):
+    assert parse_reply("5", "exercise_minutes_weekly") == {}
+    result = turn(client, "reply", asking("exercise_minutes_weekly"), text="5")
+    assert result["state"]["phase"] == "asking"
+    assert "5 minutes or 5 hours" in result["message"]

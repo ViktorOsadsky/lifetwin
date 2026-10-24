@@ -1,10 +1,25 @@
 """Input contracts only. These ranges validate data, not model eligibility."""
 
-from typing import Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
 
 SCHEMA_VERSION = "1.0"
+
+
+BP_ORDER_MESSAGE = (
+    "The top blood pressure number is usually the bigger one. Please check your reading."
+)
+
+
+def _integral_float_to_int(value: Any) -> Any:
+    # JSON/Dart clients may send 35.0 for a whole number; 35.5 stays invalid.
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return value
+
+
+WholeNumber = BeforeValidator(_integral_float_to_int)
 
 
 class ApiModel(BaseModel):
@@ -14,17 +29,29 @@ class ApiModel(BaseModel):
 class HealthProfile(ApiModel):
     """Explicitly supplied metric inputs; no risk or lifespan inference."""
 
-    age: int | None = Field(default=None, ge=0, le=120)
+    age: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=120)
     sex: Literal["female", "male", "intersex", "prefer_not_to_say"] | None = None
     height_cm: float | None = Field(default=None, ge=50, le=280)
     weight_kg: float | None = Field(default=None, ge=10, le=700)
     sleep_hours: float | None = Field(default=None, ge=0, le=24)
-    exercise_minutes_weekly: int | None = Field(default=None, ge=0, le=10080)
+    exercise_minutes_weekly: Annotated[int | None, WholeNumber] = Field(
+        default=None, ge=0, le=10080
+    )
     smoking_status: Literal["never", "former", "current", "unknown"] | None = None
     alcohol_drinks_weekly: float | None = Field(default=None, ge=0, le=200)
     diabetes: bool | None = None
-    systolic_bp: int | None = Field(default=None, ge=40, le=300)
-    diastolic_bp: int | None = Field(default=None, ge=20, le=200)
+    systolic_bp: Annotated[int | None, WholeNumber] = Field(default=None, ge=40, le=300)
+    diastolic_bp: Annotated[int | None, WholeNumber] = Field(default=None, ge=20, le=200)
+
+    @model_validator(mode="after")
+    def blood_pressure_order(self):
+        if (
+            self.systolic_bp is not None
+            and self.diastolic_bp is not None
+            and self.systolic_bp <= self.diastolic_bp
+        ):
+            raise ValueError(BP_ORDER_MESSAGE)
+        return self
 
 
 class ApiError(ApiModel):

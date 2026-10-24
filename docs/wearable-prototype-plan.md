@@ -110,7 +110,7 @@ Each row is sized to become one issue. IDs are stable so issues and PRs can refe
 | --- | --- | --- |
 | VAL-01 | Step accuracy log | Band vs. manual count vs. phone pedometer on scripted walks; results committed as a short table |
 | VAL-02 | Separation tests | Wearable data cannot change quiz health or predictions without confirmation; dismissing a suggestion leaves the profile unchanged |
-| VAL-03 | Privacy check | No raw samples or minute records leave the phone. Summaries sent under D1 never appear in server logs, traces, error reports, caches, storage or third-party provider calls |
+| VAL-03 | Privacy check | No raw samples or minute records leave the phone. Summaries sent under D1 never appear in server logs, traces, error reports, caches or storage |
 | DEMO-01 | Demo script | Pair band → walk → panel updates → suggestion → confirm → existing fortune/experiment flow, plus a replay-mode fallback |
 
 ## Phases and exit criteria
@@ -132,7 +132,7 @@ These are Tier-1 (data model, privacy boundary, model inputs, spending).
 
 | ID | Decision | Ruling | Consequence for this plan |
 | --- | --- | --- | --- |
-| D1 | Where wearable data may go | **(b) aggregated summaries may go to the server, processed within the request only, never stored** | Raw samples and minute records stay on the band/phone. The server must not persist, log, trace or cache wearable payloads (extends VAL-03), and must not forward them to third-party LLM or research providers. The exact summary fields need a contract decision with Tracks A/B; the earlier activity-tracker ruling allows only a 4-week weekly average to leave the phone, so anything finer must be reconciled with it first |
+| D1 | Where wearable data may go | **(b) aggregated summaries may go to the server, processed within the request only, never stored** | Raw samples and minute records stay on the band/phone. The server must not persist, log, trace or cache wearable payloads (extends VAL-03). **Open:** whether summaries may be forwarded to the AI agents. [apple-health.md](apple-health.md) already sends Apple Health samples to the agents through the server, so the wearable could follow the same path. The exact summary fields need a contract decision with Track B, alongside `apple_health_samples.v0` |
 | D2 | How wearable values enter the profile | **(a) for now:** a suggestion the user confirms; no contract change | APP-04/APP-08 use the existing draft → confirm path. A provenance field can be revisited with Tracks A/B |
 | D3 | Device-measured vs. self-reported activity | **Device-measured activity will be included in the model** | Track A owns the method and the change is part of deferred prediction work. Until it lands, suggestions carry the device-vs-self-report caveat. The model must be trained on device data comparable to this band (see the note below) |
 | D4 | Ownership | **Open** | Team decides; not assigned here |

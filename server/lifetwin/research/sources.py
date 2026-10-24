@@ -1,7 +1,7 @@
 """Original authority sources checked on October 23, 2026 (Pacific time).
 
-Only these reviewed page URLs may be sent to the extraction provider. Search
-snippets, provider-written titles, and retrieved instructions are never trusted
+Only these reviewed page URLs may be sent to the extraction provider; no search
+query is sent. Provider-written titles and retrieved instructions are never trusted
 as clinical evidence. Adding a source requires reviewing the original page.
 """
 
@@ -44,14 +44,6 @@ SOURCES: dict[ResearchTopic, EvidenceSource] = {
         url="https://ods.od.nih.gov/factsheets/WYNTK-Consumer/",
         publisher="NIH Office of Dietary Supplements",
     ),
-}
-
-TOPIC_QUERIES: dict[ResearchTopic, str] = {
-    "physical_activity": "NIDDK tips for starting physical activity gradual activity",
-    "sleep": "CDC about sleep consistent bedtime wake time sleep habits",
-    "nutrition": "CDC healthy eating tips vegetables fruit whole grains",
-    "smoking": "CDC benefits of quitting smoking health",
-    "supplements": "NIH ODS dietary supplements consumer safety medicine interactions",
 }
 
 

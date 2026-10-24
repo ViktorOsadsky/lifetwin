@@ -14,4 +14,5 @@ Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent im
 | [tracks/C-flutter-app.md](tracks/C-flutter-app.md) | Flutter app screens and visualizations |
 | [tracks/D-advisor-demo.md](tracks/D-advisor-demo.md) | AI advisor, safety copy, demo |
 | [ios-testing.md](ios-testing.md) | Running the app on the test iPhone and the simulator |
-| [wearable-prototype-plan.md](wearable-prototype-plan.md) | Draft wrist activity-tracker prototype: hardware, metrics, feature list, phases and pending decisions |
+| [apple-health.md](apple-health.md) | Apple Health import: what is read, read-back rules, privacy decisions, what is left |
+| [wearable-prototype-plan.md](wearable-prototype-plan.md) | Draft wrist activity-tracker prototype: hardware, metrics, feature list, phases and team decisions |

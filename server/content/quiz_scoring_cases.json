@@ -1,0 +1,74 @@
+{
+  "description": "Reference game-health scoring vectors for the bundled quiz bank. Each step lists the game state expected after the client applies that event. 'scored' is false when an event must not change game health or play a reaction. 'start_game_health' is test setup only; real play starts at local_scoring.initial_game_health. Events: answer, review (the player opens the explanation), network_failure.",
+  "bank_version": "2.0",
+  "cases": [
+    {
+      "name": "duplicate tap on the same answer is counted once",
+      "start_game_health": 90,
+      "steps": [
+        {"event": "answer", "question_id": "soup-serving-check.v2", "option_id": "b", "expect": {"game_health": 95, "mascot_event": "quiz_recovering", "scored": true}},
+        {"event": "answer", "question_id": "soup-serving-check.v2", "option_id": "b", "expect": {"game_health": 95, "mascot_event": null, "scored": false}}
+      ]
+    },
+    {
+      "name": "correct answer at full game health stays at 100",
+      "start_game_health": 100,
+      "steps": [
+        {"event": "answer", "question_id": "soup-serving-check.v2", "option_id": "b", "expect": {"game_health": 100, "mascot_event": "quiz_recovering", "scored": true}}
+      ]
+    },
+    {
+      "name": "other options after a wrong answer are unscored, before or without review",
+      "start_game_health": 100,
+      "steps": [
+        {"event": "answer", "question_id": "soup-serving-check.v2", "option_id": "a", "expect": {"game_health": 95, "mascot_event": "quiz_sick", "scored": true}},
+        {"event": "answer", "question_id": "soup-serving-check.v2", "option_id": "c", "expect": {"game_health": 95, "mascot_event": null, "scored": false}},
+        {"event": "answer", "question_id": "soup-serving-check.v2", "option_id": "b", "expect": {"game_health": 95, "mascot_event": null, "scored": false}}
+      ]
+    },
+    {
+      "name": "wrong answer, review once, then an unscored retry",
+      "start_game_health": 100,
+      "steps": [
+        {"event": "answer", "question_id": "chicken-salad-prep.v2", "option_id": "b", "expect": {"game_health": 95, "mascot_event": "quiz_sick", "scored": true}},
+        {"event": "review", "question_id": "chicken-salad-prep.v2", "expect": {"game_health": 100, "mascot_event": "quiz_recovering", "scored": true}},
+        {"event": "review", "question_id": "chicken-salad-prep.v2", "expect": {"game_health": 100, "mascot_event": null, "scored": false}},
+        {"event": "answer", "question_id": "chicken-salad-prep.v2", "option_id": "a", "expect": {"game_health": 100, "mascot_event": null, "scored": false}}
+      ]
+    },
+    {
+      "name": "wrong answer at zero stays at zero and review still recovers",
+      "start_game_health": 0,
+      "steps": [
+        {"event": "answer", "question_id": "leftovers-next-step.v2", "option_id": "a", "expect": {"game_health": 0, "mascot_event": "quiz_sick", "scored": true}},
+        {"event": "review", "question_id": "leftovers-next-step.v2", "expect": {"game_health": 5, "mascot_event": "quiz_recovering", "scored": true}}
+      ]
+    },
+    {
+      "name": "review after a correct answer is unscored",
+      "start_game_health": 90,
+      "steps": [
+        {"event": "answer", "question_id": "yogurt-sugar-accounting.v2", "option_id": "b", "expect": {"game_health": 95, "mascot_event": "quiz_recovering", "scored": true}},
+        {"event": "review", "question_id": "yogurt-sugar-accounting.v2", "expect": {"game_health": 95, "mascot_event": null, "scored": false}}
+      ]
+    },
+    {
+      "name": "network failure is unscored and does not use up the question",
+      "start_game_health": 100,
+      "steps": [
+        {"event": "network_failure", "question_id": "sodium-label-decoder.v2", "expect": {"game_health": 100, "mascot_event": null, "scored": false}},
+        {"event": "answer", "question_id": "sodium-label-decoder.v2", "option_id": "b", "expect": {"game_health": 95, "mascot_event": "quiz_sick", "scored": true}}
+      ]
+    },
+    {
+      "name": "each question version is tracked separately",
+      "start_game_health": 100,
+      "steps": [
+        {"event": "answer", "question_id": "small-activity-windows.v2", "option_id": "a", "expect": {"game_health": 95, "mascot_event": "quiz_sick", "scored": true}},
+        {"event": "answer", "question_id": "activity-missing-piece.v2", "option_id": "a", "expect": {"game_health": 90, "mascot_event": "quiz_sick", "scored": true}},
+        {"event": "review", "question_id": "activity-missing-piece.v2", "expect": {"game_health": 95, "mascot_event": "quiz_recovering", "scored": true}},
+        {"event": "answer", "question_id": "serving-size-meaning.v2", "option_id": "a", "expect": {"game_health": 100, "mascot_event": "quiz_recovering", "scored": true}}
+      ]
+    }
+  ]
+}
