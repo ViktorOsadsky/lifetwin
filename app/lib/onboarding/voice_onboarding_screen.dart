@@ -104,6 +104,11 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   late GuideTurn? _shownTurn = c.turn;
 
   bool get _justChanged => _turnLock?.isActive ?? false;
+  late bool _shownCorrecting = c.correcting;
+
+  void _keepAnswer() {
+    if (!_justChanged) c.keepAnswer();
+  }
 
   final _noticeKey = GlobalKey(debugLabel: 'notice');
   final _quickKey = GlobalKey(debugLabel: 'quick answers');
@@ -216,6 +221,13 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     // With large text the story above the controls is short. A new turn scrolls the end
     // of the twin's line (the question or "Is that right?") into view; then, when there
     // is room, the quick answers under it. A new notice scrolls into view with its button.
+    // "No, change it" swaps the read-back's buttons for the typing box and "Never mind" in
+    // the same place: a double tap must not undo the change it just made.
+    if (c.correcting != _shownCorrecting) {
+      _shownCorrecting = c.correcting;
+      _turnLock?.cancel();
+      _turnLock = Timer(secondTapGuard, () {});
+    }
     if (!identical(c.turn, _shownTurn)) {
       _shownTurn = c.turn;
       _turnLock?.cancel();
@@ -389,7 +401,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   }) {
     final keyboard = _keyboard;
     final compact = largeText(context) || crowded;
-    final inWindow = line.isNotEmpty && !compact && line.length <= 70;
+    final inWindow = line.isNotEmpty && !compact && !keyboard && line.length <= 70;
     return LayoutBuilder(
       builder: (context, box) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -697,7 +709,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         ..._answerControls(busy, keyboard),
         if (!busy && !keyboard) ...[
           const SizedBox(height: 12),
-          LipButton(label: 'Never mind', kind: LipKind.secondary, height: 72, onTap: c.keepAnswer),
+          LipButton(label: 'Never mind', kind: LipKind.secondary, height: 72, onTap: _keepAnswer),
         ],
         if (!keyboard) _switchMode(),
       ];
