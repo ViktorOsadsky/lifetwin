@@ -6,6 +6,7 @@ from pydantic import Field, field_validator, model_validator
 
 from lifetwin.core.models import ApiModel, HealthProfile
 from lifetwin.research.models import EvidenceSource, ResearchResult, ResearchTopic
+from lifetwin.research.sources import SOURCES
 
 
 class AdvisorRequest(ApiModel):
@@ -52,7 +53,18 @@ class AdvisorResponse(ApiModel):
 
     @model_validator(mode="after")
     def cited_actions(self) -> "AdvisorResponse":
-        source_ids = {source.id for source in self.sources}
-        if any(not set(action.source_ids) <= source_ids for action in self.actions):
-            raise ValueError("Every action must cite a supplied evidence source.")
+        if any(
+            source != SOURCES.get(source.topic)
+            for source in [*self.sources, *self.research.sources]
+        ):
+            raise ValueError("Every source must be a reviewed source for its topic.")
+        topics = {source.id: source.topic for source in self.sources}
+        if any(
+            topics.get(source_id) != action.topic
+            for action in self.actions
+            for source_id in action.source_ids
+        ):
+            raise ValueError("Every action must cite a supplied source on its own topic.")
+        if not set(self.research.retrieved_source_ids) <= set(topics):
+            raise ValueError("Retrieved sources must be supplied evidence sources.")
         return self
