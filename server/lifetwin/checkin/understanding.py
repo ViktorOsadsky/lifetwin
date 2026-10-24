@@ -38,8 +38,7 @@ Pace = Literal["vigorous", "moderate"]
 # Out of breath, in everyday words, and activities that nearly always are.
 VIGOROUS = (
     r"\b(?:out of breath|breathless\w*|puff\w*|huff\w*|winded|pant\w*|gasp\w*|"
-    r"hard to (?:talk|breathe)|couldn't (?:talk|catch my breath)|sweat\w*|"
-    r"heart (?:going|pounding|racing|thumping)|uphill|up (?:the|a|some) hills?|hills|hilly|"
+    r"hard to (?:talk|breathe)|couldn't (?:talk|catch my breath)|sweat\w*|uphill|up (?:the|a|some) hills?|hills|hilly|"
     r"steep|jog\w*|run|ran|running|laps|hard|harder|strenuous|vigorous\w*|"
     r"intense|shovel\w* snow|spin class|fast)\b"
 )
@@ -49,8 +48,8 @@ NOT_VIGOROUS = (
     r"being\s+|even\s+)?(?:out of breath|breathless|puffed|winded)|"
     r"(?:nothing|none|no(?:thing)? one)\s+(?:of it\s+)?(?:that|which)?\s*(?:got|made|left|"
     r"had)\s+(?:me\s+)?(?:out of breath|breathless|puff\w*|winded)|"
-    r"no (?:hills|running|jogging)|nothing (?:strenuous|hard|vigorous|too hard)|"
-    r"(?:not|wasn't|nothing|never) (?:too |very |that |so )?hard)\b"
+    r"no (?:hills|running|jogging)|nothing (?:strenuous|hard|vigorous)|(?:wasn't|was not) hard|"
+    r"nothing (?:that )?(?:got (?:me )?)?(?:out of breath|breathless|puffed))\b"
 )
 MODERATE = (
     r"\b(?:easy|easily|gentle|gently|leisurely|stroll\w*|ambl\w*|potter\w*|garden\w*|"
@@ -131,8 +130,20 @@ WISH = (
 )
 
 
+# Figures of speech that sound like running: "the grandkids ran me ragged".
+IDIOMS = (
+    r"\b(?:ran|run|running)\s+(?:me|us|myself)?\s*(?:ragged|off (?:my|our) feet)\b|"
+    r"\b(?:ran|run|running)\s+(?:errands|around after \w+|late|out of)\b"
+)
+# "Nine and a bit hours": more than the number, by how much is not said.
+MORE_THAN = r"\band a (?:bit|little)\b|\b(?:\d+|an?) (?:minute|hour)s? (?:plus|or more)\b|\bodd\b"
+
+
 def _plain(text: str) -> str:
     text = _canonical(normalize_text(text))
+    text = re.sub(IDIOMS, " ", text)
+    # "between 20 and 30 minutes" is the range "20 to 30 minutes".
+    text = re.sub(r"\bbetween (\d+(?:\.\d+)?) and (?=\d)", r"\1 to ", text)
     # "maybe 25 minutes", "seven hours maybe": an estimate, read back as "about".
     text = re.sub(MAYBE.pattern + r"(?=\d)", "about ", text)
     text = re.sub(r"(?:(?<=minute)|(?<=hour))\s+(?:maybe|probably|perhaps)\b", " ", text)
@@ -140,7 +151,7 @@ def _plain(text: str) -> str:
 
 
 def _unsafe(text: str) -> bool:
-    return bool(re.search(WISH, text) or PAST_OLD.search(text))
+    return bool(re.search(WISH, text) or PAST_OLD.search(text) or re.search(MORE_THAN, text))
 
 
 def _other_time(text: str, day: str) -> bool:
@@ -151,7 +162,9 @@ def _other_time(text: str, day: str) -> bool:
 
 def _own(text: str) -> str | None:
     """The reply without clauses only about someone else; None when nothing is left."""
-    clauses = [c for c in re.split(r"[;,.!?]|\bbut\b|\bwhile\b", text) if c.strip()]
+    clauses = [
+        c for c in re.split(r"[;,!?]|(?<!\d)\.|\.(?!\d)|\bbut\b|\bwhile\b", text) if c.strip()
+    ]
     # "my husband and I walked": the person's own too.
     mine = [c for c in clauses if not _others(c) or _mine(c)]
     if not mine:
@@ -341,7 +354,8 @@ def read_activity(
                 return ActivityRead()
             continue
         pace = next(iter(named))
-        minutes = _amount(words, week, today)
+        # A part without a number has no time ("nothing too hard" is no zero).
+        minutes = _amount(words, week, today) if re.search(r"\d", words) else None
         if minutes is None:
             if re.search(r"\d", words) or re.search(VAGUE, words) or totals.get(pace) is not None:
                 return ActivityRead()
@@ -393,6 +407,9 @@ def _paced(plain: str, held: int, names: dict[str, str]) -> ActivityRead | None:
 
 def _sitting_minutes(text: str) -> float | None:
     durations = list(re.finditer(DAY_DURATION, text))
+    numbers = re.findall(r"(?<![\d.])\d+(?:\.\d+)?", text)
+    if durations and len(numbers) > sum(2 if d.group(1) else 1 for d in durations):
+        return None  # "eight hours, maybe nine": which?
     if not durations:
         bare = re.findall(rf"{N}(?!\s*(?:minute|hour|time|day|week|o'clock|am|pm))", text)
         if len(bare) == 1 and 1 <= float(bare[0]) <= 16 and not re.search(r"[/:]", text):

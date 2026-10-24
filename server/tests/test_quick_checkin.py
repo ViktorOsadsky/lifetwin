@@ -512,3 +512,24 @@ def test_quick_api_round_trip(client):
 def test_quick_api_rejects_a_plan_for_another_kind(client):
     bad = client.post("/api/checkin/start", json={"kind": "daily", "quick": {"topics": ["sleep"]}})
     assert bad.status_code == 422
+
+
+# --- Defects found by the one-time held-out scoring (new wording, not the held-out text) --------
+
+
+@pytest.mark.parametrize(
+    ("field", "text", "expected"),
+    [
+        (V, "walked for an hour and a half", {M: 90}),  # "1.5" was cut at the dot
+        (S, "six and a half hours", {S: 390}),
+        (V, "the kids ran me ragged, we gardened for an hour", {M: 60}),  # not running
+        (V, "nothing too hard, a gentle walk for 10 minutes", {M: 10}),  # "too" hedges the no
+        (V, "between 10 and 20 minutes of easy walking", {M: 15}),  # a close range, read as about
+        (V, "got my heart going on the bike for 20 minutes", {}),  # heart rate alone: pace asked
+        (S, "seven and a bit hours", {}),  # more than 7, by how much?
+        (S, "about 6 hours, maybe 7", {}),  # which?
+        (V, "nothing out of breath, an easy stroll for 25 minutes", {V: 0, M: 25}),
+    ],
+)
+def test_held_out_defects_stay_fixed(field, text, expected):
+    assert pending(say(at(field), text)) == expected
