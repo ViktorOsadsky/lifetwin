@@ -153,6 +153,37 @@ void main() {
     expect(r.c.mascotLine, 'How old are you?');
   });
 
+  test('first turn failing: an answer typed meanwhile starts the talk instead of being refused', () async {
+    final r = Rig();
+    r.guide.failNext = true;
+    await r.c.answerConsent(false);
+    expect(r.c.turn, isNull);
+    r.guide.failNext = true;
+    await r.c.submitTyped('71');
+    expect(r.guide.calls.map((c) => c['action']), ['start', 'start']);
+    expect(r.c.notice, noNetworkNotice);
+    await r.c.retry();
+    expect(r.guide.calls.last['action'], 'start');
+    expect(r.c.mascotLine, 'How old are you?');
+    await r.c.skip();
+    expect(r.guide.calls.last['action'], 'skip');
+  });
+
+  test('a network notice that cannot be said aloud stays on screen with Try again', () async {
+    final r = Rig();
+    await r.c.answerConsent(true);
+    r.guide.failNext = true;
+    r.output.speakError = const VoiceFailure('token: connection refused');
+    await r.c.submitTyped('70');
+    expect(r.c.notice, noNetworkNotice);
+    expect(r.c.canRetry, isTrue);
+    r.output.speakError = const VoiceUnavailableException();
+    r.guide.failNext = true;
+    await r.c.retry();
+    expect(r.c.notice, noNetworkNotice);
+    expect(r.c.canRetry, isTrue);
+  });
+
   test('once done, Go back reopens the last answer so it can be changed', () async {
     final r = Rig();
     await r.c.answerConsent(false);

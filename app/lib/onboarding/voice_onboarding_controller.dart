@@ -438,6 +438,11 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   Future<void> _send(String action, {String? text, bool fromTranscript = false, Map<String, num>? values}) async {
     if (_busy) return;
+    if (turn == null && action != 'start') {
+      // The first question never arrived (e.g. no network), so there is nothing to answer
+      // yet: the server would refuse it. Anything sent, Try again included, starts instead.
+      return _send('start');
+    }
     _busy = true;
     if (action == 'reply' && text != null) _lastReply = (text, fromTranscript);
     // After "No, change it" the next answer is a correction. Otherwise a reply
@@ -518,7 +523,9 @@ class VoiceOnboardingController extends ChangeNotifier {
     try {
       await (replay ? output.replay() : output.speak(spokenText(line))).timeout(_speakLimit);
     } on VoiceUnavailableException {
-      if (gen == _speechGen) {
+      // A notice that could not be said aloud is still on screen; replacing it (say, "can't
+      // reach LifeTwin" with "couldn't say that") would hide what went wrong.
+      if (gen == _speechGen && mascotLine) {
         _set(() {
           typing = true;
           voiceUsable = false;
@@ -526,7 +533,7 @@ class VoiceOnboardingController extends ChangeNotifier {
         });
       }
     } catch (_) {
-      if (gen == _speechGen) _set(() => notice = speakTroubleNotice);
+      if (gen == _speechGen && mascotLine) _set(() => notice = speakTroubleNotice);
     }
     if (gen == _speechGen && phase == VoicePhase.speaking) {
       _set(() => phase = turn?.complete == true ? VoicePhase.done : VoicePhase.idle);
