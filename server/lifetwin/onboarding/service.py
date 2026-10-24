@@ -9,6 +9,15 @@ from datetime import date
 from fastapi import HTTPException
 
 from lifetwin.core.models import HealthProfile
+from lifetwin.onboarding.intents import (
+    asks_back,
+    clean_reply,
+    control_intent,
+    focus,
+    keeps_answer,
+    read_back_reply,
+)
+from lifetwin.onboarding.intents import phrase as words_of
 from lifetwin.onboarding.models import (
     FIELDS,
     ConversationState,
@@ -17,6 +26,7 @@ from lifetwin.onboarding.models import (
     TurnResponse,
 )
 from lifetwin.onboarding.parsing import (
+    BP_FIELDS,
     BP_ORDER_MESSAGE,
     EXAMPLES,
     FRIENDLY_LABELS,
@@ -45,47 +55,12 @@ def _safe(read, *args, **kwargs):
         return None
 
 
-# Only these exact replies confirm pending answers; anything vaguer re-asks.
-AFFIRMATIVES = {
-    "yes",
-    "yeah",
-    "yep",
-    "yes please",
-    "correct",
-    "yes correct",
-    "that's correct",
-    "that is correct",
-    "yes that's correct",
-    "yes that is correct",
-    "that's right",
-    "that is right",
-    "yes that's right",
-    "yes that is right",
-    "yes it is",
-    "yup",
-    "yep that's right",
-    "yeah that's right",
-    "yes that's it",
-    "that's it",
-    "exactly",
-    "absolutely",
-    "you got it",
-    "yes indeed",
-    "uh huh",
-    "mm hm",
-    "yes sir",
-    "yes ma'am",
-    "that sounds right",
-}
-# "yes but 6 ft" both confirms and corrects; it changes nothing and asks again.
 # "Yeah, that's right" said to "For example, 5 feet 10 inches" means the example fits.
 EXAMPLE_YES = re.compile(
     r"(?:(?:yes|yeah|yea|yep|yup|uh huh|sure|right|correct|exactly)\s*)+"
     r"(?:(?:that's|thats|that is|it's|its)\s+(?:right|correct|me|it|true|about right))?"
     r"|(?:that's|thats|that is|it's|its)\s+(?:right|correct|me|it|true|about right)"
 )
-MIXED_YES = re.compile(r"(?:yes|yeah|yep|yup|correct)\b.*(?:\d|\b(?:but|no|not|actually)\b)")
-NEGATIVE = re.compile(r"(?:no|nope)\b\s*(?:(?:it's|it is|actually|i meant)\b\s*)?(.*)")
 BOTH_BP = ["systolic_bp", "diastolic_bp"]
 BOTH_BP_MESSAGE = 'Please tell me both blood pressure numbers, for example "120 over 80".'
 SEX_WORDS = {
@@ -97,6 +72,65 @@ SMOKING_WORDS = {
     "former": "smoked in the past",
     "current": "smoke now",
     "unknown": "not sure",
+}
+
+
+# Lead-ins for replies about the conversation itself; the prompt follows unchanged.
+REPEAT_LEAD = "Of course. "
+SLOWER_LEAD = "Of course, I'll go slower. "
+LOUDER_LEAD = "I'll speak up. "
+UNSURE_LEAD = "Is that a yes? Nothing has changed yet. "
+NO_LEAD = "Okay, nothing has changed. "
+QUESTION_BACK_LEAD = (
+    "That's a good question, but I can't answer it here, and I haven't saved anything from it. "
+)
+RESTART_QUESTION = (
+    "Do you want to clear all your answers and start again? "
+    "Say 'yes, start over' to do that, or just keep answering."
+)
+DONE_LEAD = "Your answers are saved. Tap Continue to see your forecast."
+WHAT_NOW = re.compile(
+    r"(?:so )?(?:what now|now what|what next|what's next|what do i do now|what happens now|"
+    r"what happens next|what do i do next|is that it|are we done|am i done|that's it then)"
+)
+THANKS = re.compile(r"\b(?:thanks|thank you|thank u|ty|cheers|much obliged)\b", re.I)
+PRIVATE_NOTE = (
+    "Your answers stay on your phone and LifeTwin's server, are used for your forecast, "
+    "and nothing is saved until you say yes."
+)
+WHY_NOTE = (
+    "I ask so your twin can make your forecast; your answers stay on your phone and "
+    "LifeTwin's server, and nothing is saved until you say yes."
+)
+HELPER_NOTE = "The AI helper reads an answer only if you say it's okay."
+SKIP_NOTE = 'If you\'d rather not answer, just say "skip".'
+# A plain explanation of each question, with an example answer.
+HELP: dict[str, str] = {
+    "age": "I'm asking how many years old you are today. For example, say \"I'm 72\". "
+    "You can also tell me the year you were born.",
+    "sex": "I'm asking whether you were born female or male, because health numbers differ "
+    'between the two. Just say "female" or "male".',
+    "height_cm": "I'm asking how tall you are, standing without shoes. For example, "
+    '"5 feet 10 inches" or "178 cm". A close guess is fine.',
+    "weight_kg": 'I\'m asking how much you weigh. For example, "160 pounds" or "72 kg". '
+    "A close guess is fine; I'll read it back to you.",
+    "sleep_hours": "I'm asking how many hours you sleep on a usual night. For example, "
+    '"7 hours", or "from 11 at night to 6 in the morning".',
+    "exercise_minutes_weekly": "I'm asking how many minutes you move on purpose in a whole "
+    "week, like walking, swimming or gardening. For example, a 30-minute walk 5 days a week "
+    'is "150 minutes". If you don\'t exercise, say "none".',
+    "smoking_status": 'I\'m asking about smoking cigarettes. Say "never" if you never smoked, '
+    '"I quit" if you smoked in the past, or "I smoke" if you smoke now.',
+    "alcohol_drinks_weekly": "I'm asking how many drinks of beer, wine or liquor you have in "
+    'a usual week. One beer or one glass of wine is one drink. For example, "3 drinks", or '
+    '"none".',
+    "diabetes": "I'm asking if a doctor has ever told you that you have diabetes, also called "
+    'high blood sugar. Say "yes", "no", or "I don\'t know".',
+    "systolic_bp": "I'm asking for your blood pressure: the two numbers a blood pressure cuff "
+    'shows, the bigger one first. For example, "120 over 80". If you don\'t know it, say '
+    '"I don\'t know".',
+    "diastolic_bp": "I'm asking for the bottom, smaller number of your blood pressure. For "
+    'example, the 80 in "120 over 80". If you don\'t know it, say "I don\'t know".',
 }
 
 
@@ -157,7 +191,8 @@ def describe(values: dict, about: set[str] = frozenset()) -> str:
         if field == "diastolic_bp" and "systolic_bp" in values:
             continue
         if field == "systolic_bp" and "diastolic_bp" in values:
-            parts.append(f"Blood pressure: {value} over {values['diastolic_bp']}")
+            about_bp = "about " if field in about else ""  # "maybe like 130 over 85"
+            parts.append(f"Blood pressure: {about_bp}{value} over {values['diastolic_bp']}")
             continue
         shown = {
             "age": lambda v: str(v),
@@ -198,10 +233,20 @@ class ConversationService:
         configured = self.extractor is not None and self.extractor.configured
         provider_status = "not_needed" if configured else "not_configured"
         action = request.action
-        text = normalize_text(request.text or "")
+        # Fillers, stutters and transcript punctuation go first; meaning stays.
+        text = clean_reply(normalize_text(request.text or ""))
         today = self.clock()
+        # Ink also transcribes other people in the room: only a voice transcript is
+        # held to "someone else's number beside yours is asked about".
+        voice = request.input_mode == "transcript"
+        heard_for = state.current_field or next(
+            iter(state.pending_profile.model_dump(exclude_none=True)), None
+        )
+        if action == "reply" and heard_for and state.phase in {"asking", "confirming"}:
+            # Room chatter around the answer goes before anything else reads it.
+            text = focus(text, heard_for, transcript=voice, confirming=state.phase == "confirming")
 
-        def respond(message: str) -> TurnResponse:
+        def respond(message: str, hint: str | None = None) -> TurnResponse:
             reaction = {
                 "idle": "idle",
                 "asking": "asking",
@@ -216,6 +261,7 @@ class ConversationService:
                 provider_status=provider_status,
                 complete=state.phase == "ready",
                 mascot_events=[MascotEvent(state=reaction, caption=message)],
+                speech_hint=hint,
             )
 
         if action == "cancel":
@@ -235,35 +281,122 @@ class ConversationService:
             )
         if state.phase in {"idle", "cancelled"}:
             self._invalid("Start the conversation before sending another action.")
+        read_back = None  # how a reply to a read-back is read, when not left to the reply
+        if action == "reply" and state.phase == "ready" and WHAT_NOW.fullmatch(words_of(text)):
+            return respond(DONE_LEAD)
+        if action == "reply":
+            intent = control_intent(text)
+            kind = intent.kind if intent else None
+            if kind in {"repeat", "slower", "louder"}:
+                lead = {"repeat": REPEAT_LEAD, "slower": SLOWER_LEAD, "louder": LOUDER_LEAD}
+                return respond(lead[kind] + self._prompt(state), None if kind == "repeat" else kind)
+            if kind == "help":
+                return respond(self._help(state))
+            if kind in {"why", "private"}:
+                note = WHY_NOTE if kind == "why" else PRIVATE_NOTE
+                note += " " + HELPER_NOTE if configured else ""
+                return respond(note + " " + self._prompt(state))
+            if kind == "ask" and heard_for and not asks_back(text, heard_for, transcript=voice):
+                kind = None  # chatter worded like a question, beside the answer
+            if kind == "ask":
+                return respond(QUESTION_BACK_LEAD + self._prompt(state))
+            if kind in {"restart", "restart_confirmed"}:
+                answers = state.model_dump(include={"confirmed_profile", "pending_profile"})
+                if not state.skipped_fields and not any(
+                    value is not None for profile in answers.values() for value in profile.values()
+                ):
+                    return respond(
+                        "We're just getting started, so there's nothing to clear. "
+                        + self._prompt(state)
+                    )
+                if kind == "restart_confirmed":
+                    state = ConversationState(pending_profile=HealthProfile())
+                    self._advance(state)
+                    return respond(
+                        "Okay, let's start over. I cleared your answers. " + self._prompt(state)
+                    )
+                # Nothing is held over to the next turn: the prompt that follows (a read-back
+                # included) is what a bare "yes" will answer.
+                return respond(RESTART_QUESTION + " " + self._prompt(state))
+            if kind == "skip":
+                if state.phase == "ready":
+                    return respond("There are no questions left. " + self._prompt(state))
+                text = "skip"
+            if kind == "back":
+                pending_fields = list(state.pending_profile.model_dump(exclude_none=True))
+                field = intent.field
+                if state.phase == "confirming" and (field is None or field in pending_fields):
+                    # "I made a mistake", "change my age to 47" during its read-back.
+                    if intent.rest:
+                        text, read_back = intent.rest, "correction"
+                    else:
+                        read_back = "no"
+                else:
+                    note = ""
+                    if state.phase == "confirming":
+                        # Unsaved answers are asked again later; saved ones never change here.
+                        note = (
+                            "I haven't saved your "
+                            + " and ".join(
+                                dict.fromkeys(self._label(name) for name in pending_fields)
+                            )
+                            + " answer yet, so I'll ask again later. "
+                        )
+                    field = field or self._previous(state)
+                    if field is None:
+                        return respond(
+                            "This is the first question, so there's nothing to go back to. "
+                            + self._prompt(state)
+                        )
+                    message = note + self._reopen(state, field)
+                    if intent.rest:
+                        # "Change my age to 47": the new answer is read back as usual.
+                        answered = await self.turn(
+                            TurnRequest(
+                                action="reply",
+                                state=state,
+                                text=intent.rest,
+                                input_mode=request.input_mode,
+                                provider_consent=request.provider_consent,
+                            )
+                        )
+                        if answered.state.phase == "confirming":
+                            return answered
+                    return respond(message)
+        from_read_back = False
         if action == "reply" and state.phase == "confirming":
-            # A spoken or typed "yes" confirms; "no, ..." corrects; nothing vague confirms.
-            phrase = " ".join(text.lower().replace(",", " ").rstrip(".!?").split())
-            if phrase in AFFIRMATIVES:
+            # Only an unmistakable yes confirms; a no never does, and a correction
+            # replaces only the answer being read back.
+            heard, rest = (read_back, "") if read_back else read_back_reply(text)
+            if read_back == "correction":
+                rest = text
+            pending = state.pending_profile.model_dump(exclude_none=True)
+            if heard == "yes_value":
+                # "Yes, 46" to "Age: 46" confirms; "yes, 47" is a question, not a yes.
+                asked = "systolic_bp" if list(pending) == BOTH_BP else next(iter(pending))
+                said = _safe(parse_reply, rest, asked, today=today) or {}
+                heard = "yes" if said == pending else "unsure"
+            if heard == "yes":
                 action = "confirm"
-            elif MIXED_YES.match(phrase):
+            elif heard == "unsure":
+                return respond(UNSURE_LEAD + self._prompt(state))
+            elif heard == "no":
+                pending_fields = list(pending)
+                if len(pending_fields) == 1:
+                    field = pending_fields[0]
+                    return respond(
+                        NO_LEAD + "Please tell me the right answer for "
+                        f"your {FRIENDLY_LABELS[field]}, for example {EXAMPLES[field]}."
+                    )
+                if pending_fields == BOTH_BP:
+                    return respond(NO_LEAD + BOTH_BP_MESSAGE)
                 return respond(
-                    "Sorry, I couldn't tell if that was a yes. Nothing has changed. "
-                    + self._prompt(state)
+                    NO_LEAD + "Which answer should I change? "
+                    'Please say its name and the right answer, like "weight: 150 pounds".'
                 )
             else:
-                negative = NEGATIVE.fullmatch(phrase)
-                if negative:
-                    text = negative.group(1).strip()
-                    if not text:
-                        pending_fields = list(state.pending_profile.model_dump(exclude_none=True))
-                        if len(pending_fields) == 1:
-                            field = pending_fields[0]
-                            return respond(
-                                "Okay, nothing has changed. Please tell me the right answer for "
-                                f"your {FRIENDLY_LABELS[field]}, for example {EXAMPLES[field]}."
-                            )
-                        if pending_fields == BOTH_BP:
-                            return respond("Okay, nothing has changed. " + BOTH_BP_MESSAGE)
-                        return respond(
-                            "Okay, nothing has changed. Which answer should I change? "
-                            'Please say its name and the right answer, like "weight: 150 pounds".'
-                        )
-                action = "correct"
+                text = rest if heard == "correction" else text
+                action, from_read_back = "correct", True
         if action == "confirm":
             if state.phase != "confirming":
                 self._invalid("There are no pending answers to confirm.")
@@ -318,11 +451,18 @@ class ConversationService:
             if state.phase == "confirming":
                 self._invalid("Confirm or correct pending answers before skipping a question.")
             if getattr(state.confirmed_profile, target) is not None:
+                if target == state.current_field and request.field is None:
+                    # Skipping a question reopened by "go back" keeps the saved answer.
+                    self._advance(state)
+                    return respond("Okay, I kept your answer. " + self._prompt(state))
                 self._invalid("Skipping does not erase confirmed measurements.")
-            if target not in state.skipped_fields:
-                state.skipped_fields.append(target)
+            self._skip(state, target)
             self._advance(state)
             return respond("That's okay; I won't fill it in. " + self._prompt(state))
+        if state.phase == "ready" and action == "reply":
+            # "Thank you", "ok", "bye", "what now?": a kind word, never an error.
+            thanks = "You're welcome! " if THANKS.search(text) else ""
+            return respond(thanks + DONE_LEAD)
         if state.phase == "ready" and action != "correct":
             self._invalid(
                 "The conversation is ready. Use correct with a field to change an answer."
@@ -346,6 +486,12 @@ class ConversationService:
             target = pending_fields[0]
         if target is None:
             self._invalid("Choose the field you want to correct.")
+        asking = action == "reply" and state.phase == "asking"
+        reopened = asking and self._saved(state, target)
+        if reopened and (keeps_answer(text) or is_skip(text, target)):
+            # A question reopened by "go back": "keep it" or "skip" leaves the saved answer.
+            self._advance(state)
+            return respond("Okay, I kept your answer. " + self._prompt(state))
         if is_skip(text, target):
             if action == "correct":
                 if request.field and getattr(state.confirmed_profile, target) is not None:
@@ -364,15 +510,13 @@ class ConversationService:
                         + self._prompt(state)
                     )
                 return respond("Nothing has changed. " + self._prompt(state))
-            if target not in state.skipped_fields:
-                state.skipped_fields.append(target)
+            self._skip(state, target)
             self._advance(state)
             return respond("I'll leave that unknown. " + self._prompt(state))
-        candidates = _safe(parse_reply, text, target, today=today) or {}
+        candidates = _safe(parse_reply, text, target, today=today, strict=voice) or {}
         phrase = " ".join(text.lower().replace(",", " ").rstrip(".!?").split())
         # Only a fresh answer can mean the question's example: "no, that's right" during
         # a read-back is not a yes to "5 feet 10 inches".
-        asking = action == "reply" and state.phase == "asking"
         if (
             not candidates
             and asking
@@ -414,11 +558,20 @@ class ConversationService:
         # A saved answer changes only when asked for by name or corrected explicitly
         # ("actually I'm 71, not 72"); "7 hours, oh man" can never rewrite sex.
         saved = state.confirmed_profile.model_dump(exclude_none=True)
+        # A reopened question may replace its own saved answer (both blood pressure numbers).
+        asked = {target} | (BP_FIELDS if reopened and target in BP_FIELDS else set())
         candidates = {
             field: value
             for field, value in candidates.items()
-            if field not in saved or field == request.field or corrects(text, field)
+            if field not in saved
+            or field == request.field
+            or corrects(text, field)
+            or (reopened and field in asked)
         }
+        if from_read_back:
+            # "No, I'm 47 and I weigh 150" to "Age: 46": only the age is replaced.
+            held = state.pending_profile.model_dump(exclude_none=True)
+            candidates = {field: value for field, value in candidates.items() if field in held}
         lone_bottom = list(candidates) == ["diastolic_bp"] and (
             state.confirmed_profile.systolic_bp is None
             and state.pending_profile.systolic_bp is None
@@ -484,6 +637,76 @@ class ConversationService:
         return respond(self._prompt(state, about=set(candidates) if approximate(text) else set()))
 
     @staticmethod
+    def _saved(state: ConversationState, field: str) -> bool:
+        fields = BP_FIELDS if field in BP_FIELDS else {field}
+        return any(getattr(state.confirmed_profile, name) is not None for name in fields)
+
+    @staticmethod
+    def _label(field: str) -> str:
+        return "blood pressure" if field in BP_FIELDS else FRIENDLY_LABELS[field]
+
+    @staticmethod
+    def _previous(state: ConversationState) -> str | None:
+        """The answered question before this one ("go back"), or the last one when done."""
+        answered = [
+            field
+            for field in FIELDS
+            if getattr(state.confirmed_profile, field) is not None or field in state.skipped_fields
+        ]
+        if state.phase == "asking":
+            answered = [f for f in answered if FIELDS.index(f) < FIELDS.index(state.current_field)]
+        if not answered:
+            return None
+        field = answered[-1]
+        return "systolic_bp" if field == "diastolic_bp" and "systolic_bp" in answered else field
+
+    def _reopen(self, state: ConversationState, field: str) -> str:
+        """Ask a question again; its saved answer stays until a new one is confirmed."""
+        state.pending_profile = HealthProfile()
+        state.phase, state.current_field = "asking", field
+        names = BOTH_BP if field == "systolic_bp" else [field]
+        saved = {
+            name: getattr(state.confirmed_profile, name)
+            for name in names
+            if getattr(state.confirmed_profile, name) is not None
+        }
+        label = self._label(field)
+        if saved:
+            return (
+                f"Okay, let's go back to your {label}. Right now I have {describe(saved)}. "
+                + QUESTIONS[field]
+                + ' If that was right, say "keep it".'
+            )
+        if field in state.skipped_fields:
+            return (
+                f"Okay, let's go back to your {label}. You skipped it before. " + QUESTIONS[field]
+            )
+        return f"Okay, let's do your {label}. " + QUESTIONS[field]
+
+    def _help(self, state: ConversationState) -> str:
+        if state.phase == "confirming":
+            pending = state.pending_profile.model_dump(exclude_none=True)
+            return (
+                "I'm checking that I heard you right before I save anything. I heard "
+                + describe(pending)
+                + '. If that\'s right, say "yes". If not, say "no" and then the right answer.'
+            )
+        if state.phase == "ready":
+            return (
+                "We're all done. To change an answer, say what to change, like \"change my "
+                'weight". To clear everything and begin again, say "start over".'
+            )
+        return HELP[state.current_field] + " " + SKIP_NOTE
+
+    @staticmethod
+    def _skip(state: ConversationState, field: str) -> None:
+        # The blood pressure question is one reading: skipping it skips both numbers.
+        fields = BOTH_BP if field == "systolic_bp" else [field]
+        for name in fields:
+            if name not in state.skipped_fields and getattr(state.confirmed_profile, name) is None:
+                state.skipped_fields.append(name)
+
+    @staticmethod
     def _bp_ordered(state: ConversationState, pending: dict) -> bool:
         systolic = pending.get("systolic_bp", state.confirmed_profile.systolic_bp)
         diastolic = pending.get("diastolic_bp", state.confirmed_profile.diastolic_bp)
@@ -514,7 +737,7 @@ class ConversationService:
         if state.phase == "ready":
             return (
                 "All done! I saved the answers you confirmed and left skipped ones blank. "
-                "Forecasts are not available yet. You can still change any answer."
+                "Tap Continue to see your forecast. You can still change any answer."
             )
         return QUESTIONS[state.current_field]
 

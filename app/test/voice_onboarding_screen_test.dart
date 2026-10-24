@@ -326,7 +326,11 @@ void main() {
     t.view.physicalSize = const Size(390, 844);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    await t.pumpWidget(MaterialApp(home: VoiceOnboardingScreen(controller: r.c, onDone: (_) {})));
+    await t.pumpWidget(
+      MaterialApp(
+        home: VoiceOnboardingScreen(controller: r.c, onDone: (_) {}),
+      ),
+    );
     await choose(t, 'Type instead');
     expect(find.text('Hide keyboard'), findsNothing);
     await t.showKeyboard(find.byType(TextField));
@@ -358,6 +362,167 @@ void main() {
     await t.pump();
     expect(r.guide.calls.last['text'], '70');
   });
+  group('quick answers', () {
+    const cases = {
+      'sex': [('Female', 'female'), ('Male', 'male')],
+      'diabetes': [('Yes', 'yes'), ('No', 'no'), ('Not sure', "I don't know")],
+      'smoking_status': [
+        ('I smoke now', 'I smoke now'),
+        ('I used to smoke', 'I used to smoke'),
+        ('I never smoked', 'I have never smoked'),
+      ],
+    };
+
+    Future<(FieldGuide, VoiceOnboardingController, FakeSpeechOutput)> open(
+      WidgetTester t,
+      String field, {
+      double scale = 1,
+      bool hold = false,
+    }) async {
+      t.view.physicalSize = const Size(390, 844);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      final guide = FieldGuide(field);
+      final output = FakeSpeechOutput()..holdSpeech = hold;
+      final c = VoiceOnboardingController(guide: guide, input: FakeSpeechInput(), output: output);
+      await t.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(scale), size: const Size(390, 844)),
+            child: VoiceOnboardingScreen(controller: c, onDone: (_) {}),
+          ),
+        ),
+      );
+      for (final l in ['Yes, I can talk', 'Not now']) {
+        await t.ensureVisible(find.text(l));
+        await t.pumpAndSettle();
+        await t.tap(find.text(l));
+        await t.pumpAndSettle();
+      }
+      if (hold) {
+        await t.pump();
+        await t.pump();
+      } else {
+        await t.pumpAndSettle();
+      }
+      return (guide, c, output);
+    }
+
+    for (final e in cases.entries) {
+      testWidgets('${e.key}: each button sends its words, then the read-back appears', (t) async {
+        for (final (label, say) in e.value) {
+          final (guide, c, _) = await open(t, e.key);
+          await t.tap(find.widgetWithText(OutlinedButton, label));
+          await t.pumpAndSettle();
+          expect(guide.calls.last, {'action': 'reply', 'text': say});
+          expect(c.confirming, isTrue);
+          expect(find.text('Change'), findsOneWidget);
+          expect(find.widgetWithText(OutlinedButton, label), findsNothing);
+          await t.pumpWidget(const SizedBox());
+        }
+      });
+
+      testWidgets('${e.key}: buttons are tall and sit two per row at 390 wide', (t) async {
+        await open(t, e.key);
+        final rects = [for (final (label, _) in e.value) t.getRect(find.widgetWithText(OutlinedButton, label))];
+        for (final r in rects) {
+          expect(r.height, greaterThanOrEqualTo(72));
+        }
+        expect(rects[0].top, rects[1].top);
+        expect(rects[0].width, lessThan(195));
+        expect(t.takeException(), isNull);
+      });
+
+      testWidgets('${e.key}: no overflow at text scale 2.0, buttons stack', (t) async {
+        await open(t, e.key, scale: 2.0);
+        for (final (label, _) in e.value) {
+          await t.ensureVisible(find.widgetWithText(OutlinedButton, label));
+        }
+        final first = t.getRect(find.widgetWithText(OutlinedButton, e.value[0].$1));
+        final second = t.getRect(find.widgetWithText(OutlinedButton, e.value[1].$1));
+        expect(second.top, greaterThan(first.top));
+        expect(t.takeException(), isNull);
+      });
+    }
+
+    testWidgets('no buttons for other fields', (t) async {
+      await open(t, 'age');
+      for (final l in ['Female', 'Male', 'Not sure', 'I smoke now']) {
+        expect(find.text(l), findsNothing);
+      }
+      expect(find.text('Hold to talk'), findsOneWidget);
+    });
+
+    testWidgets('no buttons while confirming, or while correcting', (t) async {
+      final (_, c, _) = await open(t, 'sex');
+      await t.tap(find.text('Male'));
+      await t.pumpAndSettle();
+      expect(find.text('Female'), findsNothing);
+      await t.tap(find.text('Change'));
+      await t.pumpAndSettle();
+      expect(c.correcting, isTrue);
+      expect(find.text('Female'), findsNothing);
+      expect(find.text('Okay. What is the right answer?'), findsOneWidget);
+    });
+
+    testWidgets('tapping while the mascot speaks stops the speech first', (t) async {
+      final (guide, c, output) = await open(t, 'sex', hold: true);
+      expect(c.phase, VoicePhase.speaking);
+      output.holdSpeech = false;
+      await t.tap(find.text('Female'));
+      await t.pumpAndSettle();
+      expect(output.stops, 1);
+      expect(guide.calls.last['text'], 'female');
+    });
+
+    testWidgets('tapping while listening cancels the recording, then sends', (t) async {
+      final (guide, c, _) = await open(t, 'sex');
+      await t.tap(find.text('Hold to talk'));
+      await t.pumpAndSettle();
+      expect(c.phase, VoicePhase.listening);
+      await t.tap(find.text('Male'));
+      await t.pumpAndSettle();
+      expect(guide.calls.last['text'], 'male');
+      expect(guide.calls.where((x) => x['action'] == 'reply').length, 1);
+    });
+
+    testWidgets('buttons are disabled while busy', (t) async {
+      final (guide, _, _) = await open(t, 'sex');
+      guide.hold = Completer<void>();
+      await t.tap(find.text('Female'));
+      await t.pump();
+      final b = t.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Male'));
+      expect(b.onPressed, isNull);
+      guide.hold!.complete();
+      await t.pumpAndSettle();
+    });
+  });
+}
+
+class FieldGuide implements ConversationGuide {
+  FieldGuide(this.field);
+  final String field;
+  final calls = <Map<String, dynamic>>[];
+  Completer<void>? hold;
+
+  @override
+  Future<GuideTurn> turn({
+    required String action,
+    Map<String, dynamic>? state,
+    String? text,
+    bool fromTranscript = false,
+    Map<String, num>? values,
+    bool aiHelper = false,
+  }) async {
+    calls.add({'action': action, 'text': ?text});
+    if (hold != null) await hold!.future;
+    final asking = action == 'start';
+    return GuideTurn(
+      state: {'phase': asking ? 'asking' : 'confirming', 'current_field': asking ? field : null},
+      message: asking ? 'Question about $field?' : 'Is that right?',
+      complete: false,
+    );
+  }
 }
 
 class HangingInput extends FakeSpeechInput {

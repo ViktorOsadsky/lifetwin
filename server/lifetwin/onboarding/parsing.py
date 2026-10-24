@@ -494,8 +494,14 @@ HEDGES = re.compile(
     r"last time i checked|at my last check ?up|these days|nowadays|right now|"
     r"at the moment|currently|usually|normally|typically|generally|on average)\b"
 )
+# "I feel like it depends on the day, maybe like 130 over 85": one typical value,
+# read back as "about"; "it depends" with no value after it stays vague.
+DEPENDS = re.compile(
+    r"\b(?:i feel like )?it (?:all )?depends(?: on (?:the|what|how|my) \w+)?,? (?:but )?"
+    r"(?=(?:maybe|probably|usually|mostly|about|around|like|roughly)\b)"
+)
 QUESTION = re.compile(r"\?")
-MAYBE = re.compile(r"\b(?:maybe|probably|perhaps|possibly)\s+(?:(?:about|around)\s+)?")
+MAYBE = re.compile(r"\b(?:maybe|probably|perhaps|possibly)\s+(?:(?:about|around|like)\s+)?")
 UNCERTAIN = re.compile(
     r"\b(?:maybe|may be|might|perhaps|possibly|probably|unsure|either|dunno|guessing|"
     r"not (?:really |quite |too |entirely |exactly )?(?:sure|certain)|"
@@ -542,7 +548,9 @@ OTHER_PERSON = re.compile(
 )
 # "Bob is 75": a name as the subject (only visible while the reply keeps its capitals).
 NAME_SUBJECT = re.compile(
-    r"\b(?!(?:I|It|Its|That|This|There|Here|My|Mine|Yes|Yeah|Yep|No|Nope|Nah|Well|Oh|So|Um|"
+    r"\b(?!(?:Who|What|When|Where|Why|How|Which|Can|Could|Would|Will|Is|Are|Do|Does|Did|"
+    r"Hey|Wait|Dude|Bro|Like|Okay|Ok|And|But|Or|If|Then|Now|Ah|See|Look|Listen|"
+    r"I|It|Its|That|This|There|Here|My|Mine|Yes|Yeah|Yep|No|Nope|Nah|Well|Oh|So|Um|"
     r"Uh|Hmm|The|We|They|You|Doctor|Dr|Female|Male|Woman|Man|Never|Not|Just|About|Around|"
     r"Maybe|Probably|Mostly|Usually|Normal|Everything|Nothing|None|Today|Weight|Height|Age|"
     r"Sleep|Exercise|Alcohol|Smoking|Diabetes|Blood|Pressure|Monday|Tuesday|Wednesday|"
@@ -670,7 +678,8 @@ PAST_SPOIL = re.compile(
 )
 ADVICE = re.compile(
     r"\b(?:need|needs|needed|recommend\w*|advised?|allowed|ideal|ideally|normal is|normal's|"
-    r"normal for|ought|feel|feels|look|looks|in my dreams|dream)\b"
+    r"normal for|ought|feels?(?! like it\b)|(?:i|you) look|looks? (?:like )?\d+|in my dreams|"
+    r"dream)\b"
 )
 # Sleep, exercise and drinks are the person's own habit, so a doctor's word is advice.
 REPORTED = re.compile(r"\b(?:says|said|tells me|told me)\b")  # not "I'd say 6"
@@ -697,6 +706,7 @@ def _clean_measurement(field: str, text: str, spans: list[tuple[int, int]]) -> b
     # "maybe I weigh 70" doubts the whole statement.
     starts = {start for start, _ in spans}
     hedged = [m.span() for m in MAYBE.finditer(text) if m.end() in starts]
+    hedged += [m.span() for m in DEPENDS.finditer(text) if any(s >= m.end() for s in starts)]
     rest = _blank(text, spans + hedged)
     if re.search(r"\d", rest) or NOT_CURRENT.search(rest):
         return False
@@ -710,7 +720,9 @@ def _clean_measurement(field: str, text: str, spans: list[tuple[int, int]]) -> b
     if NEGATION.search(local) or PAST_OLD.search(local) or CHANGE.search(local):
         return False
     # A blood pressure is always a past reading; only an old one ("years ago") is refused.
-    stale = PAST_VERB.search(local) and not RECENT.search(local_raw) and field not in BP_FIELDS
+    # "were you just getting 5'4": a past verb said to someone else is not the person's past.
+    own_past = PAST_VERB.search(re.sub(r"\b(?:were|was|did) you\b", " ", local))
+    stale = own_past and not RECENT.search(local_raw) and field not in BP_FIELDS
     if FUTURE.search(local) or stale:
         return False
     return not _other_topic(field, local)
@@ -1825,6 +1837,8 @@ def clarify(text: str, field: ProfileField, *, today: date | None = None) -> str
     """
     if LONG_NUMBER.search(normalize_text(text)):
         return None
+    if competing(normalize_text(text), field):
+        return f"I heard more than one number. What is your own {FRIENDLY_LABELS[field]}?"
     canonical = _canonical(text)
     if _doubtful(canonical) or OTHER_PERSON.search(canonical):
         return None
@@ -2007,7 +2021,8 @@ def corrects(text: str, field: ProfileField) -> bool:
 
 # Two numbers joined as alternatives or a range: the value is their middle.
 RANGE = re.compile(
-    r"\b(?:about|around|roughly|approximately|approx|give or take|or so)\b|"
+    r"\b(?:about|around|roughly|approximately|approx|give or take|or so|maybe|probably|"
+    r"depends)\b|"
     r"\bbetween\b|(?<![:\d])\d+(?:\.\d+)?(?: [a-z]+){0,2} (?:or|to|-) (?:an? |\d)|\ban? \w+ or \d"
 )
 
@@ -2016,14 +2031,28 @@ def approximate(text: str) -> bool:
     return bool(RANGE.search(_canonical(normalize_text(text))))
 
 
-def parse_reply(text: str, field: ProfileField, *, today: date | None = None) -> dict:
+def competing(text: str, field: ProfileField) -> bool:
+    """Someone else's number beside a number for this question ("My brother is 6 foot.
+    I'm 5'4"). In a room full of voices it may not be the person's own answer."""
+    if field in CATEGORICAL:
+        return False
+    pieces = [p for p in re.split(rf"{SENTENCE_END}|[;,]|\s+and\s+", text, flags=re.I) if p]
+    theirs = [p for p in pieces if p.strip() and _others(p)]
+    numbered = [p for p in pieces if re.search(r"\d", _canonical(p))]
+    return any(re.search(r"\d", _canonical(p)) for p in theirs) and len(numbered) > 1
+
+
+def parse_reply(
+    text: str, field: ProfileField, *, today: date | None = None, strict: bool = False
+) -> dict:
     """Handle a short answer, or clauses that each say what they answer.
 
     A clause names another field by its topic or unit ("I weigh 160 pounds" to
-    the age question); clauses only about someone else are left out.
+    the age question); clauses only about someone else are left out. ``strict``
+    (a voice transcript) also refuses when someone else's number competes.
     """
     text = normalize_text(text)
-    if LONG_NUMBER.search(text):
+    if LONG_NUMBER.search(text) or (strict and competing(text, field)):
         return {}
     # "I'm 70. My wife, 72": sentences about someone else are left out, and what is
     # left must be said about oneself ("No. My mother, yes." answers nothing).

@@ -39,6 +39,8 @@ Start a conversation:
 
 The response contains caller-held `state`, a caption and mascot events. Send its full state back with `{"action":"reply","state":<returned state>,"text":"I'm 35"}`. Extracted values appear only in `pending_profile`; send `action: "confirm"` with that returned state to accept them. `correct`, `skip`, and `cancel` are explicit actions. A bare weight/height without units triggers clarification; no value is silently committed. Voice capture/transcription/synthesis remain deferred, so `input_mode: "transcript"` means the caller already has a final transcript.
 
+Replies about the conversation itself are recognized before any value is read (`lifetwin/onboarding/intents.py`): repeat ("what?", "pardon"), slower/louder (the prompt is repeated and `speech_hint` is `"slower"` or `"louder"`; otherwise `null`), help, "why do you need this"/"is this private", go back or "change my age" (the question reopens; the saved answer stays until a new one is confirmed, and "keep it" or "skip" keeps it), and start over (the answers are cleared only by an explicit phrase in the same turn, such as "yes, start over"; a plain "start over" asks first and repeats the current question or read-back, so a bare "yes" afterwards answers that, never the reset). In the done phase, replies such as "thank you", "ok" or "what now?" get a kind reply and the conversation stays ready. Questions back such as "is 72 old?" are never read as answers. A read-back is confirmed only by an unmistakable yes; "no, 47" replaces only the value being read back, and "I guess" is asked about again. Fillers, stutters and transcript punctuation are removed first. The behavior is pinned by `tests/data/conversation_dialogues.json`.
+
 Get a keyless plan:
 
 ```json
