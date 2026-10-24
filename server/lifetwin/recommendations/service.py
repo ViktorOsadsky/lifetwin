@@ -18,6 +18,8 @@ import math
 from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.model_inputs import character_hints
 from lifetwin.onboarding.models import HabitNote, Recommendation
+from lifetwin.personalize.providers import Personalizer
+from lifetwin.personalize.service import consented, phrase_recommendations
 from lifetwin.recommendations.levers import LEVER_ORDER, MODEL_VERSION
 from lifetwin.recommendations.models import (
     LeverRanking,
@@ -158,9 +160,8 @@ def _activity(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation 
             "vigorous_plus_60",
             "activity",
             "Pick up the pace",
-            f"You said {doing}. You could try going a little faster for part of it, until "
-            "you're breathing harder. Brisk minutes count double toward the weekly goal of "
-            f"{GOAL} minutes.",
+            f"You said {doing}. You could try a faster pace for part of it. Brisk minutes "
+            f"count double toward the weekly {GOAL}.",
             based,
         )
     gap = GOAL - minutes
@@ -210,10 +211,12 @@ def _sleep(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation | N
             "for adults."
         )
     if note and note.wakes_for:
-        text += f" If {note.wakes_for} keeps waking you, it's worth mentioning to your doctor."
+        cause = WAKING.get(note.wakes_for, note.wakes_for)
+        text += f" If {cause} often wakes you, it's worth mentioning to your doctor."
     return _rec("short_sleep_plus_1h", "sleep", "A bit more sleep", text, based)
 
 
+WAKING = {"bathroom": "needing the bathroom", "worry": "worry", "noise": "noise"}
 SITTING_TIPS = {
     "tv": "You said a lot of your sitting is watching TV. You could stand up and move "
     "around during the ads.",
@@ -260,8 +263,16 @@ def suggest(profile: HealthProfile, notes: list[HabitNote]) -> list[Recommendati
     return found[:3]
 
 
-def recommend(request: RecommendationRequest) -> RecommendationResponse:
+async def recommend(
+    request: RecommendationRequest, personalizer: Personalizer | None = None
+) -> RecommendationResponse:
     recs = suggest(request.profile, request.habit_notes)
+    phrased_by = "templates"
+    if recs and consented(request.outside_ai_consent, personalizer):
+        recs, used = await phrase_recommendations(
+            personalizer, recs, request.profile.model_dump(), request.habit_notes
+        )
+        phrased_by = personalizer.name if used else "templates"
     message = " ".join([LEAD, *(rec.message for rec in recs)]) if recs else NOTHING_YET
     return RecommendationResponse(
         status="ok" if recs else "not_enough_information",
@@ -269,4 +280,5 @@ def recommend(request: RecommendationRequest) -> RecommendationResponse:
         recommendations=recs,
         character_hints=character_hints(request.profile, request.habit_notes),
         lever_ranking=LeverRanking(model_version=MODEL_VERSION, order=list(LEVER_ORDER)),
+        phrased_by=phrased_by,
     )
