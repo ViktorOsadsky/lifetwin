@@ -1841,6 +1841,13 @@ def _drop_self_correction(text: str) -> str:
 # "Not much, maybe 4", "not a lot. 90 minutes a week": a modest word before the number
 # itself. Only at the start, so "more than 7" and "not much exercise" still count.
 MODEST_LEAD = r"^(?:oh,? )?not (?:(?:that |very |too )?much|(?:a )?(?:whole )?lot|many)\b[\s,.;:-]*(?=[^\d]*\d)"
+# "Maybe 5 hours, I wake up a lot": how often the night is broken, not how long it is.
+WAKING = (
+    r"\b(?:but |and )?i (?:wake|get) up (?:a lot|often|a few times|several times|"
+    r"(?:once|twice|\d(?: or \d)? times?))(?: (?:at|a|in the|during the|every|each) night)?"
+    r"(?: to (?:pee|go to the bathroom|use the bathroom|go to the toilet|use the toilet))?"
+    r"(?=\s*(?:$|[,.;!]))"
+)
 # "I used to be 5'9", I'm 5'8" now", "I was 200 pounds, now I'm 185": an old value set
 # against one marked as now. Only the now value is read; nothing else may hold a number.
 PAST_CLAUSE = re.compile(
@@ -1881,6 +1888,8 @@ def parse_value(field: ProfileField, text: str, *, today: date | None = None) ->
         canonical = re.sub(MODEST_LEAD, "", _drop_self_correction(canonical))
     if field in NOW_AFTER_PAST:
         canonical = _now_after_past(canonical)
+    if field == "sleep_hours":
+        canonical = re.sub(WAKING, " ", canonical)
     if field == "sex":
         sex = _sex(canonical)
         return _validated({field: sex}) if sex else {}

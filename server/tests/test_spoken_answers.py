@@ -229,3 +229,18 @@ def test_a_contrast_beside_a_no_is_kept_from_room_chatter():
     # Voice focus once dropped "but I did" and asked "did you ever smoke?".
     check("diabetes", "No, but I did.", None)
     check("smoking_status", "Hey, turn that down. No, but I did.", {"smoking_status": "former"})
+
+
+# "I wake up a lot" tells how broken the night is, not how long it is.
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("maybe 5 hours. I wake up a lot.", {"sleep_hours": 5.0}),
+        ("Maybe 6 hours, I get up a lot to pee.", {"sleep_hours": 6.0}),
+        ("7 hours, but I wake up 2 or 3 times a night.", {"sleep_hours": 7.0}),
+        ("I wake up a lot.", None),
+        ("I wake up a lot, maybe 5 hours, sometimes 4.", None),
+    ],
+)
+def test_waking_in_the_night_does_not_hide_the_hours(text, expected):
+    check("sleep_hours", text, expected)
