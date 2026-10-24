@@ -41,9 +41,18 @@ dependencies:
   http: ^1.6.0
   url_launcher: ^6.3.2
   lottie: ^3.1.0
+  # Check-in reminders at the person's chosen time (lib/checkin/checkin_reminders.dart).
+  flutter_local_notifications: ^22.3.2
+  timezone: ^0.11.2
+  flutter_timezone: ^5.1.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # The on-device model package, so tests check daily_logs with its own validation.
+  # codex/c-on-device-model adds it as a dependency (packages/lifetwin_on_device);
+  # drop this line when both land.
+  lifetwin_on_device:
+    path: ../model_handoff/lifetwin_on_device
   integration_test:
     sdk: flutter
 
