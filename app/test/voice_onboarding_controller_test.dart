@@ -186,4 +186,45 @@ void main() {
     expect(r.output.spoken.length, 1);
     expect(r.c.phase, VoicePhase.idle);
   });
+
+  test('Apple Health answers are sent as an import and the conversation moves on', () async {
+    final r = Rig();
+    await r.c.answerConsent(false);
+    await r.c.importHealth({'weight_kg': 68.0, 'sleep_hours': 7.5});
+    final call = r.guide.calls.last;
+    expect(call['action'], 'import');
+    expect(call['values'], {'weight_kg': 68.0, 'sleep_hours': 7.5});
+    expect(r.c.confirmedProfile, {'weight_kg': 68.0, 'sleep_hours': 7.5});
+    expect(r.c.mascotLine, contains('Health answers'));
+    expect(r.c.phase, VoicePhase.idle);
+  });
+
+  test('Health import waits while an answer is being confirmed, and says why', () async {
+    final r = Rig();
+    await r.c.answerConsent(false);
+    await r.c.submitTyped('70');
+    expect(r.c.confirming, isTrue);
+    final before = r.guide.calls.length;
+    await r.c.importHealth({'weight_kg': 68.0});
+    expect(r.guide.calls.length, before);
+    expect(r.c.notice, healthWaitNotice);
+  });
+
+  test('an empty Health result sends nothing', () async {
+    final r = Rig();
+    await r.c.answerConsent(false);
+    final before = r.guide.calls.length;
+    await r.c.importHealth({});
+    expect(r.guide.calls.length, before);
+  });
+
+  test('AI helper consent is sent with every turn and can be turned off', () async {
+    final r = Rig();
+    await r.c.answerConsent(false, aiHelper: true);
+    expect(r.guide.calls.last['aiHelper'], isTrue);
+    await r.c.setAiHelper(false);
+    await r.c.submitTyped('70');
+    expect(r.guide.calls.last['aiHelper'], isFalse);
+  });
 }
+

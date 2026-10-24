@@ -44,15 +44,24 @@ class ConversationState(ApiModel):
 
 
 class TurnRequest(ApiModel):
-    action: Literal["start", "reply", "confirm", "correct", "skip", "cancel"]
+    action: Literal["start", "reply", "confirm", "correct", "skip", "cancel", "import"]
     state: ConversationState = Field(default_factory=ConversationState)
     text: str | None = Field(default=None, min_length=1, max_length=2000)
     input_mode: Literal["text", "transcript"] = "text"
     field: ProfileField | None = None
     provider_consent: bool = False
+    # "import": values the user already confirmed one by one on the phone
+    # (e.g. Apple Health read-back). Validated like any profile; no source is sent.
+    values: HealthProfile | None = None
 
     @model_validator(mode="after")
     def action_payload(self):
+        if self.action == "import" and not (
+            self.values and self.values.model_dump(exclude_none=True)
+        ):
+            raise ValueError("An import requires at least one confirmed value")
+        if self.action != "import" and self.values is not None:
+            raise ValueError("Only the import action accepts values")
         if self.action in {"reply", "correct"} and not (self.text or "").strip():
             raise ValueError("A reply or correction requires nonempty text")
         if self.action not in {"reply", "correct"} and self.text is not None:

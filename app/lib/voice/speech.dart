@@ -64,6 +64,7 @@ class GuideTurn {
     required this.message,
     required this.complete,
     this.mascotState = 'asking',
+    this.providerStatus = 'not_configured',
   });
 
   final Map<String, dynamic> state;
@@ -71,18 +72,25 @@ class GuideTurn {
   final bool complete;
   final String mascotState;
 
+  /// The server's AI-helper status for this turn, e.g. `consent_required`.
+  final String providerStatus;
+
   String get phase => (state['phase'] as String?) ?? 'idle';
   bool get isConfirming => phase == 'confirming';
 }
 
 /// The server is the authority for the conversation: one call per turn.
 abstract class ConversationGuide {
-  /// [action] is one of start, reply, confirm, correct, skip, cancel.
+  /// [action] is one of start, reply, confirm, correct, skip, cancel, import.
+  /// [values] carries already-confirmed answers for import (e.g. Apple Health).
+  /// [aiHelper] is the person's consent for the server's AI helper to read replies.
   Future<GuideTurn> turn({
     required String action,
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
+    Map<String, num>? values,
+    bool aiHelper = false,
   });
 }
 

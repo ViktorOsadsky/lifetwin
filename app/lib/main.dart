@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'health/health_screen.dart';
+import 'health/health_summary.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'onboarding/voice_onboarding_screen.dart';
 import 'voice/cartesia_speech.dart';
@@ -48,7 +49,11 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
         builder: (context) => VoiceOnboardingScreen(
           controller: _controller,
           onUseHealth: () => Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => HealthImportScreen(onDone: (_) => Navigator.of(context).pop()),
+            builder: (_) => HealthImportScreen(onDone: (result) {
+              Navigator.of(context).pop();
+              // Each value was already checked on the Health screen ("Is this accurate?").
+              _controller.importHealth({for (final c in result.confirmed) c.field.profileKey: c.value});
+            }),
           )),
           onDone: (profile) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             duration: const Duration(days: 1),

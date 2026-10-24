@@ -19,14 +19,17 @@ class HttpConversationGuide implements ConversationGuide {
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
+    Map<String, num>? values,
+    bool aiHelper = false,
   }) async {
     final body = <String, dynamic>{
       'action': action,
       'state': ?state,
       'text': ?text,
+      'values': ?values,
       'input_mode': fromTranscript ? 'transcript' : 'text',
-      // Consent to the server's optional LLM extraction is a separate choice from voice.
-      'provider_consent': false,
+      // Consent to the server's AI helper is asked separately from voice.
+      'provider_consent': aiHelper,
     };
     try {
       final r = await _client
@@ -55,6 +58,7 @@ class HttpConversationGuide implements ConversationGuide {
       message: json['message'] as String,
       complete: json['complete'] == true,
       mascotState: mascot,
+      providerStatus: json['provider_status'] as String? ?? 'not_configured',
     );
   }
 }

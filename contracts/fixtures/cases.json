@@ -457,6 +457,53 @@
     }
   },
   {
+    "name": "conversation-import-health",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "import",
+      "state": {
+        "phase": "asking",
+        "current_field": "weight_kg"
+      },
+      "values": {
+        "weight_kg": 68.0
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "age",
+        "confirmed_profile": {
+          "weight_kg": 68.0
+        }
+      }
+    }
+  },
+  {
+    "name": "conversation-import-without-values",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request_schema_valid": true,
+    "request": {
+      "action": "import",
+      "state": {
+        "phase": "asking",
+        "current_field": "weight_kg"
+      }
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "code": "invalid_request"
+    }
+  },
+  {
     "name": "voice-token-consent-missing",
     "method": "POST",
     "path": "/api/voice/token",

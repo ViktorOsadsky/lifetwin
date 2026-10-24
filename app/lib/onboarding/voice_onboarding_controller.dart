@@ -31,6 +31,7 @@ const voiceOffNotice = 'Talking is not available right now, so please type your 
 const noNetworkNotice = "I can't reach LifeTwin right now. Your answers are kept. Please try again.";
 const voiceTroubleNotice = "I couldn't use the voice just now. You can try again, or type your answer.";
 const speakTroubleNotice = "I couldn't say that out loud. You can read my words above.";
+const healthWaitNotice = 'Please answer Yes or Change first. Then you can add your Health app answers.';
 
 /// Runs the conversation loop. The server decides what happens; this class only
 /// holds the caller-owned state, moves audio in and out, and keeps answers safe
@@ -50,6 +51,10 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// False after "No", or when the server or phone says voice cannot be used.
   bool voiceUsable = true;
 
+  /// The person agreed that the server's AI helper may read their replies.
+  /// Asked at the start; can be turned on or off at any time.
+  bool aiHelper = false;
+
   String mascotLine = '';
 
   /// Live words while listening; the last thing heard afterwards.
@@ -63,9 +68,13 @@ class VoiceOnboardingController extends ChangeNotifier {
   int _speechGen = 0;
   Future<void>? _starting;
   Future<void> Function()? _retry;
+  (String, bool)? _lastReply;
   bool _disposed = false;
 
   bool get confirming => turn?.isConfirming ?? false;
+
+  /// The last answer could not be read because the AI helper was off.
+  bool get helperWouldHelp => !aiHelper && turn?.providerStatus == 'consent_required';
   Map<String, dynamic>? get state => turn?.state;
 
   /// What the person has confirmed so far. Survives every voice failure.
@@ -82,13 +91,40 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- consent -----------------------------------------------------------
 
-  Future<void> answerConsent(bool yes) async {
+  Future<void> answerConsent(bool yes, {bool aiHelper = false}) async {
     if (phase != VoicePhase.consent || _busy) return;
     _set(() {
       voiceUsable = yes;
       typing = !yes;
+      this.aiHelper = aiHelper;
     });
     await _send('start');
+  }
+
+  /// Turns the AI helper on or off. Turning it on right after an answer that
+  /// needed it sends that same answer again, so the person doesn't repeat it.
+  Future<void> setAiHelper(bool on) async {
+    if (on == aiHelper || _busy) return;
+    final resend = on && helperWouldHelp ? _lastReply : null;
+    _set(() => aiHelper = on);
+    if (resend != null) {
+      await _stopSpeech();
+      await _send('reply', text: resend.$1, fromTranscript: resend.$2);
+    }
+  }
+
+  // ---- Apple Health --------------------------------------------------------
+
+  /// Adds answers the person already checked on the Health screen. The server
+  /// validates them and moves on to the next question that is still unanswered.
+  Future<void> importHealth(Map<String, num> values) async {
+    if (values.isEmpty || _busy || turn == null) return;
+    if (confirming) {
+      _set(() => notice = healthWaitNotice);
+      return;
+    }
+    await _stopSpeech();
+    await _send('import', values: values);
   }
 
   // ---- talking -----------------------------------------------------------
@@ -229,9 +265,10 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- server turn -----------------------------------------------------------
 
-  Future<void> _send(String action, {String? text, bool fromTranscript = false}) async {
+  Future<void> _send(String action, {String? text, bool fromTranscript = false, Map<String, num>? values}) async {
     if (_busy) return;
     _busy = true;
+    if (action == 'reply' && text != null) _lastReply = (text, fromTranscript);
     _set(() {
       phase = VoicePhase.interpreting;
       notice = null;
@@ -239,13 +276,20 @@ class VoiceOnboardingController extends ChangeNotifier {
     });
     final GuideTurn t;
     try {
-      t = await guide.turn(action: action, state: turn?.state, text: text, fromTranscript: fromTranscript);
+      t = await guide.turn(
+        action: action,
+        state: turn?.state,
+        text: text,
+        fromTranscript: fromTranscript,
+        values: values,
+        aiHelper: aiHelper,
+      );
     } catch (_) {
       _busy = false;
       _set(() {
         phase = VoicePhase.idle;
         notice = noNetworkNotice;
-        _retry = () => _send(action, text: text, fromTranscript: fromTranscript);
+        _retry = () => _send(action, text: text, fromTranscript: fromTranscript, values: values);
       });
       return;
     }

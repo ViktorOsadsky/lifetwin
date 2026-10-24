@@ -105,8 +105,17 @@ class FakeConversationGuide implements ConversationGuide {
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
+    Map<String, num>? values,
+    bool aiHelper = false,
   }) async {
-    calls.add({'action': action, 'text': text, 'fromTranscript': fromTranscript, 'state': state});
+    calls.add({
+      'action': action,
+      'text': text,
+      'fromTranscript': fromTranscript,
+      'state': state,
+      'values': values,
+      'aiHelper': aiHelper,
+    });
     if (gate != null) await gate!.future;
     if (failNext) {
       failNext = false;
@@ -115,8 +124,17 @@ class FakeConversationGuide implements ConversationGuide {
     final confirmed = Map<String, dynamic>.from((state?['confirmed_profile'] as Map?) ?? const {});
     final pending = Map<String, dynamic>.from((state?['pending_profile'] as Map?) ?? const {});
     switch (action) {
+      case 'import':
+        return _turn('asking', 'Thanks! I added your Health answers. Do you smoke?', {...confirmed, ...?values}, pending);
       case 'start':
         return _turn('asking', 'How old are you?', confirmed, pending);
+      case 'reply' when text == 'about five foot eight':
+        return aiHelper
+            ? _turn('confirming', 'I heard 5 feet 8 inches. Is that right?', confirmed, {'height_cm': 172.72},
+                provider: 'used')
+            : _turn('asking', "I can ask an AI helper to read this answer, but only if you say it's okay.",
+                confirmed, pending,
+                provider: 'consent_required');
       case 'reply':
         if (state?['phase'] == 'asking' && state?['current_field'] == 'age') {
           return _turn('confirming', 'I heard 70 years old. Is that right?', confirmed, {'age': 70},
@@ -134,8 +152,9 @@ class FakeConversationGuide implements ConversationGuide {
   }
 
   GuideTurn _turn(String phase, String message, Map<String, dynamic> confirmed, Map<String, dynamic> pending,
-      {bool complete = false, String mascot = 'asking'}) {
+      {bool complete = false, String mascot = 'asking', String provider = 'not_configured'}) {
     return GuideTurn(
+      providerStatus: provider,
       state: {
         'phase': phase,
         'current_field': phase == 'asking' ? 'age' : null,
