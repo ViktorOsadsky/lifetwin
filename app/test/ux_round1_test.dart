@@ -341,6 +341,51 @@ void main() {
     });
   });
 
+  group('leaving the app', () {
+    testWidgets('while listening closes the microphone and sends nothing; back, Talk works again', (t) async {
+      final r = Rig();
+      r.fakeInput.captions = ['I am'];
+      await r.pump(t);
+      await r.start(t, voice: true);
+      await tapTalk(t);
+      expect(r.c.phase, VoicePhase.listening);
+      final sent = r.calls.length;
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await t.pumpAndSettle();
+      expect(r.c.phase, VoicePhase.idle);
+      expect(r.fakeInput.cancels, 1);
+      expect(r.calls, hasLength(sent), reason: 'half-heard words must not be sent');
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await t.pumpAndSettle();
+      expect(find.text('Tap to talk'), findsOneWidget);
+      await tapTalk(t);
+      expect(r.c.phase, VoicePhase.listening);
+      await r.c.cancelTalk(); // stops the listening clock before the test ends
+      await t.pumpAndSettle();
+    });
+
+    testWidgets('while Pip speaks stops the speech', (t) async {
+      final r = Rig();
+      r.output.holdSpeech = true;
+      await r.pump(t);
+      await r.start(t, voice: true, settle: false);
+      expect(r.c.phase, VoicePhase.speaking);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      await t.pump();
+      await t.pump();
+      expect(r.output.stops, greaterThanOrEqualTo(1));
+      expect(r.c.phase, VoicePhase.idle);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await t.pumpAndSettle();
+    });
+  });
+
   group('5. Talk button', () {
     Future<List<String>> recordHaptics(WidgetTester t) async {
       final calls = <String>[];

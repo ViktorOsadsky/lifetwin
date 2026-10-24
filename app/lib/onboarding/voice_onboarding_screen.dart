@@ -92,7 +92,7 @@ class VoiceOnboardingScreen extends StatefulWidget {
   State<VoiceOnboardingScreen> createState() => _VoiceOnboardingScreenState();
 }
 
-class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
+class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with WidgetsBindingObserver {
   final _text = TextEditingController();
 
   /// Owned here, not by the TextField, so the typing box keeps focus (and the
@@ -148,6 +148,19 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   void initState() {
     super.initState();
     c.addListener(_changed);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// Leaving LifeTwin (home screen, another app, a call) closes the microphone and stops
+  /// Pip: nothing is heard or said while the app is not on screen, and words heard so far
+  /// are dropped, not sent. Coming back shows the same question, ready to answer.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Every way out passes through hidden (before paused), so this runs once.
+    if (state == AppLifecycleState.hidden) {
+      c.cancelTalk();
+      c.stopSpeaking();
+    }
   }
 
   @override
@@ -168,6 +181,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   @override
   void dispose() {
     c.removeListener(_changed);
+    WidgetsBinding.instance.removeObserver(this);
     _aiLock?.cancel();
     _turnLock?.cancel();
     _text.dispose();
