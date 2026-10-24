@@ -362,8 +362,12 @@
       "$ref": "#/$defs/ConversationState"
     },
     "voice_status": {
-      "const": "deferred",
       "default": "deferred",
+      "enum": [
+        "deferred",
+        "available",
+        "unavailable"
+      ],
       "title": "Voice Status",
       "type": "string"
     }

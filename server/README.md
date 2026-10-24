@@ -24,6 +24,7 @@ Open [the API docs](http://127.0.0.1:8000/docs). For a phone on the same trusted
 | `GET /ready` | Core service readiness; explicitly reports prediction and voice deferred. Does not claim model/provider readiness. |
 | `GET /api/capabilities` | Actual keyless/configured feature modes, no credential values. |
 | `POST /api/onboarding/turn` | Stateless guided mascot conversation. Typed text and final speech transcripts use identical validation. Optional consent-gated LLM extraction is available through a provider adapter. |
+| `POST /api/voice/token` | Consent-gated short-lived Cartesia token plus STT/TTS settings; 503 `voice_unavailable` when not configured. See Voice (Cartesia). |
 | `POST /api/advisor` | Cited curated educational plan for selected topics. Optional bounded web retrieval; no inferred health improvements or personalized treatment. |
 | `GET /api/quiz/questions` | Eight source-reviewed questions plus answers, explanations and local/offline scoring metadata. Optional topic, difficulty and bounded limit filters. |
 | `GET /api/quiz/questions/{id}` | One explicit question version; unknown versions return 404. |
@@ -53,7 +54,27 @@ Quiz answer metadata is intentionally public because scoring runs immediately on
 - `TAVILY_API_KEY`: used only when `use_web_research: true`. The adapter sends fixed topic queries, not profiles/transcripts, and retrieves only reviewed authority URLs. At most three searches and five extraction URLs, with request/overall deadlines and bounded response sizes. Blank key returns labeled curated/unconfigured research without a network call.
 - `MODEL_ARTIFACT_PATH`: reserved and deliberately unused. Setting it does not enable prediction or load a file.
 
-Live provider access has **not** been exercised; all provider tests use doubles/mock transports. The implemented advisor is curated, not an LLM-personalized planning agent. No audio provider is implemented. These distinctions are returned in API modes/capabilities.
+Live provider access has **not** been exercised; all provider tests use doubles/mock transports. The implemented advisor is curated, not an LLM-personalized planning agent. Cartesia voice is implemented as token minting only. These distinctions are returned in API modes/capabilities.
+
+## Voice (Cartesia)
+
+The phone talks to Cartesia directly for Ink speech-to-text and Sonic text-to-speech, using a short-lived access token minted by this server. The `sk_car_` API key never leaves the server and no audio passes through it.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `CARTESIA_API_KEY` | blank | Server-side secret. Blank means voice is unavailable. |
+| `CARTESIA_VOICE_ID` | blank | Required with the key; blank means voice is unavailable. |
+| `CARTESIA_VERSION` | `2026-08-14` | Sent as the `Cartesia-Version` header. |
+| `CARTESIA_TTS_MODEL` | `sonic-3.6` | Returned to the app. |
+| `CARTESIA_STT_MODEL` | `ink-2` | Returned to the app. |
+| `CARTESIA_TTS_SPEED` | `0.9` | Bounded 0.6 to 1.5. |
+| `CARTESIA_TOKEN_TTL_SECONDS` | `300` | Bounded 60 to 900. |
+
+`POST /api/voice/token` with `{"voice_consent": true}` returns `schema_version`, `token`, `expires_in`, `cartesia_version`, and the `stt` and `tts` connection settings (model, `pcm_s16le` encoding, sample rate, websocket URL; TTS also voice ID, speed and `calm` emotion). A missing or false consent is a 422 ("Please agree to use your voice first."). Missing configuration, or any Cartesia error or timeout, is a 503 `voice_unavailable` ("Voice isn't available right now. You can keep going by typing.") with no upstream text, key or token in the body or logs. Responses are `Cache-Control: no-store` and go through the normal request budget. `GET /api/capabilities` reports `voice` as `available` only when both the key and voice ID are set, otherwise `unavailable`.
+
+Privacy: audio and transcripts go to Cartesia only after the user consents, and only while they use tap-to-talk. This server does not receive or store audio. Typed input remains a complete alternative.
+
+The live Cartesia path is **untested without a key**. Tests mock the HTTP transport and check the exact request sent to `https://api.cartesia.ai/access-token`; the websocket STT/TTS protocol is the client's responsibility and is not exercised here.
 
 ## Limits and privacy
 
