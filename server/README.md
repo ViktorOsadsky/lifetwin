@@ -1,6 +1,6 @@
 # LifeTwin backend
 
-This implements the **non-prediction** backend requested after the [master guide](../MASTER_PLAN.md). All credential values in [`.env.example`](../.env.example) remain blank. No API key is needed to start or test it. Death prediction, training, model loading, survival curves, comparison math and sensitivity scanning are intentionally unimplemented; their routes return HTTP 501 with null prediction/model fields, without mock health estimates.
+This implements the backend requested after the [master guide](../MASTER_PLAN.md). All credential values in [`.env.example`](../.env.example) remain blank. No API key is needed to start or test it. `POST /api/predict` serves Track A's trained survival model (see Survival forecast below). Training, comparison math and sensitivity scanning are intentionally unimplemented; those routes return HTTP 501 with null prediction/model fields, without mock health estimates.
 
 For the audited functionality inventory, verified refinements and specific remaining backend tasks, read [backend status and remaining work](../docs/backend-status.md).
 
@@ -21,14 +21,15 @@ Open [the API docs](http://127.0.0.1:8000/docs). For a phone on the same trusted
 | Route | Behavior |
 | --- | --- |
 | `GET /health` | Lightweight liveness check; remains available while API capacity is occupied. |
-| `GET /ready` | Core service readiness; explicitly reports prediction and voice deferred. Does not claim model/provider readiness. |
+| `GET /ready` | Core service readiness; reports `prediction: available` when the model files loaded (else `not_implemented`) and voice deferred. Does not claim provider readiness. |
 | `GET /api/capabilities` | Actual keyless/configured feature modes, no credential values. |
 | `POST /api/onboarding/turn` | Stateless guided mascot conversation. Typed text and final speech transcripts use identical validation. Optional consent-gated LLM extraction is available through a provider adapter. |
 | `POST /api/voice/token` | Consent-gated short-lived Cartesia token plus STT/TTS settings; 503 `voice_unavailable` when not configured. See Voice (Cartesia). |
 | `POST /api/advisor` | Cited curated educational plan for selected topics. Optional bounded web retrieval; no inferred health improvements or personalized treatment. |
 | `GET /api/quiz/questions` | Eight source-reviewed questions plus answers, explanations and local/offline scoring metadata. Optional topic, difficulty and bounded limit filters. |
 | `GET /api/quiz/questions/{id}` | One explicit question version; unknown versions return 404. |
-| `POST /api/predict`, `/api/compare`, `/api/sensitivity` | Validated request shells only; HTTP 501 `prediction_not_implemented`, null prediction/model version. |
+| `POST /api/predict` | Survival at 1/3/5 years and a curve to 5 years from the trained model, or `unsupported` with a plain reason. HTTP 501 only when the model files are missing. |
+| `POST /api/compare`, `/api/sensitivity` | Validated request shells only; HTTP 501 `prediction_not_implemented`, null prediction/model version. |
 
 Start a conversation:
 
@@ -52,7 +53,7 @@ Quiz answer metadata is intentionally public because scoring runs immediately on
 
 - `OPENAI_API_KEY` and `OPENAI_MODEL`: both must be explicitly configured for the HTTPX Responses structured-extraction adapter. Before sending a turn to it, the caller must set `provider_consent: true`; otherwise guided mode continues. No model ID is guessed. Refused, invalid, ambiguous, incomplete and timed-out provider results fall back to clarification/guided mode. See [official Structured Outputs documentation](https://developers.openai.com/api/docs/guides/structured-outputs).
 - `TAVILY_API_KEY`: used only when `use_web_research: true`. The adapter sends fixed topic queries, not profiles/transcripts, and retrieves only reviewed authority URLs. At most three searches and five extraction URLs, with request/overall deadlines and bounded response sizes. Blank key returns labeled curated/unconfigured research without a network call.
-- `MODEL_ARTIFACT_PATH`: reserved and deliberately unused. Setting it does not enable prediction or load a file.
+- `MODEL_ARTIFACT_PATH`: folder with the survival model files; blank means the repository root. Missing files keep `/api/predict` at 501.
 
 Live provider access has **not** been exercised; all provider tests use doubles/mock transports. The implemented advisor is curated, not an LLM-personalized planning agent. Cartesia voice is implemented as token minting only. These distinctions are returned in API modes/capabilities.
 
@@ -128,4 +129,15 @@ Tests cover confirmation/corrections and ambiguity, keyless zero-network behavio
 
 The root [Dockerfile](../Dockerfile) packages the API and quiz assets with locked production dependencies and a non-root user. Bind address is `0.0.0.0`; port comes from `PORT` (default 8000). `/ready` is the readiness endpoint. Deployment to a paid/cloud service has not been performed by this change.
 
-Next: integrate Flutter with these contracts, choose an actual voice implementation, configure/evaluate any desired provider, and let Track A implement the prediction model later in its own PR. Do not replace the 501 routes with plausible sample mortality numbers.
+Next: confirm the smoking coding and the missing-value policy with Track A, ask the intake for time sitting, high blood pressure and general health, and implement compare/sensitivity on the same model. Do not replace the remaining 501 routes with plausible sample mortality numbers.
+
+## Survival forecast (`POST /api/predict`)
+
+The server runs Track A's trained DeepSurv model (`model.keras`, `preprocessor.joblib`, `baseline_hazard.csv`, `metrics.json`, committed at the repository root by Victor). The files are loaded once at startup without TensorFlow: the Dense weights are read from the `model.weights.h5` inside `model.keras` with h5py and run as a numpy forward pass; the scikit-learn preprocessor is loaded with joblib (pinned to scikit-learn 1.9.1, the version that saved it). Survival is `S(t) = exp(-H0(t) * exp(risk))`, with `H0` the last baseline row at or before `t`. Parity with Keras 3.15.1 (numpy backend) was checked on 52 inputs: largest risk difference 6.3e-7.
+
+The request is the confirmed `HealthProfile`. Mapping: age; sex male→1, female→2; BMI from `height_cm`/`weight_kg`; `sleep_hours`; `exercise_minutes_weekly` → moderate minutes, with 0 extra vigorous minutes; smoking never/former/current → 0/1/2 (unknown → missing; the coding is **assumed**, not yet confirmed by Victor); diabetes → 0/1. Time sitting, high blood pressure and general health are not asked yet and are filled in by the model's missing-value policy; the response lists them in `filled_in`.
+
+Response (`contracts/prediction.schema.json`): `status` `supported` or `unsupported`; `survival` at 1, 3 and 5 years (probabilities 0–1); a monthly step `curve` from `(0, 1)` to `max_horizon_years` (5); `model_version` (`deepsurv-nhanes-` plus a short SHA-256 of the four files); `filled_in`; `reason` (plain words, when unsupported); `limitations`. There is never a date, countdown or life expectancy. `unsupported` (with empty `survival`/`curve`) is returned when age or sex is missing, age is above 80 (not capped) or below 18, or when height/weight, sleep or exercise is missing: the model's missing-value indicators for those inputs were learned from very few people and move the result far more than any real answer would.
+
+`MODEL_ARTIFACT_PATH` sets the folder holding the four files (blank: the repository root; the Docker image uses `/app/model`). If any file is missing, the route keeps returning HTTP 501 `prediction_not_implemented`, and `/ready` reports `prediction: not_implemented`. Profiles are never logged.
+

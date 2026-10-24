@@ -1,27 +1,118 @@
 {
+  "$defs": {
+    "CurvePoint": {
+      "additionalProperties": false,
+      "properties": {
+        "survival": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Survival",
+          "type": "number"
+        },
+        "years": {
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Years",
+          "type": "number"
+        }
+      },
+      "required": [
+        "years",
+        "survival"
+      ],
+      "title": "CurvePoint",
+      "type": "object"
+    },
+    "FilledInput": {
+      "additionalProperties": false,
+      "description": "A model input the user did not give; the model's missing-value policy filled it.",
+      "properties": {
+        "feature": {
+          "title": "Feature",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "feature",
+        "label"
+      ],
+      "title": "FilledInput",
+      "type": "object"
+    },
+    "HorizonSurvival": {
+      "additionalProperties": false,
+      "properties": {
+        "survival": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Survival",
+          "type": "number"
+        },
+        "years": {
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Years",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "years",
+        "survival"
+      ],
+      "title": "HorizonSurvival",
+      "type": "object"
+    }
+  },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
-    "code": {
-      "const": "prediction_not_implemented",
-      "default": "prediction_not_implemented",
-      "title": "Code",
-      "type": "string"
+    "curve": {
+      "items": {
+        "$ref": "#/$defs/CurvePoint"
+      },
+      "title": "Curve",
+      "type": "array"
     },
-    "message": {
-      "default": "Prediction functionality is reserved for a later implementation.",
-      "title": "Message",
-      "type": "string"
+    "filled_in": {
+      "items": {
+        "$ref": "#/$defs/FilledInput"
+      },
+      "title": "Filled In",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "max_horizon_years": {
+      "default": 5,
+      "maximum": 5,
+      "minimum": 1,
+      "title": "Max Horizon Years",
+      "type": "integer"
     },
     "model_version": {
-      "default": null,
       "title": "Model Version",
-      "type": "null"
+      "type": "string"
     },
-    "prediction": {
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
       "default": null,
-      "title": "Prediction",
-      "type": "null"
+      "title": "Reason"
     },
     "schema_version": {
       "const": "1.0",
@@ -30,20 +121,32 @@
       "type": "string"
     },
     "status": {
-      "const": "not_implemented",
-      "default": "not_implemented",
+      "enum": [
+        "supported",
+        "unsupported"
+      ],
       "title": "Status",
       "type": "string"
+    },
+    "survival": {
+      "items": {
+        "$ref": "#/$defs/HorizonSurvival"
+      },
+      "title": "Survival",
+      "type": "array"
     }
   },
   "required": [
     "schema_version",
     "status",
-    "code",
-    "message",
-    "prediction",
-    "model_version"
+    "model_version",
+    "max_horizon_years",
+    "survival",
+    "curve",
+    "filled_in",
+    "reason",
+    "limitations"
   ],
-  "title": "DeferredFeature",
+  "title": "PredictionResponse",
   "type": "object"
 }
