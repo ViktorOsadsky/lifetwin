@@ -41,6 +41,14 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
   late TwinAppearance _draft = widget.appearance.value;
   _Tab _tab = _Tab.hats;
 
+  /// Taps while the screen is still sliding in are ignored: the second tap of a double
+  /// tap on the Room's Customize would otherwise land on "Save look".
+  void _unlessArriving(VoidCallback action) {
+    final route = ModalRoute.of(context)?.animation;
+    if (route != null && !route.isCompleted) return;
+    action();
+  }
+
   void _save() {
     widget.appearance.value = _draft;
     widget.onDone();
@@ -68,7 +76,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
               Positioned(
                 left: 14,
                 top: 18,
-                child: RoundBackButton(label: 'Back to room', onTap: widget.onDone),
+                child: RoundBackButton(label: 'Back to room', onTap: () => _unlessArriving(widget.onDone)),
               ),
             ],
           ),
@@ -86,7 +94,13 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: LipButton(label: 'Save look', icon: Icons.check_rounded, height: 64, fontSize: 24, onTap: _save),
+                child: LipButton(
+                  label: 'Save look',
+                  icon: Icons.check_rounded,
+                  height: 64,
+                  fontSize: 24,
+                  onTap: () => _unlessArriving(_save),
+                ),
               ),
             ],
           ),

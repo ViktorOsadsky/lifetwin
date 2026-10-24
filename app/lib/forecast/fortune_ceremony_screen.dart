@@ -34,6 +34,14 @@ class _FortuneCeremonyScreenState extends State<FortuneCeremonyScreen> with Sing
   late final AnimationController _glow = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400));
   bool _asking = false;
 
+  /// Taps while the screen is still sliding in are ignored: the second tap of a double
+  /// tap on the Room's Fortune would otherwise land on "Back to room" (or ask at once).
+  void _unlessArriving(VoidCallback action) {
+    final route = ModalRoute.of(context)?.animation;
+    if (route != null && !route.isCompleted) return;
+    action();
+  }
+
   Future<void> _ask() async {
     if (_asking) return;
     if (MediaQuery.disableAnimationsOf(context)) {
@@ -106,7 +114,7 @@ class _FortuneCeremonyScreenState extends State<FortuneCeremonyScreen> with Sing
                 label: 'Ask the ball',
                 icon: Icons.auto_awesome_rounded,
                 fontSize: 24,
-                onTap: _asking ? null : _ask,
+                onTap: _asking ? null : () => _unlessArriving(_ask),
               ),
               const SizedBox(height: 10),
               LipButton(
@@ -115,7 +123,7 @@ class _FortuneCeremonyScreenState extends State<FortuneCeremonyScreen> with Sing
                 kind: LipKind.secondary,
                 height: 56,
                 fontSize: 21,
-                onTap: _asking ? null : widget.onBack,
+                onTap: _asking ? null : () => _unlessArriving(widget.onBack),
               ),
             ],
           ),

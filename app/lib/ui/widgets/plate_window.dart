@@ -74,7 +74,10 @@ class PlateWindow extends StatelessWidget {
               top: -bannerOverhang,
               left: 0,
               right: 0,
-              child: Center(child: NameBanner(name: name)),
+              // Not a control: taps go through to the corner button it may overlap at large text.
+              child: IgnorePointer(
+                child: Center(child: NameBanner(name: name)),
+              ),
             ),
         ],
       ),
