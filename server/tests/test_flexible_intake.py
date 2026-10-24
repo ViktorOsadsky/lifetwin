@@ -344,7 +344,9 @@ def test_birth_year_alone_works_out_the_age_and_checks_it(text):
     assert result.state.phase == "confirming"
     assert result.state.pending_profile.model_dump(exclude_none=True) == {"age": 46}  # never 80
     assert result.state.confirmed_profile.age is None  # saved only after a yes
-    assert "Born in 1980: that makes you 46, or 45 if your birthday hasn't come yet" in result.message
+    assert (
+        "Born in 1980: that makes you 46, or 45 if your birthday hasn't come yet" in result.message
+    )
     fixed = asyncio.run(
         ConversationService(clock=lambda: TODAY).turn(
             TurnRequest(action="reply", state=result.state, text="45")
@@ -354,7 +356,9 @@ def test_birth_year_alone_works_out_the_age_and_checks_it(text):
 
 
 def test_birth_year_early_in_the_year_offers_the_younger_age():
-    result = reply("age", "born in 1980", service=ConversationService(clock=lambda: date(2026, 2, 1)))
+    result = reply(
+        "age", "born in 1980", service=ConversationService(clock=lambda: date(2026, 2, 1))
+    )
     assert result.state.pending_profile.age == 45
     assert "or 46 if your birthday has already passed" in result.message
 
