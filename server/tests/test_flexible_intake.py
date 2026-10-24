@@ -1089,3 +1089,27 @@ def test_spoken_two_digit_birth_year_is_a_year_not_an_age(text, age):
 
 def test_born_some_years_ago_is_never_read_as_a_birth_year():
     assert reply("age", "I was born 52 years ago").state.pending_profile.age != 74
+
+
+# --- Fixes found while building the check-ins -----------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        # Two parts for the same question are one answer, never the first part alone.
+        ("two beers on Friday and two on Saturday", {}),
+        ("a beer on Friday and a beer on Saturday", {}),
+        # Half a drink is half, not one.
+        ("half a glass of wine a day", {"alcohol_drinks_weekly": 3.5}),
+        # "Before bed" is a time of day, not an old value.
+        ("a small whiskey before bed every night", {"alcohol_drinks_weekly": 7.0}),
+        ("a glass of wine 3 nights a week", {"alcohol_drinks_weekly": 3.0}),
+    ],
+)
+def test_drink_counts_found_while_building_check_ins(text, expected):
+    assert parse_reply(text, "alcohol_drinks_weekly", today=TODAY) == expected
+
+
+def test_before_bed_never_turns_into_hours_of_sleep():
+    assert parse_reply("I read for an hour before bed", "sleep_hours", today=TODAY) == {}

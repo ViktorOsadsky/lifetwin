@@ -983,11 +983,12 @@ def asks_back(text: str, field: ProfileField, *, transcript: bool = False) -> bo
 # ---------------------------------------------------------------------------
 
 SAME = re.compile(
+    r"same old(?: same old)?|"
     r"(?:(?:about|much|pretty much|just about|roughly|more or less|basically|exactly|still|"
     r"very much|pretty|all)\s+)*(?:the )?same(?:(?: as| like) (?:usual|always|ever|before|normal|"
     r"last (?:time|week|night|check ?in|one)|the last (?:time|week|one)|yesterday|i said|"
     r"i told you|then))?(?: as (?:usual|always|ever))?"
-    r"|same old(?: same old)?|(?:as|like) (?:usual|always|before|normal|last (?:week|time))"
+    r"|(?:as|like) (?:usual|always|before|normal|last (?:week|time))"
     r"|the usual|no changes?|nothing(?:'s| has)? changed"
     r"|(?:hasn't|has not|didn't|did not|haven't|have not) changed?|unchanged|no different"
 )

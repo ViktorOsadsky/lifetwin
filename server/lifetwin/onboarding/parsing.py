@@ -770,12 +770,11 @@ def _clean_measurement(
     if _spoiled(field, rest):
         return False
     local_raw = _context(text, spans)
+    if _base(field) != "sleep_hours":
+        # "A whiskey before bed" is a time of day; to the sleep question it stays a clue.
+        local_raw = re.sub(MEALTIME, " ", local_raw)
     local = _unhedged(local_raw)
-    if (
-        NEGATION.search(local)
-        or PAST_OLD.search(re.sub(MEALTIME, " ", local))
-        or CHANGE.search(local)
-    ):
+    if NEGATION.search(local) or PAST_OLD.search(local) or CHANGE.search(local):
         return False
     # A blood pressure is always a past reading; only an old one ("years ago") is refused.
     # "were you just getting 5'4": a past verb said to someone else is not the person's past.
@@ -1420,7 +1419,10 @@ DRINK = (
 )
 SIZE = r"(?:(?:small|large|big|little|single|double|nice|cold|stiff|tall)\s+)?"
 # A count without a drink word must not be followed by another noun: "14 units" is not drinks.
-COUNT_END = r"(?=\s*(?:$|[,;.!/]|(?:a|an|per|each|every|on|in|or|with|at|tops|max|i)\b))"
+COUNT_END = (
+    r"(?=\s*(?:$|[,;.!/]|(?:a|an|per|each|every|on|in|or|with|at|tops|max|i|actually|"
+    r"exactly|total|altogether)\b))"
+)
 ZERO_DRINKS = (
     r"\bteetotal\w*|\b(?:don't|do not|never)\s+(?:drink|touch)\b|\bnone\b|\bzero\b|\bnothing\b|"
     r"\bnot a drop\b|\bno alcohol\b|\bnon ?drinker\b|\bnot a drinker\b|\babstain\w*|\bsober\b|"
@@ -1592,10 +1594,15 @@ def _in_period(text: str, field: str, period: str | None) -> str | None:
     if field == "sleep_hours":
         # Asked about a usual night: "most nights" is that night.
         text = re.sub(r"\bmost (?:of the )?nights\b", " ", text)
-    # "150 minutes this week" is a week's total, as "150 minutes a week" is.
-    weekly = field in {"exercise_minutes_weekly", "alcohol_drinks_weekly"}
-    rate = " a week " if weekly and re.search(r"\d", text) else " "
-    return " ".join(re.sub(THIS_WEEK, rate, text).split())
+    said = re.search(THIS_WEEK, text)
+    text = " ".join(re.sub(THIS_WEEK, " ", text).split())
+    if said and field == "exercise_minutes_weekly":
+        # "This week I walked two hours" is the week's total, as "two hours a week" is.
+        durations = list(re.finditer(DURATION, text))
+        if len(durations) == 1 and not re.search(FREQUENCY, _blank(text, [durations[0].span()])):
+            end = durations[0].end()
+            text = text[:end] + " a week" + text[end:]
+    return text
 
 
 SLEEP_ZERO = (
@@ -1620,11 +1627,16 @@ DAY_NO_EXERCISE = (
     r"^i (?:didn't|did not|haven't)$"
 )
 TIMES_EACH = r"\b(?:each(?: time| one)?|apiece|every time)\b"
+# As DURATION, but "and 30 minutes" joins only an hour: "20 minutes and 30 minutes" is two.
+DAY_DURATION = (
+    rf"(?:{N}\s?(?:to|-|or)\s?)?{N}\s?(minute|hour)\b"
+    rf"(?:(?<=hour),?\s?(?:and\s)?(\d{{1,2}})\s?minute\b)?"
+)
 
 
 def _exercise_day(text: str, today: date) -> Found:
     """Minutes moved today: "an hour" is 60; "twice, 20 minutes each" is 40."""
-    durations = list(re.finditer(DURATION, text))
+    durations = list(re.finditer(DAY_DURATION, text))
     if not durations:
         if re.search(r"\d", text):
             # A bare count answers "about how many minutes?"; a small one may be hours.
@@ -2556,9 +2568,9 @@ def parse_reply(
         parsed = parse_value(target, part, today=today, period=period) if target else {}
         if not parsed:
             return whole
-        # Contradictory repeated values require clarification of the whole turn,
-        # unless the reply read as one answer ("30 minutes 4 days and an hour on Saturday").
-        if any(key in values and values[key] != val for key, val in parsed.items()):
+        # Parts for the same question are pieces of one answer ("two beers on Friday and
+        # two on Saturday" is never 2): the reply is read as a whole, or asked about.
+        if any(key in values for key in parsed):
             return whole
         values.update(parsed)
     return values if whole.items() <= values.items() else {}
@@ -2765,6 +2777,10 @@ def checkin_clarify(text: str, field: str, *, period: str | None = None) -> str 
     ask = NUMBER_ASKS.get(field)
     if ask is None:
         return None
+    if field == "weight_kg" and CHANGE.search(canonical):
+        return "Thanks for telling me. " + ask
+    if not re.search(r"\d", canonical) and re.search(COMPARED, canonical):
+        return "More or less is fine, but I need a number. " + ask
     if field in PERIODS and re.search(PERIODS[field][1], canonical):
         return OTHER_TIME_LEADS[field] + ask
     if (
@@ -2782,10 +2798,6 @@ def checkin_clarify(text: str, field: str, *, period: str | None = None) -> str 
             if re.fullmatch(rf"(?:\D*\s)?{NUM}\s?hour\b\D*", canonical):
                 return 'Was that all week, or each time? For example, "an hour, 3 times".'
         return None
-    if field == "weight_kg" and CHANGE.search(canonical):
-        return "Thanks for telling me. " + ask
-    if re.search(COMPARED, canonical):
-        return "More or less is fine, but I need a number. " + ask
     if _base(field) == "sleep_hours":
         if re.search(BAD_NIGHT, canonical):
             return "I'm sorry to hear that. " + ask
