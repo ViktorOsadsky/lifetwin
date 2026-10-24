@@ -101,3 +101,9 @@ class GuideFailure implements Exception {
   @override
   String toString() => 'GuideFailure($message)';
 }
+
+/// The server answered but refused the request, with a plain-language reason
+/// (e.g. "Please check these answers: height."). Retrying unchanged won't help.
+class GuideRejected extends GuideFailure {
+  const GuideRejected(super.message);
+}

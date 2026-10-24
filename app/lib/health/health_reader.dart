@@ -23,6 +23,16 @@ const trackerTypes = [
   HealthDataType.RESTING_HEART_RATE,
 ];
 
+/// Units the summary rules expect. Passed explicitly so a plugin default can never
+/// switch a reading to pounds or centimeters without us noticing.
+const _units = {
+  HealthDataType.HEIGHT: HealthDataUnit.METER,
+  HealthDataType.WEIGHT: HealthDataUnit.KILOGRAM,
+  HealthDataType.EXERCISE_TIME: HealthDataUnit.MINUTE,
+  HealthDataType.BLOOD_PRESSURE_SYSTOLIC: HealthDataUnit.MILLIMETER_OF_MERCURY,
+  HealthDataType.BLOOD_PRESSURE_DIASTOLIC: HealthDataUnit.MILLIMETER_OF_MERCURY,
+};
+
 /// Read-only access to Apple Health. LifeTwin never writes.
 class HealthReader {
   final Health _health = Health();
@@ -46,11 +56,13 @@ class HealthReader {
     await _configure();
     final recent = await _health.getHealthDataFromTypes(
       types: [...profileTypes.where((t) => t != HealthDataType.HEIGHT && t != HealthDataType.WEIGHT), ...trackerTypes],
+      preferredUnits: _units,
       startTime: now.subtract(Duration(days: days)),
       endTime: now,
     );
     final body = await _health.getHealthDataFromTypes(
       types: const [HealthDataType.HEIGHT, HealthDataType.WEIGHT],
+      preferredUnits: _units,
       startTime: now.subtract(const Duration(days: 365)),
       endTime: now,
     );

@@ -32,6 +32,8 @@ const noNetworkNotice = "I can't reach LifeTwin right now. Your answers are kept
 const voiceTroubleNotice = "I couldn't use the voice just now. You can try again, or type your answer.";
 const speakTroubleNotice = "I couldn't say that out loud. You can read my words above.";
 const healthWaitNotice = 'Please answer Yes or Change first. Then you can add your Health app answers.';
+const healthNoneNotice = "No Health app answers were added, so I'll keep asking you. That's okay.";
+const healthRejectedPrefix = "I couldn't add your Health app answers. ";
 
 /// Runs the conversation loop. The server decides what happens; this class only
 /// holds the caller-owned state, moves audio in and out, and keeps answers safe
@@ -118,7 +120,11 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// Adds answers the person already checked on the Health screen. The server
   /// validates them and moves on to the next question that is still unanswered.
   Future<void> importHealth(Map<String, num> values) async {
-    if (values.isEmpty || _busy || turn == null) return;
+    if (_busy || turn == null) return;
+    if (values.isEmpty) {
+      _set(() => notice = healthNoneNotice);
+      return;
+    }
     if (confirming) {
       _set(() => notice = healthWaitNotice);
       return;
@@ -284,6 +290,14 @@ class VoiceOnboardingController extends ChangeNotifier {
         values: values,
         aiHelper: aiHelper,
       );
+    } on GuideRejected catch (e) {
+      // The server explained what is wrong; show its words. Nothing was changed.
+      _busy = false;
+      _set(() {
+        phase = turn?.complete == true ? VoicePhase.done : VoicePhase.idle;
+        notice = action == 'import' ? '$healthRejectedPrefix${e.message}' : e.message;
+      });
+      return;
     } catch (_) {
       _busy = false;
       _set(() {

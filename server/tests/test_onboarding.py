@@ -1098,3 +1098,15 @@ def test_values_are_rejected_for_other_actions(client):
         json={"action": "skip", "state": asking("age"), "values": {"weight_kg": 70}},
     )
     assert response.status_code == 422
+
+
+def test_import_says_when_the_current_question_was_not_in_the_health_app(client):
+    result = turn(client, "import", asking("weight_kg"), values={"height_cm": 172.7})
+    assert result["state"]["current_field"] == "weight_kg"
+    assert "didn't have your weight" in result["message"]
+
+
+def test_import_that_answers_the_current_question_does_not_repeat_it(client):
+    result = turn(client, "import", asking("weight_kg"), values={"weight_kg": 70})
+    assert result["state"]["current_field"] != "weight_kg"
+    assert "didn't have" not in result["message"]
