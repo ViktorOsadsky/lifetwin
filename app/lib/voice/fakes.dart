@@ -96,6 +96,9 @@ class FakeConversationGuide implements ConversationGuide {
   /// Fails the next call with a [GuideFailure].
   bool failNext = false;
 
+  /// Rejects the next call with this server reason ([GuideRejected]).
+  String? rejectNext;
+
   /// Waits on this before answering, to test overlapping taps.
   Completer<void>? gate;
 
@@ -120,6 +123,10 @@ class FakeConversationGuide implements ConversationGuide {
     if (failNext) {
       failNext = false;
       throw const GuideFailure('offline');
+    }
+    if (rejectNext case final reason?) {
+      rejectNext = null;
+      throw GuideRejected(reason);
     }
     final confirmed = Map<String, dynamic>.from((state?['confirmed_profile'] as Map?) ?? const {});
     final pending = Map<String, dynamic>.from((state?['pending_profile'] as Map?) ?? const {});

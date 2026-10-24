@@ -211,6 +211,7 @@ class ConversationService:
         if action == "import":
             if state.phase == "confirming":
                 self._invalid("Confirm or correct the pending answer before adding more.")
+            asked = state.current_field
             additions = request.values.model_dump(exclude_none=True)
             merged = state.confirmed_profile.model_dump()
             merged.update(additions)
@@ -219,11 +220,26 @@ class ConversationService:
                 field for field in state.skipped_fields if field not in additions
             ]
             self._advance(state)
+            # Stay on the question the person was answering if it is still open,
+            # rather than jumping back to an earlier one.
+            if (
+                asked
+                and getattr(state.confirmed_profile, asked) is None
+                and asked not in state.skipped_fields
+            ):
+                state.current_field, state.phase = asked, "asking"
             count = "1 answer" if len(additions) == 1 else f"{len(additions)} answers"
+            # Asking the same question again without saying why feels like being stuck.
+            missing = (
+                f"Your Health app didn't have your {FRIENDLY_LABELS[asked]}, so I still need it. "
+                if asked and state.current_field == asked
+                else ""
+            )
             return respond(
                 f"Thanks! I added {count} you checked from your Health app: "
                 + describe(additions)
                 + ". "
+                + missing
                 + self._prompt(state)
             )
         if action == "skip":

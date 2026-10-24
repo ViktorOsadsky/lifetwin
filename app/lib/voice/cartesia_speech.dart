@@ -41,8 +41,13 @@ class FlutterPcmSoundPlayer implements PcmPlayer {
     _rate = sampleRate;
     _frames = 0;
     _drained = null;
+    // `playback` uses the loudspeaker. The plugin sets `playAndRecord` without
+    // `defaultToSpeaker`, which iOS routes to the quiet phone-call earpiece.
+    // The microphone (record package) sets its own playAndRecord + defaultToSpeaker,
+    // and the app always stops speaking before it listens, so they never overlap.
+    // `playback` also plays when the silent switch is on.
     await FlutterPcmSound.setup(
-        sampleRate: sampleRate, channelCount: 1, iosAudioCategory: IosAudioCategory.playAndRecord);
+        sampleRate: sampleRate, channelCount: 1, iosAudioCategory: IosAudioCategory.playback);
     FlutterPcmSound.setFeedCallback((remaining) {
       if (remaining == 0 && !(_drained?.isCompleted ?? true)) _drained!.complete();
     });

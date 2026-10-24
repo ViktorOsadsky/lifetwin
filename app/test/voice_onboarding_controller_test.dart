@@ -210,12 +210,25 @@ void main() {
     expect(r.c.notice, healthWaitNotice);
   });
 
-  test('an empty Health result sends nothing', () async {
+  test('an empty Health result sends nothing but says so', () async {
     final r = Rig();
     await r.c.answerConsent(false);
     final before = r.guide.calls.length;
     await r.c.importHealth({});
     expect(r.guide.calls.length, before);
+    expect(r.c.notice, healthNoneNotice);
+  });
+
+  test('a rejected Health import shows the server reason and keeps the conversation', () async {
+    final r = Rig();
+    await r.c.answerConsent(false);
+    final line = r.c.mascotLine;
+    r.guide.rejectNext = 'Please check these answers: height. Then try again.';
+    await r.c.importHealth({'height_cm': 17300});
+    expect(r.c.notice, "I couldn't add your Health app answers. Please check these answers: height. Then try again.");
+    expect(r.c.canRetry, isFalse);
+    expect(r.c.mascotLine, line);
+    expect(r.c.phase, VoicePhase.idle);
   });
 
   test('AI helper consent is sent with every turn and can be turned off', () async {
@@ -227,4 +240,3 @@ void main() {
     expect(r.guide.calls.last['aiHelper'], isFalse);
   });
 }
-

@@ -50,6 +50,32 @@ const sleepTypes = {'SLEEP_ASLEEP', 'SLEEP_LIGHT', 'SLEEP_DEEP', 'SLEEP_REM'};
 /// reading within a year; blood pressure = average of the last 3 readings
 /// within 90 days. Anything older produces no candidate, so the mascot asks.
 List<HealthCandidate> summarize(List<HealthSample> samples, DateTime now) {
+  final out = _summarize(samples, now);
+  // A reading outside everyday human ranges is a unit or entry mistake: drop it,
+  // so the mascot asks instead of offering (or the server rejecting) a wrong value.
+  out.removeWhere((c) {
+    final (lo, hi) = plausibleRange[c.field]!;
+    return c.value < lo || c.value > hi;
+  });
+  final sys = out.where((c) => c.field == HealthField.systolicBp).firstOrNull;
+  final dia = out.where((c) => c.field == HealthField.diastolicBp).firstOrNull;
+  if (sys != null && dia != null && sys.value <= dia.value) {
+    out.removeWhere((c) => c.field == HealthField.systolicBp || c.field == HealthField.diastolicBp);
+  }
+  return out;
+}
+
+/// Everyday ranges, all inside the server's validation limits.
+const plausibleRange = <HealthField, (num, num)>{
+  HealthField.heightCm: (100, 250),
+  HealthField.weightKg: (25, 300),
+  HealthField.exerciseMinutesWeekly: (0, 3000),
+  HealthField.sleepHours: (2, 14),
+  HealthField.systolicBp: (70, 250),
+  HealthField.diastolicBp: (40, 150),
+};
+
+List<HealthCandidate> _summarize(List<HealthSample> samples, DateTime now) {
   final out = <HealthCandidate>[];
 
   final height = _latest(samples, 'HEIGHT', now, 365);

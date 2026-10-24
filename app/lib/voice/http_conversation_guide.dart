@@ -36,12 +36,26 @@ class HttpConversationGuide implements ConversationGuide {
           .post(Uri.parse('$baseUrl/api/onboarding/turn'),
               headers: {'content-type': 'application/json'}, body: jsonEncode(body))
           .timeout(const Duration(seconds: 20));
+      if (r.statusCode >= 400 && r.statusCode < 500) {
+        throw GuideRejected(_reason(r.bodyBytes) ?? 'Something in that answer could not be used.');
+      }
       if (r.statusCode != 200) throw GuideFailure('HTTP ${r.statusCode}');
       return parseTurn(jsonDecode(utf8.decode(r.bodyBytes)));
     } on GuideFailure {
       rethrow;
     } catch (e) {
       throw GuideFailure('$e');
+    }
+  }
+
+  /// The server's plain-language error message, if the body has one.
+  static String? _reason(List<int> body) {
+    try {
+      final json = jsonDecode(utf8.decode(body));
+      final message = json is Map ? json['message'] : null;
+      return message is String && message.trim().isNotEmpty ? message.trim() : null;
+    } catch (_) {
+      return null;
     }
   }
 
