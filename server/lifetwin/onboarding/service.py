@@ -465,7 +465,14 @@ class ConversationService:
         )
         if action == "reply" and heard_for and state.phase in {"asking", "confirming"}:
             # Room chatter around the answer goes before anything else reads it.
-            text = focus(text, heard_for, transcript=voice, confirming=state.phase == "confirming")
+            text = focus(
+                text,
+                heard_for,
+                transcript=voice,
+                confirming=state.phase == "confirming",
+                # Other open questions: "I'm 72, female" keeps "female" for the sex question.
+                also=tuple(f for f in ASKED if f != heard_for and state.phase == "asking"),
+            )
 
         def respond(
             message: str,
@@ -539,7 +546,8 @@ class ConversationService:
             self._invalid("Please start the conversation first.")
         if action in {"reply", "skip"} and state.phase == "remembering":
             intent = control_intent(text) if action == "reply" else None
-            plain = words_of(text)
+            # Politeness kept: "please do" is a yes here.
+            plain = " ".join(re.sub(r"[^\w'\s]", " ", text.lower()).split())
             if intent and intent.kind in {"why", "private", "help"}:
                 return respond(MEMORY_WHY + MEMORY_ASK)
             if intent is None or intent.kind == "skip":

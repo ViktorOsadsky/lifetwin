@@ -968,17 +968,23 @@ def focus(
     transcript: bool = False,
     confirming: bool = False,
     checkin: bool = False,
+    also: tuple[str, ...] = (),
 ) -> str:
     """Leave out room chatter around an answer.
 
     A sentence (and, in a voice transcript, a comma-separated piece) goes only when
-    it holds nothing for the asked question and nothing that could change an
-    answer's meaning: "Are we gonna include this, bro? Female." is "Female". A
+    it holds nothing for the asked question (or the ``also`` questions) and nothing
+    that could change an answer's meaning: "Are we gonna include this, bro? Female." is "Female". A
     reply with nothing on topic stays whole, so "say that again" still works.
     """
 
     def keep(piece: str) -> bool:
-        return _on_topic(piece, field, confirming, checkin) or _changes_meaning(piece)
+        # ``also``: other questions a piece may answer ("I'm 72, female"), kept for them.
+        return (
+            _on_topic(piece, field, confirming, checkin)
+            or _changes_meaning(piece)
+            or any(_on_topic(piece, other, False) for other in also)
+        )
 
     # Each sentence keeps its own end, so "yes?" stays a question.
     parts = re.split(f"({SENTENCE_END})", text)

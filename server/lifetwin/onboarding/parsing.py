@@ -2781,6 +2781,8 @@ def parse_reply(
                 else None
             )
         parsed = parse_value(target, part, today=today, period=period) if target else {}
+        if not parsed and several and _habit_aside(part):
+            continue  # "... and I walk my dog every morning": a habit note, not a value
         if not parsed:
             return whole
         # Parts for the same question are pieces of one answer ("two beers on Friday and
@@ -2793,6 +2795,19 @@ def parse_reply(
         # read as one question, would add them up.
         return values
     return values if whole.items() <= values.items() else {}
+
+
+def _habit_aside(part: str) -> bool:
+    """A plain mention of a habit with no number, beside other answers."""
+    text = _canonical(part)
+    if re.search(r"\d", text) or _doubtful(text) or OTHER_PERSON.search(text):
+        return False
+    if NEGATION.search(text) or VAGUE.search(_unhedged(text)) or PAST_OLD.search(text):
+        return False
+    return any(
+        re.search(TOPICS[topic], text)
+        for topic in ("exercise_minutes_weekly", "sleep_hours", "sitting_minutes_daily")
+    )
 
 
 RAW_BREAK = re.compile(

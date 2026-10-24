@@ -158,10 +158,14 @@ def choose(
     def open_(probe: Probe) -> bool:
         return probe.id not in asked and probe.topic not in covered
 
+    # A probe that helps a suggestion (it has a lever) may wait for a later answer; one
+    # that only gets to know the person is asked right after its answer or not at all.
     now = [
         probe
         for probe in PROBES
-        if open_(probe) and probe.after & answered and probe.applies(profile) is True
+        if open_(probe)
+        and probe.after & (answered if probe.lever else just_confirmed)
+        and probe.applies(profile) is True
     ]
     if not now:
         return None
