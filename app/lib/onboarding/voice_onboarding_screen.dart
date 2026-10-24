@@ -141,6 +141,24 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     if (!_justChanged) widget.onUseHealth?.call();
   }
 
+  /// Back to the Room, as the swipe-back does: the route is popped, the controller (and
+  /// every confirmed answer) stays with the app. The guard keeps a double tap from also
+  /// popping the Room's own route.
+  Timer? _leaveLock;
+
+  void _home() {
+    if (_leaveLock?.isActive ?? false) return;
+    _leaveLock = Timer(secondTapGuard, () {});
+    Navigator.of(context).maybePop();
+  }
+
+  /// However the screen is left (Home, swipe-back), the microphone closes and Pip stops.
+  void _left(bool didPop, Object? result) {
+    if (!didPop) return;
+    c.cancelTalk();
+    c.stopSpeaking();
+  }
+
   void _skip() {
     if (!_justChanged) c.skip();
   }
@@ -205,6 +223,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     WidgetsBinding.instance.removeObserver(this);
     _aiLock?.cancel();
     _turnLock?.cancel();
+    _leaveLock?.cancel();
     _resized?.cancel();
     _controlsScroll.dispose();
     _text.dispose();
@@ -262,23 +281,48 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: LtColors.paper,
-      body: SafeArea(
-        // Tapping anywhere that is not a control puts the keyboard away.
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          // Not a control for VoiceOver (it would be an unnamed, screen-sized button);
-          // "Hide keyboard" does the same for everyone.
-          excludeFromSemantics: true,
-          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-          child: ListenableBuilder(
-            listenable: c,
-            builder: (context, _) => !c.askingVoice && !(c.phase == VoicePhase.consent && c.turn == null && !c.canRetry)
-                ? _talk(context)
-                : c.askingVoice
-                ? _voiceAgain(context)
-                : _consent(context),
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    return PopScope(
+      onPopInvokedWithResult: _left,
+      child: Scaffold(
+        backgroundColor: LtColors.paper,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Always the same place, clearly named; hidden only while the keyboard is up.
+              if (!keyboard)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: LtTextLink(
+                      label: 'Home',
+                      icon: const LtIcon(LtIconKind.home, size: 28, strokeWidth: 2.6),
+                      onPressed: _home,
+                    ),
+                  ),
+                ),
+              Expanded(
+                // Tapping anywhere that is not a control puts the keyboard away.
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  // Not a control for VoiceOver (it would be an unnamed, screen-sized button);
+                  // "Hide keyboard" does the same for everyone.
+                  excludeFromSemantics: true,
+                  onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                  child: ListenableBuilder(
+                    listenable: c,
+                    builder: (context, _) =>
+                        !c.askingVoice && !(c.phase == VoicePhase.consent && c.turn == null && !c.canRetry)
+                        ? _talk(context)
+                        : c.askingVoice
+                        ? _voiceAgain(context)
+                        : _consent(context),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

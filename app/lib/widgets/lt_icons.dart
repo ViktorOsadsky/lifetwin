@@ -4,7 +4,7 @@ import '../theme/lifetwin_theme.dart';
 import 'vector/shapes.dart';
 
 /// The design's line icons (24x24, round ink strokes). Add more by pasting their paths.
-enum LtIconKind { back, check, info, mic, keyboard, pencil, speaker, stop }
+enum LtIconKind { back, check, info, mic, keyboard, pencil, speaker, stop, home }
 
 List<Shape> _iconShapes(LtIconKind kind, double w) => switch (kind) {
   LtIconKind.back => [PathShape('M15 5l-7 7 7 7', stroke: LtColors.ink, strokeWidth: w, round: true)],
@@ -48,6 +48,10 @@ List<Shape> _iconShapes(LtIconKind kind, double w) => switch (kind) {
   ],
   // "Stop" while Pip speaks (not on an artboard).
   LtIconKind.stop => [RectShape(6.5, 6.5, 11, 11, rx: 2.5, stroke: LtColors.ink, strokeWidth: w)],
+  // "Home" back to the Room (not on an artboard; same line style).
+  LtIconKind.home => [
+    PathShape('M4 11.5L12 4.5L20 11.5M6.5 10V19.5H17.5V10', stroke: LtColors.ink, strokeWidth: w, round: true),
+  ],
 };
 
 /// A decorative icon; the button or text beside it carries the meaning.
