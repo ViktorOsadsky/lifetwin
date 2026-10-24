@@ -31,6 +31,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>LifeTwin listens only while you hold the Talk button, so you can answer questions by speaking instead of typing.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>LifeTwin reads your activity, workouts, sleep, weight and blood pressure so you don't have to type them. You confirm every value before it is used.</string>
 	<key>NSHealthUpdateUsageDescription</key>
