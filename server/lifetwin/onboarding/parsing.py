@@ -539,6 +539,8 @@ VAGUE = re.compile(
     r"or more|or less|at least|at most|up to|more than|less than|fewer than|over|under|"
     # "7 hours, no, less": a bare comparison says the number is not the answer.
     r"less|more|fewer|"
+    # "2 hours at a time": one stretch, not the whole amount.
+    r"at a time|"
     r"above|below|plus|ish|odd|range|decades|twenties|thirties|forties|fifties|sixties|"
     r"seventies|eighties|nineties|on a (?:good|bad) night|(?:good|bad) nights?|"
     r"every other(?! days?\b)|shy of|short of|north of|south of|side of|"

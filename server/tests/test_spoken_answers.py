@@ -240,6 +240,7 @@ def test_a_contrast_beside_a_no_is_kept_from_room_chatter():
         ("7 hours, but I wake up 2 or 3 times a night.", {"sleep_hours": 7.0}),
         ("I wake up a lot.", None),
         ("I wake up a lot, maybe 5 hours, sometimes 4.", None),
+        ("I wake up a lot, I sleep 2 hours at a time.", None),  # one stretch, not the night
     ],
 )
 def test_waking_in_the_night_does_not_hide_the_hours(text, expected):
