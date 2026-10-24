@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'forecast/forecast_client.dart';
+import 'forecast/forecast_screen.dart';
 import 'health/health_screen.dart';
 import 'health/health_summary.dart';
 import 'onboarding/voice_onboarding_controller.dart';
@@ -13,21 +15,25 @@ void main() => runApp(const LifeTwinApp());
 /// Temporary host until Track C's game shell lands: the mascot conversation is the
 /// start screen, with a button to the Apple Health import.
 class LifeTwinApp extends StatefulWidget {
-  const LifeTwinApp({super.key, this.controller});
+  const LifeTwinApp({super.key, this.controller, this.forecastClient});
 
   /// Tests pass a controller built from fakes.
   final VoiceOnboardingController? controller;
+
+  /// Tests pass a fake; otherwise POST /api/predict on the same server.
+  final ForecastClient? forecastClient;
 
   @override
   State<LifeTwinApp> createState() => _LifeTwinAppState();
 }
 
 class _LifeTwinAppState extends State<LifeTwinApp> {
-  late final VoiceOnboardingController _controller = widget.controller ?? _live();
+  // Start finding the server now, while the consent questions are on screen.
+  late final ApiBase _api = ApiBase()..url().ignore();
+  late final VoiceOnboardingController _controller = widget.controller ?? _live(_api);
+  late final ForecastClient _forecast = widget.forecastClient ?? HttpForecastClient(base: _api);
 
-  static VoiceOnboardingController _live() {
-    // Start finding the server now, while the consent questions are on screen.
-    final api = ApiBase()..url().ignore();
+  static VoiceOnboardingController _live(ApiBase api) {
     final tokens = VoiceTokenProvider(base: api);
     return VoiceOnboardingController(
       guide: HttpConversationGuide(base: api),
@@ -61,11 +67,15 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               ),
             ),
           ),
-          onDone: (profile) => ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              duration: const Duration(days: 1),
-              showCloseIcon: true,
-              content: Text('Confirmed ${profile.length} answers.'),
+          onDone: (profile) => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => ForecastScreen(
+                client: _forecast,
+                profile: profile,
+                // The mascot speaks only if the person chose voice and it still works.
+                speech: _controller.voiceUsable && !_controller.typing ? _controller.output : null,
+                onBack: () => Navigator.of(context).pop(),
+              ),
             ),
           ),
         ),

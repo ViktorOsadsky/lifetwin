@@ -78,12 +78,11 @@ def test_keyless_mascot_plan_and_quiz_work_without_external_calls(client, monkey
 @pytest.mark.parametrize(
     "path,payload",
     [
-        ("/api/predict", {"age": 35}),
         ("/api/compare", {"baseline": {"age": 35}, "scenario": {"age": 35, "sleep_hours": 8}}),
         ("/api/sensitivity", {"profile": {"age": 35}}),
     ],
 )
-def test_every_prediction_dependent_route_is_explicitly_unimplemented(client, path, payload):
+def test_compare_and_sensitivity_routes_are_explicitly_unimplemented(client, path, payload):
     response = client.post(path, json=payload)
     assert response.status_code == 501
     body = response.json()
@@ -410,7 +409,7 @@ def test_blood_pressure_order_error_is_plain(client):
     response = client.post("/api/predict", json={"systolic_bp": 80, "diastolic_bp": 150})
     assert response.status_code == 422
     assert "top blood pressure number is usually the bigger" in response.json()["message"]
-    assert client.post("/api/predict", json={"age": 35.0}).status_code == 501
+    assert client.post("/api/predict", json={"age": 35.0}).status_code == 200
 
 
 @pytest.mark.asyncio
