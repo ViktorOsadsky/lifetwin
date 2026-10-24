@@ -49,7 +49,11 @@ class HttpConversationGuide implements ConversationGuide {
         );
       }
       if (r.statusCode >= 400 && r.statusCode < 500) {
-        throw GuideRejected(_reason(r.bodyBytes) ?? 'Something in that answer could not be used.');
+        // Only the server's own explanation means the answer was refused. A bare 4xx (a
+        // Wi-Fi sign-in page, a proxy in the way) is a connection problem: try again.
+        final reason = _reason(r.bodyBytes);
+        if (reason == null) throw GuideFailure('HTTP ${r.statusCode}');
+        throw GuideRejected(reason);
       }
       if (r.statusCode != 200) throw GuideFailure('HTTP ${r.statusCode}');
       return parseTurn(jsonDecode(utf8.decode(r.bodyBytes)));

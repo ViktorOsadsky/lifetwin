@@ -163,6 +163,7 @@ class Rig {
         await t.pump();
         await t.pump();
       }
+      await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
     }
   }
 }
@@ -340,6 +341,175 @@ void main() {
     });
   });
 
+  group('notices', () {
+    testWidgets('very large text: a new turn shows its controls from the top (Yes not scrolled away)', (t) async {
+      final r = Rig(guide: StepGuide());
+      await r.pump(t, scale: 3);
+      await r.start(t, voice: false);
+      await t.enterText(find.byType(TextField), '70');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pumpAndSettle();
+      // The person scrolled the controls down (to Skip, say), then sends.
+      final controlsScroll = find
+          .descendant(of: find.byType(SingleChildScrollView).last, matching: find.byType(Scrollable))
+          .first;
+      await t.drag(controlsScroll, const Offset(0, -600));
+      await t.pumpAndSettle();
+      expect(t.state<ScrollableState>(controlsScroll).position.pixels, greaterThan(0));
+      await r.c.submitTyped('70');
+      await t.pumpAndSettle();
+      expect(r.c.confirming, isTrue);
+      expect(find.text('Yes').hitTestable(), findsOneWidget);
+      final yes = t.getRect(find.text('Yes'));
+      final controls = t.getRect(find.byType(SingleChildScrollView).last);
+      expect(yes.top, greaterThanOrEqualTo(controls.top));
+    });
+
+    testWidgets('large text: the end of Pip\'s line (the question) is in view on each new turn', (t) async {
+      const line =
+          "Hi, I'm your guide. You can talk or type, and you can skip any question. How old are you?";
+      final r = Rig(guide: StepGuide(message: line));
+      await r.pump(t, scale: 2);
+      await r.start(t, voice: false);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pumpAndSettle();
+      Rect visible() => t.getRect(find.byType(Scrollable).first);
+      final text = find.textContaining('How old are you?');
+      expect(t.getRect(text).bottom, lessThanOrEqualTo(visible().bottom + 0.5));
+      await t.enterText(find.byType(TextField), '70');
+      await t.tap(find.text('Send'));
+      await t.pumpAndSettle();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pumpAndSettle();
+      expect(r.c.confirming, isTrue); // the read-back (StepGuide uses the same words)
+      expect(t.getRect(text).bottom, lessThanOrEqualTo(visible().bottom + 0.5));
+    });
+
+    testWidgets('large text: a turn that arrives with the keyboard up is in view once it goes down', (t) async {
+      const line =
+          "Hi, I'm your guide. You can talk or type, and you can skip any question. How old are you?";
+      final r = Rig(guide: StepGuide(message: line));
+      await r.pump(t, scale: 2);
+      await r.start(t, voice: false);
+      t.view.viewInsets = const FakeViewPadding(bottom: 336); // the keyboard
+      await t.pumpAndSettle();
+      await t.enterText(find.byType(TextField), '70');
+      await t.tap(find.text('Send'));
+      await t.pumpAndSettle();
+      t.view.resetViewInsets(); // read-back: no typing box, so the keyboard goes down
+      await t.pump(const Duration(milliseconds: 400));
+      await t.pumpAndSettle();
+      final end = t.getRect(find.textContaining('How old are you?')).bottom;
+      expect(end, lessThanOrEqualTo(t.getRect(find.byType(Scrollable).first).bottom + 0.5));
+    });
+
+    testWidgets('typing: a new question\'s quick answers scroll into view', (t) async {
+      final r = Rig(guide: StepGuide(message: 'Got it. What sex were you at birth: female or male?'));
+      await r.pump(t);
+      await r.start(t, voice: false);
+      await t.enterText(find.byType(TextField), '70');
+      await t.tap(find.text('Send'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Yes'));
+      await t.pumpAndSettle();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pumpAndSettle();
+      expect(r.c.state?['current_field'], 'sex');
+      expect(find.text('Female').hitTestable(), findsOneWidget);
+      expect(find.text('Male').hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('a new notice scrolls into view with its button (mic denied, no network)', (t) async {
+      final r = Rig();
+      r.fakeInput.startError = const MicDeniedException();
+      await r.pump(t);
+      await r.start(t, voice: true);
+      await tapTalk(t);
+      await t.pumpAndSettle();
+      expect(find.text(micDeniedNotice).hitTestable(), findsOneWidget);
+      expect(find.text('Open Settings').hitTestable(), findsOneWidget);
+      (r.guide as FakeConversationGuide).failNext = true;
+      await t.enterText(find.byType(TextField), '70');
+      await t.tap(find.text('Send'));
+      await t.pumpAndSettle();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pumpAndSettle();
+      expect(find.text('Try again').hitTestable(), findsOneWidget);
+    });
+  });
+
+  group('the "Allow microphone?" question', () {
+    for (final allow in [true, false]) {
+      testWidgets('waits as long as the person reads it, then ${allow ? 'listens' : 'says why not'}', (t) async {
+        final r = Rig();
+        r.fakeInput.permission = Completer<bool>();
+        await r.pump(t);
+        await r.start(t, voice: true);
+        await tapTalk(t);
+        await t.pump(const Duration(seconds: 25)); // well past the 10 s start limit
+        expect(r.c.notice, isNull);
+        expect(r.fakeInput.starts, 0);
+        r.fakeInput.permission!.complete(allow);
+        await t.pump();
+        await t.pump();
+        if (allow) {
+          expect(r.c.phase, VoicePhase.listening);
+          expect(r.fakeInput.starts, 1);
+          await r.c.cancelTalk();
+        } else {
+          expect(r.c.notice, micDeniedNotice);
+          expect(r.c.typing, isTrue);
+        }
+        await t.pumpAndSettle();
+      });
+    }
+  });
+
+  group('leaving the app', () {
+    testWidgets('while listening closes the microphone and sends nothing; back, Talk works again', (t) async {
+      final r = Rig();
+      r.fakeInput.captions = ['I am'];
+      await r.pump(t);
+      await r.start(t, voice: true);
+      await tapTalk(t);
+      expect(r.c.phase, VoicePhase.listening);
+      final sent = r.calls.length;
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await t.pumpAndSettle();
+      expect(r.c.phase, VoicePhase.idle);
+      expect(r.fakeInput.cancels, 1);
+      expect(r.calls, hasLength(sent), reason: 'half-heard words must not be sent');
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await t.pumpAndSettle();
+      expect(find.text('Tap to talk'), findsOneWidget);
+      await tapTalk(t);
+      expect(r.c.phase, VoicePhase.listening);
+      await r.c.cancelTalk(); // stops the listening clock before the test ends
+      await t.pumpAndSettle();
+    });
+
+    testWidgets('while Pip speaks stops the speech', (t) async {
+      final r = Rig();
+      r.output.holdSpeech = true;
+      await r.pump(t);
+      await r.start(t, voice: true, settle: false);
+      expect(r.c.phase, VoicePhase.speaking);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      await t.pump();
+      await t.pump();
+      expect(r.output.stops, greaterThanOrEqualTo(1));
+      expect(r.c.phase, VoicePhase.idle);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await t.pumpAndSettle();
+    });
+  });
+
   group('5. Talk button', () {
     Future<List<String>> recordHaptics(WidgetTester t) async {
       final calls = <String>[];
@@ -446,10 +616,12 @@ void main() {
       await t.pumpAndSettle();
       expect(find.text('Question 2 of 11'), findsOneWidget);
 
+      await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
       await tapText(t, 'Skip this question');
       expect(find.text('Question 3 of 11'), findsOneWidget);
 
       expect(t.getSize(button('Go back')).height, greaterThanOrEqualTo(56));
+      await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
       await tapText(t, 'Go back');
       expect(r.calls.last, {'action': 'reply', 'text': 'go back'});
       expect(find.textContaining('Question about sex'), findsOneWidget);
@@ -600,6 +772,7 @@ void main() {
       await r.pump(t);
       for (final l in ["Yes, I'll talk", 'Yes, turn it on']) {
         await tapText(t, l);
+        await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
       }
       r.fakeInput.transcript = 'about five foot eight';
       await tapTalk(t);
@@ -644,6 +817,19 @@ void main() {
   });
 
   group('13. VoiceOver', () {
+    testWidgets('every control has a name; no unnamed screen-sized button', (t) async {
+      final handle = t.ensureSemantics();
+      final r = Rig();
+      await r.pump(t);
+      await r.start(t, voice: false);
+      await expectLater(t, meetsGuideline(labeledTapTargetGuideline));
+      await t.enterText(find.byType(TextField), '70');
+      await t.tap(find.text('Send'));
+      await t.pumpAndSettle();
+      await expectLater(t, meetsGuideline(labeledTapTargetGuideline));
+      handle.dispose();
+    });
+
     testWidgets('with a screen reader on, the mascot does not also speak; the line is a live region', (t) async {
       final r = Rig();
       r.fakeInput.startError = const MicDeniedException();
@@ -684,6 +870,7 @@ void main() {
         await t.pumpAndSettle();
         expect(r.c.mascotLine, startsWith('Got it.'));
         expect(pipMood(t), PipMood.pleased);
+        await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
         await tapText(t, 'Skip this question');
         expect(pipMood(t), PipMood.asking);
       },

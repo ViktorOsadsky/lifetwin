@@ -126,8 +126,7 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
             body:
                 'I can read your height, weight, exercise, sleep and blood pressure from the Health app, '
                 "so you don't have to type them.\n\n"
-                "I'll check each one with you. The readings are also sent to LifeTwin's assistant, "
-                'an AI service, so it can give you advice.',
+                "I'll check each one with you, and only the ones you say are right are used.",
             primary: ('Yes, use my Health app', _start),
             secondary: ("No thanks, I'll answer myself", _skip),
           ),

@@ -19,6 +19,10 @@ Future<void> waitFor(WidgetTester t, Finder finder, {int seconds = 20}) async {
 Future<void> tapText(WidgetTester t, String label) async {
   final f = find.text(label);
   await waitFor(t, f);
+  // These links ignore taps for 0.7 s after a new question, so a double tap can't act twice.
+  if (const {'Skip this question', 'Go back', 'Use my Health app instead'}.contains(label)) {
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+  }
   await t.ensureVisible(f.first);
   await t.pump();
   await t.tap(f.first);
@@ -56,6 +60,8 @@ Future<void> startTyped(WidgetTester t, {bool aiHelper = false}) async {
   await t.pumpWidget(const LifeTwinApp());
   await tapText(t, 'Talk with Pip');
   await tapText(t, "No, I'll type");
+  // The AI question ignores taps for a moment, so a double tap can't answer it.
+  await Future<void>.delayed(const Duration(milliseconds: 800));
   await tapText(t, aiHelper ? 'Yes, turn it on' : 'Not now');
   await waitFor(t, find.textContaining('How old are you?'));
 }
@@ -172,6 +178,7 @@ void main() {
     await t.pumpWidget(const LifeTwinApp());
     await tapText(t, 'Talk with Pip');
     await tapText(t, "No, I'll type");
+    await Future<void>.delayed(const Duration(milliseconds: 800));
     await tapText(t, 'Not now');
     await waitFor(t, find.textContaining('How old are you?'));
     debugPrint('first question after ${DateTime.now().difference(started).inMilliseconds} ms');

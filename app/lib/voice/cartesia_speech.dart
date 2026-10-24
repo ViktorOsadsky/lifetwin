@@ -243,6 +243,9 @@ class CartesiaSpeechInput implements SpeechInput {
   String get _caption => CartesiaWire.joinTranscript(_finals, _partial);
 
   @override
+  Future<bool> hasPermission() => _recorder.hasPermission();
+
+  @override
   Future<void> start(void Function(String text) onCaption) async {
     await _teardown();
     if (!await _recorder.hasPermission()) throw const MicDeniedException();

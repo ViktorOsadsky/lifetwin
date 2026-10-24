@@ -148,8 +148,9 @@ class VoiceOnboardingController extends ChangeNotifier {
     return (_doneFields.length + 1).clamp(1, questionCount);
   }
 
-  /// "Go back" reopens the answer before this question.
-  bool get canGoBack => turn != null && !turn!.complete && !confirming && _doneFields.isNotEmpty;
+  /// "Go back" reopens the answer before this question; once done, the last one, so an
+  /// answer can still be changed or a skipped one added.
+  bool get canGoBack => turn != null && !confirming && _doneFields.isNotEmpty;
 
   void _set(void Function() change) {
     change();
@@ -221,6 +222,10 @@ class VoiceOnboardingController extends ChangeNotifier {
       _retry = null;
     });
     try {
+      // The system's "Allow microphone?" question waits for the person, however long they
+      // take to read it; only connecting afterwards is held to the start limit.
+      if (!await input.hasPermission()) throw const MicDeniedException();
+      if (phase != VoicePhase.listening) return; // cancelled (or the app left) meanwhile
       await input
           .start((text) {
             if (text != caption) _silentSeconds = 0;
@@ -386,7 +391,7 @@ class VoiceOnboardingController extends ChangeNotifier {
   Future<void> _button(String action, {String? text}) async {
     if (_busy) return;
     if (phase == VoicePhase.listening) await cancelTalk();
-    if (phase != VoicePhase.idle && phase != VoicePhase.speaking) return;
+    if (phase != VoicePhase.idle && phase != VoicePhase.speaking && phase != VoicePhase.done) return;
     await _stopSpeech();
     await _send(action, text: text);
   }
@@ -437,6 +442,11 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   Future<void> _send(String action, {String? text, bool fromTranscript = false, Map<String, num>? values}) async {
     if (_busy) return;
+    if (turn == null && action != 'start') {
+      // The first question never arrived (e.g. no network), so there is nothing to answer
+      // yet: the server would refuse it. Anything sent, Try again included, starts instead.
+      return _send('start');
+    }
     _busy = true;
     if (action == 'reply' && text != null) _lastReply = (text, fromTranscript);
     // After "No, change it" the next answer is a correction. Otherwise a reply
@@ -517,7 +527,9 @@ class VoiceOnboardingController extends ChangeNotifier {
     try {
       await (replay ? output.replay() : output.speak(spokenText(line))).timeout(_speakLimit);
     } on VoiceUnavailableException {
-      if (gen == _speechGen) {
+      // A notice that could not be said aloud is still on screen; replacing it (say, "can't
+      // reach LifeTwin" with "couldn't say that") would hide what went wrong.
+      if (gen == _speechGen && mascotLine) {
         _set(() {
           typing = true;
           voiceUsable = false;
@@ -525,7 +537,7 @@ class VoiceOnboardingController extends ChangeNotifier {
         });
       }
     } catch (_) {
-      if (gen == _speechGen) _set(() => notice = speakTroubleNotice);
+      if (gen == _speechGen && mascotLine) _set(() => notice = speakTroubleNotice);
     }
     if (gen == _speechGen && phase == VoicePhase.speaking) {
       _set(() => phase = turn?.complete == true ? VoicePhase.done : VoicePhase.idle);

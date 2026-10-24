@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,6 +12,7 @@ import '../widgets/lt_progress.dart';
 import '../widgets/lt_text_link.dart';
 import '../widgets/pip.dart';
 import '../widgets/scene_paper.dart';
+import '../voice/speech.dart';
 import '../widgets/speech_bubble.dart';
 import 'voice_onboarding_controller.dart';
 
@@ -89,7 +92,7 @@ class VoiceOnboardingScreen extends StatefulWidget {
   State<VoiceOnboardingScreen> createState() => _VoiceOnboardingScreenState();
 }
 
-class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
+class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with WidgetsBindingObserver {
   final _text = TextEditingController();
 
   /// Owned here, not by the TextField, so the typing box keeps focus (and the
@@ -99,6 +102,53 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   /// The voice answer from the first consent question, kept until the second is answered.
   bool? _voiceChoice;
 
+  /// Briefly true after the AI-helper question replaced the voice one. Its buttons sit
+  /// where the voice buttons were, so a double tap (or a tremor) must not answer it
+  /// unseen, least of all agree to the helper. As on the Health screen.
+  static const secondTapGuard = Duration(milliseconds: 700);
+  Timer? _aiLock;
+
+  void _chooseVoice(bool voice) {
+    _aiLock?.cancel();
+    _aiLock = Timer(secondTapGuard, () {});
+    setState(() => _voiceChoice = voice);
+  }
+
+  void _answerAi(bool voice, {bool aiHelper = false}) {
+    if (_aiLock?.isActive ?? false) return;
+    c.answerConsent(voice, aiHelper: aiHelper);
+  }
+
+  /// The same after each new question for the links that stay in place from one
+  /// question to the next: a double tap on "Skip this question" or "Go back" must not
+  /// also skip (or reopen) the next one unseen, and the first question's "Use my Health
+  /// app instead", which sits where "Not now" was, must not open the Health import.
+  Timer? _turnLock;
+  late GuideTurn? _shownTurn = c.turn;
+
+  bool get _justChanged => _turnLock?.isActive ?? false;
+
+  final _noticeKey = GlobalKey(debugLabel: 'notice');
+  final _quickKey = GlobalKey(debugLabel: 'quick answers');
+  final _lineKey = GlobalKey(debugLabel: "Pip's line");
+
+  /// The controls scroll when the text is very large; each new turn starts at the top, so
+  /// its first button (Yes, the quick answers) is not left scrolled out of sight.
+  final _controlsScroll = ScrollController();
+  String? _shownNotice;
+
+  void _useHealth() {
+    if (!_justChanged) widget.onUseHealth?.call();
+  }
+
+  void _skip() {
+    if (!_justChanged) c.skip();
+  }
+
+  void _goBack() {
+    if (!_justChanged) c.goBack();
+  }
+
   bool _wasListening = false;
 
   VoiceOnboardingController get c => widget.controller;
@@ -107,6 +157,31 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   void initState() {
     super.initState();
     c.addListener(_changed);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// Leaving LifeTwin (home screen, another app, a call) closes the microphone and stops
+  /// Pip: nothing is heard or said while the app is not on screen, and words heard so far
+  /// are dropped, not sent. Coming back shows the same question, ready to answer.
+  /// The keyboard going up or down (or a rotation) resizes the story: once it settles,
+  /// the end of Pip's line is brought back into view.
+  Timer? _resized;
+
+  @override
+  void didChangeMetrics() {
+    _resized?.cancel();
+    _resized = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) _reveal(_lineKey);
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Every way out passes through hidden (before paused), so this runs once.
+    if (state == AppLifecycleState.hidden) {
+      c.cancelTalk();
+      c.stopSpeaking();
+    }
   }
 
   @override
@@ -127,6 +202,11 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   @override
   void dispose() {
     c.removeListener(_changed);
+    WidgetsBinding.instance.removeObserver(this);
+    _aiLock?.cancel();
+    _turnLock?.cancel();
+    _resized?.cancel();
+    _controlsScroll.dispose();
     _text.dispose();
     _focus.dispose();
     super.dispose();
@@ -137,7 +217,31 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
     final listening = c.phase == VoicePhase.listening;
     if (listening != _wasListening) HapticFeedback.mediumImpact();
     _wasListening = listening;
+    // The controls take the lower part of the screen, so with large text the story above
+    // them is short. A new turn scrolls the end of Pip's line (where the question or "Is
+    // that right?" is) into view; then, when there is room, the quick answers under it. A
+    // new notice scrolls into view with its button.
+    if (!identical(c.turn, _shownTurn)) {
+      _shownTurn = c.turn;
+      _turnLock?.cancel();
+      _turnLock = Timer(secondTapGuard, () {});
+      _reveal(_lineKey);
+      if (_quickInStory && !largeText(context)) _reveal(_quickKey);
+      if (_controlsScroll.hasClients) _controlsScroll.jumpTo(0);
+    }
+    if (c.notice != null && c.notice != _shownNotice) _reveal(_noticeKey);
+    _shownNotice = c.notice;
   }
+
+  void _reveal(GlobalKey key) => WidgetsBinding.instance.addPostFrameCallback((_) {
+    final target = key.currentContext;
+    if (target == null || !target.mounted) return;
+    Scrollable.ensureVisible(
+      target,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      duration: MediaQuery.disableAnimationsOf(target) ? Duration.zero : const Duration(milliseconds: 250),
+    );
+  });
 
   void _send() {
     final t = _text.text;
@@ -164,6 +268,9 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
         // Tapping anywhere that is not a control puts the keyboard away.
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
+          // Not a control for VoiceOver (it would be an unnamed, screen-sized button);
+          // "Hide keyboard" does the same for everyone.
+          excludeFromSemantics: true,
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
           child: ListenableBuilder(
             listenable: c,
@@ -222,13 +329,13 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
         LtPrimaryButton(
           label: "Yes, I'll talk",
           icon: const LtIcon(LtIconKind.mic, size: 36),
-          onPressed: () => setState(() => _voiceChoice = true),
+          onPressed: () => _chooseVoice(true),
         ),
         const SizedBox(height: LtSpace.buttonGap),
         LtSecondaryButton(
           label: "No, I'll type",
           icon: const LtIcon(LtIconKind.keyboard),
-          onPressed: () => setState(() => _voiceChoice = false),
+          onPressed: () => _chooseVoice(false),
         ),
       ],
     );
@@ -267,10 +374,10 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
       LtPrimaryButton(
         label: 'Yes, turn it on',
         icon: const LtIcon(LtIconKind.check, size: 38, strokeWidth: 2.8),
-        onPressed: () => c.answerConsent(voice, aiHelper: true),
+        onPressed: () => _answerAi(voice, aiHelper: true),
       ),
       const SizedBox(height: LtSpace.buttonGap),
-      LtSecondaryButton(label: 'Not now', onPressed: () => c.answerConsent(voice)),
+      LtSecondaryButton(label: 'Not now', onPressed: () => _answerAi(voice)),
     ],
   );
 
@@ -289,6 +396,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: box.maxHeight * (hideKeyboard ? 0.5 : 0.6)),
             child: SingleChildScrollView(
+              controller: _controlsScroll,
               padding: EdgeInsets.fromLTRB(LtSpace.gutter, LtSpace.sm, LtSpace.gutter, hideKeyboard ? 8 : 16),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _controls(context, keyboard)),
             ),
@@ -357,7 +465,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
     return _StoryScroll(
       top: [
         // "Go back" at the top left, where the artboards keep "Back".
-        if (links && c.canGoBack)
+        // Also once done, so an answer can still be changed (or a skipped one added).
+        if (!keyboard && c.canGoBack)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Align(
@@ -365,7 +474,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
               child: LtTextLink(
                 label: 'Go back',
                 icon: const LtIcon(LtIconKind.back, size: 26, strokeWidth: 2.8),
-                onPressed: c.goBack,
+                onPressed: _goBack,
               ),
             ),
           ),
@@ -380,6 +489,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
         // Mascot line: always visible as a caption, announced when it changes.
         _pad(
           Semantics(
+            key: _lineKey,
             liveRegion: true,
             container: true,
             child: line.isEmpty
@@ -418,13 +528,17 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
           const SizedBox(height: LtSpace.lg),
           _pad(
             _NoticeBox(
+              key: _noticeKey,
               message: c.notice!,
               onRetry: c.canRetry ? c.retry : null,
               onOpenSettings: c.notice == micDeniedNotice ? widget.onOpenSettings : null,
             ),
           ),
         ],
-        if (quick) ...[const SizedBox(height: LtSpace.lg), _pad(_quickAnswers(busy))],
+        if (quick) ...[
+          const SizedBox(height: LtSpace.lg),
+          KeyedSubtree(key: _quickKey, child: _pad(_quickAnswers(busy))),
+        ],
       ],
       bottom: scene ? PipScene(mood: mood, beside: voiceLine) : null,
     );
@@ -548,7 +662,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
       if (!keyboard) ...[const SizedBox(height: LtSpace.buttonGap), _switchMode()],
       const SizedBox(height: LtSpace.xs),
       Center(
-        child: LtTextLink(label: 'Skip this question', onPressed: busy ? null : c.skip),
+        child: LtTextLink(label: 'Skip this question', onPressed: busy ? null : _skip),
       ),
       if (!keyboard) ..._minor(),
     ];
@@ -615,7 +729,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   List<Widget> _minor() => [
     if (widget.onUseHealth != null && c.questionNumber == 1 && !c.confirming && c.phase != VoicePhase.listening)
       Center(
-        child: LtTextLink(label: 'Use my Health app instead', onPressed: widget.onUseHealth),
+        child: LtTextLink(label: 'Use my Health app instead', onPressed: _useHealth),
       ),
   ];
 
@@ -959,7 +1073,7 @@ class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
 }
 
 class _NoticeBox extends StatelessWidget {
-  const _NoticeBox({required this.message, this.onRetry, this.onOpenSettings});
+  const _NoticeBox({super.key, required this.message, this.onRetry, this.onOpenSettings});
   final String message;
   final VoidCallback? onRetry;
   final Future<void> Function()? onOpenSettings;

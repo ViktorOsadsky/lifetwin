@@ -63,10 +63,17 @@ class FakeSpeechInput implements SpeechInput {
   int finishes = 0;
   int cancels = 0;
 
+  /// Set to hold the "Allow microphone?" answer until it is completed.
+  Completer<bool>? permission;
+
+  @override
+  Future<bool> hasPermission() async => permission == null ? true : permission!.future;
+
   @override
   Future<void> start(void Function(String text) onCaption) async {
     starts++;
     if (startError != null) throw startError!;
+    if (!await hasPermission()) throw const MicDeniedException(); // as the real recorder does
     for (final c in captions) {
       onCaption(c);
     }

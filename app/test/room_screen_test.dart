@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/forecast/forecast_client.dart';
 import 'package:lifesim/main.dart';
+import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/room/room_screen.dart';
 import 'package:lifesim/voice/fakes.dart';
@@ -114,6 +115,7 @@ void main() {
       await t.pumpAndSettle();
       await t.tap(find.text("No, I'll type"));
       await t.pumpAndSettle();
+      await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
       await t.ensureVisible(find.text('Not now'));
       await t.pumpAndSettle();
       await t.tap(find.text('Not now'));
@@ -126,8 +128,7 @@ void main() {
       await t.tap(find.text('Continue'));
       await t.pumpAndSettle();
       expect(forecast.calls, hasLength(1));
-      await t.scrollUntilVisible(find.text('Go back to my answers'), 200, scrollable: find.byType(Scrollable).first);
-      await t.tap(find.text('Go back to my answers'));
+      await t.tap(find.text('Back'));
       await t.pumpAndSettle();
       expect(find.text('Welcome back.'), findsOneWidget);
       forecast.answers.add(Forecast.parse(supportedJson()));
@@ -135,6 +136,41 @@ void main() {
       await t.pumpAndSettle();
       expect(forecast.calls, hasLength(2));
       expect(forecast.calls.last, {'age': 70});
+    });
+
+    phoneTest('"Go back to my answers" opens the conversation, where Go back can change one', (t) async {
+      final (c, forecast) = await start(t);
+      await t.tap(find.text('Talk with Pip'));
+      await t.pumpAndSettle();
+      await t.tap(find.text("No, I'll type"));
+      await t.pumpAndSettle();
+      await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
+      await t.ensureVisible(find.text('Not now'));
+      await t.tap(find.text('Not now'));
+      await t.pumpAndSettle();
+      await t.enterText(find.byType(TextField), '70');
+      await t.tap(find.text('Send'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Yes'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Continue'));
+      await t.pumpAndSettle();
+      await t.scrollUntilVisible(find.text('Go back to my answers'), 200, scrollable: find.byType(Scrollable).first);
+      await t.tap(find.text('Go back to my answers'));
+      await t.pumpAndSettle();
+      expect(find.byType(VoiceOnboardingScreen), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
+      await t.tap(find.text('Go back'));
+      await t.pumpAndSettle();
+      expect(c.phase, VoicePhase.idle);
+      expect(find.text('Continue'), findsNothing);
+      // Left unfinished: the Room no longer offers a forecast from the older answers.
+      Navigator.of(t.element(find.byType(VoiceOnboardingScreen))).pop();
+      await t.pumpAndSettle();
+      await t.tap(find.text('See my forecast'));
+      await t.pumpAndSettle();
+      expect(find.text(RoomScreen.talkFirst), findsOneWidget);
+      expect(forecast.calls, hasLength(1));
     });
   });
 }

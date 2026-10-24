@@ -625,3 +625,46 @@ def test_reopened_question_keeps_its_answer_until_a_new_one_is_confirmed():
     assert pending.pending_profile.age == 73
     cancelled = reply(pending, "no", service).state
     assert cancelled.confirmed_profile.age == 72
+
+
+def correct(state: ConversationState, text: str) -> TurnResponse:
+    service = ConversationService(None, clock=lambda: TODAY)
+    return asyncio.run(service.turn(TurnRequest(action="correct", state=state, text=text)))
+
+
+@pytest.mark.parametrize(
+    ("text", "lead"),
+    [
+        ("go back", NO_LEAD + "What is the right answer for your age?"),
+        ("start over", RESTART_QUESTION),
+        ("what?", REPEAT_LEAD),
+        ("help", "I'm checking that I heard you right"),
+    ],
+)
+def test_conversation_words_after_no_change_it_are_not_read_as_a_value(text, lead):
+    """The app sends the words after "No, change it" as a correction; commands still work."""
+    pending = ConversationState(
+        phase="confirming", current_field="age", pending_profile={"age": 45}
+    )
+    result = correct(pending, text)
+    assert result.message.startswith(lead)
+    assert "couldn't read" not in result.message
+    assert result.state.confirmed_profile.age is None
+    assert result.state.pending_profile.age == 45
+
+
+def test_yes_start_over_after_no_change_it_clears_and_a_value_still_corrects():
+    pending = ConversationState(
+        phase="confirming",
+        current_field="sex",
+        confirmed_profile={"age": 71},
+        pending_profile={"sex": "male"},
+    )
+    cleared = correct(pending, "yes, start over").state
+    assert cleared.confirmed_profile.age is None and cleared.current_field == "age"
+    fixed = correct(pending, "female").state
+    assert fixed.pending_profile.sex == "female" and fixed.confirmed_profile.sex is None
+    changed = correct(pending, "change my sex to female").state
+    assert changed.pending_profile.sex == "female" and changed.phase == "confirming"
+    kept = correct(pending, "skip")
+    assert kept.message.startswith("Nothing has changed.")

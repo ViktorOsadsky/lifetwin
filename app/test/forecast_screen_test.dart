@@ -31,7 +31,7 @@ Map<String, dynamic> supportedJson() => {
   ],
   'filled_in': [
     {'feature': 'sedentary_min_day', 'label': 'time spent sitting each day'},
-    {'feature': 'hypertension_diagnosed', 'label': 'high blood pressure'},
+    {'feature': 'hypertension_diagnosed', 'label': 'being told you have high blood pressure'},
     {'feature': 'general_health', 'label': 'how you rate your health'},
   ],
   'reason': null,
@@ -130,7 +130,7 @@ void main() {
     expect(find.textContaining('not a promise, and they are not a date'), findsOneWidget);
     expect(find.textContaining('links, not causes'), findsOneWidget);
     expect(
-      find.textContaining('time spent sitting each day, high blood pressure and how you rate your health'),
+      find.textContaining('time spent sitting each day, being told you have high blood pressure and how you rate your health'),
       findsOneWidget,
     );
     expect(r.speech.spoken, [sentence]);
@@ -290,6 +290,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text("No, I'll type"));
     await t.pumpAndSettle();
+    await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
     await t.ensureVisible(find.text('Not now'));
     await t.pumpAndSettle();
     await t.tap(find.text('Not now'));
@@ -303,8 +304,7 @@ void main() {
     await t.pumpAndSettle();
     expect(forecast.calls.single, {'age': 70});
     expect(find.text(sentence), findsOneWidget);
-    await t.scrollUntilVisible(find.text('Go back to my answers'), 200, scrollable: find.byType(Scrollable).first);
-    await t.tap(find.text('Go back to my answers'));
+    await t.tap(find.text('Back'));
     await t.pumpAndSettle();
     // Back from the forecast lands on the Room, which now greets a returning person.
     expect(find.text('Your room'), findsOneWidget);

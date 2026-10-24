@@ -266,6 +266,16 @@ class ConversationService:
         # Ink also transcribes other people in the room: only a voice transcript is
         # held to "someone else's number beside yours is asked about".
         voice = request.input_mode == "transcript"
+        if (
+            action == "correct"
+            and request.field is None
+            and state.phase == "confirming"
+            and getattr(control_intent(text), "kind", "skip") != "skip"
+        ):
+            # After "No, change it" the app sends the next words as a correction. "Go back",
+            # "start over" or "what?" there are about the conversation, not a new value, so
+            # they are read exactly as the same words said to the read-back.
+            action = "reply"
         heard_for = state.current_field or next(
             iter(state.pending_profile.model_dump(exclude_none=True)), None
         )
