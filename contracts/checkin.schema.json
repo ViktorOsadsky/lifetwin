@@ -3,6 +3,22 @@
     "CheckinState": {
       "additionalProperties": false,
       "properties": {
+        "activity_day": {
+          "anyOf": [
+            {
+              "enum": [
+                "today",
+                "yesterday"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Activity Day"
+        },
         "confirmed": {
           "$ref": "#/$defs/CheckinValues"
         },
@@ -20,7 +36,13 @@
                 "smoking_status",
                 "weight_kg",
                 "systolic_bp",
-                "diastolic_bp"
+                "diastolic_bp",
+                "sleep_hours_night_before",
+                "vigorous_recreation_min",
+                "moderate_recreation_min",
+                "sedentary_min_day",
+                "vigorous_recreation_min_week",
+                "moderate_recreation_min_week"
               ],
               "type": "string"
             },
@@ -31,13 +53,51 @@
           "default": null,
           "title": "Current Field"
         },
+        "from_health": {
+          "default": false,
+          "title": "From Health",
+          "type": "boolean"
+        },
+        "held_minutes": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Held Minutes"
+        },
         "kind": {
           "enum": [
             "daily",
-            "weekly"
+            "weekly",
+            "quick"
           ],
           "title": "Kind",
           "type": "string"
+        },
+        "local_date": {
+          "anyOf": [
+            {
+              "pattern": "\\d{4}-\\d{2}-\\d{2}",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Local Date"
+        },
+        "one_pace": {
+          "default": false,
+          "title": "One Pace",
+          "type": "boolean"
         },
         "pending": {
           "$ref": "#/$defs/CheckinValues"
@@ -69,11 +129,17 @@
               "smoking_status",
               "weight_kg",
               "systolic_bp",
-              "diastolic_bp"
+              "diastolic_bp",
+              "sleep_hours_night_before",
+              "vigorous_recreation_min",
+              "moderate_recreation_min",
+              "sedentary_min_day",
+              "vigorous_recreation_min_week",
+              "moderate_recreation_min_week"
             ],
             "type": "string"
           },
-          "maxItems": 7,
+          "maxItems": 9,
           "minItems": 1,
           "title": "Questions",
           "type": "array"
@@ -91,13 +157,36 @@
               "smoking_status",
               "weight_kg",
               "systolic_bp",
-              "diastolic_bp"
+              "diastolic_bp",
+              "sleep_hours_night_before",
+              "vigorous_recreation_min",
+              "moderate_recreation_min",
+              "sedentary_min_day",
+              "vigorous_recreation_min_week",
+              "moderate_recreation_min_week"
             ],
             "type": "string"
           },
-          "maxItems": 8,
+          "maxItems": 9,
           "title": "Skipped Fields",
           "type": "array"
+        },
+        "suggested": {
+          "$ref": "#/$defs/CheckinValues"
+        },
+        "suggested_activity_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggested Activity Min"
         }
       },
       "required": [
@@ -108,7 +197,14 @@
         "previous",
         "confirmed",
         "pending",
-        "skipped_fields"
+        "skipped_fields",
+        "local_date",
+        "activity_day",
+        "suggested",
+        "suggested_activity_min",
+        "from_health",
+        "one_pace",
+        "held_minutes"
       ],
       "title": "CheckinState",
       "type": "object"
@@ -187,6 +283,48 @@
           "default": null,
           "title": "Exercise Minutes Weekly"
         },
+        "moderate_recreation_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min"
+        },
+        "moderate_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min Week"
+        },
+        "sedentary_min_day": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sedentary Min Day"
+        },
         "sleep_hours": {
           "anyOf": [
             {
@@ -214,6 +352,20 @@
           ],
           "default": null,
           "title": "Sleep Hours Last Night"
+        },
+        "sleep_hours_night_before": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours Night Before"
         },
         "smoking_status": {
           "anyOf": [
@@ -246,6 +398,34 @@
           ],
           "default": null,
           "title": "Systolic Bp"
+        },
+        "vigorous_recreation_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min"
+        },
+        "vigorous_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min Week"
         },
         "weight_kg": {
           "anyOf": [
@@ -283,6 +463,12 @@
         "sleep_hours_last_night",
         "exercise_minutes_today",
         "alcohol_drinks_yesterday",
+        "sleep_hours_night_before",
+        "vigorous_recreation_min",
+        "moderate_recreation_min",
+        "sedentary_min_day",
+        "vigorous_recreation_min_week",
+        "moderate_recreation_min_week",
         "wellbeing",
         "sleep_hours",
         "exercise_minutes_weekly",
@@ -295,9 +481,114 @@
       "title": "CheckinValues",
       "type": "object"
     },
-    "HealthProfile": {
+    "DailyLogPart": {
       "additionalProperties": false,
-      "description": "Explicitly supplied metric inputs; no risk or lifespan inference.",
+      "description": "Part of one ``daily_logs`` row, in the package's names and units. Null means\nnot answered in this check-in. The app adds ``workday`` and keeps a day for the\nmodel only once all four values are known (see app/lib/checkin/README.md).",
+      "properties": {
+        "date": {
+          "pattern": "\\d{4}-\\d{2}-\\d{2}",
+          "title": "Date",
+          "type": "string"
+        },
+        "moderate_recreation_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min"
+        },
+        "sedentary_min_day": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sedentary Min Day"
+        },
+        "sleep_hours": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours"
+        },
+        "vigorous_recreation_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min"
+        }
+      },
+      "required": [
+        "date",
+        "sleep_hours",
+        "vigorous_recreation_min",
+        "moderate_recreation_min",
+        "sedentary_min_day"
+      ],
+      "title": "DailyLogPart",
+      "type": "object"
+    },
+    "MascotEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "caption": {
+          "maxLength": 1500,
+          "minLength": 1,
+          "title": "Caption",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "asking",
+            "thinking",
+            "confirming",
+            "celebrating",
+            "idle",
+            "concerned"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state",
+        "caption"
+      ],
+      "title": "MascotEvent",
+      "type": "object"
+    },
+    "ProfileUpdate": {
+      "additionalProperties": false,
+      "description": "A weekly check-in's confirmed answers as profile values: the HealthProfile\nfields, plus the on-device model's activity and sitting inputs in its own names.",
       "properties": {
         "age": {
           "anyOf": [
@@ -381,6 +672,34 @@
           "default": null,
           "title": "Height Cm"
         },
+        "moderate_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min Week"
+        },
+        "sedentary_min_day": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sedentary Min Day"
+        },
         "sex": {
           "anyOf": [
             {
@@ -443,6 +762,20 @@
           "default": null,
           "title": "Systolic Bp"
         },
+        "vigorous_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min Week"
+        },
         "weight_kg": {
           "anyOf": [
             {
@@ -469,38 +802,12 @@
         "alcohol_drinks_weekly",
         "diabetes",
         "systolic_bp",
-        "diastolic_bp"
+        "diastolic_bp",
+        "vigorous_recreation_min_week",
+        "moderate_recreation_min_week",
+        "sedentary_min_day"
       ],
-      "title": "HealthProfile",
-      "type": "object"
-    },
-    "MascotEvent": {
-      "additionalProperties": false,
-      "properties": {
-        "caption": {
-          "maxLength": 1500,
-          "minLength": 1,
-          "title": "Caption",
-          "type": "string"
-        },
-        "state": {
-          "enum": [
-            "asking",
-            "thinking",
-            "confirming",
-            "celebrating",
-            "idle",
-            "concerned"
-          ],
-          "title": "State",
-          "type": "string"
-        }
-      },
-      "required": [
-        "state",
-        "caption"
-      ],
-      "title": "MascotEvent",
+      "title": "ProfileUpdate",
       "type": "object"
     }
   },
@@ -524,6 +831,14 @@
     "complete": {
       "title": "Complete",
       "type": "boolean"
+    },
+    "daily_logs": {
+      "items": {
+        "$ref": "#/$defs/DailyLogPart"
+      },
+      "maxItems": 2,
+      "title": "Daily Logs",
+      "type": "array"
     },
     "emergency": {
       "default": false,
@@ -560,7 +875,7 @@
       "type": "string"
     },
     "profile_update": {
-      "$ref": "#/$defs/HealthProfile"
+      "$ref": "#/$defs/ProfileUpdate"
     },
     "provider_status": {
       "const": "not_configured",
@@ -614,6 +929,7 @@
     "speech_hint",
     "emergency",
     "profile_update",
+    "daily_logs",
     "accepted_input_modes",
     "mascot_events",
     "complete",
