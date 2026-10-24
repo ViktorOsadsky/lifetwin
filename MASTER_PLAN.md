@@ -6,7 +6,7 @@ Start here before implementing a feature. This is the shared product and integra
 
 1. Read [AGENTS.md](AGENTS.md) for repository workflow rules.
 2. Read this document for the current product, interfaces, implementation order, and completion criteria.
-3. Read [TEAM_PLAN.md](TEAM_PLAN.md), the splitting document, for track ownership, sync points, and iOS setup.
+3. Read [docs/team-plan.md](docs/team-plan.md), the splitting document, for track ownership and sync points, [the track briefs](docs/README.md), and [iOS setup](docs/ios-testing.md).
 4. Read [projectspec.md](projectspec.md) for the underlying survival-analysis requirements, data preparation, evaluation, and privacy requirements.
 
 New explicit user decisions take precedence. Otherwise this guide resolves the differences below; the team plan governs ownership and the project spec supplies methodological detail. When a decision changes, update the affected documents in the same PR. Never silently change a shared interface.
@@ -16,11 +16,15 @@ New explicit user decisions take precedence. Otherwise this guide resolves the d
 | Naming | Repository/product working name: LifeTwin. The original spec calls the project LifeSim; keep existing API/model identifiers until a deliberate migration. |
 | App | Flutter/Dart, with iOS testing through Xcode as specified in the team plan. The earlier Next.js/web stack is superseded. |
 | Backend | Python; FastAPI is the implementation default from the spec. The server owns model inference, research, and LLM credentials. |
-| Experience | A playful, customizable digital twin and many cohesive SVG illustrations, with real model-backed health scenario comparisons. This replaces the spec's primarily scientific visual direction. |
-| Longevity output | Supported survival probabilities and curves. The user's “death date” concept is represented as an uncertain longevity outlook, never an exact individual date of death (spec §15). |
+| Experience | Mostly full-screen pet-game UI, inspired by Talking Tom: an expressive mascot, customizable digital twin, SVG art and LottieFiles animations. The mascot conversation replaces traditional health-input onboarding screens. |
+| Conversation | Voice-first health questions with an equally capable text mode. An LLM conversation guide (“Muse” in the user's description; exact model/provider is a proposed choice) collects structured answers. Voice implementation/provider is deliberately deferred. |
+| Longevity output | The mascot reveals the user's outlook through a magic-ball fortune scene. Show supported survival probabilities and curves as an uncertain forecast; never fabricate an exact individual date of death (spec §15). |
+| Quiz | Challenging food-choice and situational questions. Wrong answers immediately make the twin look sicker in game state; explanations and recovery opportunities teach the user. Quiz penalties never alter real health inputs or model predictions. |
 | Optimization direction | Improve survival probability at a supported horizon. If a validated longevity summary is added later, improve it toward a longer life: a later date, not an earlier one. |
 | Recommendations | Model sensitivity identifies scenarios to investigate. Evidence and feasibility determine which suggestions become a plan. Supplement discovery is optional research, not a model-proven longevity intervention. |
 | Delivery | Short branches, PRs, then merges to `main`. Direct pushes to `main` are superseded by the user's PR requirement. |
+
+See [the prospective tech stack](docs/tech-stack.md) for concrete package/provider defaults, confirmed versus proposed choices, and deferred voice decisions. See [the PRD reconciliation](docs/prd-reconciliation.md) for updates to the original spec.
 
 ## Current repository state
 
@@ -32,12 +36,13 @@ The skill pack contains prior research about other product ideas. Reuse relevant
 
 Build one connected experience:
 
-1. **Meet your twin.** Pick an appearance, colors, outfit, and accessories. Enter a brief health/lifestyle profile with explicit units. Cosmetic choices never affect predictions.
-2. **See your baseline.** Show the twin alongside a real survival curve, supported horizon, model identity, and a concise uncertainty explanation. Use cute SVG organs, sleep/activity motifs, and friendly reactions to make information approachable.
+1. **Meet the mascot and your twin.** Start in the game room, choose appearance/accessories, and talk with the mascot about health and habits. Reply aloud or type in the same conversation; no traditional multi-page intake form. Cosmetic choices never affect predictions.
+2. **Hear your fortune.** The mascot consults a magic ball and reveals the model-backed longevity outlook. Keep supported horizons, uncertainty, and a real survival curve accessible from the scene. No invented countdown or exact personal death date.
 3. **Explore the levers.** The server evaluates small, bounded increases and decreases in eligible inputs. Show which changes produce higher or lower modeled survival and how much, including flat or uncertain results.
 4. **Research a plan.** An agent reads credible web sources for the promising directions, separates evidence from model associations, and produces a short, practical plan. It may research supplements or products when relevant; these are optional and cannot be credited with numerical model benefits without a supported model input and evidence.
 5. **Try it on your twin.** In an experimental sandbox, edit supported health inputs or apply a plan's explicit scenario assumptions. Compare the baseline and experimental curves and twin states. A plan's completion does not imply a particular physiological change.
 6. **Choose a real-world next step.** Let the user select or dismiss a plan item. Keep the baseline unchanged until the user explicitly records new real-world measurements.
+7. **Play the quiz.** Answer challenging food and everyday-situation questions. Wrong answers produce an immediate, reversible sick reaction in the twin; correct answers and review help it recover. The feedback teaches game concepts without asserting that the user's real health changed.
 
 The emotional goal is curiosity and encouragement. Avoid death countdowns, frightening consequences, body shaming, or visual claims that a heavier/lighter avatar is inherently healthier. The twin illustrates the scenario; it is not a medical scan or a forecast of the user's future appearance.
 
@@ -45,36 +50,61 @@ The emotional goal is curiosity and encouragement. Avoid death countdowns, frigh
 
 | Screen | Required behavior |
 | --- | --- |
-| Welcome / onboarding | Explain the simulation, collect only needed supported inputs, show units and validation, offer a clearly labeled sample profile, and aim for the spec's under-60-second onboarding. |
+| Game room / mascot conversation | Mascot-led health questions, voice/text toggle, captions, listen/thinking/speaking reactions, answer confirmation and progress. Keep setup brief; the spec's 60-second goal is a usability target, not a reason to rush speech. |
 | Twin studio | Customize skin/hair/clothes/accessories independently of the health profile; provide a useful default so customization never blocks simulation. |
-| Home / baseline | Twin, supported survival summary, curve, model limitations, and actions to explore a scenario or generate a plan. |
+| Magic-ball fortune | Mascot performs the reveal using the validated baseline. A readable summary and optional detail panel show the curve, supported horizon, and limitations. |
 | Experiment / compare | Editable clone of the profile, validated controls, overlaid baseline/scenario curves, signed percentage-point deltas, reset, and an explicit “apply to experiment” action. |
 | Plan / advisor | Ranked suggestions, evidence links, feasible next steps, optional product research, and model-versus-evidence distinctions. |
+| Quiz arena | Challenging questions with answer choices, immediate sick/recovery animation, explanation, retry/review and independent game-health meter. |
 
 Create an original, reusable SVG family: layered avatar parts, heart/lungs/activity/sleep/nutrition illustrations, accessories, navigation icons, loading/empty/error states, and milestone reactions. Begin with a small complete set and expand it after the flow works. Use shared palette, stroke, corner, and expression conventions; keep an asset manifest with purpose and license/provenance. Flutter's SVG renderer must support each asset's features. Supply semantic labels, adequate contrast, text alternatives to chart colors, and reduced-motion behavior. Do not use real health records in screenshots or demos.
 
+Compose these as game modes in one character-centered world, with large touch targets, short speech bubbles, playful props and minimal persistent chrome. Charts/plans open as panels or activities; the primary experience should feel like a pet game. Talking Tom is an interaction reference, not permission to copy its character, art, branding, or audio. LottieFiles handles authored mascot/prop motion; SVG handles modular customization and illustrations.
+
+## Mascot conversation and fortune
+
+The same conversational flow must work with voice and text. The LLM asks one clear question at a time, extracts candidate fields into the versioned profile schema, and asks follow-ups for ambiguous answers or units. “About 170” is not enough to decide height versus weight or pounds versus kilograms. A reply may answer several fields, but only explicitly provided values may enter the draft.
+
+Show captions and a compact editable summary; ask the user to confirm extracted health values before submitting them for inference. Corrections replace the relevant draft values and invalidate stale results. Let the user skip optional questions or say “I don't know”; never infer a diagnosis from casual language. A completed confirmed profile uses the same validation/API as typed input. Text mode is an equal conversation path, not a separate questionnaire.
+
+Implement a conversation state machine: `idle → asking/speaking → listening or typing → interpreting → confirming → ready`, with retry, cancel, correction, and unavailable-provider states. The avatar receives presentation events, never authority to change health data. Keep draft profile state on device/in request context; avoid durable conversation or audio storage. Explain provider processing before transmitting health text/audio.
+
+Voice is a product requirement whose integration choice is deferred. Define replaceable `SpeechInput`, `SpeechOutput`, and `ConversationGuide` interfaces. First prove the conversation with text and development audio stubs; label unavailable voice honestly. A finished voice experience must handle microphone permission denial, interruption, errors, and switching to text without losing confirmed answers. Do not describe text-only scaffolding as completed voice onboarding or promise phoneme-level lip sync before selecting the audio stack.
+
+The magic-ball scene is presentation around a prediction result: awaiting model → reveal → mascot explanation → inspect or experiment. Bind the spoken/captioned result to the same validated value, horizon and model version shown in details. If no prediction is supported, the mascot explains that limitation instead of inventing a fortune. Any future date-like summary requires a separately reviewed definition, model support and prominent uncertainty; never derive a date from an arbitrary curve endpoint.
+
+## Quiz mode and game-health state
+
+Start with a small, curated question bank covering food choices and challenging everyday decisions. Each question has a versioned ID, scenario, options, correct answer, explanation, source references, difficulty, and a deterministic game-health effect. Questions should have enough context to justify the answer; a personalized medical dilemma without enough information is unsuitable for a single “correct” response. Generated drafts require evidence review before entering the scored bank.
+
+Maintain a separate `game_health` value and mascot expression state, distinct from `confirmed_profile`, `experimental_profile`, and `prediction`. Wrong answers immediately decrement bounded game health and trigger a mild sick/tired Lottie reaction; correct answers/review/retry provide a clear recovery route. Make the effect real time by applying local deterministic scoring before any network explanation finishes. Show “game health” so users understand what changed. A wrong answer must not lower a survival probability, change a date, update a diagnosis, or launch a medical inference request.
+
+Count each submitted answer once, disable duplicate taps, and never score network failure or an ambiguous/unreviewed question as wrong. Preserve the reaction in reduced-motion mode through static expression/text. Quiz play, fortune results and experiment outcomes have distinct visual cues. Wrong answers should feel playful and recoverable, without death animations or personal health threats.
+
 ## Ownership and proposed folders
 
-Keep the four tracks from [TEAM_PLAN.md](TEAM_PLAN.md). Victor owns A; B–D still need human owners. An agent takes only the task it was assigned and identifies its track and file scope in its PR. These are assignments for future work, not evidence that workers are running.
+Keep the four tracks from [docs/team-plan.md](docs/team-plan.md). Victor owns A; B–D still need human owners. An agent takes only the task it was assigned and identifies its track and file scope in its PR. These are assignments for future work, not evidence that workers are running.
 
 | Track | Owns | Proposed paths | Handoff |
 | --- | --- | --- | --- |
 | A — Data & model (Victor) | Dataset harmonization, survival training, held-out evaluation, model card and feature manifest | `ml/`, model artifact metadata | Loadable artifact, preprocessing, supported population/horizons/features, evaluation report, inference adapter instructions |
-| B — API & integration | Shared contracts, server, inference adapter, bounded sensitivity execution, deployment | `contracts/`, `server/`, server-side integration scripts | Working validated endpoints; real/stub mode distinction; errors, cancellation, request budgets |
-| C — Flutter app | SVG art system, twin customization, onboarding, baseline, experiment/compare and plan UI | `app/`, including `app/assets/` | Working phone flow against fixtures, then real server; accessible loading/error/unsupported states |
-| D — Advisor, trust & demo | Sensitivity interpretation rules, evidence retrieval, plan generation, supplement boundaries, demo and evaluation cases | `server/advisor/`, `server/research/`, `docs/`, advisor fixtures coordinated with B | Cited plans tied to actual prediction results, missing-evidence behavior, rehearsed demo |
+| B — API & integration | Shared contracts, server, inference adapter, bounded sensitivity execution, conversation/provider adapters, deployment | `contracts/`, `server/`, server-side integration scripts | Validated endpoints, structured conversation turns, real/stub mode, request budgets; provider secrets stay on server |
+| C — Flutter app | Game shell, SVG/Lottie art, customization, voice/text conversation, fortune scene, quiz scoring/reactions, experiment and plan UI | `app/`, including `app/assets/` | Full phone loop, independent game/health states, accessible voice/text/error paths |
+| D — Advisor, trust & demo | LLM conversation guide, sensitivity interpretation, evidence and plans, quiz question bank, fortune narration, demo | `server/advisor/`, `server/research/`, `content/`, `docs/`, fixtures coordinated with B | Confirmed field extraction, cited plans and quiz explanations, grounded narration, rehearsed demo |
 
 B owns the `/api/advisor` route and orchestration boundary; D owns its research and planning implementation. Agree the handoff before either edits shared files. C owns plan presentation. For a three-person team, combine B and D as the splitting document suggests. Changes to shared schemas belong in a focused contract PR before dependent features merge.
 
 ## Contract Zero: first merge
 
-Create these deliverables before independent implementation branches depend on them. All names below are proposed contracts until this PR lands; do not present them as existing code.
+Create these deliverables before independent implementation branches depend on them. All names below are proposed contracts until the Contract Zero implementation PR lands; do not present them as existing code.
 
 - `contracts/profile.schema.json`: versioned profile fields, metric units, missingness, supported categories, and validation.
 - `contracts/prediction.schema.json`: prediction request/response, model metadata, supported/unsupported results, and real/stub mode.
 - `contracts/compare.schema.json`: baseline/scenario requests, aligned horizons, server-calculated deltas.
 - `contracts/sensitivity.schema.json`: bounded scan request/results and feature support rules.
 - `contracts/advisor.schema.json`: grounded research/plan request/results, citations, and experiment assumptions.
+- `contracts/conversation.schema.json`: text/transcript turn, confirmed versus candidate fields, next question, ambiguity/correction states, completion, and mascot presentation events. Raw audio transport is deferred.
+- `contracts/quiz.schema.json`: versioned reviewed questions, answer IDs, deterministic scoring and explanation references. `game_health` is explicitly separate from clinical inputs.
 - `contracts/fixtures/`: typical supported profile, missing data, invalid units, minor, outside validated age range, two demo futures, flat sensitivity, missing evidence, and provider failure.
 - `contracts/stub_server.py` and `contracts/check.py`: deterministic fixture server and executable contract checks. The stub is visibly illustrative and must never masquerade as a trained model.
 
@@ -84,7 +114,7 @@ The contract PR must define nullability, required versus optional fields, errors
 
 - Use a `schema_version` independently from `model_version`. Attach model/preprocessing version and prediction identity to downstream comparisons and plans.
 - The model manifest defines feature names, units, categories, admissible prediction ranges, missing-value policy, validated population, and supported horizons. Clinical measurements may be valid model inputs without being eligible optimization actions.
-- Avatar settings are a separate object. Keep baseline measurements, hypothetical scenario values, and plan assumptions distinct.
+- Keep avatar settings, quiz/game health, confirmed baseline measurements, conversation drafts, hypothetical scenario values, and plan assumptions distinct. Game scores are not model outputs.
 - Prediction output includes a survival curve, supported horizons, `model_version`, and `max_horizon_years`. Return `status: "unsupported"` plus a limitation when appropriate, without a fabricated curve. Missing inputs follow the declared model policy; do not invent them.
 - Curves start at time zero with probability one, remain within [0, 1], and never increase over time. Do not extrapolate beyond validated support or invent confidence intervals.
 - Comparison deltas use the same model version and horizon: `100 * (scenario_probability - baseline_probability)`, in **percentage points**. Positive means greater modeled survival. Reject or recompute mismatched-version results.
@@ -100,8 +130,9 @@ The contract PR must define nullability, required versus optional fields, errors
 | `POST /api/compare` | Predict baseline and scenario through the same model and calculate deltas at shared supported horizons. |
 | `POST /api/sensitivity` | Run the bounded input perturbation scan below and return evaluated candidates, direction, validity, and budget metadata. This extends the original spec. |
 | `POST /api/advisor` | Use validated model/sensitivity context and cited evidence to explain and propose a plan. Research and plan statuses remain explicit if a provider fails. |
+| `POST /api/onboarding/turn` | Interpret a typed or transcribed reply against the draft/confirmed profile, return candidate values and the next mascot question; never silently commit an inferred health value. Voice transport/provider to be chosen later. |
 
-Keep customization and scenario editing client-side for the MVP. Add a separate asynchronous job API only if measured research latency requires it; B and D must first agree its contract and lifecycle.
+Keep customization, reviewed quiz content/scoring, conversation state, and scenario editing client-side for the MVP. LLM interpretation runs on the server. Add a separate asynchronous job API only if measured research latency requires it; B and D must first agree its contract and lifecycle.
 
 ## Sensitivity search: the requested “brute force gradient”
 
@@ -151,13 +182,14 @@ These gates refine the splitting document's relative schedule; they do not claim
 | Gate | Deliverable | Acceptance before moving on |
 | --- | --- | --- |
 | 0 — Shared boundary | Contract Zero PR, minimal fixtures/stub/checker, initial model feature manifest | Everyone can use the same schemas; unsupported and fake-data states are explicit. |
-| 1 — Connected skeleton | Flutter onboarding, simple SVG twin, dashboard and comparison against the stub; Python service skeleton | Full phone flow works; reset and baseline separation work; fixtures are visibly illustrative. |
+| 1 — Connected skeleton | Flutter game room, simple SVG/Lottie twin, text mascot intake, fortune and comparison against the stub; Python service skeleton | Conversation confirms values; full phone flow works; fixture fortunes are labeled; reset and baseline separation work. |
 | 2 — Real model | A's artifact/preprocessing/model card and B's serving adapter | Real NHANES-linked survival output, proper censoring, held-out evaluation, population/horizon gates; update fixtures and model version. |
 | 3 — Search and sandbox | B's sensitivity service and C's experiment UI | Bounded perturbations, correct signs/units, flat/boundary cases, interactions re-evaluated; no baseline mutation. |
 | 4 — Evidence to plan | D's research/plan implementation and C's plan presentation | Citations support claims, numbers match their context, unmodeled actions stay unmodeled, plans apply to experiments transparently. |
-| 5 — Polish and demo | Expanded cohesive SVG set, customization, mobile accessibility, deployed API, rehearsed phone demo | Representative and held-out profiles work end to end; failure modes are usable; optional supplement research is clearly distinguished. |
+| 5 — Game and voice | Quiz bank/scoring, immediate sick/recovery reactions, expanded SVG/Lottie set, customization; integrate voice after provider selection | Quiz cannot mutate predictions; speech and text share confirmed state; microphone denial/interruption work. Voice remains pending until the actual provider flow works. |
+| 6 — Polish and demo | Mobile accessibility, deployed API, complete mascot-led phone rehearsal | Demonstrate talk/type → confirm → magic-ball fortune → cited plan → experiment/reset → quiz and recovery, plus failure cases. |
 
-The spec's predictive MVP remains the first milestone. The expanded LifeTwin experience is complete only after the twin, bounded search, evidence-backed plan, and experiment loop also work. If the model or research is late, a labeled fixture demo is useful but must not be described as a completed predictive product.
+The spec's predictive MVP remains the first milestone. The expanded LifeTwin experience is complete only after the game shell, mascot-led voice/text intake, fortune scene, bounded search, evidence-backed plan, experiment loop and quiz also work. A labeled fixture or text-only demo is useful scaffolding and must be described accurately.
 
 ## Verification that matters
 
@@ -165,9 +197,9 @@ Run checks appropriate to the changed track after the relevant tooling exists. D
 
 - **A:** reproducible preprocessing/training; held-out C-index, censoring-aware Brier score, calibration, available subgroup checks, sample/death/follow-up counts, and manifest limitations. No outcome leakage or uncensored lifespan labels for survivors.
 - **B:** schema/fixture checks against stub and real server; unsupported population, invalid/missing inputs, horizon cap, curve validity, same-version comparisons, deterministic predictions, bounded scan counts, correct finite differences, and timeouts. Different models need not predict identical numbers.
-- **C:** Flutter analysis and meaningful flow tests; actual rendered phone/simulator review of SVGs, forms, charts, loading/unsupported/error states, baseline isolation, cancellation/stale responses, accessibility, and reduced motion.
-- **D:** held-out advisor cases covering wrong-horizon numbers, ungrounded health claims, missing sources, supplement requests, prompt injection in retrieved pages, and inability to map an action into a model feature.
-- **Integration:** a new supported profile through onboarding → baseline → sensitivity → cited plan → experiment → reset, then an unsupported profile and a research outage. Record real versus fixture mode in demo evidence.
+- **C:** Flutter analysis and meaningful flow tests; rendered phone/simulator review of SVG/Lottie scenes, voice/text switching, confirmed-answer correction, denied microphone, fortune captions, charts, isolated quiz health, immediate reactions, duplicate-answer handling, cancellation/stale responses, accessibility, and reduced motion.
+- **D:** held-out cases for ambiguous/missing conversational values, unit clarification, wrong-horizon numbers, ungrounded health claims, unsupported fortunes, quiz-source validity, missing evidence, supplement requests, retrieved prompt injection, and unmodeled plan actions.
+- **Integration:** a new supported profile through mascot talk/type → confirmation → magic-ball fortune → sensitivity → cited plan → experiment/reset → quiz error/recovery, then unsupported-profile and research/voice failure paths. Quiz answers must leave confirmed inputs and model predictions unchanged. Record real versus fixture mode.
 
 ## PR and merge protocol for every agent
 

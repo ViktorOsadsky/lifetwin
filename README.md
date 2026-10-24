@@ -1,11 +1,12 @@
 # lifetwin
 
-LifeTwin is a playful health scenario simulator with a customizable SVG digital twin, model-backed survival comparisons, and an evidence-backed planning agent. The application is planned; this repository currently contains its specification and implementation guides.
+LifeTwin is a pet-style health game: talk or type to a mascot, hear a magic-ball longevity forecast, customize an SVG/Lottie twin, explore model-backed scenarios, follow an evidence-backed plan, and play challenging health quizzes. The application is planned; this repository currently contains its specification and implementation guides.
 
 ## Start here
 
 - [Master implementation guide](MASTER_PLAN.md): current product decisions, sensitivity search, research/planning, experimental twin, contracts, and delivery gates.
-- [Team splitting document](TEAM_PLAN.md): track owners, sync points, and planned iOS workflow.
+- [Team splitting document](docs/team-plan.md): track owners and sync points; [track briefs and iOS workflow](docs/README.md).
+- [Prospective tech stack](docs/tech-stack.md): Flutter/LottieFiles plus proposed app, API, ML, LLM, research, testing, and deployment choices.
 - [Project specification](projectspec.md): survival modeling, data, evaluation, and privacy requirements.
 - [Agent instructions](AGENTS.md): required reading and PR/merge workflow for repository contributors.
 
