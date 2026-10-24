@@ -1,0 +1,31 @@
+CEDAR GROVE COMMUNITY HEALTH FAIR
+Couples Wellness Screening
+Date of service: 10/05/2026
+Station 4 - Heart and Metabolic Check
+Participant: Frank Mockwell
+DOB: 08/19/1954
+Participant ID: CHF-2026-0173
+Address: 902 Prairie View Rd
+Hartfield, KS 66099
+Phone: (555) 010-9120
+Email: frank.mockwell@example.com
+Participant Vitals
+Height    5 ft 10 in
+Weight    201 lb
+Blood pressure    146/92 mmHg
+Smoking status: Never smoker
+Spouse / Partner
+Linda Mockwell
+Height    5 ft 4 in
+Weight    148 lb
+Blood pressure    118/74 mmHg
+Smoking status: Current smoker, 1 pack per day
+Participant Results
+LDL Cholesterol    131 mg/dL
+Fasting glucose    104 mg/dL
+Counselor notes
+Thank you for joining the screening today.
+Please share these results with your own doctor.
+Each person should keep their own copy.
+Next fair: April 2027
+Page 1 of 1

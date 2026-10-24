@@ -1,0 +1,60 @@
+MERCY VALLEY GENERAL HOSPITAL
+1500 Hospital Way
+Springvale, PA 19099
+Main (555) 010-3000
+DISCHARGE SUMMARY
+Patient name: Dolores Vandertest
+DOB: 11/03/1949    Age: 76
+MRN: 7730155
+Acct #: 90017766
+Insurance member ID: XZQ0099871
+Home address: 88 Maple Court
+Springvale, PA 19099
+Phone: (555) 010-3344
+Admission date: Sep 28, 2026
+Discharge date: Oct 3, 2026
+Attending: Dr. Raymond Ostrowski
+Discharging physician: Dr. Lena Hartwell
+Disposition: Home with home health services
+Discharge Diagnoses
+1. Community-acquired pneumonia
+2. HTN
+3. Prediabetes
+4. Osteoarthritis of both knees
+Past Medical History
+Hypertension, osteoarthritis, hyperlipidemia
+Hospital Course
+Ms. Vandertest presented on Sep 28 with cough, fever and shortness of breath.
+Chest x-ray showed a right lower lobe infiltrate.
+She was treated with IV antibiotics and improved steadily.
+Blood pressure was elevated on arrival and improved with her home medications.
+Oxygen was weaned to room air by hospital day 3.
+Page 1 of 2
+<<<PAGE>>>
+Patient name: Dolores Vandertest    MRN: 7730155
+MERCY VALLEY GENERAL HOSPITAL - DISCHARGE SUMMARY
+Vitals
+BP on admission 168/94 (Sep 28, 2026)
+BP at discharge 132/80
+Height 170 cm
+Weight 74.3 kg
+Down 2.5 kg from admission weight
+Temp 98.4 F    SpO2 96 % on room air
+Results
+Hemoglobin A1c 6.2 % (Sep 29, 2026)
+WBC 11.8 K/uL on admission, 7.4 K/uL at discharge
+Creatinine 0.9 mg/dL
+Social History
+Tobacco: Never
+Alcohol: none
+Family History
+Father: diabetes, coronary artery disease
+Sister: breast cancer
+Discharge Medications
+Amlodipine 5 mg daily for high blood pressure
+Metformin 500 mg daily for prediabetes
+Levofloxacin 750 mg daily for 3 more days
+Follow-up
+PCP Dr. Samuel Brightwater in 1 week, call (555) 010-3355
+Electronically signed: Dr. Lena Hartwell, Oct 3, 2026 14:20
+Page 2 of 2
