@@ -511,6 +511,8 @@ VAGUE = re.compile(
     r"now and then|occasionally|here and there|once in a while|not much|not a lot|"
     r"a lot|lots|a little|a bit|a few|a couple|couple of|several|socially|on occasion|"
     r"or more|or less|at least|at most|up to|more than|less than|fewer than|over|under|"
+    # "7 hours, no, less": a bare comparison says the number is not the answer.
+    r"less|more|fewer|"
     r"above|below|plus|ish|odd|range|decades|twenties|thirties|forties|fifties|sixties|"
     r"seventies|eighties|nineties|on a (?:good|bad) night|(?:good|bad) nights?|"
     r"every other(?! days?\b)|shy of|short of|north of|south of|side of|"
@@ -1757,12 +1759,56 @@ def _drop_correction(text: str) -> str:
     return dropped if re.search(r"\d", dropped) else text
 
 
+# "70, no, 71", "6 hours, sorry, 7 hours", "150, I mean 155 pounds", "I'm 74, 75 actually":
+# a value said and corrected straight away; the later one is the answer.
+_VALUE = rf"\d+(?:\.\d+)?(?:\s?(?P<unit>{MEASURE_UNIT}))?(?:\s\d{{1,2}}(?:\.\d+)?(?:\s?inch)?)?"
+_CORRECTION_NO = r"(?:no|nope|oh no)"
+_CORRECTION_CUE = (
+    r"(?:wait|sorry|i'm sorry|i mean|i meant|actually|or rather|rather|correction|"
+    r"scratch that|make that|make it)"
+)
+SELF_CORRECTION_WORDS = rf"(?:{_CORRECTION_NO}|{_CORRECTION_CUE})"
+# A bare "no" counts only set off by punctuation, as transcripts write it: "5 10 no 6 foot"
+# typed without any is asked about.
+_CORRECTION = (
+    rf"(?:[,.;]\s*)?(?:{_CORRECTION_NO}\s+)?{_CORRECTION_CUE}\b[,.;]?"
+    rf"|[,.;]\s*{_CORRECTION_NO}\b[,.;]?|{_CORRECTION_NO}[,.;]"
+)
+SELF_CORRECTED = (
+    rf"(?<![\d.:/])(?:{_VALUE})\s*(?:(?:{_CORRECTION})\s*)+"
+    rf"(?=(?:(?:i'm|i am|it's|it is) )?(?P<next>{_VALUE.replace('unit', 'unit2')}))"
+    rf"|(?<![\d.:/])(?:{_VALUE.replace('unit', 'unit3')})\s*[,.;]\s*"
+    rf"(?=(?P<last>{_VALUE.replace('unit', 'unit4')})\s+actually[.!]?\s*$)"
+)
+
+
+def _drop_self_correction(text: str) -> str:
+    """Keep only the corrected value, when both are the same kind of measurement."""
+
+    def drop(match: re.Match) -> str:
+        first = match.group("unit") or match.group("unit3")
+        second = match.group("unit2") or match.group("unit4")
+        if first and second and first.rstrip("s") != second.rstrip("s"):
+            return match.group(0)
+        return " "
+
+    for _ in range(3):  # "70, no, 71, no, 72"
+        dropped = re.sub(SELF_CORRECTED, drop, text)
+        if dropped == text:
+            break
+        text = dropped
+    return " ".join(text.split())
+
+
 def parse_value(field: ProfileField, text: str, *, today: date | None = None) -> dict:
     """Accept explicit, current, single answers; do not guess units or diagnoses."""
     today = today or date.today()
     canonical = _drop_correction(_canonical(text))
     if field in BP_FIELDS:
+        # A corrected half of a reading ("130 over 80, no, 85") is asked about.
         return _blood_pressure(field, canonical)
+    if field not in CATEGORICAL:
+        canonical = _drop_self_correction(canonical)
     if field == "sex":
         sex = _sex(canonical)
         return _validated({field: sex}) if sex else {}

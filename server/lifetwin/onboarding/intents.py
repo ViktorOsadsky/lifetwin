@@ -20,6 +20,7 @@ from lifetwin.onboarding.parsing import (
     PAST_SPOIL,
     REPORTED,
     SEASONAL,
+    SELF_CORRECTION_WORDS,
     SENTENCE_END,
     SEX_FAMILIES,
     TENS_WORDS,
@@ -886,6 +887,17 @@ def _changes_meaning(piece: str) -> bool:
     )
 
 
+def _corrects_between(pieces: list[str], i: int) -> bool:
+    """A correction word between two numbers ("70, no, 71") stays for the parser."""
+    if not re.fullmatch(rf"(?:{SELF_CORRECTION_WORDS}\s*)+", words_of(pieces[i])):
+        return False
+
+    def numbered(side: list[str]) -> bool:
+        return any(re.search(r"\d", _canonical(piece)) for piece in side)
+
+    return numbered(pieces[:i]) and numbered(pieces[i + 1 :])
+
+
 def words_of(text: str) -> str:
     return " ".join(re.sub(r"[^\w'\s]", " ", text.lower()).split())
 
@@ -917,7 +929,14 @@ def focus(
             continue
         if transcript:
             pieces = [piece.strip() for piece in sentence.split(",") if piece.strip()]
-            sentence = ", ".join(piece for piece in pieces if keep(piece)) or sentence
+            sentence = (
+                ", ".join(
+                    piece
+                    for i, piece in enumerate(pieces)
+                    if keep(piece) or _corrects_between(pieces, i)
+                )
+                or sentence
+            )
             trimmed = re.sub(_DANGLING_RATE, "", sentence, flags=re.I)
             if trimmed != sentence and re.search(_RATE, trimmed, re.I):
                 sentence = trimmed
