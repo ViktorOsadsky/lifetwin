@@ -1,0 +1,83 @@
+<!doctype html>
+<!-- Flutter: the plate window shrinks first (Fortune to 160pt min, Customize to 200pt min), then the bottom panel scrolls. Test at 375x667 and at 1.3x text. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>V Ceremony</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.scr{width:390px;height:844px;position:relative;overflow:hidden;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#4A2F25;-webkit-font-smoothing:antialiased}
+.g-lav{background:radial-gradient(140% 70% at 50% 18%,#F0ECFD 0%,#E6E0FA 72%)}
+.g-mint{background:radial-gradient(140% 70% at 50% 18%,#E3F5EC 0%,#D3EEE2 72%)}
+.g-peach{background:radial-gradient(140% 70% at 50% 18%,#FDEBE1 0%,#FBE0D2 72%)}
+.g-night{background:radial-gradient(140% 70% at 50% 22%,#1B2245 0%,#121731 72%)}
+.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.pn{position:absolute;box-sizing:border-box;border:1.5px solid #A88B7D;border-radius:28px;background:#FFFDF8;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.g-night .pn{box-shadow:0 6px 16px rgba(5,8,25,.35),inset 0 1px 0 rgba(255,255,255,.08)}
+.win{border-radius:30px}
+.pa{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border-radius:24px;overflow:hidden}
+.pa img.plate{position:absolute;display:block;object-fit:cover}
+.key{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(226,179,87,.7);border-radius:24px;pointer-events:none}
+.spk{position:absolute;width:16px;height:16px;pointer-events:none}
+.banner{position:absolute;left:50%;transform:translateX(-50%);height:44px;max-width:240px;box-sizing:border-box;padding:0 20px;display:flex;align-items:center;justify-content:center;gap:6px;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;white-space:nowrap;z-index:3}
+.banner .nm{overflow:hidden;text-overflow:ellipsis}
+.banner .br{color:#B4532F}
+.btn{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:#4A2F25;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid #8C6B5D;background:#FFFDF8;padding:0}
+.btn.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.lip{background:#9FD9C3;box-shadow:inset 0 -3px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-cream{background:#FFFDF8;box-shadow:inset 0 -3px 0 rgba(233,223,208,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.link{border:0;background:transparent;box-shadow:none;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;font-weight:700;font-size:18px;min-height:48px}
+.back{position:absolute;width:52px;height:52px;border-radius:26px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);z-index:2}
+.tail{position:absolute;width:20px;height:20px;background:#FFFDF8;border:1.5px solid #A88B7D;border-top-color:transparent;border-right-color:transparent;box-sizing:border-box}
+.dots{display:flex;gap:8px;justify-content:center;align-items:center}
+.dot{width:12px;height:12px;border-radius:6px;border:2px solid #8C6B5D;box-sizing:border-box;background:#FFFDF8}
+.dot.done{background:#4A2F25;border-color:#4A2F25}
+.dot.now{width:30px;background:#9FD9C3;border-color:#7A5B4E}
+.chip{width:100%;height:52px;border-radius:26px;justify-content:flex-start;padding:0 16px;font-size:17px;font-weight:700;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.tab{width:66px;height:70px;border-radius:18px;border:2px solid transparent;background:transparent;flex-direction:column;gap:3px;font-size:17px}
+.tab.on{background:#9FD9C3;border-color:#7A5B4E;font-weight:700}
+.tile{width:104px;height:88px;border-radius:22px;background:#FFFDF8;flex-direction:column;gap:2px;font-size:17px;position:relative;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.tile:nth-child(odd){transform:rotate(-1deg)}
+.tile:nth-child(even){transform:rotate(1deg)}
+.tile svg.it{filter:drop-shadow(0 2px 3px rgba(74,47,37,.18))}
+.tile.on{background:#9FD9C3;border-color:#7A5B4E;font-weight:700;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.badge{position:absolute;right:-8px;top:-8px;width:30px;height:30px;border-radius:15px;background:#4A2F25;display:flex;align-items:center;justify-content:center;border:2px solid #FFFDF8}
+.thumb{width:42px;height:42px;border-radius:21px;overflow:hidden;position:relative;border:2px solid #8C6B5D;background:#FBF4EA;flex:none;box-sizing:border-box}
+.thumb img{position:absolute;display:block}
+.ncard{background:#1E2547;color:#FBF4EA;border-color:#0B0F26}
+.ncard .nkey{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(232,182,76,.7);border-radius:22px;pointer-events:none}
+.ncard .link{color:#E8B64C}
+</style>
+</helmet>
+<div class="scr g-night">
+<!-- Motion: on "Ask the ball" the ball glows in 2 slow pulses (about 1.2s each, ease-in-out), the mist in the ball clears, then the screen hands off to the V-4 result. Reduced motion: a single crossfade to V-4, no pulses. -->
+<div class="pn win" style="left: 14px; top: 77px; width: 362px; height: 566px"><div class="pa" style=""><img class="plate" src="../../../app/assets/scene/3.0x/fortune_reveal.jpg" alt="Your bear twin lifting a glowing fortune ball under the night sky" style="width: 427px; height: 640px; left: -40px; top: 0px;"></div><div class="key"></div><svg class="spk" style="left: 12px; top: 12px" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1.5l2.4 7.1 7.1 2.4-7.1 2.4L12 20.5l-2.4-7.1L2.5 11l7.1-2.4z" fill="#E8B64C" stroke="#8C6B5D" stroke-width="1.2" stroke-linejoin="round"></path></svg><svg class="spk" style="right: 12px; top: 12px" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1.5l2.4 7.1 7.1 2.4-7.1 2.4L12 20.5l-2.4-7.1L2.5 11l7.1-2.4z" fill="#E8B64C" stroke="#8C6B5D" stroke-width="1.2" stroke-linejoin="round"></path></svg></div>
+<!-- Name banner: max-width 240px; the name scales down to 18px, then truncates with an ellipsis. -->
+<div class="banner" style="top: 55px" aria-label="Twin name: Mochi"><span class="br">{</span><span class="nm">Mochi</span><span class="br">}</span></div>
+<div class="pn" style="left: 44px; top: 196px; width: 196px; padding: 14px 18px; border-radius: 26px; z-index: 2"><span class="tail" style="left: 120px; bottom: -11px; transform: rotate(-45deg)"></span><p class="fd" style="margin: 0; font-size: 25px; line-height: 1.18; text-align: left; position: relative">Want to peek<br>ahead?</p></div>
+<div class="pn ncard" style="left: 14px; top: 621px; width: 362px; height: 185px; padding: 20px 22px 0">
+<div class="nkey"></div>
+<div style="position: relative">
+<button class="btn lip fd" style="width: 100%; height: 64px; border-radius: 32px; font-size: 24px">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="10" r="6.5"/><path d="M6.5 20.5h11l-1.8-3.6H8.3z"/><path d="M9.2 8.6a3.2 3.2 0 0 1 2.6-2.2"/></svg><span>Ask the ball</span>
+</button>
+<button class="btn lip-cream fd" style="width: 100%; height: 56px; border-radius: 28px; font-size: 21px; margin-top: 10px">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M4 11l8-7 8 7v9.5h-5.5V15h-5v5.5H4z"/></svg><span>Back to room</span>
+</button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
