@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/checkin/checkin_models.dart';
 import 'package:lifesim/checkin/checkin_reminders.dart';
+import 'package:lifesim/checkin/daily_logs.dart' show DailyLogsAssembler;
 import 'package:lifesim/twin/twin_checkin_store.dart';
 import 'package:lifesim/twin/twin_history.dart' show candidateWindows;
 import 'package:lifesim/twin/twin_model.dart';
@@ -76,7 +77,11 @@ void main() {
     await repo.saveOnboarding(
       Map<String, dynamic>.from(t['state'] as Map),
       modelInputs: Map<String, dynamic>.from(t['model_inputs'] as Map),
-      fromHealth: const {'height_cm', 'weight_kg', 'sleep_hours'},
+      sources: const {
+        'height_cm': HistorySource.appleHealth,
+        'weight_kg': HistorySource.appleHealth,
+        'sleep_hours': HistorySource.appleHealth,
+      },
     );
   }
 
@@ -383,7 +388,9 @@ void main() {
       expect((onboarding.date, onboarding.time), ('2026-10-18', '10:05'));
       final items = {for (final i in onboarding.items) i.field: i};
       expect(items['height_cm']!.source, HistorySource.appleHealth);
-      expect(items['age']!.source, isNull); // the entry's own source: "You said"
+      expect(items['age']!.source, HistorySource.said);
+      expect(items['age']!.sourceLabel, 'You said');
+      expect(items['height_cm']!.sourceLabel, 'Apple Health');
       expect(items['age']!.text, '72 years');
       expect(items['general_health']!.text, 'good');
       expect(items['hypertension_diagnosed']!.label, 'told you have high blood pressure');
@@ -533,6 +540,158 @@ void main() {
     });
   });
 
+  group('provenance', () {
+    test('each confirmed value keeps its source; band and proxy values are estimates', () async {
+      final t = ready;
+      (t['state'] as Map)['estimated_fields'] = ['sedentary_min_day'];
+      await repo.saveOnboarding(
+        Map<String, dynamic>.from(t['state'] as Map),
+        modelInputs: Map<String, dynamic>.from(t['model_inputs'] as Map),
+        sources: const {
+          'height_cm': HistorySource.appleHealth,
+          'moderate_recreation_min_week': HistorySource.wristband,
+          'age': 'a rumour', // not a source: the person's own answer
+        },
+      );
+      expect(repo.provenance('height_cm')!.source, HistorySource.appleHealth);
+      expect(repo.provenance('height_cm')!.estimated, isFalse);
+      final band = repo.provenance('moderate_recreation_min_week')!;
+      expect(
+        (band.source, band.estimated, band.sourceLabel, band.estimateText),
+        (HistorySource.wristband, true, 'From your band', '≈ Sensor estimate'),
+      );
+      final proxy = repo.provenance('sedentary_min_day')!;
+      expect((proxy.source, proxy.estimated, proxy.estimateText), (HistorySource.said, true, '≈ Rough estimate'));
+      expect(repo.provenance('age')!.source, HistorySource.said);
+      expect(repo.provenance('age')!.estimateText, isNull);
+      final items = {for (final i in repo.history().single.items) i.field: i};
+      expect(
+        (items['moderate_recreation_min_week']!.source, items['moderate_recreation_min_week']!.estimated),
+        (HistorySource.wristband, true),
+      );
+      expect(items['sedentary_min_day']!.estimateText, '≈ Rough estimate');
+      // A confirmed band estimate may change the outlook: it is the person's answer.
+      expect(repo.current!.profileUsed['moderate_recreation_min_week'], 90);
+
+      // A later weekly answer replaces the band value and its provenance.
+      now = DateTime(2026, 10, 25, 18);
+      await checkinStore.applyFinishedCheckin(weekly, localDate: '2026-10-25');
+      expect(repo.provenance('moderate_recreation_min_week')!.source, HistorySource.said);
+      expect(repo.provenance('moderate_recreation_min_week')!.estimated, isFalse);
+      expect(repo.provenance('height_cm')!.source, HistorySource.appleHealth); // untouched
+    });
+
+    test('band values are left out of anything sent to an outside AI', () async {
+      await repo.saveConversationProfile(
+        {'age': 72, 'sex': 'female', 'moderate_recreation_min_week': 120, 'sleep_hours': 7},
+        sources: const {
+          'moderate_recreation_min_week': HistorySource.wristband,
+          'sleep_hours': HistorySource.appleHealth,
+        },
+      );
+      expect(repo.outsideAiProfile(), {'age': 72, 'sex': 'female', 'sleep_hours': 7});
+      expect(repo.outsideAiProfile().containsKey('moderate_recreation_min_week'), isFalse);
+      // Any profile map can be filtered the same way before it is sent.
+      expect(withoutWristbandValues({'moderate_recreation_min_week': 120, 'age': 72}, repo.store.profileMeta), {
+        'age': 72,
+      });
+      // Once the person states the value themselves, it is theirs to share again.
+      await repo.saveConversationProfile({'moderate_recreation_min_week': 150}, kind: HistoryKind.mochiChange);
+      expect(repo.outsideAiProfile()['moderate_recreation_min_week'], 150);
+    });
+
+    test('a confirmed wristband import is history, marked as a sensor estimate', () async {
+      await repo.recordImport({'moderate_recreation_min_week': 140}, source: HistorySource.wristband);
+      final e = repo.history().single;
+      expect(
+        (e.kind, e.source, e.sourceLabel),
+        (HistoryKind.wristbandImport, HistorySource.wristband, 'From your band'),
+      );
+      expect(e.items.single.estimateText, '≈ Sensor estimate');
+      expect(repo.profile, isEmpty); // it reaches the profile only through the conversation
+    });
+
+    test('a second conversation is recorded as a Mochi change with only what changed', () async {
+      await onboard();
+      final t = ready;
+      ((t['state'] as Map)['confirmed_profile'] as Map)['sleep_hours'] = 7.0;
+      await repo.saveOnboarding(Map<String, dynamic>.from(t['state'] as Map));
+      final change = repo.history().first;
+      expect(change.kind, HistoryKind.mochiChange);
+      expect(change.items.single.field, 'sleep_hours');
+      expect((change.items.single.old, change.items.single.value), (6.5, 7.0));
+      // The Apple Health label stays with the old value only: the new one is the person's.
+      expect(repo.provenance('sleep_hours')!.source, HistorySource.mochiChange);
+    });
+  });
+
+  group('review fixes', () {
+    test('a weekly check-in on any weekday files the week holding most of its seven days', () {
+      CheckinEntry w(String date) => CheckinEntry(
+        kind: 'weekly',
+        date: date,
+        answers: const {
+          'sleep_hours': 7,
+          'vigorous_recreation_min_week': 60,
+          'moderate_recreation_min_week': 90,
+          'sedentary_min_day': 360,
+        },
+      );
+      String week(String d) => '${const DailyLogsAssemblerProbe().summaries([w(d)]).single['week_start']}';
+      expect(week('2026-10-24'), '2026-10-19'); // Saturday: this week (5 of 7 days are in it)
+      expect(week('2026-10-25'), '2026-10-19'); // Sunday
+      expect(week('2026-10-22'), '2026-10-19'); // Thursday
+      expect(week('2026-10-21'), '2026-10-12'); // Wednesday: the week before
+      expect(week('2026-10-26'), '2026-10-19'); // Monday
+      // Weekly day Saturday: a window exists every day, not only at weekends.
+      final checkins = [w('2026-10-17'), w('2026-10-24')];
+      for (var d = DateTime(2026, 10, 19); d.isBefore(DateTime(2026, 11, 1)); d = d.add(const Duration(days: 1))) {
+        final windows = candidateWindows(checkins: checkins, dayLogs: const [], asOf: d);
+        expect(windows.first.containsKey('weekly_summaries'), isTrue, reason: isoDate(d));
+      }
+    });
+
+    test('a failed write keeps nothing, and the retry records the check-in once', () async {
+      final flaky = FlakyBackend();
+      final r = TwinRepository(model: model, store: await TwinStore.open(flaky), clock: () => now);
+      final s = TwinCheckinStore(r);
+      flaky.failNext = true;
+      await expectLater(s.applyFinishedCheckin(quickWeek.first, localDate: '2026-10-19'), throwsA(isA<StateError>()));
+      expect(r.store.checkins, isEmpty);
+      expect(r.store.dayLogs, isEmpty);
+      expect(r.history(), isEmpty);
+      await s.applyFinishedCheckin(quickWeek.first, localDate: '2026-10-19');
+      expect(r.store.checkins, hasLength(1));
+      expect(r.history(), hasLength(1));
+      final reopened = await TwinStore.open(flaky);
+      expect(reopened.checkins, hasLength(1));
+      expect(reopened.dayLogs.single.date, '2026-10-19');
+    });
+
+    test('a refused blood pressure is no reading; an unchanged half is not re-logged', () async {
+      final r = weekly;
+      ((r['state'] as Map)['confirmed'] as Map)['systolic_bp'] = 400; // the profile refuses it
+      (r['profile_update'] as Map)['systolic_bp'] = 400;
+      await repo.applyCheckin(r, localDate: '2026-10-25');
+      expect(repo.readings().single.items.map((i) => i.field), ['diastolic_bp']);
+      await repo.saveConversationProfile({'systolic_bp': 130, 'diastolic_bp': 78}, kind: HistoryKind.mochiChange);
+      final last = repo.readings().last;
+      expect(last.items.map((i) => (i.field, i.value)), [('systolic_bp', 130)]); // 78 was already stored
+    });
+
+    test("a quick check-in only writes its own day and the day before", () async {
+      final r = copy(quickWeek.last); // local date 2026-10-25
+      r['daily_logs'] = [
+        {'date': '2026-10-24', 'sleep_hours': 6.0},
+        {'date': '2026-10-25', 'sleep_hours': 7.0},
+        {'date': '2027-01-01', 'sleep_hours': 8.0},
+        {'date': '2026-09-01', 'sleep_hours': 8.0},
+      ];
+      await checkinStore.applyFinishedCheckin(r, localDate: '2026-10-25');
+      expect(repo.store.dayLogs.map((d) => d.date), ['2026-10-24', '2026-10-25']);
+    });
+  });
+
   test('an older saved store (before the new fields and history) still loads', () async {
     final old = MemoryBackend()
       ..text = jsonEncode({
@@ -603,4 +762,28 @@ class DailyLogsWindowProbe {
               ).firstWhere((w) => w.containsKey('daily_logs'))['daily_logs']
               as List)
           .cast<Map<String, dynamic>>();
+}
+
+class DailyLogsAssemblerProbe {
+  const DailyLogsAssemblerProbe();
+  List<Map<String, dynamic>> summaries(List<CheckinEntry> c) => const DailyLogsAssembler().weeklySummaries(c);
+}
+
+/// A backend whose next write fails once, like a full disk.
+class FlakyBackend implements StoreBackend {
+  String? text;
+  bool failNext = false;
+  @override
+  Future<String?> read() async => text;
+  @override
+  Future<void> write(String t) async {
+    if (failNext) {
+      failNext = false;
+      throw StateError('disk full');
+    }
+    text = t;
+  }
+
+  @override
+  Future<void> delete() async => text = null;
 }

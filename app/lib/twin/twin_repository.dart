@@ -123,15 +123,21 @@ class TwinRepository extends ChangeNotifier {
     };
   }
 
-  /// A finished onboarding conversation (its returned `state`): memory consent first, then
+  /// A finished onboarding conversation (its returned `state`); recorded as
+  /// [HistoryKind.onboarding] the first time and as a [HistoryKind.mochiChange] (only the
+  /// values that changed) once a profile exists. Memory consent first, then
   /// the habit notes (`state.habit_notes`, kept only when `memory_consent` is true), then
   /// the confirmed profile ([saveConversationProfile]). [modelInputs] is the turn's
-  /// `model_inputs`; [fromHealth] the profile keys whose values came from Apple Health.
+  /// `model_inputs`; [sources] the profile keys whose values came from somewhere other
+  /// than the person's own words (Apple Health, a document, the wristband). The state's
+  /// `estimated_fields` (answers to Mochi's simpler questions) are marked estimated.
   Future<TwinAssessment> saveOnboarding(
     Map<String, dynamic> state, {
     Map<String, dynamic>? modelInputs,
-    Set<String> fromHealth = const {},
-  }) async {
+    Map<String, String> sources = const {},
+  }) => _atomically(() async {
+    // The first conversation is the onboarding; a later one changes answers through Mochi.
+    final kind = store.hasProfile ? HistoryKind.mochiChange : HistoryKind.onboarding;
     final consent = state['memory_consent'];
     if (consent is bool) await store._setMemoryConsent(consent);
     if (consent == true) {
@@ -144,8 +150,14 @@ class TwinRepository extends ChangeNotifier {
       }
     }
     final confirmed = Map<String, dynamic>.from(state['confirmed_profile'] as Map? ?? const {});
-    return saveConversationProfile(confirmed, modelInputs: modelInputs, fromHealth: fromHealth);
-  }
+    return saveConversationProfile(
+      confirmed,
+      kind: kind,
+      modelInputs: modelInputs,
+      sources: sources,
+      estimated: {for (final f in state['estimated_fields'] as List? ?? const []) '$f'},
+    );
+  });
 
   /// Keeps the answers a Mochi conversation confirmed (the whole confirmed profile it
   /// returns) and recomputes. Call only with a conversation's confirmed values.
@@ -154,16 +166,26 @@ class TwinRepository extends ChangeNotifier {
   ///
   /// [kind] is [HistoryKind.onboarding] or [HistoryKind.mochiChange]. An onboarding entry
   /// lists every confirmed value; a Mochi change only the values that changed (old → new).
+  ///
+  /// Each changed value's provenance is kept (`store.profileMeta`, [provenance]): its
+  /// source from [sources] (by default "You said", or "Mochi change" for a Mochi change)
+  /// and `estimated` for the fields in [estimated] and every wristband value.
   Future<TwinAssessment> saveConversationProfile(
     Map<String, dynamic> confirmed, {
     String kind = HistoryKind.onboarding,
     Map<String, dynamic>? modelInputs,
-    Set<String> fromHealth = const {},
-  }) async {
+    Map<String, String> sources = const {},
+    Set<String> estimated = const {},
+  }) => _atomically(() async {
     final before = store.profile;
     final merge = mergeConfirmed(before, confirmed);
     if (merge.refused.isNotEmpty) debugPrint('Refused profile fields: ${merge.refused}');
-    await store._saveProfile(merge.profile);
+    final fallback = kind == HistoryKind.mochiChange ? HistorySource.mochiChange : HistorySource.said;
+    String sourceOf(String k) => HistorySource.all.contains(sources[k]) ? sources[k]! : fallback;
+    bool estimatedOf(String k) => estimated.contains(k) || sourceOf(k) == HistorySource.wristband;
+    await store._saveProfile(merge.profile, {
+      for (final k in merge.changed) k: FieldProvenance(source: sourceOf(k), estimated: estimatedOf(k), at: _clock()),
+    });
     final ready = readyModelProfile(modelInputs);
     if (ready != null) {
       // One vocabulary: the server's mapping and the app's must agree (keys only, no values).
@@ -189,35 +211,52 @@ class TwinRepository extends ChangeNotifier {
             field: k,
             value: merge.profile[k],
             old: before[k] != merge.profile[k] ? before[k] : null,
-            source: fromHealth.contains(k) ? HistorySource.appleHealth : null,
+            source: merge.changed.contains(k) ? sourceOf(k) : (store.profileMeta[k]?.source ?? sourceOf(k)),
+            estimated: merge.changed.contains(k) ? estimatedOf(k) : (store.profileMeta[k]?.estimated ?? false),
           ),
       ],
     );
-    await _recordReading(
-      merge.changed,
-      merge.profile,
-      kind == HistoryKind.mochiChange ? HistorySource.mochiChange : HistorySource.said,
-    );
+    // A reading only from the numbers this save changed: an unchanged stored half is not
+    // a new measurement.
+    await _recordReading({for (final k in merge.changed) k: merge.profile[k]}, fallback);
     final a = assess(null, modelInputs);
     _current = a;
     notifyListeners();
     return a;
-  }
+  });
 
   /// The Apple Health values the person confirmed on the Health screen ("Is this
   /// accurate?"). History only: they reach the profile through the conversation.
-  Future<void> recordHealthImport(Map<String, Object?> values) async {
-    await _record(
-      kind: HistoryKind.healthImport,
-      source: HistorySource.appleHealth,
-      items: [
-        for (final e in values.entries)
-          if (e.value != null && (profileSchema[e.key]?.call(e.value!) ?? false))
-            HistoryItem(field: e.key, value: e.value),
-      ],
-    );
-    notifyListeners();
-  }
+  Future<void> recordHealthImport(Map<String, Object?> values) =>
+      recordImport(values, source: HistorySource.appleHealth);
+
+  /// Values from Apple Health or the wristband that the person confirmed after a
+  /// read-back, before the conversation takes them. History only. Wristband values are
+  /// always estimates ("≈ Sensor estimate").
+  Future<void> recordImport(Map<String, Object?> values, {required String source, bool estimated = false}) =>
+      _atomically(() async {
+        final band = source == HistorySource.wristband;
+        await _record(
+          kind: band ? HistoryKind.wristbandImport : HistoryKind.healthImport,
+          source: source,
+          items: [
+            for (final e in values.entries)
+              if (e.value != null && (profileSchema[e.key]?.call(e.value!) ?? false))
+                HistoryItem(field: e.key, value: e.value, source: source, estimated: estimated || band),
+          ],
+        );
+        notifyListeners();
+      });
+
+  /// Where the stored value of [field] came from; null for a value saved before
+  /// provenance was kept (treat it as "You said").
+  FieldProvenance? provenance(String field) => store.profileMeta[field];
+
+  /// [profile] (the stored one by default) without the values that came from the
+  /// wristband. Use it for anything sent with `outside_ai_consent` (owner ruling: band
+  /// values are not shared with an outside AI until the owner rules).
+  Map<String, dynamic> outsideAiProfile([Map<String, dynamic>? profile]) =>
+      withoutWristbandValues(profile ?? store.profile, store.profileMeta);
 
   /// Applies a check-in response (`/api/checkin/start` or `/turn`). A finished check-in
   /// (`complete: true`) is recorded once with its history entry; a quick one merges its
@@ -227,7 +266,7 @@ class TwinRepository extends ChangeNotifier {
   ///
   /// [localDate] (YYYY-MM-DD) is the date the check-in started; by default the state's
   /// `local_date`, else today.
-  Future<CheckinOutcome> applyCheckin(Map<String, dynamic> response, {String? localDate}) async {
+  Future<CheckinOutcome> applyCheckin(Map<String, dynamic> response, {String? localDate}) => _atomically(() async {
     final state = response['state'] is Map ? response['state'] as Map : const {};
     final stateDate = state['local_date'];
     final date = localDate ?? (stateDate is String && stateDate.length == 10 ? stateDate : isoDate(_clock()));
@@ -249,12 +288,32 @@ class TwinRepository extends ChangeNotifier {
           final v = part.valueOf(f);
           if (v == null) continue;
           final old = byDate[part.date]?.valueOf(f);
-          items.add(HistoryItem(field: f, value: v, old: old != null && old != v ? old : null, date: part.date));
+          items.add(
+            HistoryItem(
+              field: f,
+              value: v,
+              old: old != null && old != v ? old : null,
+              date: part.date,
+              source: HistorySource.said,
+            ),
+          );
         }
       }
       await store._putDayLogs(mergeDayLogs(rows, outcome.dayLogParts));
     }
-    if (outcome.changedFields.isNotEmpty) await store._saveProfile(outcome.profile);
+    // A weekly answer is the person's own word now, even when the value didn't change: each
+    // value the profile took (or kept, unchanged) is theirs, no longer a band estimate.
+    final update = response['profile_update'] is Map ? response['profile_update'] as Map : const {};
+    final taken = [
+      for (final e in update.entries)
+        if (record.kind == HistoryKind.weekly && e.value != null && outcome.profile[e.key] == e.value) '${e.key}',
+    ];
+    if (outcome.changedFields.isNotEmpty || taken.isNotEmpty) {
+      await store._saveProfile(outcome.profile, {
+        for (final k in {...outcome.changedFields, ...taken})
+          k: FieldProvenance(source: HistorySource.said, at: _clock()),
+      });
+    }
     // The rest of what the person confirmed (feeling, a daily check-in's answers, the
     // weekly answers, with old → new where the profile changed).
     for (final e in record.answers.entries) {
@@ -267,6 +326,7 @@ class TwinRepository extends ChangeNotifier {
           value: e.value,
           old: weeklyChange ? before[e.key] : null,
           date: record.kind == HistoryKind.weekly ? null : record.date,
+          source: HistorySource.said,
         ),
       );
     }
@@ -278,11 +338,12 @@ class TwinRepository extends ChangeNotifier {
       weekStart: outcome.weeklySummary?['week_start'] as String?,
     );
     if (record.kind == HistoryKind.weekly) {
-      await _recordReading(record.answers.keys, record.answers, HistorySource.said);
+      // A weekly answer is a fresh measurement even when unchanged; a refused value is not one.
+      await _recordReading(record.answers, HistorySource.said);
     }
     _refresh();
     return outcome;
-  }
+  });
 
   /// A past day's answer, corrected through a confirmed Mochi read-back ("Tuesday I felt
   /// okay, not great"). Records stay append-only: the correction is a new
@@ -300,7 +361,7 @@ class TwinRepository extends ChangeNotifier {
     String field,
     Object? value, [
     String source = HistorySource.mochiChange,
-  ]) async {
+  ]) => _atomically(() async {
     final day = isoDate(date);
     if (day.compareTo(isoDate(_clock())) > 0 || !HistorySource.all.contains(source)) return null;
     final logInput = dayLogSchema.containsKey(field);
@@ -322,7 +383,7 @@ class TwinRepository extends ChangeNotifier {
     final entry = await _record(
       kind: HistoryKind.correction,
       source: source,
-      items: [HistoryItem(field: field, value: value, old: old, date: day)],
+      items: [HistoryItem(field: field, value: value, old: old, date: day, source: source)],
       days: logInput ? [day] : const [],
       corrects: original.$1.id,
     );
@@ -332,7 +393,7 @@ class TwinRepository extends ChangeNotifier {
       notifyListeners();
     }
     return entry;
-  }
+  });
 
   /// The entry holding the current answer for [field] on [day] (a correction, or the
   /// check-in that gave it), with that value.
@@ -501,18 +562,30 @@ class TwinRepository extends ChangeNotifier {
     return entry;
   }
 
-  /// A confirmed blood pressure reading in [fields] becomes its own dated entry.
-  Future<void> _recordReading(Iterable<String> fields, Map<String, dynamic> values, String source) async {
-    final keys = fields.toSet();
-    if (!keys.contains('systolic_bp') && !keys.contains('diastolic_bp')) return;
+  /// A confirmed blood pressure reading in [values] becomes its own dated entry, with
+  /// only the numbers that pass the profile's checks.
+  Future<void> _recordReading(Map<String, dynamic> values, String source) async {
     await _record(
       kind: HistoryKind.reading,
       source: source,
       items: [
         for (final f in const ['systolic_bp', 'diastolic_bp'])
-          if (values[f] is num) HistoryItem(field: f, value: values[f]),
+          if (values[f] != null && profileSchema[f]!(values[f] as Object))
+            HistoryItem(field: f, value: values[f], source: source),
       ],
     );
+  }
+
+  /// One write per event (see `TwinStore._transaction`); if it fails, memory and the
+  /// forecast are put back as they were.
+  Future<T> _atomically<T>(Future<T> Function() body) async {
+    try {
+      return await store._transaction(body);
+    } catch (_) {
+      _current = store.hasProfile ? assess() : null;
+      notifyListeners();
+      rethrow;
+    }
   }
 
   /// Recomputes [current] now, e.g. on app open when the date has moved on (a daily
@@ -526,3 +599,10 @@ class TwinRepository extends ChangeNotifier {
     return a;
   }
 }
+
+/// [profile] without the fields whose provenance is the wristband (owner ruling: band
+/// values never go to an outside AI until the owner rules).
+Map<String, dynamic> withoutWristbandValues(Map<String, dynamic> profile, Map<String, FieldProvenance> meta) => {
+  for (final e in profile.entries)
+    if (meta[e.key]?.source != HistorySource.wristband) e.key: e.value,
+};

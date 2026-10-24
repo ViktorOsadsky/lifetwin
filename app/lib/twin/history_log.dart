@@ -12,6 +12,9 @@ abstract final class HistoryKind {
   static const mochiChange = 'mochi_change';
   static const healthImport = 'health_import';
 
+  /// Wristband estimates confirmed after a read-back.
+  static const wristbandImport = 'wristband_import';
+
   /// Reserved for document-upload confirmations (not built yet).
   static const document = 'document';
 
@@ -25,20 +28,60 @@ abstract final class HistoryKind {
   static const checkins = {quick, daily, weekly};
 }
 
-/// Where the values came from.
+/// Where a confirmed value came from (per value: profile metadata and history items).
 abstract final class HistorySource {
-  static const said = 'said';
+  static const said = 'you_said';
   static const appleHealth = 'apple_health';
   static const document = 'document';
   static const mochiChange = 'mochi_change';
 
-  static const all = {said, appleHealth, document, mochiChange};
+  /// A wristband estimate the person confirmed after a read-back (owner ruling: "for this
+  /// demo and this scope, we need it as a confirmation"). Always `estimated`. Never sent to
+  /// an outside AI until the owner rules (see `withoutWristbandValues`).
+  static const wristband = 'wristband';
+
+  static const all = {said, appleHealth, document, mochiChange, wristband};
 
   static String label(String source) => switch (source) {
     appleHealth => 'Apple Health',
     document => 'Document',
     mochiChange => 'Mochi change',
+    wristband => 'From your band',
     _ => 'You said',
+  };
+}
+
+/// "≈ Sensor estimate" for a band estimate, "≈ Rough estimate" for the conversation's
+/// simpler-question estimates; null for a plain answer.
+String? estimateLabel(String source, bool estimated) =>
+    !estimated ? null : (source == HistorySource.wristband ? '≈ Sensor estimate' : '≈ Rough estimate');
+
+/// Where one profile value came from, kept beside the profile (`profile_meta`).
+class FieldProvenance {
+  const FieldProvenance({required this.source, this.estimated = false, this.at});
+
+  factory FieldProvenance.fromJson(Map<String, dynamic> j) => FieldProvenance(
+    source: '${j['source'] ?? HistorySource.said}',
+    estimated: j['estimated'] == true,
+    at: j['at'] == null ? null : DateTime.tryParse('${j['at']}'),
+  );
+
+  /// One of [HistorySource].
+  final String source;
+
+  /// A band or proxy estimate, not a measured or exact answer.
+  final bool estimated;
+
+  /// When it was confirmed (the phone's local time).
+  final DateTime? at;
+
+  String get sourceLabel => HistorySource.label(source);
+  String? get estimateText => estimateLabel(source, estimated);
+
+  Map<String, dynamic> toJson() => {
+    'source': source,
+    if (estimated) 'estimated': true,
+    if (at != null) 'at': at!.toIso8601String(),
   };
 }
 
@@ -114,14 +157,22 @@ String fieldLabel(String field, {bool day = false}) =>
 /// One value in an entry: the field, its plain label, the value with units, and for a
 /// change the old value too.
 class HistoryItem {
-  const HistoryItem({required this.field, required this.value, this.old, this.date, this.source});
+  const HistoryItem({
+    required this.field,
+    required this.value,
+    required this.source,
+    this.old,
+    this.date,
+    this.estimated = false,
+  });
 
-  factory HistoryItem.fromJson(Map<String, dynamic> j) => HistoryItem(
+  factory HistoryItem.fromJson(Map<String, dynamic> j, {String fallbackSource = HistorySource.said}) => HistoryItem(
     field: '${j['field']}',
     value: j['value'],
     old: j['old'],
     date: j['date'] as String?,
-    source: j['source'] as String?,
+    source: j['source'] as String? ?? fallbackSource,
+    estimated: j['estimated'] == true,
   );
 
   /// The stored field name (profile or `daily_logs` name, or the check-in's answer name).
@@ -134,8 +185,17 @@ class HistoryItem {
   /// The day the value describes (a day-log value or a correction); null for a profile value.
   final String? date;
 
-  /// Set when this value's source differs from its entry's (an Apple Health value in onboarding).
-  final String? source;
+  /// Where this value came from (one of [HistorySource]); an onboarding entry can mix
+  /// "You said" and Apple Health values.
+  final String source;
+
+  /// A band or proxy estimate.
+  final bool estimated;
+
+  String get sourceLabel => HistorySource.label(source);
+
+  /// "≈ Sensor estimate" / "≈ Rough estimate", or null.
+  String? get estimateText => estimateLabel(source, estimated);
 
   String get label => fieldLabel(field, day: date != null);
   String get unit => ((date != null ? _dayWords[field] : null) ?? _profileWords[field] ?? _dayWords[field])?.$2 ?? '';
@@ -147,7 +207,14 @@ class HistoryItem {
   /// A known value was replaced by a different one.
   bool get isChange => old != null && old != value;
 
-  Map<String, dynamic> toJson() => {'field': field, 'value': value, 'old': ?old, 'date': ?date, 'source': ?source};
+  Map<String, dynamic> toJson() => {
+    'field': field,
+    'value': value,
+    'old': ?old,
+    'date': ?date,
+    'source': source,
+    if (estimated) 'estimated': true,
+  };
 }
 
 class HistoryEntry {
@@ -171,7 +238,7 @@ class HistoryEntry {
     source: '${j['source']}',
     items: [
       for (final i in j['items'] as List? ?? const [])
-        if (i is Map) HistoryItem.fromJson(Map<String, dynamic>.from(i)),
+        if (i is Map) HistoryItem.fromJson(Map<String, dynamic>.from(i), fallbackSource: '${j['source']}'),
     ],
     days: [for (final d in j['days'] as List? ?? const []) '$d'],
     weekStart: j['week_start'] as String?,

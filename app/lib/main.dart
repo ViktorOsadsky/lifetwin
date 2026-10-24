@@ -67,6 +67,10 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// Profile keys that came from Apple Health, to label their source.
   final _healthKeys = <String>{};
 
+  /// The Apple Health values taken this session, so a value is labelled Apple Health only
+  /// while the confirmed answer is still that value.
+  final _healthValues = <String, Object?>{};
+
   /// The answers a forecast uses: whatever the conversation holds now, once finished.
   /// Read live, so "start over" or a changed answer never leaves an older forecast behind.
   /// Before this session's conversation starts, the profile saved on the phone is used.
@@ -114,10 +118,12 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   void _keepConversation() {
     final state = _controller.state;
     if (state == null) return;
-    final fromHealth = {..._healthKeys};
-    _twin
-        .then((repo) => repo.saveOnboarding(state, modelInputs: _controller.modelInputs, fromHealth: fromHealth))
-        .ignore();
+    final confirmed = (state['confirmed_profile'] as Map?) ?? const {};
+    final sources = {
+      for (final e in _healthValues.entries)
+        if (confirmed[e.key] == e.value) e.key: HistorySource.appleHealth,
+    };
+    _twin.then((repo) => repo.saveOnboarding(state, modelInputs: _controller.modelInputs, sources: sources)).ignore();
   }
 
   @override
@@ -158,6 +164,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           // the talk) are they labelled "Apple Health" and does the Room's pill go away.
           if (await _controller.importHealth(values)) {
             _twin.then((repo) => repo.recordHealthImport(values)).ignore();
+            _healthValues.addAll(values);
             if (mounted) setState(() => _healthKeys.addAll(values.keys));
           }
         },
