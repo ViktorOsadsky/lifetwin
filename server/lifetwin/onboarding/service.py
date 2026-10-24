@@ -1,6 +1,7 @@
 """Explicit candidate/confirmation transitions for text and final transcripts."""
 
 import asyncio
+import re
 
 from fastapi import HTTPException
 
@@ -12,8 +13,115 @@ from lifetwin.onboarding.models import (
     TurnRequest,
     TurnResponse,
 )
-from lifetwin.onboarding.parsing import QUESTIONS, SKIP_WORDS, grounded_candidates, parse_reply
+from lifetwin.onboarding.parsing import (
+    BP_ORDER_MESSAGE,
+    EXAMPLES,
+    FRIENDLY_LABELS,
+    QUESTIONS,
+    clarify,
+    grounded_candidates,
+    is_skip,
+    normalize_text,
+    parse_reply,
+)
 from lifetwin.onboarding.providers import ExtractionUnavailable, Extractor
+
+# Only these exact replies confirm pending answers; anything vaguer re-asks.
+AFFIRMATIVES = {
+    "yes",
+    "yeah",
+    "yep",
+    "yes please",
+    "correct",
+    "yes correct",
+    "that's correct",
+    "that is correct",
+    "yes that's correct",
+    "yes that is correct",
+    "that's right",
+    "that is right",
+    "yes that's right",
+    "yes that is right",
+    "yes it is",
+}
+NEGATIVE = re.compile(r"(?:no|nope)\b\s*(?:(?:it's|it is|actually|i meant)\b\s*)?(.*)")
+BOTH_BP = ["systolic_bp", "diastolic_bp"]
+BOTH_BP_MESSAGE = 'Please tell me both blood pressure numbers, for example "120 over 80".'
+SEX_WORDS = {
+    "female": "woman (female)",
+    "male": "man (male)",
+    "intersex": "intersex",
+    "prefer_not_to_say": "prefer not to say",
+}
+SMOKING_WORDS = {
+    "never": "never smoked",
+    "former": "smoked in the past",
+    "current": "smoke now",
+    "unknown": "not sure",
+}
+
+
+def _plain(value: float, digits: int = 1) -> str:
+    return f"{value:.{digits}f}".rstrip("0").rstrip(".")
+
+
+def _about(value: float, shown: str) -> str:
+    return "" if abs(value - float(shown)) < 0.01 else "about "
+
+
+def _count(value: float, unit: str) -> str:
+    return "none" if value == 0 else f"{_plain(value)} {unit}{'' if value == 1 else 's'}"
+
+
+def _both(metric: str, imperial: str, metric_exact: bool, imperial_exact: bool) -> str:
+    # The unit the person used converts exactly, so it is shown first.
+    if metric_exact and not imperial_exact:
+        return f"{metric} ({imperial})"
+    return f"{imperial} ({metric})"
+
+
+def _height(cm: float) -> str:
+    inches = cm / 2.54
+    shown_in, shown_cm = str(round(inches)), _plain(cm, 0)
+    feet, rest = divmod(round(inches), 12)
+    imperial = f"{_about(inches, shown_in)}{feet} feet" + (f" {rest} inches" if rest else "")
+    metric = f"{_about(cm, shown_cm)}{shown_cm} cm"
+    return _both(metric, imperial, not _about(cm, shown_cm), not _about(inches, shown_in))
+
+
+def _weight(kg: float) -> str:
+    pounds = kg / 0.45359237
+    shown_lb, shown_kg = _plain(pounds), _plain(kg)
+    imperial = f"{_about(pounds, shown_lb)}{shown_lb} pounds"
+    metric = f"{_about(kg, shown_kg)}{shown_kg} kg"
+    return _both(metric, imperial, not _about(kg, shown_kg), not _about(pounds, shown_lb))
+
+
+def describe(values: dict) -> str:
+    """Plain-language summary in the person's own unit, metric value beside it."""
+    parts = []
+    for field, value in values.items():
+        if field == "diastolic_bp" and "systolic_bp" in values:
+            continue
+        if field == "systolic_bp" and "diastolic_bp" in values:
+            parts.append(f"Blood pressure: {value} over {values['diastolic_bp']}")
+            continue
+        shown = {
+            "age": lambda v: str(v),
+            "sex": SEX_WORDS.get,
+            "height_cm": _height,
+            "weight_kg": _weight,
+            "sleep_hours": lambda v: f"{_plain(v)} hour{'' if v == 1 else 's'} a night",
+            "exercise_minutes_weekly": lambda v: _count(v, "minute") + " a week",
+            "smoking_status": SMOKING_WORDS.get,
+            "alcohol_drinks_weekly": lambda v: _count(v, "drink") + " a week",
+            "diabetes": lambda v: "yes" if v else "no",
+            "systolic_bp": str,
+            "diastolic_bp": str,
+        }[field](value)
+        label = FRIENDLY_LABELS[field]
+        parts.append(f"{label[0].upper()}{label[1:]}: {shown}")
+    return "; ".join(parts)
 
 
 class ConversationService:
@@ -26,6 +134,8 @@ class ConversationService:
         mode = "guided"
         configured = self.extractor is not None and self.extractor.configured
         provider_status = "not_needed" if configured else "not_configured"
+        action = request.action
+        text = normalize_text(request.text or "")
 
         def respond(message: str) -> TurnResponse:
             reaction = {
@@ -44,24 +154,48 @@ class ConversationService:
                 mascot_events=[MascotEvent(state=reaction, caption=message)],
             )
 
-        if request.action == "cancel":
+        if action == "cancel":
             # Clear drafts and supplied health data from the returned session.
             state = ConversationState(phase="cancelled")
             return respond(
                 "We can stop here. Your conversation state is cleared. Come back whenever you like."
             )
-        if request.action == "start":
+        if action == "start":
             if state.phase in {"cancelled", "idle"}:
                 state.pending_profile = HealthProfile()
                 self._advance(state)
             return respond(
-                "Hi, I'm your twin's guide! We can chat by text or a final voice transcript. "
-                "You can skip any question, and I'll ask before saving answers in your profile. "
+                "Hi, I'm your twin's guide! You can type or talk to me. "
+                "You can skip any question, and I'll check each answer with you before I save it. "
                 + self._prompt(state)
             )
         if state.phase in {"idle", "cancelled"}:
             self._invalid("Start the conversation before sending another action.")
-        if request.action == "confirm":
+        if action == "reply" and state.phase == "confirming":
+            # A spoken or typed "yes" confirms; "no, ..." corrects; nothing vague confirms.
+            phrase = " ".join(text.lower().replace(",", " ").rstrip(".!?").split())
+            if phrase in AFFIRMATIVES:
+                action = "confirm"
+            else:
+                negative = NEGATIVE.fullmatch(phrase)
+                if negative:
+                    text = negative.group(1).strip()
+                    if not text:
+                        pending_fields = list(state.pending_profile.model_dump(exclude_none=True))
+                        if len(pending_fields) == 1:
+                            field = pending_fields[0]
+                            return respond(
+                                "Okay, nothing has changed. Please tell me the right answer for "
+                                f"your {FRIENDLY_LABELS[field]}, for example {EXAMPLES[field]}."
+                            )
+                        if pending_fields == BOTH_BP:
+                            return respond("Okay, nothing has changed. " + BOTH_BP_MESSAGE)
+                        return respond(
+                            "Okay, nothing has changed. Which answer should I change? "
+                            'Please say its name and the right answer, like "weight: 150 pounds".'
+                        )
+                action = "correct"
+        if action == "confirm":
             if state.phase != "confirming":
                 self._invalid("There are no pending answers to confirm.")
             additions = state.pending_profile.model_dump(exclude_none=True)
@@ -74,7 +208,7 @@ class ConversationService:
             ]
             self._advance(state)
             return respond("Confirmed! " + self._prompt(state))
-        if request.action == "skip":
+        if action == "skip":
             target = request.field or state.current_field
             if target is None:
                 self._invalid("Choose a field to skip.")
@@ -86,34 +220,47 @@ class ConversationService:
                 state.skipped_fields.append(target)
             self._advance(state)
             return respond("That's okay; I won't fill it in. " + self._prompt(state))
-        if state.phase == "ready" and request.action != "correct":
+        if state.phase == "ready" and action != "correct":
             self._invalid(
                 "The conversation is ready. Use correct with a field to change an answer."
             )
-        if state.phase == "confirming" and request.action != "correct":
+        if state.phase == "confirming" and action != "correct":
             self._invalid("Confirm or correct the pending answers first.")
         target = request.field or state.current_field
-        if request.action == "correct" and state.phase == "confirming" and request.field is None:
+        if action == "correct" and state.phase == "confirming" and request.field is None:
             pending_fields = list(state.pending_profile.model_dump(exclude_none=True))
+            if pending_fields == BOTH_BP:
+                # A pending reading is corrected as a whole pair, never one guessed half.
+                if len(parse_reply(text, "systolic_bp")) != 2:
+                    return respond(BOTH_BP_MESSAGE + " Nothing has changed.")
+                pending_fields = ["systolic_bp"]
             if len(pending_fields) != 1:
                 return respond(
-                    "Several answers are pending. Choose the field you want to correct: "
-                    + ", ".join(pending_fields)
-                    + ". Nothing has changed."
+                    "I have more than one answer waiting: "
+                    + ", ".join(FRIENDLY_LABELS[field] for field in pending_fields)
+                    + ". Which one do you want to change? Nothing has changed."
                 )
             target = pending_fields[0]
         if target is None:
             self._invalid("Choose the field you want to correct.")
-        text = request.text.strip()
-        normalized = text.lower().rstrip(".!?")
-        if normalized in SKIP_WORDS and not (
-            target == "smoking_status" and normalized == "unknown"
-        ):
-            if request.action == "correct":
-                return respond(
-                    "No value changed. You can give a new explicit answer or cancel. "
-                    + self._prompt(state)
-                )
+        if is_skip(text, target):
+            if action == "correct":
+                if request.field and getattr(state.confirmed_profile, target) is not None:
+                    # An explicitly chosen saved answer may be withdrawn to blank;
+                    # this never adds or guesses a value.
+                    confirmed = state.confirmed_profile.model_dump()
+                    confirmed[target] = None
+                    state.confirmed_profile = HealthProfile.model_validate(confirmed)
+                    if target not in state.skipped_fields:
+                        state.skipped_fields.append(target)
+                    if state.phase != "confirming":
+                        self._advance(state)
+                    return respond(
+                        f"Okay, I removed your {FRIENDLY_LABELS[target]} answer and left it "
+                        "blank. If that was a mistake, just tell me the answer again. "
+                        + self._prompt(state)
+                    )
+                return respond("Nothing has changed. " + self._prompt(state))
             if target not in state.skipped_fields:
                 state.skipped_fields.append(target)
             self._advance(state)
@@ -124,7 +271,7 @@ class ConversationService:
                 try:
                     async with asyncio.timeout(self.timeout):
                         extraction = await self.extractor.extract(text, target)
-                    candidates = grounded_candidates(text, extraction)
+                    candidates = grounded_candidates(text, extraction, target)
                     if not candidates:
                         raise ExtractionUnavailable()
                     mode, provider_status = "llm", "used"
@@ -136,28 +283,53 @@ class ConversationService:
             notice = ""
             if provider_status == "consent_required":
                 notice = (
-                    "An optional AI provider could process this reply only with your permission. "
+                    "I can ask an AI helper to read this answer, but only if you say it's okay. "
                 )
             elif provider_status == "unavailable":
-                notice = (
-                    "The optional AI guide is unavailable; the guided conversation still works. "
+                notice = "The AI helper isn't available right now, but we can keep going. "
+            hint = clarify(text, target)
+            if state.phase == "confirming":
+                return respond(
+                    notice
+                    + (hint + " " if hint else "Sorry, I didn't understand that. ")
+                    + "Nothing has changed. "
+                    + self._prompt(state)
                 )
             return respond(
                 notice
-                + "I couldn't safely read that answer. Please give one clear value with units, "
-                "choose a listed category, or skip. " + QUESTIONS[target]
+                + (
+                    hint
+                    or "Sorry, I didn't understand that. You can answer in your own words, "
+                    'or say "skip". '
+                    + QUESTIONS[target]
+                )
             )
-        if request.action == "correct" and request.field and request.field not in candidates:
+        if action == "correct" and request.field and request.field not in candidates:
             return respond(
-                "Please give a correction for " + request.field + ". " + QUESTIONS[request.field]
+                "Please give the right answer for your "
+                + FRIENDLY_LABELS[request.field]
+                + ". "
+                + QUESTIONS[request.field]
             )
         # Corrections replace affected pending values; unrelated pending values stay visible.
         pending = state.pending_profile.model_dump(exclude_none=True)
         pending.update(candidates)
+        if not self._bp_ordered(state, pending):
+            return respond(
+                BP_ORDER_MESSAGE
+                + " Nothing has changed. "
+                + (self._prompt(state) if state.phase == "confirming" else QUESTIONS[target])
+            )
         state.pending_profile = HealthProfile.model_validate(pending)
         state.phase = "confirming"
         state.current_field = next(iter(pending)) if len(pending) == 1 else None
         return respond(self._prompt(state))
+
+    @staticmethod
+    def _bp_ordered(state: ConversationState, pending: dict) -> bool:
+        systolic = pending.get("systolic_bp", state.confirmed_profile.systolic_bp)
+        diastolic = pending.get("diastolic_bp", state.confirmed_profile.diastolic_bp)
+        return systolic is None or diastolic is None or systolic > diastolic
 
     @staticmethod
     def _advance(state: ConversationState) -> None:
@@ -175,17 +347,17 @@ class ConversationService:
     @staticmethod
     def _prompt(state: ConversationState) -> str:
         if state.phase == "confirming":
-            summary = "; ".join(
-                f"{field}: {value}"
-                for field, value in state.pending_profile.model_dump(exclude_none=True).items()
-            )
+            pending = state.pending_profile.model_dump(exclude_none=True)
             return (
-                "I heard "
-                + summary
-                + ". Metric fields use cm, kg, hours/night, minutes/week, drinks/week and mmHg. Confirm these answers, or tell me a correction."
+                "Here is what I heard. "
+                + describe(pending)
+                + ". Is that right? Say yes, or tell me the right answer."
             )
         if state.phase == "ready":
-            return "Your confirmed answers are ready, with skipped answers left unknown. Prediction functionality will be added later. You can still correct a field."
+            return (
+                "All done! I saved the answers you confirmed and left skipped ones blank. "
+                "Forecasts are not available yet. You can still change any answer."
+            )
         return QUESTIONS[state.current_field]
 
     @staticmethod

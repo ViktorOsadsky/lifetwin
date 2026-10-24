@@ -8,17 +8,59 @@ from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.models import ExtractionResult, ProfileField
 
 QUESTIONS: dict[ProfileField, str] = {
-    "age": "How old are you in years? You can skip anything you don't know.",
-    "sex": "Which sex category would you like to record: female, male, intersex, or prefer not to say?",
-    "height_cm": "How tall are you? Please include cm, meters, or feet and inches.",
-    "weight_kg": "What is your current weight? Please include kg or pounds.",
-    "sleep_hours": "How many hours do you usually sleep per night?",
-    "exercise_minutes_weekly": "How many minutes of exercise do you usually do per week?",
-    "smoking_status": "Have you never smoked, formerly smoked, or do you currently smoke? Unknown is okay too.",
-    "alcohol_drinks_weekly": "How many alcoholic drinks do you usually have per week?",
-    "diabetes": "Have you been diagnosed with diabetes? Please say yes, no, or skip if unsure.",
-    "systolic_bp": "Do you know your systolic blood pressure in mmHg, the top number? You can also give both as 120/80.",
-    "diastolic_bp": "Do you know your diastolic blood pressure in mmHg, the bottom number?",
+    "age": "How old are you? You can skip any question you don't know.",
+    "sex": 'Are you a woman or a man? You can also say intersex, or "prefer not to say".',
+    "height_cm": "How tall are you? For example, 5 feet 10 inches, or 178 cm.",
+    "weight_kg": "How much do you weigh? For example, 160 pounds, or 72 kg.",
+    "sleep_hours": "How many hours do you usually sleep each night? For example, 7 hours.",
+    "exercise_minutes_weekly": (
+        "How many minutes of exercise do you get in a whole week? "
+        "For example, a 30-minute walk 5 days a week is 150 minutes."
+    ),
+    "smoking_status": "Do you smoke now, did you smoke in the past, or have you never smoked?",
+    "alcohol_drinks_weekly": (
+        "How many alcoholic drinks do you usually have in a week? "
+        'For example, 3 drinks. If you don\'t drink, say "none".'
+    ),
+    "diabetes": (
+        "Has a doctor ever told you that you have diabetes? Please say yes or no. "
+        "If you're not sure, say \"I don't know\"."
+    ),
+    "systolic_bp": (
+        "What is your blood pressure? For example, 120 over 80. "
+        "If you don't know it, just say \"I don't know\"."
+    ),
+    "diastolic_bp": (
+        "What is the bottom number of your blood pressure? For example, the 80 in 120 over 80. "
+        "If you don't know it, just say \"I don't know\"."
+    ),
+}
+# Plain names for messages; code identifiers never reach the person.
+FRIENDLY_LABELS: dict[ProfileField, str] = {
+    "age": "age",
+    "sex": "sex",
+    "height_cm": "height",
+    "weight_kg": "weight",
+    "sleep_hours": "sleep",
+    "exercise_minutes_weekly": "exercise",
+    "smoking_status": "smoking",
+    "alcohol_drinks_weekly": "alcohol",
+    "diabetes": "diabetes",
+    "systolic_bp": "top blood pressure number",
+    "diastolic_bp": "bottom blood pressure number",
+}
+EXAMPLES: dict[ProfileField, str] = {
+    "age": '"I\'m 72"',
+    "sex": '"a woman"',
+    "height_cm": '"5 feet 10 inches"',
+    "weight_kg": '"160 pounds"',
+    "sleep_hours": '"7 hours"',
+    "exercise_minutes_weekly": '"150 minutes a week"',
+    "smoking_status": '"I never smoked"',
+    "alcohol_drinks_weekly": '"3 drinks a week"',
+    "diabetes": '"I don\'t have diabetes"',
+    "systolic_bp": '"120 over 80"',
+    "diastolic_bp": '"80"',
 }
 
 LABELS: dict[str, ProfileField] = {
@@ -42,7 +84,64 @@ LABELS: dict[str, ProfileField] = {
     "diastolic": "diastolic_bp",
     "diastolic_bp": "diastolic_bp",
 }
-SKIP_WORDS = {"skip", "unknown", "i don't know", "i do not know", "not sure", "unsure"}
+SKIP_WORDS = {
+    "skip",
+    "skip it",
+    "skip this",
+    "skip this one",
+    "pass",
+    "next",
+    "unknown",
+    "i don't know",
+    "i do not know",
+    "don't know",
+    "dont know",
+    "i dont know",
+    "not sure",
+    "i'm not sure",
+    "im not sure",
+    "i am not sure",
+    "unsure",
+    "no idea",
+    "i have no idea",
+    "i don't remember",
+    "i do not remember",
+    "don't remember",
+    "i'd rather not say",
+    "i would rather not say",
+    "rather not say",
+    "prefer not to say",
+    "i prefer not to say",
+}
+# These record an answer for sex instead of skipping the question.
+SEX_PREFER_NOT = {
+    "prefer not to say",
+    "i prefer not to say",
+    "i'd rather not say",
+    "i would rather not say",
+    "rather not say",
+}
+# "Do you know your blood pressure?" is commonly answered with a plain no.
+BP_NO = {"no", "nope", "no i don't", "no i do not", "i don't"}
+BP_ORDER_MESSAGE = (
+    "The top number is usually the bigger one. Could you check your reading? "
+    "For example, 120 over 80."
+)
+# A provider may assign a quote to a field other than the one asked only when
+# the clause itself names that field: bare "160" for weight is not systolic.
+FIELD_CUES: dict[ProfileField, str] = {
+    "age": r"\b(?:age|years?|yrs?|old)\b",
+    "sex": r"\b(?:sex|female|male|intersex|woman|man)\b",
+    "height_cm": r"height|tall|cm\b|centimet|met(?:er|re)|\d\s*m\b|ft\b|feet|foot|inch|\d\s*in\b|['\"]",
+    "weight_kg": r"weigh|kg\b|kilo|lbs?\b|pound",
+    "sleep_hours": r"sleep|night",
+    "exercise_minutes_weekly": r"exercis|minutes?|mins?\b|workout|walk|week",
+    "smoking_status": r"smok|cigar",
+    "alcohol_drinks_weekly": r"drink|alcohol|beer|wine",
+    "diabetes": r"diabet",
+    "systolic_bp": r"systolic|blood pressure|mmhg|\btop\b|\d\s*(?:/|over)\s*\d",
+    "diastolic_bp": r"diastolic|blood pressure|mmhg|\bbottom\b|\d\s*(?:/|over)\s*\d",
+}
 # Bound numeric tokens before conversion, as well as validating profile ranges.
 # Every admitted measurement fits these limits; enormous spoken-number tokens
 # cannot overflow feet conversions or create non-finite intermediates.
@@ -57,9 +156,37 @@ PREFIXES: dict[ProfileField, str] = {
     "alcohol_drinks_weekly": r"(?:i drink)",
     "smoking_status": r"(?!)",
     "diabetes": r"(?!)",
-    "systolic_bp": r"(?:my systolic blood pressure is|my systolic is)",
-    "diastolic_bp": r"(?:my diastolic blood pressure is|my diastolic is)",
+    "systolic_bp": r"(?:my systolic blood pressure is|my systolic is|my blood pressure is)",
+    "diastolic_bp": r"(?:my diastolic blood pressure is|my diastolic is|my blood pressure is)",
 }
+QUOTES = str.maketrans(
+    {"\u2019": "'", "\u2018": "'", "\u201c": '"', "\u201d": '"', "\u2032": "'", "\u2033": '"'}
+)
+BP_PAIR = r"(\d{2,3})\s*(?:/|over)\s*(\d{2,3})(?:\s*mmhg)?"
+
+
+def normalize_text(text: str) -> str:
+    """Map smart punctuation (iOS default) and prime marks to ASCII; collapse spaces."""
+    return " ".join(text.translate(QUOTES).split())
+
+
+def _phrase(field: ProfileField, text: str) -> str:
+    value = normalize_text(text).lower().rstrip(".!?").strip()
+    value = re.sub(r"^" + PREFIXES[field] + r"\s+", "", value)
+    # Commas are pauses inside one spoken answer ("no, I don't"; "5 feet, 10 inches").
+    value = " ".join(value.replace(",", " ").split())
+    return re.sub(r"(\d+) and a half\b", r"\1.5", value)
+
+
+def is_skip(text: str, field: ProfileField) -> bool:
+    phrase = " ".join(normalize_text(text).lower().replace(",", " ").rstrip(".!?").split())
+    if field == "smoking_status" and phrase == "unknown":
+        return False
+    if field == "sex" and phrase in SEX_PREFER_NOT:
+        return False
+    if field in {"systolic_bp", "diastolic_bp"} and phrase in BP_NO:
+        return True
+    return phrase in SKIP_WORDS
 
 
 def _number(value: str, suffix: str = "") -> float | None:
@@ -69,24 +196,29 @@ def _number(value: str, suffix: str = "") -> float | None:
 
 def parse_value(field: ProfileField, text: str) -> dict:
     """Accept explicit single measurements; do not guess units or diagnoses."""
-    value = text.strip().lower().rstrip(".!?").strip()
-    value = re.sub(r"^" + PREFIXES[field] + r"\s+", "", value)
+    value = _phrase(field, text)
     result: float | int | str | bool | None = None
     if field == "age":
         result = _number(value, r"(?:\s*(?:years?(?: old)?|yrs?))?")
     elif field == "height_cm":
+        value = re.sub(r"\s+tall$", "", value)
         cm = _number(value, r"\s*(?:cm|centimeters?|centimetres?)")
         meters = _number(value, r"\s*(?:m|meters?|metres?)")
+        inches = _number(value, r"\s*(?:in|inches|inch|\")")
         feet = re.fullmatch(
-            r"(\d{1,2})\s*(?:ft|feet|foot|')\s*(?:(\d{1,2}(?:\.\d{1,6})?)\s*(?:in|inches|inch|\"))?",
+            r"(\d{1,2})\s*(?:ft\.?|feet|foot|')"
+            r"(?:\s*(?:and\s+)?(\d{1,2}(?:\.\d{1,6})?)\s*(?:in\.?|inches|inch|\")?)?",
             value,
         )
-        if feet and (feet.group(2) is None or float(feet.group(2)) < 12):
-            result = int(feet.group(1)) * 30.48 + float(feet.group(2) or 0) * 2.54
+        if feet:
+            if feet.group(2) is None or float(feet.group(2)) < 12:
+                result = int(feet.group(1)) * 30.48 + float(feet.group(2) or 0) * 2.54
         elif cm is not None:
             result = cm
         elif meters is not None:
             result = meters * 100
+        elif inches is not None:
+            result = inches * 2.54
     elif field == "weight_kg":
         kg = _number(value, r"\s*(?:kg|kilograms?|kilos?)")
         lb = _number(value, r"\s*(?:lb|lbs|pounds?)")
@@ -98,42 +230,85 @@ def parse_value(field: ProfileField, text: str) -> dict:
         hours = _number(value, r"\s*(?:hours?|hrs?)(?:\s*(?:per|a|each|/)\s*week)")
         if hours is not None:
             result = hours * 60
+        # A bare small number is more likely days or hours than weekly minutes.
+        if re.fullmatch(NUMBER, value) and 0 < float(value) < 15:
+            result = None
+        daily = re.fullmatch(
+            NUMBER + r"\s*(minutes?|mins?|hours?|hrs?)\s*(?:a|per|each)\s*day"
+            r"\s*(?:and\s+)?(?:([1-7])\s*days?\s*(?:a|per|each)\s*week|(every day))",
+            value,
+        )
+        if daily:
+            per_day = float(daily.group(1)) * (1 if daily.group(2).startswith("m") else 60)
+            result = per_day * (7 if daily.group(4) else int(daily.group(3)))
+        if value in {"none", "i don't exercise", "i do not exercise"}:
+            result = 0
     elif field == "alcohol_drinks_weekly":
         result = _number(value, r"(?:\s*drinks?(?:\s*(?:per|a|each|/)\s*week)?)?")
         if value in {"none", "i don't drink", "i do not drink"}:
             result = 0.0
     elif field in {"systolic_bp", "diastolic_bp"}:
-        pair = re.fullmatch(r"(\d{2,3})\s*/\s*(\d{2,3})(?:\s*mmhg)?", value)
+        pair = re.fullmatch(BP_PAIR, value)
         if pair:
-            return _validated(
-                {"systolic_bp": int(pair.group(1)), "diastolic_bp": int(pair.group(2))}
-            )
+            systolic, diastolic = int(pair.group(1)), int(pair.group(2))
+            if systolic <= diastolic:
+                return {}
+            return _validated({"systolic_bp": systolic, "diastolic_bp": diastolic})
         result = _number(value, r"(?:\s*mmhg)?")
     elif field == "sex":
         result = {
             "female": "female",
+            "woman": "female",
+            "a woman": "female",
             "male": "male",
+            "man": "male",
+            "a man": "male",
             "intersex": "intersex",
-            "prefer not to say": "prefer_not_to_say",
             "prefer_not_to_say": "prefer_not_to_say",
+            **dict.fromkeys(SEX_PREFER_NOT, "prefer_not_to_say"),
         }.get(value)
     elif field == "smoking_status":
         result = {
             "never": "never",
             "never smoked": "never",
+            "i never smoked": "never",
+            "i've never smoked": "never",
             "i have never smoked": "never",
             "former": "former",
             "formerly smoked": "former",
+            "in the past": "former",
+            "i smoked in the past": "former",
+            "i used to smoke": "former",
+            "i quit": "former",
             "i quit smoking": "former",
             "current": "current",
             "currently smoke": "current",
             "i smoke": "current",
+            "i smoke now": "current",
+            "yes i smoke": "current",
             "unknown": "unknown",
         }.get(value)
     elif field == "diabetes":
-        if value in {"yes", "yes diagnosed", "i have been diagnosed with diabetes"}:
+        if value in {
+            "yes",
+            "yes diagnosed",
+            "yes i do",
+            "yes i have diabetes",
+            "i have diabetes",
+            "i have been diagnosed with diabetes",
+        }:
             result = True
-        elif value in {"no", "no diagnosis", "i have not been diagnosed with diabetes"}:
+        elif value in {
+            "no",
+            "nope",
+            "no i don't",
+            "no i do not",
+            "no diagnosis",
+            "i don't have diabetes",
+            "i do not have diabetes",
+            "no i don't have diabetes",
+            "i have not been diagnosed with diabetes",
+        }:
             result = False
     if result is None:
         return {}
@@ -146,6 +321,52 @@ def parse_value(field: ProfileField, text: str) -> dict:
     return _validated({field: result})
 
 
+def clarify(text: str, field: ProfileField) -> str | None:
+    """Field-specific follow-up for an answer that is close but not safe to read."""
+    value = _phrase(field, text)
+    about = re.fullmatch(r"(?:about|around|roughly|approximately|maybe)\s+(.+)", value)
+    bare = re.fullmatch(NUMBER, about.group(1) if about else value)
+    number = bare.group(1) if bare else None
+    if field == "weight_kg":
+        if about:
+            return (
+                "Your best guess is fine. Please say just the number with pounds or "
+                'kilograms, like "160 pounds".'
+            )
+        if number:
+            return (
+                f"Is that {number} pounds or {number} kilograms? Please say the number "
+                f'with the unit, like "{number} pounds".'
+            )
+    if field == "height_cm":
+        if about:
+            return (
+                "Your best guess is fine. Please say just the number with the unit, "
+                'like "5 feet 10 inches" or "178 cm".'
+            )
+        if number:
+            return (
+                "Is that inches or centimeters? Please say it with the unit, "
+                'like "70 inches". You can also say "5 feet 10 inches".'
+            )
+    if field in {"systolic_bp", "diastolic_bp"}:
+        pair = re.fullmatch(BP_PAIR, value)
+        if pair and int(pair.group(1)) <= int(pair.group(2)):
+            return BP_ORDER_MESSAGE
+    if field == "exercise_minutes_weekly":
+        if re.search(r"\b(?:a|per|each|every)\s+day\b", value):
+            return (
+                "How many days a week do you do that? You can say, for example, "
+                '"30 minutes a day, 5 days a week".'
+            )
+        if number and not about and 0 < float(number) < 15:
+            return (
+                f"Is that {number} minutes or {number} hours in the whole week? Please say it "
+                f'with minutes or hours, like "{number} hours a week".'
+            )
+    return None
+
+
 def _validated(values: dict) -> dict:
     try:
         return HealthProfile.model_validate(values).model_dump(exclude_none=True)
@@ -155,7 +376,12 @@ def _validated(values: dict) -> dict:
 
 def parse_reply(text: str, field: ProfileField) -> dict:
     """Handle a short answer or several explicitly labeled clauses."""
-    parts = re.split(r"[;,]|\s+and\s+", text.strip(), flags=re.I)
+    text = normalize_text(text)
+    # One measurement may contain commas or "and" ("5 feet, 10 inches").
+    whole = parse_value(field, text)
+    if whole:
+        return whole
+    parts = re.split(r"[;,]|\s+and\s+", text, flags=re.I)
     values: dict = {}
     for part in parts:
         if not part.strip():
@@ -181,13 +407,16 @@ def parse_reply(text: str, field: ProfileField) -> dict:
     return values
 
 
-def grounded_candidates(text: str, extraction: ExtractionResult) -> dict:
+def grounded_candidates(text: str, extraction: ExtractionResult, asked: ProfileField) -> dict:
     """Validate evidence boundaries AND the full context of every clause.
 
     A provider-selected span cannot remove a negation, past/hypothetical tense,
     uncertainty, or a contradictory second measurement. Conservative grammar
     leaves unfamiliar prose for clarification rather than trusting an LLM claim.
+    A field other than the asked one needs a clause that names it, so a bare
+    "160" given for weight can never become a blood pressure.
     """
+    text = normalize_text(text)
     clauses = [
         clause.strip()
         for clause in re.split(r"[;,\n]|(?<!\d)[.!?]|[.!?](?!\d)|\s+and\s+", text, flags=re.I)
@@ -196,15 +425,20 @@ def grounded_candidates(text: str, extraction: ExtractionResult) -> dict:
     values: dict = {}
     covered: set[int] = set()
     for candidate in extraction.candidates:
-        quote_values = parse_value(candidate.field, candidate.quote)
+        quote = normalize_text(candidate.quote)
+        quote_values = parse_value(candidate.field, quote)
         if not quote_values:
             return {}
         matching_clauses = []
         for index, clause in enumerate(clauses):
             # Word boundaries stop "male" inside "female" and "70 kg"
             # inside "170 kg" from serving as evidence.
-            if not re.search(r"(?<!\w)" + re.escape(candidate.quote) + r"(?!\w)", clause):
+            if not re.search(r"(?<!\w)" + re.escape(quote) + r"(?!\w)", clause):
                 continue
+            if candidate.field != asked and not re.search(
+                FIELD_CUES[candidate.field], clause, flags=re.I
+            ):
+                return {}
             # These two modifiers assert present time; stripping any other
             # prose would risk dropping negation, ambiguity, or historical context.
             normalized = re.sub(r"\b(?:current|currently)\s+", "", clause, flags=re.I)
