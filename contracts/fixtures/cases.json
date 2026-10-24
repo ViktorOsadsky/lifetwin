@@ -35,7 +35,15 @@
       }
     },
     "status": 501,
-    "response_schema": "compare.schema.json"
+    "response_schema": "compare.schema.json",
+    "response": {
+      "schema_version": "1.0",
+      "status": "not_implemented",
+      "code": "prediction_not_implemented",
+      "message": "Prediction functionality is reserved for a later implementation.",
+      "prediction": null,
+      "model_version": null
+    }
   },
   {
     "name": "sensitivity-deferred",
@@ -49,7 +57,15 @@
       }
     },
     "status": 501,
-    "response_schema": "sensitivity.schema.json"
+    "response_schema": "sensitivity.schema.json",
+    "response": {
+      "schema_version": "1.0",
+      "status": "not_implemented",
+      "code": "prediction_not_implemented",
+      "message": "Prediction functionality is reserved for a later implementation.",
+      "prediction": null,
+      "model_version": null
+    }
   },
   {
     "name": "mascot-start",
@@ -69,9 +85,33 @@
       "state": {
         "phase": "asking",
         "current_field": "age",
+        "confirmed_profile": {
+          "age": null,
+          "sex": null,
+          "height_cm": null,
+          "weight_kg": null,
+          "sleep_hours": null,
+          "exercise_minutes_weekly": null,
+          "smoking_status": null,
+          "alcohol_drinks_weekly": null,
+          "diabetes": null,
+          "systolic_bp": null,
+          "diastolic_bp": null
+        },
         "pending_profile": {
-          "age": null
-        }
+          "age": null,
+          "sex": null,
+          "height_cm": null,
+          "weight_kg": null,
+          "sleep_hours": null,
+          "exercise_minutes_weekly": null,
+          "smoking_status": null,
+          "alcohol_drinks_weekly": null,
+          "diabetes": null,
+          "systolic_bp": null,
+          "diastolic_bp": null
+        },
+        "skipped_fields": []
       }
     }
   },
@@ -91,8 +131,16 @@
     "response_subset": {
       "mode": "curated_educational",
       "status": "educational",
+      "actions": {
+        "$each": {
+          "modeled_effect_status": "unmodeled",
+          "modeled_effect": null
+        }
+      },
       "research": {
-        "status": "not_requested"
+        "status": "not_requested",
+        "query_count": 0,
+        "page_count": 0
       }
     }
   },
@@ -130,7 +178,8 @@
     "name": "invalid-conversation-input",
     "method": "POST",
     "path": "/api/onboarding/turn",
-    "invalid_request": true,
+    "request_schema": "conversation.request.schema.json",
+    "request_schema_valid": true,
     "request": {
       "action": "reply",
       "text": " "
@@ -146,7 +195,8 @@
     "name": "advisor-rejects-client-prognosis",
     "method": "POST",
     "path": "/api/advisor",
-    "invalid_request": true,
+    "request_schema": "advisor.request.schema.json",
+    "request_schema_valid": false,
     "request": {
       "topics": [
         "sleep"
@@ -180,6 +230,230 @@
     "response_subset": {
       "status": "error",
       "code": "quiz_question_not_found"
+    }
+  },
+  {
+    "name": "quiz-question-detail",
+    "method": "GET",
+    "path": "/api/quiz/questions/soup-serving-check.v1",
+    "status": 200,
+    "response_schema": "quiz.question.schema.json",
+    "response_subset": {
+      "schema_version": "1.0",
+      "id": "soup-serving-check.v1",
+      "review_status": "reviewed"
+    }
+  },
+  {
+    "name": "predict-invalid-units",
+    "method": "POST",
+    "path": "/api/predict",
+    "request_schema": "prediction.request.schema.json",
+    "request_schema_valid": false,
+    "request": {
+      "height_cm": 5.9
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "predict-unknown-unit-field",
+    "method": "POST",
+    "path": "/api/predict",
+    "request_schema": "prediction.request.schema.json",
+    "request_schema_valid": false,
+    "request": {
+      "weight_lb": 160
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "predict-out-of-range-age",
+    "method": "POST",
+    "path": "/api/predict",
+    "request_schema": "prediction.request.schema.json",
+    "request_schema_valid": false,
+    "request": {
+      "age": 121
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "onboarding-ambiguous-height",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "about 170",
+      "state": {
+        "phase": "asking",
+        "current_field": "height_cm"
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "height_cm",
+        "confirmed_profile": {
+          "age": null,
+          "sex": null,
+          "height_cm": null,
+          "weight_kg": null,
+          "sleep_hours": null,
+          "exercise_minutes_weekly": null,
+          "smoking_status": null,
+          "alcohol_drinks_weekly": null,
+          "diabetes": null,
+          "systolic_bp": null,
+          "diastolic_bp": null
+        },
+        "pending_profile": {
+          "age": null,
+          "sex": null,
+          "height_cm": null,
+          "weight_kg": null,
+          "sleep_hours": null,
+          "exercise_minutes_weekly": null,
+          "smoking_status": null,
+          "alcohol_drinks_weekly": null,
+          "diabetes": null,
+          "systolic_bp": null,
+          "diastolic_bp": null
+        }
+      }
+    }
+  },
+  {
+    "name": "onboarding-skip",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "skip",
+      "state": {
+        "phase": "asking",
+        "current_field": "age"
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "sex",
+        "confirmed_profile": {
+          "age": null,
+          "sex": null,
+          "height_cm": null,
+          "weight_kg": null,
+          "sleep_hours": null,
+          "exercise_minutes_weekly": null,
+          "smoking_status": null,
+          "alcohol_drinks_weekly": null,
+          "diabetes": null,
+          "systolic_bp": null,
+          "diastolic_bp": null
+        },
+        "pending_profile": {
+          "age": null,
+          "sex": null,
+          "height_cm": null,
+          "weight_kg": null,
+          "sleep_hours": null,
+          "exercise_minutes_weekly": null,
+          "smoking_status": null,
+          "alcohol_drinks_weekly": null,
+          "diabetes": null,
+          "systolic_bp": null,
+          "diastolic_bp": null
+        },
+        "skipped_fields": [
+          "age"
+        ]
+      }
+    }
+  },
+  {
+    "name": "advisor-research-unconfigured",
+    "method": "POST",
+    "path": "/api/advisor",
+    "request_schema": "advisor.request.schema.json",
+    "request": {
+      "topics": [
+        "sleep"
+      ],
+      "use_web_research": true
+    },
+    "status": 200,
+    "response_schema": "advisor.schema.json",
+    "response_subset": {
+      "mode": "curated_educational",
+      "status": "educational",
+      "actions": {
+        "$each": {
+          "modeled_effect_status": "unmodeled",
+          "modeled_effect": null
+        }
+      },
+      "research": {
+        "status": "unconfigured",
+        "query_count": 0,
+        "page_count": 0
+      }
+    }
+  },
+  {
+    "name": "advisor-duplicate-topics",
+    "method": "POST",
+    "path": "/api/advisor",
+    "request_schema": "advisor.request.schema.json",
+    "request_schema_valid": true,
+    "request": {
+      "topics": [
+        "sleep",
+        "sleep"
+      ]
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "conversation-reply-without-text",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request_schema_valid": true,
+    "request": {
+      "action": "reply"
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
     }
   }
 ]

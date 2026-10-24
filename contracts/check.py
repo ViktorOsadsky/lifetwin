@@ -7,13 +7,22 @@ from pathlib import Path
 
 import httpx
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError
+from schema_registry import SCHEMAS
 
 ROOT = Path(__file__).resolve().parent
 
 
 def assert_subset(actual: object, expected: object, path: str = "response") -> None:
-    """Check fixture semantics without duplicating an entire quiz/content bank."""
-    if isinstance(expected, dict):
+    """Check fixture semantics without duplicating an entire quiz/content bank.
+
+    ``{"$each": subset}`` requires a nonempty list whose every element matches ``subset``.
+    """
+    if isinstance(expected, dict) and set(expected) == {"$each"}:
+        if not isinstance(actual, list) or not actual:
+            raise AssertionError(f"{path}: expected a nonempty list")
+        for index, item in enumerate(actual):
+            assert_subset(item, expected["$each"], f"{path}[{index}]")
+    elif isinstance(expected, dict):
         if not isinstance(actual, dict):
             raise AssertionError(f"{path}: expected an object")
         for key, value in expected.items():
@@ -38,10 +47,10 @@ def main() -> None:
     )
     args = parser.parse_args()
     validators = {}
-    for path in ROOT.glob("*.schema.json"):
-        schema = json.loads(path.read_text())
+    for name in SCHEMAS:
+        schema = json.loads((ROOT / name).read_text())
         Draft202012Validator.check_schema(schema)
-        validators[path.name] = Draft202012Validator(schema, format_checker=FormatChecker())
+        validators[name] = Draft202012Validator(schema, format_checker=FormatChecker())
     cases = json.loads((ROOT / "fixtures" / "cases.json").read_text())
     checked_responses = 0
     checked_requests = 0
@@ -71,8 +80,15 @@ def main() -> None:
                 httpx.Client(timeout=15, follow_redirects=False, trust_env=False)
             )
         for case in cases:
-            if "request_schema" in case and not case.get("invalid_request", False):
-                validators[case["request_schema"]].validate(case["request"])
+            if "request_schema" in case:
+                # Schema-valid requests the server still rejects pin known schema drift.
+                expected_valid = case.get("request_schema_valid", True)
+                if expected_valid:
+                    validators[case["request_schema"]].validate(case["request"])
+                elif validators[case["request_schema"]].is_valid(case["request"]):
+                    raise SystemExit(
+                        f"{case['name']}: request unexpectedly matches {case['request_schema']}"
+                    )
                 checked_requests += 1
             if "response" in case:
                 validators[case["response_schema"]].validate(case["response"])
@@ -103,7 +119,7 @@ def main() -> None:
                 print(f"PASS {case['name']} (API response checked)")
             elif "response" in case:
                 print(f"PASS {case['name']} (static response checked)")
-            elif "request_schema" in case and not case.get("invalid_request", False):
+            elif "request_schema" in case:
                 print(f"PASS {case['name']} (request fixture only; response not checked)")
             else:
                 print(f"SKIP {case['name']} (requires API replay)")
