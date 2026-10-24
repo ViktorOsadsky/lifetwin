@@ -12,15 +12,19 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python }}
       - name: Install locked dependencies
         run: |
           python -m pip install uv==0.13.5
-          uv sync --frozen
+          uv sync --frozen --python ${{ matrix.python }}
       - name: Lint and formatting
         run: |
           uv run ruff check server contracts
@@ -35,3 +39,14 @@ jobs:
           uv run pytest -q
           uv run python contracts/export.py --check
           uv run python contracts/check.py
+          uv run python contracts/check.py --in-process
+      - name: Build runtime container
+        if: matrix.python == '3.11'
+        run: docker build --tag lifetwin-backend:test .
+      - name: Verify runtime container over HTTP (no provider keys)
+        if: matrix.python == '3.11'
+        run: |
+          docker run --detach --name lifetwin-backend --publish 127.0.0.1:8765:8000 lifetwin-backend:test
+          trap 'docker logs lifetwin-backend; docker rm --force lifetwin-backend >/dev/null' EXIT
+          curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 1 --retry-max-time 30 http://127.0.0.1:8765/ready
+          uv run python contracts/check.py --base-url http://127.0.0.1:8765

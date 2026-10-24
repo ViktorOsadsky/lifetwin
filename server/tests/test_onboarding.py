@@ -416,3 +416,51 @@ def test_enormous_numeric_token_clarifies_instead_of_overflowing(client):
     result = turn(client, "reply", state, text=text)
     assert result["state"]["phase"] == "asking"
     assert result["state"]["pending_profile"]["height_cm"] is None
+
+
+def test_deeply_nested_provider_json_falls_back_to_guided_clarification():
+    async def run():
+        nested = b"[" * 2000 + b"0" + b"]" * 2000
+        async with httpx.AsyncClient(
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, content=nested))
+        ) as client:
+            provider = OpenAIExtractor(api_key="test-only", model="test-only", client=client)
+            response = await ConversationService(provider).turn(
+                TurnRequest(
+                    action="reply",
+                    state=ConversationState(phase="asking", current_field="weight_kg"),
+                    text="My current weight is 70 kg",
+                    provider_consent=True,
+                )
+            )
+            assert response.guide_mode == "guided"
+            assert response.provider_status == "unavailable"
+            assert response.state.pending_profile.weight_kg is None
+
+    asyncio.run(run())
+
+
+def test_owned_extractor_client_does_not_trust_proxy_environment_and_is_closed(monkeypatch):
+    clients = []
+    original = httpx.AsyncClient
+
+    def create_client(**kwargs):
+        assert kwargs["trust_env"] is False
+        assert kwargs["follow_redirects"] is False
+        client = original(
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(200, json={"status": "incomplete"})
+            ),
+            **kwargs,
+        )
+        clients.append(client)
+        return client
+
+    async def run():
+        monkeypatch.setattr(httpx, "AsyncClient", create_client)
+        provider = OpenAIExtractor(api_key="test-only", model="test-only")
+        with pytest.raises(ExtractionUnavailable):
+            await provider.extract("70 kg", "weight_kg")
+
+    asyncio.run(run())
+    assert len(clients) == 1 and clients[0].is_closed

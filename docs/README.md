@@ -4,6 +4,7 @@ Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent im
 
 | Doc | For |
 |---|---|
+| [backend-status.md](backend-status.md) | Audited backend functionality, concrete fixes, verification and prioritized remaining backend tasks; excludes frontend/ML implementation |
 | [MASTER_PLAN.md](../MASTER_PLAN.md) | Mascot-led game vision, voice/text intake, fortune, quiz, sensitivity, plans, experiment loop and delivery gates |
 | [tech-stack.md](tech-stack.md) | Confirmed Flutter/LottieFiles plus proposed packages, model/API, LLM/research, deployment and deferred voice |
 | [prd-reconciliation.md](prd-reconciliation.md) | Where each master-doc section lives, and every place a team decision changes it |

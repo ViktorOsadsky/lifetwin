@@ -63,12 +63,12 @@ class TavilyResearch:
             response.raise_for_status()
             data = bytearray()
             async for chunk in response.aiter_bytes():
-                data.extend(chunk)
-                if len(data) > MAX_RESPONSE_BYTES:
+                if len(data) + len(chunk) > MAX_RESPONSE_BYTES:
                     raise _InvalidProviderResponse
+                data.extend(chunk)
         try:
             payload = json.loads(data)
-        except (ValueError, UnicodeError):
+        except (ValueError, RecursionError):
             raise _InvalidProviderResponse from None
         if not isinstance(payload, dict):
             raise _InvalidProviderResponse

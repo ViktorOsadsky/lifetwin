@@ -252,3 +252,16 @@ def test_partial_success_is_reported_without_fabricating_missing_retrieval():
 def test_internal_adapter_also_rejects_unbounded_unreviewed_topics(topics):
     with pytest.raises(ValueError):
         asyncio.run(TavilyResearch().research(topics))
+
+
+@pytest.mark.asyncio
+async def test_deeply_nested_provider_json_returns_unavailable():
+    nested = b"[" * 2000 + b"0" + b"]" * 2000
+    research = TavilyResearch(
+        api_key="test-only",
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, content=nested)),
+    )
+    result = await research.research(["sleep"])
+    assert result.status == "unavailable"
+    assert result.query_count == 1
+    assert result.retrieved_source_ids == []

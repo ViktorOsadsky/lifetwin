@@ -36,20 +36,37 @@ class Settings(BaseSettings):
     @field_validator("cors_origins")
     @classmethod
     def exact_origins_only(cls, value: str) -> str:
-        for origin in filter(None, (part.strip() for part in value.split(","))):
+        normalized = []
+        for origin in filter(None, (part.strip(" ") for part in value.split(","))):
+            if any(
+                character.isspace() or ord(character) < 32 or ord(character) == 127
+                for character in origin
+            ):
+                raise ValueError("CORS origins cannot contain whitespace or control characters")
             parsed = urlsplit(origin)
+            # Accessing .port validates nonnumeric and out-of-range ports.
+            port = parsed.port
             if (
                 parsed.scheme not in {"http", "https"}
                 or not parsed.hostname
                 or "*" in origin
-                or parsed.username
-                or parsed.password
+                or parsed.username is not None
+                or parsed.password is not None
                 or parsed.path not in {"", "/"}
-                or parsed.query
-                or parsed.fragment
+                or "?" in origin
+                or "#" in origin
+                or port == 0
             ):
                 raise ValueError("CORS origins must be explicit HTTP(S) origins")
-        return value
+            host = parsed.hostname.encode("idna").decode("ascii").lower()
+            if ":" in host:
+                host = f"[{host}]"
+            if port is not None and port != {"http": 80, "https": 443}[parsed.scheme]:
+                host += f":{port}"
+            canonical = f"{parsed.scheme}://{host}"
+            if canonical not in normalized:
+                normalized.append(canonical)
+        return ",".join(normalized)
 
     @property
     def allowed_origins(self) -> list[str]:
