@@ -147,13 +147,7 @@ class HistoryItem {
   /// A known value was replaced by a different one.
   bool get isChange => old != null && old != value;
 
-  Map<String, dynamic> toJson() => {
-    'field': field,
-    'value': value,
-    'old': ?old,
-    'date': ?date,
-    'source': ?source,
-  };
+  Map<String, dynamic> toJson() => {'field': field, 'value': value, 'old': ?old, 'date': ?date, 'source': ?source};
 }
 
 class HistoryEntry {

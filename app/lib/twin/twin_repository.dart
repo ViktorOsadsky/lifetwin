@@ -193,7 +193,11 @@ class TwinRepository extends ChangeNotifier {
           ),
       ],
     );
-    await _recordReading(merge.changed, merge.profile, kind == HistoryKind.mochiChange ? HistorySource.mochiChange : HistorySource.said);
+    await _recordReading(
+      merge.changed,
+      merge.profile,
+      kind == HistoryKind.mochiChange ? HistorySource.mochiChange : HistorySource.said,
+    );
     final a = assess(null, modelInputs);
     _current = a;
     notifyListeners();
@@ -273,7 +277,8 @@ class TwinRepository extends ChangeNotifier {
       days: [for (final p in outcome.dayLogParts) p.date],
       weekStart: outcome.weeklySummary?['week_start'] as String?,
     );
-    if (record.kind == HistoryKind.weekly) await _recordReading(record.answers.keys, record.answers, HistorySource.said);
+    if (record.kind == HistoryKind.weekly)
+      await _recordReading(record.answers.keys, record.answers, HistorySource.said);
     _refresh();
     return outcome;
   }
@@ -307,7 +312,11 @@ class TwinRepository extends ChangeNotifier {
     final old = original.$2;
     if (old == value) return null;
     if (logInput) {
-      await store._putDayLogs(mergeDayLogs(store.dayLogs, [DayLog.fromJson({'date': day, field: value})]));
+      await store._putDayLogs(
+        mergeDayLogs(store.dayLogs, [
+          DayLog.fromJson({'date': day, field: value}),
+        ]),
+      );
     }
     final entry = await _record(
       kind: HistoryKind.correction,
@@ -421,9 +430,7 @@ class TwinRepository extends ChangeNotifier {
   List<DayLog> dayLogs({required DateTime from, required DateTime to}) {
     final byDate = {for (final r in store.dayLogs) r.date: r};
     final last = isoDate(to);
-    return [
-      for (var d = isoDate(from); d.compareTo(last) <= 0; d = shiftDay(d, 1)) byDate[d] ?? DayLog(date: d),
-    ];
+    return [for (var d = isoDate(from); d.compareTo(last) <= 0; d = shiftDay(d, 1)) byDate[d] ?? DayLog(date: d)];
   }
 
   /// Monday–Sunday weeks with at least 4 different days with a finished check-in of any
@@ -506,6 +513,10 @@ class TwinRepository extends ChangeNotifier {
       ],
     );
   }
+
+  /// Recomputes [current] now, e.g. on app open when the date has moved on (a daily
+  /// window ends yesterday). Null before a profile.
+  TwinAssessment? refresh() => store.hasProfile ? _refresh() : null;
 
   TwinAssessment _refresh() {
     final a = assess();

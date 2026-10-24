@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'checkin/checkin_reminders.dart';
 import 'customize/customize_screen.dart';
 import 'forecast/forecast_client.dart';
 import 'forecast/forecast_screen.dart';
@@ -52,8 +53,10 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   late final ApiBase _api = ApiBase()..url().ignore();
   late final VoiceOnboardingController _controller = widget.controller ?? _live(_api);
   // Loaded once, at startup.
-  late final Future<TwinRepository> _twin = widget.twin ?? TwinRepository.open();
-  late final ForecastClient _forecast = widget.forecastClient ?? OnDeviceForecastClient(_twin);
+  late final Future<TwinRepository> _twin =
+      widget.twin ?? TwinRepository.open(reminders: CheckinReminders(LocalNotificationPort()));
+  late final ForecastClient _forecast =
+      widget.forecastClient ?? OnDeviceForecastClient(_twin, modelInputs: () => _controller.modelInputs);
 
   /// The profile saved on the phone by an earlier session, once the store is open.
   Map<String, dynamic>? _stored;
@@ -106,9 +109,15 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     name: j['name'] as String?,
   );
 
-  /// Keeps the finished conversation's answers on the phone.
-  void _keepProfile(Map<String, dynamic> p) {
-    _twin.then((repo) => repo.saveConversationProfile(p)).ignore();
+  /// Keeps the finished conversation on the phone: memory consent, habit notes (only
+  /// with consent) and the confirmed answers, each Apple Health value labelled as such.
+  void _keepConversation() {
+    final state = _controller.state;
+    if (state == null) return;
+    final fromHealth = {..._healthKeys};
+    _twin
+        .then((repo) => repo.saveOnboarding(state, modelInputs: _controller.modelInputs, fromHealth: fromHealth))
+        .ignore();
   }
 
   @override
@@ -129,7 +138,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       appearance: _look.value,
       onUseHealth: () => _health(talkContext),
       onDone: (profile) {
-        _keepProfile(profile);
+        _keepConversation();
         _ceremony(talkContext, fromTalk: true);
       },
     ),
@@ -147,7 +156,10 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           final values = {for (final c in result.confirmed) c.field.profileKey: c.value};
           // Only once the values were taken (sent and accepted, or queued for the start of
           // the talk) are they labelled "Apple Health" and does the Room's pill go away.
-          if (await _controller.importHealth(values) && mounted) setState(() => _healthKeys.addAll(values.keys));
+          if (await _controller.importHealth(values)) {
+            _twin.then((repo) => repo.recordHealthImport(values)).ignore();
+            if (mounted) setState(() => _healthKeys.addAll(values.keys));
+          }
         },
       ),
     ),

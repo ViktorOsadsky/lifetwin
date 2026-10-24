@@ -290,7 +290,11 @@ void main() {
       expect(o.emergency, isTrue);
       expect(o.record, isNull);
       expect(
-        applyCheckinResponse(fullProfile, responseFor('checkin-resume-after-pause'), localDate: isoDate(monday)).emergency,
+        applyCheckinResponse(
+          fullProfile,
+          responseFor('checkin-resume-after-pause'),
+          localDate: isoDate(monday),
+        ).emergency,
         isFalse,
       );
     });
@@ -351,7 +355,9 @@ void main() {
 
     test('weekly: consecutive weeks ending with the latest completed one, at most four', () {
       // Sunday check-ins describe the week ending that day.
-      final checkins = [for (final d in ['2026-09-20', '2026-10-04', '2026-10-11', '2026-10-18', '2026-10-25']) weekly(d)];
+      final checkins = [
+        for (final d in ['2026-09-20', '2026-10-04', '2026-10-11', '2026-10-18', '2026-10-25']) weekly(d),
+      ];
       final windows = candidateWindows(checkins: checkins, dayLogs: const [], asOf: monday);
       expect((windows.first['weekly_summaries'] as List).map((r) => r['week_start']), [
         '2026-09-28',
@@ -382,7 +388,10 @@ void main() {
       expect((w.first['daily_logs'] as List), hasLength(14));
       expect((w.first['daily_logs'] as List).last['date'], '2026-10-25');
       // Yesterday missed: unknown, never 0, so there is no daily window at all.
-      final gap = [for (final d in days) if (d.date != '2026-10-25') d];
+      final gap = [
+        for (final d in days)
+          if (d.date != '2026-10-25') d,
+      ];
       expect(candidateWindows(checkins: const [], dayLogs: gap, asOf: monday), [const {}]);
     });
   });

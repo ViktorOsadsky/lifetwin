@@ -197,10 +197,23 @@ void main() {
   test('a good week counts different days with a finished check-in of any kind', () {
     CheckinEntry c(String kind, String date) => CheckinEntry(kind: kind, date: date, answers: const {});
     // Mon quick + Mon daily (one day), Wed weekly, Fri quick: three days, not a good week.
-    expect(weekProgress([c('quick', '2026-10-05'), c('daily', '2026-10-05'), c('weekly', '2026-10-07'), c('quick', '2026-10-09')], asOf).goodWeeks, 0);
+    expect(
+      weekProgress([
+        c('quick', '2026-10-05'),
+        c('daily', '2026-10-05'),
+        c('weekly', '2026-10-07'),
+        c('quick', '2026-10-09'),
+      ], asOf).goodWeeks,
+      0,
+    );
     // A Sunday weekly check-in is the fourth day.
     expect(
-      weekProgress([c('quick', '2026-10-05'), c('daily', '2026-10-06'), c('quick', '2026-10-09'), c('weekly', '2026-10-11')], asOf).goodWeeks,
+      weekProgress([
+        c('quick', '2026-10-05'),
+        c('daily', '2026-10-06'),
+        c('quick', '2026-10-09'),
+        c('weekly', '2026-10-11'),
+      ], asOf).goodWeeks,
       1,
     );
   });

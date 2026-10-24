@@ -119,6 +119,9 @@ class VoiceOnboardingController extends ChangeNotifier {
   Map<String, dynamic> get confirmedProfile =>
       Map<String, dynamic>.from((turn?.state['confirmed_profile'] as Map?) ?? const {});
 
+  /// The latest turn's `model_inputs` (see GuideTurn.modelInputs).
+  Map<String, dynamic>? get modelInputs => turn?.modelInputs;
+
   bool get canRetry => _retry != null;
   bool get canHearAgain => voiceUsable && mascotLine.isNotEmpty && !typing && phase != VoicePhase.interpreting;
 
