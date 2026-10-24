@@ -1,5 +1,51 @@
 {
   "$defs": {
+    "CharacterHints": {
+      "additionalProperties": false,
+      "description": "Coarse, kind hints for the twin's look; null until there is something to go on.\n\nmood (how the person says they feel): \"good\", \"okay\", \"not_great\" (the check-in\nwellbeing scale). energy (sleep and activity): \"high\", \"medium\", \"low\".",
+      "properties": {
+        "energy": {
+          "anyOf": [
+            {
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Energy"
+        },
+        "mood": {
+          "anyOf": [
+            {
+              "enum": [
+                "good",
+                "okay",
+                "not_great"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mood"
+        }
+      },
+      "required": [
+        "mood",
+        "energy"
+      ],
+      "title": "CharacterHints",
+      "type": "object"
+    },
     "ConversationState": {
       "additionalProperties": false,
       "properties": {
@@ -20,7 +66,12 @@
                 "alcohol_drinks_weekly",
                 "diabetes",
                 "systolic_bp",
-                "diastolic_bp"
+                "diastolic_bp",
+                "general_health",
+                "hypertension",
+                "sitting_minutes_daily",
+                "moderate_minutes_weekly",
+                "vigorous_minutes_weekly"
               ],
               "type": "string"
             },
@@ -31,6 +82,92 @@
           "default": null,
           "title": "Current Field"
         },
+        "current_probe": {
+          "anyOf": [
+            {
+              "enum": [
+                "activity",
+                "inactive_barrier",
+                "smoking_history",
+                "quit_story",
+                "sleep_pattern",
+                "sitting_activities",
+                "health_feeling"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Current Probe"
+        },
+        "estimated_fields": {
+          "items": {
+            "enum": [
+              "age",
+              "sex",
+              "height_cm",
+              "weight_kg",
+              "sleep_hours",
+              "exercise_minutes_weekly",
+              "smoking_status",
+              "alcohol_drinks_weekly",
+              "diabetes",
+              "systolic_bp",
+              "diastolic_bp",
+              "general_health",
+              "hypertension",
+              "sitting_minutes_daily",
+              "moderate_minutes_weekly",
+              "vigorous_minutes_weekly"
+            ],
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Estimated Fields",
+          "type": "array"
+        },
+        "habit_notes": {
+          "items": {
+            "$ref": "#/$defs/HabitNote"
+          },
+          "maxItems": 10,
+          "title": "Habit Notes",
+          "type": "array"
+        },
+        "health_offered": {
+          "default": false,
+          "title": "Health Offered",
+          "type": "boolean"
+        },
+        "memory_consent": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Memory Consent"
+        },
+        "pending_estimate": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pending Estimate"
+        },
         "pending_profile": {
           "$ref": "#/$defs/HealthProfile"
         },
@@ -38,13 +175,96 @@
           "default": "idle",
           "enum": [
             "idle",
+            "remembering",
             "asking",
+            "offering",
+            "probing",
             "confirming",
             "ready",
             "cancelled"
           ],
           "title": "Phase",
           "type": "string"
+        },
+        "probes_asked": {
+          "items": {
+            "enum": [
+              "activity",
+              "inactive_barrier",
+              "smoking_history",
+              "quit_story",
+              "sleep_pattern",
+              "sitting_activities",
+              "health_feeling"
+            ],
+            "type": "string"
+          },
+          "maxItems": 7,
+          "title": "Probes Asked",
+          "type": "array"
+        },
+        "proxies_asked": {
+          "items": {
+            "enum": [
+              "age",
+              "sex",
+              "height_cm",
+              "weight_kg",
+              "sleep_hours",
+              "exercise_minutes_weekly",
+              "smoking_status",
+              "alcohol_drinks_weekly",
+              "diabetes",
+              "systolic_bp",
+              "diastolic_bp",
+              "general_health",
+              "hypertension",
+              "sitting_minutes_daily",
+              "moderate_minutes_weekly",
+              "vigorous_minutes_weekly"
+            ],
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Proxies Asked",
+          "type": "array"
+        },
+        "proxy_field": {
+          "anyOf": [
+            {
+              "enum": [
+                "age",
+                "sex",
+                "height_cm",
+                "weight_kg",
+                "sleep_hours",
+                "exercise_minutes_weekly",
+                "smoking_status",
+                "alcohol_drinks_weekly",
+                "diabetes",
+                "systolic_bp",
+                "diastolic_bp",
+                "general_health",
+                "hypertension",
+                "sitting_minutes_daily",
+                "moderate_minutes_weekly",
+                "vigorous_minutes_weekly"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proxy Field"
+        },
+        "seed": {
+          "default": 0,
+          "maximum": 2147483648,
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
         },
         "skipped_fields": {
           "items": {
@@ -59,12 +279,92 @@
               "alcohol_drinks_weekly",
               "diabetes",
               "systolic_bp",
-              "diastolic_bp"
+              "diastolic_bp",
+              "general_health",
+              "hypertension",
+              "sitting_minutes_daily",
+              "moderate_minutes_weekly",
+              "vigorous_minutes_weekly"
             ],
             "type": "string"
           },
-          "maxItems": 11,
+          "maxItems": 16,
           "title": "Skipped Fields",
+          "type": "array"
+        },
+        "small_talk": {
+          "default": false,
+          "title": "Small Talk",
+          "type": "boolean"
+        },
+        "steer_field": {
+          "anyOf": [
+            {
+              "enum": [
+                "age",
+                "sex",
+                "height_cm",
+                "weight_kg",
+                "sleep_hours",
+                "exercise_minutes_weekly",
+                "smoking_status",
+                "alcohol_drinks_weekly",
+                "diabetes",
+                "systolic_bp",
+                "diastolic_bp",
+                "general_health",
+                "hypertension",
+                "sitting_minutes_daily",
+                "moderate_minutes_weekly",
+                "vigorous_minutes_weekly"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Steer Field"
+        },
+        "steer_lead": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Steer Lead"
+        },
+        "unknown_fields": {
+          "items": {
+            "enum": [
+              "age",
+              "sex",
+              "height_cm",
+              "weight_kg",
+              "sleep_hours",
+              "exercise_minutes_weekly",
+              "smoking_status",
+              "alcohol_drinks_weekly",
+              "diabetes",
+              "systolic_bp",
+              "diastolic_bp",
+              "general_health",
+              "hypertension",
+              "sitting_minutes_daily",
+              "moderate_minutes_weekly",
+              "vigorous_minutes_weekly"
+            ],
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Unknown Fields",
           "type": "array"
         }
       },
@@ -73,9 +373,343 @@
         "confirmed_profile",
         "pending_profile",
         "current_field",
-        "skipped_fields"
+        "skipped_fields",
+        "unknown_fields",
+        "estimated_fields",
+        "proxy_field",
+        "proxies_asked",
+        "pending_estimate",
+        "steer_field",
+        "steer_lead",
+        "health_offered",
+        "current_probe",
+        "probes_asked",
+        "habit_notes",
+        "memory_consent",
+        "seed",
+        "small_talk"
       ],
       "title": "ConversationState",
+      "type": "object"
+    },
+    "HabitNote": {
+      "additionalProperties": false,
+      "description": "What the person said about a habit, in short words taken from their reply.\n\nNotes are never health values and are never used by the model. They are returned\nto the app, which keeps them on the phone; the server stores nothing.",
+      "properties": {
+        "barrier": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Barrier"
+        },
+        "bedtime": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bedtime"
+        },
+        "concern": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Concern"
+        },
+        "estimate": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimate"
+        },
+        "estimate_for": {
+          "anyOf": [
+            {
+              "enum": [
+                "age",
+                "sex",
+                "height_cm",
+                "weight_kg",
+                "sleep_hours",
+                "exercise_minutes_weekly",
+                "smoking_status",
+                "alcohol_drinks_weekly",
+                "diabetes",
+                "systolic_bp",
+                "diastolic_bp",
+                "general_health",
+                "hypertension",
+                "sitting_minutes_daily",
+                "moderate_minutes_weekly",
+                "vigorous_minutes_weekly"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimate For"
+        },
+        "feeling": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Feeling"
+        },
+        "frequency": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frequency"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "naps": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Naps"
+        },
+        "quit_ago": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quit Ago"
+        },
+        "quit_aid": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quit Aid"
+        },
+        "reading": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reading"
+        },
+        "smoked_years": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Smoked Years"
+        },
+        "source": {
+          "default": "said",
+          "enum": [
+            "said",
+            "ai_helper"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "time_of_day": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time Of Day"
+        },
+        "topic": {
+          "enum": [
+            "exercise",
+            "sleep",
+            "smoking",
+            "sitting",
+            "health"
+          ],
+          "title": "Topic",
+          "type": "string"
+        },
+        "tried_quitting": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tried Quitting"
+        },
+        "wake_time": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wake Time"
+        },
+        "wakes_for": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wakes For"
+        },
+        "with": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "With"
+        }
+      },
+      "required": [
+        "topic",
+        "kind",
+        "with",
+        "time_of_day",
+        "frequency",
+        "barrier",
+        "bedtime",
+        "wake_time",
+        "wakes_for",
+        "naps",
+        "smoked_years",
+        "tried_quitting",
+        "quit_aid",
+        "quit_ago",
+        "feeling",
+        "concern",
+        "reading",
+        "estimate_for",
+        "estimate",
+        "source"
+      ],
+      "title": "HabitNote",
       "type": "object"
     },
     "HealthProfile": {
@@ -150,6 +784,25 @@
           "default": null,
           "title": "Exercise Minutes Weekly"
         },
+        "general_health": {
+          "anyOf": [
+            {
+              "enum": [
+                "excellent",
+                "very_good",
+                "good",
+                "fair",
+                "poor"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "General Health"
+        },
         "height_cm": {
           "anyOf": [
             {
@@ -163,6 +816,32 @@
           ],
           "default": null,
           "title": "Height Cm"
+        },
+        "hypertension": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hypertension"
+        },
+        "moderate_minutes_weekly": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Minutes Weekly"
         },
         "sex": {
           "anyOf": [
@@ -179,6 +858,20 @@
           ],
           "default": null,
           "title": "Sex"
+        },
+        "sitting_minutes_daily": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sitting Minutes Daily"
         },
         "sleep_hours": {
           "anyOf": [
@@ -226,6 +919,20 @@
           "default": null,
           "title": "Systolic Bp"
         },
+        "vigorous_minutes_weekly": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Minutes Weekly"
+        },
         "weight_kg": {
           "anyOf": [
             {
@@ -252,7 +959,12 @@
         "alcohol_drinks_weekly",
         "diabetes",
         "systolic_bp",
-        "diastolic_bp"
+        "diastolic_bp",
+        "general_health",
+        "hypertension",
+        "sitting_minutes_daily",
+        "moderate_minutes_weekly",
+        "vigorous_minutes_weekly"
       ],
       "title": "HealthProfile",
       "type": "object"
@@ -285,6 +997,388 @@
       ],
       "title": "MascotEvent",
       "type": "object"
+    },
+    "ModelInputs": {
+      "additionalProperties": false,
+      "description": "Which model inputs are known. With anything missing the model gives no number.\n\n``status`` is \"ready\" only when all eleven inputs are known and age is 35-79;\notherwise the app shows \"still learning\" (or the age message) instead of a number.",
+      "properties": {
+        "estimated": {
+          "items": {
+            "enum": [
+              "age",
+              "sex_nhanes",
+              "bmi",
+              "smoking_status",
+              "diabetes_diagnosed",
+              "hypertension_diagnosed",
+              "general_health",
+              "sleep_hours",
+              "vigorous_recreation_min_week",
+              "moderate_recreation_min_week",
+              "sedentary_min_day"
+            ],
+            "type": "string"
+          },
+          "maxItems": 11,
+          "title": "Estimated",
+          "type": "array"
+        },
+        "missing": {
+          "items": {
+            "enum": [
+              "age",
+              "sex_nhanes",
+              "bmi",
+              "smoking_status",
+              "diabetes_diagnosed",
+              "hypertension_diagnosed",
+              "general_health",
+              "sleep_hours",
+              "vigorous_recreation_min_week",
+              "moderate_recreation_min_week",
+              "sedentary_min_day"
+            ],
+            "type": "string"
+          },
+          "maxItems": 11,
+          "title": "Missing",
+          "type": "array"
+        },
+        "profile": {
+          "$ref": "#/$defs/ModelProfile"
+        },
+        "skipped": {
+          "items": {
+            "enum": [
+              "age",
+              "sex_nhanes",
+              "bmi",
+              "smoking_status",
+              "diabetes_diagnosed",
+              "hypertension_diagnosed",
+              "general_health",
+              "sleep_hours",
+              "vigorous_recreation_min_week",
+              "moderate_recreation_min_week",
+              "sedentary_min_day"
+            ],
+            "type": "string"
+          },
+          "maxItems": 11,
+          "title": "Skipped",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "still_learning",
+            "unsupported_age"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "unknown": {
+          "items": {
+            "enum": [
+              "age",
+              "sex_nhanes",
+              "bmi",
+              "smoking_status",
+              "diabetes_diagnosed",
+              "hypertension_diagnosed",
+              "general_health",
+              "sleep_hours",
+              "vigorous_recreation_min_week",
+              "moderate_recreation_min_week",
+              "sedentary_min_day"
+            ],
+            "type": "string"
+          },
+          "maxItems": 11,
+          "title": "Unknown",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "profile",
+        "missing",
+        "unknown",
+        "skipped",
+        "estimated"
+      ],
+      "title": "ModelInputs",
+      "type": "object"
+    },
+    "ModelProfile": {
+      "additionalProperties": false,
+      "description": "The on-device model's ``profile`` map, built only from confirmed answers.\n\nKeys and codes are the package's own (model_handoff/lifetwin_on_device). A null\nis a missing input. Height and weight are both set or both null, since the\npackage derives bmi from the pair.",
+      "properties": {
+        "age": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age"
+        },
+        "diabetes_diagnosed": {
+          "anyOf": [
+            {
+              "enum": [
+                0,
+                1
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diabetes Diagnosed"
+        },
+        "general_health": {
+          "anyOf": [
+            {
+              "enum": [
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "General Health"
+        },
+        "height_cm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Height Cm"
+        },
+        "hypertension_diagnosed": {
+          "anyOf": [
+            {
+              "enum": [
+                0,
+                1
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hypertension Diagnosed"
+        },
+        "moderate_recreation_min_week": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min Week"
+        },
+        "sedentary_min_day": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sedentary Min Day"
+        },
+        "sex_nhanes": {
+          "anyOf": [
+            {
+              "enum": [
+                1,
+                2
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sex Nhanes"
+        },
+        "sleep_hours": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours"
+        },
+        "smoking_status": {
+          "anyOf": [
+            {
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Smoking Status"
+        },
+        "vigorous_recreation_min_week": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min Week"
+        },
+        "weight_kg": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weight Kg"
+        }
+      },
+      "required": [
+        "age",
+        "sex_nhanes",
+        "height_cm",
+        "weight_kg",
+        "smoking_status",
+        "diabetes_diagnosed",
+        "hypertension_diagnosed",
+        "general_health",
+        "sleep_hours",
+        "vigorous_recreation_min_week",
+        "moderate_recreation_min_week",
+        "sedentary_min_day"
+      ],
+      "title": "ModelProfile",
+      "type": "object"
+    },
+    "Recommendation": {
+      "additionalProperties": false,
+      "properties": {
+        "based_on": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 6,
+          "title": "Based On",
+          "type": "array"
+        },
+        "causal_interpretation": {
+          "const": false,
+          "default": false,
+          "title": "Causal Interpretation",
+          "type": "boolean"
+        },
+        "id": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "lever": {
+          "enum": [
+            "quit_smoking",
+            "vigorous_plus_60",
+            "moderate_plus_90",
+            "short_sleep_plus_1h",
+            "sitting_minus_60_realistic",
+            "keep_it_up"
+          ],
+          "title": "Lever",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 400,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "source_title": {
+          "title": "Source Title",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "wellness_card": {
+          "enum": [
+            "smoking",
+            "activity",
+            "sleep",
+            "sitting"
+          ],
+          "title": "Wellness Card",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "lever",
+        "title",
+        "message",
+        "based_on",
+        "wellness_card",
+        "source_title",
+        "source_url",
+        "causal_interpretation"
+      ],
+      "title": "Recommendation",
+      "type": "object"
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -302,6 +1396,22 @@
       "minItems": 2,
       "title": "Accepted Input Modes",
       "type": "array"
+    },
+    "character_hints": {
+      "$ref": "#/$defs/CharacterHints"
+    },
+    "client_action": {
+      "anyOf": [
+        {
+          "const": "open_health_import",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Client Action"
     },
     "complete": {
       "title": "Complete",
@@ -344,6 +1454,9 @@
       "title": "Message",
       "type": "string"
     },
+    "model_inputs": {
+      "$ref": "#/$defs/ModelInputs"
+    },
     "provider_status": {
       "default": "not_configured",
       "enum": [
@@ -355,6 +1468,22 @@
       ],
       "title": "Provider Status",
       "type": "string"
+    },
+    "quick_replies": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 8,
+      "title": "Quick Replies",
+      "type": "array"
+    },
+    "recommendations": {
+      "items": {
+        "$ref": "#/$defs/Recommendation"
+      },
+      "maxItems": 3,
+      "title": "Recommendations",
+      "type": "array"
     },
     "schema_version": {
       "const": "1.0",
@@ -404,6 +1533,11 @@
     "accepted_input_modes",
     "mascot_events",
     "complete",
+    "quick_replies",
+    "client_action",
+    "model_inputs",
+    "character_hints",
+    "recommendations",
     "limitations"
   ],
   "title": "TurnResponse",

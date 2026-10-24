@@ -72,6 +72,25 @@
           "default": null,
           "title": "Exercise Minutes Weekly"
         },
+        "general_health": {
+          "anyOf": [
+            {
+              "enum": [
+                "excellent",
+                "very_good",
+                "good",
+                "fair",
+                "poor"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "General Health"
+        },
         "height_cm": {
           "anyOf": [
             {
@@ -85,6 +104,32 @@
           ],
           "default": null,
           "title": "Height Cm"
+        },
+        "hypertension": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hypertension"
+        },
+        "moderate_minutes_weekly": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Minutes Weekly"
         },
         "sex": {
           "anyOf": [
@@ -101,6 +146,20 @@
           ],
           "default": null,
           "title": "Sex"
+        },
+        "sitting_minutes_daily": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sitting Minutes Daily"
         },
         "sleep_hours": {
           "anyOf": [
@@ -147,6 +206,20 @@
           ],
           "default": null,
           "title": "Systolic Bp"
+        },
+        "vigorous_minutes_weekly": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Minutes Weekly"
         },
         "weight_kg": {
           "anyOf": [
