@@ -47,7 +47,7 @@ void main() {
 
     /// Back to the conversation if a second tap opened the Health screen.
     Future<void> backToTalk() async {
-      if (find.text("Use your iPhone's Health app?").evaluate().isNotEmpty) {
+      if (find.text('Use Apple Health?').evaluate().isNotEmpty) {
         check(false, 'a second tap opened the Health screen');
         await tapText(t, 'Not now');
         await pumpFor(t, const Duration(seconds: 1));

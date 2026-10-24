@@ -53,7 +53,7 @@ List<HealthSample> readings(DateTime now) {
 Future<void> openHealth(WidgetTester t, String label) async {
   await hideKeyboard(t);
   await tapText(t, label);
-  await tapText(t, 'Yes, use my Health app');
+  await tapText(t, 'Yes, use Apple Health');
 }
 
 /// Answers every Health question: [wrong] counts down the ones marked "No, let me fix it".
@@ -72,9 +72,9 @@ void main() {
 
   testWidgets('Health readings become answers; those questions are not asked again', (t) async {
     await startTyped(t, app: LifeTwinApp(healthReader: FakeReader(readings(DateTime.now()))));
-    await openHealth(t, 'Use my Health app');
+    await openHealth(t, 'Use my Apple Health');
     await checkAll(t);
-    await waitFor(t, find.textContaining('from the Health app'));
+    await waitFor(t, find.textContaining('from Apple Health'));
     await settled(t);
     final c = ctl(t);
     expect(c.notice, isNull);
@@ -110,9 +110,9 @@ void main() {
   testWidgets('a reading marked wrong is asked; none found says so; Health again after done', (t) async {
     await startTyped(t, app: LifeTwinApp(healthReader: FakeReader(readings(DateTime.now()))));
     // Height (the first reading) is marked wrong, so it is asked later.
-    await openHealth(t, 'Use my Health app');
+    await openHealth(t, 'Use my Apple Health');
     await checkAll(t, wrong: 1);
-    await waitFor(t, find.textContaining('from the Health app'));
+    await waitFor(t, find.textContaining('from Apple Health'));
     await settled(t);
     expect(ctl(t).confirmedProfile['height_cm'], isNull);
     await say(t, '71', 'you are 71');
@@ -129,9 +129,9 @@ void main() {
       await settled(t);
     }
     // From the done screen, the Health app again: values checked again, still done.
-    await openHealth(t, 'Use my Health app');
+    await openHealth(t, 'Use my Apple Health');
     await checkAll(t);
-    await waitFor(t, find.textContaining('from the Health app'));
+    await waitFor(t, find.textContaining('from Apple Health'));
     await settled(t);
     await pumpFor(t, const Duration(seconds: 1)); // the Health screen slides away
     expect(ctl(t).phase, VoicePhase.done);
@@ -141,7 +141,7 @@ void main() {
 
   testWidgets('no Health readings: plain words, and the questions go on', (t) async {
     await startTyped(t, app: LifeTwinApp(healthReader: FakeReader(const [])));
-    await openHealth(t, 'Use my Health app');
+    await openHealth(t, 'Use my Apple Health');
     await waitFor(t, find.text("I couldn't find any readings"));
     await tapText(t, 'Continue');
     await waitFor(t, find.text(healthNoneNotice));

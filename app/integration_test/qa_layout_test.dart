@@ -90,8 +90,8 @@ void main() {
     }
     await hideKeyboard(t);
     await look('11-done');
-    await tapText(t, 'Use my Health app');
-    await waitFor(t, find.text('Yes, use my Health app'));
+    await tapText(t, 'Use my Apple Health');
+    await waitFor(t, find.text('Yes, use Apple Health'));
     await look('12-health-intro');
     await tapText(t, "No thanks, I'll answer myself");
     await waitFor(t, find.text('Continue'));

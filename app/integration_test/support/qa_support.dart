@@ -60,7 +60,7 @@ Future<void> pumpFor(WidgetTester t, Duration d) async {
 }
 
 /// Links that ignore taps for 0.7 s after a new question, so a double tap can't act twice.
-const guardedLinks = {'Skip this question', 'Go back', 'Use my Health app', 'Never mind'};
+const guardedLinks = {'Skip this question', 'Go back', 'Use my Apple Health', 'Never mind'};
 
 /// Taps that swoosh the conversation in from the Room (720 ms); its buttons move until then.
 const swooshes = {'Talk', 'Go back to my answers'};
