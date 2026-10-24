@@ -244,3 +244,19 @@ def test_a_contrast_beside_a_no_is_kept_from_room_chatter():
 )
 def test_waking_in_the_night_does_not_hide_the_hours(text, expected):
     check("sleep_hours", text, expected)
+
+
+# Ink ends sentences after a clock time or a spoken height: "I go to bed at 10. I get up at 6."
+@pytest.mark.parametrize(
+    ("field", "text", "expected"),
+    [
+        ("sleep_hours", "I go to bed at 10. I get up at 6.", {"sleep_hours": 8.0}),
+        ("sleep_hours", "Bed at 11. Up at 7, usually.", {"sleep_hours": 8.0}),
+        ("height_cm", "510. I think.", {"height_cm": 177.8}),
+        ("height_cm", "170. That's in centimeters.", {"height_cm": 170.0}),
+        ("sleep_hours", "I go to bed at 10. My husband gets up at 6.", None),
+        ("sleep_hours", "I used to go to bed at 10. I get up at 6.", None),
+    ],
+)
+def test_a_sentence_end_after_the_number_does_not_hide_it(field, text, expected):
+    check(field, text, expected)

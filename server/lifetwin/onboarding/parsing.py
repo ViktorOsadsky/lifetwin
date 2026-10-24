@@ -989,9 +989,9 @@ HEIGHT_EITHER = rf"(?<![\d.])(?<!-){_FT_IN}\s(?:or|to|-)\s{_FT_IN}(?![\d.])"
 # "5 and a half feet" (canonical "5.5 ft")
 FEET_DECIMAL = r"(?<![\d.])(?<!-)(\d\.(?:25|5|75))\s?ft\b(?!\s?\d)"
 # Speech to text writes "five ten" as "510"; nothing else that size is a height.
-SPOKEN_HEIGHT = rf"(?<![\d.])(?<!-)([4-7])(0[1-9]|1[01])(?![\d.]){FOLLOW}"
+SPOKEN_HEIGHT = rf"(?<![\d.])(?<!-)([4-7])(0[1-9]|1[01])(?!\d|\.\d){FOLLOW}"
 # A bare 120-219 can only be centimeters.
-BARE_CM = rf"(?<![\d.])(?<!-)(1[2-9]\d|2[01]\d)(?![\d.]){FOLLOW}"
+BARE_CM = rf"(?<![\d.])(?<!-)(1[2-9]\d|2[01]\d)(?!\d|\.\d){FOLLOW}"
 HEIGHT_PAIR = (
     r"(?<![\d.])(?<!-)([4-7])(?:\s|\s?-\s?|,\s?)(\d{1,2}(?:\.5)?)(?![\d.])"
     r"(?!\s?(?:ft|inch|cm|m|kg|lb|stone|hour|minute|year|over|/|on|to|or|and)\b)"
@@ -1095,7 +1095,7 @@ def _weight(text: str, today: date) -> Found:
     return _collect(rf"{N}{FOLLOW}", text, bare)
 
 
-TIME = r"(\d{1,2})(?::(\d{2}))?(?:\s?(am|pm|o'clock))?(?![\d.:])(?!\s?(?:hour|minute)\b)"
+TIME = r"(\d{1,2})(?::(\d{2}))?(?:\s?(am|pm|o'clock))?(?![\d:]|\.\d)(?!\s?(?:hour|minute)\b)"
 BEDTIME = (
     rf"\b(?:bed|asleep|sleep(?:ing)?|lights out|turn in)\b(?:\s+[a-z']+){{0,3}}?\s+"
     rf"(?:(?:by|at|around|about|from)\s+)?{TIME}[^\d]{{0,30}}?\b(?:up|awake|wake(?:\s+up)?|"
