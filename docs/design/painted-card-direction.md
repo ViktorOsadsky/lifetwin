@@ -145,13 +145,12 @@ The assets live in `app/assets/twin/` and `app/assets/scene/`. Every file has a 
 
 | Asset | File (under `app/assets/`) | 1x size | How it was made |
 |---|---|---|---|
-| Bear, base | `twin/bear/base/default.png` | 180×180 | generated on white, cut out (alpha) |
-| Bear, Cal hat | `twin/bear/base/cal_hat.png` | 180×180 | same |
-| Human, base | `twin/human/base/default.png` | 180×180 | same |
-| Human, Cal hat | `twin/human/base/cal_hat.png` | 180×180 | same |
-| Cal hat, alone | `twin/accessory/hat/cal.png` | 180×180 | same; ear holes cleared |
-| Bear poses (Cal hat) | `twin/bear/pose/{stand, wave, walk_side, walk_front, walk_back, sit, jump, think, stretch, sleep, eat, hold_ball, shrug, dizzy}.png` | 180 long side | cut from two generated pose sheets; `stand` is the Cal-hat base art; `shrug` is a separate generation, cropped |
-| Human poses (Cal hat) | `twin/human/pose/{hold_ball, shrug, wave, walk_side, sit, jump}.png` | 180 long side | generated and cut out (alpha); 3.0x kept at native size (about 490px) |
+| Base sprites | `twin/{bear,human}/base/{default,cal_hat}.png` | 180 long side | the v2 standing sprites (same files as `pose_nohat/stand` and `pose/stand`), kept at the old paths |
+| Cal hat, alone | `twin/accessory/hat/cal.png` | 180×180 | older generation, ear holes cleared (not yet re-cut from the v2 canonical hat) |
+| Poses, Cal hat | `twin/{bear,human}/pose/{stand, wave, walk_side, walk_front, walk_back, sit, jump, think, stretch, sleep, eat, hold_ball, shrug, dizzy}.png` | 180 long side | v2 set: the no-hat pose with one canonical hat composited on (`design/sprites/v2`, REVISED3) |
+| Poses, no hat | `twin/{bear,human}/pose_nohat/{same 14 poses}.png` | 180 long side | v2 set; each shares its canvas, size and feet anchor with the hat sprite of the pose |
+| Vector copies (not bundled) | `twin/svg/{bear,human}/{pose,pose_nohat}/{pose}.svg` | viewBox = the PNG's canvas | traced from the v2 PNGs (`design/svg/vectorize.py`, vtracer); see "PNG at runtime" below |
+| Lottie | `lottie/{ball_glow, bear_idle, bear_wave, bear_walk, bear_celebrate, human_idle}.json` | 512×512 | `design/lottie/build.py` from the v2 SVGs; `ball_glow` plays behind the ball in the ceremony |
 | Calm island | `scene/room.jpg` | 390×585 | Onboarding and Readback (and the swoosh); the twin sprite is composited on it |
 | Room, background | `scene/room/room_bg.jpg` | 390×844 | the pre-rendered room without the twin (3.0x is the native 1170×2532 render) |
 | Room, quilt edge | `scene/room/room_fg_bed.png` | cropped | only the quilt pixels in front of a sleeping twin; drawn over it in bed |
@@ -163,7 +162,9 @@ The assets live in `app/assets/twin/` and `app/assets/scene/`. Every file has a 
 | Night, revealed (legacy) | `scene/fortune_reveal.jpg` | 390×585 | baked bear holding the ball; no longer used by the app, kept for the static mockups |
 | Night, still learning (legacy) | `scene/fortune_learning.jpg` | 390×585 | baked bear with the misted ball; same |
 
-**Sizes.** A sprite shows at about 180pt tall, so 1x is 180px on its long side, 2.0x is 360px and 3.0x is 540px. Scenes are 390×585 at 1x, 780×1170 at 2.0x and native 933×1400 at 3.0x. Nothing is upscaled past its source: the pose crops are 416–504px on their long side, so their 3.0x files keep native size (slightly soft on 3x screens). Re-cut the pose sheets at a higher resolution if that shows.
+**Sizes.** A sprite shows at about 180pt tall, so 1x is 180px on its long side, 2.0x is 360px and 3.0x is 540px. Scenes are 390×585 at 1x, 780×1170 at 2.0x and native 933×1400 at 3.0x. Nothing is upscaled past its source: the v2 sprites are 310–430px on their long side, so their 2.0x and 3.0x files keep native size (`note3x` in the manifest; slightly soft on 3x screens). Every app sprite is padded so the painted content fills 93% of its height (3.5% top and bottom), which is what the room's sizing assumes; the feet anchors come from `design/sprites/v2/manifest_v2.json`, re-based to that canvas.
+
+**PNG at runtime, SVG kept for later.** The app draws the PNGs. The traced SVGs posterise fur and fabric into flat patches, which reads worse than the painting at the close-up sizes we use (the SVG conversion's own advice), and rendering them would add `flutter_svg`, which nothing needs yet. They live in `app/assets/twin/svg/` (not listed in `pubspec.yaml`, so not bundled) for future scaling or recolouring work; their viewBox matches the PNG canvas, so they can replace a PNG one for one.
 
 **Pipeline.** The image model cannot output alpha, so we generate on flat white and cut out with `tools/art/cutout.py`, a standard-library flood fill from the border that also clears enclosed holes and feathers the edge. Rules:
 
@@ -177,7 +178,7 @@ The assets live in `app/assets/twin/` and `app/assets/scene/`. Every file has a 
 - Fur and skin tone are separate sprites, not hue filters, so outlines stay cocoa.
 - Demographic cues (age shown on the muzzle and hair, body silhouettes) need their own sprite sets. Generate them only after the team settles the body policy (`AGENTS.md` versus the owner's data-driven ruling, still open).
 
-**Fortune poses (gap closed):** both twins now have fortune poses on the shared night plate. The ceremony (V-8) and the supported result (V-4) composite the chosen twin's `hold_ball` pose on `scene/night.jpg`, with a contact shadow and a soft glow behind the ball; still learning and unsupported (V-5) use `shrug`. Every screen now composites the chosen twin. A pose a twin lacks falls back to that twin's own standing sprite (`twinAsset` in `twin_assets.dart`); all pose art wears the Cal hat, so a twin with no hat stands without the ball. The baked plates remain only because the static mockups reference them.
+**Fortune poses (gap closed):** both twins have fortune poses on the shared night plate. The ceremony (V-8) and the supported result (V-4) composite the chosen twin's `hold_ball` pose on `scene/night.jpg`, with a contact shadow and a soft glow behind the ball; the ceremony also plays the `ball_glow` Lottie behind the ball (frame 0, still, under reduced motion). Still learning and unsupported (V-5) use `shrug`. Every twin has all 14 poses with and without the hat, so a twin with no hat holds the ball too (`twinAsset` picks `pose/` or `pose_nohat/`). The baked plates remain only because the static mockups reference them.
 
 ## 6. Figma ↔ code naming
 
@@ -187,8 +188,9 @@ The assets live in `app/assets/twin/` and `app/assets/scene/`. Every file has a 
 | Family | Names |
 |---|---|
 | Base sprites | `twin/{bear\|human}/base/{default\|cal_hat}` |
-| Bear poses | `twin/bear/pose/{stand\|wave\|walk_side\|walk_front\|walk_back\|sit\|jump\|think\|stretch\|sleep\|eat\|hold_ball\|shrug\|dizzy}` |
-| Human poses | `twin/human/pose/{hold_ball\|shrug\|wave\|walk_side\|sit\|jump}` (no Figma component yet) |
+| Poses, Cal hat | `twin/{bear\|human}/pose/{stand\|wave\|walk_side\|walk_front\|walk_back\|sit\|jump\|think\|stretch\|sleep\|eat\|hold_ball\|shrug\|dizzy}` (human and v2 art: no Figma component yet) |
+| Poses, no hat | `twin/{bear\|human}/pose_nohat/{same poses}` (no Figma component yet) |
+| Vectors (repo only) | `twin/svg/{bear\|human}/{pose\|pose_nohat}/{pose}.svg` |
 | Accessories | `twin/accessory/hat/cal` |
 | Scenes | `scene/{room\|customize\|night}` (legacy: `fortune_reveal`, `fortune_learning`) |
 | References (Figma only) | `reference/{model_sheet_bear\|model_sheet_bear_cal_hat\|model_sheet_human\|demographics_bear\|demographics_human\|room_topdown}` |
@@ -205,10 +207,13 @@ flutter:
     - assets/twin/            # manifest.json
     - assets/twin/bear/base/
     - assets/twin/bear/pose/
+    - assets/twin/bear/pose_nohat/
     - assets/twin/human/base/
     - assets/twin/human/pose/
+    - assets/twin/human/pose_nohat/
     - assets/twin/accessory/hat/
     - assets/scene/
+    - assets/lottie/          # lottie: ^3.1.0
 ```
 
 ## 7. Flutter notes
@@ -224,7 +229,7 @@ flutter:
 - **Source:** the approved prototype is kept as `tools/art/room3d/room3d_prototype.html` (three.js r128, toon room, camera from slightly above), with local layer-export hooks (`#layer=bg|noball|noapple|fg_bed|fg_table|calib`). `render_layers.sh` renders them headless at 1170×2532 (390×844 at 3x); `make_assets.py` writes the 1x / 2.0x / 3.0x assets and `room_layers.json`; `gen_room_layout.py` writes `app/lib/room/room_layout_data.dart` from it. The camera target was lowered from the prototype's so the floor clears the taller Flutter dock.
 - **Layers, back to front:** `room_bg`, the empty-shelf patch (while the twin holds the ball), the empty-bowl patch (`room_bowl_empty`, while it eats; `room_bowl_apple` then scales the apple back in), the twin's blob shadow and sprite, then `room_fg_bed` (only while it is in bed) and `room_fg_table` (when it stands behind the table; the bowl patch is laid on it again), then the effect particles. The foreground is cut with a depth-and-stencil pass in the prototype, so it holds exactly the pixels that cover the twin there.
 - **Code:** `FloorProjector` (world → screen with the exported view-projection matrix, plus the floor homography and its inverse) is the only part that knows the camera. `RoomSim` ports the behaviours (wander through waypoints, direction-picked walk poses with tilt, bob and squash, idle sit or wave, Exercise, Eat, Sleep with z's and tap to wake, Fortune to the shelf with two glow pulses then the ceremony, tap to hop, long press for the dizzy pose as the quiz-reaction demo, blinks on the standing bear). Effects are `CustomPainter` particles projected from the world: sweat drops and sparkles in Exercise, crumb sparkles and a "Yum!" hop in Eat, a sparkle as the ball leaves the shelf and around it while it glows, and hop sparkles on a tap. The idle sit or wave comes every 8 to 12 s of real time outside actions. `RoomScene` draws it and ticks only while something moves and the room is the current route. Reduced motion turns long walks into crossfades, shortens the loops, spawns no particles, keeps the ball's glow steady and puts the apple back at once. On screens shorter than the render, the screen measures its top bar and bottom UI and the room slides up (within the render's edges) so the twin at the mat stays above the buttons. Button labels stay on one line: slots are sized to the labels, and a label scales down (to a 15 px floor, dropping the activity icons first) instead of wrapping. A Flame room would replace `RoomScene` and the projector; `RoomSim` and `RoomScreen` stay.
-- **Twins:** the human uses its own poses and falls back where it has none (front and back walks use the side walk, eat and sleep use sit, stretch uses wave, think uses stand); a twin with no hat stands.
+- **Twins:** both twins have every pose, with the hat (`pose/`) or without it (`pose_nohat/`), so the room shows the chosen look in every action; `resolveRoomPose` keeps its fallback chain for future looks. Blinks run on the bear's standing sprite in both looks (the pair shares its canvas, so the eyes sit at the same spot). The room's sprite animation is unchanged; the Lottie idle and walk files are not used there.
 
 ## 8. Critique log
 

@@ -18,6 +18,7 @@ class NightTwinPlate extends StatelessWidget {
     this.glow = 0,
     this.feetAt = const Offset(0.5, 0.9),
     this.twinHeight = 0.62,
+    this.ballLottie,
   });
 
   final TwinAppearance appearance;
@@ -31,6 +32,9 @@ class NightTwinPlate extends StatelessWidget {
 
   /// Twin height as a fraction of the window height (capped by its width).
   final double twinHeight;
+
+  /// Drives the `ball_glow` Lottie behind the ball (ceremony only).
+  final Animation<double>? ballLottie;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +51,7 @@ class NightTwinPlate extends StatelessWidget {
           appearance: appearance,
           pose: pose,
           glow: glow,
+          ballLottie: ballLottie,
           height: math.max(60.0, math.min(box.height * twinHeight, box.width * 0.8)),
         ),
       ),

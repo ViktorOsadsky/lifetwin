@@ -86,6 +86,8 @@ class _FortuneCeremonyScreenState extends State<FortuneCeremonyScreen> with Sing
               return NightTwinPlate(
                 appearance: widget.appearance,
                 pose: TwinPose.holdBall,
+                // The Lottie's 2.4 s of pulses run on the same controller; at rest it shows frame 0.
+                ballLottie: _glow,
                 glow: _asking ? 0.55 + 0.45 * Curves.easeInOut.transform(pulse) : 0.55,
                 feetAt: const Offset(0.6, 0.9),
               );

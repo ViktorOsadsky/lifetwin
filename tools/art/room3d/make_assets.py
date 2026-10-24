@@ -1,7 +1,7 @@
 # Turn the rendered layers (render_layers.sh) into Flutter assets.
 # usage: uv run --with pillow python make_assets.py <render dir> <app/assets/scene/room>
 # Writes 1x / 2.0x / 3.0x variants (3.0x = the native 1170x2532 render), crops the
-# foreground layers and the empty-shelf and empty-bowl patches to their bounds, and writes room_layers.json
+# foreground layers (quilt edge, whole bed, table) and the empty-shelf and empty-bowl patches to their bounds, and writes room_layers.json
 # (camera matrix, floor calibration, walkable floor, and each layer's rect in 390x844 px).
 import json, os, sys
 from PIL import Image, ImageChops, ImageFilter
@@ -37,6 +37,7 @@ def cropped(name, key, pad=6):
     layers[key] = {'asset': 'assets/scene/room/' + asset, 'rect': [x0 / S, y0 / S, (x1 - x0) / S, (y1 - y0) / S]}
 
 cropped('room_fg_bed.png', 'fgBed')
+cropped('room_fg_bed_full.png', 'fgBedFull')  # the whole bed, over a twin behind it
 cropped('room_fg_table.png', 'fgTable')
 
 # Empty-shelf patch: the no-ball render around the ball, laid over the bg while the twin holds it.

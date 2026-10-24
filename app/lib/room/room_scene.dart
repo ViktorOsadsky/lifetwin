@@ -14,10 +14,11 @@ import 'room_sim.dart';
 /// The room, as three pre-rendered layers with the twin between them:
 /// `room_bg`, then the twin sprite (placed and sized by the [FloorProjector]
 /// of [RoomLayout], with a blob shadow), then the foreground pieces that
-/// cover it (the quilt edge while it sleeps, the table when it stands
-/// behind it), then the effect particles. Everything is laid out in the
-/// 390 x 844 render and cover-fitted to the screen; on short screens the
-/// render slides up so the mat stays clear of the UI ([clear]).
+/// cover it (the quilt edge while it sleeps; the whole bed or the table
+/// when it stands behind them, see [RoomLayout.covers]), then the effect
+/// particles. Everything is laid out in the 390 x 844 render and
+/// cover-fitted to the screen; on short screens the render slides up so the
+/// mat stays clear of the UI ([clear]).
 ///
 /// Swap point: a future room engine (for example Flame) replaces this widget
 /// and its projector; [RoomSim] and the screen around it stay the same.
@@ -106,11 +107,12 @@ double roomAlignmentY(RoomLayout layout, Size box, EdgeInsets clear) {
   return 2 * dy / spare - 1;
 }
 
-/// The bear's eyes in its standing sprite (`bear/pose/stand.png`), as
-/// fractions of the square sprite box, measured from the art. Re-measure
-/// (darkest pixels in the head) when that file is swapped for new art.
-const _eyes = [Offset(0.4126, 0.2972), Offset(0.583, 0.2969)];
-const _standAsset = 'assets/twin/bear/pose/stand.png';
+/// The bear's eyes in its standing sprite (`bear/pose/stand.png`, and the
+/// same spot in `bear/pose_nohat/stand.png`, which shares its canvas), as
+/// fractions of the square sprite box, measured from the v2 art (darkest
+/// blobs in the head). Re-measure when that file is swapped for new art.
+const _eyes = [Offset(0.4123, 0.2959), Offset(0.6007, 0.2932)];
+const _standAssets = {'assets/twin/bear/pose/stand.png', 'assets/twin/bear/pose_nohat/stand.png'};
 
 class _RoomSceneState extends State<RoomScene> {
   late final Ticker _ticker = Ticker(_tick);
@@ -211,9 +213,16 @@ class _RoomSceneState extends State<RoomScene> {
                 if (sim.ballTaken) _layer(layout.shelfEmpty),
                 ..._bowl(layout),
                 ..._twin(layout),
-                if (sim.inBed) _layer(layout.fgBed),
+                // On the bed, only the quilt edge tucks it in; behind the bed, the whole bed covers it.
+                if (sim.inBed)
+                  _layer(layout.fgBed)
+                else if (layout.covers(layout.footprints['bed']!, sim.pos))
+                  _layer(layout.fgBedFull, key: const ValueKey('room-bed-over')),
                 // The table layer holds the bowl too: patch it again on top.
-                if (sim.pos.dy < layout.tableZ - 0.2) ...[_layer(layout.fgTable), ..._bowl(layout)],
+                if (layout.covers(layout.footprints['table']!, sim.pos)) ...[
+                  _layer(layout.fgTable, key: const ValueKey('room-table-over')),
+                  ..._bowl(layout),
+                ],
                 for (final z in sim.zs) _z(layout, z),
                 if (sim.fx.isNotEmpty)
                   Positioned.fill(
@@ -255,7 +264,8 @@ class _RoomSceneState extends State<RoomScene> {
     ];
   }
 
-  Widget _layer(RoomLayer l) => Positioned.fromRect(
+  Widget _layer(RoomLayer l, {Key? key}) => Positioned.fromRect(
+    key: key,
     rect: l.rect,
     child: IgnorePointer(
       child: ExcludeSemantics(child: Image.asset(l.asset, fit: BoxFit.fill, gaplessPlayback: true)),
@@ -307,7 +317,7 @@ class _RoomSceneState extends State<RoomScene> {
       glow: sim.glow,
     );
     // Blinks: eyes painted shut on the standing bear for a moment.
-    final blink = sim.blinking && asset == _standAsset;
+    final blink = sim.blinking && _standAssets.contains(asset);
     return [
       if (shadowA > 0)
         Positioned(
@@ -410,7 +420,7 @@ class _BlinkPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
-    final fur = Paint()..color = const Color(0xFFB06B38);
+    final fur = Paint()..color = const Color(0xFFBA7949); // fur around the v2 eyes
     final lid = Paint()
       ..color = const Color(0xFF2E1A12)
       ..style = PaintingStyle.stroke
@@ -418,7 +428,7 @@ class _BlinkPainter extends CustomPainter {
       ..strokeWidth = w * 0.0085;
     for (final e in _eyes) {
       final c = Offset(e.dx * w, e.dy * size.height);
-      canvas.drawOval(Rect.fromCenter(center: c, width: w * 0.046, height: w * 0.052), fur);
+      canvas.drawOval(Rect.fromCenter(center: c, width: w * 0.052, height: w * 0.060), fur);
       final r = w * 0.0185;
       canvas.drawArc(
         Rect.fromCircle(center: c.translate(0, -w * 0.008), radius: r),

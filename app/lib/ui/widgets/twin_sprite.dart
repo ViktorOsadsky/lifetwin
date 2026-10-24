@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../swoosh_route.dart';
 import '../theme.dart';
@@ -31,6 +32,7 @@ class TwinSprite extends StatelessWidget {
     this.hero = false,
     this.isRoom = true,
     this.glow = 0,
+    this.ballLottie,
   });
 
   final TwinAppearance appearance;
@@ -45,6 +47,12 @@ class TwinSprite extends StatelessWidget {
   /// A soft glow behind the ball (0 = none, 1 = full). Drawn only when the
   /// twin really holds the ball ([TwinPose.holdBall] art exists for it).
   final double glow;
+
+  /// Draws the vector `ball_glow` Lottie behind the held ball (the fortune
+  /// ceremony), driven by this animation: 0 is its resting first frame, and
+  /// one run 0 → 1 plays its two glow pulses. Under reduced motion it shows
+  /// frame 0, still.
+  final Animation<double>? ballLottie;
 
   bool get holdsBall => pose == TwinPose.holdBall && twinHasPose(appearance.type, appearance.look, pose);
 
@@ -91,9 +99,32 @@ class TwinSprite extends StatelessWidget {
               _oval(height * feet, height * 0.59, height * 0.1, 0.10),
               _oval(height * feet, height * 0.41, height * 0.055, 0.26),
             ],
+            if (ballLottie != null && holdsBall) _ballLottie(context),
             if (glow > 0 && holdsBall) _glow(),
             Positioned.fill(child: sprite),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// The Lottie's globe (centre 256,236, radius 150 on its 512 canvas) is
+  /// laid just behind the painted ball, a little larger, so its halo pulses
+  /// around it; the Lottie's stand stays hidden behind the twin.
+  Widget _ballLottie(BuildContext context) {
+    final c = twinBallCenter(appearance.type);
+    final side = height * twinBallRadius(appearance.type) * 1.12 * 512 / 150;
+    return Positioned(
+      key: const ValueKey('ball-glow-lottie'),
+      left: height * c.dx - side * 0.5,
+      top: height * c.dy - side * 236 / 512,
+      width: side,
+      height: side,
+      child: IgnorePointer(
+        child: ExcludeSemantics(
+          child: MediaQuery.disableAnimationsOf(context)
+              ? Lottie.asset(ballGlowLottie, animate: false)
+              : Lottie.asset(ballGlowLottie, controller: ballLottie),
         ),
       ),
     );
