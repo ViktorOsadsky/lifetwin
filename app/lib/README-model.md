@@ -139,7 +139,11 @@ The store is one JSON document, written by the iOS runner (`ios/Runner/AppDelega
 `applyCheckinResponse(profile, response, localDate:)` follows `contracts/checkin.schema.json` on `codex/d-twin-checkins`. It is tested against those fixtures (`test/fixtures/checkin_contract_cases.json`, copied from 92779c9).
 
 - **Weekly, `complete: true`:** every non-null `profile_update` field is set on the profile, and null fields are left as they are. The forecast is then recomputed.
-- **"Not sure":** an `unknown` / `not_sure` answer never replaces a known value. It only fills a gap. The same rule applies to `saveConversationProfile` (`keepKnownAnswers`).
+- **Writing rule** (`mergeConfirmed`, shared by `saveConversationProfile` and weekly `profile_update`):
+  - A field changes only when the save carries it with a value. Null or absent never erases: saving `{'age': 71}` keeps height and weight. Erasing happens only through Delete my data, or a confirmed change to another value.
+  - Every field is type- and range-checked against `profileSchema` (the contract's HealthProfile plus the new model inputs). A wrong type, such as `sleep_hours: "I don't know"`, or a non-profile key, such as `wellbeing` or `memory_consent`, is refused and listed in `CheckinOutcome.refusedFields`.
+  - **"Not sure" vs the server.** The check-in contract says "set each non-null field", so the server may confirm `smoking_status: "unknown"` for a person whose stored answer is `former`. The app deliberately keeps `former` (owner ruling): unknown only fills a gap, and never replaces a known answer.
+- **Daily check-ins never touch the profile**, even if their response carries a `profile_update`.
 - **Daily:** history only (`CheckinRecord`).
 - **`emergency: true`:** sets `CheckinOutcome.emergency`. It is never stored. The twin shows `concerned` until `clearEmergency()`.
 - **Weekly summary:** when a weekly check-in's confirmed answers cover all four behaviour fields (`sleep_hours`, `vigorous_recreation_min_week`, `moderate_recreation_min_week`, `sedentary_min_day`), a summary row is stored for the Monday–Sunday week that has ended by the end of the check-in day. Today's weekly script asks only `exercise_minutes_weekly`, so no row is made yet.

@@ -7,6 +7,7 @@ import 'package:lifesim/twin/checkin_applier.dart';
 import 'package:lifesim/twin/twin_history.dart';
 import 'package:lifesim/twin/twin_model.dart';
 import 'package:lifesim/twin/twin_repository.dart';
+import 'package:lifesim/twin/twin_state.dart';
 
 /// Every model input known (golden profile 1 with height and weight).
 const fullProfile = {
@@ -202,10 +203,76 @@ void main() {
       expect(known.changedFields, ['sleep_hours']);
       final gap = applyCheckinResponse({...fullProfile}..remove('smoking_status'), r, localDate: monday);
       expect(gap.profile['smoking_status'], 'unknown');
-      expect(keepKnownAnswers({'smoking_status': 'never', 'age': 50}, {'smoking_status': 'not_sure', 'age': 51}), {
+      expect(mergeConfirmed({'smoking_status': 'never', 'age': 50}, {'smoking_status': 'unknown', 'age': 51}).profile, {
         'smoking_status': 'never',
         'age': 51,
       });
+    });
+
+    test('the server confirming "unknown" for a known answer: the app keeps the known one', () {
+      // The contract says "set each non-null field"; the owner rule wins on the phone.
+      final r = responseFor('checkin-weekly-profile-update');
+      r['profile_update'] = {...r['profile_update'] as Map<String, dynamic>, 'smoking_status': 'unknown'};
+      final o = applyCheckinResponse({...fullProfile, 'smoking_status': 'former'}, r, localDate: monday);
+      expect(o.profile['smoking_status'], 'former');
+      expect(o.changedFields, isNot(contains('smoking_status')));
+      expect(o.refusedFields, isEmpty);
+    });
+
+    test('a value of the wrong type is refused, never written', () {
+      final r = responseFor('checkin-weekly-profile-update');
+      r['profile_update'] = {
+        'sleep_hours': "I don't know",
+        'age': 'seventy',
+        'weight_kg': -5,
+        'diabetes': 'yes',
+        'exercise_minutes_weekly': 90.5,
+        'sex': 'other',
+        'smoking_status': 'sometimes',
+      };
+      final o = applyCheckinResponse(fullProfile, r, localDate: monday);
+      expect(o.profile, fullProfile);
+      expect(o.changedFields, isEmpty);
+      expect(
+        o.refusedFields,
+        unorderedEquals([
+          'sleep_hours',
+          'age',
+          'weight_kg',
+          'diabetes',
+          'exercise_minutes_weekly',
+          'sex',
+          'smoking_status',
+        ]),
+      );
+    });
+
+    test('only profile fields may be written: wellbeing, memory_consent and others are refused', () {
+      final r = responseFor('checkin-weekly-profile-update');
+      r['profile_update'] = {'wellbeing': 'good', 'memory_consent': true, 'game_health': 3, 'sleep_hours': 6.5};
+      final o = applyCheckinResponse(fullProfile, r, localDate: monday);
+      expect(o.profile, {...fullProfile, 'sleep_hours': 6.5});
+      expect(o.profile.containsKey('wellbeing'), isFalse);
+      expect(o.profile.containsKey('memory_consent'), isFalse);
+      expect(o.refusedFields, unorderedEquals(['wellbeing', 'memory_consent', 'game_health']));
+    });
+
+    test('a daily check-in never touches the profile, even with a profile_update', () {
+      final r = {
+        'complete': true,
+        'emergency': false,
+        'profile_update': {'sleep_hours': 4.0, 'weight_kg': 60.0, 'smoking_status': 'current'},
+        'state': {
+          'kind': 'daily',
+          'phase': 'ready',
+          'questions': ['sleep_hours_last_night', 'exercise_minutes_today', 'wellbeing'],
+          'confirmed': {'sleep_hours_last_night': 4.0, 'wellbeing': 'okay'},
+        },
+      };
+      final o = applyCheckinResponse(fullProfile, r, localDate: monday);
+      expect(o.profile, fullProfile);
+      expect(o.changedFields, isEmpty);
+      expect(o.record!.kind, 'daily');
     });
 
     test('a weekly check-in still going changes nothing', () {
@@ -348,6 +415,43 @@ void main() {
       final a = await repo.saveConversationProfile({...fullProfile, 'smoking_status': 'unknown'});
       expect(repo.profile['smoking_status'], 'former');
       expect(a.status, 'available');
+    });
+
+    test('saving a conversation never erases: null or absent fields keep the stored values', () async {
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      await repo.saveConversationProfile({...fullProfile, 'smoking_status': 'former'});
+      await repo.saveConversationProfile({...fullProfile, 'smoking_status': null});
+      expect(repo.profile['smoking_status'], 'former');
+      await repo.saveConversationProfile({'age': 71});
+      expect(repo.profile, {...fullProfile, 'smoking_status': 'former', 'age': 71});
+      expect(repo.profile['height_cm'], 175.0);
+      expect(repo.profile['weight_kg'], 76.5625);
+    });
+
+    test('saving a conversation refuses wrong types and non-profile keys', () async {
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      await repo.saveConversationProfile(fullProfile);
+      await repo.saveConversationProfile({'sleep_hours': "I don't know", 'wellbeing': 'good', 'memory_consent': true});
+      expect(repo.profile, fullProfile);
+    });
+
+    test('changing the map from repo.profile leaves the stored profile alone', () async {
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      await repo.saveConversationProfile(fullProfile);
+      final copy = repo.profile;
+      copy['age'] = 99;
+      copy.remove('weight_kg');
+      expect(repo.profile, fullProfile);
+      expect(repo.store.profile, fullProfile);
+    });
+
+    test('after an emergency, a later ordinary check-in response clears the emergency', () async {
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      await repo.applyCheckin(responseFor('checkin-emergency-pause'));
+      expect(repo.twinState().emergency, isTrue);
+      await repo.applyCheckin(responseFor('checkin-resume-after-pause'));
+      expect(repo.twinState().emergency, isFalse);
+      expect(repo.twinState().mood, isNot(TwinMood.concerned));
     });
 
     test('the emergency flag shows on the twin until cleared', () async {

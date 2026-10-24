@@ -9,26 +9,34 @@ library;
 import 'twin_history.dart';
 import 'twin_model.dart' show isoDate;
 
-/// Profile fields a weekly `profile_update` may set: the contract's HealthProfile fields,
-/// and the model inputs the conversation is gaining (same names as the package).
-const updatableProfileFields = {
-  'age',
-  'sex',
-  'height_cm',
-  'weight_kg',
-  'sleep_hours',
-  'exercise_minutes_weekly',
-  'smoking_status',
-  'alcohol_drinks_weekly',
-  'diabetes',
-  'systolic_bp',
-  'diastolic_bp',
-  'general_health',
-  'hypertension_diagnosed',
-  'sedentary_min_day',
-  'vigorous_recreation_min_week',
-  'moderate_recreation_min_week',
+/// The profile's fields and what each accepts: the contract's HealthProfile
+/// (`server/lifetwin/core/models.py`, same ranges) and the model inputs the conversation
+/// is gaining (same names as the package). Nothing else may be written to the profile.
+final Map<String, bool Function(Object)> profileSchema = {
+  'age': (v) => _whole(v, 0, 120),
+  'sex': (v) => v == 'female' || v == 'male',
+  'height_cm': (v) => _number(v, 50, 280),
+  'weight_kg': (v) => _number(v, 10, 700),
+  'sleep_hours': (v) => _number(v, 0, 24),
+  'exercise_minutes_weekly': (v) => _whole(v, 0, 10080),
+  'smoking_status': (v) => const {'never', 'former', 'current', 'unknown'}.contains(v),
+  'alcohol_drinks_weekly': (v) => _number(v, 0, 200),
+  'diabetes': (v) => v is bool,
+  'systolic_bp': (v) => _whole(v, 40, 300),
+  'diastolic_bp': (v) => _whole(v, 20, 200),
+  'general_health': (v) =>
+      _whole(v, 1, 5) || const {'excellent', 'very_good', 'good', 'fair', 'poor', 'unknown'}.contains(v),
+  'hypertension_diagnosed': (v) => v is bool,
+  'sedentary_min_day': (v) => _number(v, 0, 1440),
+  'vigorous_recreation_min_week': (v) => _number(v, 0, 10080),
+  'moderate_recreation_min_week': (v) => _number(v, 0, 10080),
 };
+
+/// The fields a conversation or a weekly `profile_update` may set.
+Set<String> get updatableProfileFields => profileSchema.keys.toSet();
+
+bool _number(Object v, num lo, num hi) => v is num && v.isFinite && v >= lo && v <= hi;
+bool _whole(Object v, num lo, num hi) => _number(v, lo, hi) && (v as num) == v.roundToDouble();
 
 /// An answer that says "I don't know" (`unknown`, `not_sure`), not a value.
 bool isUnknownAnswer(Object? v) =>
@@ -36,22 +44,46 @@ bool isUnknownAnswer(Object? v) =>
 
 bool isKnownAnswer(Object? v) => v != null && !isUnknownAnswer(v);
 
-/// [incoming] laid over [stored], except that an unknown answer never replaces a known
-/// stored value (owner ruling). For conversation profiles and check-in updates alike.
-Map<String, dynamic> keepKnownAnswers(Map<String, dynamic> stored, Map<String, dynamic> incoming) => {
-  ...incoming,
-  for (final e in incoming.entries)
-    if (isUnknownAnswer(e.value) && isKnownAnswer(stored[e.key])) e.key: stored[e.key],
-};
+/// The result of laying confirmed values over the stored profile.
+typedef ProfileMerge = ({Map<String, dynamic> profile, List<String> changed, List<String> refused});
+
+/// The one rule for writing confirmed values (conversation saves and weekly check-ins):
+/// - a field changes only when [incoming] carries it with a value; null or absent never
+///   erases (erasing is Delete my data, or a confirmed change to another value);
+/// - an unknown ("not sure") answer never replaces a known value; it only fills a gap,
+///   even when the server confirmed it (owner ruling);
+/// - a field outside [profileSchema], or a value of the wrong type or range, is refused.
+ProfileMerge mergeConfirmed(Map<String, dynamic> stored, Map<String, dynamic> incoming) {
+  final next = Map<String, dynamic>.from(stored);
+  final changed = <String>[], refused = <String>[];
+  for (final e in incoming.entries) {
+    final v = e.value;
+    if (v == null) continue;
+    final valid = profileSchema[e.key];
+    if (valid == null || !valid(v)) {
+      refused.add(e.key);
+      continue;
+    }
+    if (isUnknownAnswer(v) && isKnownAnswer(next[e.key])) continue;
+    if (next[e.key] != v) changed.add(e.key);
+    next[e.key] = v;
+  }
+  return (profile: next, changed: changed, refused: refused);
+}
 
 class CheckinOutcome {
   const CheckinOutcome({
     required this.profile,
     required this.changedFields,
     required this.emergency,
+    this.refusedFields = const [],
     this.record,
     this.weeklySummary,
   });
+
+  /// `profile_update` fields refused: not profile fields (e.g. `wellbeing`), or of the
+  /// wrong type or range (e.g. `sleep_hours: "I don't know"`).
+  final List<String> refusedFields;
 
   /// The profile after the update (unchanged unless a weekly check-in completed).
   final Map<String, dynamic> profile;
@@ -89,19 +121,12 @@ CheckinOutcome applyCheckinResponse(
       if (e.value != null) e.key: e.value,
   };
   final record = CheckinRecord(kind: '$kind', date: isoDate(localDate), answers: confirmed);
+  // Daily check-ins are history only: their profile_update is never applied.
   if (kind != 'weekly') {
     return CheckinOutcome(profile: profile, changedFields: const [], emergency: emergency, record: record);
   }
   final update = Map<String, dynamic>.from(response['profile_update'] as Map? ?? const {});
-  final next = Map<String, dynamic>.from(profile);
-  final changed = <String>[];
-  for (final e in update.entries) {
-    if (e.value == null || !updatableProfileFields.contains(e.key)) continue;
-    // "Not sure" never replaces a known answer; it only fills a gap.
-    if (isUnknownAnswer(e.value) && isKnownAnswer(next[e.key])) continue;
-    if (next[e.key] != e.value) changed.add(e.key);
-    next[e.key] = e.value;
-  }
+  final merge = mergeConfirmed(profile, update);
   Map<String, dynamic>? summary;
   if (weeklySummaryFields.every((f) => confirmed[f] is num)) {
     summary = {
@@ -112,8 +137,9 @@ CheckinOutcome applyCheckinResponse(
     };
   }
   return CheckinOutcome(
-    profile: next,
-    changedFields: changed,
+    profile: merge.profile,
+    changedFields: merge.changed,
+    refusedFields: merge.refused,
     emergency: emergency,
     record: record,
     weeklySummary: summary,

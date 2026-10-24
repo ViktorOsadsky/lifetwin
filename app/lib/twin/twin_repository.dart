@@ -78,9 +78,12 @@ class TwinRepository extends ChangeNotifier {
 
   /// Keeps the answers a Mochi conversation confirmed (the whole confirmed profile it
   /// returns) and recomputes. Call only with a conversation's confirmed values.
-  /// An unknown ("not sure") answer keeps the known value already on the phone.
+  /// Follows [mergeConfirmed]: only fields carried with a value change; null or absent
+  /// never erases; "not sure" keeps a known value; wrong types are refused.
   Future<TwinAssessment> saveConversationProfile(Map<String, dynamic> confirmed) async {
-    await store._saveProfile(keepKnownAnswers(store.profile, confirmed));
+    final merge = mergeConfirmed(store.profile, confirmed);
+    if (merge.refused.isNotEmpty) debugPrint('Refused profile fields: ${merge.refused}');
+    await store._saveProfile(merge.profile);
     return _refresh();
   }
 
