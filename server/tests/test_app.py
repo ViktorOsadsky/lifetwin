@@ -349,3 +349,95 @@ async def test_disconnect_after_body_cancels_research_and_releases_slot():
         transport=httpx.ASGITransport(app=application), base_url="http://test"
     ) as client:
         assert (await client.get("/api/capabilities")).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_busy_rejections_do_not_consume_rate_quota_and_retry_after_is_short():
+    application = create_app(config(max_concurrent_requests=1, rate_limit_per_minute=3))
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    @application.get("/slow")
+    async def slow():
+        entered.set()
+        await release.wait()
+        return {"ok": True}
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=application), base_url="http://test"
+    ) as client:
+        first = asyncio.create_task(client.get("/slow"))  # uses 1 of 3
+        await asyncio.wait_for(entered.wait(), timeout=1)
+        for _ in range(5):
+            busy = await client.get("/api/capabilities")
+            assert busy.status_code == 429
+            assert busy.json()["code"] == "server_busy"
+            assert busy.headers["retry-after"] == "2"
+        release.set()
+        assert (await first).status_code == 200
+        # Quota left: 2 more successes, then the limit.
+        assert (await client.get("/api/capabilities")).status_code == 200
+        assert (await client.get("/api/capabilities")).status_code == 200
+        limited = await client.get("/api/capabilities")
+        assert limited.json()["code"] == "rate_limit_exceeded"
+        assert 1 <= int(limited.headers["retry-after"]) <= 60
+
+
+def test_cors_headers_are_present_on_middleware_429_responses():
+    settings = config(cors_origins="https://demo.example", rate_limit_per_minute=1)
+    with TestClient(create_app(settings)) as client:
+        headers = {"Origin": "https://demo.example"}
+        assert client.get("/api/capabilities", headers=headers).status_code == 200
+        limited = client.get("/api/capabilities", headers=headers)
+        assert limited.status_code == 429
+        assert limited.headers["access-control-allow-origin"] == "https://demo.example"
+        assert limited.headers["x-request-id"]
+
+
+def test_provider_timeout_setting_reaches_onboarding_service():
+    application = create_app(config(provider_timeout_seconds=3))
+    assert application.state.conversation_service.timeout == 3
+
+
+def test_validation_message_names_wrong_answers_in_plain_words(client):
+    response = client.post("/api/predict", json={"age": "abc", "weight_kg": 5})
+    assert response.status_code == 422
+    message = response.json()["message"]
+    assert "age" in message and "weight" in message and "try again" in message
+    assert "abc" not in response.text
+
+
+def test_blood_pressure_order_error_is_plain(client):
+    response = client.post("/api/predict", json={"systolic_bp": 80, "diastolic_bp": 150})
+    assert response.status_code == 422
+    assert "top blood pressure number is usually the bigger" in response.json()["message"]
+    assert client.post("/api/predict", json={"age": 35.0}).status_code == 501
+
+
+@pytest.mark.asyncio
+async def test_unexpected_exception_is_logged_without_details(caplog):
+    application = create_app(config())
+
+    @application.get("/broken/{item}")
+    async def broken(item: str):
+        raise RuntimeError("secret health detail")
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=application), base_url="http://test"
+    ) as client:
+        with caplog.at_level("ERROR", logger="lifetwin.request"):
+            response = await client.get("/broken/private-value")
+    record = next(r for r in caplog.records if r.name == "lifetwin.request")
+    text = record.getMessage()
+    assert response.headers["x-request-id"] in text
+    assert "RuntimeError" in text and "/broken/{item}" in text
+    assert "secret health detail" not in caplog.text
+    assert "private-value" not in caplog.text
+
+
+def test_openapi_declares_only_reachable_error_statuses(client):
+    paths = client.get("/openapi.json").json()["paths"]
+    assert set(paths["/api/capabilities"]["get"]["responses"]) == {"200", "429", "500", "504"}
+    assert "409" in paths["/api/onboarding/turn"]["post"]["responses"]
+    assert "409" not in paths["/api/predict"]["post"]["responses"]
+    assert "404" in paths["/api/quiz/questions/{question_id}"]["get"]["responses"]
+    assert "404" not in paths["/api/capabilities"]["get"]["responses"]
