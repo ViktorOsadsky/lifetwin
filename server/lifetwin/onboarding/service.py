@@ -208,6 +208,24 @@ class ConversationService:
             ]
             self._advance(state)
             return respond("Confirmed! " + self._prompt(state))
+        if action == "import":
+            if state.phase == "confirming":
+                self._invalid("Confirm or correct the pending answer before adding more.")
+            additions = request.values.model_dump(exclude_none=True)
+            merged = state.confirmed_profile.model_dump()
+            merged.update(additions)
+            state.confirmed_profile = HealthProfile.model_validate(merged)
+            state.skipped_fields = [
+                field for field in state.skipped_fields if field not in additions
+            ]
+            self._advance(state)
+            count = "1 answer" if len(additions) == 1 else f"{len(additions)} answers"
+            return respond(
+                f"Thanks! I added {count} you checked from your Health app: "
+                + describe(additions)
+                + ". "
+                + self._prompt(state)
+            )
         if action == "skip":
             target = request.field or state.current_field
             if target is None:

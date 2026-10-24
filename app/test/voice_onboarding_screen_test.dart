@@ -27,6 +27,19 @@ class Rig {
   }
 }
 
+/// Answers both consent questions: voice, then the AI helper.
+Future<void> choose(WidgetTester t, String voiceLabel, {bool aiHelper = false}) async {
+  await t.ensureVisible(find.text(voiceLabel));
+  await t.pumpAndSettle();
+  await t.tap(find.text(voiceLabel));
+  await t.pumpAndSettle();
+  final second = aiHelper ? 'Yes, turn it on' : 'Not now';
+  await t.ensureVisible(find.text(second));
+  await t.pumpAndSettle();
+  await t.tap(find.text(second));
+  await t.pumpAndSettle();
+}
+
 void main() {
   testWidgets('consent explains Cartesia and offers Yes / Type instead; nothing starts before', (t) async {
     final r = Rig();
@@ -42,8 +55,7 @@ void main() {
   testWidgets('Type instead on consent starts the same conversation by typing', (t) async {
     final r = Rig();
     await r.pump(t);
-    await t.tap(find.text('Type instead'));
-    await t.pumpAndSettle();
+    await choose(t, 'Type instead');
     expect(find.text('How old are you?'), findsOneWidget);
     expect(find.text('Hold to talk'), findsNothing);
     expect(r.output.spoken, isEmpty);
@@ -59,8 +71,7 @@ void main() {
   testWidgets('Yes consent shows caption, speaks it, and tap-to-talk works', (t) async {
     final r = Rig();
     await r.pump(t);
-    await t.tap(find.text('Yes, I can talk'));
-    await t.pumpAndSettle();
+    await choose(t, 'Yes, I can talk');
     expect(find.text('How old are you?'), findsOneWidget);
     expect(r.output.spoken, ['How old are you?']);
     expect(find.text('Hear it again'), findsOneWidget);
@@ -86,8 +97,7 @@ void main() {
   testWidgets('holding the button sends when let go', (t) async {
     final r = Rig();
     await r.pump(t);
-    await t.tap(find.text('Yes, I can talk'));
-    await t.pumpAndSettle();
+    await choose(t, 'Yes, I can talk');
     final g = await t.startGesture(t.getCenter(find.byType(TalkButton)));
     await t.pump();
     expect(r.c.phase, VoicePhase.listening);
@@ -102,8 +112,7 @@ void main() {
     final r = Rig();
     r.input.startError = const MicDeniedException();
     await r.pump(t);
-    await t.tap(find.text('Yes, I can talk'));
-    await t.pumpAndSettle();
+    await choose(t, 'Yes, I can talk');
     await t.tap(find.text('Hold to talk'));
     await t.pumpAndSettle();
     expect(find.textContaining('open Settings'), findsOneWidget);
@@ -116,10 +125,7 @@ void main() {
     final r = Rig();
     r.input.transcript = '';
     await r.pump(t, scale: 2.0);
-    await t.ensureVisible(find.text('Yes, I can talk'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Yes, I can talk'));
-    await t.pumpAndSettle();
+    await choose(t, 'Yes, I can talk');
     await t.ensureVisible(find.text('Hold to talk'));
     await t.pumpAndSettle();
     await t.tap(find.text('Hold to talk'));
@@ -136,10 +142,44 @@ void main() {
     final r = Rig();
     await t.pumpWidget(LifeTwinApp(controller: r.c));
     expect(find.text('Talk with me?'), findsOneWidget);
-    await t.tap(find.text('Type instead'));
-    await t.pumpAndSettle();
+    await choose(t, 'Type instead');
     await t.tap(find.text('Use my Health app instead'));
     await t.pumpAndSettle();
     expect(find.text("Use your iPhone's Health app?"), findsOneWidget);
+  });
+
+  testWidgets('AI helper consent explains where answers go; yes turns it on for every turn', (t) async {
+    final r = Rig();
+    await r.pump(t);
+    await t.tap(find.text('Type instead'));
+    await t.pumpAndSettle();
+    expect(find.text('Turn on the AI helper?'), findsOneWidget);
+    expect(find.textContaining('go to an outside AI service'), findsOneWidget);
+    expect(r.guide.calls, isEmpty); // nothing starts until both questions are answered
+    for (final label in ['Yes, turn it on', 'Not now']) {
+      expect(t.getSize(find.ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton))).height, greaterThanOrEqualTo(72));
+    }
+    await t.tap(find.text('Yes, turn it on'));
+    await t.pumpAndSettle();
+    expect(r.c.aiHelper, isTrue);
+    expect(r.guide.calls.single['aiHelper'], isTrue);
+    expect(find.text('Turn off AI helper'), findsOneWidget);
+  });
+
+  testWidgets('saying not now still lets the AI helper read a hard answer later, without retyping', (t) async {
+    final r = Rig();
+    await r.pump(t);
+    await choose(t, 'Type instead');
+    await t.enterText(find.byType(TextField), 'about five foot eight');
+    await t.tap(find.text('Send'));
+    await t.pumpAndSettle();
+    expect(find.text('Yes, let the AI helper read it'), findsOneWidget);
+    await t.tap(find.text('Yes, let the AI helper read it'));
+    await t.pumpAndSettle();
+    expect(r.guide.calls.last['action'], 'reply');
+    expect(r.guide.calls.last['text'], 'about five foot eight');
+    expect(r.guide.calls.last['aiHelper'], isTrue);
+    expect(find.textContaining('5 feet 8 inches'), findsOneWidget);
+    expect(find.text('Yes'), findsOneWidget);
   });
 }

@@ -22,6 +22,9 @@ class VoiceOnboardingScreen extends StatefulWidget {
 class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   final _text = TextEditingController();
 
+  /// The voice answer from the first consent question, kept until the second is answered.
+  bool? _voiceChoice;
+
   VoiceOnboardingController get c => widget.controller;
 
   @override
@@ -60,6 +63,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   }
 
   Widget _consent(BuildContext context) {
+    final voice = _voiceChoice;
+    if (voice != null) return _aiConsent(context, voice);
     final text = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -74,9 +79,34 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
         ),
         const Spacer(),
         const SizedBox(height: 24),
-        BigButton(label: 'Yes, I can talk', filled: true, onTap: () => c.answerConsent(true)),
+        BigButton(label: 'Yes, I can talk', filled: true, onTap: () => setState(() => _voiceChoice = true)),
         const SizedBox(height: 16),
-        BigButton(label: 'Type instead', filled: false, onTap: () => c.answerConsent(false)),
+        BigButton(label: 'Type instead', filled: false, onTap: () => setState(() => _voiceChoice = false)),
+      ],
+    );
+  }
+
+  /// Second question: may an AI helper read the answers? We encourage yes, but
+  /// "Not now" works fully, and it can be turned on later.
+  Widget _aiConsent(BuildContext context, bool voice) {
+    final text = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(header: true, child: Text('Turn on the AI helper?', style: text.headlineMedium)),
+        const SizedBox(height: 24),
+        Text(
+          'It lets you answer in your own words, like "about five foot eight".\n\n'
+          "Your answers go to an outside AI service. LifeTwin doesn't keep them, "
+          'and I still check each one with you.\n\n'
+          'You can change this any time.',
+          style: text.titleLarge?.copyWith(height: 1.4),
+        ),
+        const Spacer(),
+        const SizedBox(height: 24),
+        BigButton(label: 'Yes, turn it on', filled: true, onTap: () => c.answerConsent(voice, aiHelper: true)),
+        const SizedBox(height: 16),
+        BigButton(label: 'Not now', filled: false, onTap: () => c.answerConsent(voice)),
       ],
     );
   }
@@ -148,10 +178,15 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
       ];
     }
     return [
+      if (c.helperWouldHelp && !busy) ...[
+        BigButton(label: 'Yes, let the AI helper read it', filled: true, onTap: () => c.setAiHelper(true)),
+        const SizedBox(height: 16),
+      ],
       if (c.typing) ..._typingControls(busy) else TalkButton(controller: c),
       const SizedBox(height: 12),
       if (c.canHearAgain) _hearAgain(),
       _modeSwitch(),
+      _helperSwitch(),
       if (widget.onUseHealth != null)
         TextButton.icon(
           onPressed: widget.onUseHealth,
@@ -185,6 +220,14 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
         onPressed: c.hearAgain,
         icon: const Icon(Icons.volume_up),
         label: Text('Hear it again', style: Theme.of(context).textTheme.titleMedium),
+        style: TextButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+      );
+
+  Widget _helperSwitch() => TextButton.icon(
+        onPressed: () => c.setAiHelper(!c.aiHelper),
+        icon: Icon(c.aiHelper ? Icons.auto_awesome : Icons.auto_awesome_outlined),
+        label: Text(c.aiHelper ? 'Turn off AI helper' : 'Turn on AI helper',
+            style: Theme.of(context).textTheme.titleMedium),
         style: TextButton.styleFrom(minimumSize: const Size.fromHeight(56)),
       );
 

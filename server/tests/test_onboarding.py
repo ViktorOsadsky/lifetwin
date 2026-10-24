@@ -1041,3 +1041,60 @@ def test_everyday_approximate_answers_go_to_confirmation(client, field, text, va
     assert result["state"]["phase"] == "confirming"
     assert result["state"]["pending_profile"][field] == value
     assert result["state"]["confirmed_profile"][field] is None
+
+
+# Apple Health import: values confirmed one by one on the phone move the conversation on.
+def test_import_adds_confirmed_values_and_moves_past_the_current_question(client):
+    state = asking("weight_kg", confirmed_profile={"age": 76, "sex": "female", "height_cm": 160})
+    result = turn(client, "import", state, values={"weight_kg": 68, "sleep_hours": 7.5})
+    confirmed = result["state"]["confirmed_profile"]
+    assert (
+        confirmed["weight_kg"] == 68 and confirmed["sleep_hours"] == 7.5 and confirmed["age"] == 76
+    )
+    assert result["state"]["phase"] == "asking"
+    assert result["state"]["current_field"] not in {
+        "weight_kg",
+        "sleep_hours",
+        "age",
+        "sex",
+        "height_cm",
+    }
+    assert result["state"]["pending_profile"]["weight_kg"] is None
+    assert "Health app" in result["message"] and "2 answers" in result["message"]
+
+
+def test_import_clears_a_previous_skip_for_the_same_field(client):
+    state = asking("age", skipped_fields=["weight_kg"])
+    result = turn(client, "import", state, values={"weight_kg": 70})
+    assert "weight_kg" not in result["state"]["skipped_fields"]
+    assert result["state"]["confirmed_profile"]["weight_kg"] == 70
+
+
+@pytest.mark.parametrize(
+    "values",
+    [{}, {"weight_kg": 5}, {"systolic_bp": 80, "diastolic_bp": 120}, {"weight_kg": "heavy"}],
+)
+def test_import_validates_values_like_any_answer(client, values):
+    response = client.post(
+        "/api/onboarding/turn", json={"action": "import", "state": asking("age"), "values": values}
+    )
+    assert response.status_code == 422
+
+
+def test_import_waits_for_a_pending_confirmation(client):
+    state = ConversationState(
+        phase="confirming", current_field="age", pending_profile={"age": 70}
+    ).model_dump()
+    response = client.post(
+        "/api/onboarding/turn",
+        json={"action": "import", "state": state, "values": {"weight_kg": 70}},
+    )
+    assert response.status_code == 409
+
+
+def test_values_are_rejected_for_other_actions(client):
+    response = client.post(
+        "/api/onboarding/turn",
+        json={"action": "skip", "state": asking("age"), "values": {"weight_kg": 70}},
+    )
+    assert response.status_code == 422
