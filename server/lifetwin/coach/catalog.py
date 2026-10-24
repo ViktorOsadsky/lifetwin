@@ -65,6 +65,13 @@ NIA_SUPPLEMENTS: Source = (
 )
 CDC_SLEEP: Source = ("CDC: About sleep", "https://www.cdc.gov/sleep/about/index.html")
 CDC_TOBACCO: Source = ("CDC: Smoking and tobacco use", "https://www.cdc.gov/tobacco/about/")
+# Checked 2026-10-24 (search summary of the AHA page; the page itself refused a fetch):
+# above 180/120, wait and re-check; with symptoms call 911, without them contact a
+# health care professional as soon as possible.
+AHA_CRISIS: Source = (
+    "AHA: Hypertensive crisis, when to call 911 for high blood pressure",
+    "https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/hypertensive-crisis-when-you-should-call-911-for-high-blood-pressure",
+)
 GAIN_FRAMING: Source = (
     "Gallagher & Updegraff 2012: gain-framed messages and prevention behaviours",
     "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
@@ -509,8 +516,8 @@ DIET: dict[str, Card] = {
             "With diabetes, your care team or a dietitian is the best guide for food choices. "
             "Medicare Part B covers medical nutrition therapy with a dietitian for diabetes or "
             "kidney disease, when your doctor refers you.",
-            "Food advice for diabetes depends on your medicines, so it belongs with your care "
-            "team.",
+            "Food needs with diabetes are different for each person, so they belong with your "
+            "care team.",
             MEDICARE_MNT,
             fixed=True,
         ),
@@ -597,6 +604,20 @@ FORECAST_REPLY = (
     "Nobody can tell how long a person will live, and I never guess. The model only compares "
     "similar people over the next one to five years, and it shows links, not causes."
 )
+BP_CRISIS_REPLY = (
+    "That blood pressure reading is very high. Sit quietly for a few minutes and check it "
+    "again. If it is still that high, please contact your doctor now. Call 911 if you have "
+    "chest pain, shortness of breath, back pain, numbness, weakness, a change in vision or "
+    "trouble speaking."
+)
+TREND_NOTICES = {
+    "bp": "Your last few blood pressure readings were higher than before. It's worth "
+    "bringing them to your doctor.",
+    "a1c": "Your last few A1c results were higher than before. Please bring them to your "
+    "care team at your next visit.",
+    "ldl": "Your last few cholesterol results were higher than before. It's worth bringing "
+    "them to your doctor.",
+}
 RED_FLAG_REPLY = (
     "Let's pause movement ideas for now. Please check with your doctor before trying them again."
 )

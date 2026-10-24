@@ -895,6 +895,63 @@
       ],
       "title": "PreviousPlan",
       "type": "object"
+    },
+    "Reading": {
+      "additionalProperties": false,
+      "description": "A confirmed reading the phone keeps over time (owner ruling 2026-10-24): blood\npressure, and A1c or LDL from uploaded documents. Used only for trends and the\ncrisis line; never a diagnosis, never sent to a provider.",
+      "properties": {
+        "date": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "title": "Date",
+          "type": "string"
+        },
+        "field": {
+          "enum": [
+            "systolic_bp",
+            "diastolic_bp",
+            "a1c",
+            "ldl"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "typed",
+            "voice",
+            "apple_health",
+            "document",
+            "checkin"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "mmHg",
+            "%",
+            "mg/dL",
+            "mmol/L"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "maximum": 500,
+          "minimum": 0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "unit",
+        "date",
+        "source"
+      ],
+      "title": "Reading",
+      "type": "object"
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -1028,6 +1085,14 @@
     },
     "profile": {
       "$ref": "#/$defs/CoachProfile"
+    },
+    "readings": {
+      "items": {
+        "$ref": "#/$defs/Reading"
+      },
+      "maxItems": 60,
+      "title": "Readings",
+      "type": "array"
     },
     "said": {
       "anyOf": [

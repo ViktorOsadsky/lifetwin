@@ -484,6 +484,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "alert": {
+      "anyOf": [
+        {
+          "const": "bp_crisis",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Alert"
+    },
     "based_on": {
       "anyOf": [
         {
@@ -601,6 +614,14 @@
       "title": "Movement Paused",
       "type": "boolean"
     },
+    "notices": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 3,
+      "title": "Notices",
+      "type": "array"
+    },
     "phrased_by": {
       "default": "templates",
       "enum": [
@@ -698,6 +719,8 @@
     "plan_type",
     "reused_previous",
     "clarify",
+    "alert",
+    "notices",
     "lines",
     "reply",
     "items",

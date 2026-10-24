@@ -128,6 +128,13 @@ STOP = {
     "what",
     "now",
 }
+CRISIS_DAYS = 7
+# (notice, reading fields, rise that counts, food pattern to put first)
+TRENDS = (
+    ("bp", {"systolic_bp"}, 5, "dash_less_salt"),
+    ("a1c", {"a1c"}, 0.3, None),
+    ("ldl", {"ldl"}, 10, "mediterranean"),
+)
 CLARIFY = "To make this more personal: on how many days did you get moving last week?"
 
 
@@ -170,6 +177,8 @@ class Plan:
     drafts: list[Draft]
     # A fixed safety reply was given: no provider call for this request.
     provider_blocked: bool
+    alert: str | None = None
+    notices: list[str] = field(default_factory=list)
 
 
 def fact(source: str, value: object) -> TraceFact:
@@ -264,6 +273,9 @@ class Planner:
         self.ignore_notes = False
         self.pet_gone = False
         self.food_focus: str | None = None
+        self.food_first: str | None = None
+        self.alert: str | None = None
+        self.notices: list[str] = []
         self.callback_used = False
         self.trace: list[TraceStep] = []
         self.changes: list[PlanChange] = []
@@ -294,6 +306,7 @@ class Planner:
                 "notes": [n.model_dump(exclude_none=True) for n in self.notes()],
                 "goals": self.req.goals if self.req.memory_consent is True else [],
                 "limits": sorted(self.req.limits),
+                "readings": [r.model_dump() for r in self.req.readings],
                 "paused": self.req.movement_paused,
                 "local_date": self.today,
             }
@@ -306,6 +319,8 @@ class Planner:
         if self.req.checkins:
             observed.append(f"checkins ({len(self.req.checkins)} days)")
         observed += [f"note:{n.id}" for n in self.notes()]
+        if self.req.readings:
+            observed.append(f"readings ({len(self.req.readings)})")
         missing = []
         if (
             p.exercise_minutes_weekly is None
@@ -432,6 +447,69 @@ class Planner:
         )
         self.reply = "Okay. I won't use that while you decide."
 
+    def read_readings(self) -> None:
+        """Trends and the crisis line only: never a diagnosis, never a single reading
+        read as a condition, never anything about medicines (owner ruling)."""
+        readings = [r for r in self.req.readings if 0 <= _days(r.date, self.today) <= 365]
+        bp_days = sorted({r.date for r in readings if r.field in {"systolic_bp", "diastolic_bp"}})
+        if bp_days and _days(bp_days[-1], self.today) <= CRISIS_DAYS:
+            latest = [r for r in readings if r.date == bp_days[-1]]
+            if any(
+                (r.field == "systolic_bp" and r.value >= 180)
+                or (r.field == "diastolic_bp" and r.value >= 120)
+                for r in latest
+            ):
+                self.alert, self.concerned, self.provider_blocked = "bp_crisis", True, True
+                self.paused, self.pause_reason = True, "bp_crisis"
+                self.food_first = "dash_less_salt"
+                self.reply = cat.BP_CRISIS_REPLY
+                self.trace.append(
+                    TraceStep(
+                        item_id="plan",
+                        facts=[
+                            fact("readings", f"blood pressure on {bp_days[-1]} at or above 180/120")
+                        ],
+                        rule="crisis_gate: at or above 180/120 -> re-check, contact your doctor now, "
+                        "911 with symptoms (AHA)",
+                        evidence=cat.AHA_CRISIS[1],
+                        action="crisis reply; movement paused",
+                    )
+                )
+        for group, fields, step, first in TRENDS:
+            series = sorted(
+                (r for r in readings if r.field in fields),
+                key=lambda r: r.date,
+            )
+            values = [r.value * (38.67 if r.unit == "mmol/L" else 1) for r in series]
+            if len(values) < 4:
+                continue
+            recent, earlier = values[-3:], values[:-3]
+            if sum(recent) / 3 - sum(earlier) / len(earlier) >= step:
+                self.notices.append(cat.TREND_NOTICES[group])
+                if first and self.food_first is None:
+                    self.food_first = first
+                # The diabetes card only for a confirmed diagnosis: a trend is not one.
+                if group == "a1c" and not self.food_focus and self.profile.diabetes:
+                    self.food_focus = "care_team_food"
+                self.trace.append(
+                    TraceStep(
+                        item_id="plan",
+                        facts=[
+                            fact("readings", f"{group}: last 3 of {len(values)} higher than before")
+                        ],
+                        rule="reading_trend: notice the direction, suggest the doctor; no diagnosis, "
+                        "no single-reading judgement, nothing about medicines",
+                        evidence=(
+                            cat.NHLBI_DASH
+                            if group == "bp"
+                            else cat.MEDICARE_MNT
+                            if group == "a1c"
+                            else cat.PREDIMED
+                        )[1],
+                        action=f"notice: {group} trend; food pattern {first or 'care team'}",
+                    )
+                )
+
     def add_limit(self, tag: str, source: str, value: str) -> None:
         self.limits.add(tag)
         self.limit_facts.append(fact(source, f"{value} -> {tag}"))
@@ -496,6 +574,7 @@ class Planner:
             self.profile.model_dump(exclude_none=True)
             or self.req.checkins
             or self.req.limits
+            or self.req.readings
             or self.notes()
             or self.prev
         )
@@ -601,11 +680,10 @@ class Planner:
         facts = level_facts + self.limit_facts
         age = self.profile.age
         if self.paused:
-            reason = (
-                "movement stays paused until your doctor says it's okay"
-                if self.pause_reason == "movement_paused"
-                else "you mentioned a warning sign"
-            )
+            reason = {
+                "movement_paused": "movement stays paused until your doctor says it's okay",
+                "bp_crisis": "of that very high blood pressure reading",
+            }.get(self.pause_reason or "", "you mentioned a warning sign")
             self.changes.append(
                 PlanChange(
                     item_id="move",
@@ -839,6 +917,10 @@ class Planner:
             order.remove("dash_less_salt")
             order.insert(0, "dash_less_salt")
             facts.append(fact("profile.hypertension", True))
+        if self.food_first:
+            order.remove(self.food_first)
+            order.insert(0, self.food_first)
+            facts.append(fact("readings", f"trend -> {self.food_first}"))
         prev_card = cat.DIET.get(prev_ref.catalog_id) if prev_ref else None
         dismissed = bool(fb and fb.status == "dismissed")
         if fb:
@@ -1198,6 +1280,7 @@ class Planner:
         if any(is_emergency(t) for t in texts):
             return self.emergency_plan()
         self.read_said()
+        self.read_readings()
         self.read_feedback_and_notes()
         snapshot_id = self.snapshot()
         if self.reusable(snapshot_id):
@@ -1276,6 +1359,8 @@ class Planner:
             plan_type="general" if general else "personal",
             reused_previous=False,
             clarify=clarify,
+            alert=self.alert,
+            notices=self.notices,
             reply=self.reply,
             lines=self.lines(items, general),
             items=items,
@@ -1402,6 +1487,7 @@ class Planner:
             out.append("Here's a small plan for today.")
         else:
             out.append("Here's today's plan.")
+        out.extend(self.notices)
         shown = [
             c.explanation
             for c in self.changes

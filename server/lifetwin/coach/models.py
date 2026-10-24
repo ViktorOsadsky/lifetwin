@@ -86,6 +86,36 @@ class DaySummary(ApiModel):
     wellbeing: Wellbeing | None = None
 
 
+READING_UNITS = {
+    "systolic_bp": {"mmHg": (40, 300)},
+    "diastolic_bp": {"mmHg": (20, 200)},
+    "a1c": {"%": (3, 20)},
+    "ldl": {"mg/dL": (10, 500), "mmol/L": (0.3, 13)},
+}
+
+
+class Reading(ApiModel):
+    """A confirmed reading the phone keeps over time (owner ruling 2026-10-24): blood
+    pressure, and A1c or LDL from uploaded documents. Used only for trends and the
+    crisis line; never a diagnosis, never sent to a provider."""
+
+    field: Literal["systolic_bp", "diastolic_bp", "a1c", "ldl"]
+    value: float = Field(ge=0, le=500)
+    unit: Literal["mmHg", "%", "mg/dL", "mmol/L"]
+    date: RealDate
+    source: Literal["typed", "voice", "apple_health", "document", "checkin"]
+
+    @model_validator(mode="after")
+    def unit_and_range(self):
+        ranges = READING_UNITS[self.field]
+        if self.unit not in ranges:
+            raise ValueError("That unit does not fit this reading")
+        low, high = ranges[self.unit]
+        if not low <= self.value <= high:
+            raise ValueError("That reading is outside the accepted range")
+        return self
+
+
 class CoachNote(ApiModel):
     """A habit note the phone keeps (conversation-v2's ``HabitNote`` fields), plus the
     phone's ``id``, a first ``name`` for a pet or person, and the day it was noted.
@@ -181,6 +211,7 @@ class PreviousPlan(ApiModel):
 class CoachPlanRequest(ApiModel):
     profile: CoachProfile = Field(default_factory=CoachProfile)
     checkins: list[DaySummary] = Field(default_factory=list, max_length=28)
+    readings: list[Reading] = Field(default_factory=list, max_length=60)
     # May Mochi use the little things it remembers? false or null: notes are ignored.
     memory_consent: bool | None = None
     habit_notes: list[CoachNote] = Field(default_factory=list, max_length=20)
@@ -219,6 +250,8 @@ class CoachPlanRequest(ApiModel):
         # Freshness: nothing may be dated after the phone's own day.
         if any(day.date > self.local_date for day in self.checkins):
             raise ValueError("Check-ins cannot be dated after local_date")
+        if any(reading.date > self.local_date for reading in self.readings):
+            raise ValueError("Readings cannot be dated after local_date")
         if len({day.date for day in self.checkins}) != len(self.checkins):
             raise ValueError("One check-in summary per day")
         if len({note.id for note in self.habit_notes}) != len(self.habit_notes):
@@ -326,6 +359,11 @@ class CoachPlanResponse(ApiModel):
     reused_previous: bool = False
     # A short question that would make the next plan more personal.
     clarify: str | None = None
+    # "bp_crisis": a recent blood pressure reading at or above 180/120. The app shows
+    # "Call my doctor" and a "Call 911" button the person taps themselves.
+    alert: Literal["bp_crisis"] | None = None
+    # Plain notes from the readings history ("your last few readings were higher").
+    notices: list[str] = Field(default_factory=list, max_length=3)
     # Mochi's spoken lines, in order: the reply to what was said, the plan, the changes.
     lines: list[str] = Field(min_length=1, max_length=10)
     reply: str | None = None

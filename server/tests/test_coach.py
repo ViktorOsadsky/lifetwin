@@ -170,6 +170,8 @@ def check(expect: dict, status: int, body: dict, fake: FakeMuse, prev_body: dict
         assert body["mood"] in expect["mood_in"], (label, body["mood"])
     if "movement_paused" in expect:
         assert body["movement_paused"] is expect["movement_paused"], label
+    if "alert" in expect:
+        assert body["alert"] == expect["alert"], (label, body["alert"])
     if "memory_instruction" in expect:
         want = expect["memory_instruction"]
         got = body["memory_instruction"]
@@ -600,6 +602,26 @@ PERSONAL = {
     "said": "Good morning Mochi, my name is Dorothy Smith",
     "outside_ai_consent": {"muse": True},
 }
+
+
+def test_readings_never_reach_the_provider():
+    fake = FakeMuse()
+    client, _ = make_client(fake)
+    readings = [
+        {"field": "systolic_bp", "value": v, "unit": "mmHg", "date": d, "source": "typed"}
+        for v, d in (
+            (128, "2026-09-01"),
+            (131, "2026-09-20"),
+            (143, "2026-10-10"),
+            (147, "2026-10-18"),
+            (149, "2026-10-22"),
+        )
+    ]
+    body = post(client, {**PERSONAL, "readings": readings})
+    assert body["notices"] and fake.calls
+    sent = json.dumps(fake.calls)
+    assert not any(str(v) in sent for v in (128, 131, 143, 147, 149))
+    assert "higher than before" not in sent  # notices are fixed text, never reworded
 
 
 def test_provider_gets_only_drafts_never_names_profile_or_words():

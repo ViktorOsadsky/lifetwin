@@ -77,6 +77,8 @@ async def plan(
         plan_type=result.plan_type,
         reused_previous=result.reused_previous,
         clarify=result.clarify,
+        alert=result.alert,
+        notices=result.notices,
         lines=lines,
         reply=result.reply,
         items=items,

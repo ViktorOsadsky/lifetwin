@@ -57,6 +57,7 @@ Expect properties (all optional; every listed one must hold):
   "changes": {"move": ["swapped","seated"], ...}   # item's change kind must be one of these
   "mood_in": ["happy","proud","cozy","waiting","concerned","celebrate"]
   "movement_paused": bool
+  "alert": null | "bp_crisis"
   "memory_instruction": null | {"action": "forget"|"forget_all", "note_ids_include": [...]}
   "provider_calls": int            # how many times the fake provider was called
   "phrased_by": "templates" | "muse"

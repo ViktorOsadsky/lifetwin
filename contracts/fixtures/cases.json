@@ -1068,5 +1068,42 @@
     "response_subset": {
       "code": "invalid_request"
     }
+  },
+  {
+    "name": "coach-plan-blood-pressure-crisis",
+    "method": "POST",
+    "path": "/api/coach/plan",
+    "request_schema": "coach.plan.request.schema.json",
+    "request": {
+      "local_date": "2026-10-24",
+      "profile": {
+        "age": 71
+      },
+      "readings": [
+        {
+          "field": "systolic_bp",
+          "value": 184,
+          "unit": "mmHg",
+          "date": "2026-10-24",
+          "source": "typed"
+        },
+        {
+          "field": "diastolic_bp",
+          "value": 104,
+          "unit": "mmHg",
+          "date": "2026-10-24",
+          "source": "typed"
+        }
+      ]
+    },
+    "status": 200,
+    "response_schema": "coach.plan.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "alert": "bp_crisis",
+      "movement_paused": true,
+      "emergency": false,
+      "mood": "concerned"
+    }
   }
 ]
