@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/lifetwin_theme.dart';
+import 'whole_word_text.dart';
 
 /// Underlined text action ("Skip this question"). At least 56 pt tall, no box.
 class LtTextLink extends StatelessWidget {
@@ -37,7 +38,9 @@ class LtTextLink extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (icon != null) ...[ExcludeSemantics(child: icon!), const SizedBox(width: LtSpace.sm)],
-                    Flexible(child: Text(label, textAlign: TextAlign.center, style: style)),
+                    Flexible(
+                      child: WholeWordText(label, textAlign: TextAlign.center, style: style),
+                    ),
                   ],
                 ),
               ),

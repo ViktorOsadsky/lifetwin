@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../theme/lifetwin_theme.dart';
 import 'lip_button.dart';
 import 'lt_icons.dart';
+import 'whole_word_text.dart';
 
-/// Label row shared by the big buttons: optional icon, then text that wraps.
+/// Label row shared by the big buttons: optional icon, then text that wraps between words.
 class _Label extends StatelessWidget {
   const _Label({required this.label, required this.style, required this.enabled, this.icon});
   final String label;
@@ -14,7 +15,7 @@ class _Label extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = Text(
+    final text = WholeWordText(
       label,
       textAlign: TextAlign.center,
       style: style.copyWith(color: enabled ? LtColors.ink : LipStyle.disabledOutline),
@@ -23,7 +24,9 @@ class _Label extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        ExcludeSemantics(child: Opacity(opacity: enabled ? 1 : .5, child: icon)),
+        ExcludeSemantics(
+          child: Opacity(opacity: enabled ? 1 : .5, child: icon),
+        ),
         const SizedBox(width: LtSpace.lg),
         Flexible(child: text),
       ],
@@ -122,7 +125,7 @@ class LtBackButton extends StatelessWidget {
       children: [
         const LtIcon(LtIconKind.back, size: 26, strokeWidth: 2.8),
         const SizedBox(width: LtSpace.xs),
-        Flexible(child: Text(label, style: LtText.pillButton)),
+        Flexible(child: WholeWordText(label, style: LtText.pillButton)),
       ],
     ),
   );
