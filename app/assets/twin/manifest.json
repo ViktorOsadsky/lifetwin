@@ -652,6 +652,44 @@
       },
       "note3x": "3.0x is the native 1170x2532 render (cropped for foreground pieces)",
       "notes": "The shelf without its crystal ball; laid over the bg while the twin holds the ball."
+    },
+    {
+      "path": "assets/scene/room/room_bowl_empty.png",
+      "size1x": {
+        "w": 28,
+        "h": 28
+      },
+      "rectIn390x844": [
+        12.0,
+        416.0,
+        28.0,
+        28.0
+      ],
+      "variants": {
+        "2.0x": "assets/scene/room/2.0x/room_bowl_empty.png",
+        "3.0x": "assets/scene/room/3.0x/room_bowl_empty.png"
+      },
+      "note3x": "3.0x is the native 1170x2532 render (cropped for foreground pieces)",
+      "notes": "The fruit bowl without its apple (feathered patch); laid over the bg while the twin eats."
+    },
+    {
+      "path": "assets/scene/room/room_bowl_apple.png",
+      "size1x": {
+        "w": 28,
+        "h": 28
+      },
+      "rectIn390x844": [
+        12.0,
+        416.0,
+        28.0,
+        28.0
+      ],
+      "variants": {
+        "2.0x": "assets/scene/room/2.0x/room_bowl_apple.png",
+        "3.0x": "assets/scene/room/3.0x/room_bowl_apple.png"
+      },
+      "note3x": "3.0x is the native 1170x2532 render (cropped for foreground pieces)",
+      "notes": "The apple alone, cut from the bg; scales back into the bowl after Eat."
     }
   ]
 }

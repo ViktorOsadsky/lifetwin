@@ -188,6 +188,15 @@
   218.556
  ],
  "shelfBallRadius": 0.14,
+ "bowlApple": [
+  -1.02,
+  0.7,
+  1.85
+ ],
+ "bowlAppleScreen": [
+  26.069,
+  430.756
+ ],
  "calibration": [
   {
    "world": [
@@ -511,6 +520,24 @@
     188.0,
     60.0,
     60.0
+   ]
+  },
+  "bowlEmpty": {
+   "asset": "assets/scene/room/room_bowl_empty.png",
+   "rect": [
+    12.0,
+    416.0,
+    28.0,
+    28.0
+   ]
+  },
+  "bowlApple": {
+   "asset": "assets/scene/room/room_bowl_apple.png",
+   "rect": [
+    12.0,
+    416.0,
+    28.0,
+    28.0
    ]
   }
  },

@@ -28,6 +28,8 @@ class RoomLayout {
     required this.sleepY,
     required this.bedTop,
     required this.tableZ,
+    required this.shelfBallAt,
+    required this.appleAt,
     required this.bounds,
     required this.obstacles,
     required this.waypoints,
@@ -37,6 +39,8 @@ class RoomLayout {
     required this.fgBed,
     required this.fgTable,
     required this.shelfEmpty,
+    required this.bowlEmpty,
+    required this.bowlApple,
   });
 
   /// Size of the render, in logical px.
@@ -57,6 +61,11 @@ class RoomLayout {
   final double sleepY;
   final double bedTop;
   final double tableZ;
+
+  /// World (x, y, z) of the crystal ball on the shelf and of the apple in
+  /// the fruit bowl, for the sparkles.
+  final (double, double, double) shelfBallAt;
+  final (double, double, double) appleAt;
 
   /// Walkable floor (x, z) and the padded furniture boxes to walk around.
   final Rect bounds;
@@ -79,6 +88,13 @@ class RoomLayout {
 
   /// The shelf without its crystal ball, shown while the twin holds the ball.
   final RoomLayer shelfEmpty;
+
+  /// The fruit bowl without its apple (a feathered patch), shown while the
+  /// twin eats; [bowlApple] then scales the apple back in.
+  final RoomLayer bowlEmpty;
+
+  /// The apple alone, cut from the bg, for the refill pop.
+  final RoomLayer bowlApple;
 
   FloorProjector get projector => FloorProjector(viewProjection: viewProjection, viewport: viewport);
 

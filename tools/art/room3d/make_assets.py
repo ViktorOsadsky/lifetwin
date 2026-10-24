@@ -1,10 +1,10 @@
 # Turn the rendered layers (render_layers.sh) into Flutter assets.
 # usage: uv run --with pillow python make_assets.py <render dir> <app/assets/scene/room>
 # Writes 1x / 2.0x / 3.0x variants (3.0x = the native 1170x2532 render), crops the
-# foreground layers and the empty-shelf patch to their bounds, and writes room_layers.json
+# foreground layers and the empty-shelf and empty-bowl patches to their bounds, and writes room_layers.json
 # (camera matrix, floor calibration, walkable floor, and each layer's rect in 390x844 px).
 import json, os, sys
-from PIL import Image
+from PIL import Image, ImageChops, ImageFilter
 
 src, out = sys.argv[1], sys.argv[2]
 S = 3  # render scale
@@ -47,6 +47,24 @@ x0, y0 = int(max(0, bx - half)) * S, int(max(0, by - half)) * S
 x1, y1 = int(min(W, bx + half)) * S, int(min(H, by + half)) * S
 save(nb.crop((x0, y0, x1, y1)), 'room_shelf_empty.png')
 layers['shelfEmpty'] = {'asset': 'assets/scene/room/room_shelf_empty.png', 'rect': [x0 / S, y0 / S, (x1 - x0) / S, (y1 - y0) / S]}
+
+# Empty-bowl patch (Eat): the no-apple render around the apple, feathered so only the bowl changes,
+# and the apple alone (cut from the bg) for the refill pop.
+ax, ay = cal['bowlAppleScreen']
+half = 14
+x0, y0 = int(max(0, ax - half)) * S, int(max(0, ay - half)) * S
+x1, y1 = int(min(W, ax + half)) * S, int(min(H, ay + half)) * S
+na = Image.open(os.path.join(src, 'room_noapple.png')).convert('RGB').crop((x0, y0, x1, y1))
+full = bg.crop((x0, y0, x1, y1))
+diff = ImageChops.difference(full, na).convert('L').point(lambda v: 255 if v > 6 else 0)
+assert diff.getbbox() and diff.getbbox() != (0, 0, x1 - x0, y1 - y0), 'apple must sit inside the patch'
+rect = [x0 / S, y0 / S, (x1 - x0) / S, (y1 - y0) / S]
+empty = na.convert('RGBA'); empty.putalpha(diff.filter(ImageFilter.MaxFilter(13)).filter(ImageFilter.GaussianBlur(4)))
+save(empty, 'room_bowl_empty.png')
+layers['bowlEmpty'] = {'asset': 'assets/scene/room/room_bowl_empty.png', 'rect': rect}
+apple = full.convert('RGBA'); apple.putalpha(diff.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(1)))
+save(apple, 'room_bowl_apple.png')
+layers['bowlApple'] = {'asset': 'assets/scene/room/room_bowl_apple.png', 'rect': rect}
 
 cal['layers'] = layers
 cal['$comment'] = ('Pre-rendered room (owner ruling 2026-10-24). Rendered from tools/art/room3d/room3d_prototype.html '

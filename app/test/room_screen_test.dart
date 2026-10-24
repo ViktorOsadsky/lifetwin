@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/forecast/forecast_client.dart';
 import 'package:lifesim/forecast/fortune_ceremony_screen.dart';
@@ -54,14 +57,16 @@ Future<ValueNotifier<TwinAppearance>> pumpRoom(
   bool reduced = false,
   Future<void> Function()? onFortune,
   ValueNotifier<Forecast?>? outlook,
+  Size size = const Size(390, 844),
+  double textScale = 1,
 }) async {
-  setPhone(t);
+  setPhone(t, size);
   final notifier = ValueNotifier(look);
   addTearDown(notifier.dispose);
   await t.pumpWidget(
     MaterialApp(
       home: MediaQuery(
-        data: MediaQueryData(size: const Size(390, 844), disableAnimations: reduced),
+        data: MediaQueryData(size: size, disableAnimations: reduced, textScaler: TextScaler.linear(textScale)),
         child: RoomScreen(
           appearance: notifier,
           onTalk: () {},
@@ -73,7 +78,49 @@ Future<ValueNotifier<TwinAppearance>> pumpRoom(
     ),
   );
   await t.pump();
+  await t.pump(); // the room hears how much the UI covers
   return notifier;
+}
+
+/// The box (button) around a label.
+Rect boxOf(WidgetTester t, String label) =>
+    t.getRect(find.ancestor(of: find.text(label), matching: find.byType(GestureDetector)).first);
+
+/// Runs [sim] for [seconds] at 60 fps, calling [each] after every step.
+void run(RoomSim sim, double seconds, [void Function()? each]) {
+  for (var i = 0; i < seconds * 60; i++) {
+    sim.step(1 / 60);
+    each?.call();
+  }
+}
+
+/// The bundled fonts, so label widths are the real ones.
+Future<void> loadAppFonts() async {
+  for (final (family, files) in [
+    ('Atkinson Hyperlegible', ['AtkinsonHyperlegible-Regular.ttf', 'AtkinsonHyperlegible-Bold.ttf']),
+    ('Fredoka', ['Fredoka-Variable.ttf']),
+  ]) {
+    final loader = FontLoader(family);
+    for (final f in files) {
+      loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
+    }
+    await loader.load();
+  }
+}
+
+/// A label sits on one line, inside its box, at 15 px or more.
+void expectOneLine(WidgetTester t, String label, {bool checkFloor = true}) {
+  final text = t.widget<Text>(find.text(label));
+  expect(text.maxLines, 1, reason: label);
+  expect(text.softWrap, isFalse, reason: label);
+  final para = t.renderObject<RenderParagraph>(find.text(label));
+  final lineH = para.text.style!.fontSize! * para.textScaler.scale(1) * para.text.style!.height!;
+  expect(para.size.height, lessThan(lineH * 1.5), reason: '$label is on one line');
+  final rect = t.getRect(find.text(label)), box = boxOf(t, label);
+  expect(box.left <= rect.left + 0.5 && rect.right <= box.right + 0.5, isTrue, reason: '$label fits its box');
+  if (checkFloor) {
+    expect(rect.height / para.text.style!.height!, greaterThanOrEqualTo(15 - 0.05), reason: '$label is 15 px or more');
+  }
 }
 
 void main() {
@@ -99,8 +146,10 @@ void main() {
       expect(find.text(label), findsOneWidget);
     }
     for (final label in ['Exercise', 'Eat', 'Sleep']) {
-      expect(t.getSize(find.ancestor(of: find.text(label), matching: find.byType(GestureDetector)).first).height,
-          greaterThanOrEqualTo(48));
+      expect(
+        t.getSize(find.ancestor(of: find.text(label), matching: find.byType(GestureDetector)).first).height,
+        greaterThanOrEqualTo(48),
+      );
     }
     expect(t.takeException(), isNull);
   });
@@ -252,6 +301,128 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
+  testWidgets('effects: sweat and sparkles in Exercise, hop sparkles on a tap', (t) async {
+    await pumpRoom(t);
+    await t.tap(find.byKey(const ValueKey('room-twin')), warnIfMissed: false);
+    await t.pump(const Duration(milliseconds: 50));
+    expect(find.byKey(const ValueKey('room-fx')), findsOneWidget);
+    await frames(t, 1.5);
+    await t.tap(find.text('Exercise'));
+    await pumpUntil(t, find.text('Jumping jacks!'));
+    await t.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('room-fx')), findsOneWidget);
+    await pumpUntil(t, find.text('Feeling strong'));
+  });
+
+  test('effects: each action spawns its own; none under reduced motion', () {
+    for (final reduced in [false, true]) {
+      final sim = RoomSim(layout: roomLayout, reduced: reduced);
+      final kinds = <RoomFxKind>{};
+      void seen() => kinds.addAll(sim.fx.map((p) => p.kind));
+      final glows = <double>{};
+      sim.tapTwin();
+      run(sim, 1, seen);
+      for (final a in [RoomAction.exercise, RoomAction.eat]) {
+        sim.startAction(a);
+        run(sim, 12, seen);
+      }
+      sim.startAction(RoomAction.fortune);
+      run(sim, 10, () {
+        seen();
+        if (sim.glow > 0) glows.add((sim.glow * 100).roundToDouble());
+      });
+      if (reduced) {
+        expect(kinds, isEmpty);
+        expect(glows, {50}, reason: 'a steady glow, no pulses');
+      } else {
+        expect(kinds, {RoomFxKind.sparkle, RoomFxKind.drop});
+        expect(glows.reduce((a, b) => a > b ? a : b), greaterThan(90), reason: 'the ball pulses');
+      }
+      sim.dispose();
+    }
+  });
+
+  testWidgets('Eat takes the apple out of the bowl and pops it back after', (t) async {
+    await pumpRoom(t);
+    expect(image(roomLayout.bowlEmpty.asset), findsNothing);
+    await t.tap(find.text('Eat'));
+    await pumpUntil(t, find.text('Crunch, crunch!'));
+    await t.pump(const Duration(milliseconds: 100));
+    expect(image(roomLayout.bowlEmpty.asset), findsWidgets); // the apple is out
+    await pumpUntil(t, find.text('Yum!'));
+    expect(image(roomLayout.bowlEmpty.asset), findsWidgets);
+    await pumpUntil(t, find.text('Full and happy'));
+    expect(find.byKey(const ValueKey('room-apple-pop')), findsOneWidget); // popping back in
+    await frames(t, 0.6);
+    expect(image(roomLayout.bowlEmpty.asset), findsNothing);
+    expect(find.byKey(const ValueKey('room-apple-pop')), findsNothing);
+  });
+
+  testWidgets('reduced motion: the apple comes back at once, with no effects', (t) async {
+    await pumpRoom(t, reduced: true);
+    await t.tap(find.text('Eat'));
+    await pumpUntil(t, find.text('Crunch, crunch!'));
+    await t.pump(const Duration(milliseconds: 100));
+    expect(image(roomLayout.bowlEmpty.asset), findsWidgets);
+    expect(find.byKey(const ValueKey('room-fx')), findsNothing);
+    await pumpUntil(t, find.text('Full and happy'));
+    await t.pump(const Duration(milliseconds: 50));
+    expect(image(roomLayout.bowlEmpty.asset), findsNothing);
+    expect(find.byKey(const ValueKey('room-apple-pop')), findsNothing);
+  });
+
+  testWidgets('a long press makes the twin dizzy, then all better', (t) async {
+    await pumpRoom(t);
+    await t.longPress(find.byKey(const ValueKey('room-twin')), warnIfMissed: false);
+    await t.pump(const Duration(milliseconds: 100));
+    expect(find.text('Whoa, dizzy!'), findsOneWidget);
+    expect(twinPose(t), TwinPose.dizzy);
+    await pumpUntil(t, find.text('All better'), seconds: 3);
+    expect(twinPose(t), isNot(TwinPose.dizzy));
+  });
+
+  testWidgets('the standing bear blinks', (t) async {
+    await pumpRoom(t);
+    await pumpUntil(t, find.byKey(const ValueKey('room-blink')), seconds: 12);
+    expect(twinPose(t), TwinPose.stand);
+    await frames(t, 0.3);
+    expect(find.byKey(const ValueKey('room-blink')), findsNothing);
+  });
+
+  test('idle: a sit on the rug or a wave every 8 to 12 s; the walk tilts, bobs and squashes', () {
+    final sim = RoomSim(layout: roomLayout, random: math.Random(3));
+    addTearDown(sim.dispose);
+    final said = <String>[];
+    var maxTilt = 0.0, maxBob = 0.0, minSq = 1.0;
+    run(sim, 40, () {
+      if (said.isEmpty || said.last != sim.status) said.add(sim.status);
+      if (sim.pose == RoomPose.walk || sim.pose == RoomPose.walkFront || sim.pose == RoomPose.walkBack) {
+        maxTilt = math.max(maxTilt, sim.tilt.abs());
+        maxBob = math.max(maxBob, sim.bob);
+        minSq = math.min(minSq, sim.sq);
+      }
+    });
+    expect(said.where((s) => s == 'Hi there!' || s == 'Sitting on the rug').length, greaterThanOrEqualTo(2));
+    expect(maxTilt, closeTo(3.5 * math.pi / 180, 0.005)); // the prototype's values
+    expect(maxBob, closeTo(0.026 * roomLayout.bearHeight, 0.002));
+    expect(minSq, closeTo(1 - 0.028, 0.004));
+  });
+
+  test('the room only slides on screens shorter than the render', () {
+    const clear = EdgeInsets.only(top: 90, bottom: 260);
+    expect(roomAlignmentY(roomLayout, const Size(390, 844), clear), 0);
+    final y = roomAlignmentY(roomLayout, const Size(375, 667), clear);
+    expect(y, greaterThan(0), reason: 'slides up to show more floor');
+    expect(y, lessThanOrEqualTo(1));
+  });
+
+  testWidgets('button labels never break inside a word (test font, 390 wide)', (t) async {
+    await pumpRoom(t);
+    for (final label in ['Exercise', 'Eat', 'Sleep', 'Customize', 'Fortune']) {
+      expectOneLine(t, label, checkFloor: false);
+    }
+  });
+
   group('FloorProjector', () {
     final p = roomLayout.projector;
 
@@ -299,5 +470,42 @@ void main() {
     for (final s in said) {
       expect(s.split(' ').length, lessThanOrEqualTo(4), reason: s);
     }
+  });
+
+  group('with the bundled fonts', () {
+    setUpAll(loadAppFonts);
+
+    testWidgets('Exercise and Customize fit one line at 17 px on a 390 phone', (t) async {
+      await pumpRoom(t);
+      for (final label in ['Exercise', 'Eat', 'Sleep', 'Customize', 'Fortune']) {
+        expectOneLine(t, label);
+        expect(t.getRect(find.text(label)).height, closeTo(17 * 1.35, 0.5), reason: '$label is not scaled down');
+      }
+    });
+
+    testWidgets('375 x 667: the twin stays clear of the activity row and dock during Exercise', (t) async {
+      for (final scale in [1.0, 1.3]) {
+        await pumpRoom(t, size: const Size(375, 667), textScale: scale);
+        await t.tap(find.text('Exercise'));
+        await pumpUntil(t, find.text('Jumping jacks!'));
+        final row = boxOf(t, 'Exercise');
+        for (var i = 0; i < 30; i++) {
+          await t.pump(const Duration(milliseconds: 50));
+          final twin = t.getRect(find.byKey(const ValueKey('room-twin')));
+          expect(twin.bottom, lessThanOrEqualTo(row.top), reason: 'feet above the buttons at ${scale}x');
+          expect(twin.top, greaterThanOrEqualTo(0), reason: 'head on screen at ${scale}x');
+        }
+        await pumpUntil(t, find.text('Feeling strong'));
+        expect(t.takeException(), isNull);
+      }
+    });
+
+    testWidgets('labels stay on one line at 15 px or more on 375 x 667 with 1.3x text', (t) async {
+      await pumpRoom(t, size: const Size(375, 667), textScale: 1.3);
+      for (final label in ['Exercise', 'Eat', 'Sleep', 'Customize', 'Fortune']) {
+        expectOneLine(t, label);
+      }
+      expect(t.takeException(), isNull);
+    });
   });
 }

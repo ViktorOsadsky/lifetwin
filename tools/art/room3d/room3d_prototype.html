@@ -437,8 +437,9 @@
 const HASH = Object.fromEntries(location.hash.replace(/^#/, '').split('&').filter(Boolean).map(kv => kv.split('=')));
 const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
 let REDUCED = mq.matches || HASH.reduced === '1';
-/* Layer export for the Flutter room (local only): #layer=bg|noball|fg_bed|fg_table|calib&dpr=3
+/* Layer export for the Flutter room (local only): #layer=bg|noball|noapple|fg_bed|fg_table|calib&dpr=3
    bg: room without the bear or UI. noball: same, crystal ball taken off the shelf.
+   noapple: same, the apple taken out of the fruit bowl (Eat).
    fg_bed: only the bed pixels in front of the sleeping bear (transparent elsewhere).
    fg_table: only the table (transparent elsewhere). calib: camera matrix + key points as JSON in <pre id="calib">. */
 const LAYER = HASH.layer || '';
@@ -1474,6 +1475,7 @@ function applyLayer() {
   S.frozen = true;
   bear.root.visible = false; bear.shadow.visible = false; heldGlow.visible = false;
   if (LAYER === 'noball') { ball.visible = false; ballLight.intensity = 0; }
+  if (LAYER === 'noapple') bowlApple.visible = false;
   if (LAYER === 'fg_table') {
     scene.children.forEach(o => { if (!o.isLight && o !== table) o.visible = false; });
   }
@@ -1507,6 +1509,7 @@ function applyLayer() {
     for (const x of [-2, -1, 0, 1, 2]) for (const z of [-2, -1, 0, 1, 2]) pts.push({ world: [x, 0, z], screen: proj(x, 0, z) });
     pts.push({ world: [SPOT.bed[0], SLEEP_Y, SPOT.bed[1]], screen: proj(SPOT.bed[0], SLEEP_Y, SPOT.bed[1]) });
     const ballP = ball.position;
+    const appleP = bowlApple.getWorldPosition(new THREE.Vector3());
     const out = {
       source: 'design/room3d/index.html (three.js r128), rendered headless',
       viewport: [W, H],
@@ -1517,6 +1520,7 @@ function applyLayer() {
       bounds: BOUNDS, obstacles: OBST, waypoints: WAYPTS, wander: WANDER, spots: SPOT,
       bed: BED, table: TABLE, shelfBall: [ballP.x, ballP.y, ballP.z], shelfBallScreen: proj(ballP.x, ballP.y, ballP.z),
       shelfBallRadius: 0.14,
+      bowlApple: [+appleP.x.toFixed(4), +appleP.y.toFixed(4), +appleP.z.toFixed(4)], bowlAppleScreen: proj(appleP.x, appleP.y, appleP.z),
       calibration: pts
     };
     const pre = document.createElement('pre'); pre.id = 'calib'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);

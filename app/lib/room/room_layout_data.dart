@@ -37,6 +37,8 @@ const RoomLayout roomLayout = RoomLayout(
   sleepY: 0.57,
   bedTop: 0.56,
   tableZ: 1.78,
+  shelfBallAt: (0.9700000000000001, 1.96, -2.33),
+  appleAt: (-1.02, 0.7, 1.85),
   bounds: Rect.fromLTRB(-2.0, -2.0, 2.0, 2.0),
   obstacles: [
     Rect.fromLTRB(-1.15, -2.7800000000000002, 0.91, -0.16999999999999998),
@@ -76,4 +78,6 @@ const RoomLayout roomLayout = RoomLayout(
   fgBed: RoomLayer('assets/scene/room/room_fg_bed.png', Rect.fromLTWH(146.0, 331.0, 145.0, 24.0)),
   fgTable: RoomLayer('assets/scene/room/room_fg_table.png', Rect.fromLTWH(0.0, 405.0, 66.0, 89.0)),
   shelfEmpty: RoomLayer('assets/scene/room/room_shelf_empty.png', Rect.fromLTWH(314.0, 188.0, 60.0, 60.0)),
+  bowlEmpty: RoomLayer('assets/scene/room/room_bowl_empty.png', Rect.fromLTWH(12.0, 416.0, 28.0, 28.0)),
+  bowlApple: RoomLayer('assets/scene/room/room_bowl_apple.png', Rect.fromLTWH(12.0, 416.0, 28.0, 28.0)),
 );
