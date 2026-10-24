@@ -277,8 +277,9 @@ class TwinRepository extends ChangeNotifier {
       days: [for (final p in outcome.dayLogParts) p.date],
       weekStart: outcome.weeklySummary?['week_start'] as String?,
     );
-    if (record.kind == HistoryKind.weekly)
+    if (record.kind == HistoryKind.weekly) {
       await _recordReading(record.answers.keys, record.answers, HistorySource.said);
+    }
     _refresh();
     return outcome;
   }
