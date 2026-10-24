@@ -15,24 +15,26 @@ void main() {
     await tapText(t, "No, I'll type");
     await readQuestion(t);
     await tapText(t, 'Not now');
-    await waitFor(t, find.textContaining('How old are you?'));
+    await waitFor(t, find.textContaining(memoryQuestion)); // 1: start
     await settled(t);
-    await say(t, '71', 'you are 71'); // 2
-    await yes(t, 'What sex'); // 3
-    await tapText(t, 'Female'); // 4
-    await waitFor(t, find.textContaining('female at birth'));
-    await settled(t);
-    await yes(t, 'How tall'); // 5
-    await typeAndSend(t, '5 foot 4'); // 6: over the limit
+    await say(t, 'No thanks', ageQuestion); // 2: the memory question comes first
+    await say(t, '71', 'you are 71'); // 3
+    await yes(t, sexQuestion); // 4
+    await tapText(t, 'Female'); // over the limit
     await waitFor(t, find.textContaining('Too many tries'));
     await settled(t);
     await tapText(t, 'Try again');
     await pumpFor(t, const Duration(seconds: 1));
     await waitFor(t, find.textContaining('Too many tries'));
     await settled(t);
-    expect(ctl(t).confirmedProfile['sex'], 'female');
+    expect(ctl(t).confirmedProfile['age'], 71);
+    expect(ctl(t).confirmedProfile['sex'], isNull, reason: 'a refused answer is not saved');
     await pumpFor(t, const Duration(seconds: 62));
     await tapText(t, 'Try again');
-    await waitFor(t, find.textContaining('5 feet 4 inches'));
+    await waitFor(t, find.textContaining('female at birth'));
+    await settled(t);
+    await yes(t, smokingQuestion);
+    expect(ctl(t).confirmedProfile['sex'], 'female');
+    expect(ctl(t).confirmedProfile['age'], 71);
   });
 }
