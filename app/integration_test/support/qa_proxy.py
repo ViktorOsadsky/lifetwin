@@ -11,6 +11,7 @@ GET /__qa/mode?m=<mode>[&path=<prefix>][&times=<n>][&delay=<seconds>]:
   html        200 with an HTML page instead of JSON
   html403     403 with an HTML page (a captive portal or a proxy in the way)
   500         the server's own internal-error answer
+  501         the server without its model files (the forecast is "still learning")
 `path` limits the fault to requests whose path starts with it; `times` reverts to pass after
 that many faulted requests. GET /__qa/log lists the forwarded requests (path and onboarding
 action only, never bodies); GET /__qa/reset clears the log and the mode.
@@ -112,6 +113,10 @@ class Handler(BaseHTTPRequestHandler):
         if fault == "500":
             msg = "Something went wrong on our side. Please try again in a moment."
             return self._send(500, _api_error("internal_error", msg))
+        if fault == "501":  # the server without its model files (DeferredFeature)
+            return self._send(
+                501, json.dumps({"status": "deferred", "detail": "Not implemented yet."}).encode()
+            )
         if fault == "slow":
             time.sleep(MODE["delay"])
         req = urllib.request.Request(

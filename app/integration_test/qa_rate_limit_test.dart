@@ -11,7 +11,7 @@ void main() {
 
   testWidgets('real 429: the wait message, Try again too soon says so again, later it works', (t) async {
     await t.pumpWidget(const LifeTwinApp());
-    await tapText(t, 'Talk with Pip');
+    await tapText(t, 'Talk');
     await tapText(t, "No, I'll type");
     await readQuestion(t);
     await tapText(t, 'Not now');

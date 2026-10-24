@@ -16,7 +16,7 @@ import 'package:lifesim/voice/cartesia_speech.dart';
 import 'package:lifesim/voice/http_conversation_guide.dart';
 import 'package:lifesim/voice/speech.dart';
 import 'package:lifesim/voice/voice_token.dart';
-import 'package:lifesim/widgets/lip_button.dart';
+import 'package:lifesim/ui/widgets/widgets.dart';
 
 import 'support/sim_support.dart';
 
@@ -221,8 +221,10 @@ void main() {
       log('START api=${const String.fromEnvironment('API_BASE_URL')}');
       await t.pumpWidget(LifeTwinApp(controller: controller));
       await tick(t);
-      await tapButton(t, 'Talk with Pip');
+      await tapButton(t, 'Talk');
       await tick(t);
+      // The swoosh brings the conversation in (720 ms); its buttons move until then.
+      await tick(t, 1000);
       final c = ctl(t);
       // The AI question ignores taps for a moment, so a double tap can't answer it.
       final talked = await tapButton(t, "Yes, I'll talk");
@@ -278,7 +280,9 @@ void main() {
           'chatter + "Female."',
           ok,
           '$h',
-          ok ? '' : h.error ?? (h.confirming ? 'read-back lacks female at birth' : 'no read-back (chatter not handled)'),
+          ok
+              ? ''
+              : h.error ?? (h.confirming ? 'read-back lacks female at birth' : 'no read-back (chatter not handled)'),
         );
         if (c.confirming) {
           // Now the clean "female" clip, as a correction of the read-back.
@@ -329,9 +333,15 @@ void main() {
         await recover(t);
       }
       final finished = await waitUntil(t, () => c.phase == VoicePhase.done, seconds: 20);
-      log('conversation ${finished ? 'finished' : 'NOT finished (phase ${c.phase})'}; confirmed=${jsonEncode(c.confirmedProfile)}');
+      log(
+        'conversation ${finished ? 'finished' : 'NOT finished (phase ${c.phase})'}; confirmed=${jsonEncode(c.confirmedProfile)}',
+      );
 
-      if (finished && await tapButton(t, 'Continue')) {
+      // The fortune's ceremony comes first; its "Ask the ball" asks for the forecast.
+      if (finished &&
+          await tapButton(t, 'Continue') &&
+          await waitUntil(t, () => find.text('Ask the ball').evaluate().isNotEmpty) &&
+          await tick(t, 900).then((_) => tapButton(t, 'Ask the ball'))) {
         final seen = await waitUntil(t, () => screenText().contains('still living'), seconds: 45);
         record('forecast screen', seen, 'screen="${screenText()}"', seen ? '' : 'no "still living" text');
       } else {

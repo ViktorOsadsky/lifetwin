@@ -40,6 +40,7 @@ dependencies:
   flutter_pcm_sound: ^3.3.3
   http: ^1.6.0
   url_launcher: ^6.3.2
+  lottie: ^3.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -64,20 +65,37 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # LifeTwin design-system fonts (SIL OFL 1.1, from github.com/google/fonts).
-  # Fredoka is a variable font; text styles select weight with FontVariation('wght').
+  # Twin sprites and scene plates (docs/design/painted-card-direction.md §6).
+  # Flutter finds the 2.0x/ and 3.0x/ variants itself, so only the 1x
+  # folders are listed.
   assets:
+    - assets/twin/            # manifest.json
+    - assets/twin/bear/base/
+    - assets/twin/bear/pose/
+    - assets/twin/bear/pose_nohat/
+    - assets/twin/human/base/
+    - assets/twin/human/pose/
+    - assets/twin/human/pose_nohat/
+    - assets/twin/accessory/hat/
+    - assets/scene/
     - assets/fonts/fredoka/OFL.txt
     - assets/fonts/atkinson_hyperlegible/OFL.txt
+    - assets/scene/room/      # pre-rendered room layers + room_layers.json
+    - assets/lottie/          # design/lottie/out (ball_glow in the fortune ceremony)
+    # assets/twin/svg/ (v2 vector sprites) is kept in the repo for future use and is not bundled.
+
+  # SIL Open Font License 1.1 (from github.com/google/fonts); the licence texts sit beside them.
+  # Fredoka is a variable font (wght axis), set via fontVariations in lib/ui/theme.dart.
   fonts:
+    - family: Atkinson Hyperlegible
+      fonts:
+        - asset: assets/fonts/atkinson_hyperlegible/AtkinsonHyperlegible-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/atkinson_hyperlegible/AtkinsonHyperlegible-Bold.ttf
+          weight: 700
     - family: Fredoka
       fonts:
         - asset: assets/fonts/fredoka/Fredoka-Variable.ttf
-    - family: AtkinsonHyperlegible
-      fonts:
-        - asset: assets/fonts/atkinson_hyperlegible/AtkinsonHyperlegible-Regular.ttf
-        - asset: assets/fonts/atkinson_hyperlegible/AtkinsonHyperlegible-Bold.ttf
-          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

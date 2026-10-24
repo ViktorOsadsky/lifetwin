@@ -6,7 +6,7 @@ Status: design direction for the Flutter UI remake (track C). It supersedes the 
 - **Generated art (Figma):** https://www.figma.com/design/m2vIKuVlQQSa9m3ELVRdZc
 - **Reference research:** [references.md](references.md) covers 35 captured apps and games (Talking Tom 2, Pou, Pokémon Sleep, Neko Atsume, Finch, Duolingo, Memoji, Co–Star, Alto's Odyssey, Headspace and more), with the lesson taken from each.
 - **Prototypes:** [prototypes/](prototypes/), the playable room test and the Room ↔ Onboarding swoosh. The motion spec is [motion-swoosh.md](motion-swoosh.md).
-- **Open Tier-1 decision:** how the room is built in Flutter. The options are (1) a pre-rendered room plus sprite actors (recommended), (2) Flame with an isometric room, (3) `flutter_scene` 3D, or (4) the three.js prototype in a WebView. Owner ruling pending.
+- **Tier-1 ruling (owner, 2026-10-24): the room is a pre-rendered room plus sprite actors.** The options were (1) a pre-rendered room plus sprite actors, (2) Flame with an isometric room, (3) `flutter_scene` 3D, and (4) the three.js prototype in a WebView. Option 1 was chosen; Flame is the upgrade path. On branch `codex/c-room-3d` only, for review (see section 7).
 - **Twin asset library (Figma):** https://www.figma.com/design/m2vIKuVlQQSa9m3ELVRdZc/?node-id=52-2 (see section 6). The screens are on the page "Final screens · painted card".
 
 ## 1. Decisions (owner, 2026-10-24)
@@ -18,6 +18,7 @@ Status: design direction for the Flutter UI remake (track C). It supersedes the 
 | Signature item | A navy floppy sun hat with a gold band and gold "Cal" script, with the bear's ears through two holes in the crown. |
 | Layout system | **"Storybook panels + card frame"** (concept C refined with grafts from B and A, below). It won two independent critiques. |
 | UI vs art | Painted raster art carries the charm. The UI layer is flat, outlined and opaque, and **text never sits on paint**. |
+| Room engine (Tier-1) | **Pre-rendered room + sprite actors.** The toon room is rendered once from the approved three.js prototype into image layers; the twin is a painted sprite placed by the prototype's camera. Flame is the upgrade path; it would replace only the room layer. |
 
 ## 2. Fortune: honest by construction (read before designing copy)
 
@@ -126,7 +127,7 @@ Text lives only on bubbles and sheets. The window shrinks first when space is sh
 
 | # | Screen | Maps to handoff | Contents |
 |---|---|---|---|
-| V-1 | Room | F1 | Calm island with the chosen twin sprite, contact shadow and warm glow. Bubble: "Hi! Want to chat?" Mood chip: "Feeling cozy". Dock: **Customize** · **Talk** (primary) · **Fortune**, labels 17pt. |
+| V-1 | Room | F1 | The pre-rendered room (section 7) with the chosen twin sprite walking in it. Top: the `{ Name }` banner and the outlook card ("Your 5-yr look": the last real forecast, or "Ask the ball"). Bottom: a status line of 4 words or fewer, the activity row **Exercise** · **Eat** · **Sleep**, and the dock **Customize** · **Talk** (primary) · **Fortune**, labels 17pt. (The static island version with "Hi! Want to chat?" and "Feeling cozy" was the design before the Tier-1 ruling.) |
 | V-2 | Onboarding | F2 | Back button. Twin on the island; one question bubble. Progress dots. **Hold to talk** (88pt), "Type instead" link, then two full-width chips: **Use my Health app** and **AI helper: Off** (the switch state is visible; keep the word "AI" for honest consent). |
 | V-3 | Readback | F2/F3 | Bubble: "You're 5 foot 8. Right?" A dashed value card, "5 ft 8 in", so people can confirm by eye. **Yes** (72pt, filled) and **Change** (60pt). Progress stays put until Yes. |
 | V-8 | Ceremony | F4 | A tall night window, with the bear holding the glowing ball. Bubble: "Want to peek ahead?" **Ask the ball** / Back to room. Motion: 2 glow pulses (about 1.2s each), the mist clears, then V-4. Reduced motion: crossfade. |
@@ -144,18 +145,26 @@ The assets live in `app/assets/twin/` and `app/assets/scene/`. Every file has a 
 
 | Asset | File (under `app/assets/`) | 1x size | How it was made |
 |---|---|---|---|
-| Bear, base | `twin/bear/base/default.png` | 180×180 | generated on white, cut out (alpha) |
-| Bear, Cal hat | `twin/bear/base/cal_hat.png` | 180×180 | same |
-| Human, base | `twin/human/base/default.png` | 180×180 | same |
-| Human, Cal hat | `twin/human/base/cal_hat.png` | 180×180 | same |
-| Cal hat, alone | `twin/accessory/hat/cal.png` | 180×180 | same; ear holes cleared |
-| Bear poses (Cal hat) | `twin/bear/pose/{stand, wave, walk_side, walk_front, walk_back, sit, jump, think, stretch, sleep, eat, hold_ball, dizzy}.png` | 180 long side | cut from two generated pose sheets; `stand` is the Cal-hat base art |
-| Calm island | `scene/room.jpg` | 390×585 | Room, Onboarding and Readback; the twin sprite is composited on it |
+| Base sprites | `twin/{bear,human}/base/{default,cal_hat}.png` | 180 long side | the v2 standing sprites (same files as `pose_nohat/stand` and `pose/stand`), kept at the old paths |
+| Cal hat, alone | `twin/accessory/hat/cal.png` | 180×180 | older generation, ear holes cleared (not yet re-cut from the v2 canonical hat) |
+| Poses, Cal hat | `twin/{bear,human}/pose/{stand, wave, walk_side, walk_front, walk_back, sit, jump, think, stretch, sleep, eat, hold_ball, shrug, dizzy}.png` | 180 long side | v2 set: the no-hat pose with one canonical hat composited on (`design/sprites/v2`, REVISED3) |
+| Poses, no hat | `twin/{bear,human}/pose_nohat/{same 14 poses}.png` | 180 long side | v2 set; each shares its canvas, size and feet anchor with the hat sprite of the pose |
+| Vector copies (not bundled) | `twin/svg/{bear,human}/{pose,pose_nohat}/{pose}.svg` | viewBox = the PNG's canvas | traced from the v2 PNGs (`design/svg/vectorize.py`, vtracer); see "PNG at runtime" below |
+| Lottie | `lottie/{ball_glow, bear_idle, bear_wave, bear_walk, bear_celebrate, human_idle}.json` | 512×512 | `design/lottie/build.py` from the v2 SVGs; `ball_glow` plays behind the ball in the ceremony |
+| Calm island | `scene/room.jpg` | 390×585 | Onboarding and Readback (and the swoosh); the twin sprite is composited on it |
+| Room, background | `scene/room/room_bg.jpg` | 390×844 | the pre-rendered room without the twin (3.0x is the native 1170×2532 render) |
+| Room, quilt edge | `scene/room/room_fg_bed.png` | cropped | only the quilt pixels in front of a sleeping twin; drawn over it in bed |
+| Room, table | `scene/room/room_fg_table.png` | cropped | the table alone; drawn over the twin when it stands behind it |
+| Room, empty shelf | `scene/room/room_shelf_empty.png` | 60×60 | the shelf without the crystal ball, while the twin holds it |
+| Room, layout | `scene/room/room_layers.json` | — | camera matrix, floor calibration points, walkable floor, spots and each layer's rect |
 | Calm peach pedestal | `scene/customize.jpg` | 390×585 | Customize; the twin sprite is composited on it |
-| Night, revealed | `scene/fortune_reveal.jpg` | 390×585 | baked bear holding the ball (MVP) |
-| Night, still learning | `scene/fortune_learning.jpg` | 390×585 | baked bear with the misted ball (MVP) |
+| Calm night, empty | `scene/night.jpg` | 390×585 | the fortune screens (V-4, V-5, V-8); the twin sprite is composited on its open floor |
+| Night, revealed (legacy) | `scene/fortune_reveal.jpg` | 390×585 | baked bear holding the ball; no longer used by the app, kept for the static mockups |
+| Night, still learning (legacy) | `scene/fortune_learning.jpg` | 390×585 | baked bear with the misted ball; same |
 
-**Sizes.** A sprite shows at about 180pt tall, so 1x is 180px on its long side, 2.0x is 360px and 3.0x is 540px. Scenes are 390×585 at 1x, 780×1170 at 2.0x and native 933×1400 at 3.0x. Nothing is upscaled past its source: the pose crops are 416–504px on their long side, so their 3.0x files keep native size (slightly soft on 3x screens). Re-cut the pose sheets at a higher resolution if that shows.
+**Sizes.** A sprite shows at about 180pt tall, so 1x is 180px on its long side, 2.0x is 360px and 3.0x is 540px. Scenes are 390×585 at 1x, 780×1170 at 2.0x and native 933×1400 at 3.0x. Nothing is upscaled past its source: the v2 sprites are 310–430px on their long side, so their 2.0x and 3.0x files keep native size (`note3x` in the manifest; slightly soft on 3x screens). Every app sprite is padded so the painted content fills 93% of its height (3.5% top and bottom), which is what the room's sizing assumes; the feet anchors come from `design/sprites/v2/manifest_v2.json`, re-based to that canvas.
+
+**PNG at runtime, SVG kept for later.** The app draws the PNGs. The traced SVGs posterise fur and fabric into flat patches, which reads worse than the painting at the close-up sizes we use (the SVG conversion's own advice), and rendering them would add `flutter_svg`, which nothing needs yet. They live in `app/assets/twin/svg/` (not listed in `pubspec.yaml`, so not bundled) for future scaling or recolouring work; their viewBox matches the PNG canvas, so they can replace a PNG one for one.
 
 **Pipeline.** The image model cannot output alpha, so we generate on flat white and cut out with `tools/art/cutout.py`, a standard-library flood fill from the border that also clears enclosed holes and feathers the edge. Rules:
 
@@ -169,7 +178,7 @@ The assets live in `app/assets/twin/` and `app/assets/scene/`. Every file has a 
 - Fur and skin tone are separate sprites, not hue filters, so outlines stay cocoa.
 - Demographic cues (age shown on the muzzle and hair, body silhouettes) need their own sprite sets. Generate them only after the team settles the body policy (`AGENTS.md` versus the owner's data-driven ruling, still open).
 
-**MVP gap:** only the two fortune plates bake in the bear. The bear now has a `hold_ball` pose, so the night plates can be repainted empty and the pose composited on them. The human still needs its own poses (at least "hold ball" and "shrug"). Every other screen already composites the chosen twin.
+**Fortune poses (gap closed):** both twins have fortune poses on the shared night plate. The ceremony (V-8) and the supported result (V-4) composite the chosen twin's `hold_ball` pose on `scene/night.jpg`, with a contact shadow and a soft glow behind the ball; the ceremony also plays the `ball_glow` Lottie behind the ball (frame 0, still, under reduced motion). Still learning and unsupported (V-5) use `shrug`. Every twin has all 14 poses with and without the hat, so a twin with no hat holds the ball too (`twinAsset` picks `pose/` or `pose_nohat/`). The baked plates remain only because the static mockups reference them.
 
 ## 6. Figma ↔ code naming
 
@@ -179,9 +188,11 @@ The assets live in `app/assets/twin/` and `app/assets/scene/`. Every file has a 
 | Family | Names |
 |---|---|
 | Base sprites | `twin/{bear\|human}/base/{default\|cal_hat}` |
-| Bear poses | `twin/bear/pose/{stand\|wave\|walk_side\|walk_front\|walk_back\|sit\|jump\|think\|stretch\|sleep\|eat\|hold_ball\|dizzy}` |
+| Poses, Cal hat | `twin/{bear\|human}/pose/{stand\|wave\|walk_side\|walk_front\|walk_back\|sit\|jump\|think\|stretch\|sleep\|eat\|hold_ball\|shrug\|dizzy}` (human and v2 art: no Figma component yet) |
+| Poses, no hat | `twin/{bear\|human}/pose_nohat/{same poses}` (no Figma component yet) |
+| Vectors (repo only) | `twin/svg/{bear\|human}/{pose\|pose_nohat}/{pose}.svg` |
 | Accessories | `twin/accessory/hat/cal` |
-| Scenes | `scene/{room\|customize\|fortune_reveal\|fortune_learning}` |
+| Scenes | `scene/{room\|customize\|night}` (legacy: `fortune_reveal`, `fortune_learning`) |
 | References (Figma only) | `reference/{model_sheet_bear\|model_sheet_bear_cal_hat\|model_sheet_human\|demographics_bear\|demographics_human\|room_topdown}` |
 
 - **Cells:** each sprite component is a 256×256 cell. The art is fitted and centred, with the feet on a baseline at 92% of the cell height (235.5px), so swapping poses never moves the feet. Scenes are 390×585 cells. The label under each cell is the exact asset path.
@@ -196,17 +207,29 @@ flutter:
     - assets/twin/            # manifest.json
     - assets/twin/bear/base/
     - assets/twin/bear/pose/
+    - assets/twin/bear/pose_nohat/
     - assets/twin/human/base/
+    - assets/twin/human/pose/
+    - assets/twin/human/pose_nohat/
     - assets/twin/accessory/hat/
     - assets/scene/
+    - assets/lottie/          # lottie: ^3.1.0
 ```
 
 ## 7. Flutter notes
 
-- Package `lifesim`. Add the `assets:` list from section 6 to `pubspec.yaml`, and add `google_fonts` (or bundle Fredoka and Atkinson Hyperlegible as assets).
+- Package `lifesim`. Add the `assets:` list from section 6 to `pubspec.yaml`.
+- **Fonts are bundled** in `app/assets/fonts/` and registered in `pubspec.yaml` (no `google_fonts`, no network), one folder per family: Atkinson Hyperlegible Regular and Bold (400, 700) and Fredoka as one variable TTF (`wght` axis). Both are under the SIL Open Font License 1.1; the license texts ship beside the fonts (`atkinson_hyperlegible/OFL.txt`, `fredoka/OFL.txt`) and must stay with them. Fredoka styles set `fontVariations: [FontVariation('wght', 500 or 600)]`, because `fontWeight` alone does not reliably drive a variable axis.
 - Put tokens in one `lib/ui/theme.dart` (colours, type, radii, shadows). Shared widgets: `LipButton`, `PlateWindow` (frame, banner and sparkles), `Bubble`, `Chip`, `DotArray`, `ModeScaffold` (tint background).
 - Reuse the existing logic unchanged: `VoiceOnboardingController` (phases, `startTalk`/`stopTalk`, `setTyping`, `setAiHelper`, `confirm`/`change`), `HealthImportScreen`, and `HttpForecastClient.predict`. The remake replaces only the widgets.
 - Reduced motion: every ceremony beat has a static frame.
+
+### The room (pre-rendered room + sprite actors)
+
+- **Source:** the approved prototype is kept as `tools/art/room3d/room3d_prototype.html` (three.js r128, toon room, camera from slightly above), with local layer-export hooks (`#layer=bg|noball|noapple|fg_bed|fg_table|calib`). `render_layers.sh` renders them headless at 1170×2532 (390×844 at 3x); `make_assets.py` writes the 1x / 2.0x / 3.0x assets and `room_layers.json`; `gen_room_layout.py` writes `app/lib/room/room_layout_data.dart` from it. The camera target was lowered from the prototype's so the floor clears the taller Flutter dock.
+- **Layers, back to front:** `room_bg`, the empty-shelf patch (while the twin holds the ball), the empty-bowl patch (`room_bowl_empty`, while it eats; `room_bowl_apple` then scales the apple back in), the twin's blob shadow and sprite, then `room_fg_bed` (only while it is in bed) and `room_fg_table` (when it stands behind the table; the bowl patch is laid on it again), then the effect particles. The foreground is cut with a depth-and-stencil pass in the prototype, so it holds exactly the pixels that cover the twin there.
+- **Code:** `FloorProjector` (world → screen with the exported view-projection matrix, plus the floor homography and its inverse) is the only part that knows the camera. `RoomSim` ports the behaviours (wander through waypoints, direction-picked walk poses with tilt, bob and squash, idle sit or wave, Exercise, Eat, Sleep with z's and tap to wake, Fortune to the shelf with two glow pulses then the ceremony, tap to hop, long press for the dizzy pose as the quiz-reaction demo, blinks on the standing bear). Effects are `CustomPainter` particles projected from the world: sweat drops and sparkles in Exercise, crumb sparkles and a "Yum!" hop in Eat, a sparkle as the ball leaves the shelf and around it while it glows, and hop sparkles on a tap. The idle sit or wave comes every 8 to 12 s of real time outside actions. `RoomScene` draws it and ticks only while something moves and the room is the current route. Reduced motion turns long walks into crossfades, shortens the loops, spawns no particles, keeps the ball's glow steady and puts the apple back at once. On screens shorter than the render, the screen measures its top bar and bottom UI and the room slides up (within the render's edges) so the twin at the mat stays above the buttons. Button labels stay on one line: slots are sized to the labels, and a label scales down (to a 15 px floor, dropping the activity icons first) instead of wrapping. A Flame room would replace `RoomScene` and the projector; `RoomSim` and `RoomScreen` stay.
+- **Twins:** both twins have every pose, with the hat (`pose/`) or without it (`pose_nohat/`), so the room shows the chosen look in every action; `resolveRoomPose` keeps its fallback chain for future looks. Blinks run on the bear's standing sprite in both looks (the pair shares its canvas, so the eyes sit at the same spot). The room's sprite animation is unchanged; the Lottie idle and walk files are not used there.
 
 ## 8. Critique log
 

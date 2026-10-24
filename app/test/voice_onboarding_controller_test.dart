@@ -233,7 +233,7 @@ void main() {
   test('Apple Health answers are sent as an import and the conversation moves on', () async {
     final r = Rig();
     await r.c.answerConsent(false);
-    await r.c.importHealth({'weight_kg': 68.0, 'sleep_hours': 7.5});
+    expect(await r.c.importHealth({'weight_kg': 68.0, 'sleep_hours': 7.5}), isTrue);
     final call = r.guide.calls.last;
     expect(call['action'], 'import');
     expect(call['values'], {'weight_kg': 68.0, 'sleep_hours': 7.5});
@@ -242,13 +242,25 @@ void main() {
     expect(r.c.phase, VoicePhase.idle);
   });
 
+  test('Apple Health answers checked before the talk are added when it starts', () async {
+    final r = Rig();
+    expect(await r.c.importHealth({'weight_kg': 68.0}), isTrue); // from the Room: queued
+    expect(r.guide.calls, isEmpty);
+    expect(r.c.hasPendingHealth, isTrue);
+    await r.c.answerConsent(false);
+    expect(r.guide.calls.map((c) => c['action']), ['start', 'import']);
+    expect(r.guide.calls.last['values'], {'weight_kg': 68.0});
+    expect(r.c.confirmedProfile, {'weight_kg': 68.0});
+    expect(r.c.hasPendingHealth, isFalse);
+  });
+
   test('Health import waits while an answer is being confirmed, and says why', () async {
     final r = Rig();
     await r.c.answerConsent(false);
     await r.c.submitTyped('70');
     expect(r.c.confirming, isTrue);
     final before = r.guide.calls.length;
-    await r.c.importHealth({'weight_kg': 68.0});
+    expect(await r.c.importHealth({'weight_kg': 68.0}), isFalse, reason: 'nothing was taken');
     expect(r.guide.calls.length, before);
     expect(r.c.notice, healthWaitNotice);
   });
@@ -268,7 +280,7 @@ void main() {
     final line = r.c.mascotLine;
     r.guide.rejectNext = 'Please check these answers: height. Then try again.';
     await r.c.importHealth({'height_cm': 17300});
-    expect(r.c.notice, "I couldn't add your Health app answers. Please check these answers: height. Then try again.");
+    expect(r.c.notice, "I couldn't add your Apple Health answers. Please check these answers: height. Then try again.");
     expect(r.c.canRetry, isFalse);
     expect(r.c.mascotLine, line);
     expect(r.c.phase, VoicePhase.idle);

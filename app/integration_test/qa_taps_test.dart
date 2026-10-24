@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:lifesim/forecast/forecast_screen.dart';
+import 'package:lifesim/forecast/fortune_ceremony_screen.dart';
 import 'package:lifesim/main.dart';
+import 'package:lifesim/room/room_screen.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
 
 import 'support/qa_support.dart';
@@ -20,10 +22,10 @@ void main() {
 
   tearDown(qaReset);
 
-  testWidgets('double tap on "Talk with Pip" and the voice consent answers only that question', (t) async {
+  testWidgets('double tap on "Talk" and the voice consent answers only that question', (t) async {
     await qaReset();
     await t.pumpWidget(const LifeTwinApp());
-    await doubleTapText(t, 'Talk with Pip');
+    await doubleTapText(t, 'Talk');
     await pumpFor(t, const Duration(seconds: 1));
     expect(find.byType(VoiceOnboardingScreen, skipOffstage: false), findsOneWidget, reason: 'one conversation screen');
     await doubleTapText(t, "Yes, I'll talk");
@@ -45,7 +47,7 @@ void main() {
 
     /// Back to the conversation if a second tap opened the Health screen.
     Future<void> backToTalk() async {
-      if (find.text("Use your iPhone's Health app?").evaluate().isNotEmpty) {
+      if (find.text('Use Apple Health?').evaluate().isNotEmpty) {
         check(false, 'a second tap opened the Health screen');
         await tapText(t, 'Not now');
         await pumpFor(t, const Duration(seconds: 1));
@@ -54,10 +56,13 @@ void main() {
 
     await qaReset();
     await t.pumpWidget(const LifeTwinApp());
-    await tapText(t, 'Talk with Pip');
+    await tapText(t, 'Talk');
     await doubleTapText(t, "No, I'll type");
     await pumpFor(t, const Duration(seconds: 1));
-    check(find.text('Let an AI helper read hard answers?').evaluate().isNotEmpty, 'AI question answered by a double tap');
+    check(
+      find.text('Let an AI helper read hard answers?').evaluate().isNotEmpty,
+      'AI question answered by a double tap',
+    );
     await doubleTapText(t, 'Not now');
     await pumpFor(t, const Duration(seconds: 1));
     await backToTalk();
@@ -126,14 +131,27 @@ void main() {
     }
     await doubleTapText(t, 'Continue');
     await pumpFor(t, const Duration(seconds: 2));
+    check(
+      find.byType(FortuneCeremonyScreen, skipOffstage: false).evaluate().length == 1,
+      'Continue opened two ceremonies',
+    );
+    await doubleTapText(t, 'Ask the ball');
+    await pumpFor(t, const Duration(seconds: 4)); // the ball glows for 2.4 s first
     check(find.byType(ForecastScreen, skipOffstage: false).evaluate().length == 1, 'Continue opened two forecasts');
     check(await qaCount('/api/predict') == 1, 'Continue: ${await qaCount('/api/predict')} predictions');
 
-    await doubleTapText(t, 'Back');
+    await doubleTapText(t, 'Back', finder: roundButton('Back'));
     await pumpFor(t, const Duration(seconds: 1));
-    check(find.text('Your room').evaluate().isNotEmpty, 'Back double tap: not on the Room');
-    await doubleTapText(t, 'See my forecast');
+    check(find.byType(RoomScreen).evaluate().isNotEmpty, 'Back double tap: not on the Room');
+    await doubleTapText(t, 'Fortune');
+    await waitFor(t, find.byType(FortuneCeremonyScreen), seconds: 20); // the twin walks to the shelf first
     await pumpFor(t, const Duration(seconds: 2));
+    check(
+      find.byType(FortuneCeremonyScreen, skipOffstage: false).evaluate().length == 1,
+      'two ceremonies from the Room',
+    );
+    await doubleTapText(t, 'Ask the ball');
+    await pumpFor(t, const Duration(seconds: 4)); // the ball glows for 2.4 s first
     check(find.byType(ForecastScreen, skipOffstage: false).evaluate().length == 1, 'two forecasts from the Room');
     check(await qaCount('/api/predict') == 2, 'Room forecast: ${await qaCount('/api/predict')} predictions');
     expect(problems, isEmpty);

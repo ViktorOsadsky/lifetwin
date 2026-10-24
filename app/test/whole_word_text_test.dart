@@ -2,16 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lifesim/theme/lifetwin_theme.dart';
-import 'package:lifesim/widgets/lt_buttons.dart';
-import 'package:lifesim/widgets/lt_icons.dart';
-import 'package:lifesim/widgets/lt_progress.dart';
-import 'package:lifesim/widgets/lt_text_link.dart';
+import 'package:lifesim/ui/theme.dart';
+import 'package:lifesim/ui/widgets/widgets.dart';
 import 'package:lifesim/widgets/whole_word_text.dart';
 
 /// The app's real fonts, so word widths are the ones people see.
 Future<void> loadFonts() async {
-  await (FontLoader(LtFonts.heading)..addFont(rootBundle.load('assets/fonts/fredoka/Fredoka-Variable.ttf'))).load();
+  await (FontLoader(LtFonts.display)..addFont(rootBundle.load('assets/fonts/fredoka/Fredoka-Variable.ttf'))).load();
   await (FontLoader(LtFonts.body)
         ..addFont(rootBundle.load('assets/fonts/atkinson_hyperlegible/AtkinsonHyperlegible-Regular.ttf'))
         ..addFont(rootBundle.load('assets/fonts/atkinson_hyperlegible/AtkinsonHyperlegible-Bold.ttf')))
@@ -67,7 +64,7 @@ Future<void> show(WidgetTester t, Widget child, {double scale = 1}) async {
         data: MediaQueryData(size: const Size(390, 844), textScaler: TextScaler.linear(scale)),
         child: Scaffold(
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(LtSpace.gutter),
+            padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [child]),
           ),
         ),
@@ -96,13 +93,13 @@ void main() {
 
   group('WholeWordText', () {
     testWidgets('at a normal size it is plain text at the chosen scale', (t) async {
-      await show(t, WholeWordText('Continue', style: LtText.primaryButton), scale: 1);
+      await show(t, WholeWordText('Continue', style: LtText.display(26)), scale: 1);
       expect(fitted(t, 'Continue'), isNull);
       expect(brokenWords(t), isEmpty);
     });
 
     testWidgets('large text whose words all fit keeps the chosen size and wraps at spaces', (t) async {
-      await show(t, WholeWordText('Good to see you, I am glad', style: LtText.body), scale: 2);
+      await show(t, WholeWordText('Good to see you, I am glad', style: LtText.body()), scale: 2);
       expect(fitted(t, 'Good to see you, I am glad'), isNull);
       expect(t.getSize(find.byType(WholeWordText)).height, greaterThan(2 * 22 * 2)); // wrapped
       expect(brokenWords(t), isEmpty);
@@ -110,7 +107,7 @@ void main() {
 
     testWidgets('a word wider than the line shrinks just enough to fit whole', (t) async {
       const room = 200.0;
-      final style = LtText.primaryButton;
+      final style = LtText.display(26);
       await show(
         t,
         Center(
@@ -135,7 +132,7 @@ void main() {
       await show(
         t,
         Center(
-          child: SizedBox(width: 200, child: Text('Continue', style: LtText.primaryButton)),
+          child: SizedBox(width: 200, child: Text('Continue', style: LtText.display(26))),
         ),
         scale: 3,
       );
@@ -144,7 +141,7 @@ void main() {
 
     testWidgets('the whole text shrinks by one factor; lines still break only at spaces', (t) async {
       const line = 'Let an AI helper read hard answers?';
-      await show(t, WholeWordText(line, style: LtText.title), scale: 3.12);
+      await show(t, WholeWordText(line, style: LtText.display(30)), scale: 3.12);
       final s = fitted(t, line)!;
       expect(s.scale(10), lessThan(31.2));
       expect(t.getSize(find.byType(WholeWordText)).height, greaterThan(32 * s.scale(1) * 1.15 * 2)); // still wraps
@@ -165,7 +162,7 @@ void main() {
               TextSpan(text: '% were still living afterwards.'),
             ],
           ),
-          style: LtText.question,
+          style: LtText.display(26),
         ),
         scale: 3.12,
       );
@@ -177,7 +174,7 @@ void main() {
       await show(
         t,
         IntrinsicHeight(
-          child: SizedBox(width: 200, child: WholeWordText('Continue', style: LtText.primaryButton)),
+          child: SizedBox(width: 200, child: WholeWordText('Continue', style: LtText.display(26))),
         ),
         scale: 3,
       );
@@ -188,7 +185,7 @@ void main() {
     });
 
     test('wordFitFactor is 1 when the widest word fits and below 1 when it does not', () async {
-      final style = LtText.primaryButton;
+      final style = LtText.display(26);
       const span = TextSpan(text: 'No, change it');
       expect(wordFitFactor(span, style, TextScaler.noScaling, 300, TextDirection.ltr), 1);
       final f = wordFitFactor(span, style, const TextScaler.linear(3.12), 150, TextDirection.ltr);
@@ -199,44 +196,30 @@ void main() {
 
   group('shared widgets never break a word', () {
     for (final scale in [1.0, 2.0, 3.0]) {
-      testWidgets('buttons, links, Back and progress at text scale $scale', (t) async {
+      testWidgets('buttons, links, chips, bubble and progress at text scale $scale', (t) async {
         await show(
           t,
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              LtStepProgress(
-                step: 3,
-                total: 11,
-                trailing: LtTextLink(label: 'Settings', onPressed: () {}),
-              ),
+              const StepProgress(step: 3, total: 11),
+              LinkButton(label: 'Settings', icon: Icons.settings_outlined, onTap: () {}),
               const SizedBox(height: 12),
-              LtPrimaryButton(label: 'Continue', onPressed: () {}),
-              LtPrimaryButton(label: "Yes, I'll talk", icon: const LtIcon(LtIconKind.mic, size: 36), onPressed: () {}),
-              LtSecondaryButton(
+              LipButton(label: 'Continue', height: 72, onTap: () {}),
+              LipButton(label: "Yes, I'll talk", icon: Icons.mic_none_rounded, height: 72, onTap: () {}),
+              LipButton(
                 label: 'No, change it',
-                icon: const LtIcon(LtIconKind.pencil, size: 32),
-                onPressed: () {},
+                icon: Icons.edit_rounded,
+                kind: LipKind.secondary,
+                height: 72,
+                onTap: () {},
               ),
-              LtPrimaryButton(label: 'Go back to my answers', onPressed: () {}),
-              // The forecast header: Back beside a fixed-size badge.
-              Row(
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: LtBackButton(onPressed: () {}),
-                    ),
-                  ),
-                  const SizedBox(width: 140, height: 60),
-                ],
-              ),
+              LipButton(label: 'Go back to my answers', onTap: () {}),
+              LipButton(label: 'Use my Apple Health', icon: Icons.favorite_border_rounded, kind: LipKind.secondary, onTap: () {}),
+              LtToggleChip(label: 'AI helper: Off', value: false, onChanged: (_) {}),
+              const Bubble(text: "Let's talk first, so I can make your forecast."),
               Center(
-                child: LtTextLink(
-                  label: 'Use my Health app instead',
-                  icon: const LtIcon(LtIconKind.back, size: 26),
-                  onPressed: () {},
-                ),
+                child: LinkButton(label: 'Skip this question', onTap: () {}),
               ),
             ],
           ),

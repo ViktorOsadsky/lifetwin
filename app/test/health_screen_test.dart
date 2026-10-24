@@ -4,8 +4,7 @@ import 'package:lifesim/health/health_reader.dart';
 import 'package:lifesim/health/health_sample.dart';
 import 'package:lifesim/health/health_screen.dart';
 import 'package:lifesim/health/health_summary.dart';
-import 'package:lifesim/widgets/lip_button.dart';
-import 'package:lifesim/widgets/pip.dart';
+import 'package:lifesim/ui/widgets/widgets.dart';
 
 final now = DateTime(2026, 10, 24, 12);
 
@@ -31,7 +30,7 @@ Future<HealthImportResult?> run(WidgetTester t, HealthReader reader, List<String
       home: HealthImportScreen(reader: reader, now: () => now, onDone: (r) => result = r),
     ),
   );
-  await t.tap(find.text('Yes, use my Health app'));
+  await t.tap(find.text('Yes, use Apple Health'));
   await t.pumpAndSettle();
   for (final label in taps) {
     await t.tap(find.text(label));
@@ -63,7 +62,7 @@ void main() {
         home: HealthImportScreen(reader: FakeReader(samples), now: () => now, onDone: (r) => result = r),
       ),
     );
-    await t.tap(find.text('Yes, use my Health app'));
+    await t.tap(find.text('Yes, use Apple Health'));
     await t.pumpAndSettle();
     expect(find.text('Question 1 of 2'), findsOneWidget);
     await t.tap(find.text("Yes, that's right"));
@@ -82,7 +81,7 @@ void main() {
         home: HealthImportScreen(reader: FakeReader(samples), now: () => now, onDone: (r) => result = r),
       ),
     );
-    await t.tap(find.text('Yes, use my Health app'));
+    await t.tap(find.text('Yes, use Apple Health'));
     await t.pumpAndSettle();
     expect(find.text('Go back'), findsNothing);
     await t.tap(find.text("Yes, that's right"));
@@ -118,7 +117,9 @@ void main() {
   });
 
   for (final scale in [1.0, 2.0]) {
-    testWidgets('scale $scale on a 390x844 phone: Pip and big buttons on every step, nothing overflows', (t) async {
+    testWidgets('scale $scale on a 390x844 phone: the twin and big buttons on every step, nothing overflows', (
+      t,
+    ) async {
       t.view.physicalSize = const Size(390, 844);
       t.view.devicePixelRatio = 1;
       addTearDown(t.view.reset);
@@ -136,7 +137,7 @@ void main() {
       );
       Future<void> check(String label) async {
         expect(t.takeException(), isNull, reason: label);
-        expect(find.byType(Pip), findsOneWidget, reason: label);
+        expect(find.byType(TwinSprite), findsOneWidget, reason: label);
         final b = find.ancestor(of: find.text(label), matching: find.byType(LipButton));
         expect(t.getSize(b).height, greaterThanOrEqualTo(72), reason: label);
         // The test font is far wider than the real one, so at 2.0 the pinned buttons
@@ -148,12 +149,12 @@ void main() {
         await t.pump(const Duration(seconds: 1));
       }
 
-      await check('Yes, use my Health app');
+      await check('Yes, use Apple Health');
       await t.pumpAndSettle();
       await check("Yes, that's right");
       await check('No, let me fix it');
       expect(find.text('Thank you'), findsOneWidget);
-      expect(t.widget<Pip>(find.byType(Pip)).mood, PipMood.pleased);
+      expect(t.widget<TwinSprite>(find.byType(TwinSprite)).pose, TwinMood.pleased.pose);
       await check('Continue');
     });
   }

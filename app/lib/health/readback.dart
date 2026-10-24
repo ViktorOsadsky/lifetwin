@@ -15,7 +15,7 @@ String readBack(HealthCandidate c, {required bool imperial, required DateTime no
     HealthField.systolicBp => 'the top number of your blood pressure is about ${c.value}',
     HealthField.diastolicBp => 'the bottom number of your blood pressure is about ${c.value}',
   };
-  return "Your iPhone's Health app says $said.$when Is this accurate?";
+  return "Apple Health says $said.$when Is this accurate?";
 }
 
 const confirmLabel = "Yes, that's right";

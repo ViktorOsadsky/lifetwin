@@ -33,9 +33,9 @@ const voiceOffNotice = 'Talking is not available right now, so please type your 
 const noNetworkNotice = "I can't reach LifeTwin right now. Your answers are kept. Please try again.";
 const voiceTroubleNotice = "I couldn't use the voice just now. You can try again, or type your answer.";
 const speakTroubleNotice = "I couldn't say that out loud. You can read my words above.";
-const healthWaitNotice = 'Please answer Yes or No first. Then you can add your Health app answers.';
-const healthNoneNotice = "No Health app answers were added, so I'll keep asking you. That's okay.";
-const healthRejectedPrefix = "I couldn't add your Health app answers. ";
+const healthWaitNotice = 'Please answer Yes or No first. Then you can add your Apple Health answers.';
+const healthNoneNotice = "No Apple Health answers were added, so I'll keep asking you. That's okay.";
+const healthRejectedPrefix = "I couldn't add your Apple Health answers. ";
 
 /// Runs the conversation loop. The server decides what happens; this class only
 /// holds the caller-owned state, moves audio in and out, and keeps answers safe
@@ -183,20 +183,39 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- Apple Health --------------------------------------------------------
 
+  Map<String, num>? _pendingHealth;
+
+  /// True while Apple Health values wait for the conversation to start.
+  bool get hasPendingHealth => _pendingHealth != null;
+
   /// Adds answers the person already checked on the Health screen. The server
   /// validates them and moves on to the next question that is still unanswered.
-  Future<void> importHealth(Map<String, num> values) async {
-    if (_busy || turn == null) return;
+  ///
+  /// Values checked before the conversation started (the Room's "Use my Apple Health")
+  /// are kept and added as soon as its first question arrives.
+  ///
+  /// True when the values were taken: queued for the start, or sent and accepted. False
+  /// when nothing was added (none checked, busy, an answer still being confirmed, or the
+  /// server refused them or could not be reached); the reason is in [notice].
+  Future<bool> importHealth(Map<String, num> values) async {
+    if (turn == null) {
+      if (values.isEmpty) return false;
+      _pendingHealth = {...?_pendingHealth, ...values};
+      return true;
+    }
+    if (_busy) return false;
     if (values.isEmpty) {
       _set(() => notice = healthNoneNotice);
-      return;
+      return false;
     }
     if (confirming) {
       _set(() => notice = healthWaitNotice);
-      return;
+      return false;
     }
     await _stopSpeech();
+    final before = turn;
     await _send('import', values: values);
+    return notice == null && !identical(turn, before);
   }
 
   // ---- talking -----------------------------------------------------------
@@ -494,6 +513,12 @@ class VoiceOnboardingController extends ChangeNotifier {
       mascotLine = t.message;
       phase = t.complete ? VoicePhase.done : VoicePhase.idle;
     });
+    final pending = _pendingHealth;
+    if (action == 'start' && pending != null) {
+      // The answer to the import asks the first open question, so only it is spoken.
+      _pendingHealth = null;
+      return _send('import', values: pending);
+    }
     if (!typing && voiceUsable && !screenReader) await _speak(t.message);
   }
 

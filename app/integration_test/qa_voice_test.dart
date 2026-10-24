@@ -5,6 +5,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:lifesim/main.dart';
+import 'package:lifesim/room/room_screen.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
 import 'package:lifesim/voice/cartesia_speech.dart';
@@ -33,13 +34,16 @@ class VoiceRig {
 Future<void> startVoice(WidgetTester t, VoiceRig r) async {
   await qaReset();
   await t.pumpWidget(LifeTwinApp(controller: r.controller));
-  await tapText(t, 'Talk with Pip');
+  await tapText(t, 'Talk');
   await tapText(t, "Yes, I'll talk");
   await readQuestion(t);
   await tapText(t, 'Not now');
   await waitFor(t, find.textContaining('How old are you?'));
   await settled(t);
 }
+
+/// The first answer by voice is also photographed: listening, then its read-back.
+var _shotsTaken = false;
 
 /// Taps Talk, plays [clip] into the microphone, taps Talk again and waits for [want].
 Future<void> talkClip(WidgetTester t, VoiceRig r, String clip, String want) async {
@@ -53,6 +57,12 @@ Future<void> talkClip(WidgetTester t, VoiceRig r, String clip, String want) asyn
     await pumpFor(t, const Duration(milliseconds: 100));
   }
   expect(c.phase, VoicePhase.listening, reason: 'mic never opened: ${c.notice}');
+  final shoot = !_shotsTaken;
+  _shotsTaken = true;
+  if (shoot) {
+    await pumpFor(t, const Duration(milliseconds: 1200)); // some words are heard
+    await qaAction(t, 'shot', name: 'voice-listening', wait: Duration.zero);
+  }
   while (r.mic.clipEndedAt == null && c.phase == VoicePhase.listening) {
     await pumpFor(t, const Duration(milliseconds: 100));
   }
@@ -60,6 +70,7 @@ Future<void> talkClip(WidgetTester t, VoiceRig r, String clip, String want) asyn
   if (c.phase == VoicePhase.listening) await t.tap(find.byType(TalkButton).first, warnIfMissed: false);
   await waitFor(t, find.textContaining(want), seconds: 40);
   await settled(t);
+  if (shoot) await qaAction(t, 'shot', name: 'voice-readback');
 }
 
 void main() {
@@ -100,15 +111,16 @@ void main() {
       await settled(t);
     }
     await tapText(t, 'Continue');
+    await askTheBall(t);
     await waitFor(t, find.textContaining('were still living 5 years later'));
-    await pumpFor(t, const Duration(seconds: 3)); // the reveal, then Pip says it
+    await pumpFor(t, const Duration(seconds: 3)); // the reveal, then the twin says it
     expect(r.output.spoken.last, contains('were still living 5 years later'));
-    await tapText(t, 'Back');
-    await waitFor(t, find.text('Your room'));
-    await tapText(t, 'See my forecast');
+    await tapRound(t, 'Back');
+    await waitFor(t, find.byType(RoomScreen));
+    await openFortune(t);
     await waitFor(t, find.textContaining('were still living 5 years later'));
-    await tapText(t, 'Back');
-    await waitFor(t, find.text('Your room'));
+    await tapRound(t, 'Back');
+    await waitFor(t, find.byType(RoomScreen));
   });
 
   testWidgets('pressing Home while listening: nothing is sent, the same question waits, Talk works', (t) async {

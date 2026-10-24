@@ -8,9 +8,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lifesim/forecast/fortune_ceremony_screen.dart';
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
+import 'package:lifesim/ui/widgets/widgets.dart';
 
 const qaProxy = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://127.0.0.1:8051');
 
@@ -59,7 +61,10 @@ Future<void> pumpFor(WidgetTester t, Duration d) async {
 }
 
 /// Links that ignore taps for 0.7 s after a new question, so a double tap can't act twice.
-const guardedLinks = {'Skip this question', 'Go back', 'Use my Health app instead'};
+const guardedLinks = {'Skip this question', 'Go back', 'Use my Apple Health', 'Never mind'};
+
+/// Taps that swoosh the conversation in from the Room (720 ms); its buttons move until then.
+const swooshes = {'Talk', 'Go back to my answers'};
 
 Future<void> tapText(WidgetTester t, String label, {int seconds = 30}) async {
   final f = find.text(label);
@@ -69,11 +74,38 @@ Future<void> tapText(WidgetTester t, String label, {int seconds = 30}) async {
   await t.pump();
   await t.tap(f.first, warnIfMissed: false);
   await t.pump();
+  if (swooshes.contains(label)) await pumpFor(t, const Duration(milliseconds: 1000));
 }
 
 /// Two taps on the same spot, 60 ms apart: a tremor or an impatient double tap.
-Future<void> doubleTapText(WidgetTester t, String label) async {
-  final f = find.text(label);
+/// A round window button by its spoken name ("Back", "Home"); it shows an icon, no words.
+Finder roundButton(String label) => find.byWidgetPredicate((w) => w is RoundBackButton && w.label == label);
+
+Future<void> tapRound(WidgetTester t, String label) async {
+  final f = roundButton(label);
+  await waitFor(t, f);
+  await t.ensureVisible(f.first); // with large text the window may be scrolled away
+  await pumpFor(t, const Duration(milliseconds: 400));
+  await t.tap(f.first, warnIfMissed: false);
+  await t.pump();
+}
+
+/// The fortune's ceremony comes first: its "Ask the ball" asks for the forecast.
+Future<void> askTheBall(WidgetTester t) async {
+  await waitFor(t, find.text('Ask the ball'));
+  await pumpFor(t, const Duration(milliseconds: 900)); // it ignores taps while sliding in
+  await tapText(t, 'Ask the ball');
+}
+
+/// From the Room: Fortune (the twin walks to the shelf first), then "Ask the ball".
+Future<void> openFortune(WidgetTester t) async {
+  await tapText(t, 'Fortune');
+  await waitFor(t, find.byType(FortuneCeremonyScreen), seconds: 20);
+  await askTheBall(t);
+}
+
+Future<void> doubleTapText(WidgetTester t, String label, {Finder? finder}) async {
+  final f = finder ?? find.text(label);
   await waitFor(t, f);
   await t.ensureVisible(f.first);
   await t.pump();
@@ -82,6 +114,7 @@ Future<void> doubleTapText(WidgetTester t, String label) async {
   await t.pump(const Duration(milliseconds: 60));
   await t.tapAt(at);
   await t.pump();
+  if (swooshes.contains(label)) await pumpFor(t, const Duration(milliseconds: 1000));
 }
 
 String screenText() => find
@@ -142,7 +175,7 @@ Future<void> readQuestion(WidgetTester t) => pumpFor(t, const Duration(milliseco
 Future<void> startTyped(WidgetTester t, {bool aiHelper = false, Widget? app}) async {
   await qaReset();
   await t.pumpWidget(app ?? const LifeTwinApp());
-  await tapText(t, 'Talk with Pip');
+  await tapText(t, 'Talk');
   await tapText(t, "No, I'll type");
   await readQuestion(t);
   await tapText(t, aiHelper ? 'Yes, turn it on' : 'Not now');
@@ -181,7 +214,12 @@ Future<void> hideKeyboard(WidgetTester t) async {
 /// Asks the shell watcher (support/qa_watch.sh, tailing this test's output) to act on the
 /// simulator: `background` (Home, then back after 4 s), `settings` (screenshot the
 /// Settings app, then back) or `shot <name>` (a screenshot). Then lets [wait] pass.
-Future<void> qaAction(WidgetTester t, String verb, {String name = '', Duration wait = const Duration(seconds: 2)}) async {
+Future<void> qaAction(
+  WidgetTester t,
+  String verb, {
+  String name = '',
+  Duration wait = const Duration(seconds: 2),
+}) async {
   debugPrint('QA-ACTION $verb $name');
   await pumpFor(t, wait);
 }

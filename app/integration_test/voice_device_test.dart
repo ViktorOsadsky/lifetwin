@@ -20,7 +20,7 @@ import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
 import 'package:lifesim/voice/speech.dart';
-import 'package:lifesim/widgets/lip_button.dart';
+import 'package:lifesim/ui/widgets/widgets.dart';
 
 const harnessUrl = String.fromEnvironment('VOICE_HARNESS_URL', defaultValue: 'http://169.254.4.42:8099');
 
@@ -247,7 +247,8 @@ void main() {
         await log('START harness=$harnessUrl');
         await t.pumpWidget(const LifeTwinApp());
         await tick(t);
-        await tapButton(t, 'Talk with Pip');
+        await tapButton(t, 'Talk');
+        await Future<void>.delayed(const Duration(seconds: 1)); // the swoosh brings the conversation in
         await tick(t);
         final c = ctl(t);
         // The AI question ignores taps for a moment, so a double tap can't answer it.

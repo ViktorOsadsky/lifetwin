@@ -33,14 +33,40 @@ void main() {
     }
 
     await qaReset();
-    debugPrint('QA-LAYOUT scale=${t.platformDispatcher.textScaleFactor} '
-        'brightness=${t.platformDispatcher.platformBrightness}');
+    debugPrint(
+      'QA-LAYOUT scale=${t.platformDispatcher.textScaleFactor} '
+      'brightness=${t.platformDispatcher.platformBrightness}',
+    );
     await t.pumpWidget(const LifeTwinApp());
-    await waitFor(t, find.text('Talk with Pip'));
+    await waitFor(t, find.text('Talk'));
     await look('01-room');
-    await tapText(t, 'See my forecast');
+    // The bear wanders: Exercise sends it across the room to the mat. A few frames, 1.2 s apart.
+    await tapText(t, 'Exercise');
+    for (var i = 1; i <= 4; i++) {
+      await qaAction(t, 'shot', name: '$label-01w-wander-$i', wait: const Duration(milliseconds: 1200));
+    }
+    await waitFor(t, find.text('Feeling strong'), seconds: 30);
+    // To bed and from the bed to the table: the bear walks around the bed, never through it.
+    await pumpFor(t, const Duration(seconds: 1));
+    await tapText(t, 'Sleep');
+    for (var i = 1; i <= 5; i++) {
+      await qaAction(t, 'shot', name: '$label-01x-to-bed-$i', wait: const Duration(milliseconds: 1000));
+    }
+    await waitFor(t, find.text('Sleeping. Tap to wake'), seconds: 30);
+    await tapText(t, 'Eat');
+    for (var i = 1; i <= 6; i++) {
+      await qaAction(t, 'shot', name: '$label-01y-bed-to-table-$i', wait: const Duration(milliseconds: 900));
+    }
+    await pumpFor(t, const Duration(seconds: 8));
+    await tapText(t, 'Customize');
+    await waitFor(t, find.text('Save look'));
+    await look('01b-customize');
+    await tapRound(t, 'Back to room');
+    await waitFor(t, find.text('Fortune'));
+    await pumpFor(t, const Duration(milliseconds: 800)); // Customize slides away
+    await tapText(t, 'Fortune');
     await look('02-room-talk-first');
-    await tapText(t, 'Talk with Pip');
+    await tapText(t, 'Talk');
     await waitFor(t, find.text("No, I'll type"));
     await look('03-consent');
     await tapText(t, "No, I'll type");
@@ -82,16 +108,42 @@ void main() {
     }
     await hideKeyboard(t);
     await look('11-done');
-    await tapText(t, 'Use my Health app');
-    await waitFor(t, find.text('Yes, use my Health app'));
+    await tapText(t, 'Use my Apple Health');
+    await waitFor(t, find.text('Yes, use Apple Health'));
     await look('12-health-intro');
     await tapText(t, "No thanks, I'll answer myself");
     await waitFor(t, find.text('Continue'));
     await pumpFor(t, const Duration(seconds: 1));
     await tapText(t, 'Continue');
+    await waitFor(t, find.text('Ask the ball'));
+    await look('12b-ceremony');
+    await askTheBall(t);
     await waitFor(t, find.textContaining('were still living 5 years later'));
     await pumpFor(t, const Duration(seconds: 2));
     await look('13-forecast');
+    await tapText(t, 'See what shaped it');
+    await waitFor(t, roundButton('Back to your look ahead'));
+    await look('13b-outlook');
+    await t.scrollUntilVisible(find.text('Limits'), 300, scrollable: find.byType(Scrollable).first);
+    await look('13c-outlook-end');
+    t.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(0); // back to the top
+    await pumpFor(t, const Duration(milliseconds: 600));
+    await tapRound(t, 'Back to your look ahead');
+    await waitFor(t, find.text('See what shaped it'));
+    // The server without its model: "still learning".
+    await tapRound(t, 'Back');
+    await waitFor(t, find.text('Fortune'));
+    await pumpFor(t, const Duration(milliseconds: 800));
+    await qaMode('501', path: '/api/predict', times: 1);
+    await openFortune(t);
+    await waitFor(t, find.text('Still learning'));
+    await look('13d-still-learning');
+    await tapText(t, 'Back to room');
+    await waitFor(t, find.text('Fortune'));
+    await pumpFor(t, const Duration(milliseconds: 800));
+    await openFortune(t);
+    await waitFor(t, find.textContaining('were still living 5 years later'));
+    await pumpFor(t, const Duration(seconds: 2));
     await t.scrollUntilVisible(find.text('Go back to my answers'), 300, scrollable: find.byType(Scrollable).first);
     await look('14-forecast-end');
 
