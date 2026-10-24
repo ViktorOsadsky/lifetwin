@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,6 +12,7 @@ import '../widgets/lt_progress.dart';
 import '../widgets/lt_text_link.dart';
 import '../widgets/pip.dart';
 import '../widgets/scene_paper.dart';
+import '../voice/speech.dart';
 import '../widgets/speech_bubble.dart';
 import 'voice_onboarding_controller.dart';
 
@@ -102,18 +105,39 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   /// Briefly true after the AI-helper question replaced the voice one. Its buttons sit
   /// where the voice buttons were, so a double tap (or a tremor) must not answer it
   /// unseen, least of all agree to the helper. As on the Health screen.
-  bool _aiLocked = false;
   static const secondTapGuard = Duration(milliseconds: 700);
+  Timer? _aiLock;
 
   void _chooseVoice(bool voice) {
-    _aiLocked = true;
-    Future.delayed(secondTapGuard, () => _aiLocked = false);
+    _aiLock?.cancel();
+    _aiLock = Timer(secondTapGuard, () {});
     setState(() => _voiceChoice = voice);
   }
 
   void _answerAi(bool voice, {bool aiHelper = false}) {
-    if (_aiLocked) return;
+    if (_aiLock?.isActive ?? false) return;
     c.answerConsent(voice, aiHelper: aiHelper);
+  }
+
+  /// The same after each new question for the links that stay in place from one
+  /// question to the next: a double tap on "Skip this question" or "Go back" must not
+  /// also skip (or reopen) the next one unseen, and the first question's "Use my Health
+  /// app instead", which sits where "Not now" was, must not open the Health import.
+  Timer? _turnLock;
+  late GuideTurn? _shownTurn = c.turn;
+
+  bool get _justChanged => _turnLock?.isActive ?? false;
+
+  void _useHealth() {
+    if (!_justChanged) widget.onUseHealth?.call();
+  }
+
+  void _skip() {
+    if (!_justChanged) c.skip();
+  }
+
+  void _goBack() {
+    if (!_justChanged) c.goBack();
   }
 
   bool _wasListening = false;
@@ -144,6 +168,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   @override
   void dispose() {
     c.removeListener(_changed);
+    _aiLock?.cancel();
+    _turnLock?.cancel();
     _text.dispose();
     _focus.dispose();
     super.dispose();
@@ -154,6 +180,11 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
     final listening = c.phase == VoicePhase.listening;
     if (listening != _wasListening) HapticFeedback.mediumImpact();
     _wasListening = listening;
+    if (!identical(c.turn, _shownTurn)) {
+      _shownTurn = c.turn;
+      _turnLock?.cancel();
+      _turnLock = Timer(secondTapGuard, () {});
+    }
   }
 
   void _send() {
@@ -383,7 +414,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
               child: LtTextLink(
                 label: 'Go back',
                 icon: const LtIcon(LtIconKind.back, size: 26, strokeWidth: 2.8),
-                onPressed: c.goBack,
+                onPressed: _goBack,
               ),
             ),
           ),
@@ -566,7 +597,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
       if (!keyboard) ...[const SizedBox(height: LtSpace.buttonGap), _switchMode()],
       const SizedBox(height: LtSpace.xs),
       Center(
-        child: LtTextLink(label: 'Skip this question', onPressed: busy ? null : c.skip),
+        child: LtTextLink(label: 'Skip this question', onPressed: busy ? null : _skip),
       ),
       if (!keyboard) ..._minor(),
     ];
@@ -633,7 +664,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   List<Widget> _minor() => [
     if (widget.onUseHealth != null && c.questionNumber == 1 && !c.confirming && c.phase != VoicePhase.listening)
       Center(
-        child: LtTextLink(label: 'Use my Health app instead', onPressed: widget.onUseHealth),
+        child: LtTextLink(label: 'Use my Health app instead', onPressed: _useHealth),
       ),
   ];
 

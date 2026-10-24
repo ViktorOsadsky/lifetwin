@@ -447,10 +447,12 @@ void main() {
       await t.pumpAndSettle();
       expect(find.text('Question 2 of 11'), findsOneWidget);
 
+      await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
       await tapText(t, 'Skip this question');
       expect(find.text('Question 3 of 11'), findsOneWidget);
 
       expect(t.getSize(button('Go back')).height, greaterThanOrEqualTo(56));
+      await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
       await tapText(t, 'Go back');
       expect(r.calls.last, {'action': 'reply', 'text': 'go back'});
       expect(find.textContaining('Question about sex'), findsOneWidget);
@@ -686,6 +688,7 @@ void main() {
         await t.pumpAndSettle();
         expect(r.c.mascotLine, startsWith('Got it.'));
         expect(pipMood(t), PipMood.pleased);
+        await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
         await tapText(t, 'Skip this question');
         expect(pipMood(t), PipMood.asking);
       },
