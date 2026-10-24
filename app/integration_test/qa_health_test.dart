@@ -37,10 +37,12 @@ List<HealthSample> readings(DateTime now) {
       ),
     for (var d = 1; d <= 28; d++)
       if (d % 7 < 5)
+        // Counted back from now, not from midnight, so the oldest one stays inside the
+        // 28-day window whatever the time of day (from 9:00 on it used to fall out: 143).
         s(
           'EXERCISE_TIME',
-          day.subtract(Duration(days: d)).add(const Duration(hours: 9)),
-          day.subtract(Duration(days: d)).add(const Duration(hours: 9, minutes: 30)),
+          now.subtract(Duration(days: d)).add(const Duration(minutes: 5)),
+          now.subtract(Duration(days: d)).add(const Duration(minutes: 35)),
           30,
         ),
     s('BLOOD_PRESSURE_SYSTOLIC', day.subtract(const Duration(days: 3)), day.subtract(const Duration(days: 3)), 128),
@@ -143,6 +145,7 @@ void main() {
     await waitFor(t, find.text("I couldn't find any readings"));
     await tapText(t, 'Continue');
     await waitFor(t, find.text(healthNoneNotice));
+    await pumpFor(t, const Duration(milliseconds: 800)); // the Health screen slides away
     await say(t, '71', 'you are 71');
   });
 }

@@ -104,10 +104,12 @@ void main() {
     await pumpFor(t, const Duration(seconds: 2));
     await look('13-forecast');
     await tapText(t, 'See what shaped it');
-    await waitFor(t, find.text('Built from your answers'));
+    await waitFor(t, roundButton('Back to your look ahead'));
     await look('13b-outlook');
     await t.scrollUntilVisible(find.text('Limits'), 300, scrollable: find.byType(Scrollable).first);
     await look('13c-outlook-end');
+    await t.drag(find.byType(Scrollable).first, const Offset(0, 4000)); // back to the top
+    await pumpFor(t, const Duration(milliseconds: 600));
     await tapRound(t, 'Back to your look ahead');
     await waitFor(t, find.text('See what shaped it'));
     // The server without its model: "still learning".

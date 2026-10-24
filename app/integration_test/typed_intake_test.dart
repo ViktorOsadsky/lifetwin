@@ -20,7 +20,7 @@ Future<void> tapText(WidgetTester t, String label) async {
   final f = find.text(label);
   await waitFor(t, f);
   // These links ignore taps for 0.7 s after a new question, so a double tap can't act twice.
-  if (const {'Skip this question', 'Go back', 'Use my Health app'}.contains(label)) {
+  if (const {'Skip this question', 'Go back', 'Use my Health app', 'Never mind'}.contains(label)) {
     await Future<void>.delayed(const Duration(milliseconds: 800));
   }
   await t.ensureVisible(f.first);
