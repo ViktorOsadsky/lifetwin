@@ -28,7 +28,9 @@ See [the prospective tech stack](docs/tech-stack.md) for concrete package/provid
 
 ## Current repository state
 
-At creation of this guide, the repository contains the spec, team plan, and reusable [hackathon skill pack](hackathon-pack/START-HERE.md). It does **not** yet contain an application, trained model, API implementation, `contracts/`, or the iOS helper script referenced by the team plan. Those paths in that document are planned deliverables; its commands cannot yet be run.
+The [non-prediction Python backend](server/README.md) and [shared contracts](contracts/README.md) now exist: guided text/transcript intake with confirmation, optional LLM extraction adapter, cited curated educational plans with bounded research adapter, and reviewed quiz delivery. Provider credentials remain blank. The latest user request explicitly defers **all prediction implementation**, including training, model loading, survival curves, comparison math and sensitivity scanning; those route shells return HTTP 501 with null prediction/model fields and no fake estimates. No Flutter app, voice provider, trained model, cloud deployment, or iOS helper script is implemented yet. Earlier `contracts/stub_server.py` commands remain planned and are replaced for current backend work by the run guide.
+
+The full predictive/game vision below remains a future roadmap. Existing raw profile ranges validate inputs only, not model eligibility. Quiz effects are game-only; educational plans have null/unmodeled effects. Do not treat this foundation as a completed longevity product.
 
 The skill pack contains prior research about other product ideas. Reuse relevant tools and instructions, but do not treat RecallDesk, commerce, or finance examples as this app's product requirements. Do not claim that a fixture or helper script is the LifeTwin application.
 
@@ -94,9 +96,9 @@ Keep the four tracks from [docs/team-plan.md](docs/team-plan.md). Victor owns A;
 
 B owns the `/api/advisor` route and orchestration boundary; D owns its research and planning implementation. Agree the handoff before either edits shared files. C owns plan presentation. For a three-person team, combine B and D as the splitting document suggests. Changes to shared schemas belong in a focused contract PR before dependent features merge.
 
-## Contract Zero: first merge
+## Contract Zero and future extensions
 
-Create these deliverables before independent implementation branches depend on them. All names below are proposed contracts until the Contract Zero implementation PR lands; do not present them as existing code.
+The first non-prediction contract PR has landed. See [contracts/README.md](contracts/README.md) for the 13 generated request/response schemas, six fixtures, exporter and checker. The model-dependent response schemas intentionally contain only a deferred status/null fields. The list below remains the full product's target boundary; population/horizon/model results, numerical fixtures and the old `stub_server.py` are not implemented under the user's current deferral. Use the real keyless server run guide instead of commands for a nonexistent stub.
 
 - `contracts/profile.schema.json`: versioned profile fields, metric units, missingness, supported categories, and validation.
 - `contracts/prediction.schema.json`: prediction request/response, model metadata, supported/unsupported results, and real/stub mode.
@@ -226,4 +228,4 @@ Known limits / blockers:
 Next dependent task:
 ```
 
-The next implementation task is **Contract Zero**, followed by the connected Flutter/stub skeleton and real model work in the owners' tracks. This documentation change does not launch those tasks or mark them complete.
+The non-prediction backend foundation and contracts are implemented; see the run guide for verified behavior. Next integrate Flutter with the keyless endpoints, select voice providers, and evaluate configured providers if desired. Track A's model and all prediction-dependent functionality remain explicitly deferred to a later PR; the full game/predictive roadmap is not complete.

@@ -1,6 +1,6 @@
 # LifeTwin working docs
 
-Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent implementation guide, and [AGENTS.md](../AGENTS.md) for PR/merge rules. [`projectspec.md`](../projectspec.md) remains the original modeling and privacy specification. Updated product/stack decisions are recorded in [prd-reconciliation.md](prd-reconciliation.md); the original spec is preserved. Referenced contracts, app files and scripts are planned until implementation PRs land.
+Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent implementation guide, and [AGENTS.md](../AGENTS.md) for PR/merge rules. [`projectspec.md`](../projectspec.md) remains the original modeling and privacy specification. Updated product/stack decisions are recorded in [prd-reconciliation.md](prd-reconciliation.md); the original spec is preserved. See the [backend run guide](../server/README.md) and [implemented contracts](../contracts/README.md) for current non-prediction functionality. Flutter, audio, model and iOS helper paths remain future work.
 
 | Doc | For |
 |---|---|

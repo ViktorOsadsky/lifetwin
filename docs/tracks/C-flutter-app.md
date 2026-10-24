@@ -29,8 +29,6 @@ First ship the text conversation → confirmed profile → fixture fortune → e
 - Preload quiz reaction assets for immediate local feedback; supply static expressions/captions for reduced motion. Do not copy Talking Tom art or branding.
 - API base URL comes from `--dart-define=API_BASE_URL=…`; see [ios-testing.md](../ios-testing.md).
 
-## Work against the stub
+## Work against the current backend
 
-After Contract Zero lands, run `python3 contracts/stub_server.py` and build the flow on its visibly fake numbers (`model_version: "stub-0"`). The planned sample
-responses in `contracts/fixtures/` cover every state you need to render: a typical profile, risk factors, a minor, an
-out-of-range age and the §4.1 demo futures.
+Follow [the backend run guide](../../server/README.md). Guided intake, curated plans and quiz content work keylessly; use the generated schemas and fixtures for parsing. Prediction/compare/sensitivity deliberately return 501/null under the user's latest request. Render that unavailable state, not fake mortality values. Voice capture/playback remain deferred. There is no `contracts/stub_server.py` or numerical model fixture yet.

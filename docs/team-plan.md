@@ -1,6 +1,6 @@
 # LifeSim team plan
 
-How we split the original spec ([`projectspec.md`](../projectspec.md)) so four people can build in parallel without drifting apart. Read [MASTER_PLAN.md](../MASTER_PLAN.md) first for the current mascot-led game, SVG/Lottie twin, voice/text intake, magic-ball fortune, quiz, sensitivity search, plans and experiments. This document governs owners and sync points. Changes from the original spec are listed in [prd-reconciliation.md](prd-reconciliation.md); stack defaults are in [tech-stack.md](tech-stack.md). Referenced contracts, app and scripts are planned deliverables until implementation PRs land.
+How we split the original spec ([`projectspec.md`](../projectspec.md)) so four people can build in parallel without drifting apart. Read [MASTER_PLAN.md](../MASTER_PLAN.md) first for the current product and [the backend run guide](../server/README.md) for implemented non-prediction functionality/contracts. This document governs owners and original sync targets. Changes from the spec are listed in [prd-reconciliation.md](prd-reconciliation.md); stack defaults are in [tech-stack.md](tech-stack.md). Flutter, voice, model, numerical stub and iOS helper paths below remain future work; the user explicitly deferred prediction implementation.
 
 ## Decisions so far
 

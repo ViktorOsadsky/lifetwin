@@ -1,9 +1,11 @@
 # lifetwin
 
-LifeTwin is a pet-style health game: talk or type to a mascot, hear a magic-ball longevity forecast, customize an SVG/Lottie twin, explore model-backed scenarios, follow an evidence-backed plan, and play challenging health quizzes. The application is planned; this repository currently contains its specification and implementation guides.
+LifeTwin is a pet-style health game: talk or type to a mascot, hear a magic-ball longevity forecast, customize an SVG/Lottie twin, explore model-backed scenarios, follow an evidence-backed plan, and play challenging health quizzes. The non-prediction Python backend now supports conversational intake, cited educational plans and quiz delivery. The Flutter app, voice implementation and longevity model remain to be built.
 
 ## Start here
 
+- [Backend run guide](server/README.md): working endpoints, blank-key startup, limits, tests, and deliberately empty prediction routes.
+- [Shared API contracts](contracts/README.md): generated schemas, fixtures and offline/live checks for Flutter integration.
 - [Master implementation guide](MASTER_PLAN.md): current product decisions, sensitivity search, research/planning, experimental twin, contracts, and delivery gates.
 - [Team splitting document](docs/team-plan.md): track owners and sync points; [track briefs and iOS workflow](docs/README.md).
 - [Prospective tech stack](docs/tech-stack.md): Flutter/LottieFiles plus proposed app, API, ML, LLM, research, testing, and deployment choices.

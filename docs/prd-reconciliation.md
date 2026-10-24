@@ -1,12 +1,13 @@
 # Master doc reconciliation
 
 Maps every section of [`projectspec.md`](../projectspec.md) to its owner track, and records each place a team decision changes it.
-The original spec itself is unchanged. [MASTER_PLAN.md](../MASTER_PLAN.md) now governs current product/implementation decisions; this file records differences from that spec. Referenced contracts/stubs are planned, not existing implementations. See [tech-stack.md](tech-stack.md) for confirmed and proposed technology choices.
+The original spec itself is unchanged. [MASTER_PLAN.md](../MASTER_PLAN.md) governs current product/implementation decisions; this file records differences from that spec. Non-prediction contracts/server now exist; numerical stubs and model implementation remain deferred. See [the backend run guide](../server/README.md) for working commands and [tech-stack.md](tech-stack.md) for technology choices.
 
 ## Team decisions that change the master doc
 
 | Master doc | Says | Team decision | Status |
 |---|---|---|---|
+| Current implementation scope | Full predictive product vision | User requested backend work with blank keys and all death-prediction-related implementation deferred. Guided intake, curated cited plans/research adapter and quiz delivery are implemented; prediction/compare/sensitivity routes only return HTTP 501/null. No model, risk math, fake survival fixtures, app or audio implementation | Current user scope; see backend run guide |
 | §1, §2, §10, §11 Product/UI | Scientific dashboard with traditional onboarding screens | Mostly full-screen pet-game UI inspired by Talking Tom; original SVG art and LottieFiles motion, customizable twin, charts/plans as activities or panels | User decision |
 | §2.2 Onboarding | Multi-step health questionnaire, sliders/selections | Mascot asks questions through an LLM conversation guide; voice-first replies with an equal text conversation option, explicit extraction confirmation and corrections. Voice provider/implementation deferred | User decision |
 | §3, §15 Longevity presentation | Survival probabilities/curves, no exact death date | Mascot uses a magic ball to narrate the longevity outlook. Statistical limitations remain: no fabricated exact date or unsupported lifespan extrapolation | Product presentation updated; model constraint retained |
