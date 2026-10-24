@@ -46,6 +46,18 @@ void main() {
       await qaAction(t, 'shot', name: '$label-01w-wander-$i', wait: const Duration(milliseconds: 1200));
     }
     await waitFor(t, find.text('Feeling strong'), seconds: 30);
+    // To bed and from the bed to the table: the bear walks around the bed, never through it.
+    await pumpFor(t, const Duration(seconds: 1));
+    await tapText(t, 'Sleep');
+    for (var i = 1; i <= 5; i++) {
+      await qaAction(t, 'shot', name: '$label-01x-to-bed-$i', wait: const Duration(milliseconds: 1000));
+    }
+    await waitFor(t, find.text('Sleeping. Tap to wake'), seconds: 30);
+    await tapText(t, 'Eat');
+    for (var i = 1; i <= 6; i++) {
+      await qaAction(t, 'shot', name: '$label-01y-bed-to-table-$i', wait: const Duration(milliseconds: 900));
+    }
+    await pumpFor(t, const Duration(seconds: 8));
     await tapText(t, 'Customize');
     await waitFor(t, find.text('Save look'));
     await look('01b-customize');
