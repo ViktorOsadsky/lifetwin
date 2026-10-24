@@ -44,6 +44,7 @@ Future<void> choose(WidgetTester t, String voiceLabel, {bool aiHelper = false}) 
   await t.pumpAndSettle();
   await t.tap(find.text(voiceLabel));
   await t.pumpAndSettle();
+  await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
   final second = aiHelper ? 'Yes, turn it on' : 'Not now';
   await t.ensureVisible(find.text(second));
   await t.pumpAndSettle();
@@ -52,6 +53,28 @@ Future<void> choose(WidgetTester t, String voiceLabel, {bool aiHelper = false}) 
 }
 
 void main() {
+  testWidgets('a double tap on a voice answer does not also answer the AI-helper question', (t) async {
+    for (final voice in ["Yes, I'll talk", "No, I'll type"]) {
+      await t.pumpWidget(const SizedBox()); // a fresh screen each time
+      final r = Rig();
+      await r.pump(t);
+      final at = t.getCenter(find.text(voice));
+      await t.tapAt(at);
+      await t.pump(const Duration(milliseconds: 60));
+      expect(find.text('Let an AI helper read hard answers?'), findsOneWidget);
+      await t.tapAt(at); // lands on "Yes, turn it on" or "Not now"
+      await t.pumpAndSettle();
+      expect(find.text('Let an AI helper read hard answers?'), findsOneWidget, reason: voice);
+      expect(r.guide.calls, isEmpty);
+      expect(r.c.aiHelper, isFalse);
+      await t.pump(const Duration(milliseconds: 700));
+      await t.tapAt(t.getCenter(find.text('Not now')));
+      await t.pumpAndSettle();
+      expect(r.guide.calls.single['action'], 'start');
+      expect(r.c.aiHelper, isFalse);
+    }
+  });
+
   testWidgets('consent explains Cartesia and offers Yes / No, I\'ll type; nothing starts before', (t) async {
     final r = Rig();
     await r.pump(t);
@@ -206,6 +229,7 @@ void main() {
         greaterThanOrEqualTo(72),
       );
     }
+    await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
     await t.tap(find.text('Yes, turn it on'));
     await t.pumpAndSettle();
     expect(r.c.aiHelper, isTrue);
@@ -433,6 +457,7 @@ void main() {
         await t.pumpAndSettle();
         await t.tap(find.text(l));
         await t.pumpAndSettle();
+        await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
       }
       if (hold) {
         await t.pump();

@@ -290,6 +290,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text("No, I'll type"));
     await t.pumpAndSettle();
+    await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
     await t.ensureVisible(find.text('Not now'));
     await t.pumpAndSettle();
     await t.tap(find.text('Not now'));

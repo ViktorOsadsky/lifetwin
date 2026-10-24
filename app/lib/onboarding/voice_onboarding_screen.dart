@@ -99,6 +99,23 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
   /// The voice answer from the first consent question, kept until the second is answered.
   bool? _voiceChoice;
 
+  /// Briefly true after the AI-helper question replaced the voice one. Its buttons sit
+  /// where the voice buttons were, so a double tap (or a tremor) must not answer it
+  /// unseen, least of all agree to the helper. As on the Health screen.
+  bool _aiLocked = false;
+  static const secondTapGuard = Duration(milliseconds: 700);
+
+  void _chooseVoice(bool voice) {
+    _aiLocked = true;
+    Future.delayed(secondTapGuard, () => _aiLocked = false);
+    setState(() => _voiceChoice = voice);
+  }
+
+  void _answerAi(bool voice, {bool aiHelper = false}) {
+    if (_aiLocked) return;
+    c.answerConsent(voice, aiHelper: aiHelper);
+  }
+
   bool _wasListening = false;
 
   VoiceOnboardingController get c => widget.controller;
@@ -222,13 +239,13 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
         LtPrimaryButton(
           label: "Yes, I'll talk",
           icon: const LtIcon(LtIconKind.mic, size: 36),
-          onPressed: () => setState(() => _voiceChoice = true),
+          onPressed: () => _chooseVoice(true),
         ),
         const SizedBox(height: LtSpace.buttonGap),
         LtSecondaryButton(
           label: "No, I'll type",
           icon: const LtIcon(LtIconKind.keyboard),
-          onPressed: () => setState(() => _voiceChoice = false),
+          onPressed: () => _chooseVoice(false),
         ),
       ],
     );
@@ -267,10 +284,10 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> {
       LtPrimaryButton(
         label: 'Yes, turn it on',
         icon: const LtIcon(LtIconKind.check, size: 38, strokeWidth: 2.8),
-        onPressed: () => c.answerConsent(voice, aiHelper: true),
+        onPressed: () => _answerAi(voice, aiHelper: true),
       ),
       const SizedBox(height: LtSpace.buttonGap),
-      LtSecondaryButton(label: 'Not now', onPressed: () => c.answerConsent(voice)),
+      LtSecondaryButton(label: 'Not now', onPressed: () => _answerAi(voice)),
     ],
   );
 

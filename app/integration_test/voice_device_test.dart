@@ -250,7 +250,10 @@ void main() {
         await tapButton(t, 'Talk with Pip');
         await tick(t);
         final c = ctl(t);
-        if (!await tapButton(t, "Yes, I'll talk") || !await tapButton(t, 'Not now')) {
+        // The AI question ignores taps for a moment, so a double tap can't answer it.
+        final talked = await tapButton(t, "Yes, I'll talk");
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        if (!talked || !await tapButton(t, 'Not now')) {
           await log('could not get past consent; screen: ${screenText()}');
           fail++;
           return;

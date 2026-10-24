@@ -163,6 +163,7 @@ class Rig {
         await t.pump();
         await t.pump();
       }
+      await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
     }
   }
 }
@@ -600,6 +601,7 @@ void main() {
       await r.pump(t);
       for (final l in ["Yes, I'll talk", 'Yes, turn it on']) {
         await tapText(t, l);
+        await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
       }
       r.fakeInput.transcript = 'about five foot eight';
       await tapTalk(t);
