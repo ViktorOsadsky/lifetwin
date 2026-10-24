@@ -156,8 +156,8 @@ Response, `200`:
 ### Muse by Meta (optional, consented)
 
 - Muse is used only if all of these hold: the request has `outside_ai_consent: true`, the server is configured for
-  Muse (`LLM_PROVIDER=chat_completions`), and `DOCUMENT_MUSE_ENABLED=true`, which is **off by default** pending the
-  owner's Tier-1 ruling.
+  Muse (`LLM_PROVIDER=chat_completions`), and `DOCUMENT_MUSE_ENABLED=true`, which is **on by default** (owner ruling: Muse on, with consent;
+  Claude replaces it later by configuration). Set it to `false` to keep document text away from Muse entirely.
 - It runs only when the parser found no model inputs, or some lines could not be read.
 - Muse receives the identifier-stripped text only, never the image.
 - Muse can only point at evidence. Each answer must quote text that appears verbatim in the stripped document. The
@@ -261,8 +261,8 @@ pickers are native sheets and were not driven by the test.
 - Labelling document-confirmed values with their source in the forecast, as Apple Health values are.
 - Storing confirmed information notes (blood pressure, A1c, LDL) on the phone, once local history exists.
 
-- **Tier-1:** may document text go to Muse at all, and under what retention terms? Until ruled, `DOCUMENT_MUSE_ENABLED`
-  stays off.
+- **Ruled:** document text may go to Muse with the person's consent (owner, 2026-10-24). Muse's retention terms are
+  still unverified; the consent copy must not claim any retention promise until they are checked.
 - **Tier-1:** `hypertension_diagnosed` has no field in `HealthProfile` (the server's model leaves it missing). A
   confirmed value is returned by `DocumentImportResult.onPhoneOnly` but is not used yet. The profile contract has to
   add it first.

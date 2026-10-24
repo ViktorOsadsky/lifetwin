@@ -291,18 +291,21 @@ async def test_muse_is_off_unless_enabled():
     assert calls == []
 
 
-def test_app_keeps_muse_off_by_default():
+def test_app_offers_muse_by_default_and_can_switch_it_off():
     app = create_app(settings(llm_provider="chat_completions", llm_api_key="k", llm_model="m"))
-    assert app.state.document_service.muse_available is False
+    assert app.state.document_service.muse_available is True
     app = create_app(
         settings(
             llm_provider="chat_completions",
             llm_api_key="k",
             llm_model="m",
-            document_muse_enabled=True,
+            document_muse_enabled=False,
         )
     )
-    assert app.state.document_service.muse_available is True
+    assert app.state.document_service.muse_available is False
+    # Without a configured provider there is nothing to send to, whatever the flag says.
+    app = create_app(settings())
+    assert app.state.document_service.muse_available is False
 
 
 def test_a_bare_name_under_a_spouse_heading_is_removed():

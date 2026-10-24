@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     )
     # Muse may read identifier-stripped document text only when this is on AND the person
     # agreed. Off by default pending the owner's ruling (docs/document-upload.md).
-    document_muse_enabled: bool = False
+    document_muse_enabled: bool = True
     rate_limit_per_minute: int = Field(
         default=60, ge=1, le=10000, validation_alias="API_RATE_LIMIT_PER_MINUTE"
     )

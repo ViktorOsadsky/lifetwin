@@ -92,7 +92,7 @@ Select the extraction provider with environment variables (all blank by default;
 | `LLM_MODEL` | Model ID, required. |
 | `LLM_API_KEY` | Bearer key, required; kept server-side and never logged or returned. |
 | `LLM_REASONING_EFFORT` | `minimal` (default), `low`, `medium`, `high`, or blank to omit. Reasoning models such as Muse otherwise spend the whole token budget thinking and return no answer (observed live). |
-| `DOCUMENT_MUSE_ENABLED` | `false` (default). When `true` with `chat_completions` configured, Muse may read identifier-stripped document text, only for requests with `outside_ai_consent: true`. Pending the owner's ruling. |
+| `DOCUMENT_MUSE_ENABLED` | `true` (default, owner ruling). With `chat_completions` configured, Muse may read identifier-stripped document text, only for requests with `outside_ai_consent: true`. Set `false` to disable. |
 
 Muse example (supply your own key):
 
