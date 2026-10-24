@@ -53,6 +53,7 @@ Future<void> say(WidgetTester t, String answer, String expect) async {
 /// Opens the app, chooses typing, and waits for the first question.
 Future<void> startTyped(WidgetTester t, {bool aiHelper = false}) async {
   await t.pumpWidget(const LifeTwinApp());
+  await tapText(t, 'Talk'); // the Room is home
   await tapText(t, 'Type instead');
   await tapText(t, aiHelper ? 'Yes, turn it on' : 'Not now');
   await waitFor(t, find.textContaining('How old are you?'));
@@ -100,7 +101,7 @@ void main() {
     expect(find.text('Yes, let the AI helper read it'), findsOneWidget);
     await tapText(t, 'Yes, let the AI helper read it');
     // The same answer is sent again; the offer goes away, whatever the helper makes of it.
-    await waitFor(t, find.text('Turn off AI helper'));
+    await waitFor(t, find.text('AI helper: On'));
     final deadline = DateTime.now().add(const Duration(seconds: 40));
     while (find.text('Yes, let the AI helper read it').evaluate().isNotEmpty) {
       if (DateTime.now().isAfter(deadline)) throw TestFailure('offer never went away');
@@ -128,6 +129,7 @@ void main() {
   testWidgets('a whole typed intake with indirect answers', (t) async {
     final started = DateTime.now();
     await t.pumpWidget(const LifeTwinApp());
+    await tapText(t, 'Talk'); // the Room is home
     await tapText(t, 'Type instead');
     await tapText(t, 'Not now');
     await waitFor(t, find.textContaining('How old are you?'));

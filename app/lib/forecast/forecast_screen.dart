@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../onboarding/voice_onboarding_screen.dart' show BigButton;
+import '../ui/theme.dart';
+import '../ui/twin_appearance.dart';
+import '../ui/twin_assets.dart';
+import '../ui/widgets/widgets.dart';
 import '../voice/speech.dart';
 import 'forecast_client.dart';
+import 'night_plate.dart';
+import 'outlook_detail_screen.dart';
 
 /// The mascot's sentence for a supported forecast. Spoken and shown, word for word.
 String forecastSentence(Forecast f) {
@@ -15,9 +20,26 @@ String unsupportedSentence(Forecast f) =>
     "I can't make a forecast for you yet. ${f.reason ?? 'The model does not cover these answers.'}";
 
 const couldNotReach = "I couldn't get your forecast just now.";
+const stillLearningLine = "The ball isn't ready yet.";
 
-/// Magic-ball forecast: awaiting model, a short reveal, then the mascot's result.
-/// Never shows a date, a countdown or a "life expectancy".
+/// The plain "what this means" lines, shown under Why? (and kept word for
+/// word from the first forecast screen).
+List<String> forecastMeaning(Forecast f) => [
+  'These are averages for people with answers like yours in a large US health survey.',
+  'They are not a promise, and they are not a date.',
+  'They show links, not causes. Changing one answer may not change what happens.',
+  'We only look ${f.maxHorizonYears} years ahead, as far as the model was checked.',
+  if (f.filledIn.isNotEmpty)
+    'We have not asked about everything yet. For ${_join(f.filledIn)}, '
+        'the forecast used typical answers from the survey.',
+];
+
+String _join(List<String> items) =>
+    items.length == 1 ? items.single : '${items.sublist(0, items.length - 1).join(', ')} and ${items.last}';
+
+/// V-4 fortune result, with V-5 still learning and the unsupported state.
+/// Shows only real response fields: never an age, a date, a countdown or a
+/// "life expectancy".
 class ForecastScreen extends StatefulWidget {
   const ForecastScreen({
     super.key,
@@ -25,6 +47,10 @@ class ForecastScreen extends StatefulWidget {
     required this.profile,
     required this.onBack,
     this.speech,
+    this.onAddAnswer,
+    this.onPlayQuiz,
+    this.healthKeys = const {},
+    this.appearance = const TwinAppearance(),
   });
 
   final ForecastClient client;
@@ -35,6 +61,18 @@ class ForecastScreen extends StatefulWidget {
 
   /// Set when voice is on; the mascot then says its sentence aloud.
   final SpeechOutput? speech;
+
+  /// Back to the conversation to answer more; defaults to [onBack].
+  final VoidCallback? onAddAnswer;
+
+  /// Shown on "still learning" when a quiz exists.
+  final VoidCallback? onPlayQuiz;
+
+  /// Profile keys that came from the Health app (the rest: "you told me").
+  final Set<String> healthKeys;
+
+  /// Cosmetic look of the twin on the night plate.
+  final TwinAppearance appearance;
 
   @override
   State<ForecastScreen> createState() => _ForecastScreenState();
@@ -87,7 +125,7 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
         _error = e;
         _loading = false;
       });
-      await _say(couldNotReach);
+      await _say(e.modelMissing ? 'Still learning. $stillLearningLine' : couldNotReach);
     }
   }
 
@@ -107,6 +145,11 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
     widget.onBack();
   }
 
+  void _addAnswer() {
+    if (_spoke) widget.speech?.stop();
+    (widget.onAddAnswer ?? widget.onBack)();
+  }
+
   @override
   void dispose() {
     if (_spoke) widget.speech?.stop();
@@ -117,223 +160,208 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final f = _forecast;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Your forecast')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    final supported = f != null && f.supported;
+    final String? bubble = _loading
+        ? 'Looking into the magic ball…'
+        : _error != null
+        ? (_error!.modelMissing ? stillLearningLine : couldNotReach)
+        : !supported
+        ? unsupportedSentence(f!)
+        : null;
+    // Holding the ball while it looks and when it answers; a shrug otherwise.
+    final pose = (_loading || supported) ? TwinPose.holdBall : TwinPose.shrug;
+    return ModeScaffold(
+      mode: LtMode.fortune,
+      child: PlateSheetLayout(
+        minWindow: 160,
+        window: PlateWindow(
+          night: true,
+          name: widget.appearance.name,
+          plate: NightTwinPlate(
+            appearance: widget.appearance,
+            pose: pose,
+            glow: pose == TwinPose.holdBall ? 0.8 : 0,
+            // Feet clear of the sheet, which overlaps the window's bottom edge.
+            feetAt: Offset(bubble == null ? 0.5 : 0.3, bubble == null ? 0.8 : 0.86),
+            twinHeight: bubble == null ? 0.74 : 0.5,
+          ),
+          overlay: Stack(
             children: [
-              Center(child: _MagicBall(reveal: _reveal, dim: f != null && !f.supported)),
-              const SizedBox(height: 24),
-              if (_loading)
-                const _MascotLine('Looking into the magic ball…')
-              else if (_error != null)
-                ..._failed(context)
-              else if (!f!.supported)
-                ..._unsupported(f)
-              else
-                FadeTransition(opacity: _reveal, child: _Result(forecast: f, onBack: _back, speech: widget.speech)),
+              Positioned(left: 14, top: 18, child: RoundBackButton(label: 'Back', onTap: _back)),
+              if (bubble != null)
+                Positioned(
+                  top: 36,
+                  right: 10,
+                  left: 84,
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: Bubble(text: bubble, liveRegion: true, fontSize: 21, maxHeight: 220),
+                  ),
+                ),
             ],
           ),
         ),
+        sheet: Sheet(night: true, padding: const EdgeInsets.fromLTRB(22, 18, 22, 18), child: _sheet(context)),
       ),
     );
   }
 
-  List<Widget> _failed(BuildContext context) => [
-    const _MascotLine(couldNotReach),
-    const SizedBox(height: 12),
-    Text(_error?.plain ?? 'Please check the connection and try again.', style: Theme.of(context).textTheme.titleLarge),
-    const SizedBox(height: 32),
-    BigButton(label: 'Try again', filled: true, onTap: _retry),
-    const SizedBox(height: 16),
-    BigButton(label: 'Go back', filled: false, onTap: _back),
-  ];
+  Widget _sheet(BuildContext context) {
+    final f = _forecast;
+    if (_loading) {
+      return Text('One moment…', style: LtText.body(size: 18, color: LtColors.cream));
+    }
+    final e = _error;
+    if (e != null && e.modelMissing) return _stillLearning();
+    if (e != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            e.plain ?? 'Please check the connection and try again.',
+            style: LtText.body(size: 18, color: LtColors.cream),
+          ),
+          const SizedBox(height: 16),
+          LipButton(label: 'Try again', icon: Icons.refresh_rounded, onTap: _retry),
+          const SizedBox(height: 12),
+          LipButton(label: 'Go back', kind: LipKind.secondary, height: 56, fontSize: 21, onTap: _back),
+        ],
+      );
+    }
+    if (!f!.supported) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // The plain reason is in the bubble; nothing is added to it here.
+          LipButton(label: 'Add an answer', icon: Icons.add_rounded, onTap: _addAnswer),
+          if (widget.onAddAnswer != null) ...[
+            const SizedBox(height: 12),
+            LipButton(label: 'Go back', kind: LipKind.secondary, height: 56, fontSize: 21, onTap: _back),
+          ],
+        ],
+      );
+    }
+    return FadeTransition(opacity: _reveal, child: _result(context, f));
+  }
 
-  List<Widget> _unsupported(Forecast f) => [
-    _MascotLine(unsupportedSentence(f)),
-    const SizedBox(height: 32),
-    BigButton(label: 'Go back to my answers', filled: true, onTap: _back),
-  ];
-}
+  Widget _stillLearning() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Semantics(header: true, child: Text('Still learning', style: LtText.display(34, color: LtColors.gold))),
+      const SizedBox(height: 6),
+      Text('Your fortune will show here later.', style: LtText.body(color: LtColors.cream)),
+      const SizedBox(height: 16),
+      if (widget.onPlayQuiz != null) ...[
+        LipButton(label: 'Play the quiz', icon: Icons.extension_rounded, onTap: widget.onPlayQuiz),
+        const SizedBox(height: 12),
+      ],
+      LipButton(
+        label: 'Back to room',
+        icon: Icons.home_rounded,
+        kind: widget.onPlayQuiz != null ? LipKind.secondary : LipKind.primary,
+        height: widget.onPlayQuiz != null ? 56 : 64,
+        fontSize: 21,
+        onTap: _back,
+      ),
+    ],
+  );
 
-class _Result extends StatelessWidget {
-  const _Result({required this.forecast, required this.onBack, this.speech});
-
-  final Forecast forecast;
-  final VoidCallback onBack;
-  final SpeechOutput? speech;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    final f = forecast;
-    final years = f.survival.keys.toList()..sort();
-    final body = text.titleLarge?.copyWith(height: 1.4);
+  Widget _result(BuildContext context, Forecast f) {
+    final years = f.maxHorizonYears;
+    final n = f.outOf100(years);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _MascotLine(forecastSentence(f)),
-        const SizedBox(height: 28),
-        for (final y in years)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(text: 'After $y ${y == 1 ? 'year' : 'years'}: '),
-                  TextSpan(
-                    text: 'about ${f.outOf100(y)} in 100',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ],
-              ),
-              style: body,
+        Semantics(header: true, child: Text('Your look ahead', style: LtText.display(22, color: LtColors.gold))),
+        const SizedBox(height: 8),
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(text: 'About ', style: LtText.display(40, color: LtColors.cream, weight: FontWeight.w500)),
+              TextSpan(text: '$n in 100', style: LtText.display(40, color: LtColors.cream)),
+            ],
+          ),
+        ),
+        Text(
+          'chance you’re still here in $years ${years == 1 ? 'year' : 'years'}',
+          style: LtText.body(color: LtColors.cream),
+        ),
+        const SizedBox(height: 12),
+        BearHeadArray(filled: n),
+        const SizedBox(height: 8),
+        Text(
+          forecastSentence(f),
+          textAlign: TextAlign.center,
+          style: LtText.body(color: LtColors.gold),
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text('Linked, not proven.', style: LtText.body(color: LtColors.cream, weight: FontWeight.w700)),
+            LinkButton(label: 'Why?', icon: Icons.help_outline_rounded, color: LtColors.gold, onTap: () => _why(f)),
+          ],
+        ),
+        if (widget.speech != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: LinkButton(
+              label: 'Say it again',
+              icon: Icons.volume_up_rounded,
+              color: LtColors.gold,
+              onTap: () => widget.speech!.speak(forecastSentence(f)).ignore(),
             ),
           ),
-        const SizedBox(height: 20),
-        _DotGrid(filled: f.outOf100(f.maxHorizonYears)),
-        const SizedBox(height: 12),
-        Text(
-          'Each dot is one person. A filled dot is someone still living '
-          'after ${f.maxHorizonYears} years.',
-          style: text.titleMedium?.copyWith(height: 1.4),
-        ),
-        const SizedBox(height: 32),
-        Semantics(header: true, child: Text('What this means', style: text.headlineSmall)),
-        const SizedBox(height: 12),
-        for (final line in [
-          'These are averages for people with answers like yours in a large US health survey.',
-          'They are not a promise, and they are not a date.',
-          'They show links, not causes. Changing one answer may not change what happens.',
-          'We only look ${f.maxHorizonYears} years ahead, as far as the model was checked.',
-          if (f.filledIn.isNotEmpty)
-            'We have not asked about everything yet. For ${_join(f.filledIn)}, '
-                'the forecast used typical answers from the survey.',
-        ])
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text('•  $line', style: body),
+        const SizedBox(height: 4),
+        LipButton(
+          label: 'See what shaped it',
+          icon: Icons.show_chart_rounded,
+          height: 58,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => OutlookDetailScreen(
+                forecast: f,
+                profile: widget.profile,
+                healthKeys: widget.healthKeys,
+                onAddAnswer: () {
+                  Navigator.of(context).pop();
+                  _addAnswer();
+                },
+              ),
+            ),
           ),
-        const SizedBox(height: 24),
-        if (speech != null) ...[
-          BigButton(label: 'Say it again', filled: false, onTap: () => speech!.speak(forecastSentence(f)).ignore()),
-          const SizedBox(height: 16),
-        ],
-        BigButton(label: 'Go back to my answers', filled: true, onTap: onBack),
-        const SizedBox(height: 24),
-        Text('Model ${f.modelVersion}', style: text.bodyMedium),
+        ),
       ],
     );
   }
 
-  static String _join(List<String> items) =>
-      items.length == 1 ? items.single : '${items.sublist(0, items.length - 1).join(', ')} and ${items.last}';
-}
-
-class _MascotLine extends StatelessWidget {
-  const _MascotLine(this.line);
-  final String line;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      liveRegion: true,
-      container: true,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const ExcludeSemantics(child: Icon(Icons.pets, size: 48)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(line, style: Theme.of(context).textTheme.headlineSmall?.copyWith(height: 1.35)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A calm glowing ball. It brightens once during the reveal; no looping motion.
-class _MagicBall extends StatelessWidget {
-  const _MagicBall({required this.reveal, required this.dim});
-  final Animation<double> reveal;
-  final bool dim;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return ExcludeSemantics(
-      child: AnimatedBuilder(
-        animation: reveal,
-        builder: (context, _) {
-          final t = Curves.easeOut.transform(reveal.value);
-          final glow = dim ? 0.15 : 0.2 + 0.5 * t;
-          return Transform.scale(
-            scale: 0.9 + 0.1 * t,
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  center: const Alignment(-0.3, -0.4),
-                  colors: [Colors.white, scheme.primaryContainer, scheme.primary],
-                  stops: const [0.0, 0.45, 1.0],
-                ),
-                boxShadow: [
-                  BoxShadow(color: scheme.primary.withValues(alpha: glow), blurRadius: 40, spreadRadius: 6),
-                ],
-              ),
+  void _why(Forecast f) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: LtColors.paper,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(LtRadii.panel))),
+      builder: (context) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Semantics(header: true, child: Text('What this means', style: LtText.display(26))),
+                const SizedBox(height: 12),
+                for (final line in [...forecastMeaning(f), ...f.limitations])
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text('•  $line', style: LtText.body(size: 18)),
+                  ),
+                const SizedBox(height: 8),
+                LipButton(label: 'Got it', kind: LipKind.secondary, height: 56, onTap: () => Navigator.of(context).pop()),
+              ],
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// 100 dots, [filled] of them solid. Rings for the rest, so it is not color alone.
-class _DotGrid extends StatelessWidget {
-  const _DotGrid({required this.filled});
-  final int filled;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Semantics(
-      label: 'About $filled of 100 dots are filled.',
-      child: ExcludeSemantics(
-        child: LayoutBuilder(
-          builder: (context, box) {
-            const gap = 6.0;
-            final size = ((box.maxWidth - 9 * gap) / 10).clamp(4.0, 28.0);
-            // Exactly ten across, so it always reads as 10 rows of 10.
-            return Center(
-              child: SizedBox(
-                width: 10 * size + 9 * gap + 0.5,
-                child: Wrap(
-                  spacing: gap,
-                  runSpacing: gap,
-                  children: [
-                    for (var i = 0; i < 100; i++)
-                      Container(
-                        key: ValueKey('dot-$i-${i < filled ? 'filled' : 'empty'}'),
-                        width: size,
-                        height: size,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: i < filled ? scheme.primary : null,
-                          border: Border.all(color: i < filled ? scheme.primary : scheme.outline, width: 2),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            );
-          },
+          ),
         ),
       ),
     );

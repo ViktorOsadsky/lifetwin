@@ -68,8 +68,10 @@ def main():
                 outside[j] = 1
                 q.append(j)
     # enclosed background-coloured regions (e.g. ear holes in a hat) larger than
-    # a highlight are cleared too; tiny ones like eye glints stay
-    seen = bytearray(outside)
+    # a highlight are cleared too; tiny ones like eye glints stay. Pass
+    # "noholes" as the 4th argument for art with near-white fills (a cream sweater).
+    holes = not (len(sys.argv) > 4 and sys.argv[4] == 'noholes')
+    seen = bytearray(outside) if holes else bytearray(b'\x01' * (w * h))
     for s in range(w * h):
         if seen[s] or dist(px[s]) > tol:
             continue

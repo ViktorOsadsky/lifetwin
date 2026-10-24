@@ -149,11 +149,13 @@ The assets live in `app/assets/twin/` and `app/assets/scene/`. Every file has a 
 | Human, base | `twin/human/base/default.png` | 180×180 | same |
 | Human, Cal hat | `twin/human/base/cal_hat.png` | 180×180 | same |
 | Cal hat, alone | `twin/accessory/hat/cal.png` | 180×180 | same; ear holes cleared |
-| Bear poses (Cal hat) | `twin/bear/pose/{stand, wave, walk_side, walk_front, walk_back, sit, jump, think, stretch, sleep, eat, hold_ball, dizzy}.png` | 180 long side | cut from two generated pose sheets; `stand` is the Cal-hat base art |
+| Bear poses (Cal hat) | `twin/bear/pose/{stand, wave, walk_side, walk_front, walk_back, sit, jump, think, stretch, sleep, eat, hold_ball, shrug, dizzy}.png` | 180 long side | cut from two generated pose sheets; `stand` is the Cal-hat base art; `shrug` is a separate generation, cropped |
+| Human poses (Cal hat) | `twin/human/pose/{hold_ball, shrug, wave, walk_side, sit, jump}.png` | 180 long side | generated and cut out (alpha); 3.0x kept at native size (about 490px) |
 | Calm island | `scene/room.jpg` | 390×585 | Room, Onboarding and Readback; the twin sprite is composited on it |
 | Calm peach pedestal | `scene/customize.jpg` | 390×585 | Customize; the twin sprite is composited on it |
-| Night, revealed | `scene/fortune_reveal.jpg` | 390×585 | baked bear holding the ball (MVP) |
-| Night, still learning | `scene/fortune_learning.jpg` | 390×585 | baked bear with the misted ball (MVP) |
+| Calm night, empty | `scene/night.jpg` | 390×585 | the fortune screens (V-4, V-5, V-8); the twin sprite is composited on its open floor |
+| Night, revealed (legacy) | `scene/fortune_reveal.jpg` | 390×585 | baked bear holding the ball; no longer used by the app, kept for the static mockups |
+| Night, still learning (legacy) | `scene/fortune_learning.jpg` | 390×585 | baked bear with the misted ball; same |
 
 **Sizes.** A sprite shows at about 180pt tall, so 1x is 180px on its long side, 2.0x is 360px and 3.0x is 540px. Scenes are 390×585 at 1x, 780×1170 at 2.0x and native 933×1400 at 3.0x. Nothing is upscaled past its source: the pose crops are 416–504px on their long side, so their 3.0x files keep native size (slightly soft on 3x screens). Re-cut the pose sheets at a higher resolution if that shows.
 
@@ -169,7 +171,7 @@ The assets live in `app/assets/twin/` and `app/assets/scene/`. Every file has a 
 - Fur and skin tone are separate sprites, not hue filters, so outlines stay cocoa.
 - Demographic cues (age shown on the muzzle and hair, body silhouettes) need their own sprite sets. Generate them only after the team settles the body policy (`AGENTS.md` versus the owner's data-driven ruling, still open).
 
-**MVP gap:** only the two fortune plates bake in the bear. The bear now has a `hold_ball` pose, so the night plates can be repainted empty and the pose composited on them. The human still needs its own poses (at least "hold ball" and "shrug"). Every other screen already composites the chosen twin.
+**Fortune poses (gap closed):** both twins now have fortune poses on the shared night plate. The ceremony (V-8) and the supported result (V-4) composite the chosen twin's `hold_ball` pose on `scene/night.jpg`, with a contact shadow and a soft glow behind the ball; still learning and unsupported (V-5) use `shrug`. Every screen now composites the chosen twin. A pose a twin lacks falls back to that twin's own standing sprite (`twinAsset` in `twin_assets.dart`); all pose art wears the Cal hat, so a twin with no hat stands without the ball. The baked plates remain only because the static mockups reference them.
 
 ## 6. Figma ↔ code naming
 
@@ -179,9 +181,10 @@ The assets live in `app/assets/twin/` and `app/assets/scene/`. Every file has a 
 | Family | Names |
 |---|---|
 | Base sprites | `twin/{bear\|human}/base/{default\|cal_hat}` |
-| Bear poses | `twin/bear/pose/{stand\|wave\|walk_side\|walk_front\|walk_back\|sit\|jump\|think\|stretch\|sleep\|eat\|hold_ball\|dizzy}` |
+| Bear poses | `twin/bear/pose/{stand\|wave\|walk_side\|walk_front\|walk_back\|sit\|jump\|think\|stretch\|sleep\|eat\|hold_ball\|shrug\|dizzy}` |
+| Human poses | `twin/human/pose/{hold_ball\|shrug\|wave\|walk_side\|sit\|jump}` (no Figma component yet) |
 | Accessories | `twin/accessory/hat/cal` |
-| Scenes | `scene/{room\|customize\|fortune_reveal\|fortune_learning}` |
+| Scenes | `scene/{room\|customize\|night}` (legacy: `fortune_reveal`, `fortune_learning`) |
 | References (Figma only) | `reference/{model_sheet_bear\|model_sheet_bear_cal_hat\|model_sheet_human\|demographics_bear\|demographics_human\|room_topdown}` |
 
 - **Cells:** each sprite component is a 256×256 cell. The art is fitted and centred, with the feet on a baseline at 92% of the cell height (235.5px), so swapping poses never moves the feet. Scenes are 390×585 cells. The label under each cell is the exact asset path.
@@ -197,13 +200,15 @@ flutter:
     - assets/twin/bear/base/
     - assets/twin/bear/pose/
     - assets/twin/human/base/
+    - assets/twin/human/pose/
     - assets/twin/accessory/hat/
     - assets/scene/
 ```
 
 ## 7. Flutter notes
 
-- Package `lifesim`. Add the `assets:` list from section 6 to `pubspec.yaml`, and add `google_fonts` (or bundle Fredoka and Atkinson Hyperlegible as assets).
+- Package `lifesim`. Add the `assets:` list from section 6 to `pubspec.yaml`.
+- **Fonts are bundled** in `app/assets/fonts/` and registered in `pubspec.yaml` (no `google_fonts`, no network): Atkinson Hyperlegible Regular and Bold (400, 700) and Fredoka as one variable TTF (`wght` axis). Both are under the SIL Open Font License 1.1; the license texts ship beside the fonts (`OFL-AtkinsonHyperlegible.txt`, `OFL-Fredoka.txt`) and must stay with them. Fredoka styles set `fontVariations: [FontVariation('wght', 500 or 600)]`, because `fontWeight` alone does not reliably drive a variable axis.
 - Put tokens in one `lib/ui/theme.dart` (colours, type, radii, shadows). Shared widgets: `LipButton`, `PlateWindow` (frame, banner and sparkles), `Bubble`, `Chip`, `DotArray`, `ModeScaffold` (tint background).
 - Reuse the existing logic unchanged: `VoiceOnboardingController` (phases, `startTalk`/`stopTalk`, `setTyping`, `setAiHelper`, `confirm`/`change`), `HealthImportScreen`, and `HttpForecastClient.predict`. The remake replaces only the widgets.
 - Reduced motion: every ceremony beat has a static frame.

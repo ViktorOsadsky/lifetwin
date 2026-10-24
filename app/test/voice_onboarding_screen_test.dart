@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
+import 'package:lifesim/ui/widgets/lip_button.dart';
 import 'package:lifesim/voice/fakes.dart';
 import 'package:lifesim/voice/speech.dart';
 
@@ -30,6 +31,9 @@ class Rig {
     );
   }
 }
+
+/// Buttons are Material buttons or the painted-card LipButton.
+bool isButton(Widget w) => w is ButtonStyleButton || w is LipButton;
 
 /// Answers both consent questions: voice, then the AI helper.
 Future<void> choose(WidgetTester t, String voiceLabel, {bool aiHelper = false}) async {
@@ -58,7 +62,7 @@ void main() {
       expect(
         t
             .getSize(
-              find.ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton)),
+              find.ancestor(of: find.text(label), matching: find.byWidgetPredicate(isButton)),
             )
             .height,
         greaterThanOrEqualTo(72),
@@ -73,7 +77,7 @@ void main() {
     expect(find.text('How old are you?'), findsOneWidget);
     expect(find.text('Hold to talk'), findsNothing);
     expect(r.output.spoken, isEmpty);
-    await t.tap(find.text('Use my Health app instead'));
+    await t.tap(find.text('Use my Health app'));
     expect(r.health, true);
     await t.enterText(find.byType(TextField), '70');
     await t.tap(find.text('Send'));
@@ -152,12 +156,14 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('app starts on the voice screen and can open Apple Health import', (t) async {
+  testWidgets('app starts in the Room; Talk opens the voice screen, which can open Apple Health import', (t) async {
     final r = Rig();
     await t.pumpWidget(LifeTwinApp(controller: r.c));
+    await t.tap(find.text('Talk'));
+    await t.pumpAndSettle();
     expect(find.text('Talk with me?'), findsOneWidget);
     await choose(t, 'Type instead');
-    await t.tap(find.text('Use my Health app instead'));
+    await t.tap(find.text('Use my Health app'));
     await t.pumpAndSettle();
     expect(find.text("Use your iPhone's Health app?"), findsOneWidget);
   });
@@ -174,7 +180,7 @@ void main() {
       expect(
         t
             .getSize(
-              find.ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton)),
+              find.ancestor(of: find.text(label), matching: find.byWidgetPredicate(isButton)),
             )
             .height,
         greaterThanOrEqualTo(72),
@@ -184,7 +190,7 @@ void main() {
     await t.pumpAndSettle();
     expect(r.c.aiHelper, isTrue);
     expect(r.guide.calls.single['aiHelper'], isTrue);
-    expect(find.text('Turn off AI helper'), findsOneWidget);
+    expect(find.text('AI helper: On'), findsOneWidget);
   });
 
   testWidgets('saying not now still lets the AI helper read a hard answer later, without retyping', (t) async {
@@ -276,7 +282,7 @@ void main() {
     final talk = find.text('Talk instead');
     await t.ensureVisible(talk);
     expect(
-      t.getSize(find.ancestor(of: talk, matching: find.byWidgetPredicate((w) => w is ButtonStyleButton))).height,
+      t.getSize(find.ancestor(of: talk, matching: find.byWidgetPredicate(isButton))).height,
       greaterThanOrEqualTo(72),
     );
     await t.tap(talk);
@@ -336,7 +342,7 @@ void main() {
     final hide = find.text('Hide keyboard');
     expect(hide, findsOneWidget);
     expect(
-      t.getSize(find.ancestor(of: hide, matching: find.byWidgetPredicate((w) => w is ButtonStyleButton))).height,
+      t.getSize(find.ancestor(of: hide, matching: find.byWidgetPredicate(isButton))).height,
       greaterThanOrEqualTo(72),
     );
     await t.ensureVisible(hide);
@@ -349,7 +355,7 @@ void main() {
     );
     // Tapping empty space also unfocuses.
     await t.showKeyboard(find.byType(TextField));
-    await t.tapAt(const Offset(195, 300));
+    await t.tapAt(const Offset(40, 150)); // the window, beside the twin
     await t.pump();
     expect(FocusManager.instance.primaryFocus?.context?.widget is EditableText, isFalse);
     // The keyboard's own send key still sends.

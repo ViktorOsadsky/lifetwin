@@ -63,6 +63,31 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Twin sprites and scene plates (docs/design/painted-card-direction.md §6).
+  # Flutter finds the 2.0x/ and 3.0x/ variants itself, so only the 1x
+  # folders are listed.
+  assets:
+    - assets/twin/            # manifest.json
+    - assets/twin/bear/base/
+    - assets/twin/bear/pose/
+    - assets/twin/human/base/
+    - assets/twin/human/pose/
+    - assets/twin/accessory/hat/
+    - assets/scene/
+
+  # SIL Open Font License 1.1; the license texts are in assets/fonts/.
+  # Fredoka is a variable font (wght axis), set via fontVariations in lib/ui/theme.dart.
+  fonts:
+    - family: Atkinson Hyperlegible
+      fonts:
+        - asset: assets/fonts/AtkinsonHyperlegible-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/AtkinsonHyperlegible-Bold.ttf
+          weight: 700
+    - family: Fredoka
+      fonts:
+        - asset: assets/fonts/Fredoka-Variable.ttf
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
