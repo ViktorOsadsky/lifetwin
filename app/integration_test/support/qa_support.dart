@@ -186,7 +186,7 @@ final bloodPressureQuestion = _words('told you that you have high blood pressure
 final diabetesQuestion = _words('ever told you that you have diabetes');
 final sittingQuestion = _words('how many hours.*sit');
 final lighterQuestion = _words('lighter activity.*like brisk');
-final harderQuestion = _words('harder exercise');
+final harderQuestion = _words('harder exercise|breathe hard');
 
 /// The memory question comes first (conversation v2).
 const memoryQuestion = 'Can I remember the little things you tell me';

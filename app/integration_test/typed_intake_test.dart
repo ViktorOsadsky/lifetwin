@@ -92,7 +92,7 @@ final bloodPressureQuestion = words('told you that you have high blood pressure|
 final diabetesQuestion = words('ever told you that you have diabetes');
 final sittingQuestion = words('how many hours.*sit');
 final lighterQuestion = words('lighter activity.*like brisk');
-final harderQuestion = words('harder exercise');
+final harderQuestion = words('harder exercise|breathe hard');
 
 /// Conversation v2 opens with the memory question, then age, sex and smoking, then offers
 /// Apple Health, then asks only what is still missing.
