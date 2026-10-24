@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     app_env: Literal["development", "test", "production"] = "development"
     openai_api_key: SecretStr = SecretStr("")
     openai_model: str = ""
+    # Conversation-guide provider: "openai" keeps the OPENAI_* settings above.
+    llm_provider: Literal["openai", "chat_completions"] = "openai"
+    llm_base_url: str = ""
+    llm_model: str = ""
+    llm_api_key: SecretStr = SecretStr("")
     tavily_api_key: SecretStr = SecretStr("")
     cartesia_api_key: SecretStr = SecretStr("")
     cartesia_version: str = "2026-08-14"
@@ -39,6 +44,11 @@ class Settings(BaseSettings):
         default=16, ge=1, le=128, validation_alias="API_MAX_CONCURRENT_REQUESTS"
     )
     cors_origins: str = ""
+
+    @field_validator("llm_provider", mode="before")
+    @classmethod
+    def blank_provider_is_default(cls, value):
+        return "openai" if isinstance(value, str) and not value.strip() else value
 
     @field_validator("cors_origins")
     @classmethod
@@ -74,6 +84,22 @@ class Settings(BaseSettings):
             if canonical not in normalized:
                 normalized.append(canonical)
         return ",".join(normalized)
+
+    @property
+    def llm_endpoint(self) -> str:
+        if self.llm_provider != "chat_completions":
+            return ""
+        return self.llm_base_url.strip() or "https://api.meta.ai/v1"
+
+    @property
+    def llm_configured(self) -> bool:
+        if self.llm_provider == "chat_completions":
+            return bool(
+                self.llm_api_key.get_secret_value().strip()
+                and self.llm_model.strip()
+                and self.llm_endpoint
+            )
+        return bool(self.openai_api_key.get_secret_value().strip() and self.openai_model.strip())
 
     @property
     def allowed_origins(self) -> list[str]:
