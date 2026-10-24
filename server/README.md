@@ -76,6 +76,30 @@ Privacy: audio and transcripts go to Cartesia only after the user consents, and 
 
 The live Cartesia path is **untested without a key**. Tests mock the HTTP transport and check the exact request sent to `https://api.cartesia.ai/access-token`; the websocket STT/TTS protocol is the client's responsibility and is not exercised here.
 
+## Conversation guide LLM
+
+Select the extraction provider with environment variables (all blank by default; blank means keyless guided mode, with no network calls):
+
+| Variable | Meaning |
+| --- | --- |
+| `LLM_PROVIDER` | `openai` (default; uses `OPENAI_API_KEY`/`OPENAI_MODEL` exactly as before) or `chat_completions`. |
+| `LLM_BASE_URL` | Chat Completions base URL; defaults to `https://api.meta.ai/v1` when `chat_completions`. Requests go to `{base}/chat/completions`. |
+| `LLM_MODEL` | Model ID, required. |
+| `LLM_API_KEY` | Bearer key, required; kept server-side and never logged or returned. |
+
+Muse example (supply your own key):
+
+```sh
+LLM_PROVIDER=chat_completions
+LLM_BASE_URL=https://api.meta.ai/v1
+LLM_MODEL=muse-spark-1.3
+LLM_API_KEY=...
+```
+
+`ChatCompletionsExtractor` sends a system instruction plus the user's reply with `response_format` `json_schema` ([Meta structured output docs](https://dev.meta.ai/docs/structured-output)), then validates the reply strictly against `ExtractionResult` and applies the same grounding rules (exact quote, asked field) as every provider. HTTP errors, timeouts, non-JSON, refusals, truncated or schema-invalid output all fall back to guided clarification with no value filled. `/api/capabilities` `llm_configured` reflects the selected provider. Claude can be added later through its own adapter or an OpenAI-compatible endpoint by changing these variables.
+
+Privacy: when `provider_consent` is true, the user's typed or transcribed reply text is sent to the configured provider. Collecting consent and explaining this is the app's job. Meta's `-contributor` model variants are cheaper because content "may be used to train future Meta models" ([models](https://dev.meta.ai/docs/models)); use a non-contributor ID such as `muse-spark-1.3` for real health data unless the consent copy says so.
+
 ## Limits and privacy
 
 No accounts, database, durable sessions, health-profile store, transcript store or audio store. The caller holds conversation/scenario state. Client-reported state is not an authenticated medical record and must be revalidated at a future inference boundary.

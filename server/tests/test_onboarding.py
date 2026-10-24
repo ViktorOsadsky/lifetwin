@@ -9,7 +9,12 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from lifetwin.core.models import HealthProfile
-from lifetwin.onboarding import ConversationService, OpenAIExtractor, router
+from lifetwin.onboarding import (
+    ChatCompletionsExtractor,
+    ConversationService,
+    OpenAIExtractor,
+    router,
+)
 from lifetwin.onboarding.models import ConversationState, ExtractionResult, TurnRequest
 from lifetwin.onboarding.parsing import QUESTIONS, grounded_candidates, parse_reply, parse_value
 from lifetwin.onboarding.providers import ExtractionUnavailable
@@ -778,3 +783,172 @@ def test_bare_small_exercise_number_is_not_read_as_minutes(client):
     result = turn(client, "reply", asking("exercise_minutes_weekly"), text="5")
     assert result["state"]["phase"] == "asking"
     assert "5 minutes or 5 hours" in result["message"]
+
+
+# d-muse: OpenAI-compatible Chat Completions adapter (Meta Muse first).
+SECRET = "sk-test-secret-123"
+GOOD = '{"candidates":[{"field":"weight_kg","quote":"70 kg"}]}'
+
+
+def chat_body(content, finish="stop", **message):
+    return {
+        "choices": [
+            {
+                "finish_reason": finish,
+                "message": {"role": "assistant", "content": content, **message},
+            }
+        ]
+    }
+
+
+def chat_provider(client):
+    return ChatCompletionsExtractor(
+        base_url="https://api.meta.ai/v1/",
+        api_key=SECRET,
+        model="muse-spark-1.3-contributor",
+        client=client,
+    )
+
+
+def run_chat(handler, text="My current weight is 70 kg", asked="weight_kg"):
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await ConversationService(chat_provider(client)).turn(
+                TurnRequest(
+                    action="reply",
+                    state=ConversationState(phase="asking", current_field=asked),
+                    text=text,
+                    provider_consent=True,
+                )
+            )
+
+    return asyncio.run(run())
+
+
+def test_chat_completions_request_shape_and_good_extraction():
+    seen = []
+
+    def handle(request):
+        seen.append(request)
+        return httpx.Response(200, json=chat_body(GOOD))
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            return await chat_provider(client).extract("I weigh 70 kg", "weight_kg")
+
+    result = asyncio.run(run())
+    assert result.candidates[0].quote == "70 kg"
+    request = seen[0]
+    assert str(request.url) == "https://api.meta.ai/v1/chat/completions"
+    assert request.headers["authorization"] == f"Bearer {SECRET}"
+    body = json.loads(request.content)
+    assert body["model"] == "muse-spark-1.3-contributor"
+    assert [m["role"] for m in body["messages"]] == ["system", "user"]
+    assert body["messages"][1]["content"] == "I weigh 70 kg"
+    assert body["response_format"]["type"] == "json_schema"
+    assert body["response_format"]["json_schema"]["schema"]["properties"]["candidates"]
+    assert SECRET not in request.content.decode()
+
+
+def test_chat_completions_good_extraction_flows_through_service():
+    result = run_chat(lambda _: httpx.Response(200, json=chat_body(GOOD)))
+    assert result.provider_status == "used"
+    assert result.state.phase == "confirming"
+    assert result.state.pending_profile.weight_kg == 70
+    assert SECRET not in result.model_dump_json()
+
+
+def test_chat_completions_output_still_goes_through_grounding():
+    bad = '{"candidates":[{"field":"systolic_bp","quote":"160"}]}'
+    result = run_chat(
+        lambda _: httpx.Response(200, json=chat_body(bad)), text="160", asked="weight_kg"
+    )
+    assert result.provider_status == "unavailable"
+    assert result.guide_mode == "guided"
+    assert result.state.pending_profile.model_dump(exclude_none=True) == {}
+
+
+def _status(code):
+    return lambda _: httpx.Response(code, json={"error": {"message": SECRET}})
+
+
+def _timeout(request):
+    raise httpx.ReadTimeout("slow", request=request)
+
+
+@pytest.mark.parametrize(
+    "handler",
+    [
+        lambda _: httpx.Response(200, content=b"not json"),
+        lambda _: httpx.Response(200, json=chat_body("not json at all")),
+        lambda _: httpx.Response(200, json=chat_body('{"candidates":[{"field":"x","quote":1}]}')),
+        lambda _: httpx.Response(200, json=chat_body(GOOD, finish="length")),
+        lambda _: httpx.Response(200, json=chat_body(GOOD, refusal="No")),
+        lambda _: httpx.Response(200, json={"choices": []}),
+        lambda _: httpx.Response(200, content=b"[" * 2000 + b"0" + b"]" * 2000),
+        _status(401),
+        _status(429),
+        _status(500),
+        _timeout,
+    ],
+)
+def test_chat_completions_failures_fall_back_safely_without_leaking_key(handler):
+    result = run_chat(handler)
+    assert result.guide_mode == "guided"
+    assert result.provider_status == "unavailable"
+    assert result.state.pending_profile.weight_kg is None
+    assert "AI helper isn't available" in result.message
+    assert SECRET not in result.model_dump_json()
+
+
+def test_chat_completions_error_text_does_not_expose_key_or_reply():
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(_status(401))) as client:
+            with pytest.raises(ExtractionUnavailable) as caught:
+                await chat_provider(client).extract("I weigh 70 kg", "weight_kg")
+            return caught.value
+
+    error = asyncio.run(run())
+    assert SECRET not in repr(error) and "70 kg" not in repr(error) and str(error) == ""
+
+
+def test_chat_completions_unconfigured_never_calls_network():
+    def fail(_):
+        pytest.fail("Unconfigured provider must not use the network")
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(fail)) as client:
+            for kwargs in ({}, {"base_url": "https://x/v1", "api_key": "k"}):
+                provider = ChatCompletionsExtractor(client=client, **kwargs)
+                assert provider.configured is False
+                with pytest.raises(ExtractionUnavailable):
+                    await provider.extract("70 kg", "weight_kg")
+
+    asyncio.run(run())
+
+
+def test_llm_provider_selection_and_capabilities(monkeypatch):
+    from lifetwin.app import create_app
+    from lifetwin.core.config import Settings
+
+    for name in ("OPENAI_API_KEY", "OPENAI_MODEL", "LLM_PROVIDER", "LLM_BASE_URL", "LLM_MODEL"):
+        monkeypatch.delenv(name, raising=False)
+
+    def caps(**env):
+        app = create_app(Settings(_env_file=None, **env))
+        with TestClient(app) as test_client:
+            return app, test_client.get("/api/capabilities").json()
+
+    app, body = caps()
+    assert body["llm_configured"] is False
+    assert isinstance(app.state.conversation_service.extractor, OpenAIExtractor)
+    app, body = caps(OPENAI_API_KEY="k", OPENAI_MODEL="m")
+    assert body["llm_configured"] is True
+    app, body = caps(LLM_PROVIDER="chat_completions", LLM_MODEL="m")
+    assert body["llm_configured"] is False
+    app, body = caps(LLM_PROVIDER="chat_completions", LLM_MODEL="m", LLM_API_KEY="k")
+    assert body["llm_configured"] is True
+    extractor = app.state.conversation_service.extractor
+    assert isinstance(extractor, ChatCompletionsExtractor)
+    assert extractor._base_url == "https://api.meta.ai/v1"
+    assert Settings(_env_file=None, LLM_PROVIDER="").llm_provider == "openai"

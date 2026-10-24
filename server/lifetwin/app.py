@@ -19,7 +19,7 @@ from lifetwin.core.models import (
     HealthProfile,
     SensitivityRequest,
 )
-from lifetwin.onboarding import ConversationService, OpenAIExtractor
+from lifetwin.onboarding import ChatCompletionsExtractor, ConversationService, OpenAIExtractor
 from lifetwin.onboarding import router as onboarding_router
 from lifetwin.quiz.router import router as quiz_router
 from lifetwin.quiz.service import load_bank
@@ -96,10 +96,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     application.state.settings = settings
     application.state.conversation_service = ConversationService(
-        extractor=OpenAIExtractor(
-            api_key=settings.openai_api_key.get_secret_value(),
-            model=settings.openai_model,
-            timeout_seconds=settings.provider_timeout_seconds,
+        extractor=(
+            ChatCompletionsExtractor(
+                base_url=settings.llm_endpoint,
+                api_key=settings.llm_api_key.get_secret_value(),
+                model=settings.llm_model,
+                timeout_seconds=settings.provider_timeout_seconds,
+            )
+            if settings.llm_provider == "chat_completions"
+            else OpenAIExtractor(
+                api_key=settings.openai_api_key.get_secret_value(),
+                model=settings.openai_model,
+                timeout_seconds=settings.provider_timeout_seconds,
+            )
         ),
         timeout_seconds=settings.provider_timeout_seconds,
     )
@@ -159,9 +168,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {
             "schema_version": "1.0",
             "intake": "guided",
-            "llm_configured": bool(
-                settings.openai_api_key.get_secret_value().strip() and settings.openai_model.strip()
-            ),
+            "llm_configured": settings.llm_configured,
             "web_research_configured": bool(settings.tavily_api_key.get_secret_value().strip()),
             "advisor": "curated_educational",
             "quiz": "local_scoring_content",
