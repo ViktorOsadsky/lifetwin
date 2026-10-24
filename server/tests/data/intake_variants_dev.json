@@ -1744,10 +1744,8 @@
  {
   "field": "diabetes",
   "text": "I have the sugar",
-  "expected": {
-   "diabetes": true
-  },
-  "why": "affirmative / diagnosis stated"
+  "expected": null,
+  "why": "MASTER_PLAN conflict: 'never infer a diagnosis from casual language'. 'The sugar' is a colloquialism, not a yes or a named diagnosis, so ask whether a doctor said diabetes (was: diabetes true)"
  },
  {
   "field": "diabetes",
