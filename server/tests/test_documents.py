@@ -358,6 +358,13 @@ HOLDOUT = [
     ("Diabetes type 2? vs steroid-induced", "assessment", []),
     ("Height 66", "vitals", []),  # no units: Mochi asks
     ("Metformin 500 mg for type 2 diabetes", "medications", []),
+    # What Apple Vision really returned for "Wt 182 lb" on the simulator.
+    (
+        "BP 138/86 Wt 182 |b Ht 5 ft 6 in",
+        "vitals",
+        [("blood_pressure", "138/86"), ("weight_kg", 82.6), ("height_cm", 167.6)],
+    ),
+    ("Weight 70 Ibs", "vitals", [("weight_kg", 31.8)]),
 ]
 
 

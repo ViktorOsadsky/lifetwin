@@ -216,8 +216,15 @@ _HEIGHT_CM = re.compile(r"^\s*[:=]?\s*" + _NUM + r"\s*(cm|centimeters|m)\b", re.
 _HEIGHT_IN = re.compile(r"^\s*[:=]?\s*(\d{2}(?:\.\d{1,2})?)\s*(?:in\b\.?|inches|\"|”|″)", re.I)
 
 _WEIGHT_LABEL = re.compile(r"\b(?:body weight|weight|wt|wgt)\b\.?", re.I)
-_WEIGHT_UNIT_FIRST = re.compile(r"^\s*\((lbs?|kg|kgs)\)\s*[:=]?\s*" + _NUM + r"(?![\d.])", re.I)
-_WEIGHT = re.compile(r"^\s*[:=]?\s*" + _NUM + r"\s*(lbs?|pounds?|kgs?|kilograms?)\b\.?", re.I)
+# Vision often reads "lb" as "|b" or "Ib" (seen on the simulator); after a weight label
+# and a number nothing else is meant.
+_POUNDS = r"lbs?|[|I]bs?|pounds?"
+_WEIGHT_UNIT_FIRST = re.compile(
+    rf"^\s*\(({_POUNDS}|kg|kgs)\)\s*[:=]?\s*" + _NUM + r"(?![\d.])", re.I
+)
+_WEIGHT = re.compile(
+    r"^\s*[:=]?\s*" + _NUM + rf"\s*({_POUNDS}|kgs?|kilograms?)(?![A-Za-z])\.?", re.I
+)
 
 _BP_LABEL = re.compile(r"\b(?:bp|b/p|blood pressure|blood pres\.?)\b", re.I)
 _BP = re.compile(r"(?<![\d/.])(\d{2,3})\s*/\s*(\d{2,3})(?![\d/.])")
