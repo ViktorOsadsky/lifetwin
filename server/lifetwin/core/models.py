@@ -26,6 +26,9 @@ class ApiModel(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
 
 
+GeneralHealth = Literal["excellent", "very_good", "good", "fair", "poor"]
+
+
 class HealthProfile(ApiModel):
     """Explicitly supplied metric inputs; no risk or lifespan inference."""
 
@@ -43,6 +46,21 @@ class HealthProfile(ApiModel):
     diabetes: bool | None = None
     systolic_bp: Annotated[int | None, WholeNumber] = Field(default=None, ge=40, le=300)
     diastolic_bp: Annotated[int | None, WholeNumber] = Field(default=None, ge=20, le=200)
+    # Conversation v2: the remaining on-device model inputs, in the person's own terms.
+    # How each maps to the model's codes is in onboarding/model_inputs.py.
+    general_health: GeneralHealth | None = None
+    # A doctor has told the person they have high blood pressure (a diagnosis, never
+    # inferred from a reading).
+    hypertension_diagnosed: bool | None = None
+    # Awake time spent sitting on a usual day (reading, TV, driving all count).
+    sedentary_min_day: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1439)
+    # Recreational activity in a usual week: lighter ("a little out of breath") and harder.
+    moderate_recreation_min_week: Annotated[int | None, WholeNumber] = Field(
+        default=None, ge=0, le=10080
+    )
+    vigorous_recreation_min_week: Annotated[int | None, WholeNumber] = Field(
+        default=None, ge=0, le=10080
+    )
 
     @model_validator(mode="after")
     def blood_pressure_order(self):

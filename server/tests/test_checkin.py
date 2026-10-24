@@ -38,7 +38,7 @@ from lifetwin.checkin.scripts import (
     WEEKLY,
     WHY_NOTES,
 )
-from lifetwin.checkin.service import CheckinService
+from lifetwin.checkin.service import UNKNOWN_LEAD, CheckinService
 from lifetwin.core.config import Settings
 from lifetwin.core.models import CheckinValues, HealthProfile
 from lifetwin.onboarding.intents import EMERGENCY_MESSAGE, RESUME_LEAD, same_as_before
@@ -127,7 +127,10 @@ def test_corpus_reply(case):
     state = at(case["script"], case["field"], case["previous"])
     result = say(state, case["text"], case["mode"])
     got = pending(result)
-    if case["expected"] is None or case.get("known_miss"):
+    if case.get("known_miss"):
+        # Never a wrong value: asked about again today, or (once fixed) the right one.
+        assert got == {} or same(got, case["expected"]), f"{case['text']!r} -> {got}"
+    elif case["expected"] is None:
         # Nothing may be taken: the reply is asked about again.
         assert got == {}, f"{case['text']!r} -> {got} ({case['why']})"
         assert result.state.phase == "asking"
@@ -135,6 +138,42 @@ def test_corpus_reply(case):
         assert same(got, case["expected"]), f"{case['text']!r} -> {got} != {case['expected']}"
         assert result.state.phase == "confirming"
         assert result.message.endswith("Is that right?")
+
+
+KNOWN_MISSES = [c for c in CASES if c.get("known_miss")]
+
+
+@pytest.mark.xfail(strict=False, reason="known miss: asked again today; should read the value")
+@pytest.mark.parametrize("case", KNOWN_MISSES, ids=[c["text"][:30] for c in KNOWN_MISSES])
+def test_known_miss_should_read(case):
+    result = say(at(case["script"], case["field"], case["previous"]), case["text"], case["mode"])
+    assert same(pending(result), case["expected"]), f"should read {case['expected']}"
+
+
+def corpus_scores() -> dict:
+    """Value cases (an expected value) and ask-again cases (none), scored apart."""
+    scores = {
+        "value": {"read": 0, "asked_again": 0, "wrong": 0},
+        "ask_again": {"asked_again": 0, "took_a_value": 0},
+    }
+    for case in CASES:
+        got = pending(
+            say(at(case["script"], case["field"], case["previous"]), case["text"], case["mode"])
+        )
+        if case["expected"] is None:
+            scores["ask_again"]["took_a_value" if got else "asked_again"] += 1
+        elif same(got, case["expected"]):
+            scores["value"]["read"] += 1
+        else:
+            scores["value"]["wrong" if got else "asked_again"] += 1
+    return scores
+
+
+def test_corpus_scores_value_and_ask_again_cases_separately():
+    scores = corpus_scores()
+    assert scores["value"]["wrong"] == 0 and scores["ask_again"]["took_a_value"] == 0
+    value = scores["value"]
+    assert value["read"] >= 0.9 * (value["read"] + value["asked_again"]), scores
 
 
 def test_corpus_size_and_coverage():
@@ -749,12 +788,23 @@ def test_not_caught_repeats_the_question():
     assert result.message == NOT_CAUGHT + " " + SERVICE._question(state)
 
 
-@pytest.mark.parametrize("text", ["skip", "I'd rather not say", "pass", "I don't know"])
+@pytest.mark.parametrize("text", ["skip", "I'd rather not say"])
 def test_skip_words(text):
     result = say(at("weekly", "weight_kg"), text)
     assert result.message.startswith(SKIPPED)
     assert result.state.skipped_fields[-1] == "weight_kg"
     assert result.state.current_field == "systolic_bp"
+
+
+# Conversation v2: not knowing is recorded as unknown, distinct from skipping.
+@pytest.mark.parametrize("text", ["pass", "I don't know", "not sure", "I'd have to check"])
+def test_unknown_words(text):
+    result = say(at("weekly", "weight_kg"), text)
+    assert result.message.startswith(UNKNOWN_LEAD)
+    assert result.state.unknown_fields == ["weight_kg"]
+    assert "weight_kg" not in result.state.skipped_fields
+    assert result.state.current_field == "systolic_bp"
+    assert result.profile_update.weight_kg is None
 
 
 def test_the_skip_button():
@@ -873,12 +923,12 @@ def test_a_weekly_check_in_returns_its_answers_as_a_profile_update():
             "diastolic_bp": 78,
         },
     )
-    # Applying it is a plain field-by-field replace on the confirmed profile.
-    profile = HealthProfile(age=74, sex="female", height_cm=160, sleep_hours=7, diabetes=False)
-    applied = HealthProfile.model_validate(
-        profile.model_dump() | update.model_dump(exclude_none=True)
-    )
-    assert applied.age == 74 and applied.sleep_hours == 6 and applied.systolic_bp == 128
+    # The update holds only what this check-in asked: applying its non-null fields can
+    # never blank or change an onboarding answer (age, sex, height, diagnoses).
+    asked = {*result.state.questions, "diastolic_bp"} - {"wellbeing"}
+    assert set(update.model_dump(exclude_none=True)) <= asked
+    for field in ("age", "sex", "height_cm", "diabetes", "hypertension_diagnosed"):
+        assert getattr(update, field) is None
 
 
 def test_a_daily_check_in_never_updates_the_profile():
@@ -1183,3 +1233,61 @@ def test_health_values_never_reach_the_logs(monkeypatch, caplog):
     logged = " ".join(record.getMessage() for record in caplog.records)
     assert "158" not in logged and "pounds" not in logged
     assert "RuntimeError" in logged
+
+
+# -- Conversation v2, lightly: unknowns, one habit follow-up, supplements ----------------
+
+
+def test_one_habit_follow_up_with_memory_and_none_without():
+    state = at("daily", "exercise_minutes_today", memory_consent=True)
+    asked = say(say(state, "a 20 minute walk").state, "yes")
+    assert asked.state.phase == "probing" and asked.state.probe_topic == "exercise"
+    assert asked.message.endswith("What did you do? Or we can just move on.")
+    told = say(asked.state, "I walked with my neighbor after dinner")
+    assert told.state.phase == "asking" and told.state.current_field == "wellbeing"
+    note = told.state.habit_notes[0]
+    assert (note.kind, note.with_, note.time_of_day) == ("walking", "neighbor", "after dinner")
+    plain = say(say(at("daily", "exercise_minutes_today"), "a 20 minute walk").state, "yes")
+    assert plain.state.phase == "asking" and plain.state.habit_notes == []
+
+
+def test_the_follow_up_is_skippable_and_asked_once():
+    state = at("daily", "sleep_hours_last_night", memory_consent=True)
+    asked = say(say(state, "about 5 hours").state, "yes")
+    assert asked.state.probe_topic == "sleep"
+    moved = say(asked.state, "let's move on")
+    assert moved.state.phase == "asking" and moved.state.habit_notes == []
+    again = say(say(moved.state, "30 minutes").state, "yes")
+    assert again.state.phase != "probing"
+
+
+def test_checkin_supplement_question_gets_the_fixed_reply():
+    from lifetwin.onboarding.script import SUPPLEMENT_REPLY
+
+    result = say(at("weekly", "weight_kg"), "should I take fish oil?")
+    assert result.message.startswith(SUPPLEMENT_REPLY)
+    assert result.state.current_field == "weight_kg"
+
+
+@pytest.mark.parametrize(
+    "text", ["I don't understand", "say that again", "let's talk about my sleep", "go back"]
+)
+def test_controls_during_the_follow_up_never_crash(text):
+    state = at("daily", "exercise_minutes_today", memory_consent=True)
+    asked = say(say(state, "a 20 minute walk").state, "yes")
+    assert asked.state.phase == "probing"
+    result = say(asked.state, text)
+    CheckinState.model_validate(result.state.model_dump())
+    assert result.message
+
+
+def test_restart_keeps_memory_consent():
+    state = at("daily", "wellbeing", memory_consent=True)
+    result = say(state, "yes, start over")
+    assert result.message.startswith("Okay, let's start over.")
+    assert result.state.memory_consent is True
+
+
+def test_someone_elses_weight_given_possessively_is_refused():
+    result = say(at("weekly", "weight_kg"), "her weight is 150 pounds")
+    assert pending(result) == {}

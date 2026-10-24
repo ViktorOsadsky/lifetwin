@@ -12,12 +12,13 @@ from pydantic import Field, field_validator, model_validator
 
 from lifetwin.checkin.scripts import SCRIPTS, CheckinField, CheckinKind
 from lifetwin.core.models import ApiModel, CheckinValues, HealthProfile
-from lifetwin.onboarding.models import MascotEvent
+from lifetwin.onboarding.models import HabitNote, MascotEvent
 
 
 class CheckinState(ApiModel):
     kind: CheckinKind
-    phase: Literal["asking", "confirming", "ready", "cancelled"] = "asking"
+    # "probing": one optional habit follow-up ("What did you do?"), at most once.
+    phase: Literal["asking", "confirming", "probing", "ready", "cancelled"] = "asking"
     # The script's questions in order; fixed at the start (the daily habit question
     # is asked only on some days).
     questions: list[CheckinField] = Field(min_length=1, max_length=7)
@@ -28,6 +29,14 @@ class CheckinState(ApiModel):
     confirmed: CheckinValues = Field(default_factory=CheckinValues)
     pending: CheckinValues = Field(default_factory=CheckinValues)
     skipped_fields: list[CheckinField] = Field(default_factory=list, max_length=8)
+    # "I don't know": left out, distinct from skipped, not asked again this check-in.
+    unknown_fields: list[CheckinField] = Field(default_factory=list, max_length=8)
+    # From the app (onboarding's memory_consent). Without it there are no habit
+    # follow-ups and no habit notes.
+    memory_consent: bool = False
+    probe_asked: bool = False
+    probe_topic: Literal["exercise", "sleep"] | None = None
+    habit_notes: list[HabitNote] = Field(default_factory=list, max_length=5)
 
     @model_validator(mode="after")
     def consistent_state(self):
@@ -40,7 +49,7 @@ class CheckinState(ApiModel):
             raise ValueError("Skipped fields must be unique")
         if self.phase in {"asking", "confirming"} and self.current_field is None:
             raise ValueError("An open question requires a current field")
-        if self.phase in {"ready", "cancelled"} and self.current_field is not None:
+        if self.phase in {"ready", "cancelled", "probing"} and self.current_field is not None:
             raise ValueError("This phase cannot have a current field")
         if self.current_field is not None and self.current_field not in self.questions:
             raise ValueError("The current field must be one of the script's questions")
@@ -50,8 +59,8 @@ class CheckinState(ApiModel):
         for values in (self.confirmed, self.pending):
             if set(values.model_dump(exclude_none=True)) - allowed:
                 raise ValueError("Answers must belong to the script's questions")
-        if set(self.skipped_fields) - allowed:
-            raise ValueError("Skipped fields must belong to the script's questions")
+        if set(self.skipped_fields) - allowed or set(self.unknown_fields) - allowed:
+            raise ValueError("Skipped and unknown fields must belong to the script's questions")
         return self
 
 
@@ -71,6 +80,8 @@ class CheckinStartRequest(ApiModel):
     # The phone's own date (YYYY-MM-DD), so the daily habit question follows the
     # person's day rather than the server's time zone. Today on the server if absent.
     local_date: str | None = Field(default=None, min_length=10, max_length=10)
+    # The person let Mochi remember the little things (onboarding's memory_consent).
+    memory_consent: bool = False
 
     @field_validator("local_date")
     @classmethod

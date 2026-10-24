@@ -1,8 +1,8 @@
 """Stateless mascot intake contracts; profiles are never stored server-side."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
 from lifetwin.core.models import ApiModel, HealthProfile
 
@@ -18,28 +18,155 @@ ProfileField = Literal[
     "diabetes",
     "systolic_bp",
     "diastolic_bp",
+    "general_health",
+    "hypertension_diagnosed",
+    "sedentary_min_day",
+    "moderate_recreation_min_week",
+    "vigorous_recreation_min_week",
 ]
 FIELDS: tuple[ProfileField, ...] = tuple(HealthProfile.model_fields)
+FIELD_COUNT = len(FIELDS)
+
+# Short follow-ups that learn the habit behind an answer (catalogue: probes.py).
+ProbeId = Literal[
+    "activity",
+    "inactive_barrier",
+    "smoking_history",
+    "quit_story",
+    "sleep_pattern",
+    "sitting_activities",
+    "health_feeling",
+]
+HabitTopic = Literal["exercise", "sleep", "smoking", "sitting", "health"]
+Words = Annotated[str, Field(min_length=1, max_length=80)]
+
+# The on-device model's eleven inputs, with the package's exact ids. Height and
+# weight together give bmi.
+ModelInput = Literal[
+    "age",
+    "sex_nhanes",
+    "bmi",
+    "smoking_status",
+    "diabetes_diagnosed",
+    "hypertension_diagnosed",
+    "general_health",
+    "sleep_hours",
+    "vigorous_recreation_min_week",
+    "moderate_recreation_min_week",
+    "sedentary_min_day",
+]
+
+
+class HabitNote(ApiModel):
+    """What the person said about a habit, in short words taken from their reply.
+
+    Notes are never health values and are never used by the model. They are returned
+    to the app, which keeps them on the phone; the server stores nothing.
+    """
+
+    model_config = ConfigDict(
+        extra="forbid",
+        strict=True,
+        allow_inf_nan=False,
+        populate_by_name=True,
+        serialize_by_alias=True,
+    )
+
+    topic: HabitTopic
+    kind: Words | None = None  # "walking and swimming", "tv and reading"
+    with_: Words | None = Field(default=None, alias="with")  # "dog", "friends", "a class"
+    time_of_day: Words | None = None  # "morning", "after dinner"
+    frequency: Words | None = None  # "daily", "twice a week", "weekends"
+    barrier: Words | None = None  # "knee pain", "cold weather", "fear of falling"
+    bedtime: Words | None = None  # as said: "10", "11 pm", "midnight"
+    wake_time: Words | None = None
+    wakes_for: Words | None = None  # "bathroom", "back pain", "worry"
+    naps: Words | None = None  # "after lunch", "yes", "no"
+    smoked_years: Words | None = None
+    tried_quitting: Literal["yes", "no"] | None = None
+    quit_aid: Words | None = None  # "patch", "nicotine gum"
+    quit_ago: Words | None = None  # "15 years"
+    feeling: Words | None = None  # how they feel about their health: "good", "worried"
+    concern: Words | None = None  # "balance", "memory", "knee pain"
+    reading: Words | None = None  # a blood pressure reading, kept as context only
+    # A value set from a simpler question ("most of the day sitting") is an estimate.
+    estimate_for: ProfileField | None = None
+    estimate: Words | None = None
+    # "said": deterministic words from the reply; "ai_helper": the opt-in AI helper
+    # quoted the reply (each value is an exact span of the person's words).
+    source: Literal["said", "ai_helper"] = "said"
 
 
 class ConversationState(ApiModel):
-    phase: Literal["idle", "asking", "confirming", "ready", "cancelled"] = "idle"
+    # "remembering": Mochi asked whether it may remember the little things (memory
+    # consent); "offering": Apple Health was offered; "probing": a habit follow-up is open.
+    phase: Literal[
+        "idle",
+        "remembering",
+        "asking",
+        "offering",
+        "probing",
+        "confirming",
+        "ready",
+        "cancelled",
+    ] = "idle"
     confirmed_profile: HealthProfile = Field(default_factory=HealthProfile)
     pending_profile: HealthProfile = Field(default_factory=HealthProfile)
     current_field: ProfileField | None = None
-    skipped_fields: list[ProfileField] = Field(default_factory=list, max_length=11)
+    # Declined ("skip", "rather not say").
+    skipped_fields: list[ProfileField] = Field(default_factory=list, max_length=FIELD_COUNT)
+    # The person doesn't know. Distinct from skipped and from a value; never asked
+    # again in the session unless the person brings it up.
+    unknown_fields: list[ProfileField] = Field(default_factory=list, max_length=FIELD_COUNT)
+    # Confirmed values that came from a simpler question (an estimate the person agreed to).
+    estimated_fields: list[ProfileField] = Field(default_factory=list, max_length=FIELD_COUNT)
+    # The simpler question is open for this field (after "I don't know"), and the
+    # fields it was ever asked for (asked once each).
+    proxy_field: ProfileField | None = None
+    proxies_asked: list[ProfileField] = Field(default_factory=list, max_length=FIELD_COUNT)
+    # What the person said to the simpler question, while its estimate is read back.
+    pending_estimate: Words | None = None
+    # Steering: a topic the person brought up ("I walk my dog") is asked next, with
+    # their own words as the bridge ("You mentioned you walk your dog every morning.").
+    steer_field: ProfileField | None = None
+    steer_lead: Annotated[str, Field(min_length=1, max_length=200)] | None = None
+    health_offered: bool = False
+    current_probe: ProbeId | None = None
+    probes_asked: list[ProbeId] = Field(default_factory=list, max_length=7)
+    habit_notes: list[HabitNote] = Field(default_factory=list, max_length=10)
+    # May Mochi remember the little things (habit notes)? Asked first. false: no habit
+    # notes are kept or returned, no habit follow-ups, and suggestions use only the
+    # confirmed profile. null: not asked (a state built by the caller).
+    memory_consent: bool | None = None
+    # Chosen at the start so Mochi's wording varies between sessions but stays the
+    # same for the same state (reproducible tests).
+    seed: int = Field(default=0, ge=0, le=2**31)
+    # The last reply was small talk: one friendly turn, then back to the question.
+    small_talk: bool = False
 
     @model_validator(mode="after")
     def consistent_state(self):
         pending = self.pending_profile.model_dump(exclude_none=True)
         if bool(pending) != (self.phase == "confirming"):
             raise ValueError("Only the confirming phase may contain pending values")
-        if len(set(self.skipped_fields)) != len(self.skipped_fields):
-            raise ValueError("Skipped fields must be unique")
+        for name in (
+            "skipped_fields",
+            "unknown_fields",
+            "estimated_fields",
+            "probes_asked",
+            "proxies_asked",
+        ):
+            values = getattr(self, name)
+            if len(set(values)) != len(values):
+                raise ValueError("Skipped, unknown, estimated and probe lists must be unique")
         if self.phase == "asking" and self.current_field is None:
             raise ValueError("An asking state requires a current field")
-        if self.phase in {"ready", "cancelled", "idle"} and self.current_field is not None:
+        if self.phase in {"ready", "cancelled", "idle", "remembering", "offering", "probing"} and (
+            self.current_field is not None
+        ):
             raise ValueError("This phase cannot have a current field")
+        if (self.phase == "probing") != (self.current_probe is not None):
+            raise ValueError("Only the probing phase has a current probe")
         return self
 
 
@@ -51,6 +178,9 @@ class TurnRequest(ApiModel):
     input_mode: Literal["text", "transcript"] = "text"
     field: ProfileField | None = None
     provider_consent: bool = False
+    # Per-provider opt-in to outside-AI wording (separate from the AI helper above),
+    # e.g. {"claude": true}. Consent for one provider never covers another.
+    outside_ai_consent: dict[Literal["claude", "muse"], bool] = Field(default_factory=dict)
     # "import": values the user already confirmed one by one on the phone
     # (e.g. Apple Health read-back). Validated like any profile; no source is sent.
     values: HealthProfile | None = None
@@ -78,6 +208,82 @@ class MascotEvent(ApiModel):
     caption: str = Field(min_length=1, max_length=1500)
 
 
+class ModelProfile(ApiModel):
+    """The on-device model's ``profile`` map, built only from confirmed answers.
+
+    Keys and codes are the package's own (model_handoff/lifetwin_on_device). A null
+    is a missing input. Height and weight are both set or both null, since the
+    package derives bmi from the pair.
+    """
+
+    age: int | None = None
+    sex_nhanes: Literal[1, 2] | None = None
+    height_cm: float | None = None
+    weight_kg: float | None = None
+    smoking_status: Literal[0, 1, 2] | None = None
+    diabetes_diagnosed: Literal[0, 1] | None = None
+    hypertension_diagnosed: Literal[0, 1] | None = None
+    general_health: Literal[1, 2, 3, 4, 5] | None = None
+    sleep_hours: float | None = None
+    vigorous_recreation_min_week: int | None = None
+    moderate_recreation_min_week: int | None = None
+    sedentary_min_day: int | None = None
+
+
+class ModelInputs(ApiModel):
+    """Which model inputs are known. With anything missing the model gives no number.
+
+    ``status`` is "ready" only when all eleven inputs are known and age is 35-79;
+    otherwise the app shows "still learning" (or the age message) instead of a number.
+    """
+
+    status: Literal["ready", "still_learning", "unsupported_age"]
+    profile: ModelProfile
+    # Every input without a usable value (includes unknown and skipped).
+    missing: list[ModelInput] = Field(max_length=11)
+    unknown: list[ModelInput] = Field(max_length=11)
+    skipped: list[ModelInput] = Field(max_length=11)
+    # Known inputs that rest on a simpler question (an estimate the person agreed to).
+    estimated: list[ModelInput] = Field(max_length=11)
+
+
+class CharacterHints(ApiModel):
+    """Coarse, kind hints for the twin's look; null until there is something to go on.
+
+    mood (how the person says they feel): "good", "okay", "not_great" (the check-in
+    wellbeing scale). energy (sleep and activity): "high", "medium", "low".
+    """
+
+    mood: Literal["good", "okay", "not_great"] | None = None
+    energy: Literal["high", "medium", "low"] | None = None
+
+
+Lever = Literal[
+    "quit_smoking",
+    "vigorous_plus_60",
+    "moderate_plus_90",
+    "short_sleep_plus_1h",
+    "sitting_minus_60_realistic",
+    "keep_it_up",
+]
+
+
+class Recommendation(ApiModel):
+    id: str = Field(min_length=1, max_length=60)
+    # The model-sensitivity lever it follows, or "keep_it_up" for encouragement.
+    lever: Lever
+    title: str = Field(min_length=1, max_length=80)
+    # Mochi's words: gentle, concrete, no numbers of years, no promises.
+    message: str = Field(min_length=1, max_length=400)
+    # Profile fields and habit-note topics it uses, e.g. "moderate_recreation_min_week", "note:exercise".
+    based_on: list[str] = Field(max_length=6)
+    # The package's wellness card it is grounded in, and that card's public source.
+    wellness_card: Literal["smoking", "activity", "sleep", "sitting"]
+    source_title: str
+    source_url: str
+    causal_interpretation: Literal[False] = False
+
+
 class TurnResponse(ApiModel):
     schema_version: Literal["1.0"] = "1.0"
     state: ConversationState
@@ -99,6 +305,19 @@ class TurnResponse(ApiModel):
     )
     mascot_events: list[MascotEvent] = Field(min_length=1, max_length=2)
     complete: bool
+    # Short answers the app may show as buttons; tapping one sends it as reply text.
+    quick_replies: list[str] = Field(default_factory=list, max_length=8)
+    # "open_health_import": the person said yes to Apple Health; the app opens its
+    # import screen and then sends action "import" (or "skip" if nothing was used).
+    client_action: Literal["open_health_import"] | None = None
+    # What the on-device model has so far, from confirmed answers only.
+    model_inputs: ModelInputs
+    character_hints: CharacterHints = Field(default_factory=CharacterHints)
+    # "templates": Mochi's own words. A provider name: that provider phrased this line
+    # (with the person's consent for it) and the line passed the safety check.
+    phrased_by: Literal["templates", "muse", "claude"] = "templates"
+    # Filled on the turn that completes the intake (same as POST /api/recommendations).
+    recommendations: list[Recommendation] = Field(default_factory=list, max_length=3)
     limitations: list[str] = Field(
         default_factory=lambda: [
             "Speech capture and playback are not implemented; final transcripts use the text path.",
@@ -115,4 +334,4 @@ class ExtractionCandidate(ApiModel):
 
 
 class ExtractionResult(ApiModel):
-    candidates: list[ExtractionCandidate] = Field(max_length=11)
+    candidates: list[ExtractionCandidate] = Field(max_length=FIELD_COUNT)

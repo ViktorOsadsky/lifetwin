@@ -2594,5 +2594,66 @@
   "text": "my doctor says it's fine",
   "expected": null,
   "why": "no numbers"
+ },
+ {
+  "field": "weight_kg",
+  "text": "his weight is 180",
+  "expected": null,
+  "why": "someone else's value, possessive"
+ },
+ {
+  "field": "weight_kg",
+  "text": "Her weight is about 150 pounds",
+  "expected": null,
+  "why": "someone else's value, possessive"
+ },
+ {
+  "field": "height_cm",
+  "text": "her height is 5 foot 4",
+  "expected": null,
+  "why": "someone else's value, possessive"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "her blood pressure is 120 over 70",
+  "expected": null,
+  "why": "someone else's reading, possessive"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "their sleep is about 7 hours",
+  "expected": null,
+  "why": "someone else's value, possessive"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "My doctor checked it and she wrote down 148 over 92",
+  "expected": {
+   "systolic_bp": 148,
+   "diastolic_bp": 92
+  },
+  "why": "a clinician reporting the person's reading"
+ },
+ {
+  "field": "weight_kg",
+  "text": "the nurse said I'm 150 pounds",
+  "expected": {
+   "weight_kg": 68.0389
+  },
+  "why": "a clinician reporting the person's weight"
+ },
+ {
+  "field": "weight_kg",
+  "text": "he weighed me at 163 pounds",
+  "expected": {
+   "weight_kg": 73.9356
+  },
+  "why": "a clinician weighing the person"
+ },
+ {
+  "field": "weight_kg",
+  "text": "she weighs 140 pounds",
+  "expected": null,
+  "why": "someone else's weight"
  }
 ]

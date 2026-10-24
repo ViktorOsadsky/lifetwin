@@ -134,8 +134,8 @@
       "voice_status": "deferred",
       "complete": false,
       "state": {
-        "phase": "asking",
-        "current_field": "age",
+        "phase": "remembering",
+        "current_field": null,
         "confirmed_profile": {
           "age": null,
           "sex": null,
@@ -163,7 +163,11 @@
           "diastolic_bp": null
         },
         "skipped_fields": []
-      }
+      },
+      "quick_replies": [
+        "Yes, remember",
+        "No thanks"
+      ]
     }
   },
   {
@@ -932,6 +936,246 @@
         "systolic_bp": null,
         "age": null
       }
+    }
+  },
+  {
+    "name": "onboarding-memory-consent",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "sure, that's fine",
+      "state": {
+        "phase": "remembering"
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "age",
+        "memory_consent": true
+      }
+    }
+  },
+  {
+    "name": "onboarding-dont-know-is-unknown",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "my doctor would know",
+      "state": {
+        "phase": "asking",
+        "current_field": "hypertension_diagnosed",
+        "confirmed_profile": {
+          "age": 72,
+          "sex": "female"
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "unknown_fields": [
+          "hypertension_diagnosed"
+        ],
+        "skipped_fields": [],
+        "pending_profile": {
+          "hypertension_diagnosed": null
+        }
+      },
+      "model_inputs": {
+        "status": "still_learning",
+        "unknown": [
+          "hypertension_diagnosed"
+        ],
+        "profile": {
+          "age": 72,
+          "sex_nhanes": 2,
+          "hypertension_diagnosed": null
+        }
+      }
+    }
+  },
+  {
+    "name": "onboarding-blood-pressure-reading-is-not-a-diagnosis",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "Last time it was 140 over 90",
+      "state": {
+        "phase": "asking",
+        "current_field": "hypertension_diagnosed"
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "hypertension_diagnosed",
+        "pending_profile": {
+          "hypertension_diagnosed": null,
+          "systolic_bp": null
+        },
+        "habit_notes": {
+          "$each": {
+            "topic": "health",
+            "reading": "140 over 90"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "onboarding-habit-probe-note",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "Mostly walking with my dog in the morning",
+      "state": {
+        "phase": "probing",
+        "current_probe": "activity",
+        "probes_asked": [
+          "activity"
+        ],
+        "memory_consent": true
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "state": {
+        "current_probe": null,
+        "habit_notes": {
+          "$each": {
+            "topic": "exercise",
+            "kind": "walking",
+            "with": "dog",
+            "time_of_day": "morning",
+            "source": "said"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "onboarding-supplement-question",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "Should I take vitamin D?",
+      "state": {
+        "phase": "asking",
+        "current_field": "general_health"
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "message": "That's a good one to ask your pharmacist or doctor. Bring your bottles to your next visit so they can check them with your other medicines. How would you rate your health: excellent, very good, good, fair or poor?",
+      "state": {
+        "phase": "asking",
+        "current_field": "general_health"
+      }
+    }
+  },
+  {
+    "name": "recommendations-from-profile-and-notes",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "smoking_status": "never",
+        "sleep_hours": 6,
+        "moderate_recreation_min_week": 90,
+        "vigorous_recreation_min_week": 0,
+        "sedentary_min_day": 480
+      },
+      "habit_notes": [
+        {
+          "topic": "exercise",
+          "kind": "walking",
+          "with": "dog",
+          "time_of_day": "morning"
+        },
+        {
+          "topic": "sitting",
+          "kind": "tv"
+        }
+      ]
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "phrased_by": "templates",
+      "causal_interpretation": false,
+      "recommendations": {
+        "$each": {
+          "causal_interpretation": false
+        }
+      },
+      "lever_ranking": {
+        "source": "docs/model-sensitivity.json",
+        "order": [
+          "quit_smoking",
+          "vigorous_plus_60",
+          "moderate_plus_90",
+          "short_sleep_plus_1h",
+          "sitting_minus_60_realistic"
+        ]
+      }
+    }
+  },
+  {
+    "name": "recommendations-nothing-yet",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {}
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "not_enough_information",
+      "recommendations": []
+    }
+  },
+  {
+    "name": "recommendations-reject-unknown-provider-consent",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request_schema_valid": false,
+    "request": {
+      "profile": {},
+      "outside_ai_consent": {
+        "someone_else": true
+      }
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "code": "invalid_request"
     }
   }
 ]

@@ -24,6 +24,7 @@ from lifetwin.onboarding.intents import (
 )
 from lifetwin.onboarding.models import ConversationState, TurnRequest, TurnResponse
 from lifetwin.onboarding.parsing import QUESTIONS, normalize_text
+from lifetwin.onboarding.script import UNKNOWN_ACKS
 from lifetwin.onboarding.service import (
     DONE_LEAD,
     LOUDER_LEAD,
@@ -78,6 +79,7 @@ def kind_of(result: TurnResponse) -> str:
         (NO_LEAD, "no"),
         ("Got it.", "confirmed"),
         (SKIPPED, "skipped"),
+        *((ack, "unknown") for ack in UNKNOWN_ACKS),
     ]
     if message.startswith(RESTART_QUESTION):
         return "restart_question"
@@ -695,6 +697,25 @@ EMERGENCIES = [
     "the cut won't stop bleeding",
     "call 911",
     "my wife is having a stroke",
+    # Mutation audit: each pattern and marker has its own phrasing.
+    "my chest has been hurting since last week",
+    "I took too many of my pills",
+    "I fell in the bathroom and can't get up",
+    "I had a fall yesterday and I still can't get up",
+    "I don't see the point in living anymore",
+    "I'd be better off dead",
+    "there's no reason to live",
+    "I have a pain in my chest",
+    "there's a tightness in my chest",
+    "I can't stop the bleeding",
+    "I need an ambulance",
+    "send an ambulance",
+    "I'm having trouble breathing",
+    "it's hard to breathe",
+    "I have difficulty breathing",
+    "I had chest pain yesterday and I still have it",
+    "I had chest pain last week and it's back again",
+    "I had a heart attack in 2015 but my chest hurts",
 ]
 NOT_EMERGENCIES = [
     "my heart attack was in 2015",
@@ -707,7 +728,24 @@ NOT_EMERGENCIES = [
     "killing myself laughing",
     "a stroke of luck",
     "I'm 72",
+    "short of breath on the stairs",
+    "I fell last year but I'm fine now",
+    "I took my pills this morning",
+    "I had a fall in 2019",
 ]
+
+
+def test_no_reply_in_the_test_corpora_is_a_false_emergency():
+    """Every reply in server/tests/data is an ordinary answer; none may pause."""
+    data = Path(__file__).parent / "data"
+    replies = set()
+    for path in data.glob("*.json"):
+        for case in json.loads(path.read_text()):
+            if "text" in case:
+                replies.add(case["text"])
+            replies.update(turn["say"] for turn in case.get("turns", []))
+    assert len(replies) >= 800
+    assert [text for text in sorted(replies) if emergency(text)] == []
 
 
 @pytest.mark.parametrize("text", EMERGENCIES)
