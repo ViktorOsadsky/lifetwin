@@ -73,11 +73,14 @@ class MemoryBackend implements StoreBackend {
 /// Everything LifeTwin keeps about the person, on the phone only (owner ruling: "history
 /// lives on your phone"). No sync and no network: nothing here is ever sent.
 ///
-/// - [profile]: the confirmed answers (app field names).
-/// - [checkins]: finished daily and weekly check-ins as confirmed.
-/// - [dailyLogs] / [weeklySummaries]: rows in the package's shapes (twin_history.dart).
-/// - [habitNotes]: free-form JSON from the conversation.
+/// - [profile]: the confirmed answers (server HealthProfile names; profile_mapping.dart).
+/// - [checkins]: finished quick, daily and weekly check-ins as confirmed.
+/// - [dayLogs]: one row per day in the package's `daily_logs` names, possibly partial;
+///   a missing value is unknown (null), never zero.
+/// - [historyEntries]: the person's history, appended as things happen (history_log.dart).
+/// - [habitNotes]: notes from the conversation, kept only with memory consent.
 /// - [twin]: cosmetic customization; never part of the health profile.
+/// - [checkinSettings]: reminder time and weekly day; a preference, not health data.
 /// - [memoryConsent]: the conversation's `memory_consent`; habit notes are kept only while true.
 ///
 /// Reads are public. Writes are private to this library, so the only write paths are the
@@ -109,12 +112,15 @@ class TwinStore extends ChangeNotifier {
   Map<String, dynamic> get profile => Map<String, dynamic>.from(_doc['profile'] as Map? ?? const {});
   bool get hasProfile => profile.values.any((v) => v != null);
 
-  List<CheckinRecord> get checkins => [for (final c in _list('checkins')) CheckinRecord.fromJson(c)];
-  List<Map<String, dynamic>> get dailyLogs => _list('daily_logs');
-  List<Map<String, dynamic>> get weeklySummaries => _list('weekly_summaries');
+  List<CheckinEntry> get checkins => [for (final c in _list('checkins')) CheckinEntry.fromJson(c)];
+  List<DayLog> get dayLogs => [for (final r in _list('daily_logs')) DayLog.fromJson(r)];
+  List<HistoryEntry> get historyEntries => [for (final e in _list('history')) HistoryEntry.fromJson(e)];
   List<Map<String, dynamic>> get habitNotes => _list('habit_notes');
   Map<String, dynamic>? get twin => _doc['twin'] == null ? null : Map<String, dynamic>.from(_doc['twin'] as Map);
   bool get memoryConsent => _doc['memory_consent'] == true;
+  CheckinSettings get checkinSettings => _doc['checkin_settings'] is Map
+      ? CheckinSettings.fromJson(Map<String, dynamic>.from(_doc['checkin_settings'] as Map))
+      : const CheckinSettings();
 
   List<Map<String, dynamic>> _list(String key) => [
     for (final r in _doc[key] as List? ?? const [])
@@ -126,17 +132,16 @@ class TwinStore extends ChangeNotifier {
       if (e.value != null) e.key: e.value,
   });
 
-  Future<void> _addCheckin(CheckinRecord r) => _save('checkins', [..._list('checkins'), r.toJson()]);
+  Future<void> _addCheckin(CheckinEntry r) => _save('checkins', [..._list('checkins'), r.toJson()]);
 
-  /// Adds or replaces the row for its `week_start`.
-  Future<void> _putWeeklySummary(Map<String, dynamic> row) => _save(
-    'weekly_summaries',
-    [
-      for (final r in weeklySummaries)
-        if (r['week_start'] != row['week_start']) r,
-      row,
-    ]..sort((a, b) => '${a['week_start']}'.compareTo('${b['week_start']}')),
-  );
+  /// Replaces the stored day rows (already merged by [mergeDayLogs]); only known values
+  /// are written, so a missing value stays missing.
+  Future<void> _putDayLogs(List<DayLog> rows) => _save('daily_logs', [for (final r in rows) r.toJson()]);
+
+  /// Appends one history entry. Entries are never edited or removed (except by Delete my data).
+  Future<void> _addHistory(HistoryEntry e) => _save('history', [..._list('history'), e.toJson()]);
+
+  Future<void> _saveCheckinSettings(CheckinSettings s) => _save('checkin_settings', s.toJson());
 
   Future<void> _addHabitNote(Map<String, dynamic> note, {DateTime? at}) => _save('habit_notes', [
     ...habitNotes,

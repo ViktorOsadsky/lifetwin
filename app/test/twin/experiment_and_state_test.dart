@@ -283,7 +283,7 @@ void main() {
 
   group('TwinState', () {
     final now = DateTime(2026, 10, 26, 9);
-    CheckinRecord daily(String date, Map<String, dynamic> a) => CheckinRecord(kind: 'daily', date: date, answers: a);
+    CheckinEntry daily(String date, Map<String, dynamic> a) => CheckinEntry(kind: 'daily', date: date, answers: a);
 
     test('each input maps to one mood and an existing pose', () {
       final steady = model.assess({
@@ -384,7 +384,7 @@ void main() {
       expect(s.recentSleepHours, isNull);
       final w = TwinState.derive(
         checkins: [
-          const CheckinRecord(kind: 'weekly', date: '2026-10-20', answers: {'sleep_hours': 5.5, 'wellbeing': 'okay'}),
+          const CheckinEntry(kind: 'weekly', date: '2026-10-20', answers: {'sleep_hours': 5.5, 'wellbeing': 'okay'}),
         ],
         now: now,
       );
@@ -394,7 +394,7 @@ void main() {
     test('kind: a diagnosis or poor health never makes a sad, dizzy or shrugging bear', () {
       final ill = model.assess({...smoker, 'diabetes': true, 'hypertension_diagnosed': true, 'general_health': 'poor'});
       for (final checkins in [
-        <CheckinRecord>[],
+        <CheckinEntry>[],
         [
           daily('2026-10-26', {'wellbeing': 'okay'}),
         ],

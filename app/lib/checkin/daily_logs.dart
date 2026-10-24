@@ -126,7 +126,8 @@ class DailyLogsAssembler {
 }
 
 /// "Good weeks", never streaks: Monday–Sunday weeks with at least [daysForGoodWeek]
-/// check-in days. A missed day costs nothing and is never mentioned.
+/// different days with a finished check-in of any kind (quick, daily or weekly). It counts
+/// days, not check-ins. A missed day costs nothing and is never mentioned.
 const daysForGoodWeek = 4;
 
 class WeekProgress {
@@ -142,7 +143,6 @@ class WeekProgress {
 WeekProgress weekProgress(List<CheckinEntry> checkins, String today) {
   final daysByWeek = <String, Set<String>>{};
   for (final c in checkins) {
-    if (c.kind == 'weekly') continue;
     daysByWeek.putIfAbsent(mondayOf(c.date), () => {}).add(c.date);
   }
   final thisWeek = mondayOf(today);

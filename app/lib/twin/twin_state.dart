@@ -68,17 +68,18 @@ class TwinState {
   /// to explore, answers still needed, steady.
   static TwinState derive({
     TwinAssessment? assessment,
-    List<CheckinRecord> checkins = const [],
+    List<CheckinEntry> checkins = const [],
+    DayLog? today,
     bool emergency = false,
     DateTime? now,
   }) {
-    final today = dayOf(now ?? DateTime.now());
+    final day = dayOf(now ?? DateTime.now());
     final strengths = assessment?.strengths ?? const <String>[];
     final opportunities = assessment?.opportunities ?? const <String>[];
     // Daily answers count for two days, weekly ones for eight.
     final recent = [
       for (final c in checkins)
-        if (_age(c, today) case final days? when days >= 0 && days <= (c.kind == 'daily' ? 1 : 7)) c,
+        if (_age(c, day) case final days? when days >= 0 && days <= (c.kind == 'weekly' ? 7 : 1)) c,
     ]..sort((a, b) => b.date.compareTo(a.date));
     final wellbeing = recent.map((c) => c.wellbeing).nonNulls.firstOrNull;
     final sleep = recent
@@ -86,12 +87,16 @@ class TwinState {
         .nonNulls
         .firstOrNull
         ?.toDouble();
-    final active = recent
-        .where((c) => c.kind == 'daily' && _age(c, today) == 0)
-        .map((c) => c.answers['exercise_minutes_today'] as num?)
-        .nonNulls
-        .firstOrNull
-        ?.toInt();
+    // Today's activity: a quick check-in's day row (both paces known), else a daily one's.
+    final logged = today != null && today.activityKnown ? today.vigorousMin! + today.moderateMin! : null;
+    final active =
+        logged ??
+        recent
+            .where((c) => c.kind == 'daily' && _age(c, day) == 0)
+            .map((c) => c.answers['exercise_minutes_today'] as num?)
+            .nonNulls
+            .firstOrNull
+            ?.toInt();
 
     TwinState make(TwinMood mood, TwinStateReason reason, [TwinPose? pose]) => TwinState(
       mood: mood,
@@ -117,7 +122,7 @@ class TwinState {
     return make(TwinMood.content, TwinStateReason.steady);
   }
 
-  static int? _age(CheckinRecord c, DateTime today) {
+  static int? _age(CheckinEntry c, DateTime today) {
     final d = DateTime.tryParse(c.date);
     return d == null ? null : today.difference(dayOf(d)).inDays;
   }

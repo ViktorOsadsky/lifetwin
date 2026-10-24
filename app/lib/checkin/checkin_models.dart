@@ -28,13 +28,26 @@ String mondayOf(String iso) {
 class DayLog {
   const DayLog({required this.date, this.sleepHours, this.vigorousMin, this.moderateMin, this.sedentaryMin});
 
-  factory DayLog.fromJson(Map<String, dynamic> j) => DayLog(
-    date: '${j['date']}',
-    sleepHours: (j['sleep_hours'] as num?)?.toDouble(),
-    vigorousMin: (j['vigorous_recreation_min'] as num?)?.round(),
-    moderateMin: (j['moderate_recreation_min'] as num?)?.round(),
-    sedentaryMin: (j['sedentary_min_day'] as num?)?.round(),
-  );
+  /// A value of the wrong type is not read (left unknown), never guessed at.
+  factory DayLog.fromJson(Map<String, dynamic> j) {
+    num? n(String k) => j[k] is num && (j[k] as num).isFinite ? j[k] as num : null;
+    return DayLog(
+      date: '${j['date']}',
+      sleepHours: n('sleep_hours')?.toDouble(),
+      vigorousMin: n('vigorous_recreation_min')?.round(),
+      moderateMin: n('moderate_recreation_min')?.round(),
+      sedentaryMin: n('sedentary_min_day')?.round(),
+    );
+  }
+
+  /// The value stored under the package's [field] name.
+  num? valueOf(String field) => switch (field) {
+    'sleep_hours' => sleepHours,
+    'vigorous_recreation_min' => vigorousMin,
+    'moderate_recreation_min' => moderateMin,
+    'sedentary_min_day' => sedentaryMin,
+    _ => null,
+  };
 
   final String date;
 
