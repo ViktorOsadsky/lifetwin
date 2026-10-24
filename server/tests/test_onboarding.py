@@ -18,6 +18,7 @@ from lifetwin.onboarding import (
 from lifetwin.onboarding.models import ConversationState, ExtractionResult, TurnRequest
 from lifetwin.onboarding.parsing import QUESTIONS, grounded_candidates, parse_reply, parse_value
 from lifetwin.onboarding.providers import ExtractionUnavailable
+from lifetwin.onboarding.service import describe
 
 
 @pytest.fixture
@@ -1110,3 +1111,20 @@ def test_import_that_answers_the_current_question_does_not_repeat_it(client):
     result = turn(client, "import", asking("weight_kg"), values={"weight_kg": 70})
     assert result["state"]["current_field"] != "weight_kg"
     assert "didn't have" not in result["message"]
+
+
+@pytest.mark.parametrize(
+    ("values", "shown"),
+    [
+        ({"height_cm": 170.0}, "170 cm"),
+        ({"height_cm": 180.0}, "180 cm"),
+        ({"weight_kg": 100.0}, "100 kg"),
+        ({"sleep_hours": 10.0}, "10 hours"),
+        ({"height_cm": 172.7}, "about 173 cm"),
+    ],
+)
+def test_read_back_keeps_whole_number_zeros(values, shown):
+    """Found by the Convex port: 170 cm was read back as "17 cm" for confirmation."""
+    text = describe(values)
+    assert shown in text
+    assert " 17 cm" not in text and " 18 cm" not in text
