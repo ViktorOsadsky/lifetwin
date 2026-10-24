@@ -332,17 +332,6 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           overlay: LayoutBuilder(
             builder: (context, box) => Stack(
               children: [
-                Positioned(
-                  left: 12,
-                  top: 12,
-                  child: Opacity(
-                    opacity: frame.backOpacity.clamp(0.0, 1.0),
-                    child: Transform.scale(
-                      scale: frame.backScale,
-                      child: RoundBackButton(label: 'Home', icon: Icons.home_rounded, onTap: _home),
-                    ),
-                  ),
-                ),
                 if (bubble != null)
                   Positioned(
                     top: 26,
@@ -393,6 +382,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     required List<Widget> story,
     required List<Widget> controls,
     List<Widget> top = const [],
+    Widget? trailing,
     bool header = false,
     bool crowded = false,
     bool hideKeyboard = false,
@@ -404,7 +394,30 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       builder: (context, box) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Home always in the same place, clearly named; hidden only while the keyboard is up.
+          if (!keyboard)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 8, 0),
+              child: Row(
+                children: [
+                  Opacity(
+                    opacity: frame.backOpacity.clamp(0.0, 1.0),
+                    child: Transform.scale(
+                      scale: frame.backScale,
+                      child: RoundBackButton(label: 'Home', icon: Icons.home_rounded, onTap: _home),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Align(alignment: Alignment.centerRight, child: trailing ?? const SizedBox.shrink()),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
+            // Keyed, like the sheet: the rows around them come and go with the keyboard, and
+            // the typing box inside must keep its state (and focus) when they do.
+            key: const ValueKey('story'),
             child: _StoryScroll(
               children: [
                 // With the keyboard up the room goes to the question and the typing box.
@@ -425,6 +438,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
             ),
           ),
           ConstrainedBox(
+            key: const ValueKey('sheet'),
             constraints: BoxConstraints(maxHeight: box.maxHeight * (hideKeyboard ? 0.5 : 0.6)),
             child: SwooshSheetTransform(
               frame: frame,
@@ -586,21 +600,15 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       line: line,
       crowded: crowded,
       hideKeyboard: keyboard && _showsTypingBox,
+      trailing: links ? LinkButton(label: 'Settings', icon: Icons.settings_outlined, onTap: _openSettings) : null,
       top: [
         // "Go back" (also once done, so an answer can still be changed or a skipped one
-        // added) and Settings, then the progress.
-        if (goBack || links)
+        // added), then the progress.
+        if (goBack)
           _pad(
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                if (goBack)
-                  LinkButton(label: 'Go back', icon: Icons.undo_rounded, onTap: _goBack)
-                else
-                  const SizedBox.shrink(),
-                if (links) LinkButton(label: 'Settings', icon: Icons.settings_outlined, onTap: _openSettings),
-              ],
+            Align(
+              alignment: Alignment.centerLeft,
+              child: LinkButton(label: 'Go back', icon: Icons.undo_rounded, onTap: _goBack),
             ),
           ),
         if (n != null && !keyboard) ...[
@@ -775,8 +783,11 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         onSubmitted: (_) => _send(),
         minLines: 1,
         maxLines: 3,
+        // With large text a one-line floating label would be cut off; a hint can wrap.
         decoration: InputDecoration(
-          labelText: 'Type your answer',
+          labelText: largeText(context) ? null : 'Type your answer',
+          hintText: largeText(context) ? 'Type your answer' : null,
+          hintMaxLines: 3,
           labelStyle: LtText.body(size: 18),
           contentPadding: const EdgeInsets.all(18),
         ),
