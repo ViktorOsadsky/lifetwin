@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../widgets/whole_word_text.dart';
 import '../theme.dart';
 
-/// Which edge the tail points out of.
-enum BubbleTail { left, bottom }
+/// Which edge the tail points out of ([none]: no tail, e.g. under the window).
+enum BubbleTail { left, bottom, none }
 
 /// The twin's speech bubble: paper, a soft 1.5px outline, a 26px radius and
 /// a tail drawn in the same path, so the outline is seamless.
@@ -35,7 +36,7 @@ class Bubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = Text(text, style: LtText.display(fontSize));
+    final label = WholeWordText(text, style: LtText.display(fontSize));
     Widget body = Padding(padding: const EdgeInsets.fromLTRB(18, 14, 18, 14), child: label);
     if (maxHeight != null) {
       body = ConstrainedBox(
@@ -78,13 +79,15 @@ class _BubblePainter extends CustomPainter {
         ..lineTo(x + 2, size.height)
         ..lineTo(x + 20, body.bottom - 2)
         ..close();
-    } else {
+    } else if (tail == BubbleTail.left) {
       final y = (body.top + 18 + (body.height - 36 - 20) * tailAt.clamp(0.0, 1.0));
       t = Path()
         ..moveTo(body.left + 2, y)
         ..lineTo(0, y + 12)
         ..lineTo(body.left + 2, y + 20)
         ..close();
+    } else {
+      t = Path();
     }
     final shape = Path.combine(PathOperation.union, Path()..addRRect(r), t);
     canvas.drawShadow(shape, LtColors.ink.withValues(alpha: 0.5), 3, false);

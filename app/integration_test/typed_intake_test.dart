@@ -19,6 +19,10 @@ Future<void> waitFor(WidgetTester t, Finder finder, {int seconds = 20}) async {
 Future<void> tapText(WidgetTester t, String label) async {
   final f = find.text(label);
   await waitFor(t, f);
+  // These links ignore taps for 0.7 s after a new question, so a double tap can't act twice.
+  if (const {'Skip this question', 'Go back', 'Use my Health app'}.contains(label)) {
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+  }
   await t.ensureVisible(f.first);
   await t.pump();
   await t.tap(f.first);
@@ -44,7 +48,8 @@ Future<void> waitForReply(WidgetTester t, Finder finder, {int seconds = 150}) as
 
 /// Types an answer, sends it, and waits for LifeTwin's reply to contain [expect].
 Future<void> say(WidgetTester t, String answer, String expect) async {
-  await waitFor(t, find.byType(TextField));
+  // The previous Yes may have hit the rate limit; waitForReply taps "Try again".
+  await waitForReply(t, find.byType(TextField));
   await t.enterText(find.byType(TextField), answer);
   await tapText(t, 'Send');
   await waitForReply(t, find.textContaining(expect));
@@ -53,8 +58,10 @@ Future<void> say(WidgetTester t, String answer, String expect) async {
 /// Opens the app, chooses typing, and waits for the first question.
 Future<void> startTyped(WidgetTester t, {bool aiHelper = false}) async {
   await t.pumpWidget(const LifeTwinApp());
-  await tapText(t, 'Talk'); // the Room is home
-  await tapText(t, 'Type instead');
+  await tapText(t, 'Talk');
+  await tapText(t, "No, I'll type");
+  // The AI question ignores taps for a moment, so a double tap can't answer it.
+  await Future<void>.delayed(const Duration(milliseconds: 800));
   await tapText(t, aiHelper ? 'Yes, turn it on' : 'Not now');
   await waitFor(t, find.textContaining('How old are you?'));
 }
@@ -62,17 +69,29 @@ Future<void> startTyped(WidgetTester t, {bool aiHelper = false}) async {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('"Change" after a wrong age lets the person correct it', (t) async {
+  testWidgets('"No, change it" after a wrong age lets the person correct it', (t) async {
     await startTyped(t);
-    await say(t, '45', 'Age: 45');
-    await tapText(t, 'Change');
+    await say(t, '45', 'you are 45');
+    await tapText(t, 'No, change it');
     await waitFor(t, find.text('Okay. What is the right answer?'));
-    await say(t, "no, I'm 71", 'Age: 71');
+    await say(t, "no, I'm 71", 'you are 71');
     await tapText(t, 'Yes');
     await waitForReply(t, find.textContaining('What sex were you'));
   });
 
-  testWidgets('"skip" moves past a question', (t) async {
+  testWidgets('the Skip button moves past a question, and Go back reopens it', (t) async {
+    await startTyped(t);
+    expect(find.text('Question 1 of 11'), findsOneWidget);
+    expect(find.text('Go back'), findsNothing);
+    await tapText(t, 'Skip this question');
+    await waitForReply(t, find.textContaining('What sex were you'));
+    expect(find.text('Question 2 of 11'), findsOneWidget);
+    await tapText(t, 'Go back');
+    await waitForReply(t, find.textContaining('go back to your age'));
+    expect(find.text('Question 1 of 11'), findsOneWidget);
+  });
+
+  testWidgets('"skip" typed moves past a question', (t) async {
     await startTyped(t);
     await waitFor(t, find.byType(TextField));
     await t.enterText(find.byType(TextField), 'skip');
@@ -83,7 +102,7 @@ void main() {
 
   testWidgets('"Skip" typed after a confirmed answer also works', (t) async {
     await startTyped(t);
-    await say(t, '71', 'Age: 71');
+    await say(t, '71', 'you are 71');
     await tapText(t, 'Yes');
     await say(t, 'skip', 'How tall');
   });
@@ -91,7 +110,8 @@ void main() {
   testWidgets('a birth year is worked out and checked, and can be corrected', (t) async {
     await startTyped(t);
     await say(t, 'born in 1980', 'makes you 46');
-    await say(t, '45', 'Age: 45');
+    await tapText(t, 'No, change it');
+    await say(t, '45', 'you are 45');
     await tapText(t, 'Yes');
   });
 
@@ -101,7 +121,6 @@ void main() {
     expect(find.text('Yes, let the AI helper read it'), findsOneWidget);
     await tapText(t, 'Yes, let the AI helper read it');
     // The same answer is sent again; the offer goes away, whatever the helper makes of it.
-    await waitFor(t, find.text('AI helper: On'));
     final deadline = DateTime.now().add(const Duration(seconds: 40));
     while (find.text('Yes, let the AI helper read it').evaluate().isNotEmpty) {
       if (DateTime.now().isAfter(deadline)) throw TestFailure('offer never went away');
@@ -111,26 +130,55 @@ void main() {
 
   testWidgets('the whole intake ends on Continue after Yes answers only', (t) async {
     await startTyped(t);
-    const steps = [('71', 'Age: 71'), ('male', 'male at birth'), ('6 foot', '6 feet'), ('180', '180 pounds')];
+    const steps = [('71', 'you are 71'), ('male', 'male at birth'), ('6 foot', '6 feet'), ('180', '180 pounds')];
     for (final (answer, expect) in steps) {
       await say(t, answer, expect);
       await tapText(t, 'Yes');
     }
     // Skip everything left until the conversation is finished.
     for (var i = 0; i < 20 && find.text('Continue').evaluate().isEmpty; i++) {
-      await waitFor(t, find.byType(TextField));
-      await t.enterText(find.byType(TextField), 'skip');
-      await tapText(t, 'Send');
+      await tapText(t, 'Skip this question');
       await t.pump(const Duration(milliseconds: 1500));
     }
     await waitFor(t, find.text('Continue'));
   });
 
+  testWidgets('the sex and smoking buttons answer without typing', (t) async {
+    await startTyped(t);
+    await say(t, '71', 'you are 71');
+    await tapText(t, 'Yes');
+    await waitForReply(t, find.text('Female'));
+    await tapText(t, 'Female');
+    await waitForReply(t, find.textContaining('female at birth'));
+    await tapText(t, 'Yes');
+    // Skip height, weight, sleep and exercise to reach the smoking question.
+    await waitForReply(t, find.textContaining('How tall'));
+    for (final next in ['How much do you weigh', 'How many hours', 'minutes do you exercise', 'Do you smoke now']) {
+      await waitFor(t, find.byType(TextField));
+      // Tap into the box (keyboard up), type, and tap Send once: nothing may be swallowed.
+      await t.tap(find.byType(TextField));
+      await t.pump(const Duration(milliseconds: 600));
+      await t.enterText(find.byType(TextField), 'skip');
+      await t.pump(const Duration(milliseconds: 300));
+      expect(t.widget<TextField>(find.byType(TextField)).controller?.text, 'skip');
+      await tapText(t, 'Send');
+      await t.pump(const Duration(milliseconds: 300));
+      expect(t.widget<TextField>(find.byType(TextField)).controller?.text, isEmpty, reason: 'Send was swallowed');
+      await waitForReply(t, find.textContaining(next));
+      await t.pump(const Duration(milliseconds: 1500));
+    }
+    await waitForReply(t, find.text('I used to smoke'));
+    await tapText(t, 'I used to smoke');
+    await waitForReply(t, find.textContaining('smoked in the past'));
+    await tapText(t, 'Yes');
+  });
+
   testWidgets('a whole typed intake with indirect answers', (t) async {
     final started = DateTime.now();
     await t.pumpWidget(const LifeTwinApp());
-    await tapText(t, 'Talk'); // the Room is home
-    await tapText(t, 'Type instead');
+    await tapText(t, 'Talk');
+    await tapText(t, "No, I'll type");
+    await Future<void>.delayed(const Duration(milliseconds: 800));
     await tapText(t, 'Not now');
     await waitFor(t, find.textContaining('How old are you?'));
     debugPrint('first question after ${DateTime.now().difference(started).inMilliseconds} ms');
@@ -144,7 +192,7 @@ void main() {
       ('i walk the dog twice a day for 20 minutes', '280 minutes a week'),
       ('quit when my daughter was born', 'smoked in the past'),
       ('a bottle of wine a week', '5 drinks a week'),
-      ('nope', 'Diabetes: no'),
+      ('nope', 'not told you that you have diabetes'),
       ('130 slash 85', '130 over 85'),
     ];
     for (final (answer, expect) in steps) {

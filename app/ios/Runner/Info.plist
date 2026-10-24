@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Lifesim</string>
+	<string>LifeTwin</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -32,7 +32,7 @@
 		<true/>
 	</dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>LifeTwin listens only while you hold the Talk button, so you can answer questions by speaking instead of typing.</string>
+	<string>LifeTwin listens only while the Talk button is on, so you can answer questions by speaking instead of typing.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>LifeTwin reads your activity, workouts, sleep, weight and blood pressure so you don't have to type them. You confirm every value before it is used.</string>
 	<key>NSHealthUpdateUsageDescription</key>

@@ -7,6 +7,17 @@ import '../theme.dart';
 import '../twin_appearance.dart';
 import '../twin_assets.dart';
 
+/// Twin poses for the conversation: waving while it asks, thinking while it
+/// listens, jumping when an answer was taken or is read back.
+enum TwinMood {
+  asking(TwinPose.wave),
+  listening(TwinPose.think),
+  pleased(TwinPose.jump);
+
+  const TwinMood(this.pose);
+  final TwinPose pose;
+}
+
 /// The chosen twin, feet-anchored: [height] is the sprite box, and the feet
 /// sit at the manifest's anchor so swapping sprites never moves them. The
 /// contact shadow is drawn under the feet (two flat ovals, no blur).
@@ -54,7 +65,8 @@ class TwinSprite extends StatelessWidget {
     );
     if (hero) {
       // The swoosh's pose-swapping flight only has bear Cal-hat poses.
-      final swoosh = appearance.type == TwinType.bear &&
+      final swoosh =
+          appearance.type == TwinType.bear &&
           appearance.look == TwinLook.calHat &&
           (pose == TwinPose.stand || pose == TwinPose.wave || pose == TwinPose.jump);
       sprite = SizedBox.square(
@@ -120,7 +132,10 @@ class TwinSprite extends StatelessWidget {
     width: w,
     height: h,
     child: DecoratedBox(
-      decoration: ShapeDecoration(color: LtColors.ink.withValues(alpha: alpha), shape: const OvalBorder()),
+      decoration: ShapeDecoration(
+        color: LtColors.ink.withValues(alpha: alpha),
+        shape: const OvalBorder(),
+      ),
     ),
   );
 }

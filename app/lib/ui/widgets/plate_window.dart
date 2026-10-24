@@ -11,7 +11,14 @@ import '../theme.dart';
 /// [plate] is clipped to the inner window; [overlay] (back button, bubble,
 /// chips) sits above it, unclipped, in the same coordinates as the frame.
 class PlateWindow extends StatelessWidget {
-  const PlateWindow({super.key, required this.plate, this.name, this.night = false, this.overlay, this.showBanner = true});
+  const PlateWindow({
+    super.key,
+    required this.plate,
+    this.name,
+    this.night = false,
+    this.overlay,
+    this.showBanner = true,
+  });
 
   final Widget plate;
   final String? name;
@@ -117,15 +124,26 @@ class NameBanner extends StatelessWidget {
           border: Border.all(color: LtColors.container, width: LtBorders.container),
           boxShadow: LtShadows.soft,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('{ ', style: brace, maxLines: 1),
-            Flexible(
-              child: Text(shown, style: LtText.display(size), maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false),
-            ),
-            Text(' }', style: brace, maxLines: 1),
-          ],
+        // One line inside the banner: at very large text the whole banner shrinks to fit.
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('{ ', style: brace, maxLines: 1),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: math.max(room, 120)),
+                child: Text(
+                  shown,
+                  style: LtText.display(size),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                ),
+              ),
+              Text(' }', style: brace, maxLines: 1),
+            ],
+          ),
         ),
       ),
     );
@@ -137,8 +155,9 @@ class _Sparkle extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) =>
-      ExcludeSemantics(child: CustomPaint(size: Size.square(size), painter: _SparklePainter()));
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: CustomPaint(size: Size.square(size), painter: _SparklePainter()),
+  );
 }
 
 class _SparklePainter extends CustomPainter {

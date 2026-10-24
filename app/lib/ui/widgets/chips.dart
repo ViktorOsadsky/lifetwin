@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../widgets/whole_word_text.dart';
 import '../theme.dart';
 
 /// A full-width 52pt chip with a leading icon (e.g. "Use my Health app").
@@ -40,7 +41,9 @@ class LtChip extends StatelessWidget {
         selected: on,
         children: [
           if (icon != null) ...[Icon(icon, size: 26, color: LtColors.ink), const SizedBox(width: 12)],
-          Expanded(child: Text(label, style: LtText.body(weight: FontWeight.w700))),
+          Expanded(
+            child: WholeWordText(label, style: LtText.body(weight: FontWeight.w700)),
+          ),
           if (trailing != null) ...[const SizedBox(width: 8), trailing!],
           if (on) ...[const SizedBox(width: 8), const Icon(Icons.check_circle, color: LtColors.ink, size: 24)],
         ],
@@ -85,7 +88,9 @@ class LtToggleChip extends StatelessWidget {
         selected: false,
         children: [
           if (icon != null) ...[Icon(icon, size: 26, color: LtColors.ink), const SizedBox(width: 12)],
-          Expanded(child: Text(label, style: LtText.body(weight: FontWeight.w700))),
+          Expanded(
+            child: WholeWordText(label, style: LtText.body(weight: FontWeight.w700)),
+          ),
           const SizedBox(width: 8),
           _Track(on: value),
         ],
@@ -145,10 +150,7 @@ class _ChipShell extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? LtColors.mint : LtColors.paper,
           borderRadius: BorderRadius.circular(LtRadii.chip),
-          border: Border.all(
-            color: selected ? LtColors.controlOnMint : LtColors.control,
-            width: LtBorders.control,
-          ),
+          border: Border.all(color: selected ? LtColors.controlOnMint : LtColors.control, width: LtBorders.control),
           boxShadow: LtShadows.small,
         ),
         child: Row(children: children),
@@ -182,7 +184,9 @@ class StatusPill extends StatelessWidget {
           children: [
             Icon(icon, size: 24, color: LtColors.ink),
             const SizedBox(width: 8),
-            Flexible(child: Text(label, style: LtText.body(weight: FontWeight.w700))),
+            Flexible(
+              child: WholeWordText(label, style: LtText.body(weight: FontWeight.w700)),
+            ),
           ],
         ),
       ),

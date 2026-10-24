@@ -119,7 +119,8 @@ def test_grounding_still_needs_a_named_cue_for_a_field_nobody_asked():
         ("age", "I'm in my seventies"),
         ("age", "I'm going on 80"),
         ("age", "I weigh 70"),
-        ("height_cm", "I used to be 5 foot 10, now I'm 5 foot 8"),
+        # The old height alone; with "now I'm 5 foot 8" the now value is read back.
+        ("height_cm", "I used to be 5 foot 10"),
         ("height_cm", "just under 6 feet"),
         ("weight_kg", "150 lb, down from 170"),
         ("weight_kg", "-70 kg"),
@@ -258,7 +259,7 @@ def test_yes_with_a_correction_while_confirming_changes_nothing():
     request = TurnRequest(action="reply", state=pending, text="yes but 6 ft")
     result = asyncio.run(service.turn(request))
     assert result.state == pending
-    assert "Nothing has changed" in result.message
+    assert result.message.endswith("Is that right?")
 
 
 @pytest.mark.parametrize("text", ["yup", "Exactly.", "uh huh", "you got it"])
@@ -485,7 +486,7 @@ def test_simple_weights(text, expected):
 
 def test_bare_weight_is_read_back_in_pounds():
     result = confirm("weight_kg", "a buck sixty")
-    assert "Weight: 160 pounds" in result.message
+    assert "I heard you weigh 160 pounds" in result.message
     assert result.state.confirmed_profile.weight_kg is None
 
 
@@ -966,7 +967,7 @@ def test_parser_failure_is_a_follow_up_not_a_500(monkeypatch, caplog):
     monkeypatch.setattr(service_module, "parse_reply", broken)
     result = reply("age", "I'm 72")
     assert result.state.phase == "asking"
-    assert "didn't understand" in result.message
+    assert "didn't catch that" in result.message
     assert "RecursionError" in caplog.text and "boom" not in caplog.text
 
 
@@ -1005,12 +1006,16 @@ def test_no_during_read_back_never_swaps_in_the_example(text):
 @pytest.mark.parametrize(
     ("field", "text", "shown"),
     [
-        ("sleep_hours", "7 or 8", "Sleep: about 7.5 hours"),
-        ("sleep_hours", "about 7 and a half hours", "Sleep: about 7.5 hours"),
-        ("weight_kg", "between 160 and 170", "Weight: about 165 pounds"),
-        ("weight_kg", "about 165 pounds", "Weight: about 165 pounds"),
-        ("exercise_minutes_weekly", "30 to 40 minutes 3 times", "Exercise: about 105 minutes"),
-        ("sleep_hours", "7 hours", "Sleep: 7 hours"),
+        ("sleep_hours", "7 or 8", "you sleep about 7.5 hours a night"),
+        ("sleep_hours", "about 7 and a half hours", "you sleep about 7.5 hours a night"),
+        ("weight_kg", "between 160 and 170", "you weigh about 165 pounds"),
+        ("weight_kg", "about 165 pounds", "you weigh about 165 pounds"),
+        (
+            "exercise_minutes_weekly",
+            "30 to 40 minutes 3 times",
+            "you exercise about 105 minutes a week",
+        ),
+        ("sleep_hours", "7 hours", "you sleep 7 hours a night"),
     ],
 )
 def test_estimates_are_read_back_as_about(field, text, shown):

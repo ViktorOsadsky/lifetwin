@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../health/readback.dart' show usesImperial;
 import '../ui/theme.dart';
+import '../widgets/whole_word_text.dart';
 import '../ui/widgets/widgets.dart';
 import 'forecast_client.dart';
 import 'profile_labels.dart';
@@ -41,11 +42,14 @@ class OutlookDetailScreen extends StatelessWidget {
           const SizedBox(height: 14),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Semantics(header: true, child: Text('Your look ahead', style: LtText.display(32, color: LtColors.cream))),
+            child: Semantics(
+              header: true,
+              child: WholeWordText('Your look ahead', style: LtText.display(32, color: LtColors.cream)),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
-            child: Text(
+            child: WholeWordText(
               'Your chances over the next $years ${years == 1 ? 'year' : 'years'}',
               style: LtText.body(color: LtColors.cream),
             ),
@@ -54,13 +58,13 @@ class OutlookDetailScreen extends StatelessWidget {
             children: [
               SurvivalCurve(curve: f.curve, markers: f.survival, maxYears: years),
               const SizedBox(height: 8),
-              Text('Out of 100 people with answers like yours', style: LtText.body(color: LtColors.cream)),
+              WholeWordText('Out of 100 people with answers like yours', style: LtText.body(color: LtColors.cream)),
             ],
           ),
           _Section(
             title: 'Built from your answers',
             children: [
-              if (answers.isEmpty) Text('No answers yet.', style: LtText.body(color: LtColors.cream)),
+              if (answers.isEmpty) WholeWordText('No answers yet.', style: LtText.body(color: LtColors.cream)),
               for (final (key, label) in answers)
                 _Row(
                   label: label,
@@ -74,9 +78,7 @@ class OutlookDetailScreen extends StatelessWidget {
           if (f.filledIn.isNotEmpty)
             _Section(
               title: 'We assumed',
-              children: [
-                for (final label in f.filledIn) _Assumed(label: label, onAddAnswer: onAddAnswer),
-              ],
+              children: [for (final label in f.filledIn) _Assumed(label: label, onAddAnswer: onAddAnswer)],
             ),
           _Section(
             title: 'Limits',
@@ -95,12 +97,14 @@ class OutlookDetailScreen extends StatelessWidget {
                     children: [
                       Icon(icon, size: 22, color: LtColors.gold),
                       const SizedBox(width: 10),
-                      Expanded(child: Text(line, style: LtText.body(color: LtColors.cream))),
+                      Expanded(
+                        child: WholeWordText(line, style: LtText.body(color: LtColors.cream)),
+                      ),
                     ],
                   ),
                 ),
               const SizedBox(height: 8),
-              Text('Model ${f.modelVersion}', style: LtText.body(size: 15, color: LtColors.cream)),
+              WholeWordText('Model ${f.modelVersion}', style: LtText.body(size: 15, color: LtColors.cream)),
             ],
           ),
         ],
@@ -125,7 +129,10 @@ class _Section extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (title != null) ...[
-              Semantics(header: true, child: Text(title!, style: LtText.display(22, color: LtColors.gold))),
+              Semantics(
+                header: true,
+                child: WholeWordText(title!, style: LtText.display(22, color: LtColors.gold)),
+              ),
               const SizedBox(height: 12),
             ],
             ...children,
@@ -158,13 +165,20 @@ class _Row extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: 10,
         children: [
-          Text(label, style: LtText.body(size: 18, color: LtColors.cream, weight: FontWeight.w700)),
+          WholeWordText(
+            label,
+            style: LtText.body(size: 18, color: LtColors.cream, weight: FontWeight.w700),
+          ),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(health ? Icons.favorite_border_rounded : Icons.chat_bubble_outline_rounded, size: 20, color: LtColors.gold),
+              Icon(
+                health ? Icons.favorite_border_rounded : Icons.chat_bubble_outline_rounded,
+                size: 20,
+                color: LtColors.gold,
+              ),
               const SizedBox(width: 6),
-              Text(source, style: LtText.body(color: LtColors.gold)),
+              WholeWordText(source, style: LtText.body(color: LtColors.gold)),
             ],
           ),
         ],
@@ -184,19 +198,12 @@ class _Assumed extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 2),
-      decoration: ShapeDecoration(
-        shape: _DashedBorder(color: LtColors.cream.withValues(alpha: 0.5)),
-      ),
+      decoration: ShapeDecoration(shape: _DashedBorder(color: LtColors.cream.withValues(alpha: 0.5))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(text, style: LtText.body(color: LtColors.cream)),
-          LinkButton(
-            label: 'Add an answer',
-            icon: Icons.add_rounded,
-            color: LtColors.gold,
-            onTap: onAddAnswer,
-          ),
+          WholeWordText(text, style: LtText.body(color: LtColors.cream)),
+          LinkButton(label: 'Add an answer', icon: Icons.add_rounded, color: LtColors.gold, onTap: onAddAnswer),
         ],
       ),
     );

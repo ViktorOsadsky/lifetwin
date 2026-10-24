@@ -243,6 +243,9 @@ class CartesiaSpeechInput implements SpeechInput {
   String get _caption => CartesiaWire.joinTranscript(_finals, _partial);
 
   @override
+  Future<bool> hasPermission() => _recorder.hasPermission();
+
+  @override
   Future<void> start(void Function(String text) onCaption) async {
     await _teardown();
     if (!await _recorder.hasPermission()) throw const MicDeniedException();
@@ -290,7 +293,16 @@ class CartesiaSpeechInput implements SpeechInput {
     );
     // Start the mic first so the first words are not lost while the socket connects.
     final stream = await _recorder.startStream(
-      const RecordConfig(encoder: AudioEncoder.pcm16bits, sampleRate: 16000, numChannels: 1),
+      // Apple's voice processing (echo cancel + noise suppression) favors the voice
+      // close to the phone over other people talking in the room; gain helps soft voices.
+      const RecordConfig(
+        encoder: AudioEncoder.pcm16bits,
+        sampleRate: 16000,
+        numChannels: 1,
+        echoCancel: true,
+        noiseSuppress: true,
+        autoGain: true,
+      ),
     );
     _micSub = stream.listen((data) {
       for (final c in _chunks.add(data)) {

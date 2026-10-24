@@ -7,5 +7,6 @@ export 'chips.dart';
 export 'lip_button.dart';
 export 'mode_scaffold.dart';
 export 'plate_window.dart';
+export 'step_progress.dart';
 export 'survival_curve.dart';
 export 'twin_sprite.dart';

@@ -124,7 +124,12 @@ void main() {
     expect(find.text('Health app'), findsNWidgets(2)); // height and sleep
     await t.scrollUntilVisible(find.text('We assumed'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('We assumed'), findsOneWidget);
-    for (final label in ['Time spent sitting each day', 'Diabetes', 'High blood pressure', 'How you rate your health']) {
+    for (final label in [
+      'Time spent sitting each day',
+      'Diabetes',
+      'High blood pressure',
+      'How you rate your health',
+    ]) {
       await t.scrollUntilVisible(find.text(label), 200, scrollable: find.byType(Scrollable).first);
       expect(find.text(label), findsOneWidget);
     }
@@ -136,7 +141,7 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('unsupported: the plain reason, Add an answer, no number and no bear heads', (t) async {
+  testWidgets('unsupported: the plain reason, Go back to my answers, no number and no bear heads', (t) async {
     const reason =
         'The survey this forecast learns from does not record exact ages above 80, '
         'so we cannot make a forecast for you yet.';
@@ -156,17 +161,13 @@ void main() {
     expect(find.text("I can't make a forecast for you yet. $reason"), findsOneWidget);
     expect(find.byType(BearHeadArray), findsNothing);
     expect(find.textContaining('in 100', findRichText: true), findsNothing);
-    await t.tap(find.text('Add an answer'));
+    await t.tap(find.text('Go back to my answers'));
     expect(backs, 1);
   });
 
   testWidgets('501 (model not installed): still learning, misted ball, Back to room', (t) async {
     var backs = 0;
-    await pumpForecast(
-      t,
-      const ForecastFailure('model not installed', modelMissing: true),
-      onBack: () => backs++,
-    );
+    await pumpForecast(t, const ForecastFailure('model not installed', modelMissing: true), onBack: () => backs++);
     expect(find.text('Still learning'), findsOneWidget);
     expect(find.text(stillLearningLine), findsOneWidget);
     expect(find.text('Your fortune will show here later.'), findsOneWidget);
@@ -200,16 +201,14 @@ void main() {
     const human = TwinAppearance(type: TwinType.human);
 
     String spriteAsset(WidgetTester t) {
-      final image = t.widget<Image>(
-        find.descendant(of: find.byType(TwinSprite), matching: find.byType(Image)).first,
-      );
+      final image = t.widget<Image>(find.descendant(of: find.byType(TwinSprite), matching: find.byType(Image)).first);
       return (image.image as AssetImage).assetName;
     }
 
-    String plateAsset(WidgetTester t) => (t
-            .widget<Image>(find.descendant(of: find.byType(PlateScene), matching: find.byType(Image)).first)
-            .image as AssetImage)
-        .assetName;
+    String plateAsset(WidgetTester t) =>
+        (t.widget<Image>(find.descendant(of: find.byType(PlateScene), matching: find.byType(Image)).first).image
+                as AssetImage)
+            .assetName;
 
     Future<void> pumpHuman(WidgetTester t, Widget screen) async {
       t.view.physicalSize = const Size(390, 844);
@@ -252,7 +251,12 @@ void main() {
         ForecastScreen(
           client: FakeForecastClient()
             ..answers.add(
-              Forecast.parse({...profileCJson(), 'status': 'unsupported', 'survival': <Object>[], 'reason': 'Not covered.'}),
+              Forecast.parse({
+                ...profileCJson(),
+                'status': 'unsupported',
+                'survival': <Object>[],
+                'reason': 'Not covered.',
+              }),
             ),
           profile: profileC,
           onBack: () {},

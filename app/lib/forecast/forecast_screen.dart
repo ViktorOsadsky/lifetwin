@@ -5,6 +5,7 @@ import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart';
 import '../voice/speech.dart';
+import '../widgets/whole_word_text.dart';
 import 'forecast_client.dart';
 import 'night_plate.dart';
 import 'outlook_detail_screen.dart';
@@ -47,7 +48,7 @@ class ForecastScreen extends StatefulWidget {
     required this.profile,
     required this.onBack,
     this.speech,
-    this.onAddAnswer,
+    this.onAnswers,
     this.onPlayQuiz,
     this.healthKeys = const {},
     this.appearance = const TwinAppearance(),
@@ -62,8 +63,9 @@ class ForecastScreen extends StatefulWidget {
   /// Set when voice is on; the mascot then says its sentence aloud.
   final SpeechOutput? speech;
 
-  /// Back to the conversation to answer more; defaults to [onBack].
-  final VoidCallback? onAddAnswer;
+  /// "Go back to my answers": back to the conversation, where an answer can be changed or
+  /// a skipped one added. Falls back to [onBack] when not given.
+  final VoidCallback? onAnswers;
 
   /// Shown on "still learning" when a quiz exists.
   final VoidCallback? onPlayQuiz;
@@ -145,9 +147,9 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
     widget.onBack();
   }
 
-  void _addAnswer() {
+  void _answers() {
     if (_spoke) widget.speech?.stop();
-    (widget.onAddAnswer ?? widget.onBack)();
+    (widget.onAnswers ?? widget.onBack)();
   }
 
   @override
@@ -187,7 +189,11 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
           ),
           overlay: Stack(
             children: [
-              Positioned(left: 14, top: 18, child: RoundBackButton(label: 'Back', onTap: _back)),
+              Positioned(
+                left: 14,
+                top: 18,
+                child: RoundBackButton(label: 'Back', onTap: _back),
+              ),
               if (bubble != null)
                 Positioned(
                   top: 36,
@@ -209,7 +215,7 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
   Widget _sheet(BuildContext context) {
     final f = _forecast;
     if (_loading) {
-      return Text('One moment…', style: LtText.body(size: 18, color: LtColors.cream));
+      return WholeWordText('One moment…', style: LtText.body(size: 18, color: LtColors.cream));
     }
     final e = _error;
     if (e != null && e.modelMissing) return _stillLearning();
@@ -217,7 +223,7 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
+          WholeWordText(
             e.plain ?? 'Please check the connection and try again.',
             style: LtText.body(size: 18, color: LtColors.cream),
           ),
@@ -233,8 +239,8 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // The plain reason is in the bubble; nothing is added to it here.
-          LipButton(label: 'Add an answer', icon: Icons.add_rounded, onTap: _addAnswer),
-          if (widget.onAddAnswer != null) ...[
+          LipButton(label: 'Go back to my answers', icon: Icons.edit_rounded, onTap: _answers),
+          if (widget.onAnswers != null) ...[
             const SizedBox(height: 12),
             LipButton(label: 'Go back', kind: LipKind.secondary, height: 56, fontSize: 21, onTap: _back),
           ],
@@ -247,9 +253,12 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
   Widget _stillLearning() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Semantics(header: true, child: Text('Still learning', style: LtText.display(34, color: LtColors.gold))),
+      Semantics(
+        header: true,
+        child: WholeWordText('Still learning', style: LtText.display(34, color: LtColors.gold)),
+      ),
       const SizedBox(height: 6),
-      Text('Your fortune will show here later.', style: LtText.body(color: LtColors.cream)),
+      WholeWordText('Your fortune will show here later.', style: LtText.body(color: LtColors.cream)),
       const SizedBox(height: 16),
       if (widget.onPlayQuiz != null) ...[
         LipButton(label: 'Play the quiz', icon: Icons.extension_rounded, onTap: widget.onPlayQuiz),
@@ -272,24 +281,33 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(header: true, child: Text('Your look ahead', style: LtText.display(22, color: LtColors.gold))),
+        Semantics(
+          header: true,
+          child: WholeWordText('Your look ahead', style: LtText.display(22, color: LtColors.gold)),
+        ),
         const SizedBox(height: 8),
-        Text.rich(
+        WholeWordText.rich(
           TextSpan(
             children: [
-              TextSpan(text: 'About ', style: LtText.display(40, color: LtColors.cream, weight: FontWeight.w500)),
-              TextSpan(text: '$n in 100', style: LtText.display(40, color: LtColors.cream)),
+              TextSpan(
+                text: 'About ',
+                style: LtText.display(40, color: LtColors.cream, weight: FontWeight.w500),
+              ),
+              TextSpan(
+                text: '$n in 100',
+                style: LtText.display(40, color: LtColors.cream),
+              ),
             ],
           ),
         ),
-        Text(
+        WholeWordText(
           'chance you’re still here in $years ${years == 1 ? 'year' : 'years'}',
           style: LtText.body(color: LtColors.cream),
         ),
         const SizedBox(height: 12),
         BearHeadArray(filled: n),
         const SizedBox(height: 8),
-        Text(
+        WholeWordText(
           forecastSentence(f),
           textAlign: TextAlign.center,
           style: LtText.body(color: LtColors.gold),
@@ -299,7 +317,10 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
           alignment: WrapAlignment.spaceBetween,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text('Linked, not proven.', style: LtText.body(color: LtColors.cream, weight: FontWeight.w700)),
+            WholeWordText(
+              'Linked, not proven.',
+              style: LtText.body(color: LtColors.cream, weight: FontWeight.w700),
+            ),
             LinkButton(label: 'Why?', icon: Icons.help_outline_rounded, color: LtColors.gold, onTap: () => _why(f)),
           ],
         ),
@@ -326,10 +347,19 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
                 healthKeys: widget.healthKeys,
                 onAddAnswer: () {
                   Navigator.of(context).pop();
-                  _addAnswer();
+                  _answers();
                 },
               ),
             ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Center(
+          child: LinkButton(
+            label: 'Go back to my answers',
+            icon: Icons.edit_rounded,
+            color: LtColors.gold,
+            onTap: _answers,
           ),
         ),
       ],
@@ -350,15 +380,20 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Semantics(header: true, child: Text('What this means', style: LtText.display(26))),
+                Semantics(header: true, child: WholeWordText('What this means', style: LtText.display(26))),
                 const SizedBox(height: 12),
                 for (final line in [...forecastMeaning(f), ...f.limitations])
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Text('•  $line', style: LtText.body(size: 18)),
+                    child: WholeWordText('•  $line', style: LtText.body(size: 18)),
                   ),
                 const SizedBox(height: 8),
-                LipButton(label: 'Got it', kind: LipKind.secondary, height: 56, onTap: () => Navigator.of(context).pop()),
+                LipButton(
+                  label: 'Got it',
+                  kind: LipKind.secondary,
+                  height: 56,
+                  onTap: () => Navigator.of(context).pop(),
+                ),
               ],
             ),
           ),

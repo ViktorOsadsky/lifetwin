@@ -4,6 +4,7 @@ import 'package:lifesim/health/health_reader.dart';
 import 'package:lifesim/health/health_sample.dart';
 import 'package:lifesim/health/health_screen.dart';
 import 'package:lifesim/health/health_summary.dart';
+import 'package:lifesim/ui/widgets/widgets.dart';
 
 final now = DateTime(2026, 10, 24, 12);
 
@@ -114,4 +115,47 @@ void main() {
     expect(result!.samples, isEmpty);
     expect(result!.toAsk, HealthField.values);
   });
+
+  for (final scale in [1.0, 2.0]) {
+    testWidgets('scale $scale on a 390x844 phone: the twin and big buttons on every step, nothing overflows', (
+      t,
+    ) async {
+      t.view.physicalSize = const Size(390, 844);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      await t.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: const Size(390, 844),
+              textScaler: TextScaler.linear(scale),
+              disableAnimations: true,
+            ),
+            child: HealthImportScreen(reader: FakeReader(samples), now: () => now, onDone: (_) {}),
+          ),
+        ),
+      );
+      Future<void> check(String label) async {
+        expect(t.takeException(), isNull, reason: label);
+        expect(find.byType(TwinSprite), findsOneWidget, reason: label);
+        final b = find.ancestor(of: find.text(label), matching: find.byType(LipButton));
+        expect(t.getSize(b).height, greaterThanOrEqualTo(72), reason: label);
+        // The test font is far wider than the real one, so at 2.0 the pinned buttons
+        // may need their own scroll here; on screen at 1.0.
+        if (scale == 1.0) expect(t.getRect(b).bottom, lessThanOrEqualTo(844), reason: label);
+        await t.ensureVisible(find.text(label));
+        await t.pump();
+        await t.tap(find.text(label));
+        await t.pump(const Duration(seconds: 1));
+      }
+
+      await check('Yes, use my Health app');
+      await t.pumpAndSettle();
+      await check("Yes, that's right");
+      await check('No, let me fix it');
+      expect(find.text('Thank you'), findsOneWidget);
+      expect(t.widget<TwinSprite>(find.byType(TwinSprite)).pose, TwinMood.pleased.pose);
+      await check('Continue');
+    });
+  }
 }

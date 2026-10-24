@@ -208,7 +208,7 @@ flutter:
 ## 7. Flutter notes
 
 - Package `lifesim`. Add the `assets:` list from section 6 to `pubspec.yaml`.
-- **Fonts are bundled** in `app/assets/fonts/` and registered in `pubspec.yaml` (no `google_fonts`, no network): Atkinson Hyperlegible Regular and Bold (400, 700) and Fredoka as one variable TTF (`wght` axis). Both are under the SIL Open Font License 1.1; the license texts ship beside the fonts (`OFL-AtkinsonHyperlegible.txt`, `OFL-Fredoka.txt`) and must stay with them. Fredoka styles set `fontVariations: [FontVariation('wght', 500 or 600)]`, because `fontWeight` alone does not reliably drive a variable axis.
+- **Fonts are bundled** in `app/assets/fonts/` and registered in `pubspec.yaml` (no `google_fonts`, no network), one folder per family: Atkinson Hyperlegible Regular and Bold (400, 700) and Fredoka as one variable TTF (`wght` axis). Both are under the SIL Open Font License 1.1; the license texts ship beside the fonts (`atkinson_hyperlegible/OFL.txt`, `fredoka/OFL.txt`) and must stay with them. Fredoka styles set `fontVariations: [FontVariation('wght', 500 or 600)]`, because `fontWeight` alone does not reliably drive a variable axis.
 - Put tokens in one `lib/ui/theme.dart` (colours, type, radii, shadows). Shared widgets: `LipButton`, `PlateWindow` (frame, banner and sparkles), `Bubble`, `Chip`, `DotArray`, `ModeScaffold` (tint background).
 - Reuse the existing logic unchanged: `VoiceOnboardingController` (phases, `startTalk`/`stopTalk`, `setTyping`, `setAiHelper`, `confirm`/`change`), `HealthImportScreen`, and `HttpForecastClient.predict`. The remake replaces only the widgets.
 - Reduced motion: every ceremony beat has a static frame.

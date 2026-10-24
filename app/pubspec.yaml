@@ -39,6 +39,7 @@ dependencies:
   web_socket_channel: ^3.0.3
   flutter_pcm_sound: ^3.3.3
   http: ^1.6.0
+  url_launcher: ^6.3.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -74,19 +75,21 @@ flutter:
     - assets/twin/human/pose/
     - assets/twin/accessory/hat/
     - assets/scene/
+    - assets/fonts/fredoka/OFL.txt
+    - assets/fonts/atkinson_hyperlegible/OFL.txt
 
-  # SIL Open Font License 1.1; the license texts are in assets/fonts/.
+  # SIL Open Font License 1.1 (from github.com/google/fonts); the licence texts sit beside them.
   # Fredoka is a variable font (wght axis), set via fontVariations in lib/ui/theme.dart.
   fonts:
     - family: Atkinson Hyperlegible
       fonts:
-        - asset: assets/fonts/AtkinsonHyperlegible-Regular.ttf
+        - asset: assets/fonts/atkinson_hyperlegible/AtkinsonHyperlegible-Regular.ttf
           weight: 400
-        - asset: assets/fonts/AtkinsonHyperlegible-Bold.ttf
+        - asset: assets/fonts/atkinson_hyperlegible/AtkinsonHyperlegible-Bold.ttf
           weight: 700
     - family: Fredoka
       fonts:
-        - asset: assets/fonts/Fredoka-Variable.ttf
+        - asset: assets/fonts/fredoka/Fredoka-Variable.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

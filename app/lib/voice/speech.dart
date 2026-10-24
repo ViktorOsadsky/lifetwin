@@ -43,6 +43,10 @@ abstract class SpeechOutput {
 }
 
 abstract class SpeechInput {
+  /// Whether the microphone may be used. Shows the system's "Allow microphone?" question
+  /// the first time, and waits for the answer however long the person takes to read it.
+  Future<bool> hasPermission();
+
   /// Starts listening. [onCaption] receives the words heard so far.
   /// Throws [MicDeniedException], [VoiceUnavailableException] or [VoiceFailure].
   Future<void> start(void Function(String text) onCaption);

@@ -8,17 +8,20 @@ import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart';
+import '../widgets/whole_word_text.dart';
 
 /// V-1 / V-7 Room: the calm island plate with the chosen twin composited on
 /// it, a greeting bubble, the mood chip, and the dock (Customize · Talk ·
-/// Fortune). This is the approved static 2D design.
-class RoomScreen extends StatelessWidget {
+/// Fortune). This is the approved static 2D design. Nothing here is stored;
+/// [hasProfile] is whatever the host kept in memory for this session.
+class RoomScreen extends StatefulWidget {
   const RoomScreen({
     super.key,
     required this.appearance,
     required this.onTalk,
     required this.onCustomize,
     required this.onFortune,
+    this.hasProfile = false,
     this.mood = 'Feeling cozy',
   });
 
@@ -26,17 +29,57 @@ class RoomScreen extends StatelessWidget {
   final ValueListenable<TwinAppearance> appearance;
   final VoidCallback onTalk;
   final VoidCallback onCustomize;
+
+  /// The fortune, only called when [hasProfile].
   final VoidCallback onFortune;
+
+  /// True once an intake has been confirmed (and is still complete) this session.
+  final bool hasProfile;
   final String mood;
+
+  static const firstGreeting = 'Hi! Want to chat?';
+  static const returningGreeting = 'Welcome back.';
+  static const talkFirst = "Let's talk first, so I can make your forecast.";
+
+  @override
+  State<RoomScreen> createState() => _RoomScreenState();
+}
+
+class _RoomScreenState extends State<RoomScreen> {
+  bool _needTalk = false;
+
+  String get _line => _needTalk && !widget.hasProfile
+      ? RoomScreen.talkFirst
+      : widget.hasProfile
+      ? RoomScreen.returningGreeting
+      : RoomScreen.firstGreeting;
+
+  void _fortune() {
+    if (widget.hasProfile) {
+      widget.onFortune();
+    } else {
+      setState(() => _needTalk = true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // With much larger text the bubble leaves the window and sits on the sheet above
+    // the dock, at full width, so nothing is cut off or covers the twin.
+    final large = MediaQuery.textScalerOf(context).scale(20) > 28;
+    final bubble = Bubble(
+      text: _line,
+      fontSize: 21,
+      liveRegion: true,
+      tail: large ? BubbleTail.none : BubbleTail.bottom,
+      tailAt: 0,
+    );
     return SwooshRoomStage(
       builder: (context, f) => ModeScaffold(
         mode: LtMode.room,
         gradient: Gradient.lerp(LtMode.room.gradient, LtMode.onboarding.gradient, f.tint),
         child: ValueListenableBuilder<TwinAppearance>(
-          valueListenable: appearance,
+          valueListenable: widget.appearance,
           builder: (context, look, _) => PlateSheetLayout(
             minWindow: 220,
             overlap: 24,
@@ -55,16 +98,27 @@ class RoomScreen extends StatelessWidget {
                 zoom: 1.11,
                 twinBuilder: (feet, scale, box) => plantTwin(
                   feet,
-                  TwinSprite(appearance: look, height: math.max(60.0, math.min(253 * scale, box.height * 0.8)), hero: true, isRoom: true),
+                  TwinSprite(
+                    appearance: look,
+                    height: math.max(60.0, math.min(253 * scale, box.height * 0.8)),
+                    hero: true,
+                    isRoom: true,
+                  ),
                 ),
               ),
-              overlay: _RoomOverlay(frame: f, mood: mood),
+              overlay: _RoomOverlay(frame: f, mood: widget.mood, bubble: large ? null : bubble),
             ),
             sheet: Opacity(
               opacity: f.barOpacity.clamp(0.0, 1.0),
               child: Transform.translate(
                 offset: Offset(0, f.barOffsetY),
-                child: _Dock(frame: f, onTalk: onTalk, onCustomize: onCustomize, onFortune: onFortune),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (large) ...[bubble, const SizedBox(height: 12)],
+                    _Dock(frame: f, onTalk: widget.onTalk, onCustomize: widget.onCustomize, onFortune: _fortune),
+                  ],
+                ),
               ),
             ),
           ),
@@ -75,30 +129,28 @@ class RoomScreen extends StatelessWidget {
 }
 
 class _RoomOverlay extends StatelessWidget {
-  const _RoomOverlay({required this.frame, required this.mood});
+  const _RoomOverlay({required this.frame, required this.mood, this.bubble});
   final SwooshRoomFrame frame;
   final String mood;
+  final Widget? bubble;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Positioned(
-          top: 24,
-          right: 8,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 170),
-            child: Opacity(
-              opacity: frame.bubbleOpacity.clamp(0.0, 1.0),
-              child: Transform.scale(
-                scale: frame.bubbleScale,
-                alignment: Alignment.bottomLeft,
-                child: const Bubble(text: 'Hi! Want to chat?', fontSize: 21, tail: BubbleTail.bottom, tailAt: 0),
+        if (bubble != null)
+          Positioned(
+            top: 24,
+            right: 8,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 170),
+              child: Opacity(
+                opacity: frame.bubbleOpacity.clamp(0.0, 1.0),
+                child: Transform.scale(scale: frame.bubbleScale, alignment: Alignment.bottomLeft, child: bubble),
               ),
             ),
           ),
-        ),
         Positioned(
           left: 14,
           bottom: 38,
@@ -106,7 +158,10 @@ class _RoomOverlay extends StatelessWidget {
             opacity: frame.chipOpacity.clamp(0.0, 1.0),
             child: Transform.translate(
               offset: Offset(0, frame.chipOffsetY),
-              child: Transform.rotate(angle: -3 * math.pi / 180, child: StatusPill(label: mood)),
+              child: Transform.rotate(
+                angle: -3 * math.pi / 180,
+                child: StatusPill(label: mood),
+              ),
             ),
           ),
         ),
@@ -210,12 +265,23 @@ class _DockItem extends StatelessWidget {
                   color: face,
                   shape: BoxShape.circle,
                   border: Border.all(color: LtColors.control, width: LtBorders.control),
-                  boxShadow: [BoxShadow(color: lip, offset: const Offset(0, 3)), ...LtShadows.soft],
+                  boxShadow: [
+                    BoxShadow(color: lip, offset: const Offset(0, 3)),
+                    ...LtShadows.soft,
+                  ],
                 ),
                 child: Icon(icon, size: 30, color: iconColor),
               ),
               const SizedBox(height: 6),
-              Text(label, textAlign: TextAlign.center, style: LtText.body(weight: FontWeight.w700)),
+              // One line inside its box: shrinks rather than wrapping ("Customiz/e").
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: WholeWordText(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: LtText.body(weight: FontWeight.w700),
+                ),
+              ),
             ],
           ),
         ),

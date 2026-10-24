@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../ui/theme.dart';
+import '../widgets/whole_word_text.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart';
@@ -64,7 +65,11 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
           ),
           overlay: Stack(
             children: [
-              Positioned(left: 14, top: 18, child: RoundBackButton(label: 'Back to room', onTap: widget.onDone)),
+              Positioned(
+                left: 14,
+                top: 18,
+                child: RoundBackButton(label: 'Back to room', onTap: widget.onDone),
+              ),
             ],
           ),
         ),
@@ -117,7 +122,9 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                 children: [
                   _Thumb(asset: twinAsset(type, TwinLook.plain)),
                   const SizedBox(width: 10),
-                  Flexible(child: Text(label, style: LtText.body(size: 19, weight: FontWeight.w700))),
+                  Flexible(
+                    child: WholeWordText(label, style: LtText.body(size: 19, weight: FontWeight.w700)),
+                  ),
                   if (on) ...[const SizedBox(width: 6), const Icon(Icons.check_rounded, color: LtColors.ink)],
                 ],
               ),
@@ -137,7 +144,9 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
           borderRadius: BorderRadius.circular(34),
           border: Border.all(color: LtColors.container, width: LtBorders.container),
         ),
-        child: Row(children: [option(TwinType.bear, 'Bear'), const SizedBox(width: 4), option(TwinType.human, 'Human')]),
+        child: Row(
+          children: [option(TwinType.bear, 'Bear'), const SizedBox(width: 4), option(TwinType.human, 'Human')],
+        ),
       ),
     );
   }
@@ -174,9 +183,13 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                   children: [
                     Icon(t.icon, size: 26, color: LtColors.ink),
                     const SizedBox(height: 3),
-                    Text(
-                      t.label,
-                      style: LtText.body(weight: t == _tab ? FontWeight.w700 : FontWeight.w400),
+                    // One line inside the tab: shrinks rather than breaking the word.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: WholeWordText(
+                        t.label,
+                        style: LtText.body(weight: t == _tab ? FontWeight.w700 : FontWeight.w400),
+                      ),
                     ),
                   ],
                 ),
@@ -218,7 +231,13 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
             ('Cap', Icons.sports_baseball_outlined),
             ('Visor', Icons.light_mode_outlined),
           ])
-            _Tile(label: label, selected: false, tilt: 0, art: Icon(icon, size: 36, color: LtColors.control), onTap: null),
+            _Tile(
+              label: label,
+              selected: false,
+              tilt: 0,
+              art: Icon(icon, size: 36, color: LtColors.control),
+              onTap: null,
+            ),
         ],
       ),
     );
@@ -228,11 +247,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     constraints: const BoxConstraints(minHeight: 96),
     alignment: Alignment.center,
     padding: const EdgeInsets.all(16),
-    child: Text(
-      '${_tab.label} are coming soon.',
-      textAlign: TextAlign.center,
-      style: LtText.body(size: 18),
-    ),
+    child: WholeWordText('${_tab.label} are coming soon.', textAlign: TextAlign.center, style: LtText.body(size: 18)),
   );
 }
 
@@ -261,7 +276,13 @@ class _Thumb extends StatelessWidget {
 
 /// A die-cut tile used as a radio. Null [onTap] means not available yet.
 class _Tile extends StatelessWidget {
-  const _Tile({required this.label, required this.selected, required this.tilt, required this.art, required this.onTap});
+  const _Tile({
+    required this.label,
+    required this.selected,
+    required this.tilt,
+    required this.art,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -307,7 +328,7 @@ class _Tile extends StatelessWidget {
                   children: [
                     art,
                     const SizedBox(height: 2),
-                    Text(
+                    WholeWordText(
                       label,
                       textAlign: TextAlign.center,
                       style: LtText.body(weight: selected ? FontWeight.w700 : FontWeight.w400),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../widgets/whole_word_text.dart';
 import '../theme.dart';
 
 enum LipKind {
@@ -137,11 +138,7 @@ class _LipButtonState extends State<LipButton> {
   Widget build(BuildContext context) {
     final enabled = widget.onTap != null;
     final size = widget.fontSize ?? (widget.height >= 72 ? 24.0 : 22.0);
-    final label = Text(
-      widget.label,
-      textAlign: TextAlign.center,
-      style: LtText.display(size),
-    );
+    final label = WholeWordText(widget.label, textAlign: TextAlign.center, style: LtText.display(size));
     final content = widget.icon == null
         ? label
         : Row(
@@ -181,7 +178,7 @@ class _LipButtonState extends State<LipButton> {
   }
 }
 
-/// An underlined text link, at least 48pt tall (e.g. "Type instead", "Why?").
+/// An underlined text link, at least 56pt tall (e.g. "Type instead", "Why?").
 class LinkButton extends StatelessWidget {
   const LinkButton({super.key, required this.label, required this.onTap, this.icon, this.color = LtColors.ink});
 
@@ -196,21 +193,22 @@ class LinkButton extends StatelessWidget {
       onPressed: onTap,
       style: TextButton.styleFrom(
         foregroundColor: color,
-        minimumSize: const Size(48, 48),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        minimumSize: const Size(56, 56),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[Icon(icon, size: 22, color: color), const SizedBox(width: 6)],
           Flexible(
-            child: Text(
+            child: WholeWordText(
               label,
-              style: LtText.body(size: 18, weight: FontWeight.w700, color: color).copyWith(
-                decoration: TextDecoration.underline,
-                decorationThickness: 2,
-                decorationColor: color,
-              ),
+              textAlign: TextAlign.center,
+              style: LtText.body(
+                size: 18,
+                weight: FontWeight.w700,
+                color: color,
+              ).copyWith(decoration: TextDecoration.underline, decorationThickness: 2, decorationColor: color),
             ),
           ),
         ],
@@ -221,10 +219,11 @@ class LinkButton extends StatelessWidget {
 
 /// Round 52pt back button with a soft shadow, for the window corner.
 class RoundBackButton extends StatelessWidget {
-  const RoundBackButton({super.key, required this.onTap, this.label = 'Back'});
+  const RoundBackButton({super.key, required this.onTap, this.label = 'Back', this.icon = Icons.chevron_left_rounded});
 
   final VoidCallback onTap;
   final String label;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -245,7 +244,7 @@ class RoundBackButton extends StatelessWidget {
             border: Border.all(color: LtColors.control, width: LtBorders.control),
             boxShadow: LtShadows.soft,
           ),
-          child: const Icon(Icons.chevron_left_rounded, size: 34, color: LtColors.ink),
+          child: Icon(icon, size: 34, color: LtColors.ink),
         ),
       ),
     );

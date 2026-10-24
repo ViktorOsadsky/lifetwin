@@ -8,6 +8,7 @@ import 'package:http/testing.dart';
 import 'package:lifesim/forecast/forecast_client.dart';
 import 'package:lifesim/forecast/forecast_screen.dart';
 import 'package:lifesim/main.dart';
+import 'package:lifesim/room/room_screen.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/ui/widgets/widgets.dart';
 import 'package:lifesim/voice/api_base.dart';
@@ -30,7 +31,7 @@ Map<String, dynamic> supportedJson() => {
   ],
   'filled_in': [
     {'feature': 'sedentary_min_day', 'label': 'time spent sitting each day'},
-    {'feature': 'hypertension_diagnosed', 'label': 'high blood pressure'},
+    {'feature': 'hypertension_diagnosed', 'label': 'being told you have high blood pressure'},
     {'feature': 'general_health', 'label': 'how you rate your health'},
   ],
   'reason': null,
@@ -131,7 +132,9 @@ void main() {
     expect(find.textContaining('not a promise, and they are not a date'), findsOneWidget);
     expect(find.textContaining('links, not causes'), findsOneWidget);
     expect(
-      find.textContaining('time spent sitting each day, high blood pressure and how you rate your health'),
+      find.textContaining(
+        'time spent sitting each day, being told you have high blood pressure and how you rate your health',
+      ),
       findsOneWidget,
     );
     expect(find.textContaining('No causal effects of changing lifestyle are estimated.'), findsOneWidget);
@@ -173,6 +176,14 @@ void main() {
     expect(t.hasRunningAnimations, isFalse);
   });
 
+  testWidgets('Back calls onBack', (t) async {
+    final r = Rig()..client.answers.add(Forecast.parse(supportedJson()));
+    await r.pump(t);
+    await t.pumpAndSettle();
+    await t.tap(find.bySemanticsLabel('Back'));
+    expect(r.backs, 1);
+  });
+
   testWidgets('voice off: nothing is spoken', (t) async {
     final r = Rig()..client.answers.add(Forecast.parse(supportedJson()));
     await r.pump(t, voice: false);
@@ -182,7 +193,7 @@ void main() {
     expect(find.text('Say it again'), findsNothing);
   });
 
-  testWidgets('unsupported: the mascot explains why and offers to add an answer', (t) async {
+  testWidgets('unsupported: the mascot explains why and offers to go back to the answers', (t) async {
     final r = Rig()..client.answers.add(Forecast.parse(unsupportedJson()));
     await r.pump(t);
     await t.pumpAndSettle();
@@ -191,15 +202,15 @@ void main() {
     expect(r.speech.spoken, [line]);
     expect(find.byType(BearHeadArray), findsNothing);
     expect(find.textContaining('in 100', findRichText: true), findsNothing);
-    await t.ensureVisible(find.text('Add an answer'));
+    expect(find.bySemanticsLabel(RegExp('in 100 still living')), findsNothing);
+    await t.ensureVisible(find.text('Go back to my answers'));
     await t.pumpAndSettle();
-    await t.tap(find.text('Add an answer'));
+    await t.tap(find.text('Go back to my answers'));
     expect(r.backs, 1);
   });
 
   testWidgets('an error offers Try again, which asks again', (t) async {
-    final r = Rig()
-      ..client.answers.addAll([const ForecastFailure('offline'), Forecast.parse(supportedJson())]);
+    final r = Rig()..client.answers.addAll([const ForecastFailure('offline'), Forecast.parse(supportedJson())]);
     await r.pump(t);
     await t.pumpAndSettle();
     expect(find.text(couldNotReach), findsOneWidget);
@@ -221,7 +232,7 @@ void main() {
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       final scrollable = find.byType(Scrollable).first;
-      for (final label in ['Add an answer', 'Try again', 'Say it again', 'See what shaped it', 'Go back']) {
+      for (final label in ['Go back to my answers', 'Try again', 'Say it again', 'See what shaped it', 'Go back']) {
         final f = find.text(label);
         if (f.evaluate().isEmpty) continue;
         await t.scrollUntilVisible(f, 200, scrollable: scrollable);
@@ -283,9 +294,12 @@ void main() {
       output: FakeSpeechOutput(),
     );
     await t.pumpWidget(LifeTwinApp(controller: c, forecastClient: forecast));
-    await t.tap(find.text('Talk')); // the Room is home
+    await t.tap(find.text('Talk'));
     await t.pumpAndSettle();
-    await t.tap(find.text('Type instead'));
+    await t.tap(find.text("No, I'll type"));
+    await t.pumpAndSettle();
+    await t.pump(const Duration(milliseconds: 700)); // the AI question ignores a second tap at first
+    await t.ensureVisible(find.text('Not now'));
     await t.pumpAndSettle();
     await t.tap(find.text('Not now'));
     await t.pumpAndSettle();
@@ -302,6 +316,8 @@ void main() {
     expect(find.text(sentence), findsOneWidget);
     await t.tap(find.bySemanticsLabel('Back'));
     await t.pumpAndSettle();
-    expect(find.text('Continue'), findsOneWidget);
+    // Back from the forecast lands on the Room, which now greets a returning person.
+    expect(find.byType(RoomScreen), findsOneWidget);
+    expect(find.text('Welcome back.'), findsOneWidget);
   });
 }

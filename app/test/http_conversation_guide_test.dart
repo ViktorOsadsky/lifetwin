@@ -46,6 +46,17 @@ void main() {
     expect(sent['provider_consent'], isTrue);
   });
 
+  test('a 4xx HTML page (Wi-Fi sign-in, proxy) is a failure to retry, not a refused answer', () async {
+    final guide = HttpConversationGuide(
+      baseUrl: 'http://x',
+      client: MockClient((_) async => http.Response('<html><body>Hotel Wi-Fi</body></html>', 403)),
+    );
+    await expectLater(
+      guide.turn(action: 'reply', text: '71'),
+      throwsA(isA<GuideFailure>().having((e) => e is GuideRejected, 'rejected', false)),
+    );
+  });
+
   test('a 5xx answer is a plain failure (retry may help)', () async {
     final guide = HttpConversationGuide(baseUrl: 'http://x', client: MockClient((_) async => http.Response('', 503)));
     await expectLater(
