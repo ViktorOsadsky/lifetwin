@@ -1,23 +1,74 @@
 [
   {
-    "name": "prediction-deferred",
+    "name": "prediction-supported",
     "method": "POST",
     "path": "/api/predict",
     "request_schema": "prediction.request.schema.json",
     "request": {
-      "age": 35,
-      "height_cm": 175,
-      "weight_kg": 70
+      "age": 70,
+      "sex": "male",
+      "height_cm": 170,
+      "weight_kg": 75,
+      "sleep_hours": 7,
+      "exercise_minutes_weekly": 150,
+      "smoking_status": "never",
+      "diabetes": false
     },
-    "status": 501,
+    "status": 200,
     "response_schema": "prediction.schema.json",
-    "response": {
-      "schema_version": "1.0",
-      "status": "not_implemented",
-      "code": "prediction_not_implemented",
-      "message": "Prediction functionality is reserved for a later implementation.",
-      "prediction": null,
-      "model_version": null
+    "response_subset": {
+      "status": "supported",
+      "max_horizon_years": 5,
+      "survival": [
+        {
+          "years": 1,
+          "survival": 0.9805
+        },
+        {
+          "years": 3,
+          "survival": 0.9324
+        },
+        {
+          "years": 5,
+          "survival": 0.8802
+        }
+      ],
+      "filled_in": [
+        {
+          "feature": "sedentary_min_day",
+          "label": "time spent sitting each day"
+        },
+        {
+          "feature": "hypertension_diagnosed",
+          "label": "high blood pressure"
+        },
+        {
+          "feature": "general_health",
+          "label": "how you rate your health"
+        }
+      ],
+      "reason": null
+    }
+  },
+  {
+    "name": "prediction-unsupported-age",
+    "method": "POST",
+    "path": "/api/predict",
+    "request_schema": "prediction.request.schema.json",
+    "request": {
+      "age": 85,
+      "sex": "female",
+      "height_cm": 160,
+      "weight_kg": 60
+    },
+    "status": 200,
+    "response_schema": "prediction.schema.json",
+    "response_subset": {
+      "status": "unsupported",
+      "survival": [],
+      "curve": [],
+      "filled_in": [],
+      "reason": "The survey this forecast learns from does not record exact ages above 80, so we cannot make a forecast for you yet."
     }
   },
   {

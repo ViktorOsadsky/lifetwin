@@ -1,4 +1,4 @@
-"""Runnable LifeTwin backend; all prediction implementation remains deferred."""
+"""Runnable LifeTwin backend; compare and sensitivity remain deferred."""
 
 from contextlib import asynccontextmanager
 
@@ -21,6 +21,8 @@ from lifetwin.core.models import (
 )
 from lifetwin.onboarding import ChatCompletionsExtractor, ConversationService, OpenAIExtractor
 from lifetwin.onboarding import router as onboarding_router
+from lifetwin.prediction import load_model
+from lifetwin.prediction.models import PredictionResponse
 from lifetwin.quiz.router import router as quiz_router
 from lifetwin.quiz.service import load_bank
 from lifetwin.research.tavily import TavilyResearch
@@ -90,7 +92,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application = FastAPI(
         title="LifeTwin backend",
         version="0.1.0",
-        description="Mascot intake, educational plans and quiz content. Prediction is deferred.",
+        description=(
+            "Mascot intake, survival forecast, educational plans and quiz content. "
+            "Compare and sensitivity are deferred."
+        ),
         lifespan=lifespan,
         responses=COMMON_ERRORS,
     )
@@ -119,6 +124,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     application.state.voice_service = VoiceService(settings)
+    # Loaded once at startup; None when the artifact files are missing (route stays 501).
+    survival_model = load_model(settings.model_artifact_path)
+    application.state.survival_model = survival_model
+    prediction_state = "available" if survival_model else "not_implemented"
 
     @application.exception_handler(RequestValidationError)
     async def invalid_input(request: Request, exc: RequestValidationError):
@@ -162,7 +171,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @application.get("/ready", tags=["service"])
     async def ready():
-        return {"status": "ready", "prediction": "not_implemented", "voice": "deferred"}
+        return {"status": "ready", "prediction": prediction_state, "voice": "deferred"}
 
     @application.get("/api/capabilities", tags=["service"])
     async def capabilities():
@@ -173,21 +182,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "web_research_configured": bool(settings.tavily_api_key.get_secret_value().strip()),
             "advisor": "curated_educational",
             "quiz": "local_scoring_content",
-            "prediction": "not_implemented",
+            "prediction": prediction_state,
             "voice": "available" if voice_configured(settings) else "unavailable",
             "health_data_storage": "none",
         }
 
-    # Only route shells and input boundaries: no model, math or mock results.
     @application.post(
         "/api/predict",
-        response_model=DeferredFeature,
-        status_code=501,
-        tags=["deferred"],
-        responses=BODY_ERRORS,
+        response_model=PredictionResponse,
+        tags=["prediction"],
+        responses={
+            **BODY_ERRORS,
+            501: {"model": DeferredFeature, "description": "Model files are not installed"},
+        },
     )
-    async def predict(profile: HealthProfile):
-        return DeferredFeature()
+    def predict(profile: HealthProfile):
+        # Never log the profile. Unsupported profiles get a plain reason, not a number.
+        if survival_model is None:
+            return JSONResponse(status_code=501, content=DeferredFeature().model_dump())
+        return survival_model.predict(profile)
+
+    # Only route shells and input boundaries: no model, math or mock results.
 
     @application.post(
         "/api/compare",

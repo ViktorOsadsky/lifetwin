@@ -28,7 +28,8 @@ class Settings(BaseSettings):
     cartesia_voice_id: str = ""
     cartesia_tts_speed: float = Field(default=0.9, ge=0.6, le=1.5)
     cartesia_token_ttl_seconds: int = Field(default=300, ge=60, le=900)
-    # Reserved; never read or loaded by this backend.
+    # Folder holding model.keras, preprocessor.joblib, baseline_hazard.csv and metrics.json.
+    # Blank means the repository root. Missing files keep /api/predict deferred (501).
     model_artifact_path: str = ""
     provider_timeout_seconds: float = Field(
         default=12, gt=0, le=30, validation_alias="API_PROVIDER_TIMEOUT_SECONDS"
