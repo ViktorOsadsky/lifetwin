@@ -86,6 +86,7 @@ from lifetwin.onboarding.script import (
     HEALTH_STEP,
     HEALTH_WORDS,
     HOW_ARE_YOU,
+    LATER,
     MEMORY_ASK,
     MEMORY_NO,
     MEMORY_REPLIES,
@@ -105,7 +106,8 @@ from lifetwin.onboarding.script import (
     UNKNOWN_FIRST,
     pick,
 )
-from lifetwin.recommendations.service import LEAD as RECS_LEAD
+from lifetwin.personalize.providers import Personalizer
+from lifetwin.personalize.service import consented, phrase_question, phrase_recommendations
 from lifetwin.recommendations.service import suggest
 
 logger = logging.getLogger(__name__)
@@ -337,22 +339,18 @@ def _facts(values: dict, about: set[str] = frozenset()) -> list[str]:
                 ),
                 "systolic_bp": f"your top blood pressure number is {shown}",
                 "diastolic_bp": f"your bottom blood pressure number is {shown}",
-                "general_health": f"you'd call your health {shown}",
+                "general_health": f"your health is {shown}",
                 "hypertension": (
                     "a doctor has told you that you have high blood pressure"
                     if value
                     else "a doctor has not told you that you have high blood pressure"
                 ),
-                "sitting_minutes_daily": f"you sit for {shown} on a usual day",
+                "sitting_minutes_daily": f"you sit {shown} a day",
                 "moderate_minutes_weekly": (
-                    "you don't do any lighter activity"
-                    if value == 0
-                    else f"you do {shown} of lighter activity a week"
+                    "no lighter activity" if value == 0 else f"{shown} of lighter activity a week"
                 ),
                 "vigorous_minutes_weekly": (
-                    "you don't do any harder exercise"
-                    if value == 0
-                    else f"you do {shown} of harder exercise a week"
+                    "no harder exercise" if value == 0 else f"{shown} of harder exercise a week"
                 ),
             }[field]
         )
@@ -360,8 +358,11 @@ def _facts(values: dict, about: set[str] = frozenset()) -> list[str]:
 
 
 def heard(values: dict, about: set[str] = frozenset()) -> str:
-    """One "I heard ..." sentence per answer."""
-    return " ".join(f"I heard {fact}." for fact in _facts(values, about))
+    """One "I heard ..." sentence for everything being read back."""
+    facts = _facts(values, about)
+    if len(facts) > 1:
+        facts = [", ".join(facts[:-1]) + (", and " if len(facts) > 2 else " and ") + facts[-1]]
+    return " ".join(f"I heard {fact}." for fact in facts)
 
 
 def _lower_first(text: str) -> str:
@@ -382,8 +383,11 @@ class ConversationService:
         timeout_seconds: float = 6,
         clock: Callable[[], date] = date.today,
         seed: Callable[[], int] | None = None,
+        personalizer: Personalizer | None = None,
     ):
         self.extractor = extractor
+        # Outside-AI wording (opt-in per provider); never used to read or decide values.
+        self.personalizer = personalizer
         self.timeout = max(0.1, min(timeout_seconds, 10.0))
         # Birth dates are read against today; tests inject a fixed day.
         self.clock = clock
@@ -391,6 +395,47 @@ class ConversationService:
         self.seed = seed or (lambda: secrets.randbelow(2**31 - 1) + 1)
 
     async def turn(self, request: TurnRequest) -> TurnResponse:
+        response = await self._turn(request)
+        if consented(request.outside_ai_consent, self.personalizer) and not response.emergency:
+            response = await self._phrase(response)
+        return response
+
+    async def _phrase(self, response: TurnResponse) -> TurnResponse:
+        """With consent: the provider may phrase the next question or the suggestions."""
+        state, update = response.state, {}
+        if response.recommendations:
+            recs, used = await phrase_recommendations(
+                self.personalizer,
+                response.recommendations,
+                state.confirmed_profile.model_dump(),
+                state.habit_notes,
+            )
+            if used:
+                message = response.message.replace(
+                    response.recommendations[0].message, recs[0].message
+                )
+                update = {"recommendations": recs, "message": message}
+        elif state.phase == "asking" and state.current_field in BY_FIELD:
+            question = self._question(state, state.current_field, plain=True)
+            if response.message.endswith(question):
+                said = state.steer_lead if state.steer_field == state.current_field else None
+                line = await phrase_question(self.personalizer, question, said)
+                if line:
+                    update = {"message": response.message[: -len(question)] + line}
+        if not update:
+            return response
+        message = update.get("message", response.message)[:1500]
+        events = [event.model_copy(update={"caption": message}) for event in response.mascot_events]
+        return response.model_copy(
+            update={
+                **update,
+                "message": message,
+                "mascot_events": events,
+                "phrased_by": self.personalizer.name,
+            }
+        )
+
+    async def _turn(self, request: TurnRequest) -> TurnResponse:
         state = request.state.model_copy(deep=True)
         mode = "guided"
         configured = self.extractor is not None and self.extractor.configured
@@ -445,12 +490,13 @@ class ConversationService:
                 notes = state.habit_notes if state.memory_consent is not False else []
                 recommendations = _safe(suggest, state.confirmed_profile, notes) or []
                 if recommendations and message.endswith(DONE_LEAD):
-                    ideas = " ".join([RECS_LEAD, *(rec.message for rec in recommendations)])
+                    # One idea is spoken; all of them are on the next screen.
+                    more = " More ideas are on the next screen." if len(recommendations) > 1 else ""
                     message = (
                         message[: -len(DONE_LEAD)]
-                        + "All done, thank you! "
-                        + ideas
-                        + " Tap Continue to see your forecast."
+                        + "All done, thank you! One idea for you: "
+                        + recommendations[0].message
+                        + more
                     )
             return TurnResponse(
                 state=state,
@@ -618,7 +664,7 @@ class ConversationService:
                     message = note + self._reopen(state, field)
                     if intent.rest:
                         # "Change my age to 47": the new answer is read back as usual.
-                        answered = await self.turn(
+                        answered = await self._turn(
                             TurnRequest(
                                 action="reply",
                                 state=state,
@@ -712,9 +758,7 @@ class ConversationService:
                 else ""
             )
             return respond(
-                f"Thank you. I added your {named} from the Health app. "
-                + missing
-                + follow_up.strip()
+                f"Thanks! I added your {named} from Apple Health. " + missing + follow_up.strip()
             )
         if action == "skip":
             target = request.field or state.current_field
@@ -943,8 +987,15 @@ class ConversationService:
                 and self._small_talk(raw_text, target)
             ):
                 state.small_talk = True
-                lead = pick(SMALL_TALK, state.seed, "chat", len(self._settled(state)))
                 back = pick(STEER_BACK, state.seed, "back", len(self._settled(state)))
+                self._steer(state, raw_text, target, set())
+                if state.steer_lead and state.steer_field != target:
+                    # "I walk my dog every morning" said to the sitting question: kept for
+                    # the activity question, which comes next.
+                    later = pick(LATER, state.seed, "later", state.steer_field)
+                    question = ConversationService._question(state, target, plain=True)
+                    return respond(f"{state.steer_lead} {later} {back}{_lower_first(question)}")
+                lead = pick(SMALL_TALK, state.seed, "chat", len(self._settled(state)))
                 return respond(f"{lead} {back}{_lower_first(self._prompt(state))}")
             notice = ""
             if provider_status == "consent_required":
@@ -953,7 +1004,13 @@ class ConversationService:
                 notice = "The AI helper isn't available right now, but we can keep going. "
             hint = BOTH_BP_MESSAGE if lone_bottom else hint
             lead = hint or ("" if notice and provider_status == "consent_required" else NOT_CAUGHT)
-            ask = self._prompt(state) if state.phase == "confirming" else QUESTIONS[target]
+            ask = (
+                self._prompt(state)
+                if state.phase == "confirming"
+                else self._question(state, target, plain=True)
+                if target in BY_FIELD
+                else QUESTIONS[target]
+            )
             if hint and state.phase != "confirming":
                 ask = ""
             return respond(notice + (lead + " " if lead else "") + ask)

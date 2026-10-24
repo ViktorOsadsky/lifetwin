@@ -1457,6 +1457,16 @@
     "model_inputs": {
       "$ref": "#/$defs/ModelInputs"
     },
+    "phrased_by": {
+      "default": "templates",
+      "enum": [
+        "templates",
+        "muse",
+        "claude"
+      ],
+      "title": "Phrased By",
+      "type": "string"
+    },
     "provider_status": {
       "default": "not_configured",
       "enum": [
@@ -1537,6 +1547,7 @@
     "client_action",
     "model_inputs",
     "character_hints",
+    "phrased_by",
     "recommendations",
     "limitations"
   ],

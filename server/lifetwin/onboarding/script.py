@@ -57,7 +57,7 @@ SCRIPT: tuple[Question, ...] = (
         "smoking",
         (
             "Do you smoke now, did you smoke before, or have you never smoked?",
-            "Have you ever smoked? Do you smoke now, did you smoke before, or never?",
+            "Do you smoke now, did you used to, or have you never smoked?",
         ),
         'I\'m asking about smoking cigarettes. Say "never" if you never smoked, '
         '"I quit" if you smoked in the past, or "I smoke" if you smoke now.',
@@ -104,17 +104,14 @@ SCRIPT: tuple[Question, ...] = (
         "general_health",
         "health",
         (
-            "In general, would you say your health is excellent, very good, good, fair or poor?",
-            "How would you rate your health overall: excellent, very good, good, fair or poor?",
+            "How would you rate your health: excellent, very good, good, fair or poor?",
+            "Overall, is your health excellent, very good, good, fair or poor?",
         ),
         "I'm asking how you'd rate your own health in general. There's no right answer. "
         "Just pick one: excellent, very good, good, fair or poor.",
         '"good"',
         ("Excellent", "Very good", "Good", "Fair", "Poor", NOT_SURE),
-        proxy=(
-            "That's fine. Think about most days. Do you feel great, pretty good, okay, "
-            "not so good, or poorly?"
-        ),
+        proxy="That's fine. On most days, do you feel great, pretty good, okay, not so good, or poorly?",
         proxy_replies=("Great", "Pretty good", "Okay", "Not so good", "Poorly"),
     ),
     Question(
@@ -127,7 +124,7 @@ SCRIPT: tuple[Question, ...] = (
         "I'm asking whether a doctor has ever told you that you have high blood pressure, "
         "also called hypertension. A single reading doesn't count. Say yes, no, or "
         '"not sure".',
-        '"no"',
+        '"yes" or "no"',
         ("Yes", "No", NOT_SURE),
     ),
     Question(
@@ -146,18 +143,16 @@ SCRIPT: tuple[Question, ...] = (
         "sitting_minutes_daily",
         "sitting time",
         (
-            "On a usual day, about how many hours do you spend sitting? "
-            "TV, reading and driving all count.",
-            "About how many hours a day do you spend sitting down? "
-            "Meals, TV and driving all count.",
+            "About how many hours a day do you spend sitting? TV and driving count.",
+            "On a usual day, how many hours do you sit? TV and driving count.",
         ),
         "I'm asking how long you sit on a usual day while you're awake: at the table, "
         'in a chair, in the car. A rough guess is fine, like "6 hours".',
         '"6 hours"',
         ("2 hours", "4 hours", "6 hours", "8 hours", "10 hours", NOT_SURE),
         proxy=(
-            "That's okay. Do you spend most of the day sitting, about half, "
-            "or are you on your feet most of the day?"
+            "That's okay. Do you sit most of the day, about half, or are you on your feet "
+            "most of the day?"
         ),
         proxy_replies=("Mostly sitting", "About half", "On my feet most of the day"),
     ),
@@ -165,17 +160,16 @@ SCRIPT: tuple[Question, ...] = (
         "moderate_minutes_weekly",
         "lighter activity",
         (
-            "In a usual week, how many minutes do you spend on lighter activity, "
-            "like brisk walking, gardening or dancing?",
-            "How about lighter activity, like brisk walking, gardening or dancing? "
-            "About how many minutes in a usual week?",
+            "In a usual week, how many minutes of lighter activity do you do, like brisk "
+            "walking or gardening?",
+            "How many minutes a week of lighter activity, like brisk walking or gardening?",
         ),
         "I'm asking about activity that gets you a little out of breath, like a brisk "
         "walk, gardening or dancing. Add up a usual week. A 30-minute walk, 5 days a week, "
         'is 150 minutes. If you don\'t do any, say "none".',
         '"150 minutes a week"',
         ("None", "30 minutes a week", "1 hour a week", "2 hours a week", "5 hours a week"),
-        proxy="That's okay. Do you go for walks, do some gardening, or dance at all?",
+        proxy="That's okay. Do you walk, garden or dance at all?",
         proxy_replies=("Yes", "No"),
         example_value="150 minutes",
     ),
@@ -183,23 +177,19 @@ SCRIPT: tuple[Question, ...] = (
         "vigorous_minutes_weekly",
         "harder exercise",
         (
-            "And harder exercise, the kind that makes you breathe hard, like jogging, "
-            "fast cycling or tennis? About how many minutes a week?",
-            "Do you do any harder exercise that makes you breathe hard, like jogging or "
-            "tennis? About how many minutes a week?",
+            "And harder exercise that makes you breathe hard, like jogging or tennis? "
+            "How many minutes a week?",
+            "Any harder exercise, like jogging or tennis? How many minutes a week?",
         ),
         "I'm asking about exercise that makes you breathe hard and talk only in short "
         'bursts, like jogging, fast cycling or singles tennis. "None" is a fine answer.',
         '"none"',
         ("None", "30 minutes a week", "1 hour a week", "2 hours a week"),
-        proxy=(
-            "That's okay. Do you ever do anything that leaves you really out of breath, "
-            "like jogging or tennis?"
-        ),
+        proxy="That's okay. Do you ever do anything that leaves you out of breath?",
         proxy_replies=("Yes", "No"),
         with_health=(
-            "Your Health app has about {total} of exercise a week. How much of that is "
-            "harder exercise that makes you breathe hard, like jogging? None is a fine answer."
+            "Apple Health shows about {total} of activity a week. How much of it makes you "
+            "breathe hard, like jogging?"
         ),
     ),
     # Kept for corrections, Apple Health and check-ins; onboarding no longer asks them.
@@ -255,12 +245,9 @@ HEALTH_FIELDS: tuple[ProfileField, ...] = (
     "sleep_hours",
     "exercise_minutes_weekly",
 )
-HEALTH_OFFER = (
-    "I can fill in your height, weight, sleep and activity from the Apple Health app, "
-    "so you don't have to. Would you like that?"
-)
+HEALTH_OFFER = "Shall I fill in your height, weight, sleep and activity from Apple Health?"
 HEALTH_OFFER_REPLIES = ("Yes, use Apple Health", "No thanks")
-HEALTH_OPEN = "Lovely. Let's open Apple Health. Check each reading, then come back to me."
+HEALTH_OPEN = "Lovely. Check each reading in Apple Health, then come back to me."
 HEALTH_DECLINED = ("No problem, I'll just ask you.", "That's fine, we'll do it together.")
 
 # The default path: a few spoken questions, then Apple Health, then what is missing.
@@ -281,17 +268,14 @@ ORDER: tuple[str, ...] = (
 )
 ASKED: tuple[ProfileField, ...] = tuple(step for step in ORDER if step != HEALTH_STEP)
 
-GREETING = (
-    "Hi, I'm Mochi! Let's get to know each other. You can talk or type, and you can "
-    'skip anything or just say "I don\'t know". '
-)
+GREETING = "Hi, I'm Mochi! You can talk or type, skip anything, or say \"I don't know\". "
 MEMORY_ASK = (
-    "Can I remember the little things you tell me, like your walks with your dog? It helps "
-    "me give you better, more personal suggestions. You can change this any time."
+    "Can I remember the little things you tell me, like your walks? It helps me make better "
+    "suggestions. You can change this any time."
 )
 MEMORY_REPLIES = ("Yes, remember", "No thanks")
-MEMORY_YES = "Thank you! I'll keep them on your phone."
-MEMORY_NO = "That's fine. I'll just keep your answers."
+MEMORY_YES = "Thank you!"
+MEMORY_NO = "That's fine, just your answers then."
 MEMORY_WHY = (
     "If you tell me you walk your dog in the mornings, I can suggest something that fits "
     "your day. It stays on your phone, and you can change your mind any time. "
@@ -304,21 +288,21 @@ SUPPLEMENT_REPLY = (
 
 # -- Phrase banks -----------------------------------------------------------------
 
-ACKS = ("Got it.", "Thank you.", "Lovely, thanks.", "Okay, noted.", "Thanks for that.")
+ACKS = ("Got it.", "Thank you.", "Lovely.", "Okay.", "Thanks.")
 UNKNOWN_ACKS = (
-    "That's okay, we'll leave that one out.",
+    "That's okay, we'll leave it out.",
     "No problem, I'll leave that blank.",
-    "That's fine, we can do without it.",
+    "That's fine, we'll skip it.",
 )
 # Said with the first "I don't know" only.
-UNKNOWN_FIRST = " Your twin will just say it's still learning about that part."
+UNKNOWN_FIRST = " Your twin will say it's still learning."
 SMALL_TALK = ("That sounds nice.", "How lovely.", "I'm glad you told me.")
 STEER_BACK = ("Now, ", "So, ", "Back to you: ")
 HOW_ARE_YOU = "I'm doing well, thank you for asking!"
-PROBE_SKIPPED = ("Of course, let's move on.", "That's fine, let's keep going.")
-PROBE_THANKS = ("Thank you, that helps me get to know you.", "Thanks for telling me.")
+PROBE_SKIPPED = ("Of course.", "That's fine.")
+PROBE_THANKS = ("Thank you, that helps.", "Thanks for telling me.")
 # The first probe tells the person it is optional.
-PROBE_OPTIONAL = " Or we can just move on."
+PROBE_OPTIONAL = " Or we can move on."
 ESTIMATE_NOTE = " That's a rough estimate from what you said."
 BP_READING = "Thanks, {reading}. A single reading isn't the same as a diagnosis, so I'll just ask: "
 
@@ -394,6 +378,8 @@ STEERS: tuple[tuple[str, ProfileField], ...] = (
     (r"\b(?:knees?|hips?|arthritis|aches?|pains?|my health)\b", "general_health"),
 )
 STEER_LEADS = ("You mentioned {said}.", "You said {said}.")
+# Something for a later question, said to this one: thanked, kept for later.
+LATER = ("Lovely, we'll come to that in a moment.", "I'll remember that for in a moment.")
 # First person to second, for saying their words back.
 FLIP = {
     "i": "you",

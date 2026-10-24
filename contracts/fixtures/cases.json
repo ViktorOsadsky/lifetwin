@@ -1087,7 +1087,7 @@
     "status": 200,
     "response_schema": "conversation.schema.json",
     "response_subset": {
-      "message": "That's a good one to ask your pharmacist or doctor. Bring your bottles to your next visit so they can check them with your other medicines. In general, would you say your health is excellent, very good, good, fair or poor?",
+      "message": "That's a good one to ask your pharmacist or doctor. Bring your bottles to your next visit so they can check them with your other medicines. How would you rate your health: excellent, very good, good, fair or poor?",
       "state": {
         "phase": "asking",
         "current_field": "general_health"

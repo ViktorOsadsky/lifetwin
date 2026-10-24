@@ -313,6 +313,9 @@ class TurnResponse(ApiModel):
     # What the on-device model has so far, from confirmed answers only.
     model_inputs: ModelInputs
     character_hints: CharacterHints = Field(default_factory=CharacterHints)
+    # "templates": Mochi's own words. A provider name: that provider phrased this line
+    # (with the person's consent for it) and the line passed the safety check.
+    phrased_by: Literal["templates", "muse", "claude"] = "templates"
     # Filled on the turn that completes the intake (same as POST /api/recommendations).
     recommendations: list[Recommendation] = Field(default_factory=list, max_length=3)
     limitations: list[str] = Field(

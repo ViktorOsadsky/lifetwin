@@ -59,8 +59,8 @@ PROBES: tuple[Probe, ...] = (
         _smoking("current"),
         "quit_smoking",
         (
-            "Can I ask how long you've smoked, and whether you've ever tried to quit?",
-            "How long have you smoked, if you don't mind me asking? Have you ever tried to stop?",
+            "Can I ask how long you've smoked, and if you've ever tried to quit?",
+            "How long have you smoked? Have you ever tried to stop?",
         ),
     ),
     Probe(
@@ -70,8 +70,8 @@ PROBES: tuple[Probe, ...] = (
         lambda p: None if _activity(p) is None else _activity(p) > 0,
         "vigorous_plus_60",
         (
-            "What do you like to do to stay active, and do you do it with anyone?",
-            "What kind of activity is that, and do you go with anyone?",
+            "What do you like to do to stay active, and who with?",
+            "What keeps you moving, and do you go with anyone?",
         ),
     ),
     Probe(
@@ -82,7 +82,7 @@ PROBES: tuple[Probe, ...] = (
         "moderate_plus_90",
         (
             "Is anything making it hard to get moving these days?",
-            "Is there anything that gets in the way of moving more?",
+            "Does anything get in the way of moving more?",
         ),
     ),
     Probe(
@@ -92,8 +92,8 @@ PROBES: tuple[Probe, ...] = (
         lambda p: None if p.sleep_hours is None else p.sleep_hours < 7,
         "short_sleep_plus_1h",
         (
-            "What time do you usually go to bed, and does anything wake you in the night?",
-            "When do you usually turn in, and does anything wake you up?",
+            "When do you usually go to bed, and does anything wake you?",
+            "What time do you turn in, and does anything wake you up?",
         ),
     ),
     Probe(
@@ -104,18 +104,19 @@ PROBES: tuple[Probe, ...] = (
         "sitting_minus_60_realistic",
         (
             "What keeps you sitting most, like TV, reading or driving?",
-            "What do you mostly do while you're sitting? TV, reading, driving?",
+            "What do you mostly do sitting down? TV, reading, driving?",
         ),
     ),
     Probe(
         "health_feeling",
         "health",
         frozenset({"general_health"}),
-        lambda p: None if p.general_health is None else True,
+        # Only for a fair or poor rating: what is behind it helps the suggestions most.
+        lambda p: None if p.general_health is None else p.general_health in {"fair", "poor"},
         None,
         (
             "How do you feel about your health these days?",
-            "And how are you feeling about your health lately?",
+            "How are you feeling about your health lately?",
         ),
     ),
     Probe(
@@ -143,9 +144,12 @@ def choose(
 ) -> Probe | None:
     """The probe to ask now, if any.
 
-    ``answered`` holds every field already settled (a value, unknown or skipped).
-    A probe that can still come later competes for the remaining slots, so a sleep
-    question early on does not use up the slot an activity question would need.
+    A probe can be asked once one of its ``after`` answers is settled (``answered``
+    holds every field with a value, unknown or skipped), so one that lost out to a more
+    useful probe is asked at the next answer instead. Probes that can still come later
+    compete for the remaining slots: a sleep question early on does not use up the slot
+    an activity question would need. ``just_confirmed`` breaks ties toward the answer
+    just given.
     """
     if len(asked) >= MAX_PROBES:
         return None
@@ -157,18 +161,18 @@ def choose(
     now = [
         probe
         for probe in PROBES
-        if open_(probe) and probe.after & just_confirmed and probe.applies(profile) is True
+        if open_(probe) and probe.after & answered and probe.applies(profile) is True
     ]
     if not now:
         return None
-    best = min(now, key=_rank)
+    best = min(now, key=lambda probe: (_rank(probe), not probe.after & just_confirmed))
     later = [
         probe
         for probe in PROBES
         if open_(probe)
         and probe.applies(profile) is not False
+        and not (probe.after & set(ASKED) & answered)
         and probe not in now
-        and not (probe.after & set(ASKED)) <= answered
     ]
     ahead = [probe for probe in later if _rank(probe) < _rank(best)]
     return best if len(ahead) < MAX_PROBES - len(asked) else None

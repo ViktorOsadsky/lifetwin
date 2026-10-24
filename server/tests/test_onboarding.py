@@ -1094,7 +1094,7 @@ def test_import_adds_confirmed_values_and_moves_past_the_current_question(client
         "height_cm",
     }
     assert result["state"]["pending_profile"]["weight_kg"] is None
-    assert "I added your weight and sleep from the Health app." in result["message"]
+    assert "I added your weight and sleep from Apple Health." in result["message"]
     assert "68" not in result["message"]
 
 
