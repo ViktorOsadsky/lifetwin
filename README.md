@@ -4,6 +4,7 @@ LifeTwin is a pet-style health game: talk or type to a mascot, hear a magic-ball
 
 ## Start here
 
+- [Backend status and remaining work](docs/backend-status.md): current functionality, audit findings/fixes, verification and a prioritized backend-only backlog.
 - [Backend run guide](server/README.md): working endpoints, blank-key startup, limits, tests, and deliberately empty prediction routes.
 - [Shared API contracts](contracts/README.md): generated schemas, fixtures and offline/live checks for Flutter integration.
 - [Master implementation guide](MASTER_PLAN.md): current product decisions, sensitivity search, research/planning, experimental twin, contracts, and delivery gates.

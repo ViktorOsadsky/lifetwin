@@ -2,6 +2,8 @@
 
 This implements the **non-prediction** backend requested after the [master guide](../MASTER_PLAN.md). All credential values in [`.env.example`](../.env.example) remain blank. No API key is needed to start or test it. Death prediction, training, model loading, survival curves, comparison math and sensitivity scanning are intentionally unimplemented; their routes return HTTP 501 with null prediction/model fields, without mock health estimates.
 
+For the audited functionality inventory, verified refinements and specific remaining backend tasks, read [backend status and remaining work](../docs/backend-status.md).
+
 ## Run
 
 From the repository root, using Python 3.11 and [uv](https://docs.astral.sh/uv/):
@@ -59,7 +61,7 @@ No accounts, database, durable sessions, health-profile store, transcript store 
 
 The server bounds request bytes, request time, concurrency and per-IP request frequency. It cancels in-flight async work when a disconnected client is observed, redacts validation/provider exceptions, and returns request IDs plus no-store headers. Liveness/readiness probes bypass workload limits. Limits are **per process**, retain only bounded IP/timestamp buckets for rate limiting, and must be complemented by ingress limits for a public/multi-worker deployment. Proxy/IP trust must match the actual deployment; do not blindly trust forwarded headers.
 
-Access logs are disabled in the run commands/container. Keep ingress/provider logging consistent with this privacy goal. Configure exact browser origins through `CORS_ORIGINS`; native Flutter does not use browser CORS. No key belongs in the Flutter build or Git. Third-party provider retention/consent must be reviewed before using real health data.
+Access logs are disabled in the run commands/container. Keep ingress/provider logging consistent with this privacy goal. Configure exact browser origins through `CORS_ORIGINS`; invalid ports, controls, userinfo, paths, queries and fragments are rejected, and equivalent origins are canonicalized/deduplicated. No key belongs in the Flutter build or Git. Third-party provider retention/consent must be reviewed before using real health data.
 
 ## Verify
 
@@ -69,11 +71,12 @@ uv run ruff format --check server contracts
 uv run pytest -q
 uv run python contracts/export.py --check
 uv run python contracts/check.py
+uv run python contracts/check.py --in-process
 # With the server running:
 uv run python contracts/check.py --base-url http://127.0.0.1:8000
 ```
 
-Tests cover confirmation/corrections and ambiguity, keyless zero-network behavior, provider failure/grounding, citation/topic constraints, source retrieval budgets, quiz validation, request limits, cancellation, redacted errors and empty prediction routes. The live checker replays six schema-backed API fixtures; no medical model or live provider success is claimed.
+Tests cover confirmation/corrections and ambiguity, keyless zero-network behavior, provider failure/grounding (including deeply nested JSON), citation/topic constraints, source retrieval budgets, quiz validation, request limits, cancellation, redacted errors, OpenAPI error consistency, CORS configuration and empty prediction routes. The replay checker checks 11 actual responses against schemas and semantic assertions. CI tests Python 3.11/3.12/3.13 and builds/smoke-tests the Python 3.11 runtime container; inspect the PR checks for observed results. No medical model or live provider success is claimed.
 
 ## Container and next handoff
 

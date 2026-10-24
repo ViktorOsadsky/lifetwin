@@ -39,6 +39,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version="0.1.0",
         description="Mascot intake, educational plans and quiz content. Prediction is deferred.",
         lifespan=lifespan,
+        responses={
+            status: {"model": ApiError, "description": description}
+            for status, description in {
+                400: "Malformed request",
+                404: "Resource not found",
+                405: "Method not allowed",
+                409: "Invalid conversation transition",
+                413: "Request body too large",
+                422: "Invalid request fields or values",
+                429: "Request or concurrency limit reached",
+                500: "Redacted internal error",
+                504: "Request deadline exceeded",
+            }.items()
+        },
     )
     application.state.settings = settings
     application.state.conversation_service = ConversationService(
@@ -77,6 +91,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 pass
         return JSONResponse(
             status_code=exc.status_code,
+            headers=exc.headers,
             content=ApiError(
                 code=code,
                 message=message,

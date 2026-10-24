@@ -4,7 +4,11 @@
     "method": "POST",
     "path": "/api/predict",
     "request_schema": "prediction.request.schema.json",
-    "request": {"age": 35, "height_cm": 175, "weight_kg": 70},
+    "request": {
+      "age": 35,
+      "height_cm": 175,
+      "weight_kg": 70
+    },
     "status": 501,
     "response_schema": "prediction.schema.json",
     "response": {
@@ -21,7 +25,15 @@
     "method": "POST",
     "path": "/api/compare",
     "request_schema": "compare.request.schema.json",
-    "request": {"baseline": {"age": 35}, "scenario": {"age": 35, "sleep_hours": 8}},
+    "request": {
+      "baseline": {
+        "age": 35
+      },
+      "scenario": {
+        "age": 35,
+        "sleep_hours": 8
+      }
+    },
     "status": 501,
     "response_schema": "compare.schema.json"
   },
@@ -30,7 +42,12 @@
     "method": "POST",
     "path": "/api/sensitivity",
     "request_schema": "sensitivity.request.schema.json",
-    "request": {"profile": {"age": 35, "weight_kg": 70}},
+    "request": {
+      "profile": {
+        "age": 35,
+        "weight_kg": 70
+      }
+    },
     "status": 501,
     "response_schema": "sensitivity.schema.json"
   },
@@ -39,24 +56,130 @@
     "method": "POST",
     "path": "/api/onboarding/turn",
     "request_schema": "conversation.request.schema.json",
-    "request": {"action": "start"},
+    "request": {
+      "action": "start"
+    },
     "status": 200,
-    "response_schema": "conversation.schema.json"
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "guide_mode": "guided",
+      "provider_status": "not_configured",
+      "voice_status": "deferred",
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "age",
+        "pending_profile": {
+          "age": null
+        }
+      }
+    }
   },
   {
     "name": "keyless-advisor",
     "method": "POST",
     "path": "/api/advisor",
     "request_schema": "advisor.request.schema.json",
-    "request": {"topics": ["sleep"], "use_web_research": false},
+    "request": {
+      "topics": [
+        "sleep"
+      ],
+      "use_web_research": false
+    },
     "status": 200,
-    "response_schema": "advisor.schema.json"
+    "response_schema": "advisor.schema.json",
+    "response_subset": {
+      "mode": "curated_educational",
+      "status": "educational",
+      "research": {
+        "status": "not_requested"
+      }
+    }
   },
   {
     "name": "quiz-bank",
     "method": "GET",
     "path": "/api/quiz/questions",
     "status": 200,
-    "response_schema": "quiz.schema.json"
+    "response_schema": "quiz.schema.json",
+    "response_subset": {
+      "total": 8,
+      "local_scoring": {
+        "state_scope": "game_health_only",
+        "affects_confirmed_profile": false,
+        "affects_prediction": false
+      }
+    }
+  },
+  {
+    "name": "invalid-conversation-transition",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "confirm"
+    },
+    "status": 409,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_conversation_transition"
+    }
+  },
+  {
+    "name": "invalid-conversation-input",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "invalid_request": true,
+    "request": {
+      "action": "reply",
+      "text": " "
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "advisor-rejects-client-prognosis",
+    "method": "POST",
+    "path": "/api/advisor",
+    "invalid_request": true,
+    "request": {
+      "topics": [
+        "sleep"
+      ],
+      "prediction": {}
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "invalid-quiz-limit",
+    "method": "GET",
+    "path": "/api/quiz/questions?limit=0",
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "missing-quiz-version",
+    "method": "GET",
+    "path": "/api/quiz/questions/missing-question.v1",
+    "status": 404,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "quiz_question_not_found"
+    }
   }
 ]

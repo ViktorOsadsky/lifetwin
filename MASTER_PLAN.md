@@ -98,7 +98,7 @@ B owns the `/api/advisor` route and orchestration boundary; D owns its research 
 
 ## Contract Zero and future extensions
 
-The first non-prediction contract PR has landed. See [contracts/README.md](contracts/README.md) for the 13 generated request/response schemas, six fixtures, exporter and checker. The model-dependent response schemas intentionally contain only a deferred status/null fields. The list below remains the full product's target boundary; population/horizon/model results, numerical fixtures and the old `stub_server.py` are not implemented under the user's current deferral. Use the real keyless server run guide instead of commands for a nonexistent stub.
+The first non-prediction contract PR has landed. See [contracts/README.md](contracts/README.md) for the 13 generated request/response schemas, 11 replay cases, exporter and checker. The model-dependent response schemas intentionally contain only a deferred status/null fields. The list below remains the full product's target boundary; population/horizon/model results, numerical fixtures and the old `stub_server.py` are not implemented under the user's current deferral. Use the real keyless server run guide instead of commands for a nonexistent stub. The [backend audit/status report](docs/backend-status.md) distinguishes implemented functionality from remaining backend work; frontend and ML implementation are excluded from that audit.
 
 - `contracts/profile.schema.json`: versioned profile fields, metric units, missingness, supported categories, and validation.
 - `contracts/prediction.schema.json`: prediction request/response, model metadata, supported/unsupported results, and real/stub mode.

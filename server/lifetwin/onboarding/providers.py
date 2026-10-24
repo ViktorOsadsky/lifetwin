@@ -5,6 +5,7 @@ same conservative local parser validates those spans before user confirmation.
 Responses API reference: https://developers.openai.com/api/docs/guides/structured-outputs
 """
 
+import json
 from typing import Protocol
 
 import httpx
@@ -73,7 +74,7 @@ class OpenAIExtractor:
                 }
             },
         }
-        client = self._client or httpx.AsyncClient(follow_redirects=False)
+        client = self._client or httpx.AsyncClient(follow_redirects=False, trust_env=False)
         try:
             async with client.stream(
                 "POST",
@@ -85,10 +86,9 @@ class OpenAIExtractor:
                 response.raise_for_status()
                 body = bytearray()
                 async for chunk in response.aiter_bytes():
-                    body.extend(chunk)
-                    if len(body) > 65536:
+                    if len(body) + len(chunk) > 65536:
                         raise ExtractionUnavailable()
-            import json
+                    body.extend(chunk)
 
             result = json.loads(body)
             if not isinstance(result, dict) or result.get("status") != "completed":
@@ -107,7 +107,7 @@ class OpenAIExtractor:
             if len(output_text) != 1:
                 raise ExtractionUnavailable()
             return ExtractionResult.model_validate_json(output_text[0])
-        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+        except (httpx.HTTPError, ValueError, KeyError, TypeError, RecursionError) as exc:
             raise ExtractionUnavailable() from exc
         finally:
             if self._client is None:

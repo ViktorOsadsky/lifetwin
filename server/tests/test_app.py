@@ -4,6 +4,7 @@ import json
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
 from lifetwin.app import create_app
@@ -231,6 +232,65 @@ def test_cors_uses_only_explicit_origins():
             },
         )
         assert "access-control-allow-origin" not in blocked.headers
+
+
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "https://example.org:bad",
+        "https://example.org:99999",
+        "http://example.org:0",
+        "https://exa\tmple.org",
+        "https://example.org\n",
+        "https://example.org/#",
+        "https://example.org?",
+        "https://user:password@example.org",
+        "https://@example.org",
+        "https://:@example.org",
+        "https://example.org/path",
+    ],
+)
+def test_cors_rejects_invalid_ports_and_non_origin_components(origin):
+    with pytest.raises(ValidationError):
+        config(cors_origins=origin)
+
+
+def test_cors_canonicalizes_case_ports_idn_and_duplicates():
+    settings = config(
+        cors_origins=" https://EXAMPLE.org:443/,https://example.org,http://[::1]:8000,https://bücher.example "
+    )
+    assert settings.allowed_origins == [
+        "https://example.org",
+        "http://[::1]:8000",
+        "https://xn--bcher-kva.example",
+    ]
+    with TestClient(create_app(settings)) as client:
+        response = client.options(
+            "/api/onboarding/turn",
+            headers={
+                "Origin": "https://example.org",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        assert response.headers["access-control-allow-origin"] == "https://example.org"
+
+
+def test_openapi_error_contract_matches_actual_redacted_bodies(client):
+    spec = client.get("/openapi.json").json()
+    operation = spec["paths"]["/api/onboarding/turn"]["post"]
+    for payload, status in [({"action": "reply", "text": " "}, 422), ({"action": "confirm"}, 409)]:
+        response = client.post("/api/onboarding/turn", json=payload)
+        assert response.status_code == status
+        schema = operation["responses"][str(status)]["content"]["application/json"]["schema"]
+        assert schema["$ref"] == "#/components/schemas/ApiError"
+        Draft202012Validator({**schema, "components": spec["components"]}).validate(response.json())
+
+
+def test_http_error_handler_preserves_protocol_headers(client):
+    response = client.get("/api/onboarding/turn")
+    assert response.status_code == 405
+    assert response.headers["allow"] == "POST"
+    assert response.json()["status"] == "error"
 
 
 @pytest.mark.asyncio
