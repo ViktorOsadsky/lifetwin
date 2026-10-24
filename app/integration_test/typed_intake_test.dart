@@ -54,6 +54,7 @@ Future<void> say(WidgetTester t, String answer, String expect) async {
 /// Opens the app, chooses typing, and waits for the first question.
 Future<void> startTyped(WidgetTester t, {bool aiHelper = false}) async {
   await t.pumpWidget(const LifeTwinApp());
+  await tapText(t, 'Talk with Pip');
   await tapText(t, "No, I'll type");
   await tapText(t, aiHelper ? 'Yes, turn it on' : 'Not now');
   await waitFor(t, find.textContaining('How old are you?'));
@@ -169,6 +170,7 @@ void main() {
   testWidgets('a whole typed intake with indirect answers', (t) async {
     final started = DateTime.now();
     await t.pumpWidget(const LifeTwinApp());
+    await tapText(t, 'Talk with Pip');
     await tapText(t, "No, I'll type");
     await tapText(t, 'Not now');
     await waitFor(t, find.textContaining('How old are you?'));

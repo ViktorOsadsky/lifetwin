@@ -6,6 +6,7 @@ import 'health/health_screen.dart';
 import 'health/health_summary.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'onboarding/voice_onboarding_screen.dart';
+import 'room/room_screen.dart';
 import 'theme/lifetwin_theme.dart';
 import 'voice/cartesia_speech.dart';
 import 'voice/http_conversation_guide.dart';
@@ -13,8 +14,9 @@ import 'voice/voice_token.dart';
 
 void main() => runApp(const LifeTwinApp());
 
-/// Temporary host until Track C's game shell lands: the mascot conversation is the
-/// start screen, with a button to the Apple Health import.
+/// Temporary host until Track C's game shell lands: the Room is the start screen; its
+/// buttons lead to the mascot conversation (which can open the Apple Health import) and
+/// the forecast. The confirmed profile is kept in memory for this session only.
 class LifeTwinApp extends StatefulWidget {
   const LifeTwinApp({super.key, this.controller, this.forecastClient});
 
@@ -33,6 +35,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   late final ApiBase _api = ApiBase()..url().ignore();
   late final VoiceOnboardingController _controller = widget.controller ?? _live(_api);
   late final ForecastClient _forecast = widget.forecastClient ?? HttpForecastClient(base: _api);
+
+  Map<String, dynamic>? _profile;
 
   static VoiceOnboardingController _live(ApiBase api) {
     final tokens = VoiceTokenProvider(base: api);
@@ -56,32 +60,57 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       debugShowCheckedModeBanner: false,
       theme: lifeTwinTheme(),
       home: Builder(
-        builder: (context) => VoiceOnboardingScreen(
+        builder: (context) => RoomScreen(
+          hasProfile: _profile != null,
+          onTalk: () => _talk(context),
+          onForecast: () => _showForecast(context, replaceStack: false),
+        ),
+      ),
+    );
+  }
+
+  void _talk(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (talkContext) => VoiceOnboardingScreen(
           controller: _controller,
-          onUseHealth: () => Navigator.of(context).push(
+          onUseHealth: () => Navigator.of(talkContext).push(
             MaterialPageRoute<void>(
               builder: (_) => HealthImportScreen(
                 onDone: (result) {
-                  Navigator.of(context).pop();
+                  Navigator.of(talkContext).pop();
                   // Each value was already checked on the Health screen ("Is this accurate?").
                   _controller.importHealth({for (final c in result.confirmed) c.field.profileKey: c.value});
                 },
               ),
             ),
           ),
-          onDone: (profile) => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => ForecastScreen(
-                client: _forecast,
-                profile: profile,
-                // The mascot speaks only if the person chose voice and it still works.
-                speech: _controller.voiceUsable && !_controller.typing ? _controller.output : null,
-                onBack: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ),
+          onDone: (profile) {
+            setState(() => _profile = profile);
+            _showForecast(talkContext, replaceStack: true);
+          },
         ),
       ),
     );
+  }
+
+  /// From the intake's Continue ([replaceStack]) the conversation is dropped, so the
+  /// forecast's Back lands on the Room; from the Room it is simply pushed.
+  void _showForecast(BuildContext context, {required bool replaceStack}) {
+    final route = MaterialPageRoute<void>(
+      builder: (forecastContext) => ForecastScreen(
+        client: _forecast,
+        profile: _profile!,
+        // The mascot speaks only if the person chose voice and it still works.
+        speech: _controller.voiceUsable && !_controller.typing ? _controller.output : null,
+        onBack: () => Navigator.of(forecastContext).pop(),
+      ),
+    );
+    final nav = Navigator.of(context);
+    if (replaceStack) {
+      nav.pushAndRemoveUntil(route, (r) => r.isFirst);
+    } else {
+      nav.push(route);
+    }
   }
 }

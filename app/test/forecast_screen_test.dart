@@ -286,6 +286,8 @@ void main() {
       output: FakeSpeechOutput(),
     );
     await t.pumpWidget(LifeTwinApp(controller: c, forecastClient: forecast));
+    await t.tap(find.text('Talk with Pip'));
+    await t.pumpAndSettle();
     await t.tap(find.text("No, I'll type"));
     await t.pumpAndSettle();
     await t.ensureVisible(find.text('Not now'));
@@ -304,6 +306,8 @@ void main() {
     await t.scrollUntilVisible(find.text('Go back to my answers'), 200, scrollable: find.byType(Scrollable).first);
     await t.tap(find.text('Go back to my answers'));
     await t.pumpAndSettle();
-    expect(find.text('Continue'), findsOneWidget);
+    // Back from the forecast lands on the Room, which now greets a returning person.
+    expect(find.text('Your room'), findsOneWidget);
+    expect(find.text('Welcome back.'), findsOneWidget);
   });
 }
