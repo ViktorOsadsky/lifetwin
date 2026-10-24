@@ -574,8 +574,15 @@ KIN = (
     r"father|dad|brother|sister|twin|grandma|grandpa|granny|grandmother|grandfather|"
     r"boyfriend|girlfriend)"
 )
+# "Her blood pressure is 120 over 70", "his weight's 180": someone else's own value,
+# said with a possessive and no relative named.
+THEIR_VALUE = (
+    r"\b(?:her|his|their)\s+(?:latest |last |new |top |bottom |usual )?(?:blood pressure|"
+    r"pressure|bp|reading|numbers?|weight|height|sleep|age|sugar|diabetes|drinking|smoking|"
+    r"exercise|health)\b"
+)
 OTHER_PERSON = re.compile(
-    rf"\b(?:my|our|his|her|their|your)\s+{PEOPLE}(?:'s)?\b"
+    rf"{THEIR_VALUE}|\b(?:my|our|his|her|their|your)\s+{PEOPLE}(?:'s)?\b"
     r"|\bthe (?:wife|husband|missus|missis|mrs|old man|old lady|other half|better half|kids)\b"
     rf"|\b{KIN}(?:'s\b|\s+(?:is|was|has|had|does|did|weighs|sleeps|drinks|smokes|walks|says|"
     r"said|turned|turns|gets)\b)|\b(?:he|she|he's|she's|hers|him)\b"
@@ -2721,6 +2728,34 @@ def competing(text: str, field: ProfileField) -> bool:
     return any(re.search(r"\d", _canonical(p)) for p in theirs) and len(numbered) > 1
 
 
+CLINICIAN = (
+    r"\b(?:doctors?|docs?|nurses?|physicians?|gp|cardiologist|pharmacist|clinic|surgery|"
+    r"hospital|practitioner|specialist)\b"
+)
+# "She wrote down 148 over 92" (the doctor), "he weighed me at 163": a clinician reporting
+# the person's own measurement. "She weighs 140" stays someone else's.
+CLINICIAN_REPORT = re.compile(
+    r"\b(?:she|he)\s+(?:(?:just|also)\s+)?(?:said|says|wrote|writes|told me|measured|took|"
+    r"put|recorded|read|weighed|checked|got|noted)"
+    r"(?:\s+(?:it|that|me|my \w+(?: \w+)?|it down|down|it all down))*"
+    r"(?:\s+(?:at|as|was|is|it was|it's|that|i'm|i am|i was|me at))*\b",
+    re.I,
+)
+MEASURED = {"weight_kg", "height_cm", "systolic_bp", "diastolic_bp"}
+
+
+def _clinician_report(text: str, field: str) -> str:
+    """The reporting words go when a clinician is named or the person is the object."""
+    if field not in MEASURED:
+        return text
+    report = CLINICIAN_REPORT.search(text)
+    if not report:
+        return text
+    if not (re.search(CLINICIAN, text, re.I) or re.search(r"\b(?:me|my)\b", report.group(0), re.I)):
+        return text
+    return " ".join(CLINICIAN_REPORT.sub(" ", text).split()) or text
+
+
 def parse_reply(
     text: str,
     field: ProfileField,
@@ -2735,7 +2770,7 @@ def parse_reply(
     the age question); clauses only about someone else are left out. ``strict``
     (a voice transcript) also refuses when someone else's number competes.
     """
-    text = normalize_text(text)
+    text = _clinician_report(normalize_text(text), field)
     if LONG_NUMBER.search(text) or (strict and competing(text, field)):
         return {}
     # "I'm 70. My wife, 72": sentences about someone else are left out, and what is

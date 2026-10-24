@@ -1228,3 +1228,27 @@ def test_checkin_supplement_question_gets_the_fixed_reply():
     result = say(at("weekly", "weight_kg"), "should I take fish oil?")
     assert result.message.startswith(SUPPLEMENT_REPLY)
     assert result.state.current_field == "weight_kg"
+
+
+@pytest.mark.parametrize(
+    "text", ["I don't understand", "say that again", "let's talk about my sleep", "go back"]
+)
+def test_controls_during_the_follow_up_never_crash(text):
+    state = at("daily", "exercise_minutes_today", memory_consent=True)
+    asked = say(say(state, "a 20 minute walk").state, "yes")
+    assert asked.state.phase == "probing"
+    result = say(asked.state, text)
+    CheckinState.model_validate(result.state.model_dump())
+    assert result.message
+
+
+def test_restart_keeps_memory_consent():
+    state = at("daily", "wellbeing", memory_consent=True)
+    result = say(state, "yes, start over")
+    assert result.message.startswith("Okay, let's start over.")
+    assert result.state.memory_consent is True
+
+
+def test_someone_elses_weight_given_possessively_is_refused():
+    result = say(at("weekly", "weight_kg"), "her weight is 150 pounds")
+    assert pending(result) == {}

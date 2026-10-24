@@ -23,6 +23,7 @@ from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding import ConversationService, get_service, router
 from lifetwin.onboarding.habits import read_notes
 from lifetwin.onboarding.model_inputs import character_hints, model_inputs
+from lifetwin.onboarding.models import ConversationState as ConversationStateModel
 from lifetwin.onboarding.models import HabitNote
 from lifetwin.onboarding.probes import MAX_PROBES
 from lifetwin.onboarding.script import (
@@ -798,3 +799,109 @@ def test_muse_adapter_sends_json_and_logs_only_the_error_type(caplog):
     with caplog.at_level(logging.WARNING), pytest.raises(PhrasingUnavailable):
         asyncio.run(muse.phrase("rules", {"said": "my secret walk"}))
     assert "secret" not in caplog.text and "HTTPStatusError" in caplog.text
+
+
+# -- regressions from the independent review and the shared-parser fix ---------------------
+
+
+@pytest.mark.parametrize(
+    ("state", "text"),
+    [
+        (asking("sex"), "I have chest pain. Female."),
+        (
+            {"phase": "confirming", "current_field": "age", "pending_profile": {"age": 72}},
+            "Yes. My chest hurts.",
+        ),
+        (asking("age", small_talk=True), "I can't breathe"),
+    ],
+)
+def test_an_emergency_in_its_own_sentence_still_pauses(state, text):
+    result = reply(state, text)
+    assert result["emergency"] is True
+    sent = ConversationStateModel.model_validate(state).model_dump(mode="json")
+    assert result["state"] == sent
+
+
+def test_leaving_a_probe_by_jump_or_correction_returns_a_valid_state():
+    probing = {
+        "phase": "probing",
+        "current_probe": "activity",
+        "probes_asked": ["activity"],
+        "confirmed_profile": {"age": 72, "weight_kg": 70},
+    }
+    jumped = reply(probing, "can we talk about my age")
+    assert jumped["state"]["phase"] == "asking" and jumped["state"]["current_probe"] is None
+    response = client_for().post(
+        "/api/onboarding/turn",
+        json={"action": "correct", "state": probing, "field": "weight_kg", "text": "150 pounds"},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["state"]["current_probe"] is None
+
+
+@pytest.mark.parametrize(
+    ("field", "text"),
+    [
+        ("sitting_minutes_daily", "my wife sits all day"),
+        ("general_health", "my husband is in poor health"),
+        ("general_health", "I'm not fine"),
+        ("general_health", "I'm okay but my wife is poorly"),
+        ("sitting_minutes_daily", "I don't sit much, maybe half"),
+    ],
+)
+def test_simpler_question_keeps_the_safety_rules(field, text):
+    result = reply(asking(field, proxy_field=field), text)
+    assert result["state"]["pending_profile"][field] is None
+
+
+def test_someone_elses_reading_is_not_kept():
+    result = reply(
+        asking("hypertension", memory_consent=True), "my wife's blood pressure is 150 over 95"
+    )
+    assert all(not note["reading"] for note in result["state"]["habit_notes"])
+    result = reply(asking("hypertension", memory_consent=True), "her blood pressure is 120 over 70")
+    assert all(not note["reading"] for note in result["state"]["habit_notes"])
+
+
+def test_a_bare_yes_never_means_150_minutes():
+    result = reply(asking("moderate_minutes_weekly"), "yes")
+    assert result["state"]["pending_profile"]["moderate_minutes_weekly"] is None
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "You could aim to drop a few pounds.",
+        "Try to shed some weight by spring.",
+        "A little creatine could help your walks.",
+        "Try two more walks each week.",
+        "Start next week with an extra walk.",
+    ],
+)
+def test_safety_check_blocks_weight_dates_supplements_and_new_numbers(line):
+    assert not safe_line(line, json.dumps({"draft": "Adding one more walk a week."}))
+
+
+def test_safety_check_allows_numbers_and_words_from_the_facts():
+    facts = json.dumps({"draft": "Adding one more walk of about 30 minutes a week."})
+    assert safe_line("With your dog, one more 30 minute walk each week is lovely.", facts)
+
+
+@pytest.mark.parametrize(
+    ("field", "text"),
+    [
+        ("weight_kg", "his weight is 180"),
+        ("height_cm", "her height is 5 foot 4"),
+        ("weight_kg", "their weight is 150 pounds"),
+    ],
+)
+def test_possessive_values_belong_to_someone_else(field, text):
+    result = reply(asking(field), text, client_for())
+    assert result["state"]["pending_profile"][field] is None
+
+
+def test_a_clinicians_report_is_the_persons_own():
+    result = reply(asking("weight_kg"), "the nurse said I'm 150 pounds")
+    assert result["state"]["pending_profile"]["weight_kg"] == pytest.approx(68.0389)
+    result = reply(asking("weight_kg"), "he weighed me at 163 pounds")
+    assert result["state"]["pending_profile"]["weight_kg"] == pytest.approx(73.9356)
