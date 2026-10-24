@@ -29,6 +29,7 @@ from lifetwin.onboarding.parsing import (
     UNITS_WORDS,
     VAGUE,
     YES_WORDS,
+    _base,
     _canonical,
     _others,
     _topic,
@@ -847,6 +848,14 @@ _ANSWER_WORDS: dict[str, str] = {
         r"none|zero|never|nothing|teetotal\w*|sober|don't|do not)\b"
     ),
     "exercise_minutes_weekly": r"\b(?:none|nothing|zero|never|don't|do not)\b",
+    # Check-in questions about one day: a plain yes or no answers them.
+    "exercise_minutes_today": (
+        r"\b(?:no|nope|nah|yes|yeah|yep|didn't|did not|haven't|none|nothing|not today)\b"
+    ),
+    "alcohol_drinks_yesterday": (
+        r"\b(?:drinks?|beers?|wines?|glass(?:es)? of|whiske?y|none|zero|nothing|no|nope|"
+        r"didn't|did not)\b"
+    ),
 }
 _READ_BACK_WORDS = r"\b(?:yes|yeah|yep|yup|no|nope|nah|right|correct|wrong)\b"
 # "per day 2 glasses of wine a week": a rate cut off from speech before the number.
@@ -854,15 +863,17 @@ _DANGLING_RATE = r"^(?:per|a|each|every) (?:day|week|night|month)\s+(?=\S*\d)"
 _RATE = r"\b(?:a|per|each|every) (?:day|week|night|month)\b"
 
 
-def _on_topic(piece: str, field: ProfileField, confirming: bool) -> bool:
+def _on_topic(piece: str, field: ProfileField, confirming: bool, checkin: bool = False) -> bool:
     """A number, the question's topic, or a word that answers it."""
     canonical = _canonical(piece)
     if re.search(r"\d", canonical) or is_skip(piece, field):
         return True
+    if checkin and same_as_before(piece):
+        return True
     cues = (
         TOPICS.get(_topic(field), NOTHING),
-        FIELD_CUES[field],
-        _ANSWER_WORDS.get(field, NOTHING),
+        FIELD_CUES.get(field, NOTHING),
+        _ANSWER_WORDS.get(field) or _ANSWER_WORDS.get(_base(field), NOTHING),
     )
     if any(re.search(cue, canonical) for cue in cues):
         return True
@@ -905,7 +916,12 @@ def words_of(text: str) -> str:
 
 
 def focus(
-    text: str, field: ProfileField, *, transcript: bool = False, confirming: bool = False
+    text: str,
+    field: ProfileField,
+    *,
+    transcript: bool = False,
+    confirming: bool = False,
+    checkin: bool = False,
 ) -> str:
     """Leave out room chatter around an answer.
 
@@ -916,7 +932,7 @@ def focus(
     """
 
     def keep(piece: str) -> bool:
-        return _on_topic(piece, field, confirming) or _changes_meaning(piece)
+        return _on_topic(piece, field, confirming, checkin) or _changes_meaning(piece)
 
     # Each sentence keeps its own end, so "yes?" stays a question.
     parts = re.split(f"({SENTENCE_END})", text)
@@ -958,5 +974,50 @@ def asks_back(text: str, field: ProfileField, *, transcript: bool = False) -> bo
         "?" in text
         or bool(TAGGED_QUESTION.search(words))
         or bool(re.search(TOPICS.get(_topic(field), NOTHING), _canonical(text)))
-        or bool(re.search(rf"\b(?:{FIELD_NAMES[field]})\b", words))
+        or bool(re.search(rf"\b(?:{FIELD_NAMES.get(_base(field), NOTHING)})\b", words))
     )
+
+
+# ---------------------------------------------------------------------------
+# Check-ins: "same as last week"
+# ---------------------------------------------------------------------------
+
+SAME = re.compile(
+    r"(?:(?:about|much|pretty much|just about|roughly|more or less|basically|exactly|still|"
+    r"very much|pretty|all)\s+)*(?:the )?same(?:(?: as| like) (?:usual|always|ever|before|normal|"
+    r"last (?:time|week|night|check ?in|one)|the last (?:time|week|one)|yesterday|i said|"
+    r"i told you|then))?(?: as (?:usual|always|ever))?"
+    r"|same old(?: same old)?|(?:as|like) (?:usual|always|before|normal|last (?:week|time))"
+    r"|the usual|no changes?|nothing(?:'s| has)? changed"
+    r"|(?:hasn't|has not|didn't|did not|haven't|have not) changed?|unchanged|no different"
+)
+# Words that may stand around "the same": who or what is the same, and plain fillers.
+SAME_AROUND = set(
+    """oh yes yeah yep yup well i'd i would say think it's its it is was has been were are my the
+    this that that's week night time really honestly pretty much so just about mochi dear thanks
+    thank you here too as again sleep sleeping slept weight weigh weighed exercise exercising
+    exercised walking walked walks drinks drinking drank drink smoking smoke blood pressure
+    reading numbers feel feeling felt i'm am did do had have got all around roughly basically
+    still stayed staying stays for me everything things amount one usual always before last
+    hon honey love""".split()
+)
+
+
+# Number words other than "one" ("same as last one") mean a value was said.
+SAME_NUMBERS = "|".join(word for word in (*UNITS_WORDS, *TENS_WORDS) if word != "one")
+
+
+def same_as_before(text: str) -> bool:
+    """ "Same as last week", "about the same", "no change": the last answer still holds.
+
+    Only the words around it may be fillers or the topic: "not the same", "the same
+    but a bit less" or any number is not a plain "same".
+    """
+    words = phrase(text)
+    if re.search(rf"\d|\b(?:{SAME_NUMBERS})\b", words):
+        return False
+    match = SAME.search(words)
+    if not match:
+        return False
+    rest = (words[: match.start()] + " " + words[match.end() :]).split()
+    return all(word in SAME_AROUND for word in rest)
