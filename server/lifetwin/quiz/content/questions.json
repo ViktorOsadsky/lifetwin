@@ -1,0 +1,391 @@
+{
+  "schema_version": "1.0",
+  "bank_version": "1.0",
+  "total": 8,
+  "questions": [
+    {
+      "schema_version": "1.0",
+      "id": "soup-serving-check.v1",
+      "topic": "nutrition",
+      "difficulty": "challenging",
+      "scenario": "You want less sodium in one cup of soup. A has 300 mg per half-cup; B has 450 mg per cup. Which has less sodium for your one-cup portion?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A: 300 mg"
+        },
+        {
+          "id": "b",
+          "text": "B: 450 mg"
+        },
+        {
+          "id": "c",
+          "text": "They are equal"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Compare the amount you actually eat: one cup of A contains 600 mg, versus 450 mg in B. Label values depend on serving size.",
+      "sources": [
+        {
+          "title": "Sodium in Your Diet",
+          "publisher": "FDA",
+          "url": "https://www.fda.gov/food/nutrition-education-resources-materials/sodium-your-diet",
+          "accessed_on": "2026-10-23"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-23",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Your twin looks a little tired. Review the explanation to restore game health."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Your twin perks up! Game health recovers."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Learning helps your twin recover. Game health is restored."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "sodium-label-decoder.v1",
+      "topic": "nutrition",
+      "difficulty": "moderate",
+      "scenario": "Two crackers have the same serving size. A has 4% Daily Value for sodium; B has 22%. Using FDA label guidance, which statement is accurate?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Both are low in sodium"
+        },
+        {
+          "id": "b",
+          "text": "A is low; B is high"
+        },
+        {
+          "id": "c",
+          "text": "Percent Daily Value cannot compare foods"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "FDA treats 5% Daily Value or less per serving as low and 20% or more as high. This compares sodium, not every aspect of the foods.",
+      "sources": [
+        {
+          "title": "Sodium in Your Diet",
+          "publisher": "FDA",
+          "url": "https://www.fda.gov/food/nutrition-education-resources-materials/sodium-your-diet",
+          "accessed_on": "2026-10-23"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-23",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Your twin looks a little tired. Review the explanation to restore game health."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Your twin perks up! Game health recovers."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Learning helps your twin recover. Game health is restored."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "yogurt-sugar-accounting.v1",
+      "topic": "nutrition",
+      "difficulty": "challenging",
+      "scenario": "A yogurt label says Total Sugars 12 g, including 5 g Added Sugars. How much total sugar is in one serving?",
+      "options": [
+        {
+          "id": "a",
+          "text": "5 g"
+        },
+        {
+          "id": "b",
+          "text": "12 g"
+        },
+        {
+          "id": "c",
+          "text": "17 g"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Added sugars are part of total sugars, so do not add them again. The total is 12 g; 5 g of that is added sugar.",
+      "sources": [
+        {
+          "title": "How to Understand and Use the Nutrition Facts Label",
+          "publisher": "FDA",
+          "url": "https://www.fda.gov/food/nutrition-facts-label/how-understand-and-use-nutrition-facts-label",
+          "accessed_on": "2026-10-23"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-23",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Your twin looks a little tired. Review the explanation to restore game health."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Your twin perks up! Game health recovers."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Learning helps your twin recover. Game health is restored."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "serving-size-meaning.v1",
+      "topic": "nutrition",
+      "difficulty": "moderate",
+      "scenario": "A cereal label lists a serving of three-quarters of a cup. Does that tell every person how much cereal they should eat?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Yes, it is a personalized recommendation"
+        },
+        {
+          "id": "b",
+          "text": "No, it describes the label quantity and typical consumption"
+        },
+        {
+          "id": "c",
+          "text": "Yes, eating more always causes illness"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Label serving sizes describe amounts people typically consume, not a personal eating prescription. Use the amount you eat when reading nutrient values.",
+      "sources": [
+        {
+          "title": "How to Understand and Use the Nutrition Facts Label",
+          "publisher": "FDA",
+          "url": "https://www.fda.gov/food/nutrition-facts-label/how-understand-and-use-nutrition-facts-label",
+          "accessed_on": "2026-10-23"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-23",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Your twin looks a little tired. Review the explanation to restore game health."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Your twin perks up! Game health recovers."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Learning helps your twin recover. Game health is restored."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "small-activity-windows.v1",
+      "topic": "activity",
+      "difficulty": "moderate",
+      "scenario": "A generally healthy adult has only short windows for comfortable brisk walks this week. Which approach fits CDC activity guidance?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wait until a continuous 30-minute session is possible"
+        },
+        {
+          "id": "b",
+          "text": "Use the short walks and build up gradually"
+        },
+        {
+          "id": "c",
+          "text": "Activity only counts in a gym"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Activity can be split into smaller chunks. Some activity is better than none; the weekly target is not a pass-or-fail threshold.",
+      "sources": [
+        {
+          "title": "Adult Activity: An Overview",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+          "accessed_on": "2026-10-23"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-23",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Your twin looks a little tired. Review the explanation to restore game health."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Your twin perks up! Game health recovers."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Learning helps your twin recover. Game health is restored."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "activity-missing-piece.v1",
+      "topic": "activity",
+      "difficulty": "challenging",
+      "scenario": "A generally healthy adult walks briskly for 150 minutes a week. Which missing element would match CDC adult activity guidance?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Muscle-strengthening work for all major muscle groups on at least two days"
+        },
+        {
+          "id": "b",
+          "text": "Replace every walk with sitting"
+        },
+        {
+          "id": "c",
+          "text": "No other type of activity is recommended"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Adult guidance combines aerobic activity with muscle strengthening on two or more days. These are general guidelines; adapt activities to your abilities.",
+      "sources": [
+        {
+          "title": "Adult Activity: An Overview",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+          "accessed_on": "2026-10-23"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-23",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Your twin looks a little tired. Review the explanation to restore game health."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Your twin perks up! Game health recovers."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Learning helps your twin recover. Game health is restored."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "chicken-salad-prep.v1",
+      "topic": "food_safety",
+      "difficulty": "challenging",
+      "scenario": "You are preparing raw chicken and a ready-to-eat salad. Which is the safer method?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Rinse the chicken over the salad bowl"
+        },
+        {
+          "id": "b",
+          "text": "Use separate boards, keep raw juices away, and check chicken reaches 165 degrees F with a thermometer"
+        },
+        {
+          "id": "c",
+          "text": "Reuse the raw-chicken board without washing"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Raw chicken can spread germs to salad. CDC recommends separation and a thermometer check at 165 degrees F (about 74 degrees C); washing raw chicken is unnecessary.",
+      "sources": [
+        {
+          "title": "Chicken and Food Poisoning",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/food-safety/foods/chicken.html",
+          "accessed_on": "2026-10-23"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-23",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Your twin looks a little tired. Review the explanation to restore game health."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Your twin perks up! Game health recovers."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Learning helps your twin recover. Game health is restored."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "leftovers-next-step.v1",
+      "topic": "food_safety",
+      "difficulty": "moderate",
+      "scenario": "Restaurant leftovers were refrigerated promptly and have stayed cold for five days. What matches CDC guidance?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Taste them to decide"
+        },
+        {
+          "id": "b",
+          "text": "Keep them for another week"
+        },
+        {
+          "id": "c",
+          "text": "Discard them"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "CDC recommends eating refrigerated restaurant leftovers within three to four days and discarding them after that. A five-day-old portion is beyond that window.",
+      "sources": [
+        {
+          "title": "Food Safety Tips for Dining Out",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/restaurant-food-safety/communication-resources/tips-for-dining-out.html",
+          "accessed_on": "2026-10-23"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-23",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Your twin looks a little tired. Review the explanation to restore game health."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Your twin perks up! Game health recovers."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Learning helps your twin recover. Game health is restored."
+      }
+    }
+  ]
+}

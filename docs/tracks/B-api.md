@@ -2,7 +2,7 @@
 
 **Owner:** _TBD_ · **Master doc:** §7 backend, §8, §9, §12 phase 5 (deploy, responsiveness)
 
-Read [MASTER_PLAN.md](../../MASTER_PLAN.md) for expanded requirements and [tech-stack.md](../tech-stack.md) for prospective defaults. Contracts/server/scripts below are planned until implemented. B owns the route boundaries; D implements the conversation guide, research and planning logic.
+Read [MASTER_PLAN.md](../../MASTER_PLAN.md) for expanded requirements, [tech-stack.md](../tech-stack.md) for defaults and [the backend run guide](../../server/README.md) for implemented non-prediction routes/contracts. The user explicitly deferred the model, prediction, comparison math and scanning; the model delivery goals below are future work. B owns route boundaries; D owns the conversation guide, research and planning logic.
 
 ## Build
 

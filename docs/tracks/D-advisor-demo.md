@@ -2,7 +2,7 @@
 
 **Owner:** _TBD_ · **Master doc:** §5, §15, §16, §12 phases 4–5
 
-Read [MASTER_PLAN.md](../../MASTER_PLAN.md) for current game/conversation requirements and [tech-stack.md](../tech-stack.md) for proposed LLM/research choices. Contracts/checkers described below are planned until implementation PRs land.
+Read [MASTER_PLAN.md](../../MASTER_PLAN.md) for current requirements, [tech-stack.md](../tech-stack.md) for choices and [the backend run guide](../../server/README.md) for implemented intake, curated educational plans, research adapter and quiz delivery. Contracts/checkers now exist. Voice, real provider access and the model-dependent goals below remain future work; keys are blank and prediction is explicitly deferred.
 
 ## Mascot guide, fortune and quiz
 

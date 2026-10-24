@@ -1,0 +1,9 @@
+# Quiz provenance and review
+
+The runtime bank lives at `lifetwin/quiz/content/questions.json` so it ships with the Python package. It contains eight authored educational questions, reviewed against the linked CDC/FDA pages on October 23, 2026. `reviewed` means a repository content review against those pages, not external clinical certification. No question is generated or scored by an LLM at runtime. Each question includes the exact source title, publisher, canonical URL, access date, content review date and versioned ID.
+
+The arithmetic food labels are hypothetical teaching examples, not product recommendations. Activity scenarios explicitly concern generally healthy adults; they do not prescribe exercise for a medical condition. Explanations summarize only the relevant linked guidance. Content or answer changes require incrementing the question ID version and bank version, a fresh source review, and quiz tests. Citation structure is validated locally; URL reachability and source freshness require editorial review and are never checked using a user's health data.
+
+The bank includes correct answers intentionally for local/offline Flutter scoring. It is not suitable for a competitive quiz that needs hidden answers. The client must maintain a set of submitted question-version IDs and apply an answer effect only once, disable duplicate answer taps, clamp game health to 0–100, and never score request failure. After a wrong answer, reviewing its explanation restores the full five-point penalty once. Retrying that reviewed question is unscored. Correct answers to new questions also recover five points, capped at 100. Static text carries sick/recovery feedback in reduced-motion mode.
+
+The backend delivers metadata only: there are no quiz sessions, answer writes, health-profile edits, model calls, or predictions. The client owns its independent game-health state; presentation events do not claim a change in the player's real health.

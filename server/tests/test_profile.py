@@ -1,6 +1,7 @@
 import pytest
-from lifetwin.core.models import DeferredFeature, HealthProfile
 from pydantic import ValidationError
+
+from lifetwin.core.models import DeferredFeature, HealthProfile
 
 
 def test_profile_is_only_raw_partial_input():
