@@ -18,6 +18,8 @@ from lifetwin.checkin.models import (
     CheckinStartRequest,
     CheckinState,
     CheckinTurnRequest,
+    QuickPlan,
+    daily_logs,
     profile_update,
 )
 from lifetwin.checkin.scripts import (
@@ -30,13 +32,18 @@ from lifetwin.checkin.scripts import (
     HELP,
     HOW_ARE_YOU,
     NO_PREVIOUS,
+    PACES,
+    PAIRS,
     PRIVATE_NOTE,
     QUESTIONS,
     SAME_LEAD,
+    SITTING_PROXIES,
     WEEKLY,
     WHY_NOTES,
     CheckinField,
+    quick_script,
 )
+from lifetwin.checkin.understanding import read_activity, read_sitting
 from lifetwin.core.models import CheckinValues
 from lifetwin.onboarding.intents import (
     EMERGENCY_MESSAGE,
@@ -112,6 +119,12 @@ EXAMPLES: dict[str, str] = {
     "smoking_status": '"no, I don\'t smoke"',
     "weight_kg": '"160 pounds"',
     "systolic_bp": '"120 over 80"',
+    "sleep_hours_night_before": '"7 hours"',
+    "vigorous_recreation_min": '"20 minutes out of breath", or "none"',
+    "moderate_recreation_min": '"30 minutes", or "none"',
+    "sedentary_min_day": '"about 6 hours"',
+    "vigorous_recreation_min_week": '"an hour", or "none"',
+    "moderate_recreation_min_week": '"2 hours", or "none"',
 }
 LABELS: dict[str, str] = {
     "sleep_hours_last_night": "sleep",
@@ -125,7 +138,14 @@ LABELS: dict[str, str] = {
     "weight_kg": "weight",
     "systolic_bp": "blood pressure",
     "diastolic_bp": "blood pressure",
+    "sleep_hours_night_before": "sleep",
+    "vigorous_recreation_min": "activity",
+    "moderate_recreation_min": "activity",
+    "sedentary_min_day": "sitting",
+    "vigorous_recreation_min_week": "activity",
+    "moderate_recreation_min_week": "activity",
 }
+OVER_A_DAY = "That adds up to more than a whole day. Could you check it for me?"
 FEELING = {"good": "good", "okay": "okay", "not_great": "not great"}
 LAST_FEELING = {"good": "good", "okay": "okay", "not_great": "not so great"}
 
@@ -149,10 +169,19 @@ def _pounds(kg: float) -> str:
     return f"{round(kg / 0.45359237)} pounds"
 
 
+def _duration(minutes: float) -> str:
+    """Minutes as Mochi says them: "20 minutes", "an hour", "1.5 hours"."""
+    if minutes >= 60 and minutes % 30 == 0:
+        return "an hour" if minutes == 60 else _many(minutes / 60, "hour")
+    return _many(minutes, "minute")
+
+
 def _last(field: str, value, kind: str) -> str:
     """The previous answer as Mochi says it in a question ("7 hours", "130 over 80")."""
-    if field in {"sleep_hours", "sleep_hours_last_night"}:
+    if field in {"sleep_hours", "sleep_hours_last_night", "sleep_hours_night_before"}:
         return _many(value, "hour")
+    if field in PACES or field == "sedentary_min_day":
+        return _duration(value)
     if field in {"exercise_minutes_today", "exercise_minutes_weekly"}:
         return _many(value, "minute")
     if field in {"alcohol_drinks_yesterday", "alcohol_drinks_weekly"}:
@@ -193,6 +222,25 @@ AMOUNTS: dict[str, tuple[str, str, str]] = {
         "drink",
     ),
 }
+# Quick and weekly activity and sitting: (when none, otherwise); "{day}" is the day.
+SPANS: dict[str, tuple[str, str]] = {
+    "vigorous_recreation_min": (
+        "nothing got you out of breath {day}",
+        "you did {} of activity that got you out of breath {day}",
+    ),
+    "moderate_recreation_min": (
+        "you did no easy activity {day}",
+        "you did {} of easy activity {day}",
+    ),
+    "vigorous_recreation_min_week": (
+        "nothing got you out of breath this week",
+        "you did {} of activity that got you out of breath this week",
+    ),
+    "moderate_recreation_min_week": (
+        "you did no easy activity this week",
+        "you did {} of easy activity this week",
+    ),
+}
 SMOKING = {
     "current": "you smoke now",
     "former": "you don't smoke now, but you used to",
@@ -201,12 +249,28 @@ SMOKING = {
 }
 
 
-def _facts(values: dict, kind: str, about: bool = False) -> list[str]:
+def _facts(values: dict, kind: str, about: bool = False, day: str | None = None) -> list[str]:
     """One clause per answer, in the check-in's own time frame."""
     approx = "about " if about else ""
     parts = []
     for field, value in values.items():
         if field == "diastolic_bp":
+            continue
+        if field in SPANS:
+            none, said = SPANS[field]
+            text = none if value == 0 else said.format(approx + _duration(value), day="{day}")
+            parts.append(text.format(day=day or "today"))
+            continue
+        if field == "sedentary_min_day":
+            when = "on a usual day this week" if kind == "weekly" else day or "today"
+            parts.append(f"you sat for {approx}{_duration(value)} {when}")
+            continue
+        if field == "sleep_hours_night_before":
+            parts.append(
+                "you didn't sleep at all the night before"
+                if value == 0
+                else f"you slept {approx}{_many(value, 'hour')} the night before"
+            )
             continue
         if field == "systolic_bp":
             parts.append(f"your blood pressure was {approx}{value} over {values['diastolic_bp']}")
@@ -224,8 +288,29 @@ def _facts(values: dict, kind: str, about: bool = False) -> list[str]:
     return parts
 
 
-def heard(values: dict, kind: str, about: bool = False) -> str:
-    return " ".join(f"I heard {fact}." for fact in _facts(values, kind, about))
+def heard(values: dict, kind: str, about: bool = False, day: str | None = None) -> str:
+    facts = _facts(values, kind, about, day)
+    if len(facts) == 2 and all(field in SPANS for field in values):
+        # One activity answer, both paces: the day is said once.
+        when = " this week" if kind == "weekly" else f" {day or 'today'}"
+        return f"I heard {facts[0].removesuffix(when)}, and {facts[1]}."
+    return " ".join(f"I heard {fact}." for fact in facts)
+
+
+def _day(state: CheckinState) -> str | None:
+    return state.activity_day
+
+
+def _fresh(state: CheckinState, **changes) -> CheckinState:
+    """A new state for the same check-in (cancel, start over): same script and day."""
+    return CheckinState(
+        kind=state.kind,
+        questions=state.questions,
+        previous=state.previous,
+        local_date=state.local_date,
+        activity_day=state.activity_day,
+        **changes,
+    )
 
 
 class CheckinService:
@@ -242,16 +327,38 @@ class CheckinService:
                 day = date.fromisoformat(request.local_date)
             except ValueError:
                 self._invalid("Please send the phone's date as 2026-10-24.")
-        if request.kind == "weekly":
+        quick = {}
+        if request.kind == "quick":
+            plan = request.quick or QuickPlan()
+            questions = quick_script(list(plan.topics), plan.catch_up)
+            hints = plan.suggested
+            quick = {
+                "local_date": day.isoformat(),
+                "activity_day": plan.activity_day,
+                "suggested": {
+                    name: value
+                    for name, value in (
+                        ("sleep_hours_last_night", hints.sleep_hours_last_night),
+                        ("sleep_hours_night_before", hints.sleep_hours_night_before),
+                    )
+                    if value is not None
+                },
+                "suggested_activity_min": hints.activity_minutes,
+            }
+        elif request.kind == "weekly":
             questions = WEEKLY
         else:
             questions = DAILY_WITH_HABIT if day.weekday() in HABIT_DAYS else DAILY
-        state = CheckinState(
-            kind=request.kind,
-            questions=list(questions),
-            current_field=questions[0],
-            previous=request.previous,
+        state = CheckinState.model_validate(
+            {
+                "kind": request.kind,
+                "questions": list(questions),
+                "current_field": questions[0],
+                "previous": request.previous,
+                **quick,
+            }
         )
+        self._offer(state)
         return self._respond(state, GREETINGS[request.kind] + " " + self._prompt(state))
 
     # -- turns -------------------------------------------------------------------
@@ -270,12 +377,7 @@ class CheckinService:
             return self._respond(state, EMERGENCY_MESSAGE, urgent=True)
 
         if action == "cancel":
-            state = CheckinState(
-                kind=state.kind,
-                phase="cancelled",
-                questions=state.questions,
-                previous=state.previous,
-            )
+            state = _fresh(state, phase="cancelled")
             return respond("We can stop here. Nothing was saved. We can check in another time.")
         if state.phase == "cancelled":
             self._invalid("Please start the check-in again.")
@@ -332,12 +434,7 @@ class CheckinService:
                         + self._prompt(state)
                     )
                 if kind == "restart_confirmed":
-                    state = CheckinState(
-                        kind=state.kind,
-                        questions=state.questions,
-                        current_field=state.questions[0],
-                        previous=state.previous,
-                    )
+                    state = _fresh(state, current_field=state.questions[0])
                     return respond(
                         "Okay, let's start over. I cleared today's answers. " + self._prompt(state)
                     )
@@ -398,6 +495,10 @@ class CheckinService:
                 action = "confirm"
             elif said == "unsure":
                 return respond(UNSURE_LEAD + self._prompt(state))
+            elif said == "no" and state.from_health:
+                # Apple Health had it wrong: ask the question itself.
+                state.pending, state.phase, state.from_health = CheckinValues(), "asking", False
+                return respond(NO_LEAD + self._question(state))
             elif said == "no":
                 if list(pending) == BOTH_BP:
                     return respond(NO_LEAD + BOTH_BP_MESSAGE)
@@ -413,10 +514,14 @@ class CheckinService:
             merged = state.confirmed.model_dump() | additions
             state.confirmed = CheckinValues.model_validate(merged)
             state.pending = CheckinValues()
+            state.from_health = False
             state.skipped_fields = [f for f in state.skipped_fields if f not in additions]
             self._advance(state)
             return respond("Got it. " + self._prompt(state))
         if action == "skip":
+            if state.phase == "confirming" and state.from_health:
+                # Skip during Apple Health's read-back: nothing of it is kept.
+                state.pending, state.phase, state.from_health = CheckinValues(), "asking", False
             if state.phase == "confirming":
                 self._invalid(CONFIRM_FIRST)
             if state.phase == "ready":
@@ -449,18 +554,24 @@ class CheckinService:
         if merged.get("systolic_bp") and merged.get("diastolic_bp"):
             if merged["systolic_bp"] <= merged["diastolic_bp"]:
                 return respond(BP_ORDER + " " + self._question(state))
+        if self._over_a_day(state, merged):
+            return respond(OVER_A_DAY + " " + self._question(state))
         state.pending = CheckinValues.model_validate(values)
         state.phase = "confirming"
+        state.from_health = False
+        state.held_minutes = None
         lead = SAME_LEAD if same else ""
         about = not same and bool(_safe(approximate, text))
-        return respond(asked_back + lead + heard(values, state.kind, about) + " Is that right?")
+        return respond(
+            asked_back + lead + heard(values, state.kind, about, _day(state)) + " Is that right?"
+        )
 
     # -- reading an answer -------------------------------------------------------
 
     def _read(self, state: CheckinState, text: str, voice: bool):
         """(values, follow-up, same as before) for a reply to the current question."""
         field = state.current_field
-        names = BOTH_BP if field == "systolic_bp" else [field]
+        names = self._asked(state)
         previous = {
             name: getattr(state.previous, name)
             for name in names
@@ -471,6 +582,15 @@ class CheckinService:
                 return {}, NO_PREVIOUS + self._question(state, plain=True), False
             return previous, None, True
         today = self.clock()
+        if field in PACES:
+            return self._read_activity(state, text, today)
+        if field == "sedentary_min_day":
+            values, hint = read_sitting(
+                text, week=state.kind == "weekly", day=state.activity_day or "today"
+            )
+            if hint and hint.endswith(" "):
+                hint += self._question(state)
+            return values, hint, False
         period = "week" if state.kind == "weekly" else None
         if field == "smoking_status":
             status = checkin_smoking(text, state.previous.smoking_status)
@@ -487,7 +607,91 @@ class CheckinService:
         )
         return {}, hint, False
 
+    def _read_activity(self, state: CheckinState, text: str, today: date):
+        field = state.current_field
+        names = self._asked(state)
+        week = state.kind == "weekly"
+        read = read_activity(
+            text,
+            open_paces=[PACES[name] for name in names],
+            week=week,
+            day=state.activity_day or "today",
+            held=state.held_minutes,
+            today=today,
+        )
+        held = (
+            read.held if read.held is not None else (state.held_minutes if read.keep_held else None)
+        )
+        if held is None:
+            state.from_health = False
+        state.held_minutes = held
+        if read.focus:
+            pace = read.focus
+            target = next(name for name in self._pair(state) if PACES[name] == pace)
+            state.current_field, state.one_pace = target, True
+        hint = read.hint
+        if hint and hint.endswith(" "):
+            hint += self._question(state)
+        if not read.values and hint is None and week:
+            # The weekly question's own follow-ups: "how often?", "a number, please".
+            hint = checkin_clarify(text, "exercise_minutes_weekly", period="week")
+        if read.values and field not in read.values and not set(read.values) & set(names):
+            return {}, None, False
+        return read.values, hint, False
+
     # -- helpers -----------------------------------------------------------------
+
+    def _pair(self, state: CheckinState) -> list[str]:
+        """The activity question's two fields in this check-in."""
+        if state.kind == "weekly":
+            return ["vigorous_recreation_min_week", "moderate_recreation_min_week"]
+        return ["vigorous_recreation_min", "moderate_recreation_min"]
+
+    def _asked(self, state: CheckinState) -> list[str]:
+        """The fields the open question asks for: both blood pressure numbers, both
+        activity paces on the first activity question, otherwise just the one."""
+        field = state.current_field
+        if field == "systolic_bp":
+            return BOTH_BP
+        pending = list(state.pending.model_dump(exclude_none=True))
+        if state.phase == "confirming" and pending and set(pending) <= set(PACES):
+            return pending  # a correction replaces what was read back
+        second = PAIRS.get(field)
+        if second and field in PACES and not state.one_pace and state.held_minutes is None:
+            if not self._saved(state, second) and second not in state.skipped_fields:
+                return [field, second]
+        return [field]
+
+    @staticmethod
+    def _over_a_day(state: CheckinState, values: dict) -> bool:
+        """Sleep, sitting and activity on one day can't add up to more than 24 hours."""
+        if state.kind != "quick":
+            return False
+        moving = sum(
+            values.get(name) or 0
+            for name in ("vigorous_recreation_min", "moderate_recreation_min", "sedentary_min_day")
+        )
+        same_day = state.activity_day == "today"
+        sleep = values.get("sleep_hours_last_night" if same_day else "sleep_hours_night_before")
+        return moving + (sleep or 0) * 60 > 1440
+
+    @staticmethod
+    def _offer(state: CheckinState) -> None:
+        """Apple Health's value for the question that comes up, read back once."""
+        field = state.current_field
+        if state.phase != "asking" or field is None:
+            return
+        value = getattr(state.suggested, field, None)
+        if value is not None:
+            state.pending = CheckinValues.model_validate({field: value})
+            state.suggested = CheckinValues.model_validate(
+                state.suggested.model_dump(exclude_none=True) | {field: None}
+            )
+            state.phase, state.from_health = "confirming", True
+        elif field == "vigorous_recreation_min" and state.suggested_activity_min is not None:
+            if not CheckinService._saved(state, "moderate_recreation_min"):
+                state.held_minutes, state.from_health = state.suggested_activity_min, True
+            state.suggested_activity_min = None
 
     def _respond(
         self, state: CheckinState, message: str, hint: str | None = None, urgent: bool = False
@@ -506,28 +710,68 @@ class CheckinService:
             speech_hint=hint,
             emergency=urgent,
             profile_update=profile_update(state),
+            daily_logs=daily_logs(state),
         )
 
-    @staticmethod
-    def _question(state: CheckinState, plain: bool = False) -> str:
+    def _question(self, state: CheckinState, plain: bool = False) -> str:
         field = state.current_field
         forms = QUESTIONS[state.kind][field]
+        day = state.activity_day or "today"
+        if field in PACES:
+            return self._activity_question(state, forms, plain).format(value="", day=day)
+        if field == "sedentary_min_day" and state.kind == "quick":
+            rotation = date.fromisoformat(state.local_date).toordinal() % len(SITTING_PROXIES)
+            forms = {**forms, "ask": SITTING_PROXIES[rotation]}
         names = BOTH_BP if field == "systolic_bp" else [field]
         values = [getattr(state.previous, name) for name in names]
         if plain or any(value is None for value in values):
-            return forms["ask"]
+            return forms["ask"].format(day=day)
         value = values[0]
         if field == "smoking_status":
             return forms.get(f"again_{value}", forms["ask"])
         if value == 0 and "again_none" in forms:
             return forms["again_none"]
         shown = f"{values[0]} over {values[1]}" if field == "systolic_bp" else None
-        return forms["again"].format(value=shown or _last(field, value, state.kind))
+        return forms["again"].format(value=shown or _last(field, value, state.kind), day=day)
+
+    def _activity_question(self, state: CheckinState, forms: dict, plain: bool) -> str:
+        held = state.held_minutes
+        if held is not None:
+            if state.from_health and "health" in forms:
+                return forms["health"].replace("{value}", _duration(held))
+            return (
+                "Did that get you out of breath, like brisk walking uphill, "
+                "or was it at an easy pace?"
+            )
+        names = self._asked(state)
+        if len(names) == 1:
+            if state.one_pace:
+                return "About how long was it, in minutes or hours?"
+            return forms["follow"]
+        last = [getattr(state.previous, name) for name in names]
+        if plain or any(value is None for value in last) or "again" not in forms:
+            return forms["ask"]
+        hard, easy = last
+        said = (
+            (
+                "nothing that got you out of breath"
+                if hard == 0
+                else f"{_duration(hard)} that got you out of breath"
+            )
+            + " and "
+            + ("no easy activity" if easy == 0 else f"{_duration(easy)} of easy activity")
+        )
+        return forms["again"].replace("{value}", said)
 
     def _prompt(self, state: CheckinState) -> str:
         if state.phase == "confirming":
             pending = state.pending.model_dump(exclude_none=True)
-            return heard(pending, state.kind) + " Is that right?"
+            if state.from_health:
+                field = next(iter(pending))
+                return QUESTIONS[state.kind][field]["health"].format(
+                    value=_many(pending[field], "hour")
+                )
+            return heard(pending, state.kind, day=_day(state)) + " Is that right?"
         if state.phase == "ready":
             return self._closing(state)
         return self._question(state)
@@ -542,7 +786,7 @@ class CheckinService:
             pending = state.pending.model_dump(exclude_none=True)
             return (
                 "I'm checking that I heard you right before I save anything. "
-                + heard(pending, state.kind)
+                + heard(pending, state.kind, day=_day(state))
                 + ' If that\'s right, say "yes". If not, say "no" and then the right answer.'
             )
         if state.phase == "ready":
@@ -597,7 +841,7 @@ class CheckinService:
         if saved:
             return (
                 f"Okay, let's go back to your {label}. Right now I have that "
-                f"{_facts(saved, state.kind)[0]}. "
+                f"{_facts(saved, state.kind, day=_day(state))[0]}. "
                 + self._question(state, plain=True)
                 + ' If that was right, say "keep it".'
             )
@@ -607,9 +851,9 @@ class CheckinService:
             )
         return f"Okay, let's do your {label}. " + self._question(state)
 
-    @staticmethod
-    def _skip(state: CheckinState, field: str) -> None:
-        names = BOTH_BP if field == "systolic_bp" else [field]
+    def _skip(self, state: CheckinState, field: str) -> None:
+        names = self._asked(state) if field == state.current_field else [field]
+        state.held_minutes, state.from_health = None, False
         for name in names:
             if name not in state.skipped_fields and getattr(state.confirmed, name) is None:
                 state.skipped_fields.append(name)
@@ -625,6 +869,8 @@ class CheckinService:
             None,
         )
         state.phase = "asking" if state.current_field else "ready"
+        state.one_pace, state.held_minutes, state.from_health = False, None, False
+        CheckinService._offer(state)
 
     @staticmethod
     def _invalid(message: str):

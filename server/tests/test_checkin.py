@@ -22,6 +22,7 @@ from lifetwin.checkin.models import (
     CheckinStartRequest,
     CheckinState,
     CheckinTurnRequest,
+    ProfileUpdate,
 )
 from lifetwin.checkin.scripts import (
     CLOSINGS,
@@ -37,6 +38,7 @@ from lifetwin.checkin.scripts import (
     SCRIPTS,
     WEEKLY,
     WHY_NOTES,
+    quick_script,
 )
 from lifetwin.checkin.service import CheckinService
 from lifetwin.core.config import Settings
@@ -57,7 +59,9 @@ SERVICE = CheckinService(clock=lambda: TODAY)
 CASES = json.loads((Path(__file__).parent / "data" / "checkin_replies.json").read_text())
 LAST_WEEK = {
     "sleep_hours": 7,
-    "exercise_minutes_weekly": 150,
+    "vigorous_recreation_min_week": 30,
+    "moderate_recreation_min_week": 120,
+    "sedentary_min_day": 360,
     "alcohol_drinks_weekly": 3,
     "smoking_status": "former",
     "weight_kg": 72.57,
@@ -73,17 +77,29 @@ YESTERDAY = {
 }
 
 
+# A quick check-in with every question, so any field can be asked.
+QUICK_ALL = quick_script(["sleep", "activity", "sitting"], True)
+QUICK_FEELING = quick_script(["sleep", "activity", "feeling"], False)
+
+
 def script_for(kind: str, field: str) -> tuple:
     if kind == "weekly":
         return WEEKLY
+    if kind == "quick":
+        return QUICK_FEELING if field == "wellbeing" else QUICK_ALL
     return DAILY_WITH_HABIT if field == "alcohol_drinks_yesterday" else DAILY
 
 
 def at(kind: str, field: str, previous: dict | None = None, **values) -> CheckinState:
     """A check-in at ``field``; the questions before it were skipped."""
     questions = list(script_for(kind, field))
-    before = questions[: questions.index(field)]
+    done = set(values.get("confirmed", {}))
+    before = [name for name in questions[: questions.index(field)] if name not in done]
     skipped = [*before, *(["diastolic_bp"] if "systolic_bp" in before else [])]
+    if kind == "quick":
+        values = {"local_date": "2026-10-24", "activity_day": "yesterday", **values}
+        if done and field in {"vigorous_recreation_min", "moderate_recreation_min"}:
+            values.setdefault("one_pace", False)
     return CheckinState(
         kind=kind,
         questions=questions,
@@ -124,7 +140,8 @@ def same(got: dict, expected: dict) -> bool:
     "case", CASES, ids=[f"{c['script']}-{c['field']}-{i}" for i, c in enumerate(CASES)]
 )
 def test_corpus_reply(case):
-    state = at(case["script"], case["field"], case["previous"])
+    extra = {"confirmed": case["confirmed"]} if "confirmed" in case else {}
+    state = at(case["script"], case["field"], case["previous"], **extra)
     result = say(state, case["text"], case["mode"])
     got = pending(result)
     if case["expected"] is None or case.get("known_miss"):
@@ -143,7 +160,7 @@ def test_corpus_size_and_coverage():
     assert len(transcripts) >= 60
     fields = {(c["script"], c["field"]) for c in CASES}
     for kind, (script, *_) in SCRIPTS.items():
-        questions = set(DAILY_WITH_HABIT) if kind == "daily" else set(script)
+        questions = {"daily": set(DAILY_WITH_HABIT), "quick": set(QUICK_ALL)}.get(kind, set(script))
         assert {(kind, field) for field in questions} <= fields
     assert sum(c["expected"] is None for c in CASES) >= 40
     assert sum("same" in c["text"].lower() for c in CASES) >= 15
@@ -184,7 +201,7 @@ def test_closings_are_encouraging_and_never_advice_or_a_prediction(kind):
 
 
 def test_weekly_answers_keep_the_profile_units_and_ranges():
-    profile, checkin = HealthProfile.model_fields, CheckinValues.model_fields
+    profile, checkin = ProfileUpdate.model_fields, CheckinValues.model_fields
     for field in WEEKLY + ("diastolic_bp",):
         if field == "wellbeing":
             continue
@@ -230,7 +247,18 @@ def test_greeting_mentions_the_last_answer_when_there_is_one():
 @pytest.mark.parametrize(
     ("field", "previous", "said"),
     [
-        ("exercise_minutes_weekly", {"exercise_minutes_weekly": 0}, "didn't get to exercise"),
+        (
+            "vigorous_recreation_min_week",
+            {"vigorous_recreation_min_week": 0, "moderate_recreation_min_week": 0},
+            "Last week you did nothing that got you out of breath and no easy activity.",
+        ),
+        (
+            "vigorous_recreation_min_week",
+            {"vigorous_recreation_min_week": 30, "moderate_recreation_min_week": 90},
+            "you did 30 minutes that got you out of breath and 1.5 hours of easy activity.",
+        ),
+        ("vigorous_recreation_min_week", {"vigorous_recreation_min_week": 30}, None),
+        ("sedentary_min_day", {"sedentary_min_day": 360}, "sat for about 6 hours on a usual day"),
         ("alcohol_drinks_weekly", {"alcohol_drinks_weekly": 0}, "no alcoholic drinks"),
         ("smoking_status", {"smoking_status": "current"}, "you told me you smoke"),
         ("smoking_status", {"smoking_status": "former"}, "you used to smoke"),
@@ -294,7 +322,13 @@ def test_not_a_plain_same(text):
     ("kind", "field", "previous", "expected"),
     [
         ("weekly", "sleep_hours", LAST_WEEK, {"sleep_hours": 7}),
-        ("weekly", "exercise_minutes_weekly", LAST_WEEK, {"exercise_minutes_weekly": 150}),
+        (
+            "weekly",
+            "vigorous_recreation_min_week",
+            LAST_WEEK,
+            {"vigorous_recreation_min_week": 30, "moderate_recreation_min_week": 120},
+        ),
+        ("weekly", "sedentary_min_day", LAST_WEEK, {"sedentary_min_day": 360}),
         ("weekly", "alcohol_drinks_weekly", LAST_WEEK, {"alcohol_drinks_weekly": 3}),
         ("weekly", "smoking_status", LAST_WEEK, {"smoking_status": "former"}),
         ("weekly", "weight_kg", LAST_WEEK, {"weight_kg": 72.57}),
@@ -348,7 +382,7 @@ def test_more_or_less_than_usual_asks_for_a_number(field, text):
 
 @pytest.mark.parametrize("text", ["a bit more than last week", "not as much as usual"])
 def test_weekly_comparisons_ask_for_a_number(text):
-    result = say(at("weekly", "exercise_minutes_weekly", LAST_WEEK), text)
+    result = say(at("weekly", "vigorous_recreation_min_week", LAST_WEEK), text)
     assert pending(result) == {}
     assert result.message.startswith("More or less is fine, but I need a number.")
 
@@ -392,14 +426,17 @@ def test_daily_zeros(field, text, expected):
 @pytest.mark.parametrize(
     ("field", "text"),
     [
-        ("exercise_minutes_weekly", "I didn't exercise this week"),
-        ("exercise_minutes_weekly", "none this week"),
+        ("vigorous_recreation_min_week", "I didn't exercise this week"),
+        ("vigorous_recreation_min_week", "none this week"),
         ("alcohol_drinks_weekly", "I didn't have any this week"),
         ("alcohol_drinks_weekly", "none"),
     ],
 )
 def test_weekly_zeros(field, text):
-    assert pending(say(at("weekly", field), text)) == {field: 0}
+    zero = {field: 0} | (
+        {"moderate_recreation_min_week": 0} if field == "vigorous_recreation_min_week" else {}
+    )
+    assert pending(say(at("weekly", field), text)) == zero
 
 
 @pytest.mark.parametrize(
@@ -408,11 +445,11 @@ def test_weekly_zeros(field, text):
         ("exercise_minutes_today", "I didn't move much"),
         ("sleep_hours_last_night", "I didn't sleep well"),
         ("sleep_hours_last_night", "I hardly slept at all"),
-        ("exercise_minutes_weekly", "I didn't do much this week"),
+        ("vigorous_recreation_min_week", "I didn't do much this week"),
     ],
 )
 def test_not_much_is_not_zero(field, text):
-    kind = "weekly" if field == "exercise_minutes_weekly" else "daily"
+    kind = "weekly" if field == "vigorous_recreation_min_week" else "daily"
     assert pending(say(at(kind, field), text)) == {}
 
 
@@ -448,12 +485,12 @@ def test_daily_answers(field, text, expected):
     [
         ("sleep_hours", "I slept about seven hours most nights this week", 7),
         ("sleep_hours", "seven and a half", 7.5),
-        ("exercise_minutes_weekly", "I swam Monday and Wednesday, about an hour each", 120),
-        ("exercise_minutes_weekly", "I walked Monday and Wednesday, about an hour each", 120),
-        ("exercise_minutes_weekly", "this week I walked 90 minutes", 90),
-        ("exercise_minutes_weekly", "30 minutes every day", 210),
-        ("exercise_minutes_weekly", "an hour three times this week", 180),
-        ("exercise_minutes_weekly", "about two hours this week", 120),
+        ("moderate_recreation_min_week", "I walked Monday and Wednesday, about an hour each", 120),
+        ("moderate_recreation_min_week", "this week I walked 90 minutes", 90),
+        ("moderate_recreation_min_week", "30 minutes every day", 210),
+        ("moderate_recreation_min_week", "an hour three times this week", 180),
+        ("moderate_recreation_min_week", "about two hours this week", 120),
+        ("sedentary_min_day", "about 5 hours a day", 300),
         ("alcohol_drinks_weekly", "a glass of wine every night", 7),
         ("alcohol_drinks_weekly", "two beers on Friday and two on Saturday", 4),
         ("alcohol_drinks_weekly", "Two gin and tonics on Thursday and one on Sunday", 3),
@@ -464,7 +501,41 @@ def test_daily_answers(field, text, expected):
     ],
 )
 def test_weekly_answers(field, text, expected):
-    assert same(pending(say(at("weekly", field), text)), {field: expected})
+    confirmed = (
+        {"vigorous_recreation_min_week": 30} if field == "moderate_recreation_min_week" else {}
+    )
+    state = at("weekly", field, confirmed=confirmed)
+    assert same(pending(say(state, text)), {field: expected})
+
+
+V, M = "vigorous_recreation_min_week", "moderate_recreation_min_week"
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("I swam hard Monday and Wednesday, about an hour each", {V: 120}),
+        ("I walked Monday and Wednesday, about an hour each", {M: 120}),
+        ("this week I walked 90 minutes", {M: 90}),
+        ("30 minutes of jogging every day", {V: 210}),
+        ("60 minutes of brisk walking uphill and 90 minutes of gardening", {V: 60, M: 90}),
+        (
+            "nothing that got me out of breath, but about two hours of gentle walks all together",
+            {V: 0, M: 120},
+        ),
+        ("none", {V: 0, M: 0}),
+    ],
+)
+def test_weekly_activity_answers_split_out_of_breath_and_easy(text, expected):
+    assert pending(say(at("weekly", V), text)) == expected
+
+
+def test_weekly_activity_without_a_pace_asks_about_it():
+    result = say(at("weekly", V), "I swam Monday and Wednesday, about an hour each")
+    assert pending(result) == {} and result.state.held_minutes == 120
+    assert "out of breath" in result.message
+    easy = say(result.state, "it was easy")
+    assert pending(easy) == {V: 0, M: 120}
 
 
 @pytest.mark.parametrize(
@@ -485,7 +556,7 @@ def test_another_day_is_not_the_answer(field, text, lead):
 
 
 def test_last_week_is_asked_about_for_this_weeks_habits():
-    result = say(at("weekly", "exercise_minutes_weekly"), "last week I walked about two hours")
+    result = say(at("weekly", V), "last week I walked about two hours")
     assert pending(result) == {}
     assert result.message.startswith("And this past week? ")
 
@@ -504,7 +575,7 @@ def test_moving_without_minutes_asks_how_long(text):
 
 
 def test_an_hour_for_the_week_asks_how_often():
-    result = say(at("weekly", "exercise_minutes_weekly"), "about an hour")
+    result = say(at("weekly", V), "about an hour")
     assert pending(result) == {}
     assert "each time" in result.message
 
@@ -659,11 +730,12 @@ def test_weekly_feeling_reads_back_the_week():
         ("weight_kg", "one eighty", 81.65),  # split number
         ("weight_kg", "I'd say roughly 150 pounds", 68.04),  # hedge
         ("sleep_hours", "between 6 and 7 hours", 6.5),  # range
-        ("exercise_minutes_weekly", "30 to 40 minutes three times", 105),  # close range
+        ("moderate_recreation_min_week", "30 to 40 minutes three times", 105),  # close range
     ],
 )
 def test_onboarding_readings_still_work(field, text, expected):
-    assert same(pending(say(at("weekly", field), text)), {field: expected})
+    state = at("weekly", field, confirmed={V: 0} if field == M else {})
+    assert same(pending(say(state, text)), {field: expected})
 
 
 def test_a_range_is_read_back_as_about():
@@ -679,10 +751,10 @@ def test_a_range_is_read_back_as_about():
     [
         ("sleep_hours", "my husband slept nine hours"),
         ("weight_kg", "my wife weighs 140"),
-        ("exercise_minutes_weekly", "my daughter walks 200 minutes a week"),
+        ("vigorous_recreation_min_week", "my daughter walks 200 minutes a week"),
         ("sleep_hours", "I used to sleep eight hours"),
         ("sleep_hours", "my doctor says I need 8 hours"),
-        ("exercise_minutes_weekly", "I want to walk 200 minutes"),
+        ("vigorous_recreation_min_week", "I want to walk 200 minutes"),
         ("weight_kg", "is 160 a lot?"),
         ("sleep_hours", "five to eight hours"),
     ],
@@ -836,7 +908,8 @@ def test_a_weekly_check_in_returns_its_answers_as_a_profile_update():
     result, _ = run("weekly", LAST_WEEK, ["6 hours", "yes", "none", "yes", "<skip>"])
     assert result.profile_update.model_dump(exclude_none=True) == {
         "sleep_hours": 6,
-        "exercise_minutes_weekly": 0,
+        V: 0,
+        M: 0,
     }
     result, _ = run(
         "weekly",
@@ -844,7 +917,9 @@ def test_a_weekly_check_in_returns_its_answers_as_a_profile_update():
         [
             "6 hours",
             "yes",
-            "90 minutes",
+            "60 minutes of brisk walking uphill and 90 minutes of gardening",
+            "yes",
+            "about 6 hours",
             "yes",
             "2 drinks",
             "yes",
@@ -865,7 +940,9 @@ def test_a_weekly_check_in_returns_its_answers_as_a_profile_update():
         update.model_dump(exclude_none=True),
         {
             "sleep_hours": 6,
-            "exercise_minutes_weekly": 90,
+            V: 60,
+            M: 90,
+            "sedentary_min_day": 360,
             "alcohol_drinks_weekly": 2,
             "smoking_status": "former",
             "weight_kg": 71.67,
@@ -875,7 +952,7 @@ def test_a_weekly_check_in_returns_its_answers_as_a_profile_update():
     )
     # Applying it is a plain field-by-field replace on the confirmed profile.
     profile = HealthProfile(age=74, sex="female", height_cm=160, sleep_hours=7, diabetes=False)
-    applied = HealthProfile.model_validate(
+    applied = ProfileUpdate.model_validate(
         profile.model_dump() | update.model_dump(exclude_none=True)
     )
     assert applied.age == 74 and applied.sleep_hours == 6 and applied.systolic_bp == 128
@@ -1003,9 +1080,12 @@ def test_a_full_weekly_check_in_with_corrections_go_back_skip_same_and_chatter()
         [
             "~um about the same as last week",  # same -> 7 hours, read back
             "yes",
-            "I swam Monday and Wednesday, about an hour each",  # 120
+            "I swam Monday and Wednesday, about an hour each, nice and easy",  # easy 120
             "no, 90 minutes",  # corrected in the read-back
             "yes",
+            "no",  # nothing out of breath (the follow-up)
+            "yes",
+            "<skip>",  # sitting
             "~honey can you turn the tv down. two glasses of wine on friday and one on saturday",
             "yeah",
             "go back",  # reopens drinks
@@ -1026,16 +1106,17 @@ def test_a_full_weekly_check_in_with_corrections_go_back_skip_same_and_chatter()
         confirmed(result),
         {
             "sleep_hours": 7,
-            "exercise_minutes_weekly": 90,
+            V: 0,
+            M: 90,
             "alcohol_drinks_weekly": 4,
             "smoking_status": "former",
             "weight_kg": 71.67,
             "wellbeing": "not_great",
         },
     )
-    assert result.state.skipped_fields == ["systolic_bp", "diastolic_bp"]
+    assert result.state.skipped_fields == ["sedentary_min_day", "systolic_bp", "diastolic_bp"]
     assert messages[1].startswith(SAME_LEAD)
-    assert messages[8].startswith("Okay, let's go back to your drinks.")
+    assert messages[11].startswith("Okay, let's go back to your drinks.")
     assert messages[-1] == "Got it. " + CLOSINGS["weekly"]["not_great"]
 
 

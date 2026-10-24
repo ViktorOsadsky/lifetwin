@@ -96,6 +96,20 @@ class CheckinValues(ApiModel):
     sleep_hours_last_night: float | None = Field(default=None, ge=0, le=24)
     exercise_minutes_today: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1440)
     alcohol_drinks_yesterday: float | None = Field(default=None, ge=0, le=50)
+    # Quick (the frequent daily check-in): one day in the on-device model's daily_logs
+    # names and units. Sleep is last night's (above) or, as a catch-up, the night before.
+    sleep_hours_night_before: float | None = Field(default=None, ge=0, le=24)
+    vigorous_recreation_min: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1440)
+    moderate_recreation_min: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1440)
+    # Quick: awake minutes sitting that day. Weekly: on a usual day this week.
+    sedentary_min_day: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1439)
+    # Weekly: the model's activity inputs for the week, in the package's names.
+    vigorous_recreation_min_week: Annotated[int | None, WholeNumber] = Field(
+        default=None, ge=0, le=10080
+    )
+    moderate_recreation_min_week: Annotated[int | None, WholeNumber] = Field(
+        default=None, ge=0, le=10080
+    )
     # Daily or weekly: how the person feels (daily) or how the week went (weekly).
     wellbeing: Wellbeing | None = None
     # Weekly: the same fields, units and ranges as HealthProfile.
