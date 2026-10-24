@@ -356,6 +356,22 @@
       "title": "Schema Version",
       "type": "string"
     },
+    "speech_hint": {
+      "anyOf": [
+        {
+          "enum": [
+            "slower",
+            "louder"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Speech Hint"
+    },
     "state": {
       "$ref": "#/$defs/ConversationState"
     },
@@ -377,6 +393,7 @@
     "guide_mode",
     "provider_status",
     "voice_status",
+    "speech_hint",
     "accepted_input_modes",
     "mascot_events",
     "complete",

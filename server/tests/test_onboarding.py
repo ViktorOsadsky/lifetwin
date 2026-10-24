@@ -169,7 +169,8 @@ def test_bad_transitions_and_oversized_or_inconsistent_inputs_are_rejected(clien
 # The keyless parser reads "My current weight is 70 kg" by itself now, so the provider
 # path is exercised with a reply it does not read alone: the age is a second number.
 # Chatter the keyless parser refuses (someone else is mentioned), so the provider is asked.
-PROVIDER_TEXT = "Well, my grandson keeps asking, but I weigh 70 kg"
+# (A leading "Well," is now dropped as filler, after which the parser reads this alone.)
+PROVIDER_TEXT = "Funny, my grandson keeps asking, but I weigh 70 kg"
 
 
 class FakeExtractor:

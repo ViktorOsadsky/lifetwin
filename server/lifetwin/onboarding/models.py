@@ -85,6 +85,9 @@ class TurnResponse(ApiModel):
         "not_configured", "consent_required", "used", "unavailable", "not_needed"
     ] = "not_configured"
     voice_status: Literal["deferred", "available", "unavailable"] = "deferred"
+    # Set when the person asked to hear the prompt again more slowly or more loudly;
+    # the message repeats the prompt, and a voice client may adjust playback.
+    speech_hint: Literal["slower", "louder"] | None = None
     accepted_input_modes: list[Literal["text", "transcript"]] = Field(
         default_factory=lambda: ["text", "transcript"], min_length=2, max_length=2
     )
