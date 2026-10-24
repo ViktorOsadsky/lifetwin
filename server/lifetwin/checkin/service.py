@@ -301,7 +301,16 @@ class CheckinService:
             return respond(RESUME_LEAD + self._prompt(state))
         if state.phase == "probing" and action in {"reply", "skip"}:
             intent = control_intent(text) if action == "reply" else None
-            if intent is None or intent.kind == "skip":
+            if intent and intent.kind == "help":
+                return respond(
+                    "I'm just curious about your day. Tell me in a few words, or say "
+                    '"let\'s move on". ' + self._prompt(state)
+                )
+            if intent and intent.kind not in {"skip", "repeat", "slower", "louder", "ask"}:
+                # "Go back", "start over", "talk about my sleep": the follow-up ends first.
+                state.probe_topic = None
+                self._advance(state)
+            elif intent is None or intent.kind in {"skip", "ask"}:
                 lead = PROBE_SKIPPED
                 if action == "reply" and not PROBE_MOVE_ON.fullmatch(words_of(text)):
                     notes = _safe(read_notes, text, topic=state.probe_topic) or []
@@ -368,6 +377,7 @@ class CheckinService:
                         questions=state.questions,
                         current_field=state.questions[0],
                         previous=state.previous,
+                        memory_consent=state.memory_consent,
                     )
                     return respond(
                         "Okay, let's start over. I cleared today's answers. " + self._prompt(state)
@@ -377,6 +387,8 @@ class CheckinService:
                 if state.phase == "ready":
                     return respond("There are no questions left. " + self._closing(state))
                 text = "skip"
+            if kind == "jump":
+                kind = "back"  # check-ins have a fixed script: a named topic reopens it
             if kind == "back":
                 target = self._named(state, intent.field)
                 pending = list(state.pending.model_dump(exclude_none=True))

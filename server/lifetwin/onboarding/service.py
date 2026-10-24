@@ -55,6 +55,8 @@ from lifetwin.onboarding.parsing import (
     QUESTIONS,
     UNKNOWN_WORDS,
     YES_WORDS,
+    _canonical,
+    _doubtful,
     _others,
     approximate,
     birth_year_ages,
@@ -445,7 +447,12 @@ class ConversationService:
         text = clean_reply(normalize_text(request.text or ""))
         raw_text = text
         today = self.clock()
-        was_small_talk, state.small_talk = state.small_talk, False
+        # Checked on the whole reply, before chatter is filtered: "I have chest pain.
+        # Female." must pause, not answer the question.
+        urgent_reply = action in {"reply", "correct"} and emergency(text)
+        was_small_talk = state.small_talk
+        if not urgent_reply:
+            state.small_talk = False
         was_ready = state.phase == "ready"
         # Ink also transcribes other people in the room: only a voice transcript is
         # held to "someone else's number beside yours is asked about".
@@ -482,6 +489,8 @@ class ConversationService:
         ) -> TurnResponse:
             if state.memory_consent is False:
                 state.habit_notes = []  # nothing is kept for storage without consent
+            if state.phase != "probing":
+                state.current_probe = None
             reaction = {
                 "idle": "idle",
                 "remembering": "asking",
@@ -528,7 +537,7 @@ class ConversationService:
                 recommendations=recommendations,
             )
 
-        if action in {"reply", "correct"} and emergency(text):
+        if urgent_reply:
             # Nothing else happens this turn: no value, no next question, no cheer.
             return respond(EMERGENCY_MESSAGE, urgent=True)
 
@@ -893,7 +902,8 @@ class ConversationService:
             # Onboarding asks for a diagnosis, not numbers: a reading said in passing is
             # kept as context in the habit notes and never saved as a value.
             reading = _safe(blood_pressure_reading, text)
-            if reading and state.memory_consent is not False and target != "hypertension":
+            mine = _safe(_others, raw_text) is False
+            if reading and mine and state.memory_consent is not False and target != "hypertension":
                 state.habit_notes = merge(state.habit_notes, [reading])
             candidates = {k: v for k, v in candidates.items() if k not in BP_FIELDS}
         phrase = " ".join(text.lower().replace(",", " ").rstrip(".!?").split())
@@ -924,7 +934,11 @@ class ConversationService:
         if not candidates and not hint and target == "general_health":
             hint = _safe(health_either, text)
         if not candidates and asking and target == "hypertension":
-            reading = _safe(blood_pressure_reading, text)
+            reading = (
+                None
+                if _safe(_others, raw_text) is not False
+                else (_safe(blood_pressure_reading, text))
+            )
             if reading:
                 said_before = any(note.reading for note in state.habit_notes) or (
                     "hypertension" in state.proxies_asked
@@ -1140,9 +1154,17 @@ class ConversationService:
         plain = words_of(text)
         if dont_know(text) or plain in UNKNOWN_WORDS:
             return "unknown"
-        if re.search(r"\d", plain):
+        # Someone else, doubt or a number: read normally, which asks again if unsure.
+        if re.search(r"\d", plain) or _safe(_others, text) is not False:
             return None
+        estimate = field in {"sitting_minutes_daily", "general_health"}
+        if estimate and _safe(_doubtful, _canonical(plain)) is not False:
+            return None  # an estimate needs a plain answer; "no, not really" is still a no
         if field == "sitting_minutes_daily":
+            if re.search(r"\b(?:not|never)\b|n't\b", plain) and not re.search(
+                r"\bnot much\b", plain
+            ):
+                return None
             sleep = state.confirmed_profile.sleep_hours or 8
             for pattern, share, said in SITTING_SHARES:
                 if re.search(pattern, plain):
@@ -1152,6 +1174,9 @@ class ConversationService:
         if field == "general_health":
             for pattern, rating, said in HEALTH_WORDS:
                 if re.search(pattern, plain):
+                    # "I'm not fine": a negation is only safe in "not so good".
+                    if rating != "fair" and re.search(r"\b(?:not|never)\b|n't\b", plain):
+                        return None
                     return {field: rating}, said
             return None
         if field in {"moderate_minutes_weekly", "vigorous_minutes_weekly"}:
@@ -1362,6 +1387,7 @@ class ConversationService:
 
     def _reopen(self, state: ConversationState, field: str) -> str:
         """Ask a question again; its saved answer stays until a new one is confirmed."""
+        state.current_probe = None
         state.pending_profile = HealthProfile()
         state.pending_estimate = None
         state.proxy_field = None

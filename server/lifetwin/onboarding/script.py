@@ -178,7 +178,6 @@ SCRIPT: tuple[Question, ...] = (
         ),
         proxy="That's okay. Do you walk, garden or dance at all?",
         proxy_replies=("Yes", "No"),
-        example_value="150 minutes",
     ),
     Question(
         "vigorous_minutes_weekly",

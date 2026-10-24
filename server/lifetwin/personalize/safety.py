@@ -1,7 +1,8 @@
 """Every outside-AI line is checked before Mochi says it; a failed check uses the template.
 
-The check refuses medical claims and advice (years gained, dates, diagnoses, medicines,
-doses, supplements, promises), percentages, links, and any number the facts do not hold.
+The check refuses medical claims and advice (years gained, dates and time words,
+diagnoses, medicines, doses, supplements, promises), weight and diet words, percentages,
+links, and any number (digits or words) the facts do not hold.
 """
 
 import re
@@ -14,8 +15,19 @@ BLOCKED = re.compile(
     r"coq ?10|glucosamine|biotin|b ?12|herbal|cure\w*|guarantee\w*|promise\w*|definitely will|"
     r"will (?:add|give you|make you live|prevent|reverse|fix)|prevents?|reverses?|"
     r"stop taking|start taking|increase your|decrease your|percent|percentage|"
-    r"chance of|risk of dying|as an ai|language model|weight loss|lose weight|gain weight|diet)\b"
+    r"chance of|risk of dying|as an ai|language model|weigh\w*|pounds?|lbs?|kilos?|kg|"
+    r"slim\w*|shed\w*|fat|obes\w*|bmi|diet\w*|calories|creatine|elderberry|echinacea|cbd|"
+    r"ashwagandha|protein (?:powder|shakes?)|garlic pills?|st john's wort|"
+    r"january|february|march|april|may|june|july|august|september|october|november|"
+    r"december|monday|tuesday|wednesday|thursday|friday|saturday|sunday|spring|summer|"
+    r"autumn|winter|tomorrow|next (?:week|month)|by the end)\b"
     r"|%|https?://|www\.",
+    re.I,
+)
+NUMBER_WORDS = re.compile(
+    r"\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|"
+    r"fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|"
+    r"sixty|seventy|eighty|ninety|hundred|thousand|dozen|half|twice|double|triple)\b",
     re.I,
 )
 
@@ -33,4 +45,8 @@ def safe_line(line: object, facts_text: str, *, max_length: int = 400) -> bool:
         return False
     if BLOCKED.search(line):
         return False
-    return _numbers(line) <= _numbers(facts_text)
+    if _numbers(line) - _numbers(facts_text):
+        return False
+    # Spelled-out numbers count too: only those the facts already hold.
+    said = {word.lower() for word in NUMBER_WORDS.findall(line)}
+    return said <= {word.lower() for word in NUMBER_WORDS.findall(facts_text)}
