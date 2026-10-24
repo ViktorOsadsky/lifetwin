@@ -2739,6 +2739,10 @@ def competing(text: str, field: ProfileField) -> bool:
     return any(re.search(r"\d", _canonical(p)) for p in theirs) and len(numbered) > 1
 
 
+COMPARED_TO = (
+    r"\b(?:same as|the same|as much as|as heavy as|as tall as|as old as|as long as|like|than|"
+    r"similar to|close to)\b"
+)
 CLINICIAN = (
     r"\b(?:doctors?|docs?|nurses?|physicians?|gp|cardiologist|pharmacist|clinic|surgery|"
     r"hospital|practitioner|specialist)\b"
@@ -2802,6 +2806,10 @@ def parse_reply(
     parts = [part for part in re.split(r"[;,]|\s+and\s+", split, flags=re.I) if part.strip()]
     labeled = any(re.fullmatch(LABELED, part, re.I) for part in parts)
     own = [part for part in parts if not _others(part)]
+    # "I weigh about the same as my wife, 150": a value set against someone else's is
+    # not plainly the person's own, so nothing is taken.
+    if any(_others(part) and re.search(COMPARED_TO, _canonical(part)) for part in parts):
+        return {}
     dropped = bool(own) and len(own) < len(parts) and not labeled
     parts = own if dropped else parts
     several = len(parts) > 1

@@ -194,8 +194,20 @@ def score(which: str = "a") -> dict:
     total = Counter()
     for counts in by_kind.values():
         total.update({k: v for k, v in counts.items() if k != "false_unknown"})
+    # Cases with an expected value, scored apart from the cases that must be asked again.
+    ask_again = Counter()
+    for kind in ("novalue", "smalltalk"):
+        ask_again.update(
+            {
+                "asked_again": by_kind[kind]["correct"],
+                "took_a_value": by_kind[kind]["wrong"],
+                "other": by_kind[kind]["miss"],
+            }
+        )
     return {
         "cases": len(cases),
+        "value_only": {k: v for k, v in by_kind["value"].items() if k != "false_unknown"},
+        "ask_again": dict(ask_again),
         "by_kind": {kind: dict(counts) for kind, counts in sorted(by_kind.items())},
         "volunteered_notes": dict(notes),
         "total": dict(total),

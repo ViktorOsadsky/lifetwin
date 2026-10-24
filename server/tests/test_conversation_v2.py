@@ -914,3 +914,16 @@ def test_a_clinicians_report_is_the_persons_own():
     assert result["state"]["pending_profile"]["weight_kg"] == pytest.approx(68.0389)
     result = reply(asking("weight_kg"), "he weighed me at 163 pounds")
     assert result["state"]["pending_profile"]["weight_kg"] == pytest.approx(73.9356)
+
+
+def test_a_spoken_birth_year_is_read_back_as_73_or_74():
+    result = reply(asking("age"), "nineteen fifty two")
+    assert result["state"]["pending_profile"]["age"] == 74
+    assert "1952" in result["message"] and "73" in result["message"]
+
+
+def test_scorers_report_value_cases_apart_from_ask_again_cases():
+    report = conversation_eval.score("b")
+    assert report["value_only"].get("wrong", 0) == 0
+    assert report["ask_again"].get("took_a_value", 0) == 0
+    assert sum(report["value_only"].values()) == 23

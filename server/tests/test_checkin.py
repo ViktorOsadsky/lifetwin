@@ -127,7 +127,10 @@ def test_corpus_reply(case):
     state = at(case["script"], case["field"], case["previous"])
     result = say(state, case["text"], case["mode"])
     got = pending(result)
-    if case["expected"] is None or case.get("known_miss"):
+    if case.get("known_miss"):
+        # Never a wrong value: asked about again today, or (once fixed) the right one.
+        assert got == {} or same(got, case["expected"]), f"{case['text']!r} -> {got}"
+    elif case["expected"] is None:
         # Nothing may be taken: the reply is asked about again.
         assert got == {}, f"{case['text']!r} -> {got} ({case['why']})"
         assert result.state.phase == "asking"
@@ -135,6 +138,42 @@ def test_corpus_reply(case):
         assert same(got, case["expected"]), f"{case['text']!r} -> {got} != {case['expected']}"
         assert result.state.phase == "confirming"
         assert result.message.endswith("Is that right?")
+
+
+KNOWN_MISSES = [c for c in CASES if c.get("known_miss")]
+
+
+@pytest.mark.xfail(strict=False, reason="known miss: asked again today; should read the value")
+@pytest.mark.parametrize("case", KNOWN_MISSES, ids=[c["text"][:30] for c in KNOWN_MISSES])
+def test_known_miss_should_read(case):
+    result = say(at(case["script"], case["field"], case["previous"]), case["text"], case["mode"])
+    assert same(pending(result), case["expected"]), f"should read {case['expected']}"
+
+
+def corpus_scores() -> dict:
+    """Value cases (an expected value) and ask-again cases (none), scored apart."""
+    scores = {
+        "value": {"read": 0, "asked_again": 0, "wrong": 0},
+        "ask_again": {"asked_again": 0, "took_a_value": 0},
+    }
+    for case in CASES:
+        got = pending(
+            say(at(case["script"], case["field"], case["previous"]), case["text"], case["mode"])
+        )
+        if case["expected"] is None:
+            scores["ask_again"]["took_a_value" if got else "asked_again"] += 1
+        elif same(got, case["expected"]):
+            scores["value"]["read"] += 1
+        else:
+            scores["value"]["wrong" if got else "asked_again"] += 1
+    return scores
+
+
+def test_corpus_scores_value_and_ask_again_cases_separately():
+    scores = corpus_scores()
+    assert scores["value"]["wrong"] == 0 and scores["ask_again"]["took_a_value"] == 0
+    value = scores["value"]
+    assert value["read"] >= 0.9 * (value["read"] + value["asked_again"]), scores
 
 
 def test_corpus_size_and_coverage():
@@ -884,12 +923,12 @@ def test_a_weekly_check_in_returns_its_answers_as_a_profile_update():
             "diastolic_bp": 78,
         },
     )
-    # Applying it is a plain field-by-field replace on the confirmed profile.
-    profile = HealthProfile(age=74, sex="female", height_cm=160, sleep_hours=7, diabetes=False)
-    applied = HealthProfile.model_validate(
-        profile.model_dump() | update.model_dump(exclude_none=True)
-    )
-    assert applied.age == 74 and applied.sleep_hours == 6 and applied.systolic_bp == 128
+    # The update holds only what this check-in asked: applying its non-null fields can
+    # never blank or change an onboarding answer (age, sex, height, diagnoses).
+    asked = {*result.state.questions, "diastolic_bp"} - {"wellbeing"}
+    assert set(update.model_dump(exclude_none=True)) <= asked
+    for field in ("age", "sex", "height_cm", "diabetes", "hypertension_diagnosed"):
+        assert getattr(update, field) is None
 
 
 def test_a_daily_check_in_never_updates_the_profile():

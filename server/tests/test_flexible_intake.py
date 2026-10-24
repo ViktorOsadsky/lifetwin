@@ -1114,3 +1114,36 @@ def test_drink_counts_found_while_building_check_ins(text, expected):
 
 def test_before_bed_never_turns_into_hours_of_sleep():
     assert parse_reply("I read for an hour before bed", "sleep_hours", today=TODAY) == {}
+
+
+# --- Mutation audit: expectations written from the rules ---------------------------------
+
+
+def test_a_spoken_birth_year_reads_as_that_year():
+    # Born in 1952: 74 today if the birthday has passed, else 73. Asked as "74, or 73".
+    from lifetwin.onboarding.parsing import birth_year_ages
+
+    assert birth_year_ages("nineteen fifty two", today=TODAY)[:2] == (74, 73)
+    assert birth_year_ages("I was born in nineteen fifty two", today=TODAY)[:2] == (74, 73)
+
+
+@pytest.mark.parametrize(
+    ("field", "text"),
+    [
+        ("weight_kg", "eleven stone fourteen"),  # a stone has 14 pounds: 14 is no remainder
+        ("weight_kg", "between 70 and 80 kilos"),  # a range is asked about, never averaged
+        ("sleep_hours", "not entirely sure, 7 hours"),  # the hedge doubts the number
+        ("weight_kg", "I weigh about the same as my wife, 150"),  # set against someone else
+        ("age", "I'm older than my husband, 72"),
+        ("age", "the old man is 80"),
+        ("age", "the old lady is 78"),
+        ("age", "the kids are 40"),
+        ("weight_kg", "the wife weighs 140 pounds"),
+    ],
+)
+def test_audit_replies_are_asked_again(field, text):
+    assert parse_reply(text, field, today=TODAY) == {}
+
+
+def test_own_value_beside_the_old_lady_is_still_read():
+    assert parse_reply("the old lady is 78, I'm 75", "age", today=TODAY) == {"age": 75}

@@ -1092,12 +1092,18 @@ RESUME_LEAD = "Okay, let's carry on. "
 # dying to see my grandkids" and "this pain in my knee" are not among them.
 EMERGENCY = re.compile(
     r"\bchest pains?\b|\bpains? in (?:my|the) chest\b|\btightness in my chest\b|"
-    r"\bmy chest (?:hurts|is hurting|is (?:really |so |very )?tight|feels (?:tight|heavy))\b|"
+    r"\bmy chest (?:hurts|is hurting|has been hurting|keeps hurting|won't stop hurting|"
+    r"is (?:really |so |very )?tight|feels (?:tight|heavy))\b|"
     r"\b(?:can't|cannot|can not|couldn't|could not) (?:breathe|catch my breath|get my breath)\b|"
     r"\b(?:struggling|trouble|hard|difficulty) (?:to )?breath(?:e|ing)\b|"
     r"\bhaving a (?:heart attack|stroke)\b|"
     r"\b(?:think|feel like) (?:i'm|i am|it's|it is) (?:a |having a )?(?:heart attack|stroke)\b|"
-    r"\b(?:fell|fallen|had a fall)(?: down)?,? and (?:i )?(?:can't|cannot|can not) get up\b|"
+    r"\b(?:fell|fallen|had a fall|took a fall)\b[^.;!?]{0,60}?\b(?:can't|cannot|can not|"
+    r"couldn't|could not) get (?:back )?up\b|"
+    r"\b(?:took|taken|swallowed|had) (?:way )?too many (?:of )?(?:my )?(?:pills|tablets|meds|"
+    r"medicines?|medications?|sleeping pills|painkillers)\b|\boverdos\w*|"
+    r"\b(?:don't|do not|can't|cannot) see the point (?:in|of) (?:living|going on|life|being alive)\b|"
+    r"\bno point (?:in )?(?:living|going on|being alive)\b|"
     r"\b(?:want|wanna|wants) to die\b|\bwant to be dead\b|\bkill(?:ing)? myself\b(?! laughing)|"
     r"\bend (?:my life|it all)\b|\bsuicid\w*|\bbetter off dead\b|\bno reason to live\b|"
     r"\b(?:don't|do not) want to (?:live|be alive)(?: anymore| any more)?\b|"
@@ -1113,7 +1119,7 @@ HISTORY = re.compile(
 )
 HAPPENING_NOW = re.compile(
     r"\b(?:now|right now|today|tonight|this (?:morning|afternoon|evening)|all (?:day|morning|night)|"
-    r"just now|still|again)\b"
+    r"just now|still|again|has been|have been|keeps?|won't stop|since (?:last|this|yesterday))\b"
 )
 RESUME = _units(
     "continue",
