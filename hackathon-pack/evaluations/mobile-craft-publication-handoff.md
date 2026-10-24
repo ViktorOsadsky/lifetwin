@@ -16,4 +16,4 @@ The stronger composition A remains a separate editable Figma study; it is not th
 
 Contracts/model versions affected: none. Real integrations: Figma editing and Flutter browser release study; no live LifeTwin services or prediction model. The lab's screenshots, archives and local runtime artifacts are intentionally outside this repository change. Next: apply the skill to a bounded requested screen, inspect its actual rendered output, and validate the target runtime.
 
-PR/merge receipt: recorded in the publication PR and final remote-main verification receipt.
+PR: [#7](https://github.com/ViktorOsadsky/lifetwin/pull/7), branch `codex/creative-mobile-craft`. This document ships through that PR; its final merge state/commit is recorded in GitHub and the delivered remote-main byte-verification receipt.
