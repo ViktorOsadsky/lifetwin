@@ -27,7 +27,7 @@ The 5-unit Hive limit applies. The heartbeat module and OLED were unavailable at
 | Cal Hacks Arduino Kit (UNO R3) | Hive (1 in stock) | To add | Breadboard + 5 M-F and 5 M-M wires; the UNO is a spare MCU |
 | Female-to-male Dupont wire **or** GY-6500 | Hive | Fallback if the UNO kit is gone | Wiring / backup motion sensor |
 | USB power bank, ESP32 data cable, strap/velcro | Bring your own | Needed | Power and wearing. Hive has no LiPo/charger parts |
-| Heart-rate sensor (MAX30102 or similar, I²C) | Team sourcing outside Hive (D5) | Coming | Pulse; joins the MPU-6050's I²C bus, so no extra wires to the ESP32 |
+| Heart-rate sensor: **MAX30101** (or MAX30105), I²C | Team sourcing outside Hive (D5) | Coming | Pulse from the green LED, which suits the wrist. Not the MAX30102: it has only red/IR LEDs, built for fingertips. Joins the MPU-6050's I²C bus, so no extra wires to the ESP32 |
 
 ### Wiring
 
@@ -88,7 +88,7 @@ Each row is sized to become one issue. IDs are stable so issues and PRs can refe
 | HW-06 | Skin-temperature sampling (optional) | 1/min reading; a missing sensor yields `null`, not a crash | HW-01 |
 | HW-07 | BLE GATT service | Device-info, time-sync (write), minute-history (read/notify) and optional live-magnitude characteristics; reconnect resumes from the last unsent minute | HW-04 |
 | HW-08 | Wearable build | Strap, power bank, cable routing; ≥4 h runtime; the sensor sits flat on the wrist | HW-07 |
-| HW-09 | Heart-rate sensor | Sensor shares the I²C bus with the MPU-6050. Per-minute mean HR within ±5 bpm of a reference reading at rest; minutes with motion are flagged low-confidence | Sensor sourced, HW-04 |
+| HW-09 | Heart-rate sensor | MAX30101 on the back of the wrist, shared I²C bus. Read the **green** channel (common Arduino code assumes IR) and retune beat detection; shield ambient light. Per-minute mean HR within ±5 bpm of a reference reading at rest; minutes with motion are flagged low-confidence | Sensor sourced, HW-04 |
 
 ### App (Flutter)
 
@@ -136,7 +136,7 @@ These are Tier-1 (data model, privacy boundary, model inputs, spending).
 | D2 | How wearable values enter the profile | **(a) for now:** a suggestion the user confirms; no contract change | APP-04/APP-08 use the existing draft → confirm path. A provenance field can be revisited with Tracks A/B |
 | D3 | Device-measured vs. self-reported activity | **Device-measured activity will be included in the model** | Track A owns the method and the change is part of deferred prediction work. Until it lands, suggestions carry the device-vs-self-report caveat. The model must be trained on device data comparable to this band (see the note below) |
 | D4 | Ownership | **Open** | Team decides; not assigned here |
-| D5 | Heart rate | **(c) the team will source a sensor** (MAX30102 or similar) outside Hive | HW-09 and APP-09 added. Heart rate stays informational until a model input is decided |
+| D5 | Heart rate | **(c) the team will source a sensor** (MAX30101, or MAX30105, for its green LED) outside Hive | HW-09 and APP-09 added. Heart rate stays informational until a model input is decided |
 
 **Note on D3:** NHANES device data comes from research ActiGraph monitors (hip-worn in 2003–2006, wrist-worn in 2011–2014), summarized in that device's own units. MPU-6050 output is not on the same scale, so a model trained on NHANES device data needs a documented mapping or calibration before this band's values can be fed to it.
 
