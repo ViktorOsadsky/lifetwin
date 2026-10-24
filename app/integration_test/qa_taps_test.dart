@@ -136,7 +136,7 @@ void main() {
       'Continue opened two ceremonies',
     );
     await doubleTapText(t, 'Ask the ball');
-    await pumpFor(t, const Duration(seconds: 2));
+    await pumpFor(t, const Duration(seconds: 4)); // the ball glows for 2.4 s first
     check(find.byType(ForecastScreen, skipOffstage: false).evaluate().length == 1, 'Continue opened two forecasts');
     check(await qaCount('/api/predict') == 1, 'Continue: ${await qaCount('/api/predict')} predictions');
 
@@ -150,7 +150,7 @@ void main() {
       'two ceremonies from the Room',
     );
     await doubleTapText(t, 'Ask the ball');
-    await pumpFor(t, const Duration(seconds: 2));
+    await pumpFor(t, const Duration(seconds: 4)); // the ball glows for 2.4 s first
     check(find.byType(ForecastScreen, skipOffstage: false).evaluate().length == 1, 'two forecasts from the Room');
     check(await qaCount('/api/predict') == 2, 'Room forecast: ${await qaCount('/api/predict')} predictions');
     expect(problems, isEmpty);

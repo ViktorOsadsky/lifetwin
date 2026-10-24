@@ -338,7 +338,10 @@ void main() {
       );
 
       // The fortune's ceremony comes first; its "Ask the ball" asks for the forecast.
-      if (finished && await tapButton(t, 'Continue') && await tapButton(t, 'Ask the ball')) {
+      if (finished &&
+          await tapButton(t, 'Continue') &&
+          await waitUntil(t, () => find.text('Ask the ball').evaluate().isNotEmpty) &&
+          await tick(t, 900).then((_) => tapButton(t, 'Ask the ball'))) {
         final seen = await waitUntil(t, () => screenText().contains('still living'), seconds: 45);
         record('forecast screen', seen, 'screen="${screenText()}"', seen ? '' : 'no "still living" text');
       } else {

@@ -83,12 +83,18 @@ Finder roundButton(String label) => find.byWidgetPredicate((w) => w is RoundBack
 Future<void> tapRound(WidgetTester t, String label) async {
   final f = roundButton(label);
   await waitFor(t, f);
+  await t.ensureVisible(f.first); // with large text the window may be scrolled away
+  await pumpFor(t, const Duration(milliseconds: 400));
   await t.tap(f.first, warnIfMissed: false);
   await t.pump();
 }
 
 /// The fortune's ceremony comes first: its "Ask the ball" asks for the forecast.
-Future<void> askTheBall(WidgetTester t) => tapText(t, 'Ask the ball');
+Future<void> askTheBall(WidgetTester t) async {
+  await waitFor(t, find.text('Ask the ball'));
+  await pumpFor(t, const Duration(milliseconds: 900)); // it ignores taps while sliding in
+  await tapText(t, 'Ask the ball');
+}
 
 /// From the Room: Fortune, then "Ask the ball".
 Future<void> openFortune(WidgetTester t) async {
