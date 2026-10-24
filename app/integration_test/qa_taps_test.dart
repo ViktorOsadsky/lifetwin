@@ -66,19 +66,28 @@ void main() {
     await doubleTapText(t, 'Not now');
     await pumpFor(t, const Duration(seconds: 1));
     await backToTalk();
-    await waitFor(t, find.textContaining('How old are you?'));
+    // Conversation v2 opens with the memory question; a double tap on Send answers it once.
+    await waitFor(t, find.textContaining(memoryQuestion));
     await settled(t);
     check((await qaTurnActions()).length == 1, 'start sent ${await qaTurnActions()}');
+
+    await t.enterText(find.byType(TextField), 'No thanks');
+    await doubleTapText(t, 'Send');
+    await waitFor(t, find.textContaining(ageQuestion));
+    await pumpFor(t, const Duration(seconds: 1));
+    await settled(t);
+    check((await qaTurnActions()).where((a) => a == 'reply').length == 1, 'Send twice (memory): ${await qaTurnActions()}');
+    check(ctl(t).state?['current_field'] == 'age' && ctl(t).confirmedProfile['age'] == null, 'memory answer leaked into age');
 
     await t.enterText(find.byType(TextField), '71');
     await doubleTapText(t, 'Send');
     await waitFor(t, find.textContaining('you are 71'));
     await pumpFor(t, const Duration(seconds: 1));
     await settled(t);
-    check((await qaTurnActions()).where((a) => a == 'reply').length == 1, 'Send twice: ${await qaTurnActions()}');
+    check((await qaTurnActions()).where((a) => a == 'reply').length == 2, 'Send twice: ${await qaTurnActions()}');
 
     await doubleTapText(t, 'Yes');
-    await waitFor(t, find.textContaining('What sex'));
+    await waitFor(t, find.textContaining(sexQuestion));
     await pumpFor(t, const Duration(seconds: 1));
     await backToTalk();
     await settled(t);
@@ -95,13 +104,13 @@ void main() {
 
     await doubleTapText(t, 'No, change it');
     await pumpFor(t, const Duration(milliseconds: 500));
-    check(find.text('Okay. What is the right answer?').evaluate().isNotEmpty, 'No, change it double tap');
+    check(find.textContaining('What is the right answer').evaluate().isNotEmpty, 'No, change it double tap');
     // The second tap may have landed in the typing box; put the keyboard away first.
     FocusManager.instance.primaryFocus?.unfocus();
     await pumpFor(t, const Duration(milliseconds: 800));
     await tapText(t, 'Never mind');
     await doubleTapText(t, 'Yes');
-    await waitFor(t, find.textContaining('How tall'));
+    await waitFor(t, find.textContaining(smokingQuestion));
     await pumpFor(t, const Duration(seconds: 1));
     await settled(t);
 
@@ -112,6 +121,9 @@ void main() {
     await settled(t);
     var skips = (await qaTurnActions()).where((a) => a == 'skip').length - before;
     check(skips == 1, 'Skip double tap skipped $skips questions (now on ${ctl(t).state?['current_field']})');
+    // Apple Health is offered next (after age, sex and smoking); decline it by typing.
+    await declineHealth(t);
+    await hideKeyboard(t); // with the keyboard up, Go back is hidden to make room
 
     before = (await qaTurnActions()).where((a) => a == 'reply').length;
     await doubleTapText(t, 'Go back');
@@ -120,7 +132,7 @@ void main() {
     final backs = (await qaTurnActions()).where((a) => a == 'reply').length - before;
     check(backs == 1, 'Go back double tap went back $backs times (now on ${ctl(t).state?['current_field']})');
 
-    for (var i = 0; i < 14 && find.text('Continue').evaluate().isEmpty; i++) {
+    for (var i = 0; i < 16 && find.text('Continue').evaluate().isEmpty; i++) {
       if (ctl(t).confirming) {
         await tapText(t, 'Yes');
       } else {
@@ -138,7 +150,8 @@ void main() {
     await doubleTapText(t, 'Ask the ball');
     await pumpFor(t, const Duration(seconds: 4)); // the ball glows for 2.4 s first
     check(find.byType(ForecastScreen, skipOffstage: false).evaluate().length == 1, 'Continue opened two forecasts');
-    check(await qaCount('/api/predict') == 1, 'Continue: ${await qaCount('/api/predict')} predictions');
+    // The forecast runs on the phone: no prediction request, however many taps.
+    check(await qaCount('/api/predict') == 0, 'Continue: ${await qaCount('/api/predict')} predictions');
 
     await doubleTapText(t, 'Back', finder: roundButton('Back'));
     await pumpFor(t, const Duration(seconds: 1));
@@ -153,7 +166,7 @@ void main() {
     await doubleTapText(t, 'Ask the ball');
     await pumpFor(t, const Duration(seconds: 4)); // the ball glows for 2.4 s first
     check(find.byType(ForecastScreen, skipOffstage: false).evaluate().length == 1, 'two forecasts from the Room');
-    check(await qaCount('/api/predict') == 2, 'Room forecast: ${await qaCount('/api/predict')} predictions');
+    check(await qaCount('/api/predict') == 0, 'Room forecast: ${await qaCount('/api/predict')} predictions');
     expect(problems, isEmpty);
   });
 
@@ -167,6 +180,7 @@ void main() {
     await doubleTapText(t, 'Try again');
     await waitFor(t, find.textContaining('you are 71'));
     await pumpFor(t, const Duration(seconds: 1));
-    await expectActions(['start', 'reply', 'reply']);
+    // start, the memory answer, the age that failed, and the age sent again by Try again.
+    await expectActions(['start', 'reply', 'reply', 'reply']);
   });
 }
