@@ -68,6 +68,13 @@
           "type": "array"
         }
       },
+      "required": [
+        "phase",
+        "confirmed_profile",
+        "pending_profile",
+        "current_field",
+        "skipped_fields"
+      ],
       "title": "ConversationState",
       "type": "object"
     },
@@ -236,6 +243,19 @@
           "title": "Weight Kg"
         }
       },
+      "required": [
+        "age",
+        "sex",
+        "height_cm",
+        "weight_kg",
+        "sleep_hours",
+        "exercise_minutes_weekly",
+        "smoking_status",
+        "alcohol_drinks_weekly",
+        "diabetes",
+        "systolic_bp",
+        "diastolic_bp"
+      ],
       "title": "HealthProfile",
       "type": "object"
     },
@@ -349,10 +369,16 @@
     }
   },
   "required": [
+    "schema_version",
     "state",
     "message",
+    "guide_mode",
+    "provider_status",
+    "voice_status",
+    "accepted_input_modes",
     "mascot_events",
-    "complete"
+    "complete",
+    "limitations"
   ],
   "title": "TurnResponse",
   "type": "object"

@@ -36,8 +36,11 @@
     }
   },
   "required": [
+    "schema_version",
+    "status",
     "code",
-    "message"
+    "message",
+    "request_id"
   ],
   "title": "ApiError",
   "type": "object"

@@ -36,6 +36,14 @@
       "type": "string"
     }
   },
+  "required": [
+    "schema_version",
+    "status",
+    "code",
+    "message",
+    "prediction",
+    "model_version"
+  ],
   "title": "DeferredFeature",
   "type": "object"
 }

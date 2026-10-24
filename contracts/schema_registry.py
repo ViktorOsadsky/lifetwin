@@ -1,4 +1,8 @@
-"""Shared schema registry; prediction schemas intentionally contain no estimates."""
+"""Shared schema registry; prediction schemas intentionally contain no estimates.
+
+Request schemas use pydantic's validation mode. Response schemas use serialization mode,
+where every field the server always emits (including defaulted safety markers) is required.
+"""
 
 from lifetwin.advisor.models import AdvisorRequest, AdvisorResponse
 from lifetwin.core.models import (
@@ -9,20 +13,24 @@ from lifetwin.core.models import (
     SensitivityRequest,
 )
 from lifetwin.onboarding.models import TurnRequest, TurnResponse
-from lifetwin.quiz.models import QuizBankResponse
+from lifetwin.quiz.models import QuizBankResponse, QuizQuestion
+
+REQUEST = "validation"
+RESPONSE = "serialization"
 
 SCHEMAS = {
-    "profile.schema.json": HealthProfile,
-    "error.schema.json": ApiError,
-    "prediction.request.schema.json": HealthProfile,
-    "prediction.schema.json": DeferredFeature,
-    "compare.request.schema.json": CompareRequest,
-    "compare.schema.json": DeferredFeature,
-    "sensitivity.request.schema.json": SensitivityRequest,
-    "sensitivity.schema.json": DeferredFeature,
-    "conversation.request.schema.json": TurnRequest,
-    "conversation.schema.json": TurnResponse,
-    "advisor.request.schema.json": AdvisorRequest,
-    "advisor.schema.json": AdvisorResponse,
-    "quiz.schema.json": QuizBankResponse,
+    "profile.schema.json": (HealthProfile, REQUEST),
+    "error.schema.json": (ApiError, RESPONSE),
+    "prediction.request.schema.json": (HealthProfile, REQUEST),
+    "prediction.schema.json": (DeferredFeature, RESPONSE),
+    "compare.request.schema.json": (CompareRequest, REQUEST),
+    "compare.schema.json": (DeferredFeature, RESPONSE),
+    "sensitivity.request.schema.json": (SensitivityRequest, REQUEST),
+    "sensitivity.schema.json": (DeferredFeature, RESPONSE),
+    "conversation.request.schema.json": (TurnRequest, REQUEST),
+    "conversation.schema.json": (TurnResponse, RESPONSE),
+    "advisor.request.schema.json": (AdvisorRequest, REQUEST),
+    "advisor.schema.json": (AdvisorResponse, RESPONSE),
+    "quiz.schema.json": (QuizBankResponse, RESPONSE),
+    "quiz.question.schema.json": (QuizQuestion, RESPONSE),
 }
