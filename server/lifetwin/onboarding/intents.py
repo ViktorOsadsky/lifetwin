@@ -442,6 +442,11 @@ FIELD_NAMES: dict[ProfileField, str] = {
     "diabetes": r"diabetes|blood sugar",
     "systolic_bp": r"blood pressure|bp|top (?:blood pressure )?number",
     "diastolic_bp": r"bottom (?:blood pressure )?number",
+    "general_health": r"general health|overall health|health rating|health",
+    "hypertension": r"high blood pressure|hypertension",
+    "sitting_minutes_daily": r"sitting|sitting time|sitting down|how much i sit",
+    "moderate_minutes_weekly": r"lighter activity|light activity|light exercise|walking|walks",
+    "vigorous_minutes_weekly": r"harder exercise|hard exercise|vigorous exercise|vigorous activity",
 }
 _NAME = "|".join(FIELD_NAMES.values())
 _THE = r"(?:my |the |your )?"
@@ -486,6 +491,42 @@ TAGGED_QUESTION = re.compile(
 )
 
 
+# "Can we talk about my sleep?", "let's do the sitting question": the person picks
+# the topic. Each topic maps to the question it opens (``topic_field``).
+TOPIC_NAMES: dict[str, str] = {
+    r"(?:my |the |how i )?(?:sleep|sleeping)(?: question)?|how (?:much|well) i sleep": "sleep_hours",
+    r"(?:my |the )?(?:general |overall )?health(?: question)?|how i feel": "general_health",
+    r"(?:my |the )?(?:high )?blood pressure(?: question)?|(?:my )?hypertension": "hypertension",
+    r"(?:my |the )?(?:diabetes|blood sugar)(?: question)?": "diabetes",
+    r"(?:my |the )?(?:sitting|sitting time|sitting down)(?: question| part)?|how much i sit": (
+        "sitting_minutes_daily"
+    ),
+    r"(?:my |the )?(?:exercise|exercising|activity|walking|walks|workouts?|moving)(?: questions?| part)?"
+    r"|how active i am|what i do to stay active": "moderate_minutes_weekly",
+    r"(?:my |the )?(?:harder|hard|vigorous) (?:exercise|activity)": "vigorous_minutes_weekly",
+    r"(?:my |the )?(?:smoking|cigarettes)(?: question)?": "smoking_status",
+    r"(?:my |the )?weight(?: question)?|how much i weigh": "weight_kg",
+    r"(?:my |the )?height(?: question)?|how tall i am": "height_cm",
+    r"(?:my |the )?age(?: question)?|how old i am": "age",
+    r"(?:my |the )?(?:sex|gender)(?: question)?": "sex",
+}
+_TOPIC = "|".join(f"(?:{names})" for names in TOPIC_NAMES)
+JUMP = re.compile(
+    r"(?:actually |wait |oh |and |but )?"
+    r"(?:(?:can|could|shall) we (?:please )?(?:talk about|go to|go back to|do|skip (?:ahead )?to|"
+    r"move (?:on )?to|switch to|get to|jump to|chat about|discuss)"
+    r"|let's (?:talk about|do|go to|move on to|skip (?:ahead )?to|switch to|chat about|get to)"
+    r"|let me tell you about|i (?:want|wanted|would like|'d like) to (?:talk about|tell you about|"
+    r"do|go to)|i'd (?:rather|prefer to) (?:talk about|do)|(?:what|how) about"
+    r"|i have something to (?:say|tell you) about|talk about)"
+    rf" (?P<topic>{_TOPIC})(?: (?:first|now|instead|next|for a minute|for a bit|then))?"
+)
+
+
+def topic_field(topic: str) -> ProfileField:
+    return next(field for names, field in TOPIC_NAMES.items() if re.fullmatch(names, topic))
+
+
 IntentKind = Literal[
     "repeat",
     "slower",
@@ -498,6 +539,7 @@ IntentKind = Literal[
     "back",
     "skip",
     "ask",
+    "jump",
 ]
 
 
@@ -557,6 +599,9 @@ def control_intent(text: str) -> Intent | None:
         field = next(f for f, names in FIELD_NAMES.items() if re.fullmatch(names, name))
         said = any(change.group(f"r{i}") for i in range(1, 5))
         return Intent("back", field, _original_rest(text, field) if said else None)
+    jump = JUMP.fullmatch(words)
+    if jump:
+        return Intent("jump", topic_field(jump.group("topic")))
     if _full(SKIP_REQUEST, words):
         return Intent("skip")
     if is_question_back(text):
@@ -1096,3 +1141,70 @@ def emergency(text: str) -> bool:
 def resumes(text: str) -> bool:
     """ "Continue", "let's carry on": go on with the question that was paused."""
     return _full(RESUME, phrase(text))
+
+
+# ---------------------------------------------------------------------------
+# "I don't know"
+# ---------------------------------------------------------------------------
+
+_DK = (
+    r"(?:i )?(?:really |honestly |just |truly |simply )?(?:don't|do not) (?:really |even |honestly )?"
+    r"(?:know|remember|recall)"
+    r"|(?:i )?dunno|(?:i )?(?:have |got )?(?:no|not a|no earthly|not the (?:slightest|faintest|foggiest)) "
+    r"(?:idea|clue)|(?:i )?haven't (?:a|the (?:faintest|foggiest|slightest)) (?:clue|idea)"
+    r"|(?:i'm |i am )?(?:really |honestly |just )?not (?:really |quite |too |entirely |exactly |totally |"
+    r"a hundred percent |100 percent )?(?:sure|certain)|unsure|uncertain"
+    r"|beats me|search me|who knows|(?:i )?(?:couldn't|could not|can't|cannot) (?:really )?(?:tell you|say)"
+    r"|hard to (?:say|tell)|(?:i )?(?:can't|cannot|couldn't) (?:really )?(?:remember|recall)"
+    r"|(?:i )?forg[eo]t|i've forgotten|i have forgotten|pass|i'll pass|unknown"
+    r"|(?:i'd|i would|i'll|i will|i|let me|i'll need to|i'd need to|i need to|i have to|i'd have to|"
+    r"i would have to|i'll have to|i will have to) (?:have to |need to )?(?:check|look(?: it| that)? up|find out|"
+    r"ask (?:my|the|a) \w+)"
+    r"|(?:you'd|you would|you'll|you will) (?:have to|need to) ask (?:my|the) \w+"
+    r"|(?:my|the) (?:doctor|doc|nurse|gp|daughter|son|wife|husband) (?:would|will|might|could) know"
+    r"|ask my (?:doctor|doc|nurse|gp)"
+    r"|(?:i've |i have |i )?never (?:thought about|measured|counted|checked|tracked|timed|weighed|"
+    r"had it (?:checked|tested|measured|taken)|been (?:tested|checked|measured|weighed|told))"
+    r"|(?:i )?(?:don't|do not) (?:keep track|track|count|measure|own a scale|have a scale|"
+    r"weigh myself|know my numbers|pay attention)"
+    r"|(?:i )?haven't (?:weighed myself|been weighed|measured|checked|had it checked)"
+    r"|it varies(?: so much| a lot| too much)?"
+)
+_DK_LEAD = re.compile(
+    r"^(?:(?:oh|uh|um|hmm|gosh|well|sorry|honestly|to be honest|oh dear|goodness|golly),? )*"
+    rf"(?:{_DK})\b"
+)
+_DK_TAIL = (
+    r"(?:\s+(?:to be honest|honestly|really|offhand|off hand|off the top of my head|exactly|"
+    r"for sure|i'm afraid|sorry|right now|at the moment|dear|anymore|any more))*"
+)
+# "I don't know if I'd call it exercise, but I walk an hour a day", "not sure exactly,
+# but 7 hours": the doubt is about something else (or only the exact figure), and the
+# rest is the answer. A bare "I'm not sure. About 7 hours." is still asked about.
+HEDGED_ANSWER = re.compile(
+    rf"^(?:(?:oh|uh|um|hmm|gosh|well|honestly),? )*(?:{_DK})\b"
+    r" (?:if|whether|why|what to call it|exactly|for sure|offhand|to the minute)\b[^,;.]*"
+    r"\s*(?:[,;.]|\s(?=but\b)|\s-\s)\s*(?:but\s+|though\s+)?(?P<rest>\S.*)$"
+)
+
+
+def dont_know(text: str) -> bool:
+    """ "No idea", "I'd have to check", "my doctor would know", "pass": the person doesn't
+    know the answer. Every clause is either such a phrase or plain context, and no
+    clause holds a number."""
+    words = " ".join(re.sub(r"[^\w'\s,.;]", " ", normalize_text(text).lower()).split())
+    if re.search(r"\d", _canonical(words)):
+        return False
+    clauses = [c.strip() for c in re.split(r"[,.;]|\bbut\b|\bso\b", words) if c.strip()]
+    if not clauses:
+        return False
+    return any(_DK_LEAD.match(clause) for clause in clauses)
+
+
+def hedged_answer(text: str) -> str | None:
+    """The answer after a doubt about something else, kept with its own words."""
+    match = HEDGED_ANSWER.match(" ".join(normalize_text(text).split()).lower())
+    if not match:
+        return None
+    start = len(text) - len(match.group("rest"))
+    return text[start:].strip() if start > 0 and text[start:].strip() else match.group("rest")

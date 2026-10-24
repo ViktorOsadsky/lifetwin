@@ -28,40 +28,12 @@ from pydantic import ValidationError
 
 from lifetwin.core.models import CheckinValues, HealthProfile
 from lifetwin.onboarding.models import ExtractionResult, ProfileField
+from lifetwin.onboarding.script import SCRIPT
 
-QUESTIONS: dict[ProfileField, str] = {
-    "age": "How old are you?",
-    "sex": "What sex were you at birth: female or male?",
-    "height_cm": "How tall are you? For example, 5 feet 10 inches.",
-    "weight_kg": "How much do you weigh? For example, 160 pounds.",
-    "sleep_hours": "How many hours do you sleep on a usual night?",
-    "exercise_minutes_weekly": (
-        "About how many minutes do you exercise in a week? "
-        "A 30-minute walk, 5 days a week, is 150 minutes."
-    ),
-    "smoking_status": "Do you smoke now, did you smoke before, or have you never smoked?",
-    "alcohol_drinks_weekly": (
-        "How many alcoholic drinks do you have in a week? Say none if you don't drink."
-    ),
-    "diabetes": "Has a doctor ever told you that you have diabetes?",
-    "systolic_bp": "What is your blood pressure? For example, 120 over 80.",
-    "diastolic_bp": (
-        "What is the bottom number of your blood pressure? For example, the 80 in 120 over 80."
-    ),
-}
+QUESTIONS: dict[ProfileField, str] = {question.field: question.ask[0] for question in SCRIPT}
 # Plain names for messages; code identifiers never reach the person.
 FRIENDLY_LABELS: dict[ProfileField, str] = {
-    "age": "age",
-    "sex": "sex",
-    "height_cm": "height",
-    "weight_kg": "weight",
-    "sleep_hours": "sleep",
-    "exercise_minutes_weekly": "exercise",
-    "smoking_status": "smoking",
-    "alcohol_drinks_weekly": "alcohol",
-    "diabetes": "diabetes",
-    "systolic_bp": "top blood pressure number",
-    "diastolic_bp": "bottom blood pressure number",
+    **{question.field: question.label for question in SCRIPT},
     # Check-in questions about one night or one day, and how the person feels.
     "sleep_hours_last_night": "sleep",
     "exercise_minutes_today": "exercise",
@@ -71,23 +43,9 @@ FRIENDLY_LABELS: dict[ProfileField, str] = {
 # The value each question's own example stands for, so "yes, that's right" said
 # right after it can be offered back for confirmation.
 QUESTION_EXAMPLE_VALUES: dict[ProfileField, str] = {
-    "height_cm": "5 feet 10 inches",
-    "weight_kg": "160 pounds",
-    "exercise_minutes_weekly": "150 minutes",
+    question.field: question.example_value for question in SCRIPT if question.example_value
 }
-EXAMPLES: dict[ProfileField, str] = {
-    "age": '"I\'m 72"',
-    "sex": '"female"',
-    "height_cm": '"5 feet 10 inches"',
-    "weight_kg": '"160 pounds"',
-    "sleep_hours": '"7 hours"',
-    "exercise_minutes_weekly": '"150 minutes a week"',
-    "smoking_status": '"I never smoked"',
-    "alcohol_drinks_weekly": '"3 drinks a week"',
-    "diabetes": '"I don\'t have diabetes"',
-    "systolic_bp": '"120 over 80"',
-    "diastolic_bp": '"80"',
-}
+EXAMPLES: dict[ProfileField, str] = {question.field: question.example for question in SCRIPT}
 
 LABELS: dict[str, ProfileField] = {
     "age": "age",
@@ -111,14 +69,38 @@ LABELS: dict[str, ProfileField] = {
     "diastolic_bp": "diastolic_bp",
     "bp": "systolic_bp",
     "blood pressure": "systolic_bp",
+    "health": "general_health",
+    "general health": "general_health",
+    "general_health": "general_health",
+    "high blood pressure": "hypertension",
+    "hypertension": "hypertension",
+    "sitting": "sitting_minutes_daily",
+    "sitting_minutes_daily": "sitting_minutes_daily",
+    "moderate": "moderate_minutes_weekly",
+    "moderate_minutes_weekly": "moderate_minutes_weekly",
+    "vigorous": "vigorous_minutes_weekly",
+    "vigorous_minutes_weekly": "vigorous_minutes_weekly",
 }
+# Declining a question: recorded as skipped.
 SKIP_WORDS = {
     "skip",
     "skip it",
     "skip this",
     "skip this one",
-    "pass",
     "next",
+    "i'd rather not say",
+    "i would rather not say",
+    "rather not say",
+    "i'd rather not",
+    "prefer not to say",
+    "i prefer not to say",
+    "prefer not to answer",
+    "i'd rather not answer",
+}
+# Not knowing: recorded as unknown, distinct from skipped (intents.dont_know reads
+# many more phrasings; these are the short whole replies).
+UNKNOWN_WORDS = {
+    "pass",
     "unknown",
     "i don't know",
     "i do not know",
@@ -143,14 +125,6 @@ SKIP_WORDS = {
     "i can't remember",
     "can't remember",
     "i forget",
-    "i'd rather not say",
-    "i would rather not say",
-    "rather not say",
-    "i'd rather not",
-    "prefer not to say",
-    "i prefer not to say",
-    "prefer not to answer",
-    "i'd rather not answer",
 }
 # These record an answer (sex: prefer not to say; smoking: unknown) instead of skipping.
 SEX_PREFER_NOT = {
@@ -183,6 +157,11 @@ FIELD_CUES: dict[ProfileField, str] = {
     "diabetes": r"diabet",
     "systolic_bp": r"systolic|blood pressure|mmhg|\btop\b|\d\s*(?:/|over)\s*\d",
     "diastolic_bp": r"diastolic|blood pressure|mmhg|\bbottom\b|\d\s*(?:/|over)\s*\d",
+    "general_health": r"health|excellent|very good|\bgood\b|\bfair\b|\bpoor\b",
+    "hypertension": r"blood pressure|hypertension",
+    "sitting_minutes_daily": r"\bsit|seated|sat\b|hours?\b",
+    "moderate_minutes_weekly": r"exercis|minutes?|mins?\b|walk|garden|danc|week|none",
+    "vigorous_minutes_weekly": r"exercis|minutes?|mins?\b|jog|run|tennis|hard|week|none",
 }
 BP_FIELDS = {"systolic_bp", "diastolic_bp"}
 # Check-in questions about one night or one day read like their profile question,
@@ -192,6 +171,12 @@ CHECKIN_BASE: dict[str, ProfileField] = {
     "exercise_minutes_today": "exercise_minutes_weekly",
     "alcohol_drinks_yesterday": "alcohol_drinks_weekly",
 }
+# Lighter and harder activity read like the weekly exercise question.
+ACTIVITY_BASE: dict[str, ProfileField] = {
+    "moderate_minutes_weekly": "exercise_minutes_weekly",
+    "vigorous_minutes_weekly": "exercise_minutes_weekly",
+}
+ACTIVITY_FIELDS = {"exercise_minutes_weekly", *ACTIVITY_BASE}
 FEELING_CUE = (
     r"\b(?:feel\w*|felt|good|great|okay|ok|alright|all right|fine|well|bad|poorly|terrible|"
     r"awful|rough|lousy|so so|fair|wonderful|tired|sick|week)\b"
@@ -199,7 +184,7 @@ FEELING_CUE = (
 for _day, _base_field in CHECKIN_BASE.items():
     FIELD_CUES[_day] = FIELD_CUES[_base_field]
 FIELD_CUES["wellbeing"] = FEELING_CUE
-CATEGORICAL = {"sex", "smoking_status", "diabetes", "wellbeing"}
+CATEGORICAL = {"sex", "smoking_status", "diabetes", "wellbeing", "general_health", "hypertension"}
 NOTHING = r"(?!)"  # a pattern that never matches
 
 # ---------------------------------------------------------------------------
@@ -513,6 +498,9 @@ def _canonical(text: str) -> str:
     s = re.sub(r"(?<![\d.])\.(\d)", r"0.\1", s)
     for pattern, unit in UNIT_SPELLINGS:
         s = re.sub(pattern, unit, s)
+    # "I walk with my wife", "I walk my dog": company, not someone else's answer.
+    s = re.sub(COMPANY, " with company", s)
+    s = re.sub(DOG_WALK, r"\1 company", s)
     return " ".join(_containers(s).split())
 
 
@@ -524,7 +512,7 @@ def _canonical(text: str) -> str:
 HEDGES = re.compile(
     r"\b(?:i'd say|i would say|i think|i guess|i believe|i reckon|i suppose|"
     r"if i remember (?:right|rightly|correctly)|if memory serves(?: me)?|if you ask me|"
-    r"if i'm honest|to be honest|more or less|give or take|or so|roughly|about|around|"
+    r"if i'm honest|to be honest|if anything|more or less|give or take|or so|roughly|about|around|"
     r"approximately|approx|close to|nearly|almost|just about|somewhere around|"
     r"last time i checked|at my last check ?up|these days|nowadays|right now|"
     r"at the moment|currently|usually|normally|typically|generally|on average)\b"
@@ -573,6 +561,13 @@ PEOPLE = (
     r"grandchild(?:ren)?|grandma|grandpa|granny|grandmother|grandfather|boyfriend|girlfriend|"
     r"cousin|aunt|uncle|niece|nephew|dog|cat|family|parents?)"
 )
+# Company in an activity: "with my wife", "and my friends", "I walk my dog".
+COMPANY = (
+    r"\b(?:with|alongside) (?:my|our|the|a|some) (?:wife|husband|hubby|partner|son|daughter|"
+    r"friends?|neighbou?rs?|kids|children|grandkids|grandchildren|grandson|granddaughter|"
+    r"sister|brother|dogs?|buddies|pals|group|club|class)\b"
+)
+DOG_WALK = r"\b(walk\w*|take|took|taking) (?:my|our|the) dogs?\b"
 # A relative as the subject even without "my": "Dad is 90", "hubby has diabetes".
 KIN = (
     r"(?:wife|husband|hubby|missus|missis|wifey|spouse|partner|son|daughter|mother|mom|mum|"
@@ -622,6 +617,11 @@ NOT_CURRENT = re.compile(
 )
 FUTURE = re.compile(r"\b(?:will|won't|going to|gonna|turning|soon)\b|'ll\b")
 
+HYPERTENSION_WORDS = (
+    r"\b(?:(?:high|low) blood pressure|hypertension|hypertensive|blood pressure (?:pills?|"
+    r"medic\w*|tablets?|meds)|(?:pills?|medic\w*|tablets?|meds) for (?:my |the )?blood pressure|"
+    r"lisinopril|amlodipine|losartan|metoprolol|hydrochlorothiazide|water pills?)\b"
+)
 # Topic words per field. A value whose clause names another topic ("I weigh 70"
 # for the age question) is never read as the asked field.
 TOPICS: dict[str, str] = {
@@ -644,6 +644,13 @@ TOPICS: dict[str, str] = {
         r"\b(?:blood pressure|pressure|systolic|diastolic|mmhg|top number|bottom number|"
         r"upper number|lower number)\b"
     ),
+    # A diagnosis said in words, never a reading.
+    "hypertension": HYPERTENSION_WORDS,
+    "general_health": r"\b(?:my health|health is|healthy|in (?:good|great|bad|poor) shape)\b",
+    "sitting_minutes_daily": (
+        r"\b(?:sit|sits|sitting|sat|seated|on my (?:bum|backside|behind)|couch|sofa|recliner|"
+        r"armchair)\b"
+    ),
 }
 # Units also attribute a number to a topic (used for clauses a provider did not quote).
 TOPIC_UNITS: dict[str, str] = {
@@ -654,11 +661,12 @@ TOPIC_UNITS: dict[str, str] = {
     "exercise_minutes_weekly": r"\d\s?(?:hour|minute)\b",
     "alcohol_drinks_weekly": r"\d\s?(?:drinks?|beers?|glass(?:es)?)\b",
     "blood_pressure": r"\d\s?(?:/|over)\s?\d|mmhg",
+    "sitting_minutes_daily": r"\d\s?(?:hour|minute)\b",
 }
 
 
 def _base(field: str) -> str:
-    return CHECKIN_BASE.get(field, field)
+    return CHECKIN_BASE.get(field) or ACTIVITY_BASE.get(field, field)
 
 
 def _topic(field: str) -> str:
@@ -668,7 +676,12 @@ def _topic(field: str) -> str:
 
 def _other_topic(field: str, text: str) -> bool:
     own = _topic(field)
-    return any(re.search(cue, text) for topic, cue in TOPICS.items() if topic != own)
+    # A diagnosis in words ("high blood pressure") is not the reading's topic, and the
+    # other way round; each still blocks every other topic.
+    near = {"hypertension": {"blood_pressure"}, "blood_pressure": {"hypertension"}}.get(own, set())
+    return any(
+        re.search(cue, text) for topic, cue in TOPICS.items() if topic != own and topic not in near
+    )
 
 
 def _unhedged(text: str) -> str:
@@ -731,7 +744,12 @@ ADVICE = re.compile(
 )
 # Sleep, exercise and drinks are the person's own habit, so a doctor's word is advice.
 REPORTED = re.compile(r"\b(?:says|said|tells me|told me)\b")  # not "I'd say 6"
-HABITS = {"sleep_hours", "exercise_minutes_weekly", "alcohol_drinks_weekly"}
+HABITS = {
+    "sleep_hours",
+    "exercise_minutes_weekly",
+    "alcohol_drinks_weekly",
+    "sitting_minutes_daily",
+}
 SEASONAL = re.compile(
     r"\b(?:in|during) (?:the )?(?:summer|winter|spring|fall|autumn)(?:time)?\b|\bin season\b"
 )
@@ -1407,6 +1425,23 @@ def _exercise(text: str, today: date, nested: bool = False, past: bool = False) 
     return [minutes], spans
 
 
+def _sitting(text: str, today: date) -> Found:
+    """ "About 6 hours", "8 hours a day", "90 minutes": awake sitting on a usual day."""
+    if re.search(r"\b(?:a|per|each|every|in a|this) (?:week|night)\b|\bweekly\b", text):
+        return None
+    durations = list(re.finditer(DURATION, text))
+    if len(durations) != 1:
+        return None
+    minutes = _minutes(durations[0])
+    if minutes is None:
+        return None
+    spans = [durations[0].span()]
+    tail = re.match(r"\s*(?:(?:a|per|each|every)\s+day|daily|each day)\b", text[spans[0][1] :])
+    if tail:
+        spans.append((spans[0][1], spans[0][1] + tail.end()))
+    return [minutes], spans
+
+
 BEVERAGE = (
     r"(?:(?:red|white|rose|house)\s+)?(?:wine|beer|whiske?y|scotch|bourbon|champagne|prosecco|"
     r"sherry|port|cider|vodka|gin|rum|brandy|ale|lager|stout)"
@@ -1577,7 +1612,12 @@ THIS_WEEK = (
     r"\bthis past week\b"
 )
 # Habits asked about "this week": a reply about last week is about another week.
-WEEK_HABITS = {"sleep_hours", "exercise_minutes_weekly", "alcohol_drinks_weekly"}
+WEEK_HABITS = {
+    "sleep_hours",
+    "exercise_minutes_weekly",
+    "alcohol_drinks_weekly",
+    "sitting_minutes_daily",
+}
 
 
 def _in_period(text: str, field: str, period: str | None) -> str | None:
@@ -1754,6 +1794,9 @@ NUMERIC = {
     "weight_kg": _weight,
     "sleep_hours": _sleep,
     "exercise_minutes_weekly": _exercise,
+    "moderate_minutes_weekly": _exercise,
+    "vigorous_minutes_weekly": _exercise,
+    "sitting_minutes_daily": _sitting,
     "alcohol_drinks_weekly": _alcohol,
 }
 
@@ -2030,7 +2073,7 @@ DIABETES_UNCLEAR = (
     r"\bfamily history\b|\bruns in\b|\bremission\b|\breversed\b|\bcured\b|\bwent away\b|"
     r"\bused to\b|(?<!'ve )(?<!have )\bhad (?:it|diabetes)\b|\bwas diabetic\b|\bno longer\b|"
     r"\banymore\b|\bruled (?:it |that )?out\b|\binsipidus\b|\bpcos\b|\bpolycystic\b|"
-    r"\btest(?:ing|ed)? (?:me|for)\b|\bwaiting\b|\bresults?\b|\binsulin resist\w*|"
+    r"\btest(?:ing|ed)? (?:me|for)\b|\b(?:tested|screened|checked)\b|\bwaiting\b|\bresults?\b|\binsulin resist\w*|"
     r"\bhigh (?:blood )?sugar\b|\bsugar(?:'s| is) (?:a little |a bit |slightly )?high\b"
 )
 YES_WORDS = (
@@ -2071,6 +2114,152 @@ def _diabetes(text: str) -> bool | None:
     if not answer and (contrast or re.search(DIABETES_MEDICINE, text)):
         return None
     return answer
+
+
+# A diagnosis of high blood pressure, said in words. A reading is never a diagnosis.
+HYPERTENSION_UNCLEAR = (
+    r"\bborderline\b|\b(?:a (?:bit|little|touch)|slightly|somewhat|kind of|sort of) "
+    r"(?:high|elevated|up)\b|\bon the high side\b|\bhigh side\b|\belevated\b|"
+    r"\bwhite coat\b|\bonly (?:high|up) (?:at|when)\b|\bpre ?hypertens\w*|\bwatch(?:ing)? it\b|"
+    r"\bkeep(?:ing)? an eye\b|\bused to\b|\bwas high\b|\bno longer\b|\banymore\b|"
+    r"\bpregnan\w*|\bwent away\b|\b(?:tested|checked|measured|taken)\b|\bnothing to worry\b"
+)
+HYPERTENSION_YES = (
+    r"\bhigh blood pressure\b|\bhypertensi\w*|\b(?:pills?|medic\w*|tablets?|meds) for (?:my |the )?"
+    r"blood pressure\b|\bblood pressure (?:pills?|medic\w*|tablets?|meds)\b|\blisinopril\b|"
+    r"\bamlodipine\b|\blosartan\b|\bmetoprolol\b|\bhydrochlorothiazide\b|\bwater pills?\b|"
+    r"\b(?:i do|i have it|i've got it|i got it|i have that)\b"
+)
+HYPERTENSION_NO = (
+    r"\blow blood pressure\b|\b(?:it's|it is|it has|it's always|it has always|always|"
+    r"usually|normally|blood pressure is|blood pressure's|mine is|mine's)(?: been)?(?: always)?"
+    r" (?:low|normal|fine|good|ok|okay|alright|all right|perfect|great)\b|^(?:normal|fine|low)$"
+)
+
+
+def _hypertension(text: str) -> bool | None:
+    """ "I take pills for my blood pressure": yes. "It's always been normal": no.
+
+    A reading ("140 over 90") is never read as a diagnosis; nor is "a bit high".
+    """
+    if (
+        _doubtful(text)
+        or re.search(HYPERTENSION_UNCLEAR, text)
+        or re.search(r"\d", text)
+        or re.search(r"\bno thank", text)
+    ):
+        return None
+    if _other_topic("hypertension", _own_text(text)):
+        return None
+    answers: set[bool] = set()
+    for clause, _ in _own_clauses(text):
+        low = bool(re.search(HYPERTENSION_NO, clause))
+        high = bool(re.search(HYPERTENSION_YES, clause)) and not re.search(
+            r"\blow blood pressure\b", clause
+        )
+        said_no = bool(re.search(NO_WORDS, clause))
+        said_yes = bool(re.search(YES_WORDS, clause))
+        if low:
+            answers.add(False)
+        elif high and not said_no:
+            answers.add(True)
+        elif high and said_no:
+            # "No, I don't have high blood pressure", but "no, I do have high blood pressure"?
+            if re.search(r"\b(?:don't|do not|never|haven't|have not|not)\b", clause):
+                answers.add(False)
+            else:
+                return None
+        elif said_no and said_yes:
+            return None
+        elif said_no:
+            answers.add(False)
+        elif said_yes:
+            answers.add(True)
+    return answers.pop() if len(answers) == 1 else None
+
+
+# "Excellent, very good, good, fair or poor": the survey's words, nothing guessed.
+GENERAL_HEALTH = (
+    (r"\bexcellent\b", "excellent"),
+    (r"\bvery good\b", "very_good"),
+    (r"\bgood\b", "good"),
+    (r"\bfair\b", "fair"),
+    (r"\bpoor\b", "poor"),
+)
+# Everyday words between two of the five: asked as an either-or, never guessed.
+HEALTH_BETWEEN: tuple[tuple[str, str], ...] = (
+    (
+        r"\b(?:great|wonderful|fantastic|brilliant|top notch|terrific|perfect)\b",
+        "excellent, or very good",
+    ),
+    (r"\b(?:pretty good|quite good|really good|fairly good)\b", "very good, or good"),
+    (
+        r"\b(?:okay|ok|alright|all right|fine|not bad|so so|average|could be better|"
+        r"can't complain)\b",
+        "good, or fair",
+    ),
+    (
+        r"\b(?:not (?:so |too |very )?good|not great|bad|not well|unwell|rough|lousy|awful|"
+        r"terrible)\b",
+        "fair, or poor",
+    ),
+)
+
+
+def _general_health(text: str) -> str | None:
+    if re.search(r"\d", text) or OTHER_PERSON.search(text):
+        return None
+    if _other_topic("general_health", _own_text(text)):
+        return None
+    plain = _unhedged(re.sub(MAYBE, " ", text))
+    if re.search(UNCERTAIN, plain) or HYPOTHETICAL.search(re.sub(r"\bi'd say\b", " ", plain)):
+        return None
+    if re.search(r"\bpretty good|quite good|really good|fairly good\b", plain):
+        return None  # between two answers: asked about
+    found = []
+    rest = plain
+    for pattern, rating in GENERAL_HEALTH:
+        for match in re.finditer(pattern, rest):
+            before = rest[max(0, match.start() - 12) : match.start()]
+            if re.search(r"\b(?:not|n't|never)\b\s*(?:\w+\s*)?$|n't\s*$", before):
+                return None
+            found.append(rating)
+        rest = re.sub(pattern, " ", rest)
+    return found[0] if len(set(found)) == 1 else None
+
+
+def health_either(text: str) -> str | None:
+    """ "Pretty good": "Would you say very good, or good?" Never a guess."""
+    canonical = _canonical(normalize_text(text))
+    if re.search(r"\d", canonical) or OTHER_PERSON.search(canonical):
+        return None
+    for pattern, pair in HEALTH_BETWEEN:
+        if re.search(pattern, canonical):
+            return f"Would you say {pair}?"
+    return None
+
+
+# Lighter or harder activity, from what the person does ("I walk", "I jog").
+VIGOROUS_WORDS = (
+    r"\b(?:jog\w*|run|runs|running|ran|tennis|squash|racquetball|basketball|soccer|football|"
+    r"spin(?:ning)? class|hiit|vigorous\w*|hard exercise|breathe hard|out of breath|"
+    r"laps|rowing|crossfit|boot ?camp|uphill)\b"
+)
+MODERATE_WORDS = (
+    r"\b(?:walk\w*|stroll\w*|garden\w*|yard ?work|golf\w*|danc\w*|yoga|tai chi|bowling|"
+    r"housework|chores|vacuum\w*|light|gentle|stretch\w*|pilates|fishing|water aerobics|"
+    r"pickleball|hik\w*)\b"
+)
+
+
+def intensity(text: str) -> str | None:
+    """ "moderate_minutes_weekly" or "vigorous_minutes_weekly" when the words say which."""
+    canonical = _canonical(text)
+    hard = bool(re.search(VIGOROUS_WORDS, canonical))
+    light = bool(re.search(MODERATE_WORDS, canonical))
+    if hard == light:
+        return None
+    return "vigorous_minutes_weekly" if hard else "moderate_minutes_weekly"
 
 
 # ---------------------------------------------------------------------------
@@ -2214,9 +2403,20 @@ def parse_value(
     if field == "smoking_status":
         status = _smoking(canonical)
         return _validated({field: status}) if status else {}
+    if field in {"diabetes", "hypertension"}:
+        # "No diabetes either": a no, not a doubt between two things.
+        canonical = re.sub(
+            r"(\b(?:no|not|never|nor)\b|n't\b)([^,.;!?]*?)\s+either\b", r"\1\2", canonical
+        )
     if field == "diabetes":
         answer = _diabetes(canonical)
         return {} if answer is None else _validated({field: answer})
+    if field == "hypertension":
+        answer = _hypertension(canonical)
+        return {} if answer is None else _validated({field: answer})
+    if field == "general_health":
+        rating = _general_health(canonical)
+        return _validated({field: rating}) if rating else {}
     if field == "wellbeing":
         feeling = _wellbeing(canonical)
         return _validated({field: feeling}) if feeling else {}
@@ -2233,7 +2433,10 @@ def parse_value(
     if not _clean_measurement(field, canonical, spans, recent=recent):
         return {}
     result: float | int = values[0]
-    if field in {"exercise_minutes_weekly", "exercise_minutes_today"}:
+    if _base(field) == "exercise_minutes_weekly" or field in {
+        "exercise_minutes_today",
+        "sitting_minutes_daily",
+    }:
         result = int(round(result))  # "25 minutes every 3 days": an estimate, read back
     elif field == "age":
         if abs(result - round(result)) > 1e-6:
@@ -2421,6 +2624,8 @@ def _part_fields(part: str, asked: ProfileField, several: bool) -> set[str]:
     """The fields one part of a reply names, by topic words, else by units."""
     text = _canonical(part)
     named = {topic for topic, cue in TOPICS.items() if re.search(cue, text)}
+    if "hypertension" in named:
+        named.discard("blood_pressure")  # "high blood pressure" is a diagnosis, not a reading
     named |= {"sex"} if re.search(SEX_CUE if asked == "sex" else SEX_CUE_OTHER, text) else set()
     if not named:
         # "for ten years" is how long, never an age.
@@ -2441,10 +2646,20 @@ def _part_fields(part: str, asked: ProfileField, several: bool) -> set[str]:
         or re.search(TOPIC_UNITS[topic], text)
     }
     bp = asked if asked in BP_FIELDS else "systolic_bp"
-    return {
+    fields = {
         asked if topic == _topic(asked) else bp if topic == "blood_pressure" else topic
         for topic in named
     }
+    if asked in ACTIVITY_BASE or (
+        asked not in ACTIVITY_FIELDS and "exercise_minutes_weekly" in fields
+    ):
+        # "None, but I walk 30 minutes a day" to the harder-exercise question: walking is
+        # lighter activity. Words that say neither leave the asked question.
+        level = intensity(part)
+        activity = asked in ACTIVITY_FIELDS and (fields & ACTIVITY_FIELDS or not fields)
+        if level and (activity or "exercise_minutes_weekly" in fields):
+            fields = (fields - ACTIVITY_FIELDS) | {level}
+    return fields
 
 
 # No answer has seven digits in a row; refusing them early keeps huge inputs cheap.
@@ -2573,6 +2788,10 @@ def parse_reply(
         if any(key in values for key in parsed):
             return whole
         values.update(parsed)
+    if field in ACTIVITY_BASE and len(values.keys() & ACTIVITY_FIELDS) > 1:
+        # Lighter and harder activity told apart by their own words: the whole reply,
+        # read as one question, would add them up.
+        return values
     return values if whole.items() <= values.items() else {}
 
 
