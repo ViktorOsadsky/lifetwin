@@ -24,6 +24,8 @@ from lifetwin.onboarding import router as onboarding_router
 from lifetwin.quiz.router import router as quiz_router
 from lifetwin.quiz.service import load_bank
 from lifetwin.research.tavily import TavilyResearch
+from lifetwin.voice import VoiceService, voice_configured
+from lifetwin.voice import router as voice_router
 
 FIELD_WORDS = {
     "age": "age",
@@ -40,11 +42,14 @@ FIELD_WORDS = {
     "text": "your message",
     "limit": "number of questions",
     "question_id": "question",
+    "voice_consent": "voice",
 }
 
 
 def invalid_input_message(exc: RequestValidationError) -> str:
     errors = exc.errors()
+    if any(list(error.get("loc", []))[-1:] == ["voice_consent"] for error in errors):
+        return "Please agree to use your voice first."
     if any(BP_ORDER_MESSAGE in str(error.get("msg", "")) for error in errors):
         return BP_ORDER_MESSAGE
     names = []
@@ -103,6 +108,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         timeout_seconds=settings.provider_timeout_seconds,
     )
 
+    application.state.voice_service = VoiceService(settings)
+
     @application.exception_handler(RequestValidationError)
     async def invalid_input(request: Request, exc: RequestValidationError):
         # Pydantic's default error includes raw input; deliberately omit it.
@@ -159,7 +166,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "advisor": "curated_educational",
             "quiz": "local_scoring_content",
             "prediction": "not_implemented",
-            "voice": "deferred",
+            "voice": "available" if voice_configured(settings) else "unavailable",
             "health_data_storage": "none",
         }
 
@@ -204,6 +211,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         quiz_router,
         prefix="/api",
         responses=_described({404: "Quiz question not found", 422: "Invalid request values"}),
+    )
+    application.include_router(
+        voice_router,
+        prefix="/api",
+        responses={
+            **BODY_ERRORS,
+            **_described({503: "Voice is unavailable; the app can continue by typing"}),
+        },
     )
     application.add_middleware(RequestBudgetMiddleware, settings=settings)
     application.add_middleware(

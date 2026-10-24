@@ -71,6 +71,8 @@ def main() -> None:
                             openai_api_key="",
                             openai_model="",
                             tavily_api_key="",
+                            cartesia_api_key="",
+                            cartesia_voice_id="",
                         )
                     )
                 )

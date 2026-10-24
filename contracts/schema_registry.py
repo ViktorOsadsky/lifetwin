@@ -14,6 +14,7 @@ from lifetwin.core.models import (
 )
 from lifetwin.onboarding.models import TurnRequest, TurnResponse
 from lifetwin.quiz.models import QuizBankResponse, QuizQuestion
+from lifetwin.voice.models import VoiceTokenRequest, VoiceTokenResponse
 
 REQUEST = "validation"
 RESPONSE = "serialization"
@@ -33,4 +34,6 @@ SCHEMAS = {
     "advisor.schema.json": (AdvisorResponse, RESPONSE),
     "quiz.schema.json": (QuizBankResponse, RESPONSE),
     "quiz.question.schema.json": (QuizQuestion, RESPONSE),
+    "voice.token.request.schema.json": (VoiceTokenRequest, REQUEST),
+    "voice.token.schema.json": (VoiceTokenResponse, RESPONSE),
 }

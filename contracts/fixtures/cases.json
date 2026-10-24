@@ -455,5 +455,36 @@
       "status": "error",
       "code": "invalid_request"
     }
+  },
+  {
+    "name": "voice-token-consent-missing",
+    "method": "POST",
+    "path": "/api/voice/token",
+    "request_schema": "voice.token.request.schema.json",
+    "request_schema_valid": false,
+    "request": {},
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request",
+      "message": "Please agree to use your voice first."
+    }
+  },
+  {
+    "name": "voice-token-unconfigured",
+    "method": "POST",
+    "path": "/api/voice/token",
+    "request_schema": "voice.token.request.schema.json",
+    "request": {
+      "voice_consent": true
+    },
+    "status": 503,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "voice_unavailable",
+      "message": "Voice isn't available right now. You can keep going by typing."
+    }
   }
 ]

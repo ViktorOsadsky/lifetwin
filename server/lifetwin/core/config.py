@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr = SecretStr("")
     openai_model: str = ""
     tavily_api_key: SecretStr = SecretStr("")
+    cartesia_api_key: SecretStr = SecretStr("")
+    cartesia_version: str = "2026-08-14"
+    cartesia_tts_model: str = "sonic-3.6"
+    cartesia_stt_model: str = "ink-2"
+    cartesia_voice_id: str = ""
+    cartesia_tts_speed: float = Field(default=0.9, ge=0.6, le=1.5)
+    cartesia_token_ttl_seconds: int = Field(default=300, ge=60, le=900)
     # Reserved; never read or loaded by this backend.
     model_artifact_path: str = ""
     provider_timeout_seconds: float = Field(
