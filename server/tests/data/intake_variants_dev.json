@@ -1,0 +1,2598 @@
+[
+ {
+  "field": "age",
+  "text": "76",
+  "expected": {
+   "age": 76
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "seventy-six",
+  "expected": {
+   "age": 76
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "I'm 68",
+  "expected": {
+   "age": 68
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "well I just turned seventy",
+  "expected": {
+   "age": 70
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "I'm 79, going on 80",
+  "expected": {
+   "age": 79
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "I’m 88 years young!",
+  "expected": {
+   "age": 88
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "I’d say 72",
+  "expected": {
+   "age": 72
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "67 years",
+  "expected": {
+   "age": 67
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "Eighty four, thank you for asking",
+  "expected": {
+   "age": 84
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "sixty nine last birthday",
+  "expected": {
+   "age": 69
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "I am seventy-seven years of age",
+  "expected": {
+   "age": 77
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "74, yes, 74",
+  "expected": {
+   "age": 74
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "let me think... eighty-two",
+  "expected": {
+   "age": 82
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "i'm 71 now",
+  "expected": {
+   "age": 71
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "I'm ninety one",
+  "expected": {
+   "age": 91
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "seventy five and still kicking",
+  "expected": {
+   "age": 75
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "I'm 69 as of last month",
+  "expected": {
+   "age": 69
+  },
+  "why": "age stated directly"
+ },
+ {
+  "field": "age",
+  "text": "I'll be 77 in March",
+  "expected": {
+   "age": 76
+  },
+  "why": "turns 77 in future so currently 76"
+ },
+ {
+  "field": "age",
+  "text": "I'll turn eighty next spring",
+  "expected": {
+   "age": 79
+  },
+  "why": "upcoming 80th birthday so currently 79"
+ },
+ {
+  "field": "age",
+  "text": "I was born on December 5th, 1950",
+  "expected": {
+   "age": 75
+  },
+  "why": "birthday not yet reached as of 2026-10-24"
+ },
+ {
+  "field": "age",
+  "text": "old enough!",
+  "expected": null,
+  "why": "no number"
+ },
+ {
+  "field": "age",
+  "text": "I'm in my seventies",
+  "expected": null,
+  "why": "decade range too wide"
+ },
+ {
+  "field": "age",
+  "text": "I'm 76 or 77, I forget",
+  "expected": null,
+  "why": "two candidate values"
+ },
+ {
+  "field": "age",
+  "text": "I was 60 ten years ago, you do the math",
+  "expected": null,
+  "why": "indirect and arithmetic from the past; ask for current age"
+ },
+ {
+  "field": "age",
+  "text": "my wife is 70",
+  "expected": null,
+  "why": "about another person"
+ },
+ {
+  "field": "age",
+  "text": "if I make it to 90 I'll be happy",
+  "expected": null,
+  "why": "hypothetical"
+ },
+ {
+  "field": "age",
+  "text": "I'm not 70 yet, heaven forbid",
+  "expected": null,
+  "why": "negation gives only an upper bound"
+ },
+ {
+  "field": "age",
+  "text": "somewhere between 70 and 80",
+  "expected": null,
+  "why": "range too wide"
+ },
+ {
+  "field": "age",
+  "text": "I don't know, maybe 75 or 80",
+  "expected": null,
+  "why": "real uncertainty"
+ },
+ {
+  "field": "age",
+  "text": "what year is it?",
+  "expected": null,
+  "why": "not an answer"
+ },
+ {
+  "field": "sex",
+  "text": "woman",
+  "expected": {
+   "sex": "female"
+  },
+  "why": "direct synonym for female"
+ },
+ {
+  "field": "sex",
+  "text": "lady",
+  "expected": {
+   "sex": "female"
+  },
+  "why": "direct synonym for female"
+ },
+ {
+  "field": "sex",
+  "text": "female",
+  "expected": {
+   "sex": "female"
+  },
+  "why": "direct synonym for female"
+ },
+ {
+  "field": "sex",
+  "text": "F",
+  "expected": {
+   "sex": "female"
+  },
+  "why": "direct synonym for female"
+ },
+ {
+  "field": "sex",
+  "text": "f",
+  "expected": {
+   "sex": "female"
+  },
+  "why": "direct synonym for female"
+ },
+ {
+  "field": "sex",
+  "text": "I'm a gal",
+  "expected": {
+   "sex": "female"
+  },
+  "why": "direct synonym for female"
+ },
+ {
+  "field": "sex",
+  "text": "Female.",
+  "expected": {
+   "sex": "female"
+  },
+  "why": "direct synonym for female"
+ },
+ {
+  "field": "sex",
+  "text": "FEMALE",
+  "expected": {
+   "sex": "female"
+  },
+  "why": "direct synonym for female"
+ },
+ {
+  "field": "sex",
+  "text": "oh, I'm a lady, yes",
+  "expected": {
+   "sex": "female"
+  },
+  "why": "direct synonym for female"
+ },
+ {
+  "field": "sex",
+  "text": "um, female",
+  "expected": {
+   "sex": "female"
+  },
+  "why": "direct synonym for female"
+ },
+ {
+  "field": "sex",
+  "text": "I’m a woman",
+  "expected": {
+   "sex": "female"
+  },
+  "why": "direct synonym for female"
+ },
+ {
+  "field": "sex",
+  "text": "m",
+  "expected": {
+   "sex": "male"
+  },
+  "why": "direct synonym for male"
+ },
+ {
+  "field": "sex",
+  "text": "I'm a guy",
+  "expected": {
+   "sex": "male"
+  },
+  "why": "direct synonym for male"
+ },
+ {
+  "field": "sex",
+  "text": "well, I'm a man",
+  "expected": {
+   "sex": "male"
+  },
+  "why": "direct synonym for male"
+ },
+ {
+  "field": "sex",
+  "text": "Male, last time I checked",
+  "expected": {
+   "sex": "male"
+  },
+  "why": "direct synonym for male"
+ },
+ {
+  "field": "sex",
+  "text": "a gentleman, thank you",
+  "expected": {
+   "sex": "male"
+  },
+  "why": "direct synonym for male"
+ },
+ {
+  "field": "sex",
+  "text": "I'm a fella",
+  "expected": {
+   "sex": "male"
+  },
+  "why": "direct synonym for male"
+ },
+ {
+  "field": "sex",
+  "text": "MALE",
+  "expected": {
+   "sex": "male"
+  },
+  "why": "direct synonym for male"
+ },
+ {
+  "field": "sex",
+  "text": "I was born intersex",
+  "expected": null,
+  "why": "direct synonym for intersex (sex at birth is female/male only; this now skips or explains)"
+ },
+ {
+  "field": "sex",
+  "text": "I'm intersex, yes",
+  "expected": null,
+  "why": "direct synonym for intersex (sex at birth is female/male only; this now skips or explains)"
+ },
+ {
+  "field": "sex",
+  "text": "prefer not to say",
+  "expected": null,
+  "why": "direct synonym for prefer_not_to_say (sex at birth is female/male only; this now skips or explains)"
+ },
+ {
+  "field": "sex",
+  "text": "I'd rather not say",
+  "expected": null,
+  "why": "direct synonym for prefer_not_to_say (sex at birth is female/male only; this now skips or explains)"
+ },
+ {
+  "field": "sex",
+  "text": "my wife is a woman",
+  "expected": null,
+  "why": "about another person"
+ },
+ {
+  "field": "sex",
+  "text": "what do you mean?",
+  "expected": null,
+  "why": "question, no answer"
+ },
+ {
+  "field": "sex",
+  "text": "if I were a man I'd have gone fishing",
+  "expected": null,
+  "why": "hypothetical"
+ },
+ {
+  "field": "sex",
+  "text": "it's complicated",
+  "expected": null,
+  "why": "no usable value"
+ },
+ {
+  "field": "sex",
+  "text": "depends who you ask",
+  "expected": null,
+  "why": "no usable value"
+ },
+ {
+  "field": "sex",
+  "text": "male and female",
+  "expected": null,
+  "why": "two conflicting values"
+ },
+ {
+  "field": "sex",
+  "text": "I used to be called a tomboy",
+  "expected": null,
+  "why": "not a clear answer"
+ },
+ {
+  "field": "sex",
+  "text": "not female",
+  "expected": null,
+  "why": "negation excludes only one value"
+ },
+ {
+  "field": "sex",
+  "text": "yes",
+  "expected": null,
+  "why": "yes/no does not answer"
+ },
+ {
+  "field": "sex",
+  "text": "hmm",
+  "expected": null,
+  "why": "filler only"
+ },
+ {
+  "field": "height_cm",
+  "text": "170 cm",
+  "expected": {
+   "height_cm": 170.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "height_cm",
+  "text": "a hundred and eighty centimetres",
+  "expected": {
+   "height_cm": 180.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "height_cm",
+  "text": "Oh, I'm around 163 cm these days",
+  "expected": {
+   "height_cm": 163.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "height_cm",
+  "text": "roughly 175 centimeters, give or take",
+  "expected": {
+   "height_cm": 175.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "height_cm",
+  "text": "160cm",
+  "expected": {
+   "height_cm": 160.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "height_cm",
+  "text": "one fifty-two cm",
+  "expected": {
+   "height_cm": 152.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "height_cm",
+  "text": "1.7 meters",
+  "expected": {
+   "height_cm": 170.0
+  },
+  "why": "metres to cm"
+ },
+ {
+  "field": "height_cm",
+  "text": "1.68 m",
+  "expected": {
+   "height_cm": 168.0
+  },
+  "why": "metres to cm"
+ },
+ {
+  "field": "height_cm",
+  "text": "about one point six five meters",
+  "expected": {
+   "height_cm": 165.0
+  },
+  "why": "metres to cm"
+ },
+ {
+  "field": "height_cm",
+  "text": "5'4",
+  "expected": {
+   "height_cm": 162.56
+  },
+  "why": "feet-inches shorthand"
+ },
+ {
+  "field": "height_cm",
+  "text": "6 ft 2",
+  "expected": {
+   "height_cm": 187.96
+  },
+  "why": "converted"
+ },
+ {
+  "field": "height_cm",
+  "text": "six two",
+  "expected": {
+   "height_cm": 187.96
+  },
+  "why": "bare 'six two' for height is feet-inches"
+ },
+ {
+  "field": "height_cm",
+  "text": "five foot ten and a half",
+  "expected": {
+   "height_cm": 179.07
+  },
+  "why": "converted"
+ },
+ {
+  "field": "height_cm",
+  "text": "5 foot 6",
+  "expected": {
+   "height_cm": 167.64
+  },
+  "why": "converted"
+ },
+ {
+  "field": "height_cm",
+  "text": "5 ft. 7 in.",
+  "expected": {
+   "height_cm": 170.18
+  },
+  "why": "converted"
+ },
+ {
+  "field": "height_cm",
+  "text": "five feet",
+  "expected": {
+   "height_cm": 152.4
+  },
+  "why": "converted"
+ },
+ {
+  "field": "height_cm",
+  "text": "5 foot",
+  "expected": {
+   "height_cm": 152.4
+  },
+  "why": "converted"
+ },
+ {
+  "field": "height_cm",
+  "text": "well, I'd say five foot nine, I used to be taller",
+  "expected": {
+   "height_cm": 175.26
+  },
+  "why": "'used to be taller' is color, current stated"
+ },
+ {
+  "field": "height_cm",
+  "text": "six foot one in my shoes",
+  "expected": {
+   "height_cm": 185.42
+  },
+  "why": "converted"
+ },
+ {
+  "field": "height_cm",
+  "text": "66 inches",
+  "expected": {
+   "height_cm": 167.64
+  },
+  "why": "converted"
+ },
+ {
+  "field": "height_cm",
+  "text": "I'm 5 ft 2 these days, shrinking",
+  "expected": {
+   "height_cm": 157.48
+  },
+  "why": "converted"
+ },
+ {
+  "field": "height_cm",
+  "text": "six foot even",
+  "expected": {
+   "height_cm": 182.88
+  },
+  "why": "converted"
+ },
+ {
+  "field": "height_cm",
+  "text": "66",
+  "expected": null,
+  "why": "bare number could be inches or something else"
+ },
+ {
+  "field": "height_cm",
+  "text": "I was 5'10\" in my prime",
+  "expected": null,
+  "why": "past"
+ },
+ {
+  "field": "height_cm",
+  "text": "tall",
+  "expected": null,
+  "why": "no number"
+ },
+ {
+  "field": "height_cm",
+  "text": "I'm not six feet",
+  "expected": null,
+  "why": "negation"
+ },
+ {
+  "field": "height_cm",
+  "text": "if I stood up straight maybe 5'8",
+  "expected": null,
+  "why": "hypothetical"
+ },
+ {
+  "field": "height_cm",
+  "text": "my husband is 6 feet",
+  "expected": null,
+  "why": "other person"
+ },
+ {
+  "field": "height_cm",
+  "text": "short",
+  "expected": null,
+  "why": "no number"
+ },
+ {
+  "field": "height_cm",
+  "text": "I don't know, I haven't been measured in years",
+  "expected": null,
+  "why": "unknown"
+ },
+ {
+  "field": "weight_kg",
+  "text": "160 pounds",
+  "expected": {
+   "weight_kg": 72.57
+  },
+  "why": "pounds to kg"
+ },
+ {
+  "field": "weight_kg",
+  "text": "150 lbs",
+  "expected": {
+   "weight_kg": 68.04
+  },
+  "why": "pounds to kg"
+ },
+ {
+  "field": "weight_kg",
+  "text": "140 lbs.",
+  "expected": {
+   "weight_kg": 63.5
+  },
+  "why": "pounds to kg"
+ },
+ {
+  "field": "weight_kg",
+  "text": "about 155 pounds",
+  "expected": {
+   "weight_kg": 70.31
+  },
+  "why": "pounds to kg"
+ },
+ {
+  "field": "weight_kg",
+  "text": "two hundred ten pounds",
+  "expected": {
+   "weight_kg": 95.25
+  },
+  "why": "pounds to kg"
+ },
+ {
+  "field": "weight_kg",
+  "text": "one twenty pounds",
+  "expected": {
+   "weight_kg": 54.43
+  },
+  "why": "pounds to kg"
+ },
+ {
+  "field": "weight_kg",
+  "text": "178 pounds, roughly",
+  "expected": {
+   "weight_kg": 80.74
+  },
+  "why": "pounds to kg"
+ },
+ {
+  "field": "weight_kg",
+  "text": "135 LBS",
+  "expected": {
+   "weight_kg": 61.23
+  },
+  "why": "pounds to kg"
+ },
+ {
+  "field": "weight_kg",
+  "text": "70 kg",
+  "expected": {
+   "weight_kg": 70.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "weight_kg",
+  "text": "68 kilos",
+  "expected": {
+   "weight_kg": 68.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "weight_kg",
+  "text": "eighty-two kilograms",
+  "expected": {
+   "weight_kg": 82.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "weight_kg",
+  "text": "75.5 kg",
+  "expected": {
+   "weight_kg": 75.5
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "weight_kg",
+  "text": "about 64 kilos",
+  "expected": {
+   "weight_kg": 64.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "weight_kg",
+  "text": "ninety kilos, I think",
+  "expected": {
+   "weight_kg": 90.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "weight_kg",
+  "text": "58kg",
+  "expected": {
+   "weight_kg": 58.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "weight_kg",
+  "text": "roughly seventy-seven kilos",
+  "expected": {
+   "weight_kg": 77.0
+  },
+  "why": "already metric"
+ },
+ {
+  "field": "weight_kg",
+  "text": "11 stone 4",
+  "expected": {
+   "weight_kg": 71.67
+  },
+  "why": "stone=14 lb"
+ },
+ {
+  "field": "weight_kg",
+  "text": "ten stone",
+  "expected": {
+   "weight_kg": 63.5
+  },
+  "why": "stone=14 lb"
+ },
+ {
+  "field": "weight_kg",
+  "text": "12 stone 7 pounds",
+  "expected": {
+   "weight_kg": 79.38
+  },
+  "why": "stone=14 lb"
+ },
+ {
+  "field": "weight_kg",
+  "text": "about nine and a half stone",
+  "expected": {
+   "weight_kg": 60.33
+  },
+  "why": "stone=14 lb"
+ },
+ {
+  "field": "weight_kg",
+  "text": "about a hundred and sixty",
+  "expected": {
+   "weight_kg": 72.57
+  },
+  "why": "bare adult weight proposed as pounds (US default) for confirmation"
+ },
+ {
+  "field": "weight_kg",
+  "text": "around 70",
+  "expected": null,
+  "why": "no unit"
+ },
+ {
+  "field": "weight_kg",
+  "text": "maybe 150 or 160 pounds",
+  "expected": null,
+  "why": "two candidate values"
+ },
+ {
+  "field": "weight_kg",
+  "text": "heavy",
+  "expected": null,
+  "why": "no number"
+ },
+ {
+  "field": "weight_kg",
+  "text": "I'd like to be 150 pounds",
+  "expected": null,
+  "why": "aspiration"
+ },
+ {
+  "field": "weight_kg",
+  "text": "I lost 20 pounds",
+  "expected": null,
+  "why": "change, not weight"
+ },
+ {
+  "field": "weight_kg",
+  "text": "I'm not sure, I don't have a scale",
+  "expected": null,
+  "why": "unknown"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "seven hours",
+  "expected": {
+   "sleep_hours": 7
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "around six hours",
+  "expected": {
+   "sleep_hours": 6
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "seven and a half",
+  "expected": {
+   "sleep_hours": 7.5
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "7.5 hours",
+  "expected": {
+   "sleep_hours": 7.5
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "I'd say 6 hours a night",
+  "expected": {
+   "sleep_hours": 6
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "roughly seven, give or take",
+  "expected": {
+   "sleep_hours": 7
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "I think six hours these days",
+  "expected": {
+   "sleep_hours": 6
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "nine hours if I don't wake up",
+  "expected": {
+   "sleep_hours": 9
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "four hours, that's all I get",
+  "expected": {
+   "sleep_hours": 4
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "Oh, seven hours, usually",
+  "expected": {
+   "sleep_hours": 7
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "7 hours a night",
+  "expected": {
+   "sleep_hours": 7
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "eight hours a night",
+  "expected": {
+   "sleep_hours": 8
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "6.5",
+  "expected": {
+   "sleep_hours": 6.5
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "seven hours fifteen minutes",
+  "expected": {
+   "sleep_hours": 7.25
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "five and a half, last time I checked",
+  "expected": {
+   "sleep_hours": 5.5
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "eight and a half hours",
+  "expected": {
+   "sleep_hours": 8.5
+  },
+  "why": "hours per night stated"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "I'm in bed by 10 and up at 6",
+  "expected": {
+   "sleep_hours": 8
+  },
+  "why": "time in bed 10pm to 6am=8h; best available estimate of sleep"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "7 to 8 hours",
+  "expected": {
+   "sleep_hours": 7.5
+  },
+  "why": "adjacent range, midpoint"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "seven or eight hours, about",
+  "expected": {
+   "sleep_hours": 7.5
+  },
+  "why": "adjacent range, midpoint"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "I nap a lot",
+  "expected": null,
+  "why": "no nightly hours"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "it varies",
+  "expected": null,
+  "why": "no number"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "I used to sleep 8 hours",
+  "expected": null,
+  "why": "past"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "if I could, nine",
+  "expected": null,
+  "why": "hypothetical"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "I don't sleep 8 hours",
+  "expected": null,
+  "why": "negation"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "between 4 and 9",
+  "expected": null,
+  "why": "range too wide"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "depends on the night, anywhere from 3 to 8",
+  "expected": null,
+  "why": "range too wide"
+ },
+ {
+  "field": "sleep_hours",
+  "text": "my wife sleeps 7",
+  "expected": null,
+  "why": "other person"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "I walk 30 minutes every day",
+  "expected": {
+   "exercise_minutes_weekly": 210
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "an hour of gardening three times a week",
+  "expected": {
+   "exercise_minutes_weekly": 180
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "I swim twice a week for 45 minutes",
+  "expected": {
+   "exercise_minutes_weekly": 90
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "two and a half hours a week",
+  "expected": {
+   "exercise_minutes_weekly": 150
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "an hour a day, five days a week",
+  "expected": {
+   "exercise_minutes_weekly": 300
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "I walk half an hour, four days a week",
+  "expected": {
+   "exercise_minutes_weekly": 120
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "20 minutes every morning",
+  "expected": {
+   "exercise_minutes_weekly": 140
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "45 minutes, three times a week",
+  "expected": {
+   "exercise_minutes_weekly": 135
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "oh, about 90 minutes a week",
+  "expected": {
+   "exercise_minutes_weekly": 90
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "walk for 20 minutes every single day",
+  "expected": {
+   "exercise_minutes_weekly": 140
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "well, I go to water aerobics, an hour, once a week",
+  "expected": {
+   "exercise_minutes_weekly": 60
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "nothing really, I don't do any",
+  "expected": {
+   "exercise_minutes_weekly": 0
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "I walk 45 minutes on weekends, Saturday and Sunday",
+  "expected": {
+   "exercise_minutes_weekly": 90
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "an hour and a half per week",
+  "expected": {
+   "exercise_minutes_weekly": 90
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "I bike for forty minutes three days a week",
+  "expected": {
+   "exercise_minutes_weekly": 120
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "I do tai chi 30 minutes, 5 days a week",
+  "expected": {
+   "exercise_minutes_weekly": 150
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "not a thing, I'm retired from exercise",
+  "expected": {
+   "exercise_minutes_weekly": 0
+  },
+  "why": "minutes per week computed"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "not much",
+  "expected": null,
+  "why": "vague"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "10,000 steps a day",
+  "expected": null,
+  "why": "steps are not minutes"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "an hour",
+  "expected": null,
+  "why": "no frequency"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "I walk 3 miles a day",
+  "expected": null,
+  "why": "distance, not minutes"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "yoga class sometimes",
+  "expected": null,
+  "why": "no amount"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "if I could, 3 hours a week",
+  "expected": null,
+  "why": "hypothetical"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "maybe 2 hours or maybe 5",
+  "expected": null,
+  "why": "range too wide"
+ },
+ {
+  "field": "exercise_minutes_weekly",
+  "text": "I don't exercise 3 hours a week, I wish",
+  "expected": null,
+  "why": "negation"
+ },
+ {
+  "field": "smoking_status",
+  "text": "never have",
+  "expected": {
+   "smoking_status": "never"
+  },
+  "why": "never smoked"
+ },
+ {
+  "field": "smoking_status",
+  "text": "I've never smoked",
+  "expected": {
+   "smoking_status": "never"
+  },
+  "why": "never smoked"
+ },
+ {
+  "field": "smoking_status",
+  "text": "no, never in my life",
+  "expected": {
+   "smoking_status": "never"
+  },
+  "why": "never smoked"
+ },
+ {
+  "field": "smoking_status",
+  "text": "Never.",
+  "expected": {
+   "smoking_status": "never"
+  },
+  "why": "never smoked"
+ },
+ {
+  "field": "smoking_status",
+  "text": "gave up in '85",
+  "expected": {
+   "smoking_status": "former"
+  },
+  "why": "smoked, stopped"
+ },
+ {
+  "field": "smoking_status",
+  "text": "used to, quit years ago",
+  "expected": {
+   "smoking_status": "former"
+  },
+  "why": "smoked, stopped"
+ },
+ {
+  "field": "smoking_status",
+  "text": "quit cold turkey in 1990",
+  "expected": {
+   "smoking_status": "former"
+  },
+  "why": "smoked, stopped"
+ },
+ {
+  "field": "smoking_status",
+  "text": "I quit smoking 20 years ago",
+  "expected": {
+   "smoking_status": "former"
+  },
+  "why": "smoked, stopped"
+ },
+ {
+  "field": "smoking_status",
+  "text": "I smoked until I was 50, then stopped",
+  "expected": {
+   "smoking_status": "former"
+  },
+  "why": "smoked, stopped"
+ },
+ {
+  "field": "smoking_status",
+  "text": "I used to smoke but I stopped",
+  "expected": {
+   "smoking_status": "former"
+  },
+  "why": "smoked, stopped"
+ },
+ {
+  "field": "smoking_status",
+  "text": "quit last year",
+  "expected": {
+   "smoking_status": "former"
+  },
+  "why": "smoked, stopped"
+ },
+ {
+  "field": "smoking_status",
+  "text": "former smoker",
+  "expected": {
+   "smoking_status": "former"
+  },
+  "why": "smoked, stopped"
+ },
+ {
+  "field": "smoking_status",
+  "text": "I smoke",
+  "expected": {
+   "smoking_status": "current"
+  },
+  "why": "currently smokes"
+ },
+ {
+  "field": "smoking_status",
+  "text": "a few cigars a week",
+  "expected": {
+   "smoking_status": "current"
+  },
+  "why": "currently smokes"
+ },
+ {
+  "field": "smoking_status",
+  "text": "I smoke a pipe in the evenings",
+  "expected": {
+   "smoking_status": "current"
+  },
+  "why": "currently smokes"
+ },
+ {
+  "field": "smoking_status",
+  "text": "a pack a day, I know, I know",
+  "expected": {
+   "smoking_status": "current"
+  },
+  "why": "currently smokes"
+ },
+ {
+  "field": "smoking_status",
+  "text": "occasional cigarette at parties",
+  "expected": {
+   "smoking_status": "current"
+  },
+  "why": "currently smokes"
+ },
+ {
+  "field": "smoking_status",
+  "text": "I’m trying to quit but I still smoke",
+  "expected": {
+   "smoking_status": "current"
+  },
+  "why": "currently smokes"
+ },
+ {
+  "field": "smoking_status",
+  "text": "yep, about ten a day",
+  "expected": {
+   "smoking_status": "current"
+  },
+  "why": "currently smokes"
+ },
+ {
+  "field": "smoking_status",
+  "text": "I'd rather not say",
+  "expected": {
+   "smoking_status": "unknown"
+  },
+  "why": "declined or cannot recall; unknown is the only matching enum"
+ },
+ {
+  "field": "smoking_status",
+  "text": "I vape",
+  "expected": null,
+  "why": "nicotine vaping is not stated to be smoking tobacco; ask about cigarettes/cigars"
+ },
+ {
+  "field": "smoking_status",
+  "text": "not a smoker",
+  "expected": null,
+  "why": "could be never or former; ask"
+ },
+ {
+  "field": "smoking_status",
+  "text": "I don't smoke",
+  "expected": null,
+  "why": "present tense only; never vs former unclear"
+ },
+ {
+  "field": "smoking_status",
+  "text": "I quit but have one now and then",
+  "expected": null,
+  "why": "mixed"
+ },
+ {
+  "field": "smoking_status",
+  "text": "no",
+  "expected": null,
+  "why": "yes/no is ambiguous between never and former"
+ },
+ {
+  "field": "smoking_status",
+  "text": "only when I drink",
+  "expected": null,
+  "why": "unclear frequency or status"
+ },
+ {
+  "field": "smoking_status",
+  "text": "not anymore",
+  "expected": null,
+  "why": "never vs former not stated, also no prior mention"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "a glass of wine with dinner every night",
+  "expected": {
+   "alcohol_drinks_weekly": 7
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "I don't drink",
+  "expected": {
+   "alcohol_drinks_weekly": 0
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "teetotal",
+  "expected": {
+   "alcohol_drinks_weekly": 0
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "none",
+  "expected": {
+   "alcohol_drinks_weekly": 0
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "I'm a teetotaler",
+  "expected": {
+   "alcohol_drinks_weekly": 0
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "never touch the stuff",
+  "expected": {
+   "alcohol_drinks_weekly": 0
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "zero",
+  "expected": {
+   "alcohol_drinks_weekly": 0
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "one drink a day",
+  "expected": {
+   "alcohol_drinks_weekly": 7
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "a beer every evening",
+  "expected": {
+   "alcohol_drinks_weekly": 7
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "3 glasses of wine a week",
+  "expected": {
+   "alcohol_drinks_weekly": 3
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "about five drinks a week",
+  "expected": {
+   "alcohol_drinks_weekly": 5
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "oh, roughly ten a week, give or take",
+  "expected": {
+   "alcohol_drinks_weekly": 10
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "a drink or two a week",
+  "expected": {
+   "alcohol_drinks_weekly": 1.5
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "two glasses of wine on Friday and Saturday",
+  "expected": {
+   "alcohol_drinks_weekly": 4
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "I have a martini every Friday",
+  "expected": {
+   "alcohol_drinks_weekly": 1
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "two drinks a week, I think",
+  "expected": {
+   "alcohol_drinks_weekly": 2
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "just one beer a week",
+  "expected": {
+   "alcohol_drinks_weekly": 1
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "I quit drinking years ago",
+  "expected": {
+   "alcohol_drinks_weekly": 0
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "I have a glass of red wine with supper most nights",
+  "expected": null,
+  "why": "'most nights' is not an exact count"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "1 drink a week",
+  "expected": {
+   "alcohol_drinks_weekly": 1
+  },
+  "why": "drinks per week computed"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "a couple of beers on weekends",
+  "expected": null,
+  "why": "unclear whether a couple per day or per weekend (2 vs 4)"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "maybe one or two a month",
+  "expected": null,
+  "why": "monthly range with 'maybe'; ask for a clean weekly figure"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "socially",
+  "expected": null,
+  "why": "no amount"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "I used to drink a lot",
+  "expected": null,
+  "why": "past"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "my husband drinks a bottle a day",
+  "expected": null,
+  "why": "other person"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "if I were younger, 20 a week",
+  "expected": null,
+  "why": "hypothetical"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "I don't drink 7 a week, more like I don't know",
+  "expected": null,
+  "why": "negation and unsure"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "between 2 and 14 a week",
+  "expected": null,
+  "why": "range too wide"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "depends on the week",
+  "expected": null,
+  "why": "no number"
+ },
+ {
+  "field": "alcohol_drinks_weekly",
+  "text": "a glass of wine",
+  "expected": null,
+  "why": "no frequency"
+ },
+ {
+  "field": "diabetes",
+  "text": "I'm diabetic",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "type 2",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "yes, on metformin",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "yes",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "yep",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "yeah",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "type 1 diabetes",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "I have the sugar",
+  "expected": null,
+  "why": "MASTER_PLAN conflict: 'never infer a diagnosis from casual language'. 'The sugar' is a colloquialism, not a yes or a named diagnosis, so ask whether a doctor said diabetes (was: diabetes true)"
+ },
+ {
+  "field": "diabetes",
+  "text": "yes, I take insulin",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "Yes, my doctor told me years ago",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "mm-hm",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "Yes.",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "YES",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "I'm a diabetic, yes",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "yup",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "affirmative, type 2 diabetic",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "uh huh, I do",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "yes I do, I test my blood sugar every morning",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "oh yes, type two, diet controlled",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "yes, for about ten years",
+  "expected": {
+   "diabetes": true
+  },
+  "why": "affirmative / diagnosis stated"
+ },
+ {
+  "field": "diabetes",
+  "text": "nope",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "not that I know of",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "No, thank God",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "never been told I have it",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "No.",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "NO",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "nope, none",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "uh-uh",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "no, my sugar's fine",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "I’m not diabetic but my wife is",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "no, my doctor says I don’t",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "nah, thank goodness",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "no sir",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "no I do not",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "negative",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "no diabetes in my case",
+  "expected": {
+   "diabetes": false
+  },
+  "why": "negative answer"
+ },
+ {
+  "field": "diabetes",
+  "text": "borderline",
+  "expected": null,
+  "why": "not a diagnosis of diabetes; ask whether a doctor diagnosed it"
+ },
+ {
+  "field": "diabetes",
+  "text": "pre-diabetic",
+  "expected": null,
+  "why": "prediabetes is distinct from diabetes; ask"
+ },
+ {
+  "field": "diabetes",
+  "text": "my husband is diabetic",
+  "expected": null,
+  "why": "other person"
+ },
+ {
+  "field": "diabetes",
+  "text": "I'm not sure",
+  "expected": null,
+  "why": "unknown"
+ },
+ {
+  "field": "diabetes",
+  "text": "maybe",
+  "expected": null,
+  "why": "uncertain"
+ },
+ {
+  "field": "diabetes",
+  "text": "I don't know",
+  "expected": null,
+  "why": "unknown"
+ },
+ {
+  "field": "diabetes",
+  "text": "my sugar is a little high",
+  "expected": null,
+  "why": "not diagnosed"
+ },
+ {
+  "field": "diabetes",
+  "text": "no, but I take metformin",
+  "expected": null,
+  "why": "conflicting"
+ },
+ {
+  "field": "diabetes",
+  "text": "they're testing me next week",
+  "expected": null,
+  "why": "pending"
+ },
+ {
+  "field": "diabetes",
+  "text": "if I eat more sugar I'll get it",
+  "expected": null,
+  "why": "hypothetical"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "120 over 80",
+  "expected": {
+   "systolic_bp": 120,
+   "diastolic_bp": 80
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "120 over 80",
+  "expected": {
+   "systolic_bp": 120,
+   "diastolic_bp": 80
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "about 128 over 82",
+  "expected": {
+   "systolic_bp": 128,
+   "diastolic_bp": 82
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "about 128 over 82",
+  "expected": {
+   "systolic_bp": 128,
+   "diastolic_bp": 82
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "oh, it's 140 over 90",
+  "expected": {
+   "systolic_bp": 140,
+   "diastolic_bp": 90
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "BP is 118/76",
+  "expected": {
+   "systolic_bp": 118,
+   "diastolic_bp": 76
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "135 over 85 mmHg",
+  "expected": {
+   "systolic_bp": 135,
+   "diastolic_bp": 85
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "last time I checked it was 125 over 75",
+  "expected": {
+   "systolic_bp": 125,
+   "diastolic_bp": 75
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "last time I checked it was 125 over 75",
+  "expected": {
+   "systolic_bp": 125,
+   "diastolic_bp": 75
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "I think 110 over 70",
+  "expected": {
+   "systolic_bp": 110,
+   "diastolic_bp": 70
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "150 on 95",
+  "expected": {
+   "systolic_bp": 150,
+   "diastolic_bp": 95
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "150 on 95",
+  "expected": {
+   "systolic_bp": 150,
+   "diastolic_bp": 95
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "132 over 84",
+  "expected": {
+   "systolic_bp": 132,
+   "diastolic_bp": 84
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "145/88",
+  "expected": {
+   "systolic_bp": 145,
+   "diastolic_bp": 88
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "145/88",
+  "expected": {
+   "systolic_bp": 145,
+   "diastolic_bp": 88
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "about 138 over 86",
+  "expected": {
+   "systolic_bp": 138,
+   "diastolic_bp": 86
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "about 138 over 86",
+  "expected": {
+   "systolic_bp": 138,
+   "diastolic_bp": 86
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "oh, it's 124 over 80",
+  "expected": {
+   "systolic_bp": 124,
+   "diastolic_bp": 80
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "142 over 92 mmHg",
+  "expected": {
+   "systolic_bp": 142,
+   "diastolic_bp": 92
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "142 over 92 mmHg",
+  "expected": {
+   "systolic_bp": 142,
+   "diastolic_bp": 92
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "last time I checked it was 126 over 79",
+  "expected": {
+   "systolic_bp": 126,
+   "diastolic_bp": 79
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "last time I checked it was 126 over 79",
+  "expected": {
+   "systolic_bp": 126,
+   "diastolic_bp": 79
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "um, around 134 over 81",
+  "expected": {
+   "systolic_bp": 134,
+   "diastolic_bp": 81
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "um, around 134 over 81",
+  "expected": {
+   "systolic_bp": 134,
+   "diastolic_bp": 81
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "I think 148 over 90",
+  "expected": {
+   "systolic_bp": 148,
+   "diastolic_bp": 90
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "130 on 80",
+  "expected": {
+   "systolic_bp": 130,
+   "diastolic_bp": 80
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "121 over 77",
+  "expected": {
+   "systolic_bp": 121,
+   "diastolic_bp": 77
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "136/84",
+  "expected": {
+   "systolic_bp": 136,
+   "diastolic_bp": 84
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "about 127 over 83",
+  "expected": {
+   "systolic_bp": 127,
+   "diastolic_bp": 83
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "oh, it's 119 over 74",
+  "expected": {
+   "systolic_bp": 119,
+   "diastolic_bp": 74
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "oh, it's 119 over 74",
+  "expected": {
+   "systolic_bp": 119,
+   "diastolic_bp": 74
+  },
+  "why": "reading given as systolic over diastolic"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "one twenty over eighty",
+  "expected": {
+   "systolic_bp": 120,
+   "diastolic_bp": 80
+  },
+  "why": "number words"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "one twenty over eighty",
+  "expected": {
+   "systolic_bp": 120,
+   "diastolic_bp": 80
+  },
+  "why": "number words"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "one forty over ninety",
+  "expected": {
+   "systolic_bp": 140,
+   "diastolic_bp": 90
+  },
+  "why": "number words"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "one forty over ninety",
+  "expected": {
+   "systolic_bp": 140,
+   "diastolic_bp": 90
+  },
+  "why": "number words"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "one eighteen over seventy-six",
+  "expected": {
+   "systolic_bp": 118,
+   "diastolic_bp": 76
+  },
+  "why": "number words"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "one eighteen over seventy-six",
+  "expected": {
+   "systolic_bp": 118,
+   "diastolic_bp": 76
+  },
+  "why": "number words"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "one twenty-five over eighty-two",
+  "expected": {
+   "systolic_bp": 125,
+   "diastolic_bp": 82
+  },
+  "why": "number words"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "one thirty-five over eighty-eight",
+  "expected": {
+   "systolic_bp": 135,
+   "diastolic_bp": 88
+  },
+  "why": "number words"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "one thirty-five over eighty-eight",
+  "expected": {
+   "systolic_bp": 135,
+   "diastolic_bp": 88
+  },
+  "why": "number words"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "my doctor said 128 over 82 last month",
+  "expected": {
+   "systolic_bp": 128,
+   "diastolic_bp": 82
+  },
+  "why": "recent reading relayed by doctor"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "it's usually around 140 over 90",
+  "expected": {
+   "systolic_bp": 140,
+   "diastolic_bp": 90
+  },
+  "why": "usual value with hedge"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "a hundred and thirty over eighty-five",
+  "expected": {
+   "systolic_bp": 130,
+   "diastolic_bp": 85
+  },
+  "why": "number words"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "a hundred and thirty over eighty-five",
+  "expected": {
+   "systolic_bp": 130,
+   "diastolic_bp": 85
+  },
+  "why": "number words"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "it was 126 over 78 at my last checkup",
+  "expected": {
+   "systolic_bp": 126,
+   "diastolic_bp": 78
+  },
+  "why": "most recent reading"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "it was 126 over 78 at my last checkup",
+  "expected": {
+   "systolic_bp": 126,
+   "diastolic_bp": 78
+  },
+  "why": "most recent reading"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "They got 134 over 82 at the pharmacy, give or take",
+  "expected": {
+   "systolic_bp": 134,
+   "diastolic_bp": 82
+  },
+  "why": "hedge"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "well, the machine said 131 over 79 this morning",
+  "expected": {
+   "systolic_bp": 131,
+   "diastolic_bp": 79
+  },
+  "why": "voice style"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "well, the machine said 131 over 79 this morning",
+  "expected": {
+   "systolic_bp": 131,
+   "diastolic_bp": 79
+  },
+  "why": "voice style"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "I take it at home, it's 124 / 76",
+  "expected": {
+   "systolic_bp": 124,
+   "diastolic_bp": 76
+  },
+  "why": "spaced slash"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "I take it at home, it's 124 / 76",
+  "expected": {
+   "systolic_bp": 124,
+   "diastolic_bp": 76
+  },
+  "why": "spaced slash"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "130 over 80, but then it goes up at the doctor's",
+  "expected": {
+   "systolic_bp": 130,
+   "diastolic_bp": 80
+  },
+  "why": "leads with reading, extra color"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "high",
+  "expected": null,
+  "why": "no numbers"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "high",
+  "expected": null,
+  "why": "no numbers"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "I don't know",
+  "expected": null,
+  "why": "unknown"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "80 over 120",
+  "expected": null,
+  "why": "impossible order: systolic must exceed diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "80 over 120",
+  "expected": null,
+  "why": "impossible order: systolic must exceed diastolic"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "normal",
+  "expected": null,
+  "why": "no numbers"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "120",
+  "expected": null,
+  "why": "only one number given"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "the top number is 130",
+  "expected": null,
+  "why": "bottom missing"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "my husband's is 130 over 80",
+  "expected": null,
+  "why": "other person"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "my husband's is 130 over 80",
+  "expected": null,
+  "why": "other person"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "it was 160 over 100 ten years ago",
+  "expected": null,
+  "why": "past reading"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "if I skip my pills maybe 150 over 95",
+  "expected": null,
+  "why": "hypothetical"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "if I skip my pills maybe 150 over 95",
+  "expected": null,
+  "why": "hypothetical"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "130 over 80 or 140 over 90",
+  "expected": null,
+  "why": "two candidate readings"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "130 over 80 or 140 over 90",
+  "expected": null,
+  "why": "two candidate readings"
+ },
+ {
+  "field": "systolic_bp",
+  "text": "between 120 and 140 over 80",
+  "expected": null,
+  "why": "range too wide"
+ },
+ {
+  "field": "diastolic_bp",
+  "text": "my doctor says it's fine",
+  "expected": null,
+  "why": "no numbers"
+ }
+]

@@ -1,23 +1,74 @@
 [
   {
-    "name": "prediction-deferred",
+    "name": "prediction-supported",
     "method": "POST",
     "path": "/api/predict",
     "request_schema": "prediction.request.schema.json",
     "request": {
-      "age": 35,
-      "height_cm": 175,
-      "weight_kg": 70
+      "age": 70,
+      "sex": "male",
+      "height_cm": 170,
+      "weight_kg": 75,
+      "sleep_hours": 7,
+      "exercise_minutes_weekly": 150,
+      "smoking_status": "never",
+      "diabetes": false
     },
-    "status": 501,
+    "status": 200,
     "response_schema": "prediction.schema.json",
-    "response": {
-      "schema_version": "1.0",
-      "status": "not_implemented",
-      "code": "prediction_not_implemented",
-      "message": "Prediction functionality is reserved for a later implementation.",
-      "prediction": null,
-      "model_version": null
+    "response_subset": {
+      "status": "supported",
+      "max_horizon_years": 5,
+      "survival": [
+        {
+          "years": 1,
+          "survival": 0.9805
+        },
+        {
+          "years": 3,
+          "survival": 0.9324
+        },
+        {
+          "years": 5,
+          "survival": 0.8802
+        }
+      ],
+      "filled_in": [
+        {
+          "feature": "sedentary_min_day",
+          "label": "time spent sitting each day"
+        },
+        {
+          "feature": "hypertension_diagnosed",
+          "label": "being told you have high blood pressure"
+        },
+        {
+          "feature": "general_health",
+          "label": "how you rate your health"
+        }
+      ],
+      "reason": null
+    }
+  },
+  {
+    "name": "prediction-unsupported-age",
+    "method": "POST",
+    "path": "/api/predict",
+    "request_schema": "prediction.request.schema.json",
+    "request": {
+      "age": 85,
+      "sex": "female",
+      "height_cm": 160,
+      "weight_kg": 60
+    },
+    "status": 200,
+    "response_schema": "prediction.schema.json",
+    "response_subset": {
+      "status": "unsupported",
+      "survival": [],
+      "curve": [],
+      "filled_in": [],
+      "reason": "The survey this forecast learns from does not record exact ages above 80, so we cannot make a forecast for you yet."
     }
   },
   {
@@ -299,7 +350,7 @@
     "request_schema": "conversation.request.schema.json",
     "request": {
       "action": "reply",
-      "text": "about 170",
+      "text": "about 70",
       "state": {
         "phase": "asking",
         "current_field": "height_cm"
@@ -454,6 +505,84 @@
     "response_subset": {
       "status": "error",
       "code": "invalid_request"
+    }
+  },
+  {
+    "name": "conversation-import-health",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "import",
+      "state": {
+        "phase": "asking",
+        "current_field": "weight_kg"
+      },
+      "values": {
+        "weight_kg": 68.0
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "age",
+        "confirmed_profile": {
+          "weight_kg": 68.0
+        }
+      }
+    }
+  },
+  {
+    "name": "conversation-import-without-values",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request_schema_valid": true,
+    "request": {
+      "action": "import",
+      "state": {
+        "phase": "asking",
+        "current_field": "weight_kg"
+      }
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "voice-token-consent-missing",
+    "method": "POST",
+    "path": "/api/voice/token",
+    "request_schema": "voice.token.request.schema.json",
+    "request_schema_valid": false,
+    "request": {},
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request",
+      "message": "Please agree to use your voice first."
+    }
+  },
+  {
+    "name": "voice-token-unconfigured",
+    "method": "POST",
+    "path": "/api/voice/token",
+    "request_schema": "voice.token.request.schema.json",
+    "request": {
+      "voice_consent": true
+    },
+    "status": 503,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "voice_unavailable",
+      "message": "Voice isn't available right now. You can keep going by typing."
     }
   }
 ]

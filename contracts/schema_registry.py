@@ -1,4 +1,4 @@
-"""Shared schema registry; prediction schemas intentionally contain no estimates.
+"""Shared schema registry; compare and sensitivity schemas intentionally contain no estimates.
 
 Request schemas use pydantic's validation mode. Response schemas use serialization mode,
 where every field the server always emits (including defaulted safety markers) is required.
@@ -13,7 +13,9 @@ from lifetwin.core.models import (
     SensitivityRequest,
 )
 from lifetwin.onboarding.models import TurnRequest, TurnResponse
+from lifetwin.prediction.models import PredictionResponse
 from lifetwin.quiz.models import QuizBankResponse, QuizQuestion
+from lifetwin.voice.models import VoiceTokenRequest, VoiceTokenResponse
 
 REQUEST = "validation"
 RESPONSE = "serialization"
@@ -22,7 +24,7 @@ SCHEMAS = {
     "profile.schema.json": (HealthProfile, REQUEST),
     "error.schema.json": (ApiError, RESPONSE),
     "prediction.request.schema.json": (HealthProfile, REQUEST),
-    "prediction.schema.json": (DeferredFeature, RESPONSE),
+    "prediction.schema.json": (PredictionResponse, RESPONSE),
     "compare.request.schema.json": (CompareRequest, REQUEST),
     "compare.schema.json": (DeferredFeature, RESPONSE),
     "sensitivity.request.schema.json": (SensitivityRequest, REQUEST),
@@ -33,4 +35,6 @@ SCHEMAS = {
     "advisor.schema.json": (AdvisorResponse, RESPONSE),
     "quiz.schema.json": (QuizBankResponse, RESPONSE),
     "quiz.question.schema.json": (QuizQuestion, RESPONSE),
+    "voice.token.request.schema.json": (VoiceTokenRequest, REQUEST),
+    "voice.token.schema.json": (VoiceTokenResponse, RESPONSE),
 }

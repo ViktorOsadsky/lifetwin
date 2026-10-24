@@ -1,0 +1,431 @@
+{
+  "$comment": "LifeTwin twin sprites. Paths are Flutter asset keys; 2.0x/ and 3.0x/ variants are picked automatically. anchor = fractions of the image: x is the horizontal centre of the painted content, y is the feet baseline (lowest opaque row). Generated from the Figma page \"Twin · Assets\"; keep names in sync with docs/design/painted-card-direction.md section 6.",
+  "figma": {
+    "file": "m2vIKuVlQQSa9m3ELVRdZc",
+    "page": "52:2",
+    "pageUrl": "https://www.figma.com/design/m2vIKuVlQQSa9m3ELVRdZc/?node-id=52-2",
+    "twinComponentSet": "52:667"
+  },
+  "displayHeightPt": 180,
+  "twin": [
+    {
+      "path": "assets/twin/bear/base/default.png",
+      "figmaComponentId": "52:15",
+      "figmaTwinVariantId": "52:619",
+      "size1x": {
+        "w": 180,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/base/2.0x/default.png",
+        "3.0x": "assets/twin/bear/base/3.0x/default.png"
+      },
+      "anchor": {
+        "x": 0.499,
+        "y": 0.956
+      },
+      "flipX": false
+    },
+    {
+      "path": "assets/twin/bear/base/cal_hat.png",
+      "figmaComponentId": "52:21",
+      "size1x": {
+        "w": 180,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/base/2.0x/cal_hat.png",
+        "3.0x": "assets/twin/bear/base/3.0x/cal_hat.png"
+      },
+      "anchor": {
+        "x": 0.494,
+        "y": 0.956
+      },
+      "flipX": false
+    },
+    {
+      "path": "assets/twin/human/base/default.png",
+      "figmaComponentId": "52:109",
+      "figmaTwinVariantId": "52:625",
+      "size1x": {
+        "w": 180,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/base/2.0x/default.png",
+        "3.0x": "assets/twin/human/base/3.0x/default.png"
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.926
+      },
+      "flipX": false
+    },
+    {
+      "path": "assets/twin/human/base/cal_hat.png",
+      "figmaComponentId": "52:115",
+      "figmaTwinVariantId": "52:628",
+      "size1x": {
+        "w": 180,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/base/2.0x/cal_hat.png",
+        "3.0x": "assets/twin/human/base/3.0x/cal_hat.png"
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.954
+      },
+      "flipX": false
+    },
+    {
+      "path": "assets/twin/accessory/hat/cal.png",
+      "figmaComponentId": "52:123",
+      "size1x": {
+        "w": 180,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/accessory/hat/2.0x/cal.png",
+        "3.0x": "assets/twin/accessory/hat/3.0x/cal.png"
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.757
+      },
+      "anchor_meaning": "bottom-centre of the brim",
+      "flipX": false,
+      "notes": "Overlay or Customize tile only; Cal-hat looks ship as whole-character sprites because ears go through the hat."
+    },
+    {
+      "path": "assets/twin/bear/pose/stand.png",
+      "figmaComponentId": "52:29",
+      "figmaTwinVariantId": "52:622",
+      "size1x": {
+        "w": 180,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/stand.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/stand.png"
+      },
+      "anchor": {
+        "x": 0.494,
+        "y": 0.956
+      },
+      "use": "idle",
+      "flipX": false,
+      "notes": "Same art as twin/bear/base/cal_hat; the default room pose."
+    },
+    {
+      "path": "assets/twin/bear/pose/wave.png",
+      "figmaComponentId": "52:35",
+      "figmaTwinVariantId": "52:631",
+      "size1x": {
+        "w": 145,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/wave.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/wave.png"
+      },
+      "note3x": "3.0x kept at native 384x476 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.496,
+        "y": 0.96
+      },
+      "use": "greet",
+      "flipX": false,
+      "notes": "Greeting; mascot intake hello."
+    },
+    {
+      "path": "assets/twin/bear/pose/walk_side.png",
+      "figmaComponentId": "52:41",
+      "figmaTwinVariantId": "52:634",
+      "size1x": {
+        "w": 130,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/walk_side.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/walk_side.png"
+      },
+      "note3x": "3.0x kept at native 352x488 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.497,
+        "y": 0.963
+      },
+      "use": "walk",
+      "direction": "right",
+      "flipX": true,
+      "notes": "Art faces right. Flip horizontally to walk left (this mirrors the Cal script, accepted for motion)."
+    },
+    {
+      "path": "assets/twin/bear/pose/walk_front.png",
+      "figmaComponentId": "52:47",
+      "figmaTwinVariantId": "52:637",
+      "size1x": {
+        "w": 142,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/walk_front.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/walk_front.png"
+      },
+      "note3x": "3.0x kept at native 392x496 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.495,
+        "y": 0.966
+      },
+      "use": "walk",
+      "direction": "toward_camera",
+      "flipX": false,
+      "notes": "Walking toward the camera (down the screen)."
+    },
+    {
+      "path": "assets/twin/bear/pose/walk_back.png",
+      "figmaComponentId": "52:53",
+      "figmaTwinVariantId": "52:640",
+      "size1x": {
+        "w": 135,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/walk_back.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/walk_back.png"
+      },
+      "note3x": "3.0x kept at native 368x488 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.496,
+        "y": 0.967
+      },
+      "use": "walk",
+      "direction": "away_from_camera",
+      "flipX": true,
+      "notes": "Walking away (up the screen). Hat logo is not visible, so flipping is safe."
+    },
+    {
+      "path": "assets/twin/bear/pose/sit.png",
+      "figmaComponentId": "52:59",
+      "figmaTwinVariantId": "52:643",
+      "size1x": {
+        "w": 155,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/sit.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/sit.png"
+      },
+      "note3x": "3.0x kept at native 360x416 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.496,
+        "y": 0.959
+      },
+      "use": "idle_rest",
+      "flipX": false,
+      "notes": "Resting idle variant."
+    },
+    {
+      "path": "assets/twin/bear/pose/jump.png",
+      "figmaComponentId": "52:65",
+      "figmaTwinVariantId": "52:646",
+      "size1x": {
+        "w": 155,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/jump.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/jump.png"
+      },
+      "note3x": "3.0x kept at native 424x492 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.497,
+        "y": 0.963
+      },
+      "use": "celebrate",
+      "flipX": false,
+      "notes": "Celebrate: correct quiz answer, reward."
+    },
+    {
+      "path": "assets/twin/bear/pose/think.png",
+      "figmaComponentId": "52:71",
+      "figmaTwinVariantId": "52:649",
+      "size1x": {
+        "w": 122,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/think.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/think.png"
+      },
+      "note3x": "3.0x kept at native 328x484 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.495,
+        "y": 0.965
+      },
+      "use": "think",
+      "flipX": false,
+      "notes": "Thinking, loading, a quiz question."
+    },
+    {
+      "path": "assets/twin/bear/pose/stretch.png",
+      "figmaComponentId": "52:77",
+      "figmaTwinVariantId": "52:652",
+      "size1x": {
+        "w": 132,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/stretch.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/stretch.png"
+      },
+      "note3x": "3.0x kept at native 360x488 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.498,
+        "y": 0.967
+      },
+      "use": "exercise",
+      "flipX": false,
+      "notes": "Exercise experiments."
+    },
+    {
+      "path": "assets/twin/bear/pose/sleep.png",
+      "figmaComponentId": "52:83",
+      "figmaTwinVariantId": "52:655",
+      "size1x": {
+        "w": 180,
+        "h": 113
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/sleep.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/sleep.png"
+      },
+      "note3x": "3.0x kept at native 504x316 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.498,
+        "y": 0.94
+      },
+      "use": "sleep",
+      "flipX": false,
+      "notes": "Sleep, night, low energy."
+    },
+    {
+      "path": "assets/twin/bear/pose/eat.png",
+      "figmaComponentId": "52:89",
+      "figmaTwinVariantId": "52:658",
+      "size1x": {
+        "w": 151,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/eat.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/eat.png"
+      },
+      "note3x": "3.0x kept at native 364x432 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.497,
+        "y": 0.956
+      },
+      "use": "eat",
+      "flipX": false,
+      "notes": "Eating; nutrition experiments."
+    },
+    {
+      "path": "assets/twin/bear/pose/hold_ball.png",
+      "figmaComponentId": "52:95",
+      "figmaTwinVariantId": "52:661",
+      "size1x": {
+        "w": 144,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/hold_ball.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/hold_ball.png"
+      },
+      "note3x": "3.0x kept at native 376x468 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.494,
+        "y": 0.964
+      },
+      "use": "fortune",
+      "flipX": false,
+      "notes": "Fortune ball ceremony (composite on an empty night plate)."
+    },
+    {
+      "path": "assets/twin/bear/pose/dizzy.png",
+      "figmaComponentId": "52:101",
+      "figmaTwinVariantId": "52:664",
+      "size1x": {
+        "w": 158,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/dizzy.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/dizzy.png"
+      },
+      "note3x": "3.0x kept at native 436x496 (source is under 540 px; never upscaled)",
+      "anchor": {
+        "x": 0.515,
+        "y": 0.964
+      },
+      "use": "sick_reaction",
+      "flipX": false,
+      "notes": "Game-health sick reaction to a wrong quiz answer. Never tied to medical predictions."
+    }
+  ],
+  "scenes": [
+    {
+      "path": "assets/scene/room.jpg",
+      "figmaComponentId": "52:130",
+      "size1x": {
+        "w": 390,
+        "h": 585
+      },
+      "variants": {
+        "2.0x": "assets/scene/2.0x/room.jpg",
+        "3.0x": "assets/scene/3.0x/room.jpg"
+      },
+      "note3x": "3.0x kept at native 933x1400 (never upscaled)"
+    },
+    {
+      "path": "assets/scene/customize.jpg",
+      "figmaComponentId": "52:135",
+      "size1x": {
+        "w": 390,
+        "h": 585
+      },
+      "variants": {
+        "2.0x": "assets/scene/2.0x/customize.jpg",
+        "3.0x": "assets/scene/3.0x/customize.jpg"
+      },
+      "note3x": "3.0x kept at native 933x1400 (never upscaled)"
+    },
+    {
+      "path": "assets/scene/fortune_reveal.jpg",
+      "figmaComponentId": "52:140",
+      "size1x": {
+        "w": 390,
+        "h": 585
+      },
+      "variants": {
+        "2.0x": "assets/scene/2.0x/fortune_reveal.jpg",
+        "3.0x": "assets/scene/3.0x/fortune_reveal.jpg"
+      },
+      "note3x": "3.0x kept at native 933x1400 (never upscaled)"
+    },
+    {
+      "path": "assets/scene/fortune_learning.jpg",
+      "figmaComponentId": "52:145",
+      "size1x": {
+        "w": 390,
+        "h": 585
+      },
+      "variants": {
+        "2.0x": "assets/scene/2.0x/fortune_learning.jpg",
+        "3.0x": "assets/scene/3.0x/fortune_learning.jpg"
+      },
+      "note3x": "3.0x kept at native 933x1400 (never upscaled)"
+    }
+  ]
+}

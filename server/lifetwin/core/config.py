@@ -13,8 +13,23 @@ class Settings(BaseSettings):
     app_env: Literal["development", "test", "production"] = "development"
     openai_api_key: SecretStr = SecretStr("")
     openai_model: str = ""
+    # Conversation-guide provider: "openai" keeps the OPENAI_* settings above.
+    llm_provider: Literal["openai", "chat_completions"] = "openai"
+    llm_base_url: str = ""
+    llm_model: str = ""
+    llm_api_key: SecretStr = SecretStr("")
+    # Reasoning models (e.g. Muse) spend the token budget thinking unless effort is limited.
+    llm_reasoning_effort: Literal["", "minimal", "low", "medium", "high"] = "minimal"
     tavily_api_key: SecretStr = SecretStr("")
-    # Reserved; never read or loaded by this backend.
+    cartesia_api_key: SecretStr = SecretStr("")
+    cartesia_version: str = "2026-08-14"
+    cartesia_tts_model: str = "sonic-3.6"
+    cartesia_stt_model: str = "ink-2"
+    cartesia_voice_id: str = ""
+    cartesia_tts_speed: float = Field(default=0.9, ge=0.6, le=1.5)
+    cartesia_token_ttl_seconds: int = Field(default=300, ge=60, le=900)
+    # Folder holding model.keras, preprocessor.joblib, baseline_hazard.csv and metrics.json.
+    # Blank means the repository root. Missing files keep /api/predict deferred (501).
     model_artifact_path: str = ""
     provider_timeout_seconds: float = Field(
         default=12, gt=0, le=30, validation_alias="API_PROVIDER_TIMEOUT_SECONDS"
@@ -32,6 +47,11 @@ class Settings(BaseSettings):
         default=16, ge=1, le=128, validation_alias="API_MAX_CONCURRENT_REQUESTS"
     )
     cors_origins: str = ""
+
+    @field_validator("llm_provider", mode="before")
+    @classmethod
+    def blank_provider_is_default(cls, value):
+        return "openai" if isinstance(value, str) and not value.strip() else value
 
     @field_validator("cors_origins")
     @classmethod
@@ -67,6 +87,22 @@ class Settings(BaseSettings):
             if canonical not in normalized:
                 normalized.append(canonical)
         return ",".join(normalized)
+
+    @property
+    def llm_endpoint(self) -> str:
+        if self.llm_provider != "chat_completions":
+            return ""
+        return self.llm_base_url.strip() or "https://api.meta.ai/v1"
+
+    @property
+    def llm_configured(self) -> bool:
+        if self.llm_provider == "chat_completions":
+            return bool(
+                self.llm_api_key.get_secret_value().strip()
+                and self.llm_model.strip()
+                and self.llm_endpoint
+            )
+        return bool(self.openai_api_key.get_secret_value().strip() and self.openai_model.strip())
 
     @property
     def allowed_origins(self) -> list[str]:

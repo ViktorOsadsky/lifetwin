@@ -13,6 +13,9 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev --no-editable --no-install-project
 COPY server ./server
 RUN uv sync --locked --no-dev --no-editable
+# Track A's trained survival model; without these files /api/predict returns 501.
+COPY model.keras preprocessor.joblib baseline_hazard.csv metrics.json ./model/
+ENV MODEL_ARTIFACT_PATH=/app/model
 
 # App files stay root-owned and read-only to the runtime user.
 USER lifetwin

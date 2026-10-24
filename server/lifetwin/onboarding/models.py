@@ -44,15 +44,24 @@ class ConversationState(ApiModel):
 
 
 class TurnRequest(ApiModel):
-    action: Literal["start", "reply", "confirm", "correct", "skip", "cancel"]
+    action: Literal["start", "reply", "confirm", "correct", "skip", "cancel", "import"]
     state: ConversationState = Field(default_factory=ConversationState)
     text: str | None = Field(default=None, min_length=1, max_length=2000)
     input_mode: Literal["text", "transcript"] = "text"
     field: ProfileField | None = None
     provider_consent: bool = False
+    # "import": values the user already confirmed one by one on the phone
+    # (e.g. Apple Health read-back). Validated like any profile; no source is sent.
+    values: HealthProfile | None = None
 
     @model_validator(mode="after")
     def action_payload(self):
+        if self.action == "import" and not (
+            self.values and self.values.model_dump(exclude_none=True)
+        ):
+            raise ValueError("An import requires at least one confirmed value")
+        if self.action != "import" and self.values is not None:
+            raise ValueError("Only the import action accepts values")
         if self.action in {"reply", "correct"} and not (self.text or "").strip():
             raise ValueError("A reply or correction requires nonempty text")
         if self.action not in {"reply", "correct"} and self.text is not None:
@@ -75,7 +84,10 @@ class TurnResponse(ApiModel):
     provider_status: Literal[
         "not_configured", "consent_required", "used", "unavailable", "not_needed"
     ] = "not_configured"
-    voice_status: Literal["deferred"] = "deferred"
+    voice_status: Literal["deferred", "available", "unavailable"] = "deferred"
+    # Set when the person asked to hear the prompt again more slowly or more loudly;
+    # the message repeats the prompt, and a voice client may adjust playback.
+    speech_hint: Literal["slower", "louder"] | None = None
     accepted_input_modes: list[Literal["text", "transcript"]] = Field(
         default_factory=lambda: ["text", "transcript"], min_length=2, max_length=2
     )

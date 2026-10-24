@@ -169,9 +169,7 @@
             {
               "enum": [
                 "female",
-                "male",
-                "intersex",
-                "prefer_not_to_say"
+                "male"
               ],
               "type": "string"
             },
@@ -358,12 +356,32 @@
       "title": "Schema Version",
       "type": "string"
     },
+    "speech_hint": {
+      "anyOf": [
+        {
+          "enum": [
+            "slower",
+            "louder"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Speech Hint"
+    },
     "state": {
       "$ref": "#/$defs/ConversationState"
     },
     "voice_status": {
-      "const": "deferred",
       "default": "deferred",
+      "enum": [
+        "deferred",
+        "available",
+        "unavailable"
+      ],
       "title": "Voice Status",
       "type": "string"
     }
@@ -375,6 +393,7 @@
     "guide_mode",
     "provider_status",
     "voice_status",
+    "speech_hint",
     "accepted_input_modes",
     "mascot_events",
     "complete",

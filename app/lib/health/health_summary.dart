@@ -5,13 +5,13 @@ enum HealthField { heightCm, weightKg, exerciseMinutesWeekly, sleepHours, systol
 
 extension HealthFieldName on HealthField {
   String get profileKey => switch (this) {
-        HealthField.heightCm => 'height_cm',
-        HealthField.weightKg => 'weight_kg',
-        HealthField.exerciseMinutesWeekly => 'exercise_minutes_weekly',
-        HealthField.sleepHours => 'sleep_hours',
-        HealthField.systolicBp => 'systolic_bp',
-        HealthField.diastolicBp => 'diastolic_bp',
-      };
+    HealthField.heightCm => 'height_cm',
+    HealthField.weightKg => 'weight_kg',
+    HealthField.exerciseMinutesWeekly => 'exercise_minutes_weekly',
+    HealthField.sleepHours => 'sleep_hours',
+    HealthField.systolicBp => 'systolic_bp',
+    HealthField.diastolicBp => 'diastolic_bp',
+  };
 }
 
 /// A suggested answer the user must confirm. Provenance lives here, on the phone only.
@@ -50,29 +50,79 @@ const sleepTypes = {'SLEEP_ASLEEP', 'SLEEP_LIGHT', 'SLEEP_DEEP', 'SLEEP_REM'};
 /// reading within a year; blood pressure = average of the last 3 readings
 /// within 90 days. Anything older produces no candidate, so the mascot asks.
 List<HealthCandidate> summarize(List<HealthSample> samples, DateTime now) {
+  final out = _summarize(samples, now);
+  // A reading outside everyday human ranges is a unit or entry mistake: drop it,
+  // so the mascot asks instead of offering (or the server rejecting) a wrong value.
+  out.removeWhere((c) {
+    final (lo, hi) = plausibleRange[c.field]!;
+    return c.value < lo || c.value > hi;
+  });
+  final sys = out.where((c) => c.field == HealthField.systolicBp).firstOrNull;
+  final dia = out.where((c) => c.field == HealthField.diastolicBp).firstOrNull;
+  if (sys != null && dia != null && sys.value <= dia.value) {
+    out.removeWhere((c) => c.field == HealthField.systolicBp || c.field == HealthField.diastolicBp);
+  }
+  return out;
+}
+
+/// Everyday ranges, all inside the server's validation limits.
+const plausibleRange = <HealthField, (num, num)>{
+  HealthField.heightCm: (100, 250),
+  HealthField.weightKg: (25, 300),
+  HealthField.exerciseMinutesWeekly: (0, 3000),
+  HealthField.sleepHours: (2, 14),
+  HealthField.systolicBp: (70, 250),
+  HealthField.diastolicBp: (40, 150),
+};
+
+List<HealthCandidate> _summarize(List<HealthSample> samples, DateTime now) {
   final out = <HealthCandidate>[];
 
   final height = _latest(samples, 'HEIGHT', now, 365);
   if (height != null) {
-    out.add(HealthCandidate(
-        field: HealthField.heightCm, value: _round1(height.value! * 100), basis: 'latest reading', measuredAt: height.end));
+    out.add(
+      HealthCandidate(
+        field: HealthField.heightCm,
+        value: _round1(height.value! * 100),
+        basis: 'latest reading',
+        measuredAt: height.end,
+      ),
+    );
   }
   final weight = _latest(samples, 'WEIGHT', now, 365);
   if (weight != null) {
-    out.add(HealthCandidate(
-        field: HealthField.weightKg, value: _round1(weight.value!), basis: 'latest reading', measuredAt: weight.end));
+    out.add(
+      HealthCandidate(
+        field: HealthField.weightKg,
+        value: _round1(weight.value!),
+        basis: 'latest reading',
+        measuredAt: weight.end,
+      ),
+    );
   }
 
   final exercise = _unionMinutes(samples.where((s) => s.type == 'EXERCISE_TIME' && _within(s, now, 28)));
   if (exercise > 0) {
-    out.add(HealthCandidate(
-        field: HealthField.exerciseMinutesWeekly, value: (exercise / 4).round(), basis: 'weekly average', periodDays: 28));
+    out.add(
+      HealthCandidate(
+        field: HealthField.exerciseMinutesWeekly,
+        value: (exercise / 4).round(),
+        basis: 'weekly average',
+        periodDays: 28,
+      ),
+    );
   }
 
   final nights = _sleepMinutesByNight(samples.where((s) => sleepTypes.contains(s.type) && _within(s, now, 14)));
   if (nights.length >= 3) {
-    out.add(HealthCandidate(
-        field: HealthField.sleepHours, value: _round1(_median(nights) / 60), basis: 'typical night', periodDays: 14));
+    out.add(
+      HealthCandidate(
+        field: HealthField.sleepHours,
+        value: _round1(_median(nights) / 60),
+        basis: 'typical night',
+        periodDays: 14,
+      ),
+    );
   }
 
   for (final (type, field) in [

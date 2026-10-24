@@ -1,4 +1,4 @@
-"""Runnable LifeTwin backend; all prediction implementation remains deferred."""
+"""Runnable LifeTwin backend; compare and sensitivity remain deferred."""
 
 from contextlib import asynccontextmanager
 
@@ -19,11 +19,15 @@ from lifetwin.core.models import (
     HealthProfile,
     SensitivityRequest,
 )
-from lifetwin.onboarding import ConversationService, OpenAIExtractor
+from lifetwin.onboarding import ChatCompletionsExtractor, ConversationService, OpenAIExtractor
 from lifetwin.onboarding import router as onboarding_router
+from lifetwin.prediction import load_model
+from lifetwin.prediction.models import PredictionResponse
 from lifetwin.quiz.router import router as quiz_router
 from lifetwin.quiz.service import load_bank
 from lifetwin.research.tavily import TavilyResearch
+from lifetwin.voice import VoiceService, voice_configured
+from lifetwin.voice import router as voice_router
 
 FIELD_WORDS = {
     "age": "age",
@@ -40,11 +44,14 @@ FIELD_WORDS = {
     "text": "your message",
     "limit": "number of questions",
     "question_id": "question",
+    "voice_consent": "voice",
 }
 
 
 def invalid_input_message(exc: RequestValidationError) -> str:
     errors = exc.errors()
+    if any(list(error.get("loc", []))[-1:] == ["voice_consent"] for error in errors):
+        return "Please agree to use your voice first."
     if any(BP_ORDER_MESSAGE in str(error.get("msg", "")) for error in errors):
         return BP_ORDER_MESSAGE
     names = []
@@ -85,16 +92,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application = FastAPI(
         title="LifeTwin backend",
         version="0.1.0",
-        description="Mascot intake, educational plans and quiz content. Prediction is deferred.",
+        description=(
+            "Mascot intake, survival forecast, educational plans and quiz content. "
+            "Compare and sensitivity are deferred."
+        ),
         lifespan=lifespan,
         responses=COMMON_ERRORS,
     )
     application.state.settings = settings
     application.state.conversation_service = ConversationService(
-        extractor=OpenAIExtractor(
-            api_key=settings.openai_api_key.get_secret_value(),
-            model=settings.openai_model,
-            timeout_seconds=settings.provider_timeout_seconds,
+        extractor=(
+            ChatCompletionsExtractor(
+                base_url=settings.llm_endpoint,
+                api_key=settings.llm_api_key.get_secret_value(),
+                model=settings.llm_model,
+                timeout_seconds=settings.provider_timeout_seconds,
+                reasoning_effort=settings.llm_reasoning_effort,
+            )
+            if settings.llm_provider == "chat_completions"
+            else OpenAIExtractor(
+                api_key=settings.openai_api_key.get_secret_value(),
+                model=settings.openai_model,
+                timeout_seconds=settings.provider_timeout_seconds,
+            )
         ),
         timeout_seconds=settings.provider_timeout_seconds,
     )
@@ -102,6 +122,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         api_key=settings.tavily_api_key.get_secret_value(),
         timeout_seconds=settings.provider_timeout_seconds,
     )
+
+    application.state.voice_service = VoiceService(settings)
+    # Loaded once at startup; None when the artifact files are missing (route stays 501).
+    survival_model = load_model(settings.model_artifact_path)
+    application.state.survival_model = survival_model
+    prediction_state = "available" if survival_model else "not_implemented"
 
     @application.exception_handler(RequestValidationError)
     async def invalid_input(request: Request, exc: RequestValidationError):
@@ -145,34 +171,38 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @application.get("/ready", tags=["service"])
     async def ready():
-        return {"status": "ready", "prediction": "not_implemented", "voice": "deferred"}
+        return {"status": "ready", "prediction": prediction_state, "voice": "deferred"}
 
     @application.get("/api/capabilities", tags=["service"])
     async def capabilities():
         return {
             "schema_version": "1.0",
             "intake": "guided",
-            "llm_configured": bool(
-                settings.openai_api_key.get_secret_value().strip() and settings.openai_model.strip()
-            ),
+            "llm_configured": settings.llm_configured,
             "web_research_configured": bool(settings.tavily_api_key.get_secret_value().strip()),
             "advisor": "curated_educational",
             "quiz": "local_scoring_content",
-            "prediction": "not_implemented",
-            "voice": "deferred",
+            "prediction": prediction_state,
+            "voice": "available" if voice_configured(settings) else "unavailable",
             "health_data_storage": "none",
         }
 
-    # Only route shells and input boundaries: no model, math or mock results.
     @application.post(
         "/api/predict",
-        response_model=DeferredFeature,
-        status_code=501,
-        tags=["deferred"],
-        responses=BODY_ERRORS,
+        response_model=PredictionResponse,
+        tags=["prediction"],
+        responses={
+            **BODY_ERRORS,
+            501: {"model": DeferredFeature, "description": "Model files are not installed"},
+        },
     )
-    async def predict(profile: HealthProfile):
-        return DeferredFeature()
+    def predict(profile: HealthProfile):
+        # Never log the profile. Unsupported profiles get a plain reason, not a number.
+        if survival_model is None:
+            return JSONResponse(status_code=501, content=DeferredFeature().model_dump())
+        return survival_model.predict(profile)
+
+    # Only route shells and input boundaries: no model, math or mock results.
 
     @application.post(
         "/api/compare",
@@ -204,6 +234,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         quiz_router,
         prefix="/api",
         responses=_described({404: "Quiz question not found", 422: "Invalid request values"}),
+    )
+    application.include_router(
+        voice_router,
+        prefix="/api",
+        responses={
+            **BODY_ERRORS,
+            **_described({503: "Voice is unavailable; the app can continue by typing"}),
+        },
     )
     application.add_middleware(RequestBudgetMiddleware, settings=settings)
     application.add_middleware(

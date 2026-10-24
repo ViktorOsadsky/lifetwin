@@ -1,0 +1,35 @@
+{
+  "model": "TensorFlow DeepSurv Cox partial likelihood",
+  "training_population": "NHANES 2007-2014, public-use linked mortality through 2019",
+  "n_training": 15261,
+  "n_validation": 3816,
+  "n_test": 4770,
+  "test_events": 577,
+  "test_c_index": 0.8664085953183417,
+  "features": [
+    "age",
+    "bmi",
+    "sleep_hours",
+    "vigorous_recreation_min_week",
+    "moderate_recreation_min_week",
+    "sedentary_min_day",
+    "sex_nhanes",
+    "smoking_status",
+    "diabetes_diagnosed",
+    "hypertension_diagnosed",
+    "general_health"
+  ],
+  "supported_horizons_years": [
+    1.0,
+    3.0,
+    5.0
+  ],
+  "limitations": [
+    "No causal effects of changing lifestyle are estimated.",
+    "Mortality follow-up is censored and public-use dates have privacy perturbations.",
+    "No NHANES complex-survey reweighting or external validation.",
+    "Missing values are imputed from training population; predictions may be unreliable.",
+    "Do not extrapolate above age 80 (NHANES age top-coding).",
+    "Calibration and differential performance require additional validation."
+  ]
+}

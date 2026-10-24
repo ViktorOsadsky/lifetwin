@@ -162,9 +162,7 @@
             {
               "enum": [
                 "female",
-                "male",
-                "intersex",
-                "prefer_not_to_say"
+                "male"
               ],
               "type": "string"
             },
@@ -250,7 +248,8 @@
         "confirm",
         "correct",
         "skip",
-        "cancel"
+        "cancel",
+        "import"
       ],
       "title": "Action",
       "type": "string"
@@ -310,6 +309,17 @@
       ],
       "default": null,
       "title": "Text"
+    },
+    "values": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HealthProfile"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     }
   },
   "required": [

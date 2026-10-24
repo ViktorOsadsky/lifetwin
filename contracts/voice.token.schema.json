@@ -1,0 +1,131 @@
+{
+  "$defs": {
+    "SttSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "encoding": {
+          "const": "pcm_s16le",
+          "default": "pcm_s16le",
+          "title": "Encoding",
+          "type": "string"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "sample_rate": {
+          "const": 16000,
+          "default": 16000,
+          "title": "Sample Rate",
+          "type": "integer"
+        },
+        "url": {
+          "default": "wss://api.cartesia.ai/stt/websocket",
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "encoding",
+        "sample_rate",
+        "url"
+      ],
+      "title": "SttSettings",
+      "type": "object"
+    },
+    "TtsSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "emotion": {
+          "const": "calm",
+          "default": "calm",
+          "title": "Emotion",
+          "type": "string"
+        },
+        "encoding": {
+          "const": "pcm_s16le",
+          "default": "pcm_s16le",
+          "title": "Encoding",
+          "type": "string"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "sample_rate": {
+          "const": 24000,
+          "default": 24000,
+          "title": "Sample Rate",
+          "type": "integer"
+        },
+        "speed": {
+          "maximum": 1.5,
+          "minimum": 0.6,
+          "title": "Speed",
+          "type": "number"
+        },
+        "url": {
+          "default": "wss://api.cartesia.ai/tts/websocket",
+          "title": "Url",
+          "type": "string"
+        },
+        "voice_id": {
+          "title": "Voice Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "voice_id",
+        "encoding",
+        "sample_rate",
+        "speed",
+        "emotion",
+        "url"
+      ],
+      "title": "TtsSettings",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cartesia_version": {
+      "title": "Cartesia Version",
+      "type": "string"
+    },
+    "expires_in": {
+      "maximum": 900,
+      "minimum": 60,
+      "title": "Expires In",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "stt": {
+      "$ref": "#/$defs/SttSettings"
+    },
+    "token": {
+      "title": "Token",
+      "type": "string"
+    },
+    "tts": {
+      "$ref": "#/$defs/TtsSettings"
+    }
+  },
+  "required": [
+    "schema_version",
+    "token",
+    "expires_in",
+    "cartesia_version",
+    "stt",
+    "tts"
+  ],
+  "title": "VoiceTokenResponse",
+  "type": "object"
+}

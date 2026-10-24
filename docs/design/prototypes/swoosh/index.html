@@ -1,0 +1,519 @@
+<title>Room Swoosh</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap');
+
+/* ---------- page chrome tokens (the phone itself stays in product colours) ---------- */
+:root{
+  --page:#ECE6DD; --page-ink:#4A2F25; --page-soft:#7A5B4E; --frame:#2B211C;
+  --ctl:#FFFDF8; --ctl-line:#8C6B5D; --ctl-on:#9FD9C3; --focus:#2F6BD8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#1C1916; --page-ink:#F3E9DD; --page-soft:#C9B5A6; --frame:#4A423C;
+    --ctl:#2A2420; --ctl-line:#A88B7D; --ctl-on:#5FAF93; --focus:#8DB4FF;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#1C1916; --page-ink:#F3E9DD; --page-soft:#C9B5A6; --frame:#4A423C;
+  --ctl:#2A2420; --ctl-line:#A88B7D; --ctl-on:#5FAF93; --focus:#8DB4FF;
+}
+html,body{height:100%;margin:0}
+body{background:var(--page);color:var(--page-ink);font-family:'Atkinson Hyperlegible',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+
+.page{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 16px;box-sizing:border-box}
+.fit{position:relative;flex:none}
+.phone{position:absolute;left:0;top:0;width:390px;height:844px;transform-origin:0 0;border-radius:44px;overflow:hidden;box-shadow:0 0 0 7px var(--frame),0 24px 60px rgba(30,20,10,.28)}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:center;font-size:16px}
+.controls .hint{color:var(--page-soft);flex-basis:100%;text-align:center;font-size:15px}
+.sw{display:inline-flex;align-items:center;gap:10px;cursor:pointer;min-height:44px;font-weight:700}
+.sw input{appearance:none;-webkit-appearance:none;margin:0;width:50px;height:30px;border-radius:15px;border:2px solid var(--ctl-line);background:var(--ctl);position:relative;cursor:pointer;flex:none;transition:background-color .15s}
+.sw input::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:10px;background:var(--ctl);border:2px solid var(--ctl-line);box-sizing:border-box;transition:transform .18s cubic-bezier(.2,0,0,1)}
+.sw input:checked{background:var(--ctl-on)}
+.sw input:checked::after{transform:translateX(20px)}
+.sw input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+
+/* test hook (#t=…) : bare stage at 1:1 for headless captures */
+.test .page{padding:0;justify-content:flex-start;align-items:flex-start}
+.test .controls{display:none}
+.test .phone{border-radius:0;box-shadow:none}
+
+@media (max-width:430px){
+  .page{padding:0 0 8px;justify-content:flex-start;gap:6px}
+  .phone{border-radius:0;box-shadow:none}
+}
+
+/* ---------- product tokens (painted-card-direction.md §3) ---------- */
+.scr{--ink:#4A2F25;--paper:#FFFDF8;--cream:#FBF4EA;--mint:#9FD9C3;--line:#A88B7D;--ctlline:#8C6B5D;
+  width:390px;height:844px;position:relative;overflow:hidden;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:var(--ink);background:#E6E0FA}
+.scr *{box-sizing:border-box}
+.tint{position:absolute;inset:0}
+.tint.lav{background:radial-gradient(140% 70% at 50% 18%,#F0ECFD 0%,#E6E0FA 72%)}
+.tint.mint{background:radial-gradient(140% 70% at 50% 18%,#E3F5EC 0%,#D3EEE2 72%);opacity:0}
+.fd{font-family:Fredoka,ui-rounded,system-ui,sans-serif;font-weight:600}
+.pn{position:absolute;border:1.5px solid var(--line);border-radius:28px;background:var(--paper);box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.win{left:14px;top:77px;width:362px;height:615px;border-radius:30px;z-index:1}
+.pa{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border-radius:24px;overflow:hidden;background:#D9D2F4}
+.key{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(226,179,87,.7);border-radius:24px;pointer-events:none}
+.plate{position:absolute;left:-50px;top:0;width:446px;height:669px;display:block;transform-origin:0 0;max-width:none}
+.glow{position:absolute;background:radial-gradient(closest-side at 60% 42%,rgba(255,227,176,.30),rgba(255,227,176,0))}
+.anchor{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0}
+.sh1,.sh2{position:absolute;border-radius:50%}
+.sh1{left:-85px;top:-16px;width:170px;height:30px;background:rgba(74,47,37,.10);filter:blur(8px)}
+.sh2{left:-60px;top:-9px;width:120px;height:16px;background:rgba(74,47,37,.28);filter:blur(3px)}
+.bear img{position:absolute;display:block;max-width:none;pointer-events:none}
+.tuft{position:absolute;left:0;top:0}
+
+.banner{position:absolute;left:50%;top:55px;transform:translateX(-50%);height:44px;max-width:240px;padding:0 20px;display:flex;align-items:center;gap:6px;background:var(--paper);border:1.5px solid var(--line);border-radius:22px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);font-family:Fredoka,ui-rounded,system-ui,sans-serif;font-weight:600;font-size:22px;white-space:nowrap;z-index:7}
+.banner .br{color:#B4532F}
+.bubble{padding:14px 18px;border-radius:26px;z-index:6}
+.bubble p{margin:0;line-height:1.18;position:relative}
+.tail{position:absolute;width:20px;height:20px;background:var(--paper);border:1.5px solid var(--line);border-top-color:transparent;border-right-color:transparent}
+.b-room{left:240px;top:100px;width:130px;transform-origin:28px calc(100% + 10px)}
+.b-room p{font-size:21px}
+.b-onb{left:210px;top:112px;width:156px;transform-origin:-10px 62px;opacity:0}
+.b-onb p{font-size:26px}
+.cozy{left:28px;top:606px;border-radius:18px;padding:9px 16px 9px 12px;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;z-index:2;transform:rotate(-3deg)}
+
+.btn{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid var(--ctlline);background:var(--paper);padding:0;-webkit-tap-highlight-color:transparent}
+.btn.fd{font-family:Fredoka,ui-rounded,system-ui,sans-serif;font-weight:600}
+.btn:focus-visible{outline:3px solid #2F6BD8;outline-offset:3px}
+.lip{background:var(--mint);border-color:#7A5B4E;box-shadow:inset 0 -3px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.back{position:absolute;left:32px;top:99px;width:52px;height:52px;border-radius:26px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);z-index:6;opacity:0}
+.bar{left:14px;top:668px;width:362px;height:138px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;z-index:3}
+.side{width:94px;height:104px;flex-direction:column;gap:6px;border:0;background:transparent;font-size:17px;font-weight:700}
+.side .disc{width:62px;height:62px;border-radius:31px;border:2px solid var(--ctlline);display:flex;align-items:center;justify-content:center}
+.talk{width:144px;height:72px;border-radius:36px;font-size:26px}
+.wind{position:absolute;left:0;top:0;width:390px;height:844px;z-index:2;pointer-events:none;overflow:visible}
+.wind path{fill:none;stroke:#FFFFFF;stroke-linecap:round}
+.wind .edge{stroke:#A88B7D;stroke-opacity:.55}
+.sheet{left:14px;top:452px;width:362px;height:354px;padding:22px 20px 0;display:flex;flex-direction:column;align-items:stretch;z-index:5;transform-origin:50% 0;will-change:transform}
+.dots{display:flex;gap:8px;justify-content:center;align-items:center}
+.dot{width:12px;height:12px;border-radius:6px;border:2px solid var(--ctlline);background:var(--paper)}
+.dot.done{background:var(--ink);border-color:var(--ink)}
+.dot.now{width:30px;background:var(--mint);border-color:#7A5B4E}
+.hold{height:88px;border-radius:44px;font-size:26px;margin-top:18px}
+.link{border:0;background:transparent;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;font-weight:700;font-size:18px;min-height:48px;margin-top:4px;align-self:center;padding:0 12px}
+.chips{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.chip{width:100%;height:52px;border-radius:26px;justify-content:flex-start;padding:0 16px;font-size:17px;font-weight:700;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.chip .grow{flex:1;text-align:left}
+.tog{width:50px;height:30px;border-radius:15px;border:2px solid #7A5B4E;background:#EFE6D8;position:relative;flex:none}
+.tog::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:10px;background:var(--paper);border:2px solid #7A5B4E}
+.ghost{position:absolute;left:0;top:0;pointer-events:none;z-index:20}
+</style>
+
+<div class="page">
+  <div class="fit" id="fit">
+    <div class="phone" id="phone">
+      <div class="scr" id="scr">
+        <div class="tint lav"></div>
+        <div class="tint mint" id="mint"></div>
+
+        <!-- Plate window: one element for both screens; its height is glued to the sheet's top edge -->
+        <div class="pn win" id="win">
+          <div class="pa">
+            <img class="plate" id="plate" src="img/calm-room.jpg" alt="Floating island in a soft lavender sky">
+            <div class="glow" id="glow" aria-hidden="true"></div>
+            <div class="anchor" id="ground" aria-hidden="true"><div class="sh1"></div><div class="sh2"></div></div>
+            <div class="anchor bear" id="bear" role="img" aria-label="Mochi the bear twin in the Cal hat">
+              <img id="p-stand" src="img/bear_stand.png" alt="" style="left:-145.1px;top:-276.6px;width:290.2px;height:290.2px">
+              <img id="p-wave" src="img/bear_wave.png" alt="" style="left:-117px;top:-278.3px;width:234.1px;height:290.2px;opacity:0">
+              <img id="p-jump" src="img/bear_jump.png" alt="" style="left:-125px;top:-278.9px;width:250px;height:290.2px;opacity:0">
+            </div>
+            <div class="anchor" id="tufts" aria-hidden="true">
+              <svg class="tuft" id="tuft1" width="30" height="16" viewBox="0 0 30 16"><path d="M2 16C4 11 5 7 4 2c3 4 4.5 9 4.5 14zM9 16c1-6 3-9 6-12-.5 5-1.5 8-1 12zM15 16c1.5-5 4-7.5 8-9-2 4-3 6.5-2.5 9zM21 16c2-3.5 4.5-5 8-5.5-2.5 2-3.5 3.5-3.5 5.5z" fill="#93AE5B"/><path d="M6 16c.5-4 1.5-6.5 3.5-8.5-.3 3.5-.8 5.5-.3 8.5zM17.5 16c1-3 2.5-4.5 5-5.5-1 2-1.6 3.5-1.4 5.5z" fill="#AFC877"/></svg>
+              <svg class="tuft" id="tuft2" width="30" height="16" viewBox="0 0 30 16"><path d="M2 16C4 11 5 7 4 2c3 4 4.5 9 4.5 14zM9 16c1-6 3-9 6-12-.5 5-1.5 8-1 12zM15 16c1.5-5 4-7.5 8-9-2 4-3 6.5-2.5 9zM21 16c2-3.5 4.5-5 8-5.5-2.5 2-3.5 3.5-3.5 5.5z" fill="#93AE5B"/><path d="M6 16c.5-4 1.5-6.5 3.5-8.5-.3 3.5-.8 5.5-.3 8.5zM17.5 16c1-3 2.5-4.5 5-5.5-1 2-1.6 3.5-1.4 5.5z" fill="#AFC877"/></svg>
+            </div>
+          </div>
+          <div class="key"></div>
+        </div>
+
+        <div class="banner" aria-label="Twin name: Mochi"><span class="br">{</span><span>Mochi</span><span class="br">}</span></div>
+
+        <!-- Room-only -->
+        <div class="pn bubble b-room" id="bRoom"><span class="tail" style="left:18px;bottom:-11px;transform:rotate(-45deg)"></span><p class="fd">Hi! Want<br>to chat?</p></div>
+        <div class="pn cozy" id="cozy" role="status">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#F8D98A" stroke="#4A2F25" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.2c1.8 2 5.2 2 7 0"/><path d="M9 9.8h.01M15 9.8h.01"/></svg><span>Feeling cozy</span>
+        </div>
+        <div class="pn bar" id="bar">
+          <button class="btn side" id="custom" type="button">
+            <span class="disc" style="background:#F8B9A0;box-shadow:inset 0 -3px 0 rgba(232,149,122,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 3.5L3 6.5l2 5 3-1.2V20.5h8V10.3l3 1.2 2-5-5.5-3c-.6 1.6-2.2 2.7-4 2.7s-3.4-1.1-4-2.7z"/></svg></span>
+            <span>Customize</span>
+          </button>
+          <button class="btn lip fd talk" id="talk" type="button">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span>Talk</span>
+          </button>
+          <button class="btn side" id="fortune" type="button">
+            <span class="disc" style="background:#1E2547;box-shadow:inset 0 -3px 0 rgba(15,20,48,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E8B64C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="10" r="6.5"/><path d="M6.5 20.5h11l-1.8-3.6H8.3z"/><path d="M9.2 8.6a3.2 3.2 0 0 1 2.6-2.2"/></svg></span>
+            <span>Fortune</span>
+          </button>
+        </div>
+
+        <!-- Wind lines: drawn every frame relative to the sheet's top edge -->
+        <svg class="wind" id="wind" viewBox="0 0 390 844" aria-hidden="true">
+          <path id="w0e" class="edge" pathLength="1" stroke-width="6"/><path id="w0" pathLength="1" stroke-width="3.8"/>
+          <path id="w1e" class="edge" pathLength="1" stroke-width="4.8"/><path id="w1" pathLength="1" stroke-width="2.8"/>
+          <path id="w2e" class="edge" pathLength="1" stroke-width="4.2"/><path id="w2" pathLength="1" stroke-width="2.4"/>
+        </svg>
+
+        <!-- Onboarding-only -->
+        <button class="btn back" id="back" type="button" aria-label="Back"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <div class="pn bubble b-onb" id="bOnb"><span class="tail" style="left:-11px;top:52px;transform:rotate(45deg)"></span><p class="fd">How tall<br>are you?</p></div>
+        <div class="pn sheet" id="sheet">
+          <div class="dots it" role="img" aria-label="Step 2 of 5"><span class="dot done"></span><span class="dot now"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <button class="btn lip fd hold it" type="button">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span>Hold to talk</span>
+          </button>
+          <button class="btn link it" type="button">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10.5 10h.01M14.5 10h.01M17.5 10h.01M7.5 14h9"/></svg><span>Type instead</span>
+          </button>
+          <div class="chips">
+            <button class="btn chip it" type="button">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="#FF9F8B" stroke="#4A2F25" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg><span class="grow">Use my Health app</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+            </button>
+            <button class="btn chip it" type="button" role="switch" aria-checked="false">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 5h15v10.5H10l-5.5 4z"/><path d="M8.5 10.3h.01M12 10.3h.01M15.5 10.3h.01"/></svg><span class="grow">AI helper: Off</span><span class="tog" aria-hidden="true"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls" id="controls">
+    <label class="sw"><input type="checkbox" role="switch" id="slow"> Slow-mo ×4</label>
+    <label class="sw"><input type="checkbox" role="switch" id="rm"> Reduced motion</label>
+    <span class="hint">Tap Talk to swoosh in. Tap Back to swoosh home.</span>
+  </div>
+</div>
+
+<script>
+(() => {
+  /* ================= easing ================= */
+  function cubic(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const sx = t => ((ax * t + bx) * t + cx) * t;
+    const sy = t => ((ay * t + by) * t + cy) * t;
+    const dx = t => (3 * ax * t + 2 * bx) * t + cx;
+    return x => {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      let t = x;
+      for (let i = 0; i < 8; i++) {
+        const e = sx(t) - x, d = dx(t);
+        if (Math.abs(e) < 1e-6 || Math.abs(d) < 1e-6) break;
+        t -= e / d;
+      }
+      if (Math.abs(sx(t) - x) > 1e-4) { // bisection fallback
+        let lo = 0, hi = 1; t = x;
+        for (let i = 0; i < 30; i++) { if (sx(t) < x) lo = t; else hi = t; t = (lo + hi) / 2; }
+      }
+      return sy(t);
+    };
+  }
+  // Damped spring (zeta 0.72, omega 10 per unit time): ~4% overshoot, settled by the end.
+  const spring = (z = 0.72, w = 10) => {
+    const wd = w * Math.sqrt(1 - z * z);
+    return u => u <= 0 ? 0 : u >= 1 ? 1 : 1 - Math.exp(-z * w * u) * (Math.cos(wd * u) + (z * w / wd) * Math.sin(wd * u));
+  };
+  const E = {
+    lin: t => t,
+    out: cubic(0, 0, 0.2, 1),          // decelerate (entrances)
+    in: cubic(0.4, 0, 1, 1),           // accelerate (exits)
+    inOut: cubic(0.45, 0, 0.25, 1),    // on-screen travel
+    sine: t => -(Math.cos(Math.PI * t) - 1) / 2,
+    back: cubic(0.34, 1.4, 0.64, 1),   // pop with ~8% overshoot
+    backSoft: cubic(0.3, 1.22, 0.6, 1),
+    fall: t => Math.pow(t, 2.2),       // sheet dropping away
+    spring: spring()
+  };
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const seg = (ms, start, dur, ease = E.lin) => ease(clamp((ms - start) / dur));
+  // Piecewise keyframe track: keys = [[ms, value, easeIntoThisKey], ...]; value = number | [n, n]
+  function track(ms, keys) {
+    if (ms <= keys[0][0]) return keys[0][1];
+    for (let i = 1; i < keys.length; i++) {
+      const [t1, v1, ez] = keys[i], [t0, v0] = keys[i - 1];
+      if (ms <= t1) {
+        const p = (ez || E.lin)((ms - t0) / (t1 - t0));
+        return Array.isArray(v0) ? v0.map((a, j) => lerp(a, v1[j], p)) : lerp(v0, v1, p);
+      }
+    }
+    return keys[keys.length - 1][1];
+  }
+  const qb = (p0, p1, p2, t) => [
+    (1 - t) * (1 - t) * p0[0] + 2 * t * (1 - t) * p1[0] + t * t * p2[0],
+    (1 - t) * (1 - t) * p0[1] + 2 * t * (1 - t) * p1[1] + t * t * p2[1]
+  ];
+
+  /* ================= geometry (from V-1 / V-2 at 390x844) ================= */
+  const DUR = { fwd: 720, back: 740, reduced: 200 };
+  const G = {
+    // bear feet anchor in plate-window (.pa) coordinates, and scale
+    roomFeet: [173.5, 370.4], onbFeet: [105.8, 324.2], onbScale: 0.793,
+    glowRoom: [53, 84, 290, 276], glowOnb: [-14, 95, 290, 218],
+    tuftRoom: [[-69.5, -9.4], [28.5, -7.4]], tuftOnb: [[-57.8, -9.2], [20.2, -7.2]],
+    plateOnb: { dx: -86, dy: -70, s: 484 / 446 },
+    winRoomH: 615, winOnbH: 397,
+    // sheet offset paths (px from its resting place), quadratic bezier P0 -> P1 -> P2
+    enter: [[-44, 400], [36, 70], [0, 0]],
+    exit: [[0, 0], [-26, -30], [64, 430]]
+  };
+
+  /* ================= elements ================= */
+  const $ = id => document.getElementById(id);
+  const el = {
+    mint: $('mint'), win: $('win'), plate: $('plate'), glow: $('glow'), ground: $('ground'), bear: $('bear'),
+    stand: $('p-stand'), wave: $('p-wave'), jump: $('p-jump'), tufts: $('tufts'), tuft1: $('tuft1'), tuft2: $('tuft2'),
+    bRoom: $('bRoom'), cozy: $('cozy'), bar: $('bar'), talk: $('talk'), custom: $('custom'), fortune: $('fortune'),
+    back: $('back'), bOnb: $('bOnb'), sheet: $('sheet'), items: [...document.querySelectorAll('#sheet .it')],
+    w: [0, 1, 2].map(i => [$('w' + i), $('w' + i + 'e')])
+  };
+  const vis = (node, o) => { node.style.opacity = o.toFixed(3); node.style.visibility = o < 0.005 ? 'hidden' : 'visible'; };
+
+  /* ---------- shared renderers ---------- */
+  function renderWorld(b, hop, squash, poses, sheetOff, sheetRot) {
+    // b: 0 = Room framing, 1 = Onboarding framing (plate, bear base position, glow, tufts)
+    const fx = lerp(G.roomFeet[0], G.onbFeet[0], b), fy = lerp(G.roomFeet[1], G.onbFeet[1], b);
+    const s = lerp(1, G.onbScale, b);
+    const p = G.plateOnb;
+    el.plate.style.transform = `translate(${(p.dx * b).toFixed(2)}px,${(p.dy * b).toFixed(2)}px) scale(${lerp(1, p.s, b).toFixed(4)})`;
+    const gr = G.glowRoom.map((v, i) => lerp(v, G.glowOnb[i], b));
+    Object.assign(el.glow.style, { left: gr[0] + 'px', top: gr[1] + 'px', width: gr[2] + 'px', height: gr[3] + 'px' });
+    // ground shadow: stays on the ground, shrinks and lightens while the bear is airborne
+    const air = clamp(hop / 48);
+    el.ground.style.transform = `translate(${fx.toFixed(2)}px,${fy.toFixed(2)}px) scale(${(lerp(1, 0.86, b) * (1 - 0.38 * air)).toFixed(3)})`;
+    el.ground.style.opacity = (1 - 0.5 * air).toFixed(3);
+    el.bear.style.transform = `translate(${fx.toFixed(2)}px,${(fy - hop).toFixed(2)}px) scale(${(s * squash[0]).toFixed(4)},${(s * squash[1]).toFixed(4)})`;
+    vis(el.stand, poses[0]); vis(el.wave, poses[1]); vis(el.jump, poses[2]);
+    el.tufts.style.transform = `translate(${fx.toFixed(2)}px,${fy.toFixed(2)}px)`;
+    [el.tuft1, el.tuft2].forEach((t, i) => {
+      t.style.transform = `translate(${lerp(G.tuftRoom[i][0], G.tuftOnb[i][0], b).toFixed(2)}px,${lerp(G.tuftRoom[i][1], G.tuftOnb[i][1], b).toFixed(2)}px)`;
+    });
+    // sheet and the window glued to it: window bottom = sheet top + 22 (the V overlap)
+    el.sheet.style.transform = `translate(${sheetOff[0].toFixed(2)}px,${sheetOff[1].toFixed(2)}px) rotate(${sheetRot.toFixed(3)}deg)`;
+    el.win.style.height = clamp(G.winOnbH + sheetOff[1], G.winOnbH - 12, G.winRoomH).toFixed(2) + 'px';
+  }
+  function setWind(i, d, visible, alpha, edgeAlpha = 1) {
+    const [core, edge] = el.w[i];
+    const v = Math.max(0, visible.len);
+    [core, edge].forEach(pth => {
+      pth.setAttribute('d', d);
+      pth.style.strokeDasharray = `${v.toFixed(4)} 3`;
+      pth.style.strokeDashoffset = (-visible.from).toFixed(4);
+      pth.style.opacity = v < 0.002 ? 0 : (pth === edge ? alpha * edgeAlpha : alpha);
+    });
+  }
+  const pop = (node, q, from) => { node.style.transform = `scale(${lerp(from, 1, q).toFixed(4)})`; };
+
+  /* ---------- Room -> Onboarding (720 ms) ---------- */
+  function renderFwd(ms) {
+    el.mint.style.opacity = seg(ms, 80, 480, E.sine).toFixed(3);
+
+    // Room-only exits (all gone by 140 ms: the Flutter hand-off frame)
+    const rb = seg(ms, 20, 120, E.in);
+    vis(el.bRoom, 1 - rb); pop(el.bRoom, 1 - rb, 0.6);
+    const cz = seg(ms, 20, 120, E.in);
+    vis(el.cozy, 1 - cz); el.cozy.style.transform = `translateY(${(16 * cz).toFixed(2)}px) rotate(-3deg)`;
+    el.talk.style.transform = `scale(${track(ms, [[0, 1], [90, 0.94, E.out]]).toFixed(4)})`;
+    el.custom.style.transform = el.fortune.style.transform = '';
+    el.custom.style.opacity = el.fortune.style.opacity = '';
+    el.bar.style.transform = `translateY(${(36 * seg(ms, 60, 180, E.in)).toFixed(2)}px)`;
+    vis(el.bar, 1 - seg(ms, 90, 130, E.in));
+
+    // Sheet: spring along the entry bezier, leaning slightly into the motion
+    const sp = E.spring(clamp((ms - 120) / 500));
+    const off = qb(...G.enter, sp);
+    const rot = 2.2 * (1 - sp);
+
+    // Bear: anticipation squash, parabolic hop with pose swap at the apex, landing squash
+    const b = seg(ms, 140, 420, E.inOut);
+    const u = clamp((ms - 140) / 420);
+    const hop = 40 * 4 * u * (1 - u);
+    const squash = track(ms, [
+      [0, [1, 1]], [60, [1, 1]], [140, [1.05, 0.93], E.out], [220, [0.97, 1.05], E.out],
+      [380, [1, 1], E.inOut], [520, [0.99, 1.02], E.in], [560, [1, 1]],
+      [620, [1.07, 0.92], E.out], [720, [1, 1], E.back]
+    ]);
+    const wave = seg(ms, 325, 50, E.inOut);
+    renderWorld(b, hop, squash, [1 - wave, wave, 0], off, rot);
+
+    // Sheet contents: 35 ms micro-cascade once the sheet has mostly arrived
+    el.items.forEach((it, i) => {
+      const st = 300 + 35 * i;
+      it.style.transform = `translateY(${(16 * (1 - seg(ms, st, 240, E.out))).toFixed(2)}px)`;
+      it.style.opacity = seg(ms, st, 140, E.out).toFixed(3);
+    });
+
+    // Wind lines: a left-to-right gust riding just above the sheet's leading edge
+    const top = 452 + off[1], x = off[0];
+    [[30, 360, 16, 22, 170], [74, 300, 30, 15, 200], [122, 252, 42, 9, 230]].forEach(([x0, x1, gap, bow, a], i) => {
+      const y = top - gap;
+      const d = `M${x0 + x} ${y + 4} Q${(x0 + x1) / 2 + x} ${y - bow} ${x1 + x} ${y - 2}`;
+      const head = seg(ms, a, 200, E.out), tail = seg(ms, a + 90, 220, E.in);
+      setWind(i, d, { from: tail, len: head - tail }, 0.95);
+    });
+
+    pop(el.back, seg(ms, 460, 200, E.back), 0.6); vis(el.back, seg(ms, 460, 120));
+    pop(el.bOnb, seg(ms, 540, 180, E.back), 0.4); vis(el.bOnb, seg(ms, 540, 90));
+  }
+
+  /* ---------- Onboarding -> Room (740 ms) ---------- */
+  function renderBack(ms) {
+    el.mint.style.opacity = (1 - seg(ms, 60, 460, E.sine)).toFixed(3);
+
+    // Onboarding-only exits
+    el.back.style.transform = `scale(${track(ms, [[0, 1], [80, 0.92, E.out]]).toFixed(4)})`;
+    vis(el.back, 1 - seg(ms, 60, 140, E.in));
+    const ob = seg(ms, 0, 150, E.in);
+    vis(el.bOnb, 1 - ob); pop(el.bOnb, 1 - ob, 0.6);
+    el.items.forEach(it => { it.style.transform = ''; it.style.opacity = ''; });
+
+    // Sheet: small lift (anticipation), then falls away down-right along the exit bezier
+    const lift = -10 * seg(ms, 40, 100, E.out);
+    const q = seg(ms, 140, 320, E.fall);
+    const bq = qb(...G.exit, q);
+    const off = [bq[0], bq[1] + lift * (1 - q)];
+    const rot = 2.2 * E.in(q);
+
+    // Bear: crouch (wave -> stand), hop home, land, then a small celebratory bear_jump
+    const b = 1 - seg(ms, 110, 310, E.inOut);
+    const u = clamp((ms - 110) / 310), v = clamp((ms - 470) / 160);
+    const hop = 48 * 4 * u * (1 - u) + 22 * 4 * v * (1 - v);
+    const squash = track(ms, [
+      [0, [1, 1]], [40, [1, 1]], [110, [1.05, 0.93], E.out], [180, [0.97, 1.05], E.out],
+      [340, [1, 1], E.inOut], [420, [1, 1]], [450, [1.06, 0.92], E.out], [470, [1.03, 0.96], E.out],
+      [520, [0.97, 1.04], E.out], [600, [1, 1], E.inOut], [630, [1, 1]],
+      [670, [1.05, 0.94], E.out], [740, [1, 1], E.back]
+    ]);
+    const wave = 1 - seg(ms, 40, 60, E.inOut);
+    const jump = seg(ms, 455, 30, E.inOut) * (1 - seg(ms, 628, 28, E.inOut));
+    renderWorld(b, hop, squash, [clamp(1 - wave - jump), wave, jump], off, rot);
+
+    // Wind lines: short streaks trailing above the falling sheet
+    const top = 452 + off[1], x = off[0];
+    [[86, 46, 200], [196, 62, 225], [300, 40, 250]].forEach(([sx, L, a], i) => {
+      const y0 = top - 10;
+      const d = `M${sx + x} ${y0} Q${sx + x - 7} ${y0 - L / 2} ${sx + x - 3} ${y0 - L}`;
+      const head = seg(ms, a, 160, E.out), tail = seg(ms, a + 80, 200, E.in);
+      setWind(i, d, { from: 0, len: head * (1 - tail) }, 0.85, 0.35);
+    });
+
+    // Room returns: bar rises under the departing sheet, then the cozy chip, bubble last
+    el.bar.style.transform = `translateY(${(120 * (1 - seg(ms, 300, 260, E.backSoft))).toFixed(2)}px)`;
+    vis(el.bar, seg(ms, 300, 120, E.out));
+    el.talk.style.transform = `scale(${lerp(0.9, 1, seg(ms, 380, 180, E.back)).toFixed(4)})`;
+    [el.custom, el.fortune].forEach((n, i) => {
+      const st = 400 + 30 * i;
+      n.style.transform = `translateY(${(10 * (1 - seg(ms, st, 160, E.out))).toFixed(2)}px)`;
+      n.style.opacity = seg(ms, st, 120, E.out).toFixed(3);
+    });
+    const cz = seg(ms, 520, 180, E.out);
+    vis(el.cozy, cz); el.cozy.style.transform = `translateY(${(16 * (1 - cz)).toFixed(2)}px) rotate(-3deg)`;
+    pop(el.bRoom, seg(ms, 580, 160, E.back), 0.4); vis(el.bRoom, seg(ms, 580, 90));
+  }
+
+  const render = (dir, ms) => (dir === 'fwd' ? renderFwd : renderBack)(ms);
+  const rest = st => st === 'room' ? renderFwd(0) : renderFwd(DUR.fwd);
+
+  /* ================= state + playback ================= */
+  let state = 'room', busy = false;
+  const slowEl = $('slow'), rmEl = $('rm');
+  try { rmEl.checked = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  const scale = () => (slowEl.checked ? 4 : 1);
+
+  function setInteractive(st) {
+    const roomOn = st === 'room', onbOn = st === 'onb';
+    [el.bar, el.bRoom, el.cozy].forEach(n => { n.inert = !roomOn; n.setAttribute('aria-hidden', String(!roomOn)); });
+    [el.sheet, el.back, el.bOnb].forEach(n => { n.inert = !onbOn; n.setAttribute('aria-hidden', String(!onbOn)); });
+  }
+  function finish(next, hadFocus) {
+    state = next; busy = false;
+    rest(next); setInteractive(next);
+    if (hadFocus) (next === 'onb' ? el.back : el.talk).focus({ preventScroll: true });
+  }
+  // Reduced motion: 200 ms dissolve of a snapshot of the old screen over the new one; nothing travels.
+  function ghostOf() {
+    const g = $('scr').cloneNode(true);
+    g.removeAttribute('id'); g.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+    g.classList.add('ghost'); g.setAttribute('aria-hidden', 'true'); g.inert = true;
+    $('phone').appendChild(g);
+    return g;
+  }
+  function play(dir) {
+    if (busy) return;
+    busy = true;
+    const next = dir === 'fwd' ? 'onb' : 'room';
+    const trigger = dir === 'fwd' ? el.talk : el.back;
+    const hadFocus = document.activeElement === trigger;
+    setInteractive('none');
+    const k = scale();
+    let step, total, done;
+    if (rmEl.checked) {
+      // Reduced motion: the old screen (a snapshot) dissolves over the new one in 200 ms; nothing travels.
+      const g = ghostOf();
+      rest(next);
+      total = DUR.reduced;
+      step = ms => { g.style.opacity = String(1 - E.out(ms / total)); };
+      done = () => { g.remove(); finish(next, hadFocus); };
+    } else {
+      total = DUR[dir];
+      step = ms => render(dir, ms);
+      done = () => finish(next, hadFocus);
+    }
+    // One clock for every element. rAF drives it; a timeout backs it up where rAF is throttled.
+    let t0 = null;
+    const tick = () => {
+      const now = performance.now();
+      if (t0 === null) t0 = now;
+      const ms = Math.min((now - t0) / k, total);
+      step(ms);
+      if (ms < total) schedule(); else done();
+    };
+    const schedule = () => {
+      let fired = false;
+      const go = () => { if (!fired) { fired = true; tick(); } };
+      requestAnimationFrame(go); setTimeout(go, 34);
+    };
+    schedule();
+  }
+  el.talk.addEventListener('click', () => state === 'room' && play('fwd'));
+  el.back.addEventListener('click', () => state === 'onb' && play('back'));
+
+  /* ================= fit the phone to the viewport ================= */
+  const fit = $('fit'), phone = $('phone'), controls = $('controls');
+  function layout() {
+    const test = document.documentElement.classList.contains('test');
+    const narrow = innerWidth <= 430;
+    const avW = test ? 390 : innerWidth - (narrow ? 0 : 48);
+    const avH = test ? 844 : innerHeight - controls.offsetHeight - (narrow ? 14 : 52);
+    const s = test ? 1 : Math.max(0.3, Math.min(narrow ? avW / 390 : 1, avW / 390, avH / 844));
+    phone.style.transform = `scale(${s})`;
+    fit.style.width = 390 * s + 'px'; fit.style.height = 844 * s + 'px';
+  }
+  addEventListener('resize', layout);
+
+  /* ================= local test hook: #t=0.5&dir=fwd[&rm=1] freezes at progress t ================= */
+  const hp = new URLSearchParams((location.hash || '').slice(1) || location.search.slice(1));
+  if (hp.has('t')) {
+    document.documentElement.classList.add('test');
+    const dir = hp.get('dir') === 'back' ? 'back' : 'fwd';
+    const p = clamp(parseFloat(hp.get('t')) || 0);
+    if (hp.get('rm') === '1') {
+      rest(dir === 'fwd' ? 'room' : 'onb');
+      const g = ghostOf();
+      rest(dir === 'fwd' ? 'onb' : 'room');
+      g.style.opacity = String(1 - E.out(p));
+    } else {
+      render(dir, p * DUR[dir]);
+    }
+    setInteractive('none');
+  } else {
+    rest('room'); setInteractive('room');
+  }
+  layout();
+})();
+</script>

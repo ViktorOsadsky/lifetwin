@@ -1,0 +1,86 @@
+<!doctype html>
+<!-- Flutter: the plate window shrinks first (Fortune to 160pt min, Customize to 200pt min), then the bottom panel scrolls. Test at 375x667 and at 1.3x text. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>V Customize</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.scr{width:390px;height:844px;position:relative;overflow:hidden;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#4A2F25;-webkit-font-smoothing:antialiased}
+.g-lav{background:radial-gradient(140% 70% at 50% 18%,#F0ECFD 0%,#E6E0FA 72%)}
+.g-mint{background:radial-gradient(140% 70% at 50% 18%,#E3F5EC 0%,#D3EEE2 72%)}
+.g-peach{background:radial-gradient(140% 70% at 50% 18%,#FDEBE1 0%,#FBE0D2 72%)}
+.g-night{background:radial-gradient(140% 70% at 50% 22%,#1B2245 0%,#121731 72%)}
+.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.pn{position:absolute;box-sizing:border-box;border:1.5px solid #A88B7D;border-radius:28px;background:#FFFDF8;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.g-night .pn{box-shadow:0 6px 16px rgba(5,8,25,.35),inset 0 1px 0 rgba(255,255,255,.08)}
+.win{border-radius:30px}
+.pa{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border-radius:24px;overflow:hidden}
+.pa img.plate{position:absolute;display:block;object-fit:cover}
+.key{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(226,179,87,.7);border-radius:24px;pointer-events:none}
+.spk{position:absolute;width:16px;height:16px;pointer-events:none}
+.banner{position:absolute;left:50%;transform:translateX(-50%);height:44px;max-width:240px;box-sizing:border-box;padding:0 20px;display:flex;align-items:center;justify-content:center;gap:6px;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;white-space:nowrap;z-index:3}
+.banner .nm{overflow:hidden;text-overflow:ellipsis}
+.banner .br{color:#B4532F}
+.btn{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:#4A2F25;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid #8C6B5D;background:#FFFDF8;padding:0}
+.btn.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.lip{background:#9FD9C3;box-shadow:inset 0 -3px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-cream{background:#FFFDF8;box-shadow:inset 0 -3px 0 rgba(233,223,208,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.link{border:0;background:transparent;box-shadow:none;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;font-weight:700;font-size:18px;min-height:48px}
+.back{position:absolute;width:52px;height:52px;border-radius:26px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);z-index:2}
+.tail{position:absolute;width:20px;height:20px;background:#FFFDF8;border:1.5px solid #A88B7D;border-top-color:transparent;border-right-color:transparent;box-sizing:border-box}
+.dots{display:flex;gap:8px;justify-content:center;align-items:center}
+.dot{width:12px;height:12px;border-radius:6px;border:2px solid #8C6B5D;box-sizing:border-box;background:#FFFDF8}
+.dot.done{background:#4A2F25;border-color:#4A2F25}
+.dot.now{width:30px;background:#9FD9C3;border-color:#7A5B4E}
+.chip{width:100%;height:52px;border-radius:26px;justify-content:flex-start;padding:0 16px;font-size:17px;font-weight:700;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.tab{width:66px;height:70px;border-radius:18px;border:2px solid transparent;background:transparent;flex-direction:column;gap:3px;font-size:17px}
+.tab.on{background:#9FD9C3;border-color:#7A5B4E;font-weight:700}
+.tile{width:104px;height:88px;border-radius:22px;background:#FFFDF8;flex-direction:column;gap:2px;font-size:17px;position:relative;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.tile:nth-child(odd){transform:rotate(-1deg)}
+.tile:nth-child(even){transform:rotate(1deg)}
+.tile svg.it{filter:drop-shadow(0 2px 3px rgba(74,47,37,.18))}
+.tile.on{background:#9FD9C3;border-color:#7A5B4E;font-weight:700;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.badge{position:absolute;right:-8px;top:-8px;width:30px;height:30px;border-radius:15px;background:#4A2F25;display:flex;align-items:center;justify-content:center;border:2px solid #FFFDF8}
+.thumb{width:42px;height:42px;border-radius:21px;overflow:hidden;position:relative;border:2px solid #8C6B5D;background:#FBF4EA;flex:none;box-sizing:border-box}
+.thumb img{position:absolute;display:block}
+.ncard{background:#1E2547;color:#FBF4EA;border-color:#0B0F26}
+.ncard .nkey{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(232,182,76,.7);border-radius:22px;pointer-events:none}
+.ncard .link{color:#E8B64C}
+</style>
+</helmet>
+<div class="scr g-peach">
+<div class="pn win" style="left: 14px; top: 77px; width: 362px; height: 280px"><div class="pa" style=""><img class="plate" src="../../../app/assets/scene/3.0x/customize.jpg" alt="Empty peach pedestal" style="width: 346px; height: 519px; left: 0px; top: -13px;"><div aria-hidden="true" style="position: absolute; left: 53px; top: 1px; width: 290px; height: 224px; background: radial-gradient(closest-side at 60% 42%, rgba(255,227,176,.30), rgba(255,227,176,0))"></div><div aria-hidden="true" style="position: absolute; left: 88px; top: 220px; width: 170px; height: 30px; border-radius: 50%; background: rgba(74,47,37,.10); filter: blur(8px)"></div><div aria-hidden="true" style="position: absolute; left: 113px; top: 227px; width: 120px; height: 16px; border-radius: 50%; background: rgba(74,47,37,.28); filter: blur(3px)"></div><img src="../../../app/assets/twin/bear/base/3.0x/cal_hat.png" alt="Mochi the bear twin in the Cal hat" style="position: absolute; left: 56px; top: 11px; width: 236px; height: 236px; display: block"></div><div class="key"></div></div>
+<!-- Name banner: max-width 240px; the name scales down to 18px, then truncates with an ellipsis. -->
+<div class="banner" style="top: 55px" aria-label="Twin name: Mochi"><span class="br">{</span><span class="nm">Mochi</span><span class="br">}</span></div>
+<button class="btn back" style="left: 32px; top: 99px" aria-label="Back to room"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M15 5l-7 7 7 7"/></svg></button>
+<div class="pn" style="left: 14px; top: 335px; width: 362px; height: 471px; padding: 12px 10px 0">
+<div role="radiogroup" aria-label="Twin type" style="display: flex; gap: 4px; padding: 4px; border: 1.5px solid #A88B7D; border-radius: 34px; background: #F4ECE0">
+<button class="btn" role="radio" aria-checked="true" style="flex: 1; height: 56px; border-radius: 28px; gap: 10px; font-size: 19px; font-weight: 700; padding: 0 10px; background: #9FD9C3; border-color: #7A5B4E">
+<span class="thumb"><img src="../../../app/assets/twin/bear/base/3.0x/default.png" alt="" style="width: 92px; left: -26px; top: -4px"></span><span>Bear</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+</button>
+<button class="btn" role="radio" aria-checked="false" style="flex: 1; height: 56px; border-radius: 28px; gap: 10px; font-size: 19px; font-weight: 700; padding: 0 10px; border-color: transparent; background: transparent">
+<span class="thumb"><img src="../../../app/assets/twin/human/base/3.0x/default.png" alt="" style="width: 95px; left: -30px; top: -13px"></span><span>Human</span>
+</button>
+</div>
+<div role="tablist" aria-label="Outfit parts" style="display: flex; justify-content: space-between; margin-top: 12px"><button class="btn tab on" role="tab" aria-selected="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M7.5 14.5C7.5 9 9.4 6 12 6s4.5 3 4.5 8.5"/><path d="M2.5 16.5c3.2-2.6 15.8-2.6 19 0-3.2 2.4-15.8 2.4-19 0z"/></svg><span>Hats</span></button><button class="btn tab" role="tab" aria-selected="false"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M8.5 3.5L3 6.5l2 5 3-1.2V20.5h8V10.3l3 1.2 2-5-5.5-3c-.6 1.6-2.2 2.7-4 2.7s-3.4-1.1-4-2.7z"/></svg><span>Tops</span></button><button class="btn tab" role="tab" aria-selected="false"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="7" cy="14" r="3.6"/><circle cx="17" cy="14" r="3.6"/><path d="M10.6 14h2.8M3.4 13.4L2.2 9.5M20.6 13.4l1.2-3.9"/></svg><span>Glasses</span></button><button class="btn tab" role="tab" aria-selected="false"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M12 3a9 9 0 1 0 0 18c1.6 0 2.2-1 2.2-2s-1-1.5-1-2.5 1-1.6 2-1.6h1.9a3.9 3.9 0 0 0 3.9-3.9C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11.5" r="1.1"/><circle cx="10" cy="7.4" r="1.1"/><circle cx="15" cy="7.6" r="1.1"/></svg><span>Fur</span></button><button class="btn tab" role="tab" aria-selected="false"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M14.5 21V7.5a3.5 3.5 0 0 0-7 0v1.2"/><path d="M12.8 21h3.4"/></svg><span>Aids</span></button></div>
+<div role="radiogroup" aria-label="Hats" style="display: grid; grid-template-columns: repeat(3, 104px); gap: 10px 12px; justify-content: center; margin-top: 12px"><button class="btn tile on" role="radio" aria-checked="true"><span class="badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFDF8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><svg class="it" width="44" height="44" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g stroke="#FFFFFF" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"><path d="M19 38c0-13 6-21 13-21s13 8 13 21z" fill="#1F3A6B"/><path d="M5 41c6-7 48-7 54 0-6 7-48 7-54 0z" fill="#1F3A6B"/><path d="M19.5 35c8-3 17-3 25 0" fill="none" stroke="#E8B64C"/><path d="M26 28c2-3 6-3 7 0M35 25v6" fill="none" stroke="#E8B64C"/></g><g stroke="#7A5B4E" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M19 38c0-13 6-21 13-21s13 8 13 21z" fill="#1F3A6B"/><path d="M5 41c6-7 48-7 54 0-6 7-48 7-54 0z" fill="#1F3A6B"/><path d="M19.5 35c8-3 17-3 25 0" fill="none" stroke="#E8B64C"/><path d="M26 28c2-3 6-3 7 0M35 25v6" fill="none" stroke="#E8B64C"/></g></svg><span>Cal hat</span></button><button class="btn tile" role="radio" aria-checked="false"><svg class="it" width="44" height="44" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g stroke="#FFFFFF" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"><path d="M13 42c0-15 8-24 19-24s19 9 19 24z" fill="#B9B4F0"/><rect x="11" y="40" width="42" height="11" rx="5" fill="#9C96E0"/><circle cx="32" cy="15" r="6" fill="#F8B9A0"/></g><g stroke="#7A5B4E" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M13 42c0-15 8-24 19-24s19 9 19 24z" fill="#B9B4F0"/><rect x="11" y="40" width="42" height="11" rx="5" fill="#9C96E0"/><circle cx="32" cy="15" r="6" fill="#F8B9A0"/></g></svg><span>Beanie</span></button><button class="btn tile" role="radio" aria-checked="false"><svg class="it" width="44" height="44" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g stroke="#FFFFFF" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"><path d="M4 42c4-8 52-8 56 0-4 7-52 7-56 0z" fill="#EBCB8B"/><path d="M20 38c0-11 5-17 12-17s12 6 12 17z" fill="#F3DCA8"/><path d="M20.5 35c7-2.5 16-2.5 23 0" fill="none" stroke="#FF9F8B"/></g><g stroke="#7A5B4E" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 42c4-8 52-8 56 0-4 7-52 7-56 0z" fill="#EBCB8B"/><path d="M20 38c0-11 5-17 12-17s12 6 12 17z" fill="#F3DCA8"/><path d="M20.5 35c7-2.5 16-2.5 23 0" fill="none" stroke="#FF9F8B"/></g></svg><span>Sun hat</span></button><button class="btn tile" role="radio" aria-checked="false"><svg class="it" width="44" height="44" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g stroke="#FFFFFF" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"><path d="M14 40c0-13 8-21 18-21s18 8 18 21z" fill="#9FD9C3"/><path d="M14 40h44c-1 5-10 6-20 5" fill="#5FAF93"/><circle cx="32" cy="19" r="2.5" fill="#5FAF93"/></g><g stroke="#7A5B4E" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M14 40c0-13 8-21 18-21s18 8 18 21z" fill="#9FD9C3"/><path d="M14 40h44c-1 5-10 6-20 5" fill="#5FAF93"/><circle cx="32" cy="19" r="2.5" fill="#5FAF93"/></g></svg><span>Cap</span></button><button class="btn tile" role="radio" aria-checked="false"><svg class="it" width="44" height="44" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g stroke="#FFFFFF" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"><path d="M12 30c6-5 34-5 40 0v6c-6-4-34-4-40 0z" fill="#FF9F8B"/><path d="M10 36c8 10 36 10 44 0-8-3-36-3-44 0z" fill="#F8B9A0"/></g><g stroke="#7A5B4E" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M12 30c6-5 34-5 40 0v6c-6-4-34-4-40 0z" fill="#FF9F8B"/><path d="M10 36c8 10 36 10 44 0-8-3-36-3-44 0z" fill="#F8B9A0"/></g></svg><span>Visor</span></button><button class="btn tile" role="radio" aria-checked="false"><svg class="it" width="44" height="44" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g stroke="#FFFFFF" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"><circle cx="32" cy="32" r="18" fill="#FBF4EA"/><path d="M20 44l24-24" fill="none"/></g><g stroke="#7A5B4E" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><circle cx="32" cy="32" r="18" fill="#FBF4EA"/><path d="M20 44l24-24" fill="none"/></g></svg><span>No hat</span></button></div>
+<button class="btn lip fd" style="position: absolute; left: 12px; right: 12px; bottom: 14px; height: 64px; border-radius: 32px; font-size: 24px">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Save look</span>
+</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
