@@ -10,7 +10,30 @@ from dataclasses import dataclass
 from typing import Literal
 
 from lifetwin.onboarding.models import ProfileField
-from lifetwin.onboarding.parsing import TENS_WORDS, UNITS_WORDS
+from lifetwin.onboarding.parsing import (
+    ADVICE,
+    FIELD_CUES,
+    HYPOTHETICAL,
+    NO_WORDS,
+    NOT_CURRENT,
+    NOTHING,
+    PAST_SPOIL,
+    REPORTED,
+    SEASONAL,
+    SENTENCE_END,
+    SEX_FAMILIES,
+    TENS_WORDS,
+    TOPICS,
+    UNCERTAIN,
+    UNITS_WORDS,
+    VAGUE,
+    YES_WORDS,
+    _canonical,
+    _others,
+    _topic,
+    _unhedged,
+    is_skip,
+)
 
 # ---------------------------------------------------------------------------
 # Fillers and transcript noise
@@ -805,3 +828,114 @@ def read_back_reply(text: str) -> tuple[ReadBack, str]:
             return "unsure", rest
         return "correction", rest
     return "other", text
+
+
+# ---------------------------------------------------------------------------
+# Room chatter in transcripts
+# ---------------------------------------------------------------------------
+
+# Words that answer a question without naming it ("Female.", "No.", "Never.").
+_ANSWER_WORDS: dict[str, str] = {
+    "sex": rf"{SEX_FAMILIES['female']}|{SEX_FAMILIES['male']}|^[fm]$",
+    "smoking_status": r"\b(?:never|quit|used to|former|stopped|gave up|no|nope|yes|yeah)\b",
+    "diabetes": rf"{YES_WORDS}|{NO_WORDS}",
+    # Not DRINK itself: its "cans" would make "can you hear me" a drinks answer.
+    "alcohol_drinks_weekly": (
+        r"\b(?:drinks?|beers?|wines?|pints?|glass(?:es)? of|shots? of|whiske?y|scotch|bourbon|"
+        r"vodka|gin|rum|cider|champagne|cocktails?|martinis?|booze|liquor|spirits|six pack|"
+        r"none|zero|never|nothing|teetotal\w*|sober|don't|do not)\b"
+    ),
+    "exercise_minutes_weekly": r"\b(?:none|nothing|zero|never|don't|do not)\b",
+}
+_READ_BACK_WORDS = r"\b(?:yes|yeah|yep|yup|no|nope|nah|right|correct|wrong)\b"
+# "per day 2 glasses of wine a week": a rate cut off from speech before the number.
+_DANGLING_RATE = r"^(?:per|a|each|every) (?:day|week|night|month)\s+(?=\S*\d)"
+_RATE = r"\b(?:a|per|each|every) (?:day|week|night|month)\b"
+
+
+def _on_topic(piece: str, field: ProfileField, confirming: bool) -> bool:
+    """A number, the question's topic, or a word that answers it."""
+    canonical = _canonical(piece)
+    if re.search(r"\d", canonical) or is_skip(piece, field):
+        return True
+    cues = (
+        TOPICS.get(_topic(field), NOTHING),
+        FIELD_CUES[field],
+        _ANSWER_WORDS.get(field, NOTHING),
+    )
+    if any(re.search(cue, canonical) for cue in cues):
+        return True
+    return confirming and bool(re.search(_READ_BACK_WORDS, canonical))
+
+
+def _changes_meaning(piece: str) -> bool:
+    """Doubt, someone else, the past, a goal, advice or a vague amount: never chatter."""
+    canonical = _canonical(piece)
+    plain = _unhedged(canonical)
+    return bool(
+        UNCERTAIN.search(plain)
+        or HYPOTHETICAL.search(plain)
+        or VAGUE.search(plain)
+        or ADVICE.search(plain)
+        or PAST_SPOIL.search(canonical)
+        or REPORTED.search(canonical)
+        or NOT_CURRENT.search(canonical)
+        or SEASONAL.search(canonical)
+        or TAGGED_QUESTION.search(words_of(piece))
+        or _others(piece)
+    )
+
+
+def words_of(text: str) -> str:
+    return " ".join(re.sub(r"[^\w'\s]", " ", text.lower()).split())
+
+
+def focus(
+    text: str, field: ProfileField, *, transcript: bool = False, confirming: bool = False
+) -> str:
+    """Leave out room chatter around an answer.
+
+    A sentence (and, in a voice transcript, a comma-separated piece) goes only when
+    it holds nothing for the asked question and nothing that could change an
+    answer's meaning: "Are we gonna include this, bro? Female." is "Female". A
+    reply with nothing on topic stays whole, so "say that again" still works.
+    """
+
+    def keep(piece: str) -> bool:
+        return _on_topic(piece, field, confirming) or _changes_meaning(piece)
+
+    # Each sentence keeps its own end, so "yes?" stays a question.
+    parts = re.split(f"({SENTENCE_END})", text)
+    sentences = [
+        (parts[i].strip(), parts[i + 1] if i + 1 < len(parts) else "")
+        for i in range(0, len(parts), 2)
+        if parts[i].strip()
+    ]
+    kept = []
+    for sentence, end in sentences:
+        if not keep(sentence):
+            continue
+        if transcript:
+            pieces = [piece.strip() for piece in sentence.split(",") if piece.strip()]
+            sentence = ", ".join(piece for piece in pieces if keep(piece)) or sentence
+            trimmed = re.sub(_DANGLING_RATE, "", sentence, flags=re.I)
+            if trimmed != sentence and re.search(_RATE, trimmed, re.I):
+                sentence = trimmed
+        kept.append(sentence + end)
+    if not kept:
+        return text
+    return " ".join(kept)
+
+
+def asks_back(text: str, field: ProfileField, *, transcript: bool = False) -> bool:
+    """A voice transcript's question counts only when it is marked with "?" or is
+    about the asked question: "were you just getting 5'4." is chatter and an answer."""
+    if not transcript:
+        return True
+    words = words_of(text)
+    return (
+        "?" in text
+        or bool(TAGGED_QUESTION.search(words))
+        or bool(re.search(TOPICS.get(_topic(field), NOTHING), _canonical(text)))
+        or bool(re.search(rf"\b(?:{FIELD_NAMES[field]})\b", words))
+    )

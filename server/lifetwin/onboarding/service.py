@@ -10,8 +10,10 @@ from fastapi import HTTPException
 
 from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.intents import (
+    asks_back,
     clean_reply,
     control_intent,
+    focus,
     keeps_answer,
     read_back_reply,
 )
@@ -189,7 +191,8 @@ def describe(values: dict, about: set[str] = frozenset()) -> str:
         if field == "diastolic_bp" and "systolic_bp" in values:
             continue
         if field == "systolic_bp" and "diastolic_bp" in values:
-            parts.append(f"Blood pressure: {value} over {values['diastolic_bp']}")
+            about_bp = "about " if field in about else ""  # "maybe like 130 over 85"
+            parts.append(f"Blood pressure: {about_bp}{value} over {values['diastolic_bp']}")
             continue
         shown = {
             "age": lambda v: str(v),
@@ -233,6 +236,15 @@ class ConversationService:
         # Fillers, stutters and transcript punctuation go first; meaning stays.
         text = clean_reply(normalize_text(request.text or ""))
         today = self.clock()
+        # Ink also transcribes other people in the room: only a voice transcript is
+        # held to "someone else's number beside yours is asked about".
+        voice = request.input_mode == "transcript"
+        heard_for = state.current_field or next(
+            iter(state.pending_profile.model_dump(exclude_none=True)), None
+        )
+        if action == "reply" and heard_for and state.phase in {"asking", "confirming"}:
+            # Room chatter around the answer goes before anything else reads it.
+            text = focus(text, heard_for, transcript=voice, confirming=state.phase == "confirming")
 
         def respond(message: str, hint: str | None = None) -> TurnResponse:
             reaction = {
@@ -284,6 +296,8 @@ class ConversationService:
                 note = WHY_NOTE if kind == "why" else PRIVATE_NOTE
                 note += " " + HELPER_NOTE if configured else ""
                 return respond(note + " " + self._prompt(state))
+            if kind == "ask" and heard_for and not asks_back(text, heard_for, transcript=voice):
+                kind = None  # chatter worded like a question, beside the answer
             if kind == "ask":
                 return respond(QUESTION_BACK_LEAD + self._prompt(state))
             if kind in {"restart", "restart_confirmed"}:
@@ -442,8 +456,7 @@ class ConversationService:
                     self._advance(state)
                     return respond("Okay, I kept your answer. " + self._prompt(state))
                 self._invalid("Skipping does not erase confirmed measurements.")
-            if target not in state.skipped_fields:
-                state.skipped_fields.append(target)
+            self._skip(state, target)
             self._advance(state)
             return respond("That's okay; I won't fill it in. " + self._prompt(state))
         if state.phase == "ready" and action == "reply":
@@ -497,11 +510,10 @@ class ConversationService:
                         + self._prompt(state)
                     )
                 return respond("Nothing has changed. " + self._prompt(state))
-            if target not in state.skipped_fields:
-                state.skipped_fields.append(target)
+            self._skip(state, target)
             self._advance(state)
             return respond("I'll leave that unknown. " + self._prompt(state))
-        candidates = _safe(parse_reply, text, target, today=today) or {}
+        candidates = _safe(parse_reply, text, target, today=today, strict=voice) or {}
         phrase = " ".join(text.lower().replace(",", " ").rstrip(".!?").split())
         # Only a fresh answer can mean the question's example: "no, that's right" during
         # a read-back is not a yes to "5 feet 10 inches".
@@ -685,6 +697,14 @@ class ConversationService:
                 'weight". To clear everything and begin again, say "start over".'
             )
         return HELP[state.current_field] + " " + SKIP_NOTE
+
+    @staticmethod
+    def _skip(state: ConversationState, field: str) -> None:
+        # The blood pressure question is one reading: skipping it skips both numbers.
+        fields = BOTH_BP if field == "systolic_bp" else [field]
+        for name in fields:
+            if name not in state.skipped_fields and getattr(state.confirmed_profile, name) is None:
+                state.skipped_fields.append(name)
 
     @staticmethod
     def _bp_ordered(state: ConversationState, pending: dict) -> bool:
