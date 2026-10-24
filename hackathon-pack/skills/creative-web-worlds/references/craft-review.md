@@ -20,7 +20,7 @@ Use measurements for measurable things: overflow, targets, contrast, latency, dr
 
 ## Revision record
 
-Save prompt/brief, source relationships, rendered screenshot, actual criticism, change and rerun. Separate self-review, independent agent review and user verdict. Do not erase an unfavorable review by averaging it into a high score. If no independent review occurred, say so.
+For substantial refinement, save prompt/brief, source relationships, rendered screenshot, actual criticism, change and rerun. Routine fixes need concise findings and relevant verification rather than a separate experiment record. Separate self-review, independent agent review and user verdict. Do not erase an unfavorable review by averaging it into a high score. If no independent review occurred, say so.
 
 Before treating a full-page capture as evidence, scroll through image-led sections and confirm the intended assets have rendered. A capture can contain unloaded images without overflow or console errors. Inspect important regions at their actual display size; a long-page thumbnail can hide missing imagery, tiny controls, and weak text contrast.
 

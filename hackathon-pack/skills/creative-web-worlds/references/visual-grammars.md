@@ -1,10 +1,10 @@
-# Six visual grammars beyond a component showcase
+# Seven visual grammars beyond a component showcase
 
-Costs are planning estimates for one experienced builder using original simple assets, after the useful domain loop exists. They exclude backend integration and polished production art. Pick one grammar; do not combine every technique.
+Use for open web composition briefs. Costs are rough planning estimates for a narrow slice with simple original assets, not quality guarantees or required budgets. They exclude backend integration and production illustration. Pick a coherent grammar rather than combining every technique.
 
 ## 1. Spatial toy town · 3D or isometric 2.5D
 
-**Layout:** one navigable stage, three recognizable landmarks, stable task ledger outside the stage. Physical distance reflects conceptual grouping. **Type:** compact sign-like destination names and a calm DOM explanation. **Material:** low-detail wood, clay, paper or painted surfaces; choose a consistent lighting/shadow direction. **Motion:** selection raises/focuses one object; deliberate camera destinations, no continuous orbit. **State:** landmark picked → details and action appear; committed state stays marked both spatially and in text. **Access:** a landmark list triggers identical actions; mobile uses a fixed camera or list; reduced motion jumps between states. **Cost:** SVG 3–6 hours; modeled Three.js scene 8–16+ hours. Inspired by Bruno Simon, Choo Choo World, Tomorrowland. The sample uses an original market island, with products and receipt sharing the same material world.
+**Layout:** one navigable stage, three recognizable landmarks, stable task ledger outside the stage. Physical distance reflects conceptual grouping. **Type:** compact sign-like destination names and a calm DOM explanation. **Material:** low-detail wood, clay, paper or painted surfaces; choose a consistent lighting/shadow direction. **Motion:** selection raises/focuses one object; deliberate camera destinations, no continuous orbit. **State:** landmark picked → details and action appear; committed state stays marked both spatially and in text. **Access:** a landmark list triggers identical actions; mobile uses a fixed camera or list; reduced motion jumps between states. **Cost:** SVG 3–6 hours; modeled Three.js scene 8–16+ hours. Inspired by Bruno Simon, Choo Choo World, Tomorrowland.
 
 ## 2. Product theater · real 3D
 
@@ -32,4 +32,4 @@ Costs are planning estimates for one experienced builder using original simple a
 
 ## Select using the actual task
 
-For a 24-hour hackathon, give 4–6 hours to the scene and reserve time for integration, evidence and mobile repair. If the useful loop breaks, simplify the scene. Test the composition at 375px and default desktop before expanding art. Judge originality by whether the task, navigation, type and results share a concept—not by number of effects.
+For a bounded visual study, build one decisive composition and interaction before expanding art. Reserve time for rendered critique and narrow-screen repair. For a product build, simplify the scene if the useful loop breaks. Test the composition at narrow mobile and the target desktop size. Judge originality by whether the task, navigation, type and results share a concept—not by number of effects.
