@@ -8,6 +8,7 @@ from lifetwin.coach.models import CoachPlanRequest, CoachPlanResponse
 from lifetwin.coach.phrasing import DailyCap, reword
 from lifetwin.coach.planner import Planner, StaleRevision, check_revision
 from lifetwin.coach.providers import DISPLAY_NAMES, MusePhraser, Phraser
+from lifetwin.coach.safety import is_emergency
 from lifetwin.core.models import ApiError
 from lifetwin.onboarding.models import MascotEvent
 
@@ -32,7 +33,19 @@ async def plan(
     timeout: float = 8,
 ) -> CoachPlanResponse:
     check_revision(req)
-    result = Planner(req).run()
+    try:
+        result = Planner(req).run()
+    except Exception as exc:  # a planner bug must give a safe general plan, never a 500
+        logger.error("coach planner failed: %s", type(exc).__name__)
+        result = Planner(
+            CoachPlanRequest(
+                local_date=req.local_date,
+                said=req.said if is_emergency(req.said) else None,
+                limits=req.limits,
+                movement_paused=req.movement_paused
+                or bool(req.previous_plan and all(i.id != "move" for i in req.previous_plan.items)),
+            )
+        ).run()
     items, lines = result.items, result.lines
     phrased_by, status = "templates", "not_requested"
     wanted = bool(req.outside_ai_consent.get(phraser.name)) if phraser else False

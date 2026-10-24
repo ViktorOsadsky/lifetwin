@@ -35,19 +35,22 @@ from lifetwin.coach.safety import (
     CLEARED,
     DIABETES_FOOD,
     DIAGNOSIS,
+    DOSE,
     FORECAST,
     FORGET,
     FORGET_ALL,
     JOINT_PAIN,
     KIDNEY,
+    LEXICON,
     MEDICINE,
     NO_TIME,
+    NUMBER_WORDS,
     SUPPLEMENT,
+    UNITS,
     WEATHER_INDOORS,
     WEIGHT,
     is_emergency,
     red_flag,
-    safe_slot,
     words,
 )
 from lifetwin.onboarding.intents import EMERGENCY_MESSAGE
@@ -89,6 +92,16 @@ FOOD_CARDS = (
     (re.compile(r"\b(?:fish|salmon|olive|vegetables?|salads?)\b"), "mediterranean"),
     (re.compile(r"\b(?:eggs?|yogh?urt|beans|chicken|cheese)\b"), "protein_each_meal"),
     (re.compile(r"\b(?:fruit|apples?|berries|oats|porridge)\b"), "fiber"),
+)
+HOBBIES = (
+    ("garden", "gardening"),
+    ("danc", "dancing"),
+    ("swim", "swimming"),
+    ("pool", "the pool"),
+    ("tai chi", "tai chi"),
+    ("bike", "cycling"),
+    ("cycl", "cycling"),
+    ("walk", "walking"),
 )
 HABIT_TIMES = {"quit_help": "morning", "sleep_routine": "evening", "sitting_breaks": "afternoon"}
 STOP = {
@@ -132,6 +145,8 @@ class Draft:
     draft: str
     keep_words: tuple[str, ...]
     names: dict[str, str] = field(default_factory=dict)
+    # Template words added after rewording (the person's own goal words).
+    suffix: str = ""
 
 
 @dataclass
@@ -238,8 +253,10 @@ class Planner:
         self.limit_facts: list[TraceFact] = [fact("limits", tag) for tag in req.limits]
         self.reply: str | None = None
         self.provider_blocked = False
-        self.paused = req.movement_paused
-        self.pause_reason = "movement_paused" if req.movement_paused else None
+        # A previous plan without a movement item was paused; it stays paused until the
+        # person says they were cleared, even if the phone forgot to send the flag.
+        self.paused = req.movement_paused or bool(self.prev and "move" not in self.prev_refs)
+        self.pause_reason = "movement_paused" if self.paused else None
         self.cleared = False
         self.concerned = False
         self.memory_instruction: MemoryInstruction | None = None
@@ -350,6 +367,8 @@ class Planner:
             self.reply = cat.SUPPLEMENT_REPLY
         elif MEDICINE.search(text):
             self.reply = cat.MEDICINE_REPLY
+        elif DOSE.search(text):
+            self.reply = cat.SUPPLEMENT_REPLY
         elif KIDNEY.search(text):
             self.reply, self.food_focus = cat.KIDNEY_FOOD_REPLY, "care_team_kidney"
         elif DIABETES_FOOD.search(text) or (
@@ -564,9 +583,12 @@ class Planner:
             animal = "dog" if "dog" in text or note.topic == "pet" else "pet"
             line = f"You told me you like walking with your {animal}."
             return line, line, {}
-        if note.kind and safe_slot(note.kind):
-            line = f"You told me you enjoy {note.kind.lower()}."
-            return line, line, {}
+        if note.topic == "exercise":
+            # Fixed words only: the note's own text never reaches the line or a provider.
+            hobby = next((word for anchor, word in HOBBIES if anchor in text), None)
+            if hobby:
+                line = f"You told me you enjoy {hobby}."
+                return line, line, {}
         part = re.search(r"\b(knee|hip|back|joint)s?\b", text)
         if part:
             line = f"You told me about your {part.group(1)}, so this one is easy on it."
@@ -821,13 +843,21 @@ class Planner:
         dismissed = bool(fb and fb.status == "dismissed")
         if fb:
             facts.append(fact("feedback.food", fb.status + (f": {fb.reason}" if fb.reason else "")))
-        note = None
+        note, food_word = None, ""
         if gate is None and not self.callback_used and (prev_card is None or dismissed):
             for n in self.notes():
-                if n.topic == "food" and safe_slot(n.kind):
-                    card_id = next((c for rx, c in FOOD_CARDS if rx.search(_note_text(n))), None)
+                if n.topic == "food":
+                    found = next(
+                        (
+                            (rx.search(_note_text(n)), c)
+                            for rx, c in FOOD_CARDS
+                            if rx.search(_note_text(n))
+                        ),
+                        None,
+                    )
+                    card_id = found[1] if found else None
                     if card_id and not (dismissed and prev_card and prev_card.id == card_id):
-                        note = n
+                        note, food_word = n, found[0].group(0)
                         order.remove(card_id)
                         order.insert(0, card_id)
                         break
@@ -859,7 +889,7 @@ class Planner:
         self.changes.append(PlanChange(item_id="food", change=change, explanation=explanation))
         body, callback_id = card.message, None
         if note is not None:
-            body = f"You told me you love {note.kind.lower()}. {body}"
+            body = f"You told me you love {food_word}. {body}"
             callback_id = note.id
             self.callback_used = True
             facts.append(fact(f"note:{note.id}", _note_text(note)))
@@ -934,6 +964,11 @@ class Planner:
             )
         return out
 
+    def habit_message(self, card: cat.Card) -> str:
+        if "seated_only" in self.limits:
+            return card.variants.get("seated_only", card.message)
+        return card.message
+
     def build_habit(self) -> PlanItem | None:
         prev_ref = self.prev_refs.get("habit")
         fb = self.feedback.get("habit")
@@ -992,11 +1027,7 @@ class Planner:
             )
         card = cat.HABITS[chosen]
         facts = choices[chosen] + ([fact("feedback.habit", fb.status)] if fb else [])
-        message = (
-            card.variants.get("seated_only", card.message)
-            if "seated_only" in self.limits
-            else card.message
-        )
+        message = self.habit_message(card)
         self.changes.append(PlanChange(item_id="habit", change=change, explanation=explanation))
         self.trace.append(
             TraceStep(
@@ -1078,6 +1109,7 @@ class Planner:
         if mood in {"happy", "proud", "celebrate"} and good_weeks >= 2:
             text += f" That makes {good_weeks} good weeks lately."
         goal = next((g for g in self.req.goals if self.goal_ok(g)), None)
+        goal_line = ""
         if (
             goal
             and self.req.memory_consent is True
@@ -1086,7 +1118,7 @@ class Planner:
             and mood != "concerned"
         ):
             mine = re.sub(r"\bmy\b", "your", re.sub(r"\b(?:I|me)\b", "you", goal.strip(" .")))
-            text += f" You told me you want to {mine[0].lower()}{mine[1:]}."
+            goal_line = f" You told me you want to {mine[0].lower()}{mine[1:]}."
             facts = facts + [fact("goals", goal)]
         self.changes.append(
             PlanChange(
@@ -1103,7 +1135,9 @@ class Planner:
                 action=f"mood {mood}",
             )
         )
-        self.drafts.append(Draft("cheer", text, ()))
+        # The goal is the person's own words: it is added after any rewording, never sent.
+        self.drafts.append(Draft("cheer", text, (), suffix=goal_line))
+        text += goal_line
         return PlanItem(
             id="cheer",
             kind="encourage",
@@ -1121,10 +1155,12 @@ class Planner:
 
     @staticmethod
     def goal_ok(goal: str) -> bool:
+        """The person's own goal words, spoken back only when plain and harmless."""
+        goal = goal.strip(" .")
         return (
-            bool(re.fullmatch(r"[A-Za-z][A-Za-z' ,-]{0,79}", goal.strip()))
+            bool(re.fullmatch(r"[A-Za-z][a-z' ,-]{0,79}", goal))
             and len(goal.split()) <= 8
-            and not BLOCKED.search(goal)
+            and not any(rx.search(goal) for rx in (BLOCKED, LEXICON, NUMBER_WORDS, UNITS))
         )
 
     # -- the run --------------------------------------------------------------
@@ -1132,8 +1168,25 @@ class Planner:
     def reusable(self, snapshot_id: str) -> bool:
         """Same day, same observed inputs, nothing new said or reported: keep the plan."""
         prev = self.prev
+        move = self.prev_refs.get("move")
+        activity = cat.ACTIVITIES.get(move.catalog_id) if move else None
+        if move is not None and (
+            activity is None or not cat.allowed(activity, self.limits, age=self.profile.age)
+        ):
+            return False  # re-plan: never repeat an item the person's limits rule out
+        if (
+            any(
+                ref.catalog_id not in cat.ACTIVITIES | cat.DIET | cat.HABITS
+                and not ref.catalog_id.startswith("cheer_")
+                for ref in prev.items
+            )
+            if prev
+            else False
+        ):
+            return False
         return bool(
-            prev
+            not self.paused
+            and prev
             and prev.local_date == self.today
             and prev.input_snapshot_id == snapshot_id
             and not self.req.said
@@ -1272,6 +1325,7 @@ class Planner:
                 )
             elif ref.id == "habit" and ref.catalog_id in cat.HABITS:
                 card = cat.HABITS[ref.catalog_id]
+                message = self.habit_message(card)
                 self.trace.append(
                     TraceStep(
                         item_id="habit",
@@ -1281,7 +1335,7 @@ class Planner:
                         action=card.id,
                     )
                 )
-                self.drafts.append(Draft("habit", card.message, card.keep_words))
+                self.drafts.append(Draft("habit", message, card.keep_words))
                 items.append(
                     PlanItem(
                         id="habit",
@@ -1290,7 +1344,7 @@ class Planner:
                         catalog_id=card.id,
                         lever=card.lever,
                         title=card.title,
-                        message=card.message,
+                        message=message,
                         why=card.why,
                         time_of_day=ref.time_of_day or HABIT_TIMES[card.id],
                         based_on=["previous_plan"],

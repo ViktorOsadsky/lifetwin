@@ -30,30 +30,89 @@ def words(text: str) -> str:
 # Input gates
 # ---------------------------------------------------------------------------
 
+# Words for supplements and medicines, shared by the input gate and the output check.
+SUPPLEMENT_WORDS = (
+    r"\bsupplement\w*|\bvitamin\w*|\bvitamina\w*|\bmulti ?vitamin\w*|\bvit\b|\bd3\b|\bk2\b",
+    r"\bfish[ -]?oil\w*|\bomega\w*|\bcod liver\b|\bkrill\b|\bmagnesium\b|\bzinc\b|\bcalcium\b",
+    r"\biron\b|\bpotassium\b|\bmelatonin\b|\bprobiotic\w*|\bturmeric\b|\bcurcumin\b",
+    r"\bginkgo\b|\bginseng\b|\bst\.? john'?s\b|\bwort\b|\bglucosamine\b|\bchondroitin\b",
+    r"\bcollagen\b|\bbiotin\b|\bcoq ?10\b|\bb ?12\b|\bfolic\b|\bniacin\b|\bechinacea\b",
+    r"\belderberry\b|\bashwagandha\b|\bcreatine\b|\bwhey\b|\bcbd\b|\bcannabi\w*|\bhemp\b",
+    r"\bensure\b|\bboost shakes?\b|\bprotein (?:powder|shake|drink)s?\b|\bherb(?:al|s)?\b",
+    r"\bgumm(?:y|ies)\b|\bcapsules?\b|\bsoftgels?\b|\bkelp\b|\bspirulina\b|\bkombucha\b",
+)
+DRUG_WORDS = (
+    r"\bmetformin\b|\binsulin\b|\bwarfarin\b|\bcoumadin\b|\beliquis\b|\bapixaban\b|\bxarelto\b",
+    r"\bstatins?\b|\b\w+statin\b|\blipitor\b|\bcrestor\b|\baspirin\b|\bibuprofen\b|\badvil\b",
+    r"\bmotrin\b|\bnaproxen\b|\baleve\b|\btylenol\b|\bacetaminophen\b|\bparacetamol\b",
+    r"\bpainkillers?\b|\bpain ?relievers?\b|\bvoltaren\b|\bdiclofenac\b|\binhalers?\b",
+    r"\blisinopril\b|\blosartan\b|\bamlodipine\b|\bmetoprolol\b|\bhydrochlorothiazide\b",
+    r"\bfurosemide\b|\blasix\b|\bdiuretics?\b|\bwater pills?\b|\blevothyroxine\b|\bsynthroid\b",
+    r"\bomeprazole\b|\bprilosec\b|\bnexium\b|\bppis?\b|\bantacids?\b|\bprednisone\b",
+    r"\bsteroids?\b|\bgabapentin\b|\bsertraline\b|\bzoloft\b|\bprozac\b|\bfluoxetine\b",
+    r"\bssris?\b|\bantidepressants?\b|\bdigoxin\b|\bozempic\b|\bsemaglutide\b|\bwegovy\b",
+    r"\bmounjaro\b|\btirzepatide\b|\bjardiance\b|\bglipizide\b|\bopioids?\b|\boxycodone\b",
+    r"\btramadol\b|\bblood thinners?\b|\bsleeping pills?\b|\bantibiotics?\b|\bnicotine\b",
+    r"\bnicorette\b|\bchantix\b|\bvarenicline\b|\bzyban\b|\bbupropion\b|\bvap(?:e|es|ing)\b",
+    r"\be-?cig\w*|\bpatch(?:es)?\b|\blozenges?\b|\bpills?\b|\btablets?\b|\bmeds\b",
+    r"\bmedicat\w*|\bmedicines?\b|\bdrugs?\b|\bprescri\w*",
+)
+DOSE_WORDS = (r"\bdos(?:e|es|age|ing)\b|\boverdos\w*",)
+
+# Said now, these get the existing 911 line. The shared onboarding check catches the
+# plainest phrasings; the coach adds more, because a plan must never follow them.
+ACUTE = _rx(
+    r"\bchest\b.{0,30}\b(?:pain|pains|pressure|discomfort|tight\w*|heavy|heaviness|hurt\w*|"
+    r"squeez\w*|crush\w*|ach\w*|burn\w*)\b",
+    r"\b(?:pain|pressure|tightness|heaviness|discomfort)\b.{0,15}\bchest\b",
+    r"\belephant\b.{0,20}\bchest\b|\bchest\b.{0,40}\belephant\b",
+    r"\b(?:can't|cannot|can not|can barely|could barely|hardly|struggling to|trouble) "
+    r"(?:breathe|breathing|catch my breath|get (?:my )?breath)\b",
+    r"\bgasping\b|\bchoking\b|\bturning blue\b",
+    r"\bface (?:is )?(?:drooping|droopy|numb)\b|\bslurr\w*|\bwords (?:come|are coming) out wrong\b",
+    r"\b(?:can't|cannot) (?:move|feel|lift) my (?:left |right )?(?:arm|leg|hand|face|side)\b",
+    r"\b(?:can't|cannot) (?:speak|talk|get my words out)\b|\bsudden(?:ly)? (?:numb|weak|confus)\w*",
+    r"\bworst headache\b|\bpassed out\b|\bunconscious\b|\bwon't wake\b",
+    r"\b(?:hurt|harm|kill)(?:ing)? myself\b|\bwish (?:i was|i were|i'd be) dead\b",
+    r"\b(?:end|ending) (?:things|it all|my life)\b|\b(?:take|took|taking|swallow\w*) all "
+    r"(?:my|the|of my) (?:pills|tablets|medicines?|meds)\b|\boverdos\w*",
+    r"\b(?:want|wanna|wants) to die\b|\bbetter off dead\b|\bno reason to live\b|\bsuicid\w*",
+    r"\b(?:don't|do not) want to (?:live|be here|wake up)\b",
+)
+# "Had chest pain years ago": clearly the past, so a doctor line rather than 911.
+LONG_AGO = _rx(r"\b(?:years? ago|in (?:19|20)\d\d|last year|years back|when i was (?:young|a))\b")
+
 # New or worse but not acute (report §1): pause movement and see the doctor.
 RED_FLAG = _rx(
-    r"\bdizz\w*",
-    r"\blight ?headed\b",
-    r"\bfaint\w*",
-    r"\bpassed out\b",
-    r"\bblack(?:ed)? out\b",
-    r"\bswell\w*|\bswollen\b",
-    r"\bheart (?:is |was |keeps |has been |had been |started )?(?:racing|fluttering|pounding|skipping)\b",
-    r"\bpalpitations?\b",
-    r"\bshort of breath\b|\bbreathless\b",
-    r"\b(?:i|i've|i have|just) (?:fell|fallen|had a fall|took a (?:fall|tumble)|tripped)\b",
-    r"\bfell (?:down|over|again|today|yesterday|this|last)\b",
-    r"\bnew pain\b",
-    r"\b(?:pain|it|knee|hip|back)(?: is| has|'s)? (?:got |getting |gotten )?worse\b",
-    r"\bwon't go away\b|\bkeeps hurting\b",
-    r"\bnumb\w*",
-    r"\bsudden weakness\b",
-    r"\bchest (?:pain|pains|hurt|felt tight|tight|pressure)\b|\bpain in my chest\b",
+    r"\bdizz\w*|\blight ?headed\w*|\bwoozy\b|\bvertigo\b|\b(?:room|head) (?:was |is |keeps )?spinning\b",
+    r"\bfaint\w*|\bblack(?:ed)? out\b|\bnear(?:ly)? passed out\b",
+    r"\bswell\w*|\bswollen\b|\bpuffy\b|\bpuffed up\b",
+    r"\bheart(?:'s| is| was| keeps| has been| had been| started| kept)? (?:\w+ )?(?:racing|"
+    r"fluttering|pounding|skipping|jumping|beating (?:really |very |so )?(?:fast|hard))\b",
+    r"\bskipped a beat\b|\birregular (?:heart ?beat|pulse)\b|\bpalpitations?\b|\bafib\b",
+    r"\bshort of breath\b|\bbreathless\b|\b(?:really|very|so|badly|get|got|getting) out of breath\b",
+    r"\bout of breath (?:walking|easily|quickly|on the stairs)\b",
+    r"\b(?:i|i've|i have|just|she|he) (?:fell(?! asleep| in love| for\b| behind| apart| short| "
+    r"through| off the wagon)|fallen(?! asleep| in love)|had a fall|took a (?:fall|tumble)|"
+    r"tripped|slipped)\b",
+    r"\bfell (?:down|over|again|today|yesterday|this|last)\b|\bkeep falling\b|\bfalling a lot\b",
+    r"\b(?:legs?|knees?) (?:gave|give|gives|giving) (?:out|way)\b|\blost my (?:balance|footing)\b",
+    r"\bnew pain\b|\bnever had before\b|\bnew (?:lump|sore)\b",
+    r"\b(?:pain|it|knee|hip|back|ankle|foot|leg)(?: is| has|'s)? (?:got |getting |gotten )?worse\b",
+    r"\bhurts? (?:a lot )?more (?:than|today|now)\b|\bworse (?:than|today|now)\b",
+    r"\bwon't go away\b|\bkeeps hurting\b|\bstill hurts\b",
+    r"\bnumb(?:ness)?\b|\btingl\w*|\bsudden weakness\b",
+    r"\bchest\b",
     r"\b(?:recent|new) (?:surgery|operation|diagnosis)\b|\bjust had (?:surgery|an operation)\b",
+    r"\bsores? (?:that )?(?:won't|will not|don't|do not) heal\b",
+)
+NEGATED = re.compile(
+    r"\b(?:not|no longer|no more|never|isn't|wasn't|aren't|haven't|hasn't|didn't)\b"
+    r"(?: \w+){0,2} $"
 )
 JOINT_PAIN = _rx(
     r"\b(?:knee|knees|hip|hips|ankle|ankles|foot|feet|leg|legs|back|joint|joints)\b.{0,25}"
-    r"\b(?:hurt\w*|pain\w*|sore|ach\w*|stiff)\b",
+    r"\b(?:hurt\w*|pain\w*|sore|ach\w*|stiff|killing me|acting up|playing up)\b",
     r"\b(?:hurt\w*|pain\w*|sore|ach\w*|stiff)\b.{0,25}"
     r"\b(?:knee|knees|hip|hips|ankle|ankles|foot|feet|leg|legs|back|joint|joints)\b",
     r"\barthritis\b",
@@ -71,22 +130,14 @@ FORGET_ALL = _rx(
     r"\bstop remembering\b",
 )
 FORGET = re.compile(r"\b(?:forget|don't remember|do not remember|delete)\b(.*)", _FLAGS)
-SUPPLEMENT = _rx(
-    r"\bsupplement\w*",
-    r"\bvitamin\w*|\bvitamina\w*|\bmulti ?vitamin\w*",
-    r"\bfish[ -]?oil\b|\bomega\b|\bcod liver\b|\bkrill\b",
-    r"\bmagnesium\b|\bzinc\b|\bcalcium\b|\bpotassium\b|\biron (?:pills?|tablets?)\b",
-    r"\bmelatonin\b|\bprobiotic\w*|\bturmeric\b|\bcurcumin\b|\bginkgo\b|\bginseng\b",
-    r"\bst\.? john'?s wort\b|\bglucosamine\b|\bcollagen\b|\bbiotin\b|\bcoq ?10\b|\bb ?12\b",
-    r"\bprotein (?:powder|shake)s?\b|\bherbal\b|\bgummies\b",
-    r"\bdos(?:e|es|age|ing)\b",
+SUPPLEMENT = _rx(*SUPPLEMENT_WORDS)
+DOSE = _rx(
+    r"\bdos(?:e|es|age|ing)\b|\bhow much (?:should|can|do) i take\b|\bhow many \w* ?to take\b"
 )
 MEDICINE = _rx(
+    *DRUG_WORDS,
     r"\b(?:stop|quit|skip|change|lower|raise|double|halve) (?:taking )?(?:my|the) "
     r"(?:\w+ )?(?:pills?|meds?|medicines?|medication\w*|tablets?|insulin|dose)\b",
-    r"\b(?:extra|another|more|less) (?:\w+ )?(?:pills?|meds|medicine|metformin|insulin|dose)\b",
-    r"\b(?:metformin|warfarin|insulin|statin|blood thinner|blood pressure pills?)\b",
-    r"\bincrease my dose\b|\bdecrease my dose\b",
 )
 DIAGNOSIS = _rx(
     r"\bwhat (?:is|could) (?:it|this|that) be\b",
@@ -96,10 +147,10 @@ DIAGNOSIS = _rx(
     r"\bwhat is it\b",
 )
 WEIGHT = _rx(
-    r"\blose (?:some |the )?(?:weight|pounds|lbs|kilos|\d+)",
-    r"\bweight ?loss\b|\bslim down\b|\bdiet to\b|\bcrash diet\b",
-    r"\bskip (?:dinner|lunch|breakfast|meals?)\b|\bfast(?:ing)?\b(?!er)",
-    r"\bcalories?\b",
+    r"\blose (?:some |the |a little )?(?:weight|pounds|lbs|kilos|inches|\d+|\w+ pounds)",
+    r"\bweight ?loss\b|\bslim down\b|\bdiet to\b|\bcrash diet\b|\bbelly\b|\bwaistline\b",
+    r"\bskip (?:dinner|lunch|breakfast|meals?)\b|\bintermittent fasting\b",
+    r"\bfasting\b(?! for (?:blood|a test|my test|labs?|bloodwork))|\bcalories?\b",
 )
 DIABETES_FOOD = _rx(
     r"\bcarbs?\b|\bcarbohydrates?\b|\bsugar\b.{0,20}\b(?:eat|have)\b|\bblood sugar\b",
@@ -118,12 +169,35 @@ WEATHER_INDOORS = _rx(r"\b(?:cold|rain\w*|wet|icy|ice|snow\w*|hot|heat|storm\w*|
 NO_TIME = _rx(r"\bno time\b|\bbusy\b|\bran out of time\b|\btoo long\b|\bnot enough time\b")
 
 
+def _clauses(text: str) -> list[str]:
+    return [c for c in re.split(r"[.;!?]|\bbut\b", words_keep(text)) if c.strip()]
+
+
+def words_keep(text: str) -> str:
+    """Lower-case words, keeping sentence marks so clauses can be split."""
+    return " ".join(re.sub(r"[^\w'\s.;!?]", " ", text.lower().replace("’", "'")).split())
+
+
+def _hit(pattern: re.Pattern, clause: str) -> bool:
+    """A match that is not negated just before it ("I'm not dizzy anymore")."""
+    for match in pattern.finditer(clause):
+        if not NEGATED.search(clause[: match.start()]):
+            return True
+    return False
+
+
 def is_emergency(text: str | None) -> bool:
-    return bool(text) and emergency(text)
+    if not text:
+        return False
+    if emergency(text):
+        return True
+    return any(_hit(ACUTE, c) and not LONG_AGO.search(c) for c in _clauses(text))
 
 
 def red_flag(text: str | None) -> bool:
-    return bool(text) and bool(RED_FLAG.search(words(text)))
+    if not text:
+        return False
+    return any(_hit(RED_FLAG, c) or _hit(ACUTE, c) for c in _clauses(text))
 
 
 def joint_pain(text: str | None) -> bool:
@@ -203,15 +277,168 @@ def _numbers(text: str) -> set[str]:
     return set(re.findall(r"\d+(?:[.,]\d+)?", text))
 
 
+def _sentences(text: str) -> int:
+    return len([part for part in re.split(r"[.!?]+(?:\s|$)", text.strip()) if part.strip()])
+
+
+def _hits(pattern: re.Pattern, text: str) -> set[str]:
+    return {match.group(0).lower() for match in pattern.finditer(text)}
+
+
+LEXICON = _rx(
+    *SUPPLEMENT_WORDS,
+    *DRUG_WORDS,
+    *DOSE_WORDS,
+    r"\bdementia\b|\balzheimer\w*|\bstrokes?\b|\bcancer\w*|\bheart attacks?\b|\bhypertensi\w*",
+    r"\barthritis\b|\bosteo\w*|\bdiabet\w*|\bcholesterol\b|\bblood pressure\b|\bblood sugar\b",
+    r"\bbelly\b|\bwaist\w*|\binches\b|\btrim\w*|\bshrink\w*|\bthinner\b|\bskinny\b|\bobes\w*",
+    r"\bprotect\w*|\bkeeps? \w+ away\b|\bavoid\w*|\bstays? strong\b",
+    r"\bskipp\w*|\bslack\w*|\bchain\b|\bdon't break\b|\bkeep it up or\b",
+)
+# The only new words a rewording may bring: warm, plain fillers. Everything else must
+# already be in the draft, so a provider cannot add an exercise, a food, a product, a
+# condition or a claim, however it is spelled.
+WARM = {
+    "about",
+    "again",
+    "alright",
+    "also",
+    "amazing",
+    "brilliant",
+    "bright",
+    "calm",
+    "calmly",
+    "cheerful",
+    "chat",
+    "chatting",
+    "close",
+    "comfortable",
+    "comfy",
+    "cozy",
+    "could",
+    "dear",
+    "doing",
+    "done",
+    "easily",
+    "easier",
+    "easy",
+    "enjoy",
+    "enjoying",
+    "fancy",
+    "fantastic",
+    "favorite",
+    "favourite",
+    "feel",
+    "feeling",
+    "fine",
+    "fresh",
+    "friendly",
+    "gave",
+    "gentle",
+    "gently",
+    "getting",
+    "give",
+    "giving",
+    "glad",
+    "going",
+    "good",
+    "grand",
+    "great",
+    "happy",
+    "have",
+    "having",
+    "here",
+    "idea",
+    "ideas",
+    "just",
+    "keep",
+    "keeping",
+    "kind",
+    "kindly",
+    "little",
+    "lovely",
+    "made",
+    "make",
+    "making",
+    "maybe",
+    "might",
+    "moment",
+    "nearby",
+    "nice",
+    "nicely",
+    "okay",
+    "perhaps",
+    "plan",
+    "pleasant",
+    "please",
+    "proud",
+    "quick",
+    "ready",
+    "really",
+    "said",
+    "short",
+    "simple",
+    "since",
+    "slow",
+    "slowly",
+    "small",
+    "smile",
+    "sound",
+    "sounds",
+    "start",
+    "steady",
+    "step",
+    "still",
+    "stroll",
+    "sure",
+    "take",
+    "taking",
+    "thing",
+    "things",
+    "time",
+    "together",
+    "took",
+    "warm",
+    "well",
+    "went",
+    "while",
+    "wonderful",
+    "worth",
+    "would",
+    "yourself",
+    "hello",
+    "hey",
+    "friend",
+    "cheer",
+    "cheering",
+    "mochi",
+    "got",
+    "you've",
+    "one",
+    "get",
+    "let",
+    "bit",
+    "lot",
+    "now",
+    "yes",
+    "all",
+    "way",
+    "day",
+    "good morning",
+    "morning",
+}
 FILLER = {
     "the",
     "and",
     "for",
     "you",
     "your",
+    "yours",
     "with",
     "that",
     "this",
+    "these",
+    "those",
     "are",
     "can",
     "into",
@@ -221,35 +448,64 @@ FILLER = {
     "when",
     "like",
     "want",
-    "have",
     "has",
     "will",
-    "just",
     "some",
     "today",
-    "about",
     "what",
+    "which",
     "how",
     "been",
     "there",
+    "their",
+    "them",
+    "they",
     "it's",
     "you'd",
     "you're",
+    "you'll",
     "let's",
+    "i'm",
+    "i'd",
+    "here's",
+    "that's",
+    "there's",
+    "very",
+    "each",
+    "every",
+    "where",
+    "were",
+    "was",
+    "our",
+    "its",
+    "just",
+    "than",
+    "too",
+    "much",
 }
+NEGATIONS = re.compile(
+    r"\b(?:no|not|never|without|nothing|none|skip|stop|avoid|instead|even|unless|rather|"
+    r"don't|doesn't|won't|can't|cannot|shouldn't|needn't|isn't|aren't|let go)\b"
+)
+
+
+def _stem(word: str) -> str:
+    for suffix in ("ing", "ed", "es", "s", "ly"):
+        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+            return word[: -len(suffix)]
+    return word
+
+
+def _tokens(text: str) -> list[str]:
+    return re.findall(r"[a-z][a-z']*", PLACEHOLDER.sub(" ", text.lower()))
+
+
+def _vocab(text: str) -> set[str]:
+    return {_stem(w) for w in _tokens(text)}
 
 
 def _content(text: str) -> set[str]:
-    """Four-letter stems of the longer words, so "walking" and "walks" match."""
-    return {w[:4] for w in re.findall(r"[a-z']+", text.lower()) if len(w) >= 4 and w not in FILLER}
-
-
-def _sentences(text: str) -> int:
-    return len([part for part in re.split(r"[.!?]+(?:\s|$)", text.strip()) if part.strip()])
-
-
-def _hits(pattern: re.Pattern, text: str) -> set[str]:
-    return {match.group(0).lower() for match in pattern.finditer(text)}
+    return {_stem(w) for w in _tokens(text) if len(w) >= 4 and w not in FILLER and w not in WARM}
 
 
 def safe_line(line: object, draft: str, keep_words: tuple[str, ...] = ()) -> bool:
@@ -257,45 +513,39 @@ def safe_line(line: object, draft: str, keep_words: tuple[str, ...] = ()) -> boo
     if not isinstance(line, str):
         return False
     text = line.strip().replace("’", "'")
+    lowered, lowered_draft = text.lower(), draft.lower()
     if not text or "\n" in text or "\r" in text:
         return False
-    if len(text) > min(400, max(len(draft) * 2, len(draft) + 120)):
-        return False
-    # It must still say the same thing: not much shorter, and most content words kept.
-    if len(text) < len(draft) * 0.5:
-        return False
-    content = _content(draft)
-    if content and len(content & _content(text)) < 0.4 * len(content):
+    if not len(draft) * 0.5 <= len(text) <= min(400, max(len(draft) * 2, len(draft) + 120)):
         return False
     if _sentences(text) > _sentences(draft) + 1:
         return False
-    if re.search(r"[<>\[\]\\|`*#]", text):
+    if re.search(r"[<>\[\]\\|`*#@/]", text):
+        return False
+    # Words: nothing new but warm fillers, and most of the draft's content kept.
+    allowed = _vocab(draft) | {_stem(w) for w in WARM | FILLER}
+    if any(_stem(w) not in allowed for w in _tokens(text) if len(w) >= 3):
+        return False
+    content = _content(draft)
+    if content and len(content & _content(text)) < 0.5 * len(content):
+        return False
+    if len(NEGATIONS.findall(lowered)) > len(NEGATIONS.findall(lowered_draft)):
         return False
     if not _numbers(text) <= _numbers(draft):
         return False
-    lowered_draft = draft.lower()
-    for pattern in (NUMBER_WORDS, UNITS, BLOCKED):
+    for pattern in (NUMBER_WORDS, UNITS, BLOCKED, LEXICON):
         if _hits(pattern, text) - _hits(pattern, lowered_draft):
             return False
-    if set(PLACEHOLDER.findall(text)) != set(PLACEHOLDER.findall(draft)):
+    if sorted(PLACEHOLDER.findall(text)) != sorted(PLACEHOLDER.findall(draft)):
         return False
     if "{" in PLACEHOLDER.sub("", text) or "}" in PLACEHOLDER.sub("", text):
         return False
-    # No new names: a capitalised word mid-sentence must already be in the draft.
-    names = {
-        word
-        for sentence in re.split(r"[.!?]+\s*", text)
-        for word in re.findall(r"\b[A-Z][a-z]+", " ".join(sentence.split()[1:]))
-    }
-    if names - set(re.findall(r"\b[A-Z][a-z]+", draft)) - {"Mochi"}:
-        return False
-    lowered = text.lower()
     # A callback keeps saying where it came from ("You told me ...").
     if "you told me" in lowered_draft and not re.search(
         r"\byou (?:told me|said|mentioned)\b", lowered
     ):
         return False
-    return all(word.lower() in lowered for word in keep_words)
+    return all(re.search(rf"\b{re.escape(word.lower())}\b", lowered) for word in keep_words)
 
 
 def safe_slot(value: str | None) -> bool:
@@ -304,4 +554,9 @@ def safe_slot(value: str | None) -> bool:
         return False
     if not re.fullmatch(r"[A-Za-z][A-Za-z' -]{0,40}", value) or len(value.split()) > 4:
         return False
-    return not (BLOCKED.search(value) or NUMBER_WORDS.search(value) or UNITS.search(value))
+    return not (
+        BLOCKED.search(value)
+        or LEXICON.search(value)
+        or NUMBER_WORDS.search(value)
+        or UNITS.search(value)
+    )

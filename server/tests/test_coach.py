@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from lifetwin.app import create_app
 from lifetwin.coach import catalog as cat
-from lifetwin.coach.models import CoachPlanRequest
+from lifetwin.coach.models import CoachPlanRequest, PlanItemRef
 from lifetwin.coach.phrasing import DailyCap
 from lifetwin.coach.planner import Planner, revision_id
 from lifetwin.coach.providers import PhrasingUnavailable
@@ -684,3 +684,258 @@ def test_capabilities_name_the_real_provider():
     assert coach["personalize"]["display_name"] == "Muse by Meta"
     assert coach["personalize"]["provider"] == "muse"
     assert coach["runs"] == "on_app_open_or_resume"
+
+
+# ---------------------------------------------------------------------------
+# Regressions from the independent safety review (2026-10-24)
+# ---------------------------------------------------------------------------
+
+ACUTE_SAID = [
+    "I can barely breathe",
+    "I'm gasping for air",
+    "pressure in my chest",
+    "I was sitting down when my chest started hurting",
+    "my chest feels like an elephant is sitting on it",
+    "I was watching TV and got chest pains",
+    "my face is drooping and my speech is slurred",
+    "I can't move my left arm and my words come out wrong",
+    "I want to hurt myself",
+    "I wish I was dead",
+    "I'm thinking of ending things",
+    "I'm going to take all my pills",
+    "I took all my pills",
+    "chest discomfort when I walk",
+]
+PAUSE_SAID = [
+    "I slipped in the shower yesterday",
+    "I keep falling",
+    "my legs gave out yesterday",
+    "I lost my balance and went down",
+    "my heart's racing",
+    "my heart skipped a beat",
+    "my heart is beating really fast",
+    "irregular heartbeat again",
+    "my ankles are puffy",
+    "the room was spinning",
+    "I felt woozy",
+    "vertigo again",
+    "I get out of breath walking",
+    "my knee hurts more than yesterday",
+    "a pain I never had before",
+    "it hurts more today",
+]
+HARMLESS_SAID = [
+    "I fell asleep in my chair",
+    "I fell in love with tai chi",
+    "what's the number for the clinic",
+    "I'm not dizzy anymore",
+    "I walked fast today",
+    "My heart attack was in 2015",
+]
+
+
+@pytest.mark.parametrize("said", ACUTE_SAID)
+def test_acute_symptoms_get_the_911_line(said):
+    client, fake = make_client()
+    body = post(
+        client,
+        {**BASE, "local_date": "2026-10-24", "said": said, "outside_ai_consent": {"muse": True}},
+    )
+    assert body["emergency"] is True and body["items"] == [] and "911" in body["lines"][0]
+    assert fake.calls == []
+
+
+@pytest.mark.parametrize("said", PAUSE_SAID)
+def test_warning_signs_pause_movement(said):
+    client, _ = make_client()
+    body = post(client, {**BASE, "local_date": "2026-10-24", "said": said})
+    assert body["emergency"] is False and body["movement_paused"] is True
+    assert workout(body) is None and re.search(r"check with your doctor", spoken(body), re.I)
+
+
+@pytest.mark.parametrize("said", HARMLESS_SAID)
+def test_harmless_phrases_do_not_pause(said):
+    client, _ = make_client()
+    body = post(client, {**BASE, "local_date": "2026-10-24", "said": said})
+    assert body["emergency"] is False and body["movement_paused"] is False
+    assert workout(body) is not None and body["reply"] != cat.WEIGHT_REPLY
+
+
+def test_chest_heaviness_after_the_walk_is_an_emergency():
+    client, _ = make_client()
+    day1 = post(client, {**BASE, "local_date": "2026-10-20"})
+    body = post(
+        client,
+        next_day(
+            day1,
+            "2026-10-21",
+            [{"item_id": "move", "status": "done", "reason": "my chest felt heavy after"}],
+        ),
+    )
+    assert body["emergency"] is True and body["items"] == []
+
+
+WALK = cat.ACTIVITIES["walk_short"].steps.format(minutes=10) + " Bring your walker or cane."
+REVIEW_BYPASSES = [
+    (
+        cat.DIET["protein_each_meal"].message,
+        "Try adding some protein to each meal, like eggs, beans, yogurt or fish, even if your "
+        "doctor has told you to limit protein.",
+    ),
+    (
+        cat.ACTIVITIES["chair_march"].steps.format(minutes=5),
+        "Stand up beside your chair and march your feet in place for 5 minutes.",
+    ),
+    (
+        cat.ACTIVITIES["heel_raises"].steps.format(minutes=5),
+        "Let go of the kitchen counter. Rise up onto your toes and lower slowly, no holding on.",
+    ),
+    (WALK, "Take a 10-minute walk on flat ground, but use your inhaler first."),
+    (WALK, "Voltaren gel helps sore knees. Take a 10-minute walk on flat ground."),
+    (
+        WALK,
+        "Take a 10-minute walk on flat ground, so your heart stays strong and you avoid a stroke.",
+    ),
+    (WALK, "Take a 10-minute walk on flat ground to trim your waistline."),
+    (WALK, "Take a 10-minute walk on flat ground. Don't break the chain now."),
+    (WALK, "Take a 10-minute walk on flat ground, one in the morning and one at night."),
+    (WALK, "Take a 10-minute walk on flat ground. That knee ache sounds like arthritis."),
+    (WALK, "Take a 10-minute walk on flat ground. No need to bring your walker or cane."),
+]
+
+
+@pytest.mark.parametrize(("draft", "line"), REVIEW_BYPASSES)
+def test_rewording_cannot_add_or_reverse_meaning(draft, line):
+    # No keep words passed: the vocabulary and negation checks alone must refuse these.
+    assert not safe_line(line, draft)
+
+
+@pytest.mark.parametrize(
+    "goal",
+    [
+        "lose twenty pounds",
+        "live to a hundred",
+        "get rid of my belly",
+        "beat my prostate cancer",
+        "walk my daughter Maya down the aisle",
+    ],
+)
+def test_unsafe_or_personal_goals_are_never_spoken(goal):
+    client, fake = make_client()
+    body = post(
+        client,
+        {
+            **BASE,
+            "local_date": "2026-10-24",
+            "memory_consent": True,
+            "goals": [goal],
+            "outside_ai_consent": {"muse": True},
+        },
+    )
+    assert goal.split()[-1] not in spoken(body)
+    assert goal.split()[-1] not in json.dumps(fake.calls)
+
+
+def test_a_safe_goal_is_spoken_but_never_sent():
+    client, fake = make_client()
+    body = post(
+        client,
+        {
+            **BASE,
+            "local_date": "2026-10-24",
+            "memory_consent": True,
+            "goals": ["keep up with my grandkids"],
+            "outside_ai_consent": {"muse": True},
+        },
+    )
+    assert "keep up with your grandkids" in spoken(body)
+    assert "grandkids" not in json.dumps(fake.calls)
+
+
+def test_note_words_never_reach_spoken_text_or_the_provider():
+    client, fake = make_client()
+    note = {"id": "n1", "topic": "exercise", "kind": "walking with Maya to the 7-Eleven"}
+    body = post(
+        client,
+        {
+            **BASE,
+            "local_date": "2026-10-24",
+            "memory_consent": True,
+            "habit_notes": [note],
+            "outside_ai_consent": {"muse": True},
+        },
+    )
+    assert "Maya" not in spoken(body) and "Maya" not in json.dumps(fake.calls)
+    surgery = {"id": "n2", "topic": "health", "kind": "knee surgery"}
+    body = post(
+        client,
+        {**BASE, "local_date": "2026-10-24", "memory_consent": True, "habit_notes": [surgery]},
+    )
+    assert "enjoy knee surgery" not in spoken(body)
+
+
+def test_a_paused_plan_stays_paused_until_cleared():
+    client, _ = make_client()
+    day1 = post(client, {**BASE, "local_date": "2026-10-20", "said": "I felt dizzy"})
+    assert day1["movement_paused"] is True
+    # The phone forgets to send the flag: the paused plan itself keeps it.
+    day2 = post(client, next_day(day1, "2026-10-21"))
+    assert day2["movement_paused"] is True and workout(day2) is None
+    day3 = post(client, next_day(day2, "2026-10-22", said="my doctor said it's fine to exercise"))
+    assert day3["movement_paused"] is False and workout(day3)["minutes"] <= 10
+
+
+def test_reuse_keeps_seated_wording_and_rechecks_limits():
+    client, _ = make_client()
+    seated = {
+        **BASE,
+        "local_date": "2026-10-20",
+        "limits": ["seated_only"],
+        "profile": {"age": 80, "sitting_minutes_daily": 600},
+    }
+    first = post(client, seated)
+    again = post(
+        client,
+        {**seated, "previous_plan": previous(first), "latest_revision_id": first["revision_id"]},
+    )
+    assert again["reused_previous"] is True
+    habit = next(i for i in again["items"] if i["kind"] == "habit")
+    assert "stand up" not in habit["message"]
+    # A recomputed plan holding a standing walk for a seated person is re-planned.
+    forged = previous(first)
+    forged["items"][0] = {"id": "move", "kind": "workout", "catalog_id": "hill_walk", "minutes": 30}
+    forged["revision_id"] = revision_id(
+        forged["based_on"],
+        forged["local_date"],
+        forged["input_snapshot_id"],
+        [PlanItemRef.model_validate(item) for item in forged["items"]],
+    )
+    body = post(
+        client, {**seated, "previous_plan": forged, "latest_revision_id": forged["revision_id"]}
+    )
+    assert workout(body)["position"] == "seated" and body["reused_previous"] is False
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"local_date": "2026-02-30"},
+        {"local_date": "2026-10-24", "checkins": [{"date": "2026-09-31"}]},
+        {
+            "local_date": "2026-10-24",
+            "memory_consent": True,
+            "habit_notes": [{"id": "n1", "topic": "pet", "noted_on": "2026-02-31"}],
+        },
+    ],
+)
+def test_impossible_dates_are_refused_not_crashed(bad):
+    client, _ = make_client()
+    assert client.post("/api/coach/plan", json=bad).status_code == 422
+
+
+def test_feedback_without_the_latest_revision_is_refused():
+    client, _ = make_client()
+    day1 = post(client, {**BASE, "local_date": "2026-10-20"})
+    body = next_day(day1, "2026-10-21", [{"item_id": "move", "status": "done"}])
+    del body["latest_revision_id"]
+    assert client.post("/api/coach/plan", json=body).status_code == 422

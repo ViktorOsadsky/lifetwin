@@ -79,5 +79,8 @@ async def reword(
         text = line.strip()
         for placeholder, name in draft.names.items():
             text = text.replace(placeholder, name)
+        text += draft.suffix
+        if len(text) > 400:
+            return None, "fallback"
         out[draft.slot] = text
     return out, "used"

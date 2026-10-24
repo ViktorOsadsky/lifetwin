@@ -12,14 +12,28 @@ Card fields reuse the names of conversation-v2's ``Recommendation`` (``id``,
 activity details. ``message`` is the card body Mochi says.
 """
 
+from datetime import date
 from typing import Annotated, Literal
 
-from pydantic import ConfigDict, Field, field_validator, model_validator
+from pydantic import AfterValidator, ConfigDict, Field, field_validator, model_validator
 
 from lifetwin.core.models import ApiModel, HealthProfile, Wellbeing, WholeNumber
 from lifetwin.onboarding.models import MascotEvent
 
 ISO_DATE = r"^\d{4}-\d{2}-\d{2}$"
+
+
+def _real_date(value: str | None) -> str | None:
+    """A pattern match is not enough: 2026-02-30 must be refused, not crash later."""
+    if value is not None:
+        try:
+            date.fromisoformat(value)
+        except ValueError as exc:
+            raise ValueError("Dates must be real calendar days, like 2026-10-24") from exc
+    return value
+
+
+RealDate = Annotated[str, Field(pattern=ISO_DATE), AfterValidator(_real_date)]
 Words = Annotated[str, Field(min_length=1, max_length=80)]
 Id = Annotated[str, Field(min_length=1, max_length=40, pattern=r"^[A-Za-z0-9_.:-]+$")]
 
@@ -64,7 +78,7 @@ class DaySummary(ApiModel):
     """One day of check-in history, in the on-device ``daily_logs`` names
     (codex/c-frequent-checkins) plus the check-in's ``wellbeing``."""
 
-    date: str = Field(pattern=ISO_DATE)
+    date: RealDate
     sleep_hours: float | None = Field(default=None, ge=0, le=24)
     moderate_recreation_min: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1440)
     vigorous_recreation_min: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1440)
@@ -110,7 +124,7 @@ class CoachNote(ApiModel):
     source: Literal["said", "ai_helper"] = "said"
     # A pet's or person's first name ("Biscuit", "Maya"). Never sent to a provider.
     name: Annotated[str, Field(min_length=1, max_length=30)] | None = None
-    noted_on: str | None = Field(default=None, pattern=ISO_DATE)
+    noted_on: RealDate | None = None
 
 
 FeedbackStatus = Literal["accepted", "edited", "dismissed", "done", "not_done"]
@@ -153,9 +167,15 @@ class PlanItemRef(ApiModel):
 class PreviousPlan(ApiModel):
     revision_id: Id
     based_on: Id | None = None
-    local_date: str = Field(pattern=ISO_DATE)
+    local_date: RealDate
     input_snapshot_id: Id
     items: list[PlanItemRef] = Field(min_length=1, max_length=4)
+
+    @model_validator(mode="after")
+    def one_per_slot(self):
+        if len({item.id for item in self.items}) != len(self.items):
+            raise ValueError("One previous item per slot")
+        return self
 
 
 class CoachPlanRequest(ApiModel):
@@ -178,7 +198,7 @@ class CoachPlanRequest(ApiModel):
     said: Annotated[str, Field(min_length=1, max_length=500)] | None = None
     # Per-provider opt-in, conversation-v2's shape. Consent for one never covers another.
     outside_ai_consent: dict[Literal["claude", "muse"], bool] = Field(default_factory=dict)
-    local_date: str = Field(pattern=ISO_DATE)
+    local_date: RealDate
     local_time: str | None = Field(default=None, pattern=r"^\d{2}:\d{2}$")
 
     @field_validator("local_time")
@@ -194,6 +214,8 @@ class CoachPlanRequest(ApiModel):
     def feedback_needs_plan(self):
         if self.feedback is not None and self.previous_plan is None:
             raise ValueError("Feedback needs the plan it is about")
+        if self.feedback is not None and self.latest_revision_id is None:
+            raise ValueError("Feedback needs latest_revision_id, so stale feedback is refused")
         # Freshness: nothing may be dated after the phone's own day.
         if any(day.date > self.local_date for day in self.checkins):
             raise ValueError("Check-ins cannot be dated after local_date")

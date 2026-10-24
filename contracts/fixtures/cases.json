@@ -1040,7 +1040,8 @@
             "status": "done"
           }
         ]
-      }
+      },
+      "latest_revision_id": "r0000000000000000"
     },
     "status": 409,
     "response_schema": "error.schema.json",
