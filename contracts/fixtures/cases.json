@@ -1,0 +1,62 @@
+[
+  {
+    "name": "prediction-deferred",
+    "method": "POST",
+    "path": "/api/predict",
+    "request_schema": "prediction.request.schema.json",
+    "request": {"age": 35, "height_cm": 175, "weight_kg": 70},
+    "status": 501,
+    "response_schema": "prediction.schema.json",
+    "response": {
+      "schema_version": "1.0",
+      "status": "not_implemented",
+      "code": "prediction_not_implemented",
+      "message": "Prediction functionality is reserved for a later implementation.",
+      "prediction": null,
+      "model_version": null
+    }
+  },
+  {
+    "name": "compare-deferred",
+    "method": "POST",
+    "path": "/api/compare",
+    "request_schema": "compare.request.schema.json",
+    "request": {"baseline": {"age": 35}, "scenario": {"age": 35, "sleep_hours": 8}},
+    "status": 501,
+    "response_schema": "compare.schema.json"
+  },
+  {
+    "name": "sensitivity-deferred",
+    "method": "POST",
+    "path": "/api/sensitivity",
+    "request_schema": "sensitivity.request.schema.json",
+    "request": {"profile": {"age": 35, "weight_kg": 70}},
+    "status": 501,
+    "response_schema": "sensitivity.schema.json"
+  },
+  {
+    "name": "mascot-start",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {"action": "start"},
+    "status": 200,
+    "response_schema": "conversation.schema.json"
+  },
+  {
+    "name": "keyless-advisor",
+    "method": "POST",
+    "path": "/api/advisor",
+    "request_schema": "advisor.request.schema.json",
+    "request": {"topics": ["sleep"], "use_web_research": false},
+    "status": 200,
+    "response_schema": "advisor.schema.json"
+  },
+  {
+    "name": "quiz-bank",
+    "method": "GET",
+    "path": "/api/quiz/questions",
+    "status": 200,
+    "response_schema": "quiz.schema.json"
+  }
+]
