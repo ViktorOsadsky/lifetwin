@@ -342,6 +342,26 @@ void main() {
   });
 
   group('notices', () {
+    testWidgets('large text: the end of Pip\'s line (the question) is in view on each new turn', (t) async {
+      const line =
+          "Hi, I'm your guide. You can talk or type, and you can skip any question. How old are you?";
+      final r = Rig(guide: StepGuide(message: line));
+      await r.pump(t, scale: 2);
+      await r.start(t, voice: false);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pumpAndSettle();
+      Rect visible() => t.getRect(find.byType(Scrollable).first);
+      final text = find.textContaining('How old are you?');
+      expect(t.getRect(text).bottom, lessThanOrEqualTo(visible().bottom + 0.5));
+      await t.enterText(find.byType(TextField), '70');
+      await t.tap(find.text('Send'));
+      await t.pumpAndSettle();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pumpAndSettle();
+      expect(r.c.confirming, isTrue); // the read-back (StepGuide uses the same words)
+      expect(t.getRect(text).bottom, lessThanOrEqualTo(visible().bottom + 0.5));
+    });
+
     testWidgets('typing: a new question\'s quick answers scroll into view', (t) async {
       final r = Rig(guide: StepGuide(message: 'Got it. What sex were you at birth: female or male?'));
       await r.pump(t);

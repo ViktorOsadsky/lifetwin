@@ -130,6 +130,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
 
   final _noticeKey = GlobalKey(debugLabel: 'notice');
   final _quickKey = GlobalKey(debugLabel: 'quick answers');
+  final _lineKey = GlobalKey(debugLabel: "Pip's line");
   String? _shownNotice;
 
   void _useHealth() {
@@ -198,16 +199,19 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     final listening = c.phase == VoicePhase.listening;
     if (listening != _wasListening) HapticFeedback.mediumImpact();
     _wasListening = listening;
-    // A new notice, or the quick answers of a new question, may land below the fold (the
-    // controls take the lower part of the screen): scroll them into view, buttons included.
-    if (c.notice != null && c.notice != _shownNotice) _reveal(_noticeKey);
-    _shownNotice = c.notice;
+    // The controls take the lower part of the screen, so with large text the story above
+    // them is short. A new turn scrolls the end of Pip's line (where the question or "Is
+    // that right?" is) into view; then, when there is room, the quick answers under it. A
+    // new notice scrolls into view with its button.
     if (!identical(c.turn, _shownTurn)) {
       _shownTurn = c.turn;
       _turnLock?.cancel();
       _turnLock = Timer(secondTapGuard, () {});
-      if (c.notice == null && _quickInStory) _reveal(_quickKey);
+      _reveal(_lineKey);
+      if (_quickInStory && !largeText(context)) _reveal(_quickKey);
     }
+    if (c.notice != null && c.notice != _shownNotice) _reveal(_noticeKey);
+    _shownNotice = c.notice;
   }
 
   void _reveal(GlobalKey key) => WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -465,6 +469,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         // Mascot line: always visible as a caption, announced when it changes.
         _pad(
           Semantics(
+            key: _lineKey,
             liveRegion: true,
             container: true,
             child: line.isEmpty
