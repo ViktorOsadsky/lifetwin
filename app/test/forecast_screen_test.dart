@@ -11,6 +11,8 @@ import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/voice/api_base.dart';
 import 'package:lifesim/voice/fakes.dart';
+import 'package:lifesim/widgets/lip_button.dart';
+import 'package:lifesim/widgets/lt_buttons.dart';
 
 /// The server's answer for a 70-year-old man (contracts/fixtures/cases.json).
 Map<String, dynamic> supportedJson() => {
@@ -96,11 +98,15 @@ const sentence = 'Out of 100 people with answers like yours, about 88 were still
 Finder dots(String kind) =>
     find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key as ValueKey<String>).value.endsWith(kind));
 
+/// Primary and secondary buttons are at least 72 pt; nothing tappable is under 56 pt.
 void expectBigButtons(WidgetTester t) {
-  final buttons = find.byWidgetPredicate((w) => w is ButtonStyleButton);
-  expect(buttons, findsWidgets);
-  for (final e in buttons.evaluate()) {
+  final big = find.byWidgetPredicate((w) => w is LtPrimaryButton || w is LtSecondaryButton);
+  expect(big, findsWidgets);
+  for (final e in big.evaluate()) {
     expect(t.getSize(find.byWidget(e.widget)).height, greaterThanOrEqualTo(72));
+  }
+  for (final e in find.byType(LipButton).evaluate()) {
+    expect(t.getSize(find.byWidget(e.widget)).height, greaterThanOrEqualTo(56));
   }
 }
 
@@ -114,9 +120,9 @@ void main() {
     await t.pumpAndSettle();
 
     expect(find.text(sentence), findsOneWidget);
-    expect(find.textContaining('about 98 in 100', findRichText: true), findsOneWidget);
-    expect(find.textContaining('about 93 in 100', findRichText: true), findsOneWidget);
-    expect(find.textContaining('about 88 in 100', findRichText: true), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('About 98 in 100 still living')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('About 93 in 100 still living')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('About 88 in 100 still living')), findsOneWidget);
     expect(dots('filled'), findsNWidgets(88));
     expect(dots('empty'), findsNWidgets(12));
     expect(find.bySemanticsLabel('About 88 of 100 dots are filled.'), findsOneWidget);
@@ -147,6 +153,30 @@ void main() {
     expect(t.hasRunningAnimations, isFalse);
   });
 
+  testWidgets('choosing a time span changes the dots, not the sentence', (t) async {
+    final r = Rig()..client.answers.add(Forecast.parse(supportedJson()));
+    await r.pump(t);
+    await t.pumpAndSettle();
+    expect(t.widget<LtChoiceTile>(find.byKey(const ValueKey('span-5'))).selected, isTrue);
+    await t.tap(find.byKey(const ValueKey('span-1')));
+    await t.pumpAndSettle();
+    expect(t.widget<LtChoiceTile>(find.byKey(const ValueKey('span-1'))).selected, isTrue);
+    expect(t.widget<LtChoiceTile>(find.byKey(const ValueKey('span-5'))).selected, isFalse);
+    expect(dots('filled'), findsNWidgets(98));
+    expect(find.text('98 still living'), findsOneWidget);
+    expect(find.text('2 were not'), findsOneWidget);
+    expect(find.text(sentence), findsOneWidget);
+    expect(r.client.calls, hasLength(1));
+  });
+
+  testWidgets('Back calls onBack', (t) async {
+    final r = Rig()..client.answers.add(Forecast.parse(supportedJson()));
+    await r.pump(t);
+    await t.pumpAndSettle();
+    await t.tap(find.text('Back'));
+    expect(r.backs, 1);
+  });
+
   testWidgets('voice off: nothing is spoken', (t) async {
     final r = Rig()..client.answers.add(Forecast.parse(supportedJson()));
     await r.pump(t, voice: false);
@@ -165,6 +195,7 @@ void main() {
     expect(r.speech.spoken, [line]);
     expect(dots('filled'), findsNothing);
     expect(find.textContaining('in 100', findRichText: true), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('in 100 still living')), findsNothing);
     await t.ensureVisible(find.text('Go back to my answers'));
     await t.pumpAndSettle();
     await t.tap(find.text('Go back to my answers'));
@@ -172,8 +203,7 @@ void main() {
   });
 
   testWidgets('an error offers Try again, which asks again', (t) async {
-    final r = Rig()
-      ..client.answers.addAll([const ForecastFailure('offline'), Forecast.parse(supportedJson())]);
+    final r = Rig()..client.answers.addAll([const ForecastFailure('offline'), Forecast.parse(supportedJson())]);
     await r.pump(t);
     await t.pumpAndSettle();
     expect(find.text(couldNotReach), findsOneWidget);
@@ -256,7 +286,7 @@ void main() {
       output: FakeSpeechOutput(),
     );
     await t.pumpWidget(LifeTwinApp(controller: c, forecastClient: forecast));
-    await t.tap(find.text('Type instead'));
+    await t.tap(find.text("No, I'll type"));
     await t.pumpAndSettle();
     await t.tap(find.text('Not now'));
     await t.pumpAndSettle();

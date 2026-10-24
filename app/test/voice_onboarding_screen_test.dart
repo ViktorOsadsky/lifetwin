@@ -23,7 +23,11 @@ class Rig {
     await t.pumpWidget(
       MaterialApp(
         home: MediaQuery(
-          data: MediaQueryData(textScaler: TextScaler.linear(scale), size: const Size(390, 844)),
+          data: MediaQueryData(
+            textScaler: TextScaler.linear(scale),
+            size: const Size(390, 844),
+            disableAnimations: true,
+          ),
           child: VoiceOnboardingScreen(controller: c, onDone: (p) => done = p, onUseHealth: () => health = true),
         ),
       ),
@@ -45,16 +49,22 @@ Future<void> choose(WidgetTester t, String voiceLabel, {bool aiHelper = false}) 
 }
 
 void main() {
-  testWidgets('consent explains Cartesia and offers Yes / Type instead; nothing starts before', (t) async {
+  testWidgets('consent explains Cartesia and offers Yes / No, I\'ll type; nothing starts before', (t) async {
     final r = Rig();
     await r.pump(t);
     expect(
-      find.textContaining('sent to Cartesia, a voice service, only while you hold the Talk button'),
+      find.text(
+        'You can talk to me, or type. While you talk, your voice is sent to Cartesia, '
+        'a speech service, to turn it into words.',
+      ),
       findsOneWidget,
     );
+    // Honest copy: Cartesia's retention is not verified, so no promise about recordings.
+    expect(find.textContaining('recordings'), findsNothing);
+    expect(find.textContaining('hold the Talk button'), findsNothing);
     expect(r.guide.calls, isEmpty);
     expect(r.output.spoken, isEmpty);
-    for (final label in ['Yes, I can talk', 'Type instead']) {
+    for (final label in ["Yes, I'll talk", "No, I'll type"]) {
       expect(
         t
             .getSize(
@@ -69,9 +79,9 @@ void main() {
   testWidgets('Type instead on consent starts the same conversation by typing', (t) async {
     final r = Rig();
     await r.pump(t);
-    await choose(t, 'Type instead');
+    await choose(t, "No, I'll type");
     expect(find.text('How old are you?'), findsOneWidget);
-    expect(find.text('Hold to talk'), findsNothing);
+    expect(find.text('Tap to talk'), findsNothing);
     expect(r.output.spoken, isEmpty);
     await t.tap(find.text('Use my Health app instead'));
     expect(r.health, true);
@@ -79,23 +89,23 @@ void main() {
     await t.tap(find.text('Send'));
     await t.pumpAndSettle();
     expect(find.text('Yes'), findsOneWidget);
-    expect(find.text('Change'), findsOneWidget);
+    expect(find.text('No, change it'), findsOneWidget);
   });
 
   testWidgets('Yes consent shows caption, speaks it, and tap-to-talk works', (t) async {
     final r = Rig();
     await r.pump(t);
-    await choose(t, 'Yes, I can talk');
+    await choose(t, "Yes, I'll talk");
     expect(find.text('How old are you?'), findsOneWidget);
     expect(r.output.spoken, ['How old are you?']);
     expect(find.text('Hear it again'), findsOneWidget);
-    expect(find.text('Hold to talk'), findsOneWidget);
+    expect(find.text('Tap to talk'), findsOneWidget);
 
     r.input.captions = ['I am 70'];
-    await t.tap(find.text('Hold to talk')); // quick tap = start
+    await t.tap(find.text('Tap to talk')); // quick tap = start
     await t.pumpAndSettle();
     expect(find.textContaining('Hearing: I am 70'), findsOneWidget);
-    expect(find.textContaining('Tap or let go'), findsOneWidget);
+    expect(find.textContaining('Listening… tap when done'), findsOneWidget);
     await t.tap(find.byType(TalkButton)); // second tap = stop
     await t.pumpAndSettle();
     expect(r.guide.calls.last['text'], 'I am 70');
@@ -111,7 +121,7 @@ void main() {
   testWidgets('holding the button sends when let go', (t) async {
     final r = Rig();
     await r.pump(t);
-    await choose(t, 'Yes, I can talk');
+    await choose(t, "Yes, I'll talk");
     final g = await t.startGesture(t.getCenter(find.byType(TalkButton)));
     await t.pump();
     expect(r.c.phase, VoicePhase.listening);
@@ -126,8 +136,8 @@ void main() {
     final r = Rig();
     r.input.startError = const MicDeniedException();
     await r.pump(t);
-    await choose(t, 'Yes, I can talk');
-    await t.tap(find.text('Hold to talk'));
+    await choose(t, "Yes, I'll talk");
+    await t.tap(find.text('Tap to talk'));
     await t.pumpAndSettle();
     expect(find.textContaining('open Settings'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
@@ -139,10 +149,10 @@ void main() {
     final r = Rig();
     r.input.transcript = '';
     await r.pump(t, scale: 2.0);
-    await choose(t, 'Yes, I can talk');
-    await t.ensureVisible(find.text('Hold to talk'));
+    await choose(t, "Yes, I'll talk");
+    await t.ensureVisible(find.text('Tap to talk'));
     await t.pumpAndSettle();
-    await t.tap(find.text('Hold to talk'));
+    await t.tap(find.text('Tap to talk'));
     await t.pumpAndSettle();
     await t.ensureVisible(find.byType(TalkButton));
     await t.pumpAndSettle();
@@ -156,7 +166,7 @@ void main() {
     final r = Rig();
     await t.pumpWidget(LifeTwinApp(controller: r.c));
     expect(find.text('Talk with me?'), findsOneWidget);
-    await choose(t, 'Type instead');
+    await choose(t, "No, I'll type");
     await t.tap(find.text('Use my Health app instead'));
     await t.pumpAndSettle();
     expect(find.text("Use your iPhone's Health app?"), findsOneWidget);
@@ -165,10 +175,16 @@ void main() {
   testWidgets('AI helper consent explains where answers go; yes turns it on for every turn', (t) async {
     final r = Rig();
     await r.pump(t);
-    await t.tap(find.text('Type instead'));
+    await t.tap(find.text("No, I'll type"));
     await t.pumpAndSettle();
-    expect(find.text('Turn on the AI helper?'), findsOneWidget);
-    expect(find.textContaining('go to an outside AI service'), findsOneWidget);
+    expect(find.text('Let an AI helper read hard answers?'), findsOneWidget);
+    expect(
+      find.text(
+        "If I can't understand an answer, an AI service can read your words. "
+        "It's off unless you say yes. You can change this in Settings.",
+      ),
+      findsOneWidget,
+    );
     expect(r.guide.calls, isEmpty); // nothing starts until both questions are answered
     for (final label in ['Yes, turn it on', 'Not now']) {
       expect(
@@ -184,13 +200,18 @@ void main() {
     await t.pumpAndSettle();
     expect(r.c.aiHelper, isTrue);
     expect(r.guide.calls.single['aiHelper'], isTrue);
-    expect(find.text('Turn off AI helper'), findsOneWidget);
+    // The switch lives in Settings, not on the question screen.
+    expect(find.textContaining('AI helper'), findsNothing);
+    await t.ensureVisible(find.text('Settings'));
+    await t.tap(find.text('Settings'));
+    await t.pumpAndSettle();
+    expect(t.widget<SwitchListTile>(find.byType(SwitchListTile)).value, isTrue);
   });
 
   testWidgets('saying not now still lets the AI helper read a hard answer later, without retyping', (t) async {
     final r = Rig();
     await r.pump(t);
-    await choose(t, 'Type instead');
+    await choose(t, "No, I'll type");
     await t.enterText(find.byType(TextField), 'about five foot eight');
     await t.tap(find.text('Send'));
     await t.pumpAndSettle();
@@ -249,13 +270,15 @@ void main() {
     expect(c.typing, isTrue);
     expect(c.phase, VoicePhase.idle);
     await t.pump();
-    expect(t.widget<TextField>(find.byType(TextField)).enabled, isTrue);
+    final field = t.widget<TextField>(find.byType(TextField));
+    expect(field.enabled ?? true, isTrue);
+    expect(field.readOnly, isFalse);
   });
 
   testWidgets('a server that never answers ends in a retry, not a dead screen', (t) async {
     final r = Rig();
     await r.pump(t);
-    await choose(t, 'Type instead');
+    await choose(t, "No, I'll type");
     r.guide.gate = Completer<void>();
     await t.enterText(find.byType(TextField), '70');
     await t.tap(find.text('Send'));
@@ -266,18 +289,16 @@ void main() {
     expect(find.text('Send'), findsOneWidget);
   });
 
-  testWidgets('after Type instead there is a big Talk instead; voice is asked about first, then Type instead returns', (
-    t,
-  ) async {
+  testWidgets('after typing there is a Talk instead; voice is asked about first, then Type instead returns', (t) async {
     final r = Rig();
     await r.pump(t);
-    await choose(t, 'Type instead');
-    expect(find.text('Hold to talk'), findsNothing);
+    await choose(t, "No, I'll type");
+    expect(find.text('Tap to talk'), findsNothing);
     final talk = find.text('Talk instead');
     await t.ensureVisible(talk);
     expect(
       t.getSize(find.ancestor(of: talk, matching: find.byWidgetPredicate((w) => w is ButtonStyleButton))).height,
-      greaterThanOrEqualTo(72),
+      greaterThanOrEqualTo(56),
     );
     await t.tap(talk);
     await t.pumpAndSettle();
@@ -289,9 +310,9 @@ void main() {
     await t.ensureVisible(talk);
     await t.tap(talk);
     await t.pumpAndSettle();
-    await t.tap(find.text('Yes, I can talk'));
+    await t.tap(find.text("Yes, I'll talk"));
     await t.pumpAndSettle();
-    expect(find.text('Hold to talk'), findsOneWidget);
+    expect(find.text('Tap to talk'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
     await t.ensureVisible(find.text('Type instead'));
     await t.tap(find.text('Type instead'));
@@ -303,12 +324,12 @@ void main() {
   testWidgets('Change asks for the right answer and sends it as a correction', (t) async {
     final r = Rig();
     await r.pump(t);
-    await choose(t, 'Type instead');
+    await choose(t, "No, I'll type");
     await t.enterText(find.byType(TextField), '70');
     await t.tap(find.text('Send'));
     await t.pumpAndSettle();
     final calls = r.guide.calls.length;
-    await t.tap(find.text('Change'));
+    await t.tap(find.text('No, change it'));
     await t.pumpAndSettle();
     expect(r.guide.calls.length, calls); // nothing sent yet
     expect(find.text('Okay. What is the right answer?'), findsOneWidget);
@@ -331,7 +352,7 @@ void main() {
         home: VoiceOnboardingScreen(controller: r.c, onDone: (_) {}),
       ),
     );
-    await choose(t, 'Type instead');
+    await choose(t, "No, I'll type");
     expect(find.text('Hide keyboard'), findsNothing);
     await t.showKeyboard(find.byType(TextField));
     t.view.viewInsets = const FakeViewPadding(bottom: 300);
@@ -388,12 +409,16 @@ void main() {
       await t.pumpWidget(
         MaterialApp(
           home: MediaQuery(
-            data: MediaQueryData(textScaler: TextScaler.linear(scale), size: const Size(390, 844)),
+            data: MediaQueryData(
+              textScaler: TextScaler.linear(scale),
+              size: const Size(390, 844),
+              disableAnimations: true,
+            ),
             child: VoiceOnboardingScreen(controller: c, onDone: (_) {}),
           ),
         ),
       );
-      for (final l in ['Yes, I can talk', 'Not now']) {
+      for (final l in ["Yes, I'll talk", 'Not now']) {
         await t.ensureVisible(find.text(l));
         await t.pumpAndSettle();
         await t.tap(find.text(l));
@@ -416,7 +441,7 @@ void main() {
           await t.pumpAndSettle();
           expect(guide.calls.last, {'action': 'reply', 'text': say});
           expect(c.confirming, isTrue);
-          expect(find.text('Change'), findsOneWidget);
+          expect(find.text('No, change it'), findsOneWidget);
           expect(find.widgetWithText(OutlinedButton, label), findsNothing);
           await t.pumpWidget(const SizedBox());
         }
@@ -450,7 +475,7 @@ void main() {
       for (final l in ['Female', 'Male', 'Not sure', 'I smoke now']) {
         expect(find.text(l), findsNothing);
       }
-      expect(find.text('Hold to talk'), findsOneWidget);
+      expect(find.text('Tap to talk'), findsOneWidget);
     });
 
     testWidgets('no buttons while confirming, or while correcting', (t) async {
@@ -458,7 +483,7 @@ void main() {
       await t.tap(find.text('Male'));
       await t.pumpAndSettle();
       expect(find.text('Female'), findsNothing);
-      await t.tap(find.text('Change'));
+      await t.tap(find.text('No, change it'));
       await t.pumpAndSettle();
       expect(c.correcting, isTrue);
       expect(find.text('Female'), findsNothing);
@@ -477,7 +502,7 @@ void main() {
 
     testWidgets('tapping while listening cancels the recording, then sends', (t) async {
       final (guide, c, _) = await open(t, 'sex');
-      await t.tap(find.text('Hold to talk'));
+      await t.tap(find.text('Tap to talk'));
       await t.pumpAndSettle();
       expect(c.phase, VoicePhase.listening);
       await t.tap(find.text('Male'));
