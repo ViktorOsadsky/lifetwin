@@ -171,6 +171,8 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
         ? unsupportedSentence(f!)
         : null;
     // Holding the ball while it looks and when it answers; a shrug otherwise.
+    // With much larger text the bubble leaves the window for the sheet, so it is never cut off.
+    final large = MediaQuery.textScalerOf(context).scale(20) > 28;
     final pose = (_loading || supported) ? TwinPose.holdBall : TwinPose.shrug;
     return ModeScaffold(
       mode: LtMode.fortune,
@@ -184,8 +186,8 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
             pose: pose,
             glow: pose == TwinPose.holdBall ? 0.8 : 0,
             // Feet clear of the sheet, which overlaps the window's bottom edge.
-            feetAt: Offset(bubble == null ? 0.5 : 0.3, bubble == null ? 0.8 : 0.86),
-            twinHeight: bubble == null ? 0.74 : 0.5,
+            feetAt: Offset(bubble == null || large ? 0.5 : 0.3, bubble == null || large ? 0.8 : 0.86),
+            twinHeight: bubble == null || large ? 0.74 : 0.5,
           ),
           overlay: Stack(
             children: [
@@ -194,7 +196,7 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
                 top: 18,
                 child: RoundBackButton(label: 'Back', onTap: _back),
               ),
-              if (bubble != null)
+              if (bubble != null && !large)
                 Positioned(
                   top: 36,
                   right: 10,
@@ -207,7 +209,20 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
             ],
           ),
         ),
-        sheet: Sheet(night: true, padding: const EdgeInsets.fromLTRB(22, 18, 22, 18), child: _sheet(context)),
+        sheet: Sheet(
+          night: true,
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+          child: bubble != null && large
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Bubble(text: bubble, liveRegion: true, fontSize: 21, tail: BubbleTail.none),
+                    const SizedBox(height: 14),
+                    _sheet(context),
+                  ],
+                )
+              : _sheet(context),
+        ),
       ),
     );
   }

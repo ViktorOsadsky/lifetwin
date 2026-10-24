@@ -54,6 +54,15 @@ class _FortuneCeremonyScreenState extends State<FortuneCeremonyScreen> with Sing
 
   @override
   Widget build(BuildContext context) {
+    // With much larger text the bubble leaves the window for the sheet, so it is never cut off.
+    final large = MediaQuery.textScalerOf(context).scale(20) > 28;
+    final bubble = Bubble(
+      text: _asking ? 'The ball is glowing…' : 'Want to peek ahead?',
+      fontSize: 25,
+      tail: large ? BubbleTail.none : BubbleTail.bottom,
+      tailAt: 0.75,
+      liveRegion: true,
+    );
     return ModeScaffold(
       mode: LtMode.fortune,
       child: PlateSheetLayout(
@@ -74,24 +83,17 @@ class _FortuneCeremonyScreenState extends State<FortuneCeremonyScreen> with Sing
               );
             },
           ),
-          overlay: Stack(
-            children: [
-              Positioned(
-                left: 30,
-                top: 110,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 210),
-                  child: Bubble(
-                    text: _asking ? 'The ball is glowing…' : 'Want to peek ahead?',
-                    fontSize: 25,
-                    tail: BubbleTail.bottom,
-                    tailAt: 0.75,
-                    liveRegion: true,
-                  ),
+          overlay: large
+              ? null
+              : Stack(
+                  children: [
+                    Positioned(
+                      left: 30,
+                      top: 110,
+                      child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 210), child: bubble),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
         ),
         sheet: Sheet(
           night: true,
@@ -99,7 +101,13 @@ class _FortuneCeremonyScreenState extends State<FortuneCeremonyScreen> with Sing
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              LipButton(label: 'Ask the ball', icon: Icons.auto_awesome_rounded, fontSize: 24, onTap: _asking ? null : _ask),
+              if (large) ...[bubble, const SizedBox(height: 14)],
+              LipButton(
+                label: 'Ask the ball',
+                icon: Icons.auto_awesome_rounded,
+                fontSize: 24,
+                onTap: _asking ? null : _ask,
+              ),
               const SizedBox(height: 10),
               LipButton(
                 label: 'Back to room',
