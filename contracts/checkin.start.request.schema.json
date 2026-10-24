@@ -74,6 +74,48 @@
           "default": null,
           "title": "Exercise Minutes Weekly"
         },
+        "moderate_recreation_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min"
+        },
+        "moderate_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min Week"
+        },
+        "sedentary_min_day": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sedentary Min Day"
+        },
         "sleep_hours": {
           "anyOf": [
             {
@@ -101,6 +143,20 @@
           ],
           "default": null,
           "title": "Sleep Hours Last Night"
+        },
+        "sleep_hours_night_before": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours Night Before"
         },
         "smoking_status": {
           "anyOf": [
@@ -133,6 +189,34 @@
           ],
           "default": null,
           "title": "Systolic Bp"
+        },
+        "vigorous_recreation_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min"
+        },
+        "vigorous_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min Week"
         },
         "weight_kg": {
           "anyOf": [
@@ -168,6 +252,95 @@
       },
       "title": "CheckinValues",
       "type": "object"
+    },
+    "QuickPlan": {
+      "additionalProperties": false,
+      "description": "What the quick check-in asks, chosen on the phone from the stored history.",
+      "properties": {
+        "activity_day": {
+          "default": "yesterday",
+          "enum": [
+            "today",
+            "yesterday"
+          ],
+          "title": "Activity Day",
+          "type": "string"
+        },
+        "catch_up": {
+          "default": false,
+          "title": "Catch Up",
+          "type": "boolean"
+        },
+        "suggested": {
+          "$ref": "#/$defs/QuickSuggestions"
+        },
+        "topics": {
+          "items": {
+            "enum": [
+              "sleep",
+              "activity",
+              "sitting",
+              "feeling"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "title": "Topics",
+          "type": "array"
+        }
+      },
+      "title": "QuickPlan",
+      "type": "object"
+    },
+    "QuickSuggestions": {
+      "additionalProperties": false,
+      "description": "Apple Health values for the quick check-in, read on the phone and not yet\nconfirmed. Mochi reads each back (\"Looks right?\"); nothing is kept without a yes.",
+      "properties": {
+        "activity_minutes": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Activity Minutes"
+        },
+        "sleep_hours_last_night": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours Last Night"
+        },
+        "sleep_hours_night_before": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours Night Before"
+        }
+      },
+      "title": "QuickSuggestions",
+      "type": "object"
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -176,7 +349,8 @@
     "kind": {
       "enum": [
         "daily",
-        "weekly"
+        "weekly",
+        "quick"
       ],
       "title": "Kind",
       "type": "string"
@@ -202,6 +376,17 @@
     },
     "previous": {
       "$ref": "#/$defs/CheckinValues"
+    },
+    "quick": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/QuickPlan"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     }
   },
   "required": [

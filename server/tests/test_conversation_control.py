@@ -740,7 +740,9 @@ def test_no_reply_in_the_test_corpora_is_a_false_emergency():
     data = Path(__file__).parent / "data"
     replies = set()
     for path in data.glob("*.json"):
-        for case in json.loads(path.read_text()):
+        data_file = json.loads(path.read_text())
+        # Held-out sets wrap their cases with an "about" note.
+        for case in data_file["cases"] if isinstance(data_file, dict) else data_file:
             if "text" in case:
                 replies.add(case["text"])
             replies.update(turn["say"] for turn in case.get("turns", []))

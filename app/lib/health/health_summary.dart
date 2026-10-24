@@ -189,3 +189,6 @@ double _median(List<double> xs) {
 }
 
 double _round1(num x) => (x * 10).round() / 10;
+
+/// Minutes covered by [samples], counting overlaps (iPhone and Watch) once.
+double coveredMinutes(Iterable<HealthSample> samples) => _unionMinutes(samples);

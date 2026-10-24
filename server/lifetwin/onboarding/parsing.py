@@ -39,6 +39,12 @@ FRIENDLY_LABELS: dict[ProfileField, str] = {
     "exercise_minutes_today": "exercise",
     "alcohol_drinks_yesterday": "drinks",
     "wellbeing": "feeling",
+    "sleep_hours_night_before": "sleep",
+    "vigorous_recreation_min": "exercise",
+    "moderate_recreation_min": "exercise",
+    "vigorous_recreation_min_week": "exercise",
+    "moderate_recreation_min_week": "exercise",
+    "sedentary_min_day": "sitting",
 }
 # The value each question's own example stands for, so "yes, that's right" said
 # right after it can be offered back for confirmation.
@@ -171,6 +177,12 @@ CHECKIN_BASE: dict[str, ProfileField] = {
     "sleep_hours_last_night": "sleep_hours",
     "exercise_minutes_today": "exercise_minutes_weekly",
     "alcohol_drinks_yesterday": "alcohol_drinks_weekly",
+    # Quick and weekly check-ins: the model's own names (read in checkin/understanding.py).
+    "sleep_hours_night_before": "sleep_hours",
+    "vigorous_recreation_min": "exercise_minutes_weekly",
+    "moderate_recreation_min": "exercise_minutes_weekly",
+    "vigorous_recreation_min_week": "exercise_minutes_weekly",
+    "moderate_recreation_min_week": "exercise_minutes_weekly",
 }
 # Lighter and harder activity read like the weekly exercise question.
 ACTIVITY_BASE: dict[str, ProfileField] = {
@@ -185,6 +197,10 @@ FEELING_CUE = (
 for _day, _base_field in CHECKIN_BASE.items():
     FIELD_CUES[_day] = FIELD_CUES[_base_field]
 FIELD_CUES["wellbeing"] = FEELING_CUE
+FIELD_CUES["sedentary_min_day"] = (
+    r"\b(?:sat|sit\w*|seated|tv|television|telly|read\w*|puzzles?|meals?|driv\w*|car|"
+    r"couch|sofa|chair|desk|computer)\b"
+)
 CATEGORICAL = {
     "sex",
     "smoking_status",
@@ -1624,6 +1640,11 @@ PERIODS: dict[str, tuple[str, str]] = {
         rf"{HABIT_TIME}|\btoday\b|\btonight\b|\bthis (?:morning|afternoon|evening|week)\b",
     ),
     "wellbeing": (r"\btoday\b|\bthis week\b|\bright now\b", NOTHING),
+    # The catch-up: the night before yesterday ("Yesterday was a bit of a blank").
+    "sleep_hours_night_before": (
+        r"\b(?:the night before(?: (?:that|yesterday|last))?|that night|before last)\b",
+        rf"{HABIT_TIME}|\btonight\b|\blast night\b|\bthis week\b|{WEEKDAY}",
+    ),
 }
 THIS_WEEK = (
     r"\b(?:this|the) (?:past |last )?week\b|\b(?:over )?the (?:past|last) (?:7|seven) days\b|"
@@ -1793,7 +1814,7 @@ def _wellbeing(text: str) -> str | None:
 
 
 def _grammar(field: str, period: str | None):
-    if field == "sleep_hours_last_night":
+    if field in {"sleep_hours_last_night", "sleep_hours_night_before"}:
         return _sleep_night
     if field == "exercise_minutes_today":
         return _exercise_day
@@ -3017,6 +3038,7 @@ COMPARED = (
 )
 NUMBER_ASKS: dict[str, str] = {
     "sleep_hours_last_night": "About how many hours did you sleep last night?",
+    "sleep_hours_night_before": "About how many hours did you sleep the night before?",
     "exercise_minutes_today": "About how many minutes did you move today?",
     "alcohol_drinks_yesterday": "How many alcoholic drinks did you have yesterday?",
     "sleep_hours": "About how many hours did you sleep on a usual night this week?",
@@ -3026,6 +3048,7 @@ NUMBER_ASKS: dict[str, str] = {
 }
 OTHER_TIME_LEADS = {
     "sleep_hours_last_night": "And last night? ",
+    "sleep_hours_night_before": "And the night before yesterday? ",
     "exercise_minutes_today": "And today? ",
     "alcohol_drinks_yesterday": "And yesterday? ",
 }

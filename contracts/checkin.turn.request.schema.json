@@ -3,6 +3,22 @@
     "CheckinState": {
       "additionalProperties": false,
       "properties": {
+        "activity_day": {
+          "anyOf": [
+            {
+              "enum": [
+                "today",
+                "yesterday"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Activity Day"
+        },
         "confirmed": {
           "$ref": "#/$defs/CheckinValues"
         },
@@ -20,7 +36,13 @@
                 "smoking_status",
                 "weight_kg",
                 "systolic_bp",
-                "diastolic_bp"
+                "diastolic_bp",
+                "sleep_hours_night_before",
+                "vigorous_recreation_min",
+                "moderate_recreation_min",
+                "sedentary_min_day",
+                "vigorous_recreation_min_week",
+                "moderate_recreation_min_week"
               ],
               "type": "string"
             },
@@ -31,6 +53,11 @@
           "default": null,
           "title": "Current Field"
         },
+        "from_health": {
+          "default": false,
+          "title": "From Health",
+          "type": "boolean"
+        },
         "habit_notes": {
           "items": {
             "$ref": "#/$defs/HabitNote"
@@ -39,17 +66,50 @@
           "title": "Habit Notes",
           "type": "array"
         },
+        "held_minutes": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Held Minutes"
+        },
         "kind": {
           "enum": [
             "daily",
-            "weekly"
+            "weekly",
+            "quick"
           ],
           "title": "Kind",
           "type": "string"
         },
+        "local_date": {
+          "anyOf": [
+            {
+              "pattern": "\\d{4}-\\d{2}-\\d{2}",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Local Date"
+        },
         "memory_consent": {
           "default": false,
           "title": "Memory Consent",
+          "type": "boolean"
+        },
+        "one_pace": {
+          "default": false,
+          "title": "One Pace",
           "type": "boolean"
         },
         "pending": {
@@ -104,11 +164,17 @@
               "smoking_status",
               "weight_kg",
               "systolic_bp",
-              "diastolic_bp"
+              "diastolic_bp",
+              "sleep_hours_night_before",
+              "vigorous_recreation_min",
+              "moderate_recreation_min",
+              "sedentary_min_day",
+              "vigorous_recreation_min_week",
+              "moderate_recreation_min_week"
             ],
             "type": "string"
           },
-          "maxItems": 7,
+          "maxItems": 9,
           "minItems": 1,
           "title": "Questions",
           "type": "array"
@@ -126,13 +192,36 @@
               "smoking_status",
               "weight_kg",
               "systolic_bp",
-              "diastolic_bp"
+              "diastolic_bp",
+              "sleep_hours_night_before",
+              "vigorous_recreation_min",
+              "moderate_recreation_min",
+              "sedentary_min_day",
+              "vigorous_recreation_min_week",
+              "moderate_recreation_min_week"
             ],
             "type": "string"
           },
-          "maxItems": 8,
+          "maxItems": 9,
           "title": "Skipped Fields",
           "type": "array"
+        },
+        "suggested": {
+          "$ref": "#/$defs/CheckinValues"
+        },
+        "suggested_activity_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggested Activity Min"
         },
         "unknown_fields": {
           "items": {
@@ -147,11 +236,17 @@
               "smoking_status",
               "weight_kg",
               "systolic_bp",
-              "diastolic_bp"
+              "diastolic_bp",
+              "sleep_hours_night_before",
+              "vigorous_recreation_min",
+              "moderate_recreation_min",
+              "sedentary_min_day",
+              "vigorous_recreation_min_week",
+              "moderate_recreation_min_week"
             ],
             "type": "string"
           },
-          "maxItems": 8,
+          "maxItems": 9,
           "title": "Unknown Fields",
           "type": "array"
         }
@@ -237,6 +332,48 @@
           "default": null,
           "title": "Exercise Minutes Weekly"
         },
+        "moderate_recreation_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min"
+        },
+        "moderate_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min Week"
+        },
+        "sedentary_min_day": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sedentary Min Day"
+        },
         "sleep_hours": {
           "anyOf": [
             {
@@ -264,6 +401,20 @@
           ],
           "default": null,
           "title": "Sleep Hours Last Night"
+        },
+        "sleep_hours_night_before": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours Night Before"
         },
         "smoking_status": {
           "anyOf": [
@@ -296,6 +447,34 @@
           ],
           "default": null,
           "title": "Systolic Bp"
+        },
+        "vigorous_recreation_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min"
+        },
+        "vigorous_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min Week"
         },
         "weight_kg": {
           "anyOf": [

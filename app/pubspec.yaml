@@ -44,6 +44,11 @@ dependencies:
   # The on-device survival model (copied from model_handoff/, see lib/README-model.md).
   lifetwin_on_device:
     path: packages/lifetwin_on_device
+  # Check-in reminders at the person's chosen time (lib/checkin/checkin_reminders.dart).
+  flutter_local_notifications: ^22.3.2
+  timezone: ^0.11.2
+  flutter_timezone: ^5.1.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
