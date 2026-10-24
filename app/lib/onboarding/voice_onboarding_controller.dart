@@ -183,31 +183,39 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- Apple Health --------------------------------------------------------
 
-  /// Adds answers the person already checked on the Health screen. The server
-  /// validates them and moves on to the next question that is still unanswered.
-  /// Checked Apple Health values from before the conversation started (the Room's
-  /// "Use my Apple Health"). They are added as soon as the first question arrives.
   Map<String, num>? _pendingHealth;
 
   /// True while Apple Health values wait for the conversation to start.
   bool get hasPendingHealth => _pendingHealth != null;
 
-  Future<void> importHealth(Map<String, num> values) async {
+  /// Adds answers the person already checked on the Health screen. The server
+  /// validates them and moves on to the next question that is still unanswered.
+  ///
+  /// Values checked before the conversation started (the Room's "Use my Apple Health")
+  /// are kept and added as soon as its first question arrives.
+  ///
+  /// True when the values were taken: queued for the start, or sent and accepted. False
+  /// when nothing was added (none checked, busy, an answer still being confirmed, or the
+  /// server refused them or could not be reached); the reason is in [notice].
+  Future<bool> importHealth(Map<String, num> values) async {
     if (turn == null) {
-      if (values.isNotEmpty) _pendingHealth = {...?_pendingHealth, ...values};
-      return;
+      if (values.isEmpty) return false;
+      _pendingHealth = {...?_pendingHealth, ...values};
+      return true;
     }
-    if (_busy) return;
+    if (_busy) return false;
     if (values.isEmpty) {
       _set(() => notice = healthNoneNotice);
-      return;
+      return false;
     }
     if (confirming) {
       _set(() => notice = healthWaitNotice);
-      return;
+      return false;
     }
     await _stopSpeech();
+    final before = turn;
     await _send('import', values: values);
+    return notice == null && !identical(turn, before);
   }
 
   // ---- talking -----------------------------------------------------------

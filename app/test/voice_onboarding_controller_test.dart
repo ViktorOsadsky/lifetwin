@@ -233,7 +233,7 @@ void main() {
   test('Apple Health answers are sent as an import and the conversation moves on', () async {
     final r = Rig();
     await r.c.answerConsent(false);
-    await r.c.importHealth({'weight_kg': 68.0, 'sleep_hours': 7.5});
+    expect(await r.c.importHealth({'weight_kg': 68.0, 'sleep_hours': 7.5}), isTrue);
     final call = r.guide.calls.last;
     expect(call['action'], 'import');
     expect(call['values'], {'weight_kg': 68.0, 'sleep_hours': 7.5});
@@ -244,7 +244,7 @@ void main() {
 
   test('Apple Health answers checked before the talk are added when it starts', () async {
     final r = Rig();
-    await r.c.importHealth({'weight_kg': 68.0}); // from the Room: no question yet
+    expect(await r.c.importHealth({'weight_kg': 68.0}), isTrue); // from the Room: queued
     expect(r.guide.calls, isEmpty);
     expect(r.c.hasPendingHealth, isTrue);
     await r.c.answerConsent(false);
@@ -260,7 +260,7 @@ void main() {
     await r.c.submitTyped('70');
     expect(r.c.confirming, isTrue);
     final before = r.guide.calls.length;
-    await r.c.importHealth({'weight_kg': 68.0});
+    expect(await r.c.importHealth({'weight_kg': 68.0}), isFalse, reason: 'nothing was taken');
     expect(r.guide.calls.length, before);
     expect(r.c.notice, healthWaitNotice);
   });

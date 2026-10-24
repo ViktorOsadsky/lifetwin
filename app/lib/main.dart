@@ -96,12 +96,13 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     MaterialPageRoute<void>(
       builder: (_) => HealthImportScreen(
         reader: widget.healthReader,
-        onDone: (result) {
+        onDone: (result) async {
           Navigator.of(context).pop();
           // Each value was already checked on the Health screen ("Is this accurate?").
           final values = {for (final c in result.confirmed) c.field.profileKey: c.value};
-          setState(() => _healthKeys.addAll(values.keys)); // the Room's pill goes away
-          _controller.importHealth(values);
+          // Only once the values were taken (sent and accepted, or queued for the start of
+          // the talk) are they labelled "Apple Health" and does the Room's pill go away.
+          if (await _controller.importHealth(values) && mounted) setState(() => _healthKeys.addAll(values.keys));
         },
       ),
     ),
