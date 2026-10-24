@@ -31,7 +31,7 @@ Map<String, dynamic> supportedJson() => {
   ],
   'filled_in': [
     {'feature': 'sedentary_min_day', 'label': 'time spent sitting each day'},
-    {'feature': 'hypertension_diagnosed', 'label': 'high blood pressure'},
+    {'feature': 'hypertension_diagnosed', 'label': 'being told you have high blood pressure'},
     {'feature': 'general_health', 'label': 'how you rate your health'},
   ],
   'reason': null,
@@ -130,7 +130,7 @@ void main() {
     expect(find.textContaining('not a promise, and they are not a date'), findsOneWidget);
     expect(find.textContaining('links, not causes'), findsOneWidget);
     expect(
-      find.textContaining('time spent sitting each day, high blood pressure and how you rate your health'),
+      find.textContaining('time spent sitting each day, being told you have high blood pressure and how you rate your health'),
       findsOneWidget,
     );
     expect(r.speech.spoken, [sentence]);

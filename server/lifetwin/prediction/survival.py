@@ -45,7 +45,7 @@ FEATURE_LABELS = {
     "sex_nhanes": "sex at birth",
     "smoking_status": "smoking",
     "diabetes_diagnosed": "diabetes",
-    "hypertension_diagnosed": "high blood pressure",
+    "hypertension_diagnosed": "being told you have high blood pressure",
     "general_health": "how you rate your health",
 }
 SMOKING_CODES = {"never": 0.0, "former": 1.0, "current": 2.0}
@@ -60,7 +60,7 @@ REQUIRED_ANSWERS = {
 EXTRA_LIMITATIONS = [
     "Smoking answers are assumed to be coded 0 never, 1 former, 2 current; "
     "the model author has not yet confirmed this coding.",
-    "Time spent sitting, high blood pressure and general health are not asked yet; "
+    "Time spent sitting, a high blood pressure diagnosis and general health are not asked yet; "
     "the model's missing-value rule fills them in, which can change the result.",
     "The weekly exercise answer is used as moderate exercise with no extra hard exercise.",
     "Survival is shown only up to 5 years, the longest horizon the model supports.",

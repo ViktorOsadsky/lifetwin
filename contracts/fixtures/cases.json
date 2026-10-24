@@ -40,7 +40,7 @@
         },
         {
           "feature": "hypertension_diagnosed",
-          "label": "high blood pressure"
+          "label": "being told you have high blood pressure"
         },
         {
           "feature": "general_health",
