@@ -50,7 +50,7 @@ The binding rules in `MASTER_PLAN.md` ("Health-document intake (planned)") also 
 
 ## Why a small Swift method channel, not a plugin
 
-`app/ios/Runner/DocumentScanner.swift` (about 250 lines) does picking and recognition natively and returns only text
+`app/ios/Runner/DocumentScanner.swift` (under 300 lines) does picking and recognition natively and returns only text
 to Dart:
 
 - **Bytes stay in memory.** `image_picker` and `file_picker` copy the chosen file into the app's temporary folder.
@@ -237,13 +237,36 @@ Values confirmed earlier (Apple Health, earlier answers) are never lost: an uplo
 
 The barebones `DocumentUploadScreen` (`app/lib/documents/`) shows the logic and wording but not the look.
 
+## What is built
+
+| Piece | Where |
+| --- | --- |
+| Vision OCR and pickers (method channel `lifetwin/documents`) | `app/ios/Runner/DocumentScanner.swift`, registered in `AppDelegate.swift`; `NSCameraUsageDescription` in `Info.plist` |
+| Dart service: scan → text → extract → candidates; text dropped after the answer | `app/lib/documents/document_ocr.dart`, `document_extract.dart`, `document_upload.dart` |
+| Confirmation logic: "about you", one-by-one yes/no, go back, and the mapping to profile names (`diabetes_diagnosed` → `diabetes`) | `DocumentConfirmation`, `DocumentImportResult` in `document_upload.dart` |
+| Minimal screen and Room entry ("Upload a document", beside "Use my Apple Health") | `document_screen.dart`, `room/room_screen.dart`, `main.dart` |
+| Conversation import, labelled as a document (`import_source: "document"`) so Mochi says "from your document", not Apple Health | `VoiceOnboardingController.importDocument`, `server/lifetwin/onboarding/` |
+| Server endpoint, identifier stripping, parser, optional Muse grounding | `server/lifetwin/documents/` |
+| Corpus (9 synthetic documents, 69 single-line cases) written before the parser | `server/tests/data/documents/` |
+| Tests | `server/tests/test_documents.py`, `app/test/document_upload_test.dart`, `app/integration_test/document_ocr_sim_test.dart` |
+
+On the iPhone 17 simulator, real Vision OCR read a synthetic visit summary drawn at run time. The vitals row came
+back as one line, and the keyless server on port 8096 extracted all five expected candidates from it. Vision read
+"182 lb" as "182 |b", so the parser accepts `|b` and `Ib` after a weight. A hand-built PDF page went through the
+render-and-recognise path. The document camera reports `camera_unavailable` on the simulator. Photo, PDF and camera
+pickers are native sheets and were not driven by the test.
+
 ## Not done yet, and open questions
+
+- Labelling document-confirmed values with their source in the forecast, as Apple Health values are.
+- Storing confirmed information notes (blood pressure, A1c, LDL) on the phone, once local history exists.
 
 - **Tier-1:** may document text go to Muse at all, and under what retention terms? Until ruled, `DOCUMENT_MUSE_ENABLED`
   stays off.
 - **Tier-1:** `hypertension_diagnosed` has no field in `HealthProfile` (the server's model leaves it missing). A
-  confirmed value stays on the phone until the profile contract adds it.
+  confirmed value is returned by `DocumentImportResult.onPhoneOnly` but is not used yet. The profile contract has to
+  add it first.
 - **Tier-1:** should confirmed information notes (blood pressure, labs) be kept in on-phone history, and for how long?
 - The server must run behind TLS in deployment, since the text crosses the network.
-- On-device validation with real paper documents and older users. The simulator test uses a rendered synthetic
-  document.
+- On-device validation: the real photo library, Files and document camera, with real paper documents and older
+  users. The simulator test uses a rendered synthetic document.

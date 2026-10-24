@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'customize/customize_screen.dart';
+import 'documents/document_screen.dart';
+import 'documents/document_extract.dart';
+import 'documents/document_upload.dart';
 import 'forecast/forecast_client.dart';
 import 'forecast/forecast_screen.dart';
 import 'forecast/fortune_ceremony_screen.dart';
@@ -23,7 +26,14 @@ void main() => runApp(const LifeTwinApp());
 /// (with the Apple Health import), Fortune the magic ball, Customize the look.
 /// The confirmed profile is kept in memory for this session only.
 class LifeTwinApp extends StatefulWidget {
-  const LifeTwinApp({super.key, this.controller, this.forecastClient, this.healthReader, this.appearance});
+  const LifeTwinApp({
+    super.key,
+    this.controller,
+    this.forecastClient,
+    this.healthReader,
+    this.documentService,
+    this.appearance,
+  });
 
   /// Tests pass a controller built from fakes.
   final VoiceOnboardingController? controller;
@@ -33,6 +43,9 @@ class LifeTwinApp extends StatefulWidget {
 
   /// Tests pass a fake; otherwise Apple Health.
   final HealthReader? healthReader;
+
+  /// Tests pass fakes; otherwise Vision on the phone and POST /api/documents/extract.
+  final DocumentUploadService? documentService;
 
   /// Tests may pass the look; otherwise the default bear in the Cal hat.
   final ValueNotifier<TwinAppearance>? appearance;
@@ -108,6 +121,21 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     ),
   );
 
+  /// Health-document upload, separate from Apple Health. Only values the person confirmed
+  /// one by one reach the conversation; it then asks only for what is still missing.
+  void _documents(BuildContext context) => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => DocumentUploadScreen(
+        service: widget.documentService ?? liveDocumentService(extractor: HttpDocumentExtractor(base: _api)),
+        onDone: (result) async {
+          Navigator.of(context).pop();
+          final values = result.profileValues;
+          if (values.isNotEmpty) await _controller.importDocument(values);
+        },
+      ),
+    ),
+  );
+
   /// The ceremony, then the fortune. From the intake's Continue ([fromTalk]) the
   /// conversation is dropped, so Back lands on the Room; from the Room it is pushed.
   /// Completes when the person is back on the Room.
@@ -163,6 +191,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           appearance: _look,
           hasProfile: _profile != null,
           onUseHealth: _healthKeys.isEmpty ? () => _health(context) : null,
+          onUploadDocument: () => _documents(context),
           onTalk: () => _talk(context),
           onCustomize: () => _customize(context),
           onFortune: () => _ceremony(context),
