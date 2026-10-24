@@ -1,6 +1,6 @@
 # On-device model, phone storage, experiments and twin state
 
-This folder (`lib/twin/`) is the data and logic layer behind the forecast, "experiment with your twin", check-in history and the character's state. It has no screens. Everything runs on the phone. Nothing in it uses the network.
+This folder (`lib/twin/`) is the data and logic layer behind the forecast, "experiment with your twin", check-in history, the person's history view and the character's state. It has no screens. Everything runs on the phone. Nothing in it uses the network.
 
 ## The model package
 
@@ -45,25 +45,23 @@ The app keeps the confirmed profile under the field names of `server/lifetwin/co
 | `age` | `age` | as is (years) |
 | `bmi` | `height_cm` + `weight_kg` | passed as the pair; the package derives BMI. If either is missing, `bmi` is missing |
 | `sleep_hours` | `sleep_hours` | as is (hours per night) |
-| `vigorous_recreation_min_week` | `vigorous_recreation_min_week` (new) | as is (min/week) |
-| `moderate_recreation_min_week` | `moderate_recreation_min_week` (new) | as is (min/week) |
-| `sedentary_min_day` | `sedentary_min_day` (new) | as is (awake sitting, min/day) |
+| `vigorous_recreation_min_week` | `vigorous_recreation_min_week` | as is (min/week) |
+| `moderate_recreation_min_week` | `moderate_recreation_min_week` | as is (min/week) |
+| `sedentary_min_day` | `sedentary_min_day` | as is (awake sitting, min/day) |
 | `sex_nhanes` | `sex` | `male` → 1, `female` → 2 |
 | `smoking_status` | `smoking_status` | `never` → 0, `former` → 1, `current` → 2; `unknown` → missing |
 | `diabetes_diagnosed` | `diabetes` | true → 1, false → 0 |
-| `hypertension_diagnosed` | `hypertension_diagnosed` (new; `hypertension` also accepted) | true/1 → 1, false/0 → 0 |
-| `general_health` | `general_health` (new) | 1–5, or `excellent` 1, `very_good` 2, `good` 3, `fair` 4, `poor` 5 |
+| `hypertension_diagnosed` | `hypertension_diagnosed` (`hypertension`, from older saves, also accepted) | true/1 → 1, false/0 → 0 |
+| `general_health` | `general_health` | 1–5, or `excellent` 1, `very_good` 2, `good` 3, `fair` 4, `poor` 5 |
 
 Not mapped:
 
 - `exercise_minutes_weekly`, today's single exercise answer, is not split into hard and moderate minutes. Splitting it would mean guessing.
 - `alcohol_drinks_weekly`, `systolic_bp` and `diastolic_bp` are not model inputs. They stay in the profile.
 
-Until `codex/d-conversation-v2` collects the new fields, every profile returns `missing_inputs`. `missing_inputs` lists these five ids, in the package's input order:
+**One vocabulary.** The conversation (v2) collects these fields under the same names, and its `model_inputs.profile` uses the package's codes. A profile saved before the five new fields (`general_health`, `hypertension_diagnosed`, `sedentary_min_day`, `moderate_recreation_min_week`, `vigorous_recreation_min_week`) still loads; the model then reports those inputs in `missing_inputs` until they are answered. Nothing is filled in.
 
-```
-vigorous_recreation_min_week, moderate_recreation_min_week, sedentary_min_day, hypertension_diagnosed, general_health
-```
+**`model_inputs` from onboarding.** When a conversation turn's `model_inputs.status` is `ready`, the model reads its `profile` (`repo.assess(profile, modelInputs)`, `saveOnboarding(..., modelInputs:)`, and the forecast client through `OnDeviceForecastClient(modelInputs:)`), with the app's own mapping filling only keys it lacks. Otherwise (`still_learning`, `unsupported_age`) the app maps the confirmed answers itself, which gives `missing_inputs` or `unsupported_age`. At save time a disagreement between the two mappings is logged by key, never by value. Later reads (after a check-in or on app open) use the stored profile.
 
 **How unknown or missing inputs are reported:** by the package's input names, never by app field names. A missing height or weight is reported as `bmi`.
 
@@ -81,13 +79,21 @@ This is the one object the UI and the check-in controller (`lib/checkin/`) shoul
 
 | Member | What it does |
 |---|---|
-| `static Future<TwinRepository> open({AssetBundle? bundle, StoreBackend? backend, DateTime Function()? clock})` | Loads the model and sensitivity ranking, opens the store |
-| `TwinAssessment? current` | Assessment of the stored profile, with the history window; null before a profile |
+| `static Future<TwinRepository> open({AssetBundle? bundle, StoreBackend? backend, CheckinReminders? reminders, DateTime Function()? clock})` | Loads the model and sensitivity ranking, opens the store. `main.dart` passes `CheckinReminders(LocalNotificationPort())` |
+| `TwinAssessment? current` / `TwinAssessment? refresh()` | Assessment of the stored profile, with the history window; null before a profile. Call `refresh()` on app open (a daily window ends yesterday) |
 | `Map<String, dynamic> profile` | Confirmed profile (read only) |
-| `TwinStore store` | Read-only views: `profile`, `hasProfile`, `checkins`, `dailyLogs`, `weeklySummaries`, `habitNotes`, `twin`, `memoryConsent` |
-| `TwinAssessment assess([Map? appProfile])` | Assesses any profile with the phone's history; writes nothing |
-| `Future<TwinAssessment> saveConversationProfile(Map confirmed)` | Keeps a Mochi conversation's confirmed profile and recomputes |
-| `Future<CheckinOutcome> applyCheckin(Map response)` | Applies a `/api/checkin/start` or `/turn` response (below) |
+| `TwinStore store` | Read-only views: `profile`, `hasProfile`, `checkins`, `dayLogs`, `historyEntries`, `habitNotes`, `twin`, `checkinSettings`, `memoryConsent` |
+| `TwinAssessment assess([Map? appProfile, Map? modelInputs])` | Assesses any profile with the phone's history; writes nothing |
+| `Future<TwinAssessment> saveOnboarding(Map state, {Map? modelInputs, Set<String> fromHealth})` | A finished onboarding: memory consent, habit notes (only with consent), then the confirmed profile |
+| `Future<TwinAssessment> saveConversationProfile(Map confirmed, {String kind, Map? modelInputs, Set<String> fromHealth})` | Keeps a Mochi conversation's confirmed profile and recomputes. `kind` is `onboarding` (default) or `mochi_change` |
+| `Future<void> recordHealthImport(Map values)` | The Apple Health values confirmed on the Health screen; history only |
+| `Future<CheckinOutcome> applyCheckin(Map response, {String? localDate})` | Applies a `/api/checkin/start` or `/turn` response (below) |
+| `Future<HistoryEntry?> applyDayCorrection(DateTime date, String field, Object? value, [String source])` | A past day's answer corrected through a confirmed Mochi read-back (below) |
+| `List<HistoryEntry> history({DateTime? from, DateTime? to})` | The person's history, newest first (below) |
+| `List<HistoryEntry> readings()` | Confirmed blood pressure readings over time, oldest first |
+| `List<DayLog> dayLogs({required DateTime from, required DateTime to})` | One row per day for a calendar; a day without an answer has null values |
+| `int goodWeeks()` | Monday–Sunday weeks with at least 4 different days with a finished check-in of any kind |
+| `CheckinSettings checkinSettings` / `saveCheckinSettings(s)` | Reminder time and weekly day; not health data |
 | `void clearEmergency()` | After "Continue" on an emergency pause |
 | `Future<void> applyMemoryConsent(bool)` | The conversation's `memory_consent`; false deletes stored habit notes |
 | `Future<bool> addHabitNote(Map note)` | Kept only with memory consent; returns false otherwise |
@@ -95,7 +101,9 @@ This is the one object the UI and the check-in controller (`lib/checkin/`) shoul
 | `List<WellnessCard> wellnessCards` | The package's guidance cards for `current` |
 | `TwinState twinState()` | The character's state now |
 | `TwinExperiment? experiment()` | A fresh experiment from `current` |
-| `Future<void> deleteMyData()` | "Delete my data": removes the file and clears memory |
+| `Future<void> deleteMyData()` | "Delete my data": cancels the reminders, removes the file and clears memory |
+
+`TwinCheckinStore(repo)` (`twin_checkin_store.dart`) is the check-in controller's `CheckinStore`: `CheckinController(store: TwinCheckinStore(repo), reminders: repo.reminders, ...)`. It saves the finished check-in through `applyCheckin`, so don't also pass the finished turn to `applyCheckin` from `onFinished`. To keep the twin's emergency state, pass each turn that is not complete to `applyCheckin` (it is never recorded).
 
 It is a `ChangeNotifier`, so bind it with `ListenableBuilder`.
 
@@ -103,18 +111,24 @@ It is a `ChangeNotifier`, so bind it with `ListenableBuilder`.
 
 The owner's rule is: "people shouldn't be able to edit their things unless they consult with their agent first." So there is no setter for profile values or history. `TwinStore`'s write methods are private to the repository library. The only writes are:
 
-1. `saveConversationProfile`, with values confirmed in a Mochi conversation. These come from onboarding (`main.dart` calls it on Continue) and from the "change through Mochi" conversation being built server-side. Apple Health values arrive through the conversation after their read-back confirmation (`importHealth`).
-2. `applyCheckin`, for a check-in response's `profile_update` and finished check-ins.
-3. `applyMemoryConsent` / `addHabitNote`, for habit notes, only with consent.
-4. `saveTwinLook`, which is cosmetic.
-5. `deleteMyData`.
+1. `saveOnboarding` / `saveConversationProfile`, with values confirmed in a Mochi conversation: onboarding (`main.dart` calls `saveOnboarding` on Continue) and the "change through Mochi" conversation (`kind: HistoryKind.mochiChange`). Apple Health values arrive through the conversation after their read-back (`importHealth`).
+2. `recordHealthImport`, history only, for the values confirmed on the Health screen.
+3. `applyCheckin`, for a finished check-in: a weekly `profile_update`, a quick check-in's `daily_logs`.
+4. `applyDayCorrection`, for a past day's answer, from a confirmed Mochi read-back.
+5. `applyMemoryConsent` / `addHabitNote`, for habit notes, only with consent.
+6. `saveTwinLook` and `saveCheckinSettings`, which are preferences.
+7. `deleteMyData`.
 
-Experiment levers are hypothetical and never write to the profile.
+Every health write appends its history entry at the same time. Experiment levers are hypothetical and never write to the profile.
 
-**Not wired yet:**
+**Write rules** (`mergeConfirmed` / `profileSchema`, shared by every profile write):
 
-- The onboarding controller doesn't expose `memory_consent` yet. Pass it to `applyMemoryConsent` when it does.
-- Nothing writes `daily_logs` yet. The windows code reads them, ready for a confirmed Apple Health daily import.
+- Null or absent never erases.
+- Wrong types, out-of-range values and non-profile keys are refused (`CheckinOutcome.refusedFields`).
+- "Unknown" never replaces a known value; it only fills a gap.
+- Daily and quick check-ins never touch the profile.
+- Day values (`dayLogSchema`, `dayNoteSchema`) are type- and range-checked the same way; a refused value is left unknown.
+- A missed day is unknown, never 0.
 
 ## Storage choice
 
@@ -136,19 +150,62 @@ The store is one JSON document, written by the iOS runner (`ios/Runner/AppDelega
 
 ## Check-ins (`checkin_applier.dart`)
 
-`applyCheckinResponse(profile, response, localDate:)` follows `contracts/checkin.schema.json` on `codex/d-twin-checkins`. It is tested against those fixtures (`test/fixtures/checkin_contract_cases.json`, copied from 92779c9).
+`applyCheckinResponse(profile, response, localDate:)` follows `contracts/checkin.schema.json`. Its contract cases are in `test/fixtures/checkin_contract_cases.json`; real server responses for the merged flow are in `test/fixtures/merged_flow.json` (written by `server/tests/make_app_fixtures.py`).
 
-- **Weekly, `complete: true`:** every non-null `profile_update` field is set on the profile, and null fields are left as they are. The forecast is then recomputed.
-- **Writing rule** (`mergeConfirmed`, shared by `saveConversationProfile` and weekly `profile_update`):
-  - A field changes only when the save carries it with a value. Null or absent never erases: saving `{'age': 71}` keeps height and weight. Erasing happens only through Delete my data, or a confirmed change to another value.
-  - Every field is type- and range-checked against `profileSchema` (the contract's HealthProfile plus the new model inputs). A wrong type, such as `sleep_hours: "I don't know"`, or a non-profile key, such as `wellbeing` or `memory_consent`, is refused and listed in `CheckinOutcome.refusedFields`.
-  - **"Not sure" vs the server.** The check-in contract says "set each non-null field", so the server may confirm `smoking_status: "unknown"` for a person whose stored answer is `former`. The app deliberately keeps `former` (owner ruling): unknown only fills a gap, and never replaces a known answer.
-- **Daily check-ins never touch the profile**, even if their response carries a `profile_update`.
-- **Daily:** history only (`CheckinRecord`).
-- **`emergency: true`:** sets `CheckinOutcome.emergency`. It is never stored. The twin shows `concerned` until `clearEmergency()`.
-- **Weekly summary:** when a weekly check-in's confirmed answers cover all four behaviour fields (`sleep_hours`, `vigorous_recreation_min_week`, `moderate_recreation_min_week`, `sedentary_min_day`), a summary row is stored for the Monday–Sunday week that has ended by the end of the check-in day. Today's weekly script asks only `exercise_minutes_weekly`, so no row is made yet.
+- **Quick, `complete: true`:** recorded as a `CheckinEntry`. Its `daily_logs` parts are type-checked and merged into the stored day rows (`readFinishedCheckin` + `mergeDayLogs`): each known value goes into its date's row and a later confirmed answer wins. A missing value is never written. `workday` is worked out when the window is built: Monday to Friday.
+- **Daily, `complete: true`:** history only.
+- **Weekly, `complete: true`:** every non-null `profile_update` field is set on the profile under the write rules, then the forecast is recomputed. When the confirmed answers cover all four behaviour fields within the package's limits, the check-in makes a weekly summary for the Monday–Sunday week that has ended by the end of its day (`DailyLogsAssembler.weeklySummaries`, worked out from the stored check-ins; a later check-in for the same week wins).
+- **"Not sure" vs the server.** The server may confirm `smoking_status: "unknown"` for a person whose stored answer is `former`. The app keeps `former` (owner ruling).
+- **`emergency: true`:** sets `CheckinOutcome.emergency`. It is never stored. The twin shows `concerned` until `clearEmergency()` or the next ordinary response.
 
-**History windows** (`twin_history.dart`): `assess()` tries the weekly summaries window first (1–4 completed consecutive weeks), then daily logs (28, 21, 14 or 7 days ending yesterday), then the plain profile. A window the package refuses is skipped, never patched. Keep `profile_used` and `input_provenance` (`TwinAssessment.profileUsed`, `.inputProvenance`, `.source`) visible in the UI.
+**History windows** (one assembler: `DailyLogsAssembler` in `lib/checkin/daily_logs.dart`, used by `candidateWindows` / `assessWithHistory` in `twin_history.dart`): `assess()` tries complete weekly summaries first (1–4 consecutive completed weeks ending with the latest one), then complete daily logs (the longest of 28, 21, 14 or 7 consecutive days ending yesterday, with three workday nights a week), then the profile snapshot. A window the package refuses is skipped, never patched. One day's answers never change the forecast by themselves. Keep `profile_used` and `input_provenance` (`TwinAssessment.profileUsed`, `.inputProvenance`, `.source`) visible in the UI.
+
+## History for the person (`history_log.dart`)
+
+Owner: "Make sure the daily check ins and optional other check ins are logged and recorded and available to users." The store appends one entry per event as it happens, in the same protected file as everything else. Entries are never edited; only Delete my data removes them.
+
+```dart
+final entries = repo.history(from: DateTime(2026, 10, 1), to: DateTime.now()); // newest first
+final days = repo.dayLogs(from: DateTime(2026, 10, 1), to: DateTime(2026, 10, 31));
+final weeks = repo.goodWeeks();
+final bp = repo.readings();
+```
+
+**`HistoryEntry`:**
+
+| Field | Meaning |
+|---|---|
+| `id` | Stable id (`h1`, `h2`, ...) |
+| `kind` | `HistoryKind`: `quick`, `daily`, `weekly`, `onboarding`, `mochi_change`, `health_import`, `correction`, `reading`; `document` is reserved for document-upload confirmations |
+| `at`, `date`, `time` | The phone's local date and time it happened (`YYYY-MM-DD`, `HH:MM`) |
+| `source`, `sourceLabel` | `said` "You said", `apple_health` "Apple Health", `document` "Document", `mochi_change` "Mochi change" |
+| `items` | `HistoryItem`s, below |
+| `days` | Quick check-ins and corrections: the days whose day-log row this wrote |
+| `weekStart` | Weekly check-ins whose answers made a weekly summary: that week's Monday |
+| `fedForecast` | `weekly_summaries` or `daily_logs` when this entry's values are in the window the current forecast used; null otherwise (worked out when read) |
+| `corrects` / `correctedBy` / `corrected` | A correction's original entry; the original's latest correction |
+
+**`HistoryItem`:** `field`, `label` (plain words, e.g. "time sitting"), `value`, `unit`, `text` (the value with units in plain words: "7.5 hours", "very good", "no"), `old` / `oldText` (for a change: the value before), `isChange`, `date` (the day a day value describes), and `source` when it differs from the entry's (an Apple Health value inside an onboarding entry).
+
+What each kind holds:
+
+- **onboarding:** every confirmed value; Apple Health ones carry `source: apple_health`. Old → new where a stored value changed.
+- **mochi_change:** only the values that changed, old → new.
+- **health_import:** the values confirmed on the Health screen ("Is this accurate?").
+- **quick:** each day-log value with its `date` (sleep is the night before that date), then the feeling. Old → new when it replaced an earlier answer for that day.
+- **daily / weekly:** the confirmed answers; weekly ones show old → new for each profile field they changed.
+- **reading:** a confirmed blood pressure reading (`systolic_bp`, `diastolic_bp`) from a weekly check-in or a Mochi change, with its date and source. Information for the person and the coach, never a model input. Later A1c and LDL from documents go here too. A reading said in passing during onboarding stays a habit note (`reading`), since it was not read back.
+- **correction:** below.
+
+**Calendar:** `dayLogs({from, to})` returns one `DayLog` per day. A day with no answer has `sleepHours`, `vigorousMin`, `moderateMin` and `sedentaryMin` all null: show a blank, never 0, and never the word "missed". `DayLog.complete` says whether the day can count for the model.
+
+**Good weeks, never streaks:** `goodWeeks()` counts Monday–Sunday weeks with at least 4 different days with a finished check-in of any kind (quick, daily or weekly), over all time, not in a row. It counts days, not check-ins.
+
+**Past-day corrections:** `applyDayCorrection(date, field, value, [source = mochi_change])`, only after Mochi read the correction back and the person said yes.
+
+- Records are append-only: the correction is a new `correction` entry with `corrects` set to the original entry's id (the first record of that answer, also for a second correction). The original is kept; `history()` shows it as `corrected` with `correctedBy`.
+- `field` is a day-log input (`sleep_hours` for the night before `date`, `vigorous_recreation_min`, `moderate_recreation_min`, `sedentary_min_day`): that day's row takes the value and the windows recompute. Or it is a history-only answer (`wellbeing`, a daily check-in's `sleep_hours_last_night`, `exercise_minutes_today`, `alcohol_drinks_yesterday`): nothing else changes.
+- Refused (returns null, writes nothing): a future date, an unknown field or source, a wrong type or range, "unknown" (never replaces a known answer), the same value, or a day with no earlier answer for that field.
 
 ## Experiment with your twin (`twin_experiment.dart`)
 
@@ -250,6 +307,7 @@ The first matching row wins:
 - **Forecast screens:** they keep working on `Forecast` (`supported`, `survival` 1–5, `curve` with year 0 plus years 1–5, `reason`, `missingLabels`, `assessment`).
   - Show the status message when there is no number.
   - The detail curve is labelled "Modeled survival of similar people".
+  - Call `repo.refresh()` on app open.
 - **Experiment screen:** binds `TwinExperiment`.
   - Show the levers in order, with sliders using `min`/`max`/`step` and the choice for smoking.
   - Show "Not counted" with `reasonText` for flagged levers, the weight caveat, and the difference under "Modeled difference between profiles" with no number unless `available`.
@@ -257,4 +315,5 @@ The first matching row wins:
 - **Twin:** pose and mood from `twinState()`. In an emergency, show the "Call 911" button the person taps themselves.
 - **Wellness cards** with source links.
 - **"Delete my data"** button with a confirmation, calling `deleteMyData()`.
-- **Check-in screens and their HTTP client** (`/api/checkin/*`, not in this layer): pass every response to `applyCheckin`.
+- **Check-in screens** over `CheckinController` (see `lib/checkin/README.md`), with `store: TwinCheckinStore(repo)` and `reminders: repo.reminders`.
+- **History screen:** `history()` as a timeline (date, time, source label, items with `label` and `text`, "was `oldText`" for changes, a small "used in your forecast" mark when `fedForecast` is set, "corrected" on corrected entries), a calendar over `dayLogs()` with blanks for days without answers, "N good weeks" from `goodWeeks()`, and blood pressure readings from `readings()`. No edit buttons: a correction goes through Mochi and then `applyDayCorrection`.

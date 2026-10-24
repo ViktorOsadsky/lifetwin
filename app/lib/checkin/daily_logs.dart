@@ -76,7 +76,7 @@ class DailyLogsAssembler {
 
   /// Weekly summaries from weekly check-ins whose confirmed answers hold all four
   /// behaviour fields. A check-in describes the Monday–Sunday week that has ended by the
-  /// end of its day (a Sunday check-in counts that week), as on codex/c-on-device-model.
+  /// end of its day (a Sunday check-in counts that week).
   List<Map<String, dynamic>> weeklySummaries(List<CheckinEntry> checkins) {
     final byWeek = <String, Map<String, dynamic>>{};
     for (final c in checkins) {
@@ -103,7 +103,7 @@ class DailyLogsAssembler {
 
   /// The request for `LifeTwinEngine.assess`: the profile with the weekly window if there
   /// is one, else the daily window, else the profile alone (the same order as
-  /// `candidateWindows` on codex/c-on-device-model).
+  /// `candidateWindows` in lib/twin/twin_history.dart).
   Map<String, dynamic> assessRequest({
     required Map<String, dynamic> modelProfile,
     required String asOf,

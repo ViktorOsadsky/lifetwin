@@ -9,7 +9,7 @@ This folder holds the logic for Mochi's quick daily check-in and the weekly chec
 - A day counts for the model only when all four values are known and within the package's limits.
 - A missed day is unknown, never zero. A window is 7, 14, 21 or 28 real, complete, consecutive days ending yesterday.
 - No guilt and no streaks:
-  - Progress is "good weeks": Monday–Sunday weeks with at least 4 check-in days, counted over all time, not in a row (`weekProgress`).
+  - Progress is "good weeks": Monday–Sunday weeks with at least 4 different days with a finished check-in of any kind, counted over all time, not in a row (`weekProgress`). It counts days, not check-ins.
   - Nothing says "missed".
   - The only catch-up is one optional last question: "Yesterday was a bit of a blank. How did you sleep the night before?" It is asked only when yesterday had no check-in and that answer would complete yesterday's row.
 - Apple Health:
@@ -55,7 +55,7 @@ The weekly check-in (on the person's weekly day, Sunday by default; quietly stil
 
 | Member | Use |
 |---|---|
-| `CheckinController({guide, input, output, store, reminders, healthSamples, onFinished, clock, voiceUsable})` | `guide: HttpCheckinClient()`, `store`: see below, `reminders: CheckinReminders(LocalNotificationPort())`, `healthSamples`: `() => HealthReader().read(now: DateTime.now(), days: 3)` when Apple Health is connected, `onFinished`: hand a weekly turn to `TwinRepository.applyCheckin` |
+| `CheckinController({guide, input, output, store, reminders, healthSamples, onFinished, clock, voiceUsable})` | `guide: HttpCheckinClient()`, `store: TwinCheckinStore(repo)`, `reminders: repo.reminders`, `healthSamples`: `() => HealthReader().read(now: DateTime.now(), days: 3)` when Apple Health is connected. `onFinished` is optional (e.g. an animation); the store already saved the check-in, so don't pass it to `applyCheckin` again |
 | `Future<bool> start({kind = 'quick'})` | false when nothing is due today |
 | `phase` (`CheckinPhase`), `mascotLine`, `caption`, `notice`, `turn.mascotState` | what to show |
 | `startTalk()`, `stopTalk()`, `cancelTalk()`, `listenSecondsLeft` | the Talk button |
@@ -71,28 +71,24 @@ The weekly check-in (on the person's weekly day, Sunday by default; quietly stil
 
 To decide what to show on the home screen, call `CheckinScheduler().due(localNow: DateTime.now(), history:, days:, settings:)`. It returns `DueCheckins.quick` (a plan, or null) and `.weekly`. Offer the weekly check-in after the quick one, never instead of it. On every app open, call `CheckinReminders.reschedule(settings, localNow:, history:)`.
 
-## Storage: `CheckinStore` and the on-device-model repository
+## Storage: `CheckinStore` over `TwinRepository`
 
-| `CheckinStore` | `TwinRepository` / `TwinStore` (codex/c-on-device-model) |
+`TwinCheckinStore(repo)` (`lib/twin/twin_checkin_store.dart`) implements `CheckinStore` over the phone's protected store:
+
+| `CheckinStore` | `TwinRepository` |
 |---|---|
-| `checkins()` → `CheckinEntry{kind, date, answers}` | `store.checkins` → `CheckinRecord{kind, date, answers}` (same JSON) |
-| `dayLogs()` → `DayLog` rows, possibly partial | `store.dailyLogs` (its windows code already skips incomplete rows) |
-| `applyFinishedCheckin(response, localDate:)` | `applyCheckin(response)`, extended as below |
-| `settings()` / `saveSettings()` | new: a non-health `checkin_settings` key in the store document, with its own write method (a preference, like `saveTwinLook`) |
+| `checkins()` | `store.checkins` (`CheckinEntry{kind, date, answers}`) |
+| `dayLogs()` | `store.dayLogs` (`DayLog` rows, possibly partial) |
+| `applyFinishedCheckin(response, localDate:)` | `applyCheckin(response, localDate:)`: records the check-in and its history entry, merges a quick one's `daily_logs` (`readFinishedCheckin` + `mergeDayLogs`, values type-checked, never written as 0), applies a weekly `profile_update` under the write rules (`unknown` never replaces a known value), and recomputes |
+| `settings()` / `saveSettings()` | `checkinSettings` / `saveCheckinSettings` (a non-health `checkin_settings` key) |
 
-What `applyCheckin` needs for this branch:
-
-1. Accept `kind: 'quick'`. Today `applyCheckinResponse` returns early for anything except `daily` and `weekly`. Record it as a `CheckinRecord` like `daily`.
-2. Handle `daily_logs`. When `complete` is true, call `readFinishedCheckin(response, localDate:)` (in `checkin_store.dart`), then `mergeDayLogs(store.dailyLogs, parts)`. Each non-null value goes into its date's row, and the row gets `workday: weekdayNight(date)`. Write it with a new private `TwinStore._putDailyLogs(rows)`. Never write a missing value as 0.
-3. Weekly `profile_update` now uses the package names `vigorous_recreation_min_week`, `moderate_recreation_min_week` and `sedentary_min_day`, which are already in `updatableProfileFields`. Its weekly summary rule then makes a row whenever all four are confirmed. `DailyLogsAssembler.weeklySummaries` uses the same week rule, so keep one of the two.
-4. Skip `unknown`. The server already leaves `smoking_status: unknown` out of `profile_update`; the applier should skip it too.
-5. Recompute after the write, as it does now, so the window code picks up a newly completed 7-day run.
-
-Overlap: `twin_history.dart` already has `dailyWindows` and `weeklyWindow`. `DailyLogsAssembler` does the same over `DayLog`s and adds the package's limits per row. When both land, keep one: either `assessWithHistory` uses `DailyLogsAssembler.dailyWindow`, or this folder drops its copy.
+There is one window assembler: `DailyLogsAssembler`. `TwinRepository.assess` uses it through `candidateWindows` (`lib/twin/twin_history.dart`), and weekly summaries are worked out from the stored weekly check-ins with its week rule. `InMemoryCheckinStore` stays for tests and previews.
 
 ## Forecast refresh
 
 After a finished check-in or on app open:
+
+`TwinRepository` does this itself after every check-in; on app open call `repo.refresh()`. The request it builds is the same as:
 
 ```dart
 final request = const DailyLogsAssembler().assessRequest(
@@ -101,10 +97,9 @@ final request = const DailyLogsAssembler().assessRequest(
   days: await store.dayLogs(),
   checkins: await store.checkins(),
 );
-final assessment = twin.assess(request); // LifeTwinEngine
 ```
 
-`request` holds `weekly_summaries` if the latest 1–4 completed weeks have weekly check-ins with all four fields. Otherwise it holds `daily_logs`, the longest 28-, 21-, 14- or 7-day complete run ending yesterday. Otherwise it holds the profile alone. This is the same order as `candidateWindows`. Catch `FormatException` and fall back to the next window. Keep `profile_used` and `input_provenance` visible. Without a window, the forecast is the profile snapshot, unchanged by the day's answers.
+`request` holds `weekly_summaries` if the latest 1–4 completed weeks have weekly check-ins with all four fields. Otherwise it holds `daily_logs`, the longest 28-, 21-, 14- or 7-day complete run ending yesterday. Otherwise it holds the profile alone. This is the order of `candidateWindows`; a window the package refuses falls back to the next. Keep `profile_used` and `input_provenance` visible. Without a window, the forecast is the profile snapshot, unchanged by the day's answers.
 
 ## Tests
 

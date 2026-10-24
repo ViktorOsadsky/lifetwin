@@ -3,7 +3,7 @@
 /// The only write for answers is [CheckinStore.applyFinishedCheckin], with a finished
 /// `/api/checkin` response: answers reach history only through Mochi's confirmed
 /// read-backs ("people can't edit saved answers directly"). See README.md for how this
-/// maps onto `TwinRepository` on codex/c-on-device-model.
+/// is kept by `TwinRepository` (lib/twin/twin_checkin_store.dart).
 library;
 
 import 'checkin_models.dart';

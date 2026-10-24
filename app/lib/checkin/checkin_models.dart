@@ -96,7 +96,7 @@ class DayLog {
 }
 
 /// One finished check-in as confirmed in the conversation: the server's
-/// `state.confirmed` without nulls. Same shape as `CheckinRecord` on codex/c-on-device-model.
+/// `state.confirmed` without nulls, as kept in the phone store.
 class CheckinEntry {
   const CheckinEntry({required this.kind, required this.date, required this.answers});
 
