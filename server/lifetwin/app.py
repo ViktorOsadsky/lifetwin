@@ -27,6 +27,7 @@ from lifetwin.prediction import load_model
 from lifetwin.prediction.models import PredictionResponse
 from lifetwin.quiz.router import router as quiz_router
 from lifetwin.quiz.service import load_bank
+from lifetwin.recommendations.router import router as recommendations_router
 from lifetwin.research.tavily import TavilyResearch
 from lifetwin.voice import VoiceService, voice_configured
 from lifetwin.voice import router as voice_router
@@ -244,6 +245,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         responses={**BODY_ERRORS, **_described({409: "Invalid check-in transition"})},
     )
     application.include_router(advisor_router, prefix="/api", responses=BODY_ERRORS)
+    application.include_router(recommendations_router, prefix="/api", responses=BODY_ERRORS)
     application.include_router(
         quiz_router,
         prefix="/api",
