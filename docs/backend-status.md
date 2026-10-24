@@ -63,6 +63,7 @@ Business API error bodies use [ApiError](../contracts/error.schema.json), with a
 | Offline contract checker printed `PASS` for cases with no response fixture | Distinguishes request-only validation, static-response validation and cases requiring replay; reports exact response-check count |
 | A schema-validation traceback could print an invalid API response's complete contents | Replay failures now identify the case/schema without echoing response values; regression uses a private-text sentinel |
 | CI did not replay actual API contracts or build the deployment image | Added in-process replay, positive/error semantic assertions, a supported-Python test matrix, and container build/HTTP replay in CI |
+| The first container smoke probe could race startup and receive a connection reset | Added bounded readiness retries for transient connection failures before replay; persistent failures still fail CI with container logs and cleanup |
 
 The raw API-key/model configuration in [`.env.example`](../.env.example) remains empty. No frontend or ML implementation was changed.
 
