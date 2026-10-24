@@ -92,7 +92,7 @@ Muse example (supply your own key):
 ```sh
 LLM_PROVIDER=chat_completions
 LLM_BASE_URL=https://api.meta.ai/v1
-LLM_MODEL=muse-spark-1.3-contributor
+LLM_MODEL=muse-spark-1.3
 LLM_API_KEY=...
 ```
 
