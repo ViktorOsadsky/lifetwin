@@ -222,6 +222,10 @@ class VoiceOnboardingController extends ChangeNotifier {
       _retry = null;
     });
     try {
+      // The system's "Allow microphone?" question waits for the person, however long they
+      // take to read it; only connecting afterwards is held to the start limit.
+      if (!await input.hasPermission()) throw const MicDeniedException();
+      if (phase != VoicePhase.listening) return; // cancelled (or the app left) meanwhile
       await input
           .start((text) {
             if (text != caption) _silentSeconds = 0;

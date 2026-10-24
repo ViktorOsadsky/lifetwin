@@ -361,6 +361,33 @@ void main() {
     });
   });
 
+  group('the "Allow microphone?" question', () {
+    for (final allow in [true, false]) {
+      testWidgets('waits as long as the person reads it, then ${allow ? 'listens' : 'says why not'}', (t) async {
+        final r = Rig();
+        r.fakeInput.permission = Completer<bool>();
+        await r.pump(t);
+        await r.start(t, voice: true);
+        await tapTalk(t);
+        await t.pump(const Duration(seconds: 25)); // well past the 10 s start limit
+        expect(r.c.notice, isNull);
+        expect(r.fakeInput.starts, 0);
+        r.fakeInput.permission!.complete(allow);
+        await t.pump();
+        await t.pump();
+        if (allow) {
+          expect(r.c.phase, VoicePhase.listening);
+          expect(r.fakeInput.starts, 1);
+          await r.c.cancelTalk();
+        } else {
+          expect(r.c.notice, micDeniedNotice);
+          expect(r.c.typing, isTrue);
+        }
+        await t.pumpAndSettle();
+      });
+    }
+  });
+
   group('leaving the app', () {
     testWidgets('while listening closes the microphone and sends nothing; back, Talk works again', (t) async {
       final r = Rig();
