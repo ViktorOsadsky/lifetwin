@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../theme/lifetwin_theme.dart';
+import '../widgets/lt_buttons.dart';
+import '../widgets/lt_icons.dart';
+import '../widgets/lt_progress.dart';
+import '../widgets/lt_text_link.dart';
+import '../widgets/pip.dart';
+import '../widgets/scene_paper.dart';
+import '../widgets/speech_bubble.dart';
+
 import 'health_reader.dart';
 import 'health_sample.dart';
 import 'health_summary.dart';
@@ -109,57 +118,69 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: LtColors.paper,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: switch (_step) {
-            _Step.intro => _Page(
-              title: "Use your iPhone's Health app?",
-              body:
-                  'I can read your height, weight, exercise, sleep and blood pressure from the Health app, '
-                  "so you don't have to type them.\n\n"
-                  "I'll check each one with you. The readings are also sent to LifeTwin's assistant, "
-                  'an AI service, so it can give you advice.',
-              primary: ('Yes, use my Health app', _start),
-              secondary: ("No thanks, I'll answer myself", _skip),
-            ),
-            _Step.reading => const _Page(
-              title: 'Reading your Health app…',
-              body: 'This takes a few seconds.',
-              busy: true,
-            ),
-            _Step.confirm => _Page(
-              title: 'Question ${_index + 1} of ${_candidates.length}',
-              body: readBack(_candidates[_index], imperial: _imperial, now: _now),
-              primary: (confirmLabel, () => _answer(true)),
-              secondary: (fixLabel, () => _answer(false)),
-              back: _answers.isEmpty ? null : _back,
-            ),
-            _Step.nothingFound => _Page(
-              title: "I couldn't find any readings",
-              body:
-                  "That's okay. Either the Health app has no readings yet, or it isn't sharing them with LifeTwin. "
-                  'You can change that later in the Health app. For now, I will ask you instead.',
-              primary: ('Continue', _finish),
-            ),
-            _Step.done => _Page(
-              title: 'Thank you',
-              body: _confirmed.isEmpty
-                  ? 'I will ask you about each one instead.'
-                  : 'You checked ${_confirmed.length} ${_confirmed.length == 1 ? 'reading' : 'readings'}.'
-                        '${_toAsk.isEmpty ? '' : ' I will ask you about the rest.'}',
-              primary: ('Continue', _finish),
-              back: _back,
-            ),
-          },
-        ),
+        child: switch (_step) {
+          _Step.intro => _Page(
+            title: "Use your iPhone's Health app?",
+            body:
+                'I can read your height, weight, exercise, sleep and blood pressure from the Health app, '
+                "so you don't have to type them.\n\n"
+                "I'll check each one with you. The readings are also sent to LifeTwin's assistant, "
+                'an AI service, so it can give you advice.',
+            primary: ('Yes, use my Health app', _start),
+            secondary: ("No thanks, I'll answer myself", _skip),
+          ),
+          _Step.reading => const _Page(
+            title: 'Reading your Health app…',
+            body: 'This takes a few seconds.',
+            busy: true,
+          ),
+          _Step.confirm => _Page(
+            title: 'Question ${_index + 1} of ${_candidates.length}',
+            step: (_index + 1, _candidates.length),
+            body: readBack(_candidates[_index], imperial: _imperial, now: _now),
+            primary: (confirmLabel, () => _answer(true)),
+            secondary: (fixLabel, () => _answer(false)),
+            back: _answers.isEmpty ? null : _back,
+          ),
+          _Step.nothingFound => _Page(
+            title: "I couldn't find any readings",
+            body:
+                "That's okay. Either the Health app has no readings yet, or it isn't sharing them with LifeTwin. "
+                'You can change that later in the Health app. For now, I will ask you instead.',
+            primary: ('Continue', _finish),
+          ),
+          _Step.done => _Page(
+            title: 'Thank you',
+            mood: PipMood.pleased,
+            body: _confirmed.isEmpty
+                ? 'I will ask you about each one instead.'
+                : 'You checked ${_confirmed.length} ${_confirmed.length == 1 ? 'reading' : 'readings'}.'
+                      '${_toAsk.isEmpty ? '' : ' I will ask you about the rest.'}',
+            primary: ('Continue', _finish),
+            back: _back,
+          ),
+        },
       ),
     );
   }
 }
 
+/// One step of the import, in the conversation's style: a title (or the question
+/// count), Pip's words in a bubble with Pip on the paper below, and the big
+/// buttons pinned at the bottom.
 class _Page extends StatelessWidget {
-  const _Page({required this.title, required this.body, this.primary, this.secondary, this.back, this.busy = false});
+  const _Page({
+    required this.title,
+    required this.body,
+    this.primary,
+    this.secondary,
+    this.back,
+    this.busy = false,
+    this.step,
+    this.mood = PipMood.asking,
+  });
 
   final String title;
   final String body;
@@ -168,61 +189,109 @@ class _Page extends StatelessWidget {
   final VoidCallback? back;
   final bool busy;
 
+  /// (question, of) when the title is "Question N of M": shown as the progress line.
+  final (int, int)? step;
+  final PipMood mood;
+
+  static Widget _pad(Widget child) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: LtSpace.gutter),
+    child: child,
+  );
+
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Semantics(header: true, child: Text(title, style: text.headlineMedium)),
-                const SizedBox(height: 24),
-                Text(body, style: text.titleLarge?.copyWith(height: 1.4)),
-                if (busy) ...[const SizedBox(height: 32), const Center(child: CircularProgressIndicator())],
-              ],
+    final big = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+    final pip = Pip(mood: mood, height: big ? 70 : 104);
+    return LayoutBuilder(
+      builder: (context, box) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Words scroll; Pip's scene sits at the bottom, just above the buttons.
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, area) => SingleChildScrollView(
+                padding: const EdgeInsets.only(top: LtSpace.xl),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: (area.maxHeight - LtSpace.xl).clamp(0, double.infinity)),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (step case (final n, final of))
+                            _pad(
+                              Semantics(
+                                header: true,
+                                child: LtStepProgress(step: n, total: of, trailing: big ? pip : null),
+                              ),
+                            )
+                          else
+                            _pad(
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Semantics(header: true, child: Text(title, style: LtText.title)),
+                                  ),
+                                  if (big) pip,
+                                ],
+                              ),
+                            ),
+                          const SizedBox(height: LtSpace.xl),
+                          _pad(
+                            SpeechBubble(
+                              tail: big ? BubbleTail.none : BubbleTail.down,
+                              child: Semantics(
+                                liveRegion: true,
+                                container: true,
+                                child: Text(body, style: step == null ? LtText.body : LtText.bubble),
+                              ),
+                            ),
+                          ),
+                          if (busy) ...[
+                            const SizedBox(height: LtSpace.xl),
+                            const Center(child: CircularProgressIndicator(strokeWidth: 5)),
+                          ],
+                          const SizedBox(height: LtSpace.lg),
+                        ],
+                      ),
+                      if (!big) ScenePaper(height: 132, child: Positioned(left: 62, bottom: 6, child: pip)),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-        if (primary case (final label, final onTap)) _BigButton(label: label, onTap: onTap, filled: true),
-        if (secondary case (final label, final onTap)) ...[
-          const SizedBox(height: 16),
-          _BigButton(label: label, onTap: onTap, filled: false),
-        ],
-        if (back != null) ...[
-          const SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: back,
-            icon: const Icon(Icons.arrow_back),
-            label: Text('Go back', style: text.titleMedium),
-            style: TextButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: box.maxHeight * 0.6),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(LtSpace.gutter, LtSpace.sm, LtSpace.gutter, LtSpace.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (primary case (final label, final onTap)) LtPrimaryButton(label: label, onPressed: onTap),
+                  if (secondary case (final label, final onTap)) ...[
+                    const SizedBox(height: LtSpace.buttonGap),
+                    LtSecondaryButton(label: label, onPressed: onTap),
+                  ],
+                  if (back != null) ...[
+                    const SizedBox(height: LtSpace.xs),
+                    Center(
+                      child: LtTextLink(
+                        label: 'Go back',
+                        icon: const LtIcon(LtIconKind.back, size: 26, strokeWidth: 2.8),
+                        onPressed: back,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ],
-      ],
+      ),
     );
-  }
-}
-
-class _BigButton extends StatelessWidget {
-  const _BigButton({required this.label, required this.onTap, required this.filled});
-
-  final String label;
-  final VoidCallback onTap;
-  final bool filled;
-
-  @override
-  Widget build(BuildContext context) {
-    final style = ButtonStyle(
-      minimumSize: const WidgetStatePropertyAll(Size.fromHeight(72)),
-      textStyle: WidgetStatePropertyAll(Theme.of(context).textTheme.titleLarge),
-      padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 20, vertical: 16)),
-    );
-    final child = Text(label, textAlign: TextAlign.center);
-    return filled
-        ? FilledButton(onPressed: onTap, style: style, child: child)
-        : OutlinedButton(onPressed: onTap, style: style, child: child);
   }
 }
