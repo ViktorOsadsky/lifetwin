@@ -17,3 +17,4 @@ Rank	Measurement	Importance	How to collect	Recommendation
 15	Skin temperature trends	Low–moderate	Smart ring/watch	Low priority
 16	Sleep stages (REM/deep sleep)	Uncertain incremental value	Consumer sleep tracker	Low priority
 17	Electrodermal activity (EDA)	Uncertain	Specialized wearable	Low priority
+Why VO₂ max is first
