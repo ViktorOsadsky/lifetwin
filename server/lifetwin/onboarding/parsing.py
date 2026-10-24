@@ -434,6 +434,13 @@ def _canonical(text: str) -> str:
         lambda m: str({"a": 1, "one": 1, "two": 2}[m.group(1)] * 100 + int(m.group(2))),
         s,
     )  # "a hundred 30"
+    # Speech to text writes "one hundred and sixty" as "100 and 60" ("between 100 and 110"
+    # is a range).
+    s = re.sub(
+        r"(?<!between )(?<![\d.,])\b([12])00 and (\d{1,2})\b(?![\d.,]\d)",
+        lambda m: str(int(m.group(1)) * 100 + int(m.group(2))),
+        s,
+    )
     s = re.sub(r"\ba couple(?: of)? (?=[a-z0-9])", "2 ", s)
     s = re.sub(r"\ba buck(?: and)? (?=[a-z])", "one hundred ", s)
     s = NUMBER_RUN.sub(
@@ -1017,6 +1024,8 @@ def _height(text: str, today: date) -> Found:
     return found
 
 
+# Speech to text writes "one eighty" as "1 80": as a weight that is 180 pounds.
+SPLIT_POUNDS = rf"(?<![\d.:/])(?<!-)\b([12]) ([1-9]\d)\b(?![\d.:/])(?=\s?lb\b|{FOLLOW})"
 STONE = rf"{N}\s?stone\b(?:,?\s?(?:and\s)?(\d{{1,2}}(?:\.\d{{1,6}})?)(?!\d){NOT_UNIT}(?:\s?lb\b)?)?"
 LB_PER_KG = 0.45359237
 
@@ -1818,6 +1827,10 @@ def parse_value(field: ProfileField, text: str, *, today: date | None = None) ->
     if field == "diabetes":
         answer = _diabetes(canonical)
         return {} if answer is None else _validated({field: answer})
+    if field == "weight_kg":
+        canonical = re.sub(
+            SPLIT_POUNDS, lambda m: str(int(m.group(1)) * 100 + int(m.group(2))), canonical
+        )
     found = NUMERIC[field](canonical, today)
     if not found or not found[0]:
         return {}

@@ -71,3 +71,30 @@ def test_a_self_correction_keeps_the_later_value(field, text, expected):
 @pytest.mark.parametrize(("field", "text"), SELF_CORRECTION_TRAPS)
 def test_an_unclear_self_correction_is_asked_about(field, text):
     check(field, text, None)
+
+
+# Ink writes "one hundred and sixty" as "100 and 60" and "one eighty" as "1 80".
+SPLIT_HUNDREDS = [
+    ("weight_kg", "100 and 60 pounds.", {"weight_kg": 72.575}),
+    ("weight_kg", "200 and 10 pounds.", {"weight_kg": 95.254}),
+    ("height_cm", "100 and 70 centimeters.", {"height_cm": 170.0}),
+    ("weight_kg", "I weigh 1 80.", {"weight_kg": 81.647}),
+    ("weight_kg", "About 1 45 pounds.", {"weight_kg": 65.771}),
+    # A range keeps its two numbers.
+    ("weight_kg", "between 100 and 110 pounds", {"weight_kg": 47.627}),
+]
+SPLIT_HUNDRED_TRAPS = [
+    ("weight_kg", "I weigh 1 80 kg"),  # 180 kg is no everyday split
+    ("height_cm", "1 80"),  # only a weight reads "1 80" as pounds
+    ("weight_kg", "1 80 over 90"),  # a blood pressure, not a weight
+]
+
+
+@pytest.mark.parametrize(("field", "text", "expected"), SPLIT_HUNDREDS)
+def test_hundreds_split_by_the_transcript_are_joined(field, text, expected):
+    check(field, text, expected)
+
+
+@pytest.mark.parametrize(("field", "text"), SPLIT_HUNDRED_TRAPS)
+def test_split_hundreds_that_could_mean_something_else_are_asked_about(field, text):
+    check(field, text, None)
