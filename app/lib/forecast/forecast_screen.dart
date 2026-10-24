@@ -52,6 +52,7 @@ class ForecastScreen extends StatefulWidget {
     this.onPlayQuiz,
     this.healthKeys = const {},
     this.appearance = const TwinAppearance(),
+    this.onResult,
   });
 
   final ForecastClient client;
@@ -75,6 +76,9 @@ class ForecastScreen extends StatefulWidget {
 
   /// Cosmetic look of the twin on the night plate.
   final TwinAppearance appearance;
+
+  /// Called with each forecast the server returns (the Room shows the last one).
+  final ValueChanged<Forecast>? onResult;
 
   @override
   State<ForecastScreen> createState() => _ForecastScreenState();
@@ -114,6 +118,7 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
         _forecast = f;
         _loading = false;
       });
+      widget.onResult?.call(f);
       if (MediaQuery.disableAnimationsOf(context)) {
         _reveal.value = 1;
       } else {

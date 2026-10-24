@@ -7,16 +7,35 @@ import 'package:flutter/widgets.dart';
 /// wider than the room it has (very large accessibility sizes) is the whole text scaled
 /// down, just enough for that word to fit on a line. Lines still wrap at spaces.
 class WholeWordText extends StatelessWidget {
-  const WholeWordText(String this.data, {super.key, this.style, this.textAlign, this.semanticsLabel}) : textSpan = null;
+  const WholeWordText(
+    String this.data, {
+    super.key,
+    this.style,
+    this.textAlign,
+    this.semanticsLabel,
+    this.maxLines,
+    this.softWrap,
+  }) : textSpan = null;
 
-  const WholeWordText.rich(InlineSpan this.textSpan, {super.key, this.style, this.textAlign, this.semanticsLabel})
-    : data = null;
+  const WholeWordText.rich(
+    InlineSpan this.textSpan, {
+    super.key,
+    this.style,
+    this.textAlign,
+    this.semanticsLabel,
+    this.maxLines,
+    this.softWrap,
+  }) : data = null;
 
   final String? data;
   final InlineSpan? textSpan;
   final TextStyle? style;
   final TextAlign? textAlign;
   final String? semanticsLabel;
+
+  /// For one-line labels (with [softWrap] false, inside a scale-down FittedBox).
+  final int? maxLines;
+  final bool? softWrap;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +58,7 @@ class WholeWordText extends StatelessWidget {
         textAlign: align,
         textDirection: direction,
         textScaler: maxWidth.isFinite ? fitTo(maxWidth) : scaler,
+        maxLines: maxLines,
       )..layout(maxWidth: maxWidth),
       child: LayoutBuilder(
         builder: (context, box) {
@@ -46,13 +66,23 @@ class WholeWordText extends StatelessWidget {
           final shrunk = identical(fitted, scaler) ? null : fitted;
           final data = this.data;
           return data != null
-              ? Text(data, style: style, textAlign: textAlign, semanticsLabel: semanticsLabel, textScaler: shrunk)
+              ? Text(
+                  data,
+                  style: style,
+                  textAlign: textAlign,
+                  semanticsLabel: semanticsLabel,
+                  textScaler: shrunk,
+                  maxLines: maxLines,
+                  softWrap: softWrap,
+                )
               : Text.rich(
                   textSpan!,
                   style: style,
                   textAlign: textAlign,
                   semanticsLabel: semanticsLabel,
                   textScaler: shrunk,
+                  maxLines: maxLines,
+                  softWrap: softWrap,
                 );
         },
       ),

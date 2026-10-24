@@ -9,7 +9,7 @@
 /// `docs/design/painted-card-direction.md`.
 library;
 
-import 'dart:ui' show Offset;
+import 'dart:ui' show Offset, Size;
 
 enum TwinType { bear, human }
 
@@ -117,3 +117,33 @@ Offset twinBallCenter(TwinType type) =>
 /// Plain words for screen readers.
 String twinDescription(TwinType type, TwinLook look) =>
     'Your ${type == TwinType.bear ? 'bear' : 'human'} twin${look == TwinLook.calHat ? ' in the Cal hat' : ''}';
+
+/// Each sprite's 1x size (`size1x` in `assets/twin/manifest.json`), for
+/// layouts that size the painted content itself (the room).
+const Map<String, Size> twinSpriteSize1x = {
+  'assets/twin/bear/base/default.png': Size(180, 180),
+  'assets/twin/bear/base/cal_hat.png': Size(180, 180),
+  'assets/twin/human/base/default.png': Size(180, 180),
+  'assets/twin/human/base/cal_hat.png': Size(180, 180),
+  'assets/twin/accessory/hat/cal.png': Size(180, 180),
+  'assets/twin/bear/pose/stand.png': Size(180, 180),
+  'assets/twin/bear/pose/wave.png': Size(145, 180),
+  'assets/twin/bear/pose/walk_side.png': Size(130, 180),
+  'assets/twin/bear/pose/walk_front.png': Size(142, 180),
+  'assets/twin/bear/pose/walk_back.png': Size(135, 180),
+  'assets/twin/bear/pose/sit.png': Size(155, 180),
+  'assets/twin/bear/pose/jump.png': Size(155, 180),
+  'assets/twin/bear/pose/think.png': Size(122, 180),
+  'assets/twin/bear/pose/stretch.png': Size(132, 180),
+  'assets/twin/bear/pose/sleep.png': Size(180, 113),
+  'assets/twin/bear/pose/eat.png': Size(151, 180),
+  'assets/twin/bear/pose/hold_ball.png': Size(144, 180),
+  'assets/twin/bear/pose/dizzy.png': Size(158, 180),
+  'assets/twin/bear/pose/shrug.png': Size(142, 180),
+  'assets/twin/human/pose/hold_ball.png': Size(128, 180),
+  'assets/twin/human/pose/shrug.png': Size(127, 180),
+  'assets/twin/human/pose/wave.png': Size(124, 180),
+  'assets/twin/human/pose/walk_side.png': Size(124, 180),
+  'assets/twin/human/pose/sit.png': Size(144, 180),
+  'assets/twin/human/pose/jump.png': Size(135, 180),
+};

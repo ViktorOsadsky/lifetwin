@@ -26,7 +26,7 @@ void main() {
     await waitFor(t, find.textContaining('were still living 5 years later'));
     await tapRound(t, 'Back');
     await waitFor(t, find.byType(RoomScreen));
-    expect(find.text(RoomScreen.returningGreeting), findsOneWidget);
+    expect(find.textContaining('in 100'), findsWidgets); // the outlook card shows the real forecast
     await openFortune(t);
     await waitFor(t, find.textContaining('were still living 5 years later'));
     await tapRound(t, 'Back');

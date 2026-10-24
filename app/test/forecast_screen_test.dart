@@ -316,8 +316,8 @@ void main() {
     expect(find.text(sentence), findsOneWidget);
     await t.tap(find.bySemanticsLabel('Back'));
     await t.pumpAndSettle();
-    // Back from the forecast lands on the Room, which now greets a returning person.
+    // Back from the forecast lands on the Room, whose outlook card now shows the real number.
     expect(find.byType(RoomScreen), findsOneWidget);
-    expect(find.text('Welcome back.'), findsOneWidget);
+    expect(find.text('about 88 in 100'), findsOneWidget);
   });
 }

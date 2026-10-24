@@ -77,6 +77,7 @@ flutter:
     - assets/scene/
     - assets/fonts/fredoka/OFL.txt
     - assets/fonts/atkinson_hyperlegible/OFL.txt
+    - assets/scene/room/      # pre-rendered room layers + room_layers.json
 
   # SIL Open Font License 1.1 (from github.com/google/fonts); the licence texts sit beside them.
   # Fredoka is a variable font (wght axis), set via fontVariations in lib/ui/theme.dart.

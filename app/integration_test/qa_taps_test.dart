@@ -144,6 +144,7 @@ void main() {
     await pumpFor(t, const Duration(seconds: 1));
     check(find.byType(RoomScreen).evaluate().isNotEmpty, 'Back double tap: not on the Room');
     await doubleTapText(t, 'Fortune');
+    await waitFor(t, find.byType(FortuneCeremonyScreen), seconds: 20); // the twin walks to the shelf first
     await pumpFor(t, const Duration(seconds: 2));
     check(
       find.byType(FortuneCeremonyScreen, skipOffstage: false).evaluate().length == 1,

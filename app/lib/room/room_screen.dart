@@ -3,17 +3,26 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../forecast/forecast_client.dart';
 import '../ui/swoosh_route.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
-import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart';
 import '../widgets/whole_word_text.dart';
+import 'room_layout_data.dart';
+import 'room_scene.dart';
+import 'room_sim.dart';
 
-/// V-1 / V-7 Room: the calm island plate with the chosen twin composited on
-/// it, a greeting bubble, the mood chip, and the dock (Customize · Talk ·
-/// Fortune). This is the approved static 2D design. Nothing here is stored;
-/// [hasProfile] is whatever the host kept in memory for this session.
+/// V-1 / V-7 Room. Owner ruling (2026-10-24, Tier-1): the room is a
+/// pre-rendered room plus sprite actors. [RoomScene] draws the layers
+/// rendered from the approved three.js prototype with the chosen twin
+/// between them; [RoomSim] runs the behaviours. Flame is the upgrade path:
+/// it would replace [RoomScene] (and its `FloorProjector`) only.
+///
+/// Around the room: the `{ Name }` banner and the outlook card at the top;
+/// the status line, the activity row (Exercise · Eat · Sleep) and the dock
+/// (Customize · Talk · Fortune) at the bottom. The room is told how much
+/// the UI covers, so on short screens it slides up and keeps the mat clear.
 class RoomScreen extends StatefulWidget {
   const RoomScreen({
     super.key,
@@ -21,9 +30,9 @@ class RoomScreen extends StatefulWidget {
     required this.onTalk,
     required this.onCustomize,
     required this.onFortune,
+    this.outlook,
     this.hasProfile = false,
     this.onUseHealth,
-    this.mood = 'Feeling cozy',
   });
 
   /// Cosmetic look only; never part of the health profile.
@@ -31,18 +40,19 @@ class RoomScreen extends StatefulWidget {
   final VoidCallback onTalk;
   final VoidCallback onCustomize;
 
-  /// The fortune, only called when [hasProfile].
-  final VoidCallback onFortune;
+  /// Opens the fortune ceremony; completes when the person is back.
+  final Future<void> Function() onFortune;
 
-  /// True once an intake has been confirmed (and is still complete) this session.
+  /// The last real forecast, if any. Nothing is shown that it doesn't hold.
+  final ValueListenable<Forecast?>? outlook;
+
+  /// True once an intake has been confirmed (and is still complete) this session. Without
+  /// it the fortune does not open: the twin asks to talk first.
   final bool hasProfile;
 
   /// "Use my Apple Health": the Health import. Null (no pill) once Health data is confirmed.
   final VoidCallback? onUseHealth;
-  final String mood;
 
-  static const firstGreeting = 'Hi! Want to chat?';
-  static const returningGreeting = 'Welcome back.';
   static const talkFirst = "Let's talk first, so I can make your forecast.";
 
   @override
@@ -50,85 +60,167 @@ class RoomScreen extends StatefulWidget {
 }
 
 class _RoomScreenState extends State<RoomScreen> {
+  late final RoomSim _sim = RoomSim(layout: roomLayout)..onFortune = _openFortune;
+  final _topKey = GlobalKey();
+  final _bottomKey = GlobalKey();
+  EdgeInsets _clear = EdgeInsets.zero;
+  bool _measuring = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _measureSoon();
+  }
+
+  /// After layout, read how tall the top bar and the bottom UI are (their
+  /// laid-out sizes, so the swoosh's slide does not move the room).
+  void _measureSoon() {
+    if (_measuring) return;
+    _measuring = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _measuring = false;
+      if (!mounted) return;
+      final top = _topKey.currentContext?.size?.height;
+      final bottom = _bottomKey.currentContext?.size?.height;
+      if (top == null || bottom == null) return;
+      final pad = MediaQuery.paddingOf(context);
+      final clear = EdgeInsets.only(top: pad.top + 8 + top, bottom: pad.bottom + 12 + bottom);
+      if ((clear.top - _clear.top).abs() > 0.5 || (clear.bottom - _clear.bottom).abs() > 0.5) {
+        setState(() => _clear = clear);
+      }
+    });
+  }
+
+  /// Shown after Fortune (or the outlook card) is pressed before there is a profile.
   bool _needTalk = false;
 
-  String get _line => _needTalk && !widget.hasProfile
-      ? RoomScreen.talkFirst
-      : widget.hasProfile
-      ? RoomScreen.returningGreeting
-      : RoomScreen.firstGreeting;
+  Future<void> _openFortune() async {
+    await widget.onFortune();
+    if (mounted) _sim.fortuneDone();
+  }
 
+  /// Fortune and the outlook card: with no finished conversation nothing opens and the
+  /// twin says why, as on main.
   void _fortune() {
     if (widget.hasProfile) {
-      widget.onFortune();
+      _sim.press(RoomAction.fortune);
     } else {
       setState(() => _needTalk = true);
     }
   }
 
   @override
+  void didUpdateWidget(RoomScreen old) {
+    super.didUpdateWidget(old);
+    if (widget.hasProfile && _needTalk) _needTalk = false;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sim.reduced = MediaQuery.disableAnimationsOf(context);
+    _measureSoon();
+  }
+
+  @override
+  void dispose() {
+    _sim.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // With much larger text the bubble leaves the window and sits on the sheet above
-    // the dock, at full width, so nothing is cut off or covers the twin.
-    final large = MediaQuery.textScalerOf(context).scale(20) > 28;
-    final bubble = Bubble(
-      text: _line,
-      fontSize: 21,
-      liveRegion: true,
-      tail: large ? BubbleTail.none : BubbleTail.bottom,
-      tailAt: 0,
-    );
     return SwooshRoomStage(
-      builder: (context, f) => ModeScaffold(
-        mode: LtMode.room,
-        gradient: Gradient.lerp(LtMode.room.gradient, LtMode.onboarding.gradient, f.tint),
-        child: ValueListenableBuilder<TwinAppearance>(
-          valueListenable: widget.appearance,
-          builder: (context, look, _) => PlateSheetLayout(
-            minWindow: 220,
-            overlap: 24,
-            window: PlateWindow(
-              name: look.name,
-              // TODO(tier-1): room rendering approach pending owner ruling.
-              // The options (pre-rendered room + sprite actors, Flame
-              // isometric, flutter_scene 3D, three.js WebView) are listed in
-              // docs/design/painted-card-direction.md. A future room engine
-              // replaces this PlateScene; the frame, bubble, chip and dock
-              // stay as they are.
-              plate: PlateScene(
-                asset: ScenePlate.room.asset,
-                focus: const Offset(0.5, 0.554),
-                focusTarget: const Offset(0.496, 0.62),
-                zoom: 1.11,
-                twinBuilder: (feet, scale, box) => plantTwin(
-                  feet,
-                  TwinSprite(
-                    appearance: look,
-                    height: math.max(60.0, math.min(253 * scale, box.height * 0.8)),
-                    hero: true,
-                    isRoom: true,
+      builder: (context, f) => Scaffold(
+        backgroundColor: const Color(0xFFEFE6F4),
+        body: NotificationListener<SizeChangedLayoutNotification>(
+          onNotification: (_) {
+            _measureSoon();
+            return true;
+          },
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: ValueListenableBuilder<TwinAppearance>(
+                  valueListenable: widget.appearance,
+                  builder: (context, look, _) => RoomScene(sim: _sim, appearance: look, clear: _clear),
+                ),
+              ),
+              SafeArea(
+                // With very large text the top bar and the buttons can be taller than the
+                // screen: then they scroll. Taps between them still reach the room.
+                child: LayoutBuilder(
+                  builder: (context, box) => SingleChildScrollView(
+                    hitTestBehavior: HitTestBehavior.deferToChild,
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: (box.maxHeight - 20).clamp(0.0, double.infinity)),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _TopBar(
+                            key: _topKey,
+                            banner: ValueListenableBuilder<TwinAppearance>(
+                              valueListenable: widget.appearance,
+                              builder: (context, look, _) => NameBanner(name: look.name),
+                            ),
+                            card: _OutlookCard(outlook: widget.outlook, onTap: _fortune),
+                          ),
+                          Opacity(
+                            opacity: f.barOpacity.clamp(0.0, 1.0),
+                            child: Transform.translate(
+                              offset: Offset(0, f.barOffsetY),
+                              child: ListenableBuilder(
+                                listenable: _sim,
+                                builder: (context, _) => SizeChangedLayoutNotifier(
+                                  child: Column(
+                                    key: _bottomKey,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      if (_needTalk && !widget.hasProfile) ...[
+                                        const Bubble(
+                                          text: RoomScreen.talkFirst,
+                                          fontSize: 21,
+                                          tail: BubbleTail.none,
+                                          liveRegion: true,
+                                        ),
+                                        const SizedBox(height: 10),
+                                      ],
+                                      // The status line, with "Use my Apple Health" beside it until
+                                      // Health data has been confirmed.
+                                      Wrap(
+                                        alignment: WrapAlignment.center,
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        spacing: 8,
+                                        runSpacing: 8,
+                                        children: [
+                                          StatusPill(label: _sim.status, icon: Icons.circle),
+                                          if (widget.onUseHealth != null) _HealthPill(onTap: widget.onUseHealth!),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      _ActivityRow(sim: _sim),
+                                      const SizedBox(height: 10),
+                                      _Dock(
+                                        frame: f,
+                                        onTalk: widget.onTalk,
+                                        onCustomize: widget.onCustomize,
+                                        onFortune: _fortune,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-              overlay: _RoomOverlay(frame: f, mood: widget.mood, bubble: large ? null : bubble),
-            ),
-            sheet: Opacity(
-              opacity: f.barOpacity.clamp(0.0, 1.0),
-              child: Transform.translate(
-                offset: Offset(0, f.barOffsetY),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (large) ...[bubble, const SizedBox(height: 12)],
-                    if (widget.onUseHealth != null) ...[
-                      Center(child: _HealthPill(onTap: widget.onUseHealth!)),
-                      const SizedBox(height: 10),
-                    ],
-                    _Dock(frame: f, onTalk: widget.onTalk, onCustomize: widget.onCustomize, onFortune: _fortune),
-                  ],
-                ),
-              ),
-            ),
+            ],
           ),
         ),
       ),
@@ -136,46 +228,218 @@ class _RoomScreenState extends State<RoomScreen> {
   }
 }
 
-class _RoomOverlay extends StatelessWidget {
-  const _RoomOverlay({required this.frame, required this.mood, this.bubble});
-  final SwooshRoomFrame frame;
-  final String mood;
-  final Widget? bubble;
+/// The banner and the outlook card side by side, stacked when the screen is
+/// narrow or the text is large (so nothing wraps letter by letter).
+class _TopBar extends StatelessWidget {
+  const _TopBar({super.key, required this.banner, required this.card});
+  final Widget banner;
+  final Widget card;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        if (bubble != null)
-          Positioned(
-            top: 24,
-            right: 8,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 170),
-              child: Opacity(
-                opacity: frame.bubbleOpacity.clamp(0.0, 1.0),
-                child: Transform.scale(scale: frame.bubbleScale, alignment: Alignment.bottomLeft, child: bubble),
-              ),
+    final big = MediaQuery.textScalerOf(context).scale(17) > 17 * 1.15;
+    return LayoutBuilder(
+      builder: (context, box) => box.maxWidth >= 340 && !big
+          ? Row(
+              children: [
+                banner,
+                const SizedBox(width: 10),
+                Expanded(child: card),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(alignment: Alignment.centerLeft, child: banner),
+                const SizedBox(height: 8),
+                card,
+              ],
             ),
+    );
+  }
+}
+
+/// "Your 5-yr look": the real number when there is a forecast, otherwise an
+/// invitation. Never an invented number.
+class _OutlookCard extends StatelessWidget {
+  const _OutlookCard({required this.outlook, required this.onTap});
+  final ValueListenable<Forecast?>? outlook;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final source = outlook;
+    if (source == null) return _card(null);
+    return ValueListenableBuilder<Forecast?>(valueListenable: source, builder: (context, f, _) => _card(f));
+  }
+
+  Widget _card(Forecast? f) {
+    final has = f != null && f.supported;
+    final years = has ? f.maxHorizonYears : 5;
+    final line = has ? 'about ${f.outOf100(years)} in 100' : 'Ask the ball';
+    return Semantics(
+      button: true,
+      label: 'Your $years-year look: $line',
+      excludeSemantics: true,
+      onTap: onTap,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
+          decoration: BoxDecoration(
+            color: LtColors.paper,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: LtColors.container, width: LtBorders.container),
+            boxShadow: LtShadows.soft,
           ),
-        Positioned(
-          left: 14,
-          bottom: 38,
-          child: Opacity(
-            opacity: frame.chipOpacity.clamp(0.0, 1.0),
-            child: Transform.translate(
-              offset: Offset(0, frame.chipOffsetY),
-              child: Transform.rotate(
-                angle: -3 * math.pi / 180,
-                // A small status, not something to read closely: it grows with the text only
-                // so far, so at the largest sizes it never covers the twin.
-                child: MediaQuery.withClampedTextScaling(maxScaleFactor: 1.5, child: StatusPill(label: mood)),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 40,
+                child: has
+                    ? BearHeadArray(
+                        filled: f.outOf100(years),
+                        filledColor: LtColors.ink,
+                        emptyColor: LtColors.container,
+                      )
+                    : const Icon(Icons.auto_awesome_rounded, color: LtColors.ink, size: 28),
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    WholeWordText('Your $years-yr look', style: LtText.body()),
+                    WholeWordText(line, style: LtText.display(19)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The width [text] needs on one line at the current text scale.
+double _labelWidth(BuildContext context, String text, TextStyle style) {
+  final tp = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textScaler: MediaQuery.textScalerOf(context),
+    textDirection: TextDirection.ltr,
+    maxLines: 1,
+  )..layout();
+  final w = tp.width.ceilToDouble();
+  tp.dispose();
+  return w;
+}
+
+/// How far a 17 px label may scale down before it would drop under 15 px.
+double _labelFloor(BuildContext context) => math.min(1, 15 / MediaQuery.textScalerOf(context).scale(17));
+
+/// A button label on one line, never broken inside a word. The slots are
+/// sized to fit it; if one still is not wide enough, it scales down a
+/// little instead of wrapping.
+class _OneLine extends StatelessWidget {
+  const _OneLine(this.text, {required this.style});
+  final String text;
+  final TextStyle style;
+
+  // Unbounded width inside the FittedBox, so the text never wraps; it only shrinks.
+  @override
+  Widget build(BuildContext context) => FittedBox(
+    fit: BoxFit.scaleDown,
+    child: WholeWordText(text, maxLines: 1, softWrap: false, style: style),
+  );
+}
+
+/// Exercise · Eat · Sleep: compact toggles above the dock. Each gets the
+/// width its label needs, and the spare width is shared out evenly.
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({required this.sim});
+  final RoomSim sim;
+
+  static const _items = [
+    (RoomAction.exercise, 'Exercise', Icons.fitness_center_rounded),
+    (RoomAction.eat, 'Eat', Icons.restaurant_rounded),
+    (RoomAction.sleep, 'Sleep', Icons.bedtime_rounded),
+  ];
+  static const _gap = 8.0, _padX = 6.0, _icon = 24.0, _iconGap = 4.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = LtText.body(weight: FontWeight.w700);
+    Widget item(RoomAction a, String label, IconData icon, bool showIcon) {
+      final on = sim.action == a;
+      return Semantics(
+        button: true,
+        toggled: on,
+        label: label,
+        excludeSemantics: true,
+        onTap: () => sim.press(a),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => sim.press(a),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 52),
+            padding: const EdgeInsets.symmetric(horizontal: _padX, vertical: 6),
+            decoration: BoxDecoration(
+              color: on ? LtColors.mint : LtColors.paper,
+              borderRadius: BorderRadius.circular(LtRadii.chip),
+              border: Border.all(color: on ? LtColors.controlOnMint : LtColors.control, width: LtBorders.control),
+              boxShadow: LtShadows.small,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (showIcon) ...[Icon(icon, size: _icon, color: LtColors.ink), const SizedBox(width: _iconGap)],
+                Flexible(child: _OneLine(label, style: style)),
+              ],
             ),
           ),
         ),
-      ],
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, box) {
+        final labels = [for (final (_, label, _) in _items) _labelWidth(context, label, style)];
+        final avail = box.maxWidth - _gap * (_items.length - 1);
+        // Slot widths for the labels plus [extra] each; spare width shared evenly.
+        List<double> slots(double extra) {
+          final need = [for (final l in labels) l + extra];
+          final total = need.fold(0.0, (a, b) => a + b);
+          return [
+            for (final n in need)
+              (total <= avail ? n + (avail - total) / need.length : n * avail / total).floorToDouble(),
+          ];
+        }
+
+        const box0 = _padX * 2 + LtBorders.control * 2;
+        var showIcon = true;
+        var widths = slots(box0 + _icon + _iconGap);
+        // Below the 15 px floor with icons? Drop the icons to widen the labels.
+        final floor = _labelFloor(context);
+        for (var i = 0; i < labels.length; i++) {
+          if ((widths[i] - box0 - _icon - _iconGap) / labels[i] < floor) {
+            showIcon = false;
+            widths = slots(box0);
+            break;
+          }
+        }
+        return Row(
+          children: [
+            for (var i = 0; i < _items.length; i++) ...[
+              if (i > 0) const SizedBox(width: _gap),
+              SizedBox(width: widths[i], child: item(_items[i].$1, _items[i].$2, _items[i].$3, showIcon)),
+            ],
+          ],
+        );
+      },
     );
   }
 }
@@ -189,47 +453,65 @@ class _Dock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Talk keeps the width it needs (padding, icon, gap, label, borders);
+    // Customize and Fortune share the rest, so their labels stay on one line.
+    final talkW = 40 + 32 + 10 + _labelWidth(context, 'Talk', LtText.display(26)) + LtBorders.control * 2 + 4;
     return Sheet(
       padding: const EdgeInsets.fromLTRB(8, 14, 8, 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: _DockItem(
-              label: 'Customize',
-              icon: Icons.checkroom_rounded,
-              face: LtColors.peach,
-              lip: LtColors.peachLip,
-              iconColor: LtColors.ink,
-              onTap: onCustomize,
-            ),
-          ),
-          Flexible(
-            flex: 2,
-            child: Transform.scale(
-              scale: frame.talkScale,
-              child: LipButton(
-                label: 'Talk',
-                icon: Icons.mic_none_rounded,
-                height: 72,
-                fontSize: 26,
-                expand: false,
-                hint: 'Chat with your twin',
-                onTap: onTalk,
+      child: LayoutBuilder(
+        builder: (context, box) {
+          // Never squeeze Customize or Fortune under the 15 px floor: Talk gives way first.
+          final body = LtText.body(weight: FontWeight.w700);
+          final side = math.max(_labelWidth(context, 'Customize', body), _labelWidth(context, 'Fortune', body));
+          final talk = math.max(120.0, math.min(talkW, box.maxWidth - 2 * side * _labelFloor(context)));
+          return Row(
+            children: [
+              Expanded(
+                child: _DockItem(
+                  label: 'Customize',
+                  icon: Icons.checkroom_rounded,
+                  face: LtColors.peach,
+                  lip: LtColors.peachLip,
+                  iconColor: LtColors.ink,
+                  onTap: onCustomize,
+                ),
               ),
-            ),
-          ),
-          Flexible(
-            child: _DockItem(
-              label: 'Fortune',
-              icon: Icons.auto_awesome_rounded,
-              face: LtColors.night,
-              lip: const Color(0xFF0F1430),
-              iconColor: LtColors.gold,
-              onTap: onFortune,
-            ),
-          ),
-        ],
+              SizedBox(
+                width: math.min(talk, box.maxWidth * 0.5),
+                // Scaled down whole (never wrapped) if its slot is narrower.
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: IntrinsicWidth(
+                      child: Transform.scale(
+                        scale: frame.talkScale,
+                        child: LipButton(
+                          label: 'Talk',
+                          icon: Icons.mic_none_rounded,
+                          height: 72,
+                          fontSize: 26,
+                          expand: false,
+                          hint: 'Chat with your twin',
+                          onTap: onTalk,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: _DockItem(
+                  label: 'Fortune',
+                  icon: Icons.auto_awesome_rounded,
+                  face: LtColors.night,
+                  lip: const Color(0xFF0F1430),
+                  iconColor: LtColors.gold,
+                  onTap: onFortune,
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -283,15 +565,7 @@ class _DockItem extends StatelessWidget {
                 child: Icon(icon, size: 30, color: iconColor),
               ),
               const SizedBox(height: 6),
-              // One line inside its box: shrinks rather than wrapping ("Customiz/e").
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: WholeWordText(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: LtText.body(weight: FontWeight.w700),
-                ),
-              ),
+              _OneLine(label, style: LtText.body(weight: FontWeight.w700)),
             ],
           ),
         ),
@@ -331,10 +605,7 @@ class _HealthPill extends StatelessWidget {
               const Icon(Icons.favorite_border_rounded, size: 24, color: LtColors.ink),
               const SizedBox(width: 8),
               Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: WholeWordText('Use my Apple Health', style: LtText.body(weight: FontWeight.w700)),
-                ),
+                child: _OneLine('Use my Apple Health', style: LtText.body(weight: FontWeight.w700)),
               ),
             ],
           ),

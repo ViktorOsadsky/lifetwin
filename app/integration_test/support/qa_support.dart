@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lifesim/forecast/fortune_ceremony_screen.dart';
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
@@ -96,9 +97,10 @@ Future<void> askTheBall(WidgetTester t) async {
   await tapText(t, 'Ask the ball');
 }
 
-/// From the Room: Fortune, then "Ask the ball".
+/// From the Room: Fortune (the twin walks to the shelf first), then "Ask the ball".
 Future<void> openFortune(WidgetTester t) async {
   await tapText(t, 'Fortune');
+  await waitFor(t, find.byType(FortuneCeremonyScreen), seconds: 20);
   await askTheBall(t);
 }
 

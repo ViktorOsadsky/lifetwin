@@ -57,6 +57,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// Read live, so "start over" or a changed answer never leaves an older forecast behind.
   Map<String, dynamic>? get _profile => _controller.turn?.complete == true ? _controller.confirmedProfile : null;
 
+  /// The last supported forecast, for the Room's outlook card.
+  final _outlook = ValueNotifier<Forecast?>(null);
+
   static VoiceOnboardingController _live(ApiBase api) {
     final tokens = VoiceTokenProvider(base: api);
     return VoiceOnboardingController(
@@ -70,6 +73,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   void dispose() {
     _controller.dispose();
     if (widget.appearance == null) _look.dispose();
+    _outlook.dispose();
     super.dispose();
   }
 
@@ -105,7 +109,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
 
   /// The ceremony, then the fortune. From the intake's Continue ([fromTalk]) the
   /// conversation is dropped, so Back lands on the Room; from the Room it is pushed.
-  void _ceremony(BuildContext context, {bool fromTalk = false}) {
+  /// Completes when the person is back on the Room.
+  Future<void> _ceremony(BuildContext context, {bool fromTalk = false}) {
     final nav = Navigator.of(context);
     final route = MaterialPageRoute<void>(
       builder: (ceremonyContext) => FortuneCeremonyScreen(
@@ -119,6 +124,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               profile: _profile ?? const {},
               appearance: _look.value,
               healthKeys: {..._healthKeys},
+              onResult: (f) {
+                if (f.supported) _outlook.value = f;
+              },
               // The mascot speaks only if the person chose voice and it still works.
               speech: _controller.voiceUsable && !_controller.typing ? _controller.output : null,
               onBack: () => _toRoom(forecastContext),
@@ -133,11 +141,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
         ),
       ),
     );
-    if (fromTalk) {
-      nav.pushAndRemoveUntil(route, (r) => r.isFirst);
-    } else {
-      nav.push(route);
-    }
+    return fromTalk ? nav.pushAndRemoveUntil(route, (r) => r.isFirst) : nav.push(route);
   }
 
   void _customize(BuildContext context) => Navigator.of(context).push(
@@ -161,6 +165,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onTalk: () => _talk(context),
           onCustomize: () => _customize(context),
           onFortune: () => _ceremony(context),
+          outlook: _outlook,
         ),
       ),
     );
