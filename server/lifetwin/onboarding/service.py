@@ -2,6 +2,8 @@
 
 import asyncio
 import re
+from collections.abc import Callable
+from datetime import date
 
 from fastapi import HTTPException
 
@@ -43,7 +45,23 @@ AFFIRMATIVES = {
     "yes that's right",
     "yes that is right",
     "yes it is",
+    "yup",
+    "yep that's right",
+    "yeah that's right",
+    "yes that's it",
+    "that's it",
+    "exactly",
+    "absolutely",
+    "you got it",
+    "yes indeed",
+    "uh huh",
+    "mm hm",
+    "yes sir",
+    "yes ma'am",
+    "that sounds right",
 }
+# "yes but 6 ft" both confirms and corrects; it changes nothing and asks again.
+MIXED_YES = re.compile(r"(?:yes|yeah|yep|yup|correct)\b.*(?:\d|\b(?:but|no|not|actually)\b)")
 NEGATIVE = re.compile(r"(?:no|nope)\b\s*(?:(?:it's|it is|actually|i meant)\b\s*)?(.*)")
 BOTH_BP = ["systolic_bp", "diastolic_bp"]
 BOTH_BP_MESSAGE = 'Please tell me both blood pressure numbers, for example "120 over 80".'
@@ -127,9 +145,17 @@ def describe(values: dict) -> str:
 
 
 class ConversationService:
-    def __init__(self, extractor: Extractor | None = None, *, timeout_seconds: float = 6):
+    def __init__(
+        self,
+        extractor: Extractor | None = None,
+        *,
+        timeout_seconds: float = 6,
+        clock: Callable[[], date] = date.today,
+    ):
         self.extractor = extractor
         self.timeout = max(0.1, min(timeout_seconds, 10.0))
+        # Birth dates are read against today; tests inject a fixed day.
+        self.clock = clock
 
     async def turn(self, request: TurnRequest) -> TurnResponse:
         state = request.state.model_copy(deep=True)
@@ -138,6 +164,7 @@ class ConversationService:
         provider_status = "not_needed" if configured else "not_configured"
         action = request.action
         text = normalize_text(request.text or "")
+        today = self.clock()
 
         def respond(message: str) -> TurnResponse:
             reaction = {
@@ -178,6 +205,11 @@ class ConversationService:
             phrase = " ".join(text.lower().replace(",", " ").rstrip(".!?").split())
             if phrase in AFFIRMATIVES:
                 action = "confirm"
+            elif MIXED_YES.match(phrase):
+                return respond(
+                    "Sorry, I couldn't tell if that was a yes. Nothing has changed. "
+                    + self._prompt(state)
+                )
             else:
                 negative = NEGATIVE.fullmatch(phrase)
                 if negative:
@@ -267,7 +299,7 @@ class ConversationService:
             pending_fields = list(state.pending_profile.model_dump(exclude_none=True))
             if pending_fields == BOTH_BP:
                 # A pending reading is corrected as a whole pair, never one guessed half.
-                if len(parse_reply(text, "systolic_bp")) != 2:
+                if len(parse_reply(text, "systolic_bp", today=today)) != 2:
                     return respond(BOTH_BP_MESSAGE + " Nothing has changed.")
                 pending_fields = ["systolic_bp"]
             if len(pending_fields) != 1:
@@ -301,13 +333,13 @@ class ConversationService:
                 state.skipped_fields.append(target)
             self._advance(state)
             return respond("I'll leave that unknown. " + self._prompt(state))
-        candidates = parse_reply(text, target)
+        candidates = parse_reply(text, target, today=today)
         if not candidates and configured:
             if request.provider_consent:
                 try:
                     async with asyncio.timeout(self.timeout):
                         extraction = await self.extractor.extract(text, target)
-                    candidates = grounded_candidates(text, extraction, target)
+                    candidates = grounded_candidates(text, extraction, target, today=today)
                     # The helper answered; finding no usable value is not an outage.
                     provider_status = "used"
                     if candidates:
@@ -316,6 +348,13 @@ class ConversationService:
                     provider_status = "unavailable"
             else:
                 provider_status = "consent_required"
+        lone_bottom = list(candidates) == ["diastolic_bp"] and (
+            state.confirmed_profile.systolic_bp is None
+            and state.pending_profile.systolic_bp is None
+        )
+        if lone_bottom:
+            # A bottom number alone can only be checked against a known top number.
+            candidates, mode = {}, "guided"
         if not candidates:
             notice = ""
             if provider_status == "consent_required":
@@ -324,7 +363,7 @@ class ConversationService:
                 )
             elif provider_status == "unavailable":
                 notice = "The AI helper isn't available right now, but we can keep going. "
-            hint = clarify(text, target)
+            hint = BOTH_BP_MESSAGE if lone_bottom else clarify(text, target)
             if state.phase == "confirming":
                 return respond(
                     notice

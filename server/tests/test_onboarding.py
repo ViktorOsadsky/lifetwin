@@ -166,6 +166,11 @@ def test_bad_transitions_and_oversized_or_inconsistent_inputs_are_rejected(clien
     )
 
 
+# The keyless parser reads "My current weight is 70 kg" by itself now, so the provider
+# path is exercised with a reply it does not read alone: the age is a second number.
+PROVIDER_TEXT = "I'm 72 years old and I weigh 70 kg"
+
+
 class FakeExtractor:
     configured = True
 
@@ -192,14 +197,14 @@ def test_provider_is_consent_gated_and_still_needs_confirmation():
     provider = FakeExtractor()
     service = ConversationService(provider)
     state = {"phase": "asking", "current_field": "weight_kg"}
-    result = service_turn(service, action="reply", state=state, text="My current weight is 70 kg")
+    result = service_turn(service, action="reply", state=state, text=PROVIDER_TEXT)
     assert result.provider_status == "consent_required"
     assert provider.calls == 0
     result = service_turn(
         service,
         action="reply",
         state=state,
-        text="My current weight is 70 kg",
+        text=PROVIDER_TEXT,
         provider_consent=True,
     )
     assert provider.calls == 1
@@ -215,7 +220,7 @@ def test_provider_failure_or_non_evidence_never_fills_profile(quote, error):
         service,
         action="reply",
         state={"phase": "asking", "current_field": "weight_kg"},
-        text="My current weight is 70 kg",
+        text=PROVIDER_TEXT,
         provider_consent=True,
     )
     assert result.provider_status == ("unavailable" if error else "used")
@@ -233,7 +238,7 @@ def test_provider_has_overall_deadline():
         service,
         action="reply",
         state={"phase": "asking", "current_field": "weight_kg"},
-        text="My current weight is 70 kg",
+        text=PROVIDER_TEXT,
         provider_consent=True,
     )
     assert result.provider_status == "unavailable"
@@ -434,7 +439,7 @@ def test_deeply_nested_provider_json_falls_back_to_guided_clarification():
                 TurnRequest(
                     action="reply",
                     state=ConversationState(phase="asking", current_field="weight_kg"),
-                    text="My current weight is 70 kg",
+                    text=PROVIDER_TEXT,
                     provider_consent=True,
                 )
             )
@@ -810,7 +815,7 @@ def chat_provider(client):
     )
 
 
-def run_chat(handler, text="My current weight is 70 kg", asked="weight_kg"):
+def run_chat(handler, text=PROVIDER_TEXT, asked="weight_kg"):
     async def run():
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
             return await ConversationService(chat_provider(client)).turn(
@@ -1001,7 +1006,7 @@ def test_answered_but_no_value_does_not_claim_the_helper_is_unavailable():
         service,
         action="reply",
         state={"phase": "asking", "current_field": "weight_kg"},
-        text="My current weight is 70 kg",
+        text=PROVIDER_TEXT,
         provider_consent=True,
     )
     assert result.provider_status == "used"
