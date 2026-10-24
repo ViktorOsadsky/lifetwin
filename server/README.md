@@ -25,6 +25,7 @@ Open [the API docs](http://127.0.0.1:8000/docs). For a phone on the same trusted
 | `GET /api/capabilities` | Actual keyless/configured feature modes, no credential values. |
 | `POST /api/onboarding/turn` | Stateless guided mascot conversation. Typed text and final speech transcripts use identical validation. Optional consent-gated LLM extraction is available through a provider adapter. |
 | `POST /api/checkin/start`, `/api/checkin/turn` | Not yet used by the app. History lives on the phone; weekly answers come back as `profile_update` for the app to apply to the profile and forecast, daily answers are history only. An emergency reply pauses the conversation (`emergency: true`, `concerned` mascot event; also in onboarding). Mochi's daily (sleep last night, movement today, how you feel; drinks yesterday on Tuesdays and Saturdays) and weekly (every model input that changes week to week, then how the week went) check-ins. Same read-back, follow-up, chatter and control rules as onboarding; "same as last week" offers the caller-sent previous answer for a yes. Stateless: nothing is stored and no health value is logged. Scripts live in `lifetwin/checkin/scripts.py`. |
+| `POST /api/documents/extract` | Recognised text of a health document (the phone does the OCR; never the image) in, candidate values to confirm out: height, weight, smoking, explicit diabetes/hypertension diagnoses, and blood pressure/A1c/LDL as information. Identifiers are stripped first; nothing is stored or logged. Muse by Meta helps only with `DOCUMENT_MUSE_ENABLED=true` and the person's consent. See [document-upload.md](../docs/document-upload.md). |
 | `POST /api/voice/token` | Consent-gated short-lived Cartesia token plus STT/TTS settings; 503 `voice_unavailable` when not configured. See Voice (Cartesia). |
 | `POST /api/advisor` | Cited curated educational plan for selected topics. Optional bounded web retrieval; no inferred health improvements or personalized treatment. |
 | `GET /api/quiz/questions` | Eight source-reviewed questions plus answers, explanations and local/offline scoring metadata. Optional topic, difficulty and bounded limit filters. |
@@ -91,6 +92,7 @@ Select the extraction provider with environment variables (all blank by default;
 | `LLM_MODEL` | Model ID, required. |
 | `LLM_API_KEY` | Bearer key, required; kept server-side and never logged or returned. |
 | `LLM_REASONING_EFFORT` | `minimal` (default), `low`, `medium`, `high`, or blank to omit. Reasoning models such as Muse otherwise spend the whole token budget thinking and return no answer (observed live). |
+| `DOCUMENT_MUSE_ENABLED` | `false` (default). When `true` with `chat_completions` configured, Muse may read identifier-stripped document text, only for requests with `outside_ai_consent: true`. Pending the owner's ruling. |
 
 Muse example (supply your own key):
 

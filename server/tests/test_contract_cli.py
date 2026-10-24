@@ -47,8 +47,8 @@ def schema(name):
 def test_in_process_replays_success_and_error_contracts_without_sockets():
     result = run_checker("--in-process")
     assert result.returncode == 0, result.stderr
-    assert "Validated 21 schemas and 31 request fixtures" in result.stdout
-    assert "35 responses checked across 35 cases in process" in result.stdout
+    assert "Validated 21 schemas and 36 request fixtures" in result.stdout
+    assert "40 responses checked across 40 cases in process" in result.stdout
     assert "PASS invalid-conversation-transition (API response checked)" in result.stdout
     assert "PASS missing-quiz-version (API response checked)" in result.stdout
     assert "PASS quiz-question-detail (API response checked)" in result.stdout
@@ -57,7 +57,7 @@ def test_in_process_replays_success_and_error_contracts_without_sockets():
 def test_offline_mode_does_not_claim_to_check_missing_response_fixtures():
     result = run_checker()
     assert result.returncode == 0, result.stderr
-    assert "2 responses checked across 35 cases offline" in result.stdout
+    assert "2 responses checked across 40 cases offline" in result.stdout
     assert "PASS compare-deferred (static response checked)" in result.stdout
     assert "SKIP quiz-bank (requires API replay)" in result.stdout
     assert "request fixture only; response not checked" in result.stdout
@@ -189,7 +189,7 @@ def replay_against(monkeypatch, mutate):
 
 def test_replay_passes_against_unmodified_keyless_app(monkeypatch, capsys):
     replay_against(monkeypatch, lambda _path, body: body)()
-    assert "35 responses checked across 35 cases against live API." in capsys.readouterr().out
+    assert "40 responses checked across 40 cases against live API." in capsys.readouterr().out
 
 
 def test_bad_api_response_diagnostic_omits_response_values(monkeypatch):
