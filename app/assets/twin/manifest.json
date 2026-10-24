@@ -576,6 +576,82 @@
       },
       "note3x": "3.0x at 933x1400 from the 1024x1536 source (never upscaled)",
       "notes": "Empty calm night plate (no character): navy sky, crescent, low hill and mist, open floor in the lower middle. Fortune screens composite the chosen twin (hold_ball or shrug) on it. Source: design/gen/calm-night-empty.png."
+    },
+    {
+      "path": "assets/scene/room/room_bg.jpg",
+      "size1x": {
+        "w": 390,
+        "h": 844
+      },
+      "rectIn390x844": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "variants": {
+        "2.0x": "assets/scene/room/2.0x/room_bg.jpg",
+        "3.0x": "assets/scene/room/3.0x/room_bg.jpg"
+      },
+      "note3x": "3.0x is the native 1170x2532 render (cropped for foreground pieces)",
+      "notes": "The room without the twin: rendered from the three.js prototype (tools/art/room3d). The twin sprite is composited on it by RoomScene."
+    },
+    {
+      "path": "assets/scene/room/room_fg_bed.png",
+      "size1x": {
+        "w": 145,
+        "h": 24
+      },
+      "rectIn390x844": [
+        146.0,
+        331.0,
+        145.0,
+        24.0
+      ],
+      "variants": {
+        "2.0x": "assets/scene/room/2.0x/room_fg_bed.png",
+        "3.0x": "assets/scene/room/3.0x/room_fg_bed.png"
+      },
+      "note3x": "3.0x is the native 1170x2532 render (cropped for foreground pieces)",
+      "notes": "Only the quilt edge in front of a sleeping twin; drawn over the twin while it is in bed."
+    },
+    {
+      "path": "assets/scene/room/room_fg_table.png",
+      "size1x": {
+        "w": 66,
+        "h": 89
+      },
+      "rectIn390x844": [
+        0.0,
+        405.0,
+        66.0,
+        89.0
+      ],
+      "variants": {
+        "2.0x": "assets/scene/room/2.0x/room_fg_table.png",
+        "3.0x": "assets/scene/room/3.0x/room_fg_table.png"
+      },
+      "note3x": "3.0x is the native 1170x2532 render (cropped for foreground pieces)",
+      "notes": "The table alone; drawn over the twin when it stands behind it."
+    },
+    {
+      "path": "assets/scene/room/room_shelf_empty.png",
+      "size1x": {
+        "w": 60,
+        "h": 60
+      },
+      "rectIn390x844": [
+        314.0,
+        188.0,
+        60.0,
+        60.0
+      ],
+      "variants": {
+        "2.0x": "assets/scene/room/2.0x/room_shelf_empty.png",
+        "3.0x": "assets/scene/room/3.0x/room_shelf_empty.png"
+      },
+      "note3x": "3.0x is the native 1170x2532 render (cropped for foreground pieces)",
+      "notes": "The shelf without its crystal ball; laid over the bg while the twin holds the ball."
     }
   ]
 }

@@ -48,6 +48,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// Profile keys that came from Apple Health, to label their source.
   final _healthKeys = <String>{};
 
+  /// The last supported forecast, for the Room's outlook card.
+  final _outlook = ValueNotifier<Forecast?>(null);
+
   static VoiceOnboardingController _live(ApiBase api) {
     final tokens = VoiceTokenProvider(base: api);
     return VoiceOnboardingController(
@@ -61,6 +64,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   void dispose() {
     _controller.dispose();
     if (widget.appearance == null) _look.dispose();
+    _outlook.dispose();
     super.dispose();
   }
 
@@ -90,7 +94,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     ),
   );
 
-  void _ceremony(BuildContext context, Map<String, dynamic> profile) => Navigator.of(context).push(
+  Future<void> _ceremony(BuildContext context, Map<String, dynamic> profile) => Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (ceremonyContext) => FortuneCeremonyScreen(
         appearance: _look.value,
@@ -103,6 +107,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               profile: profile,
               appearance: _look.value,
               healthKeys: {..._healthKeys},
+              onResult: (f) {
+                if (f.supported) _outlook.value = f;
+              },
               // The mascot speaks only if the person chose voice and it still works.
               speech: _controller.voiceUsable && !_controller.typing ? _controller.output : null,
               onBack: () => Navigator.of(context).pop(),
@@ -136,6 +143,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onTalk: () => _talk(context),
           onCustomize: () => _customize(context),
           onFortune: () => _ceremony(context, _controller.confirmedProfile),
+          outlook: _outlook,
         ),
       ),
     );

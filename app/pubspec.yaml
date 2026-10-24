@@ -74,6 +74,7 @@ flutter:
     - assets/twin/human/pose/
     - assets/twin/accessory/hat/
     - assets/scene/
+    - assets/scene/room/      # pre-rendered room layers + room_layers.json
 
   # SIL Open Font License 1.1; the license texts are in assets/fonts/.
   # Fredoka is a variable font (wght axis), set via fontVariations in lib/ui/theme.dart.

@@ -1,72 +1,213 @@
-import 'dart:math' as math;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../forecast/forecast_client.dart';
 import '../ui/swoosh_route.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
-import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart';
+import 'room_layout_data.dart';
+import 'room_scene.dart';
+import 'room_sim.dart';
 
-/// V-1 / V-7 Room: the calm island plate with the chosen twin composited on
-/// it, a greeting bubble, the mood chip, and the dock (Customize · Talk ·
-/// Fortune). This is the approved static 2D design.
-class RoomScreen extends StatelessWidget {
+/// V-1 / V-7 Room. Owner ruling (2026-10-24, Tier-1): the room is a
+/// pre-rendered room plus sprite actors. [RoomScene] draws the layers
+/// rendered from the approved three.js prototype with the chosen twin
+/// between them; [RoomSim] runs the behaviours. Flame is the upgrade path:
+/// it would replace [RoomScene] (and its `FloorProjector`) only.
+///
+/// Around the room: the `{ Name }` banner and the outlook card at the top;
+/// the status line, the activity row (Exercise · Eat · Sleep) and the dock
+/// (Customize · Talk · Fortune) at the bottom.
+class RoomScreen extends StatefulWidget {
   const RoomScreen({
     super.key,
     required this.appearance,
     required this.onTalk,
     required this.onCustomize,
     required this.onFortune,
-    this.mood = 'Feeling cozy',
+    this.outlook,
   });
 
   /// Cosmetic look only; never part of the health profile.
   final ValueListenable<TwinAppearance> appearance;
   final VoidCallback onTalk;
   final VoidCallback onCustomize;
-  final VoidCallback onFortune;
-  final String mood;
+
+  /// Opens the fortune ceremony; completes when the person is back.
+  final Future<void> Function() onFortune;
+
+  /// The last real forecast, if any. Nothing is shown that it doesn't hold.
+  final ValueListenable<Forecast?>? outlook;
+
+  @override
+  State<RoomScreen> createState() => _RoomScreenState();
+}
+
+class _RoomScreenState extends State<RoomScreen> {
+  late final RoomSim _sim = RoomSim(layout: roomLayout)..onFortune = _openFortune;
+
+  Future<void> _openFortune() async {
+    await widget.onFortune();
+    if (mounted) _sim.fortuneDone();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sim.reduced = MediaQuery.disableAnimationsOf(context);
+  }
+
+  @override
+  void dispose() {
+    _sim.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return SwooshRoomStage(
-      builder: (context, f) => ModeScaffold(
-        mode: LtMode.room,
-        gradient: Gradient.lerp(LtMode.room.gradient, LtMode.onboarding.gradient, f.tint),
-        child: ValueListenableBuilder<TwinAppearance>(
-          valueListenable: appearance,
-          builder: (context, look, _) => PlateSheetLayout(
-            minWindow: 220,
-            overlap: 24,
-            window: PlateWindow(
-              name: look.name,
-              // TODO(tier-1): room rendering approach pending owner ruling.
-              // The options (pre-rendered room + sprite actors, Flame
-              // isometric, flutter_scene 3D, three.js WebView) are listed in
-              // docs/design/painted-card-direction.md. A future room engine
-              // replaces this PlateScene; the frame, bubble, chip and dock
-              // stay as they are.
-              plate: PlateScene(
-                asset: ScenePlate.room.asset,
-                focus: const Offset(0.5, 0.554),
-                focusTarget: const Offset(0.496, 0.62),
-                zoom: 1.11,
-                twinBuilder: (feet, scale, box) => plantTwin(
-                  feet,
-                  TwinSprite(appearance: look, height: math.max(60.0, math.min(253 * scale, box.height * 0.8)), hero: true, isRoom: true),
+      builder: (context, f) => Scaffold(
+        backgroundColor: const Color(0xFFEFE6F4),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: ValueListenableBuilder<TwinAppearance>(
+                valueListenable: widget.appearance,
+                builder: (context, look, _) => RoomScene(sim: _sim, appearance: look),
+              ),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _TopBar(
+                      banner: ValueListenableBuilder<TwinAppearance>(
+                        valueListenable: widget.appearance,
+                        builder: (context, look, _) => NameBanner(name: look.name),
+                      ),
+                      card: _OutlookCard(outlook: widget.outlook, onTap: () => _sim.press(RoomAction.fortune)),
+                    ),
+                    const Spacer(),
+                    Opacity(
+                      opacity: f.barOpacity.clamp(0.0, 1.0),
+                      child: Transform.translate(
+                        offset: Offset(0, f.barOffsetY),
+                        child: ListenableBuilder(
+                          listenable: _sim,
+                          builder: (context, _) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Center(
+                                child: StatusPill(label: _sim.status, icon: Icons.circle),
+                              ),
+                              const SizedBox(height: 10),
+                              _ActivityRow(sim: _sim),
+                              const SizedBox(height: 10),
+                              _Dock(
+                                frame: f,
+                                onTalk: widget.onTalk,
+                                onCustomize: widget.onCustomize,
+                                onFortune: () => _sim.press(RoomAction.fortune),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              overlay: _RoomOverlay(frame: f, mood: mood),
             ),
-            sheet: Opacity(
-              opacity: f.barOpacity.clamp(0.0, 1.0),
-              child: Transform.translate(
-                offset: Offset(0, f.barOffsetY),
-                child: _Dock(frame: f, onTalk: onTalk, onCustomize: onCustomize, onFortune: onFortune),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The banner and the outlook card side by side, stacked when the screen is
+/// narrow or the text is large (so nothing wraps letter by letter).
+class _TopBar extends StatelessWidget {
+  const _TopBar({required this.banner, required this.card});
+  final Widget banner;
+  final Widget card;
+
+  @override
+  Widget build(BuildContext context) {
+    final big = MediaQuery.textScalerOf(context).scale(17) > 17 * 1.15;
+    return LayoutBuilder(
+      builder: (context, box) => box.maxWidth >= 340 && !big
+          ? Row(children: [banner, const SizedBox(width: 10), Expanded(child: card)])
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [Align(alignment: Alignment.centerLeft, child: banner), const SizedBox(height: 8), card],
+            ),
+    );
+  }
+}
+
+/// "Your 5-yr look": the real number when there is a forecast, otherwise an
+/// invitation. Never an invented number.
+class _OutlookCard extends StatelessWidget {
+  const _OutlookCard({required this.outlook, required this.onTap});
+  final ValueListenable<Forecast?>? outlook;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final source = outlook;
+    if (source == null) return _card(null);
+    return ValueListenableBuilder<Forecast?>(valueListenable: source, builder: (context, f, _) => _card(f));
+  }
+
+  Widget _card(Forecast? f) {
+    final has = f != null && f.supported;
+    final years = has ? f.maxHorizonYears : 5;
+    final line = has ? 'about ${f.outOf100(years)} in 100' : 'Ask the ball';
+    return Semantics(
+      button: true,
+      label: 'Your $years-year look: $line',
+      excludeSemantics: true,
+      onTap: onTap,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
+          decoration: BoxDecoration(
+            color: LtColors.paper,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: LtColors.container, width: LtBorders.container),
+            boxShadow: LtShadows.soft,
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 40,
+                child: has
+                    ? BearHeadArray(
+                        filled: f.outOf100(years),
+                        filledColor: LtColors.ink,
+                        emptyColor: LtColors.container,
+                      )
+                    : const Icon(Icons.auto_awesome_rounded, color: LtColors.ink, size: 28),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Your $years-yr look', style: LtText.body()),
+                    Text(line, style: LtText.display(19)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -74,42 +215,57 @@ class RoomScreen extends StatelessWidget {
   }
 }
 
-class _RoomOverlay extends StatelessWidget {
-  const _RoomOverlay({required this.frame, required this.mood});
-  final SwooshRoomFrame frame;
-  final String mood;
+/// Exercise · Eat · Sleep: compact toggles above the dock.
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({required this.sim});
+  final RoomSim sim;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned(
-          top: 24,
-          right: 8,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 170),
-            child: Opacity(
-              opacity: frame.bubbleOpacity.clamp(0.0, 1.0),
-              child: Transform.scale(
-                scale: frame.bubbleScale,
-                alignment: Alignment.bottomLeft,
-                child: const Bubble(text: 'Hi! Want to chat?', fontSize: 21, tail: BubbleTail.bottom, tailAt: 0),
+    Widget item(RoomAction a, String label, IconData icon) {
+      final on = sim.action == a;
+      return Expanded(
+        child: Semantics(
+          button: true,
+          toggled: on,
+          label: label,
+          excludeSemantics: true,
+          onTap: () => sim.press(a),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => sim.press(a),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 52),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+              decoration: BoxDecoration(
+                color: on ? LtColors.mint : LtColors.paper,
+                borderRadius: BorderRadius.circular(LtRadii.chip),
+                border: Border.all(color: on ? LtColors.controlOnMint : LtColors.control, width: LtBorders.control),
+                boxShadow: LtShadows.small,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 24, color: LtColors.ink),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(label, style: LtText.body(weight: FontWeight.w700)),
+                  ),
+                ],
               ),
             ),
           ),
         ),
-        Positioned(
-          left: 14,
-          bottom: 38,
-          child: Opacity(
-            opacity: frame.chipOpacity.clamp(0.0, 1.0),
-            child: Transform.translate(
-              offset: Offset(0, frame.chipOffsetY),
-              child: Transform.rotate(angle: -3 * math.pi / 180, child: StatusPill(label: mood)),
-            ),
-          ),
-        ),
+      );
+    }
+
+    return Row(
+      children: [
+        item(RoomAction.exercise, 'Exercise', Icons.fitness_center_rounded),
+        const SizedBox(width: 8),
+        item(RoomAction.eat, 'Eat', Icons.restaurant_rounded),
+        const SizedBox(width: 8),
+        item(RoomAction.sleep, 'Sleep', Icons.bedtime_rounded),
       ],
     );
   }
@@ -210,12 +366,19 @@ class _DockItem extends StatelessWidget {
                   color: face,
                   shape: BoxShape.circle,
                   border: Border.all(color: LtColors.control, width: LtBorders.control),
-                  boxShadow: [BoxShadow(color: lip, offset: const Offset(0, 3)), ...LtShadows.soft],
+                  boxShadow: [
+                    BoxShadow(color: lip, offset: const Offset(0, 3)),
+                    ...LtShadows.soft,
+                  ],
                 ),
                 child: Icon(icon, size: 30, color: iconColor),
               ),
               const SizedBox(height: 6),
-              Text(label, textAlign: TextAlign.center, style: LtText.body(weight: FontWeight.w700)),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: LtText.body(weight: FontWeight.w700),
+              ),
             ],
           ),
         ),
