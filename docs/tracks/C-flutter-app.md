@@ -9,14 +9,14 @@ Flutter / Dart and LottieFiles are confirmed. Follow [MASTER_PLAN.md](../../MAST
 | Screen | Master doc | Must have |
 |---|---|---|
 | Game room | Updated §2.1 | Expressive original mascot/twin, playful props, short speech bubbles, minimal navigation chrome; entry points into activities |
-| Mascot intake | Updated §2.2 | Voice-first questions and equally capable text conversation; captions, explicit candidate-value confirmation/correction, progress and unit clarification; no traditional multi-screen health form. Voice provider deferred |
+| Mascot intake | Updated §2.2 | Offer health-document upload immediately with Apple Health and voice/text alternatives; confirm candidates, then ask only for missing required inputs. Upload is planned; captions/correction and text fallback remain required |
 | Twin studio | Expanded §14 | SVG cosmetic layers and accessories independent of medical inputs; Lottie-compatible palette/asset conventions |
 | Magic-ball fortune | Updated §3 | Mascot reveals the supported longevity outlook with Lottie motion; readable captions, horizon/model identity, uncertainty and curve details; unsupported results get a limitation instead of invented fortune |
 | Experiment / compare | §4 extended | Separate hypothetical profile, explicit plan assumptions, supported controls, overlaid curves and server deltas; reset never mutates the confirmed baseline |
-| Plan | §5 extended | Cited suggestions, evidence/model distinction, optional research items, explicit apply-to-experiment action |
+| Plan | §5 extended | Short daily schedule with citations, accept/edit/dismiss and completion feedback; explain revisions and keep apply-to-experiment separate |
 | Quiz | New mode | Reviewed food/situation questions, immediate sick/recovery reactions, separate bounded game-health score, explanations and recovery/retry; duplicate submissions count once |
 
-First ship the text conversation → confirmed profile → fixture fortune → experiment loop in the game shell. Then connect the real model, plan, quiz and selected voice integration according to the master guide's gates. Labeled text/audio stubs are scaffolding, not completed voice support.
+The game shell, voice/text and Apple Health paths now exist. Continue from the current app and master guide; do not replace working paths with the original fixture-flow plan. Upload and autonomous daily planning are follow-up work, not completed UI behavior.
 
 ## Rules
 
@@ -31,4 +31,8 @@ First ship the text conversation → confirmed profile → fixture fortune → e
 
 ## Work against the current backend
 
-Follow [the backend run guide](../../server/README.md). Guided intake, curated plans and quiz content work keylessly; use the generated schemas and fixtures for parsing. Prediction/compare/sensitivity deliberately return 501/null under the user's latest request. Render that unavailable state, not fake mortality values. Voice capture/playback remain deferred. There is no `contracts/stub_server.py` or numerical model fixture yet.
+Follow [the backend run guide](../../server/README.md). Guided intake, curated plans and quiz content work keylessly; use the generated schemas and fixtures for parsing. Server predict now serves the installed DeepSurv artifact; compare/sensitivity still return 501/null. The on-device Cox package is a separate boundary with its own support rules. Render the selected model's actual results or unavailable state; never mix model values. Cartesia integration exists with limitations in the voice guide. There is no `contracts/stub_server.py`.
+
+## October 23 product refinement (planned)
+
+Build upload/import → confirm candidates → missing-field follow-up, with decline, unreadable-file and correction paths. Add a short daily schedule, real activity check-in and an explained next-plan revision. An immediate twin reaction acknowledges the log; it must not claim an overnight medical improvement. Preserve actual history separately from hypothetical activity. The existing backend daily check-in never updates the forecast; only explicit supported profile/window mappings may do that. Coordinate contracts and consent/local-history/scheduling decisions with B/D first. See [the meeting decisions](../meetings/2026-10-23-product-refinement.md).

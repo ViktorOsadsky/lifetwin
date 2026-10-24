@@ -1,16 +1,17 @@
 # Master doc reconciliation
 
 Maps every section of [`projectspec.md`](../projectspec.md) to its owner track, and records each place a team decision changes it.
-The original spec itself is unchanged. [MASTER_PLAN.md](../MASTER_PLAN.md) governs current product/implementation decisions; this file records differences from that spec. Non-prediction contracts/server now exist; numerical stubs and model implementation remain deferred. See [the backend run guide](../server/README.md) for working commands and [tech-stack.md](tech-stack.md) for technology choices.
+The original spec itself is unchanged. [MASTER_PLAN.md](../MASTER_PLAN.md) governs current product/implementation decisions; this file records differences from that spec. The app, voice path, check-in APIs and model packages now exist; document upload and autonomous daily planning remain planned. See the master guide for distinct server/on-device model boundaries. See [the backend run guide](../server/README.md) for working commands and [tech-stack.md](tech-stack.md) for technology choices.
 
 ## Team decisions that change the master doc
 
 | Master doc | Says | Team decision | Status |
 |---|---|---|---|
-| Current implementation scope | Full predictive product vision | User requested backend work with blank keys and all death-prediction-related implementation deferred. Guided intake, curated cited plans/research adapter and quiz delivery are implemented; prediction/compare/sensitivity routes only return HTTP 501/null. No model, risk math, fake survival fixtures, app or audio implementation | Current user scope; see backend run guide |
+| Current implementation scope | Full predictive product vision | Earlier backend deferral has been superseded by merged app/voice/check-in/model work. Server predict serves DeepSurv; the separate Cox package supports years 1–5 and has its own population/support rules. Server compare/sensitivity remain 501. Upload and daily planning are not implemented | Current code boundaries in master guide and run guides |
 | §1, §2, §10, §11 Product/UI | Scientific dashboard with traditional onboarding screens | Mostly full-screen pet-game UI inspired by Talking Tom; original SVG art and LottieFiles motion, customizable twin, charts/plans as activities or panels | User decision |
-| §2.2 Onboarding | Multi-step health questionnaire, sliders/selections | Mascot asks questions through an LLM conversation guide; voice-first replies with an equal text conversation option, explicit extraction confirmation and corrections. Voice provider/implementation deferred | User decision |
-| §3, §15 Longevity presentation | Survival probabilities/curves, no exact death date | Mascot uses a magic ball to narrate the longevity outlook. Statistical limitations remain: no fabricated exact date or unsupported lifespan extrapolation | Product presentation updated; model constraint retained |
+| §2.2 Onboarding | Multi-step health questionnaire, sliders/selections | Offer document upload immediately, Apple Health import or mascot voice/text; confirm candidate fields, then ask only for missing required inputs. Cartesia voice exists; upload is planned | October 23 meeting refinement |
+| §3, §15 Longevity presentation | Survival probabilities/curves, no exact death date | Magic-ball reveal adds supported annual outlook, model drivers and scenario differences beyond a lone five-year percentage. The request for an exact death year is translated into interactive supported curves, never a cutoff-derived date or years gained | October 23 aspiration reconciled with model/safety limits |
+| §5, §14 Recurring value | Advisor and optional short-term challenges | Target an opt-in daily health secretary: observe confirmed updates/feedback → prepare a cited schedule → user acts/logs → agent revises and explains. Real history, experiments, quiz health and medical predictions stay separate | October 23 meeting; planner/scheduler contracts pending |
 | New quiz mode | Not in original scope | Challenging food/situation questions; wrong answers immediately make the twin look sicker through independent, reversible game-health state. Quiz answers do not modify confirmed inputs or predictions | User decision |
 | §4, §5 Scenario/advisor | Manual comparison and curated advisor context | Add bounded finite-difference input search, cited web research, practical plans and explicit plan-to-experiment mappings; supplements are optional research with no invented model effect | User direction; contracts to implement |
 | Team workflow | Earlier split allowed direct merges to main | Every change goes through a branch, PR and merge after required checks/protections | User decision |
@@ -19,7 +20,7 @@ The original spec itself is unchanged. [MASTER_PLAN.md](../MASTER_PLAN.md) gover
 | §6.4 Model selection | Cox first; random survival forest only if validation justifies it | Victor chooses the method. The master doc's order is the recommended default, not a requirement. Any model must still output S(t), a horizon cap and a validated population (§3.1, §3.2, §6.5) | Decided |
 | §9 `/api/predict` request | Example sends `bmi` | The app sends `height_cm` and `weight_kg` (what §2.2 onboarding collects), and the server computes BMI. §9 allows the schema to be "adjusted to match the final trained model" | Planned contract decision |
 | §5.3 Advisor context | Profile, predictions, comparisons, attributions, curated guidelines | The LLM gets the user's inputs plus the model's results (predictions, comparisons, risk factors). Guidelines are curated by Track D. **May change later** | Decided, revisable |
-| §15 Privacy | "Keep scenario comparisons in browser state" | Keep them in on-device app state (no account, no server storage) | Follows from Flutter |
+| §15 Privacy | "Keep scenario comparisons in browser state" | Keep scenarios on device. Check-in history stays on the phone; an across-day planner needs explicit local persistence, consent and deletion decisions. No implied durable server health store | Follows from Flutter and existing check-in boundary |
 
 ## Where each master-doc section lives
 
@@ -27,8 +28,8 @@ The original spec itself is unchanged. [MASTER_PLAN.md](../MASTER_PLAN.md) gover
 |---|---|---|
 | §1 Overview | All | Unchanged |
 | §2.1 Landing | C | Game-room welcome and mascot introduction replace the original scientific landing direction |
-| §2.2 Onboarding | C (conversation UI), B (validation), D (guide) | Voice/text turns yield confirmed schema-shaped fields; no traditional multi-page intake. Unsupported inputs are informational. Voice integration deferred |
-| §3.1 Longevity overview | C (UI), B (numbers) | 10-year and, if follow-up supports it, 20-year headline from `prediction.survival_<N>_year`; out-of-population profiles get `status: "unsupported"` + `limitation` |
+| §2.2 Onboarding | C (upload/conversation UI), B (extraction/validation boundary), D (guide) | Upload/import first, confirm candidates, then missing-field voice/text follow-ups; coordinate upload schema before implementation |
+| §3.1 Longevity overview | C (UI), A/B (model boundaries) | Show only the selected model's supported annual values and limitations; current artifacts stop at five years. Do not promise the original 10/20-year headlines |
 | §3.2 Survival curve | C | Curve from `survival_curve`, capped at `max_horizon_years` |
 | §3.3 Lifestyle controls | C | Previous curve muted, new curve contrasting, persistent "modeled, not causal" label |
 | §4 Compare your futures | C (UI), B (`/api/compare`) | Deltas in percentage points are computed by the server, never the app |
@@ -43,7 +44,7 @@ The original spec itself is unchanged. [MASTER_PLAN.md](../MASTER_PLAN.md) gover
 | §13 MVP | All | Item 7 open (see above) |
 | §14 Optional features | After MVP | Apple Health fits the Flutter/iOS choice well, but only after the MVP works |
 | §15 Safety and privacy | D (copy), B (logging), C (display) | Rules repeated at the end of [team-plan.md](team-plan.md) |
-| §16 Demo | D | Updated flow: talk/type → confirm → fortune → plan → experiment/reset → quiz and recovery, using real versus fixture mode labels |
+| §16 Demo | D | Upload/import or talk/type → confirm missing inputs → outlook/drivers → experiment/reset → daily schedule → real check-in → explained next-plan revision; quiz/recovery remains separate. Label unavailable capabilities |
 | §17 Success criteria | All | Used as the definition of done |
 
 ## Headline horizons
@@ -51,3 +52,7 @@ The original spec itself is unchanged. [MASTER_PLAN.md](../MASTER_PLAN.md) gover
 The master doc's §9 example shows 5 and 10 years; §3.1 asks for 10 and, "where supported by follow-up data", 20.
 Planned stub horizons are illustrative, not promised real outputs. The real horizons come from Victor's follow-up analysis: curves and headlines stop at the
 model's `max_horizon_years`.
+
+## October 23 product refinement source
+
+The [meeting decision record](meetings/2026-10-23-product-refinement.md) cites the user-supplied transcript, preserves requests and unresolved questions, and maps them to acceptance criteria. The original spec stays unchanged. No schemas or model versions change in this documentation PR; B/C/D must agree upload and plan-revision contracts before dependent code.
