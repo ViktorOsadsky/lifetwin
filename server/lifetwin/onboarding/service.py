@@ -272,9 +272,10 @@ class ConversationService:
                     async with asyncio.timeout(self.timeout):
                         extraction = await self.extractor.extract(text, target)
                     candidates = grounded_candidates(text, extraction, target)
-                    if not candidates:
-                        raise ExtractionUnavailable()
-                    mode, provider_status = "llm", "used"
+                    # The helper answered; finding no usable value is not an outage.
+                    provider_status = "used"
+                    if candidates:
+                        mode = "llm"
                 except (ExtractionUnavailable, TimeoutError):
                     provider_status = "unavailable"
             else:

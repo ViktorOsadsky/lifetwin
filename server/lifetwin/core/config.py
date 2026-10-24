@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_model: str = ""
     llm_api_key: SecretStr = SecretStr("")
+    # Reasoning models (e.g. Muse) spend the token budget thinking unless effort is limited.
+    llm_reasoning_effort: Literal["", "minimal", "low", "medium", "high"] = "minimal"
     tavily_api_key: SecretStr = SecretStr("")
     cartesia_api_key: SecretStr = SecretStr("")
     cartesia_version: str = "2026-08-14"

@@ -102,6 +102,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 api_key=settings.llm_api_key.get_secret_value(),
                 model=settings.llm_model,
                 timeout_seconds=settings.provider_timeout_seconds,
+                reasoning_effort=settings.llm_reasoning_effort,
             )
             if settings.llm_provider == "chat_completions"
             else OpenAIExtractor(

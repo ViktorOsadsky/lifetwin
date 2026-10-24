@@ -170,11 +170,108 @@ def normalize_text(text: str) -> str:
     return " ".join(text.translate(QUOTES).split())
 
 
+UNITS_WORDS = {
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+}
+TENS_WORDS = {
+    "twenty": 20,
+    "thirty": 30,
+    "forty": 40,
+    "fifty": 50,
+    "sixty": 60,
+    "seventy": 70,
+    "eighty": 80,
+    "ninety": 90,
+}
+NUMBER_WORDS = re.compile(
+    r"\b(?:(a|one|two) hundred(?: and)? )?(?:("
+    + "|".join(TENS_WORDS)
+    + r")(?:[ -]("
+    + "|".join(UNITS_WORDS)
+    + r"))?|("
+    + "|".join(UNITS_WORDS)
+    + r"))\b"
+    r"|\b(a|one|two) hundred\b"
+)
+
+
+def _number_words(value: str) -> str:
+    """Spoken answers arrive as words: "five foot eight" -> "5 foot 8"."""
+
+    def digits(m: re.Match) -> str:
+        hundreds = m.group(1) or m.group(5)
+        total = {"a": 100, "one": 100, "two": 200}[hundreds] if hundreds else 0
+        if m.group(2):
+            total += TENS_WORDS[m.group(2)] + (UNITS_WORDS[m.group(3)] if m.group(3) else 0)
+        elif m.group(4):
+            total += UNITS_WORDS[m.group(4)]
+        return str(total)
+
+    value = re.sub(r"\b(?:half an hour|a half hour)\b", "30 minutes", value)
+    return NUMBER_WORDS.sub(digits, value)
+
+
+# Everyday speech around an otherwise explicit answer. Approximations ("about 170
+# pounds") are accepted because every value is read back for confirmation; real
+# uncertainty, negation and past or hypothetical tense ("maybe", "not", "used to",
+# "if") are never stripped, so those answers still go to clarification.
+FILLERS = r"^(?:(?:oh|well|um|uh|so|hmm|ok|okay)\s+)+"
+HABIT = r"^(?:usually|normally|typically|generally)\s+"
+# Only verbs that belong to the asked field: "I weigh 70" must never answer the age question.
+HABIT_VERBS: dict[str, str] = {
+    "sleep_hours": "get|sleep",
+    "exercise_minutes_weekly": "do|get|walk|exercise",
+    "weight_kg": "weigh",
+    "alcohol_drinks_weekly": "have|drink",
+}
+APPROX = r"\b(?:about|around|roughly|approximately|close to|nearly|almost)\s+(?=\d)"
+TRAILING = (
+    r"\s+(?:i think|i guess|i believe|or so|give or take|more or less"
+    r"|these days|nowadays|right now|at the moment)$"
+)
+# "two hours of walking a week": the activity name is not part of the measurement.
+ACTIVITY = (
+    r"\s+of\s+(?:walking|exercise|exercising|activity|swimming|biking|cycling|gardening|dancing)\b"
+)
+
+
 def _phrase(field: ProfileField, text: str) -> str:
     value = normalize_text(text).lower().rstrip(".!?").strip()
-    value = re.sub(r"^" + PREFIXES[field] + r"\s+", "", value)
     # Commas are pauses inside one spoken answer ("no, I don't"; "5 feet, 10 inches").
     value = " ".join(value.replace(",", " ").split())
+    value = re.sub(FILLERS, "", value)
+    value = re.sub(r"^" + PREFIXES[field] + r"\s+", "", value)
+    value = re.sub(HABIT, "", value)
+    if field in HABIT_VERBS:
+        value = re.sub(
+            r"^i\s+(?:usually\s+|normally\s+|typically\s+)?(?:" + HABIT_VERBS[field] + r")\s+",
+            "",
+            value,
+        )
+    value = _number_words(value)
+    value = re.sub(TRAILING, "", value)
+    if field == "exercise_minutes_weekly":
+        value = re.sub(ACTIVITY, "", value)
+    value = re.sub(APPROX, "", value)
     return re.sub(r"(\d+) and a half\b", r"\1.5", value)
 
 
@@ -288,6 +385,12 @@ def parse_value(field: ProfileField, text: str) -> dict:
             "yes i smoke": "current",
             "unknown": "unknown",
         }.get(value)
+        # "I quit smoking back in 1990", "I stopped smoking years ago": quitting is the answer.
+        if result is None and re.fullmatch(
+            r"i(?: have|'ve)? (?:quit|stopped|gave up)(?: smoking)?(?: .+)?|i used to smoke(?: .+)?",
+            value,
+        ):
+            result = "former"
     elif field == "diabetes":
         if value in {
             "yes",

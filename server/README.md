@@ -86,6 +86,7 @@ Select the extraction provider with environment variables (all blank by default;
 | `LLM_BASE_URL` | Chat Completions base URL; defaults to `https://api.meta.ai/v1` when `chat_completions`. Requests go to `{base}/chat/completions`. |
 | `LLM_MODEL` | Model ID, required. |
 | `LLM_API_KEY` | Bearer key, required; kept server-side and never logged or returned. |
+| `LLM_REASONING_EFFORT` | `minimal` (default), `low`, `medium`, `high`, or blank to omit. Reasoning models such as Muse otherwise spend the whole token budget thinking and return no answer (observed live). |
 
 Muse example (supply your own key):
 

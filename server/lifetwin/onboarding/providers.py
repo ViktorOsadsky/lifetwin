@@ -31,7 +31,10 @@ def _instructions(field: ProfileField) -> str:
         "Each quote must be an exact substring of the user text, containing the measurement "
         "and its units or an explicit categorical answer. Never infer missing units, diagnoses, "
         "values or demographics. Do not compute predictions. Omit ambiguous, hypothetical, "
-        "past, negated or contradictory measurements. The current question concerns " + field + "."
+        "negated or contradictory measurements, and old measurements that may no longer be true. "
+        'Numbers may be written as words ("five foot eight"). Habits the user describes as '
+        "their current routine count as explicit answers, and saying they quit smoking is an "
+        "explicit answer of former smoker. The current question concerns " + field + "."
     )
 
 
@@ -136,8 +139,10 @@ class ChatCompletionsExtractor:
         api_key: str = "",
         model: str = "",
         timeout_seconds: float = 6,
+        reasoning_effort: str = "minimal",
         client: httpx.AsyncClient | None = None,
     ):
+        self._reasoning_effort = reasoning_effort.strip()
         self._base_url = base_url.strip().rstrip("/")
         self._api_key = api_key.strip()
         self._model = model.strip()
@@ -153,7 +158,7 @@ class ChatCompletionsExtractor:
             raise ExtractionUnavailable()
         payload = {
             "model": self._model,
-            "max_tokens": 1000,
+            "max_tokens": 2000,
             "messages": [
                 {
                     "role": "system",
@@ -171,6 +176,8 @@ class ChatCompletionsExtractor:
                 },
             },
         }
+        if self._reasoning_effort:
+            payload["reasoning_effort"] = self._reasoning_effort
         client = self._client or httpx.AsyncClient(follow_redirects=False, trust_env=False)
         try:
             async with client.stream(
