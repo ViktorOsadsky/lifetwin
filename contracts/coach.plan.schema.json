@@ -1,0 +1,718 @@
+{
+  "$defs": {
+    "InputSummary": {
+      "additionalProperties": false,
+      "description": "What the plan was built from: real observations only, never experiments.",
+      "properties": {
+        "days_logged_last_7": {
+          "title": "Days Logged Last 7",
+          "type": "integer"
+        },
+        "experiments_used": {
+          "const": false,
+          "default": false,
+          "title": "Experiments Used",
+          "type": "boolean"
+        },
+        "missing": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing",
+          "type": "array"
+        },
+        "observed": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Observed",
+          "type": "array"
+        },
+        "snapshot_id": {
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "stale": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Stale",
+          "type": "array"
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "observed",
+        "missing",
+        "stale",
+        "days_logged_last_7",
+        "experiments_used"
+      ],
+      "title": "InputSummary",
+      "type": "object"
+    },
+    "MascotEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "caption": {
+          "maxLength": 1500,
+          "minLength": 1,
+          "title": "Caption",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "asking",
+            "thinking",
+            "confirming",
+            "celebrating",
+            "idle",
+            "concerned"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state",
+        "caption"
+      ],
+      "title": "MascotEvent",
+      "type": "object"
+    },
+    "MemoryInstruction": {
+      "additionalProperties": false,
+      "description": "What the app should do to its notebook after the person confirms.",
+      "properties": {
+        "action": {
+          "enum": [
+            "forget",
+            "forget_all"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "confirm_prompt": {
+          "title": "Confirm Prompt",
+          "type": "string"
+        },
+        "confirmations_needed": {
+          "default": 1,
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Confirmations Needed",
+          "type": "integer"
+        },
+        "note_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Note Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "action",
+        "note_ids",
+        "confirm_prompt",
+        "confirmations_needed"
+      ],
+      "title": "MemoryInstruction",
+      "type": "object"
+    },
+    "PlanChange": {
+      "additionalProperties": false,
+      "properties": {
+        "change": {
+          "enum": [
+            "new",
+            "kept",
+            "swapped",
+            "stepped_up",
+            "shorter",
+            "seated",
+            "edited",
+            "paused",
+            "removed"
+          ],
+          "title": "Change",
+          "type": "string"
+        },
+        "explanation": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "item_id": {
+          "enum": [
+            "move",
+            "food",
+            "habit",
+            "cheer"
+          ],
+          "title": "Item Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_id",
+        "change",
+        "explanation"
+      ],
+      "title": "PlanChange",
+      "type": "object"
+    },
+    "PlanItem": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "maxLength": 40,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "based_on": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Based On",
+          "type": "array"
+        },
+        "callback_note_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Callback Note Id"
+        },
+        "catalog_id": {
+          "maxLength": 40,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Catalog Id",
+          "type": "string"
+        },
+        "causal_interpretation": {
+          "const": false,
+          "default": false,
+          "title": "Causal Interpretation",
+          "type": "boolean"
+        },
+        "controls": {
+          "items": {
+            "enum": [
+              "accept",
+              "edit",
+              "dismiss"
+            ],
+            "type": "string"
+          },
+          "title": "Controls",
+          "type": "array"
+        },
+        "counts_as": {
+          "anyOf": [
+            {
+              "enum": [
+                "moderate",
+                "vigorous",
+                "none"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Counts As"
+        },
+        "id": {
+          "enum": [
+            "move",
+            "food",
+            "habit",
+            "cheer"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "intensity": {
+          "anyOf": [
+            {
+              "enum": [
+                "light",
+                "moderate",
+                "vigorous"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intensity"
+        },
+        "kind": {
+          "enum": [
+            "workout",
+            "diet",
+            "habit",
+            "encourage"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "lever": {
+          "anyOf": [
+            {
+              "enum": [
+                "quit_smoking",
+                "vigorous_plus_60",
+                "moderate_plus_90",
+                "short_sleep_plus_1h",
+                "sitting_minus_60_realistic",
+                "keep_it_up"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lever"
+        },
+        "message": {
+          "maxLength": 400,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "minutes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minutes"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "enum": [
+                "seated",
+                "supported_standing",
+                "standing",
+                "water"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Position"
+        },
+        "reviewed_by": {
+          "const": "awaiting professional review",
+          "default": "awaiting professional review",
+          "title": "Reviewed By",
+          "type": "string"
+        },
+        "source_title": {
+          "title": "Source Title",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "time_of_day": {
+          "enum": [
+            "morning",
+            "afternoon",
+            "evening"
+          ],
+          "title": "Time Of Day",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "wellness_card": {
+          "anyOf": [
+            {
+              "enum": [
+                "activity",
+                "sitting",
+                "sleep",
+                "smoking"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wellness Card"
+        },
+        "why": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Why",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "action_id",
+        "catalog_id",
+        "lever",
+        "title",
+        "message",
+        "why",
+        "minutes",
+        "time_of_day",
+        "intensity",
+        "position",
+        "counts_as",
+        "based_on",
+        "wellness_card",
+        "source_title",
+        "source_url",
+        "callback_note_id",
+        "controls",
+        "reviewed_by",
+        "causal_interpretation"
+      ],
+      "title": "PlanItem",
+      "type": "object"
+    },
+    "TraceFact": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "value"
+      ],
+      "title": "TraceFact",
+      "type": "object"
+    },
+    "TraceStep": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "evidence": {
+          "title": "Evidence",
+          "type": "string"
+        },
+        "facts": {
+          "items": {
+            "$ref": "#/$defs/TraceFact"
+          },
+          "title": "Facts",
+          "type": "array"
+        },
+        "item_id": {
+          "anyOf": [
+            {
+              "enum": [
+                "move",
+                "food",
+                "habit",
+                "cheer"
+              ],
+              "type": "string"
+            },
+            {
+              "const": "plan",
+              "type": "string"
+            }
+          ],
+          "title": "Item Id"
+        },
+        "rule": {
+          "title": "Rule",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_id",
+        "facts",
+        "rule",
+        "evidence",
+        "action"
+      ],
+      "title": "TraceStep",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "based_on": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Based On"
+    },
+    "causal_interpretation": {
+      "const": false,
+      "default": false,
+      "title": "Causal Interpretation",
+      "type": "boolean"
+    },
+    "changes": {
+      "items": {
+        "$ref": "#/$defs/PlanChange"
+      },
+      "title": "Changes",
+      "type": "array"
+    },
+    "clarify": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Clarify"
+    },
+    "emergency": {
+      "default": false,
+      "title": "Emergency",
+      "type": "boolean"
+    },
+    "inputs": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/InputSummary"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/PlanItem"
+      },
+      "maxItems": 4,
+      "title": "Items",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "lines": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 1,
+      "title": "Lines",
+      "type": "array"
+    },
+    "local_date": {
+      "title": "Local Date",
+      "type": "string"
+    },
+    "mascot_events": {
+      "items": {
+        "$ref": "#/$defs/MascotEvent"
+      },
+      "maxItems": 2,
+      "minItems": 1,
+      "title": "Mascot Events",
+      "type": "array"
+    },
+    "memory_instruction": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MemoryInstruction"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "mood": {
+      "enum": [
+        "happy",
+        "proud",
+        "cozy",
+        "waiting",
+        "concerned",
+        "celebrate"
+      ],
+      "title": "Mood",
+      "type": "string"
+    },
+    "movement_paused": {
+      "default": false,
+      "title": "Movement Paused",
+      "type": "boolean"
+    },
+    "phrased_by": {
+      "default": "templates",
+      "enum": [
+        "templates",
+        "muse"
+      ],
+      "title": "Phrased By",
+      "type": "string"
+    },
+    "plan_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "personal",
+            "general"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Plan Type"
+    },
+    "provider_status": {
+      "default": "not_requested",
+      "enum": [
+        "not_requested",
+        "not_configured",
+        "used",
+        "fallback",
+        "unavailable",
+        "daily_cap"
+      ],
+      "title": "Provider Status",
+      "type": "string"
+    },
+    "reply": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reply"
+    },
+    "reused_previous": {
+      "default": false,
+      "title": "Reused Previous",
+      "type": "boolean"
+    },
+    "revision_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Revision Id"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "ok",
+        "emergency"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "trace": {
+      "items": {
+        "$ref": "#/$defs/TraceStep"
+      },
+      "title": "Trace",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "revision_id",
+    "based_on",
+    "local_date",
+    "inputs",
+    "plan_type",
+    "reused_previous",
+    "clarify",
+    "lines",
+    "reply",
+    "items",
+    "changes",
+    "trace",
+    "mood",
+    "mascot_events",
+    "emergency",
+    "movement_paused",
+    "memory_instruction",
+    "phrased_by",
+    "provider_status",
+    "causal_interpretation",
+    "limitations"
+  ],
+  "title": "CoachPlanResponse",
+  "type": "object"
+}

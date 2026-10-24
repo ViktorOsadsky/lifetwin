@@ -933,5 +933,139 @@
         "age": null
       }
     }
+  },
+  {
+    "name": "coach-plan-general-when-nothing-is-known",
+    "method": "POST",
+    "path": "/api/coach/plan",
+    "request_schema": "coach.plan.request.schema.json",
+    "request": {
+      "local_date": "2026-10-24"
+    },
+    "status": 200,
+    "response_schema": "coach.plan.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "plan_type": "general",
+      "emergency": false,
+      "phrased_by": "templates",
+      "provider_status": "not_requested",
+      "causal_interpretation": false,
+      "items": {
+        "$each": {
+          "controls": [
+            "accept",
+            "edit",
+            "dismiss"
+          ],
+          "reviewed_by": "awaiting professional review",
+          "causal_interpretation": false
+        }
+      },
+      "inputs": {
+        "experiments_used": false
+      }
+    }
+  },
+  {
+    "name": "coach-plan-knee-pain-seated",
+    "method": "POST",
+    "path": "/api/coach/plan",
+    "request_schema": "coach.plan.request.schema.json",
+    "request": {
+      "local_date": "2026-10-24",
+      "profile": {
+        "age": 72,
+        "exercise_minutes_weekly": 0
+      },
+      "limits": [
+        "knee_pain"
+      ]
+    },
+    "status": 200,
+    "response_schema": "coach.plan.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "plan_type": "personal",
+      "based_on": null
+    }
+  },
+  {
+    "name": "coach-plan-emergency",
+    "method": "POST",
+    "path": "/api/coach/plan",
+    "request_schema": "coach.plan.request.schema.json",
+    "request": {
+      "local_date": "2026-10-24",
+      "said": "I think I'm having a heart attack"
+    },
+    "status": 200,
+    "response_schema": "coach.plan.schema.json",
+    "response_subset": {
+      "status": "emergency",
+      "emergency": true,
+      "mood": "concerned",
+      "items": [],
+      "revision_id": null,
+      "lines": [
+        "I'm sorry you're going through that. If you need help right now, please call 911. We can carry on whenever you're ready."
+      ]
+    }
+  },
+  {
+    "name": "coach-plan-altered-previous-plan",
+    "method": "POST",
+    "path": "/api/coach/plan",
+    "request_schema": "coach.plan.request.schema.json",
+    "request": {
+      "local_date": "2026-10-24",
+      "previous_plan": {
+        "revision_id": "r0000000000000000",
+        "local_date": "2026-10-23",
+        "input_snapshot_id": "s0000000000000000",
+        "items": [
+          {
+            "id": "move",
+            "kind": "workout",
+            "catalog_id": "walk_short",
+            "minutes": 10
+          }
+        ]
+      },
+      "feedback": {
+        "revision_id": "r0000000000000000",
+        "items": [
+          {
+            "item_id": "move",
+            "status": "done"
+          }
+        ]
+      }
+    },
+    "status": 409,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "stale_revision"
+    }
+  },
+  {
+    "name": "coach-plan-feedback-without-plan",
+    "method": "POST",
+    "path": "/api/coach/plan",
+    "request_schema": "coach.plan.request.schema.json",
+    "request_schema_valid": true,
+    "request": {
+      "local_date": "2026-10-24",
+      "feedback": {
+        "revision_id": "r1",
+        "items": []
+      }
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "code": "invalid_request"
+    }
   }
 ]
