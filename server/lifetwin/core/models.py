@@ -79,3 +79,42 @@ class CompareRequest(ApiModel):
 
 class SensitivityRequest(ApiModel):
     profile: HealthProfile
+
+
+Wellbeing = Literal["good", "okay", "not_great"]
+
+
+class CheckinValues(ApiModel):
+    """Answers from a daily or weekly check-in, in the profile's own units and ranges.
+
+    Weekly answers use the profile's field names, so a caller can offer them as
+    profile updates. Daily answers are about one night or one day and have their
+    own names, so they never pass for a usual week.
+    """
+
+    # Daily: one night, one day.
+    sleep_hours_last_night: float | None = Field(default=None, ge=0, le=24)
+    exercise_minutes_today: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1440)
+    alcohol_drinks_yesterday: float | None = Field(default=None, ge=0, le=50)
+    # Daily or weekly: how the person feels (daily) or how the week went (weekly).
+    wellbeing: Wellbeing | None = None
+    # Weekly: the same fields, units and ranges as HealthProfile.
+    sleep_hours: float | None = Field(default=None, ge=0, le=24)
+    exercise_minutes_weekly: Annotated[int | None, WholeNumber] = Field(
+        default=None, ge=0, le=10080
+    )
+    smoking_status: Literal["never", "former", "current", "unknown"] | None = None
+    alcohol_drinks_weekly: float | None = Field(default=None, ge=0, le=200)
+    weight_kg: float | None = Field(default=None, ge=10, le=700)
+    systolic_bp: Annotated[int | None, WholeNumber] = Field(default=None, ge=40, le=300)
+    diastolic_bp: Annotated[int | None, WholeNumber] = Field(default=None, ge=20, le=200)
+
+    @model_validator(mode="after")
+    def blood_pressure_order(self):
+        if (
+            self.systolic_bp is not None
+            and self.diastolic_bp is not None
+            and self.systolic_bp <= self.diastolic_bp
+        ):
+            raise ValueError(BP_ORDER_MESSAGE)
+        return self

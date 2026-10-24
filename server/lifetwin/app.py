@@ -9,6 +9,8 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from lifetwin.advisor import router as advisor_router
+from lifetwin.checkin import CheckinService
+from lifetwin.checkin import router as checkin_router
 from lifetwin.core.config import Settings
 from lifetwin.core.middleware import RequestBudgetMiddleware
 from lifetwin.core.models import (
@@ -45,6 +47,11 @@ FIELD_WORDS = {
     "limit": "number of questions",
     "question_id": "question",
     "voice_consent": "voice",
+    "sleep_hours_last_night": "last night's sleep",
+    "exercise_minutes_today": "today's exercise",
+    "alcohol_drinks_yesterday": "yesterday's drinks",
+    "wellbeing": "how you feel",
+    "local_date": "date",
 }
 
 
@@ -93,7 +100,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title="LifeTwin backend",
         version="0.1.0",
         description=(
-            "Mascot intake, survival forecast, educational plans and quiz content. "
+            "Mascot intake and check-ins, survival forecast, educational plans and quiz content. "
             "Compare and sensitivity are deferred."
         ),
         lifespan=lifespan,
@@ -118,6 +125,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ),
         timeout_seconds=settings.provider_timeout_seconds,
     )
+    # Check-ins are guided only and stateless: the caller sends the previous answers.
+    application.state.checkin_service = CheckinService()
     application.state.research_client = TavilyResearch(
         api_key=settings.tavily_api_key.get_secret_value(),
         timeout_seconds=settings.provider_timeout_seconds,
@@ -228,6 +237,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         onboarding_router,
         prefix="/api",
         responses={**BODY_ERRORS, **_described({409: "Invalid conversation transition"})},
+    )
+    application.include_router(
+        checkin_router,
+        prefix="/api",
+        responses={**BODY_ERRORS, **_described({409: "Invalid check-in transition"})},
     )
     application.include_router(advisor_router, prefix="/api", responses=BODY_ERRORS)
     application.include_router(

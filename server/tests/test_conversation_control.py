@@ -14,7 +14,14 @@ from pathlib import Path
 import pytest
 
 from lifetwin.onboarding import ConversationService
-from lifetwin.onboarding.intents import clean_reply, control_intent, read_back_reply
+from lifetwin.onboarding.intents import (
+    EMERGENCY_MESSAGE,
+    RESUME_LEAD,
+    clean_reply,
+    control_intent,
+    emergency,
+    read_back_reply,
+)
 from lifetwin.onboarding.models import ConversationState, TurnRequest, TurnResponse
 from lifetwin.onboarding.parsing import QUESTIONS, normalize_text
 from lifetwin.onboarding.service import (
@@ -668,3 +675,98 @@ def test_yes_start_over_after_no_change_it_clears_and_a_value_still_corrects():
     assert changed.pending_profile.sex == "female" and changed.phase == "confirming"
     kept = correct(pending, "skip")
     assert kept.message.startswith("Nothing has changed.")
+
+
+# --- Emergencies (shared with check-ins) ---------------------------------------------
+
+EMERGENCIES = [
+    "I have chest pain",
+    "ive had chest pains since breakfast",
+    "had chest pain this morning",
+    "i think im having a heart attack",
+    "I think I am dying",
+    "i cant breathe",
+    "I'm struggling to breathe",
+    "my chest feels tight",
+    "I fell and cant get up",
+    "I want to die",
+    "i dont want to live anymore",
+    "I've been thinking about suicide",
+    "the cut won't stop bleeding",
+    "call 911",
+    "my wife is having a stroke",
+]
+NOT_EMERGENCIES = [
+    "my heart attack was in 2015",
+    "I had a heart attack in 2015",
+    "I had chest pain years ago",
+    "I'm dying to see my grandkids",
+    "this pain in my knee",
+    "I get short of breath on the stairs",
+    "I nearly killed myself laughing",
+    "killing myself laughing",
+    "a stroke of luck",
+    "I'm 72",
+]
+
+
+@pytest.mark.parametrize("text", EMERGENCIES)
+def test_emergency_phrasings(text):
+    assert emergency(text)
+
+
+@pytest.mark.parametrize("text", NOT_EMERGENCIES)
+def test_not_emergencies(text):
+    assert not emergency(text)
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        ConversationState(phase="asking", current_field="age"),
+        ConversationState(phase="confirming", current_field="age", pending_profile={"age": 72}),
+        ConversationState(phase="asking", current_field="weight_kg", confirmed_profile={"age": 72}),
+    ],
+)
+def test_onboarding_pauses_on_an_emergency(state):
+    result = reply(state, "I'm 72 but I've got chest pain right now")
+    assert result.emergency
+    assert result.message == EMERGENCY_MESSAGE
+    assert [event.state for event in result.mascot_events] == ["concerned"]
+    assert result.state == state  # nothing taken, no next question
+
+
+def test_onboarding_resumes_the_same_question():
+    state = ConversationState(
+        phase="asking", current_field="weight_kg", confirmed_profile={"age": 72}
+    )
+    paused = reply(state, "i cant breathe")
+    service = ConversationService(None, clock=lambda: TODAY)
+    for resumed in (
+        asyncio.run(service.turn(TurnRequest(action="resume", state=paused.state))),
+        reply(paused.state, "let's carry on"),
+    ):
+        assert not resumed.emergency
+        assert resumed.message == RESUME_LEAD + QUESTIONS["weight_kg"]
+        assert resumed.state == state
+
+
+def test_a_correction_with_an_emergency_also_pauses():
+    state = ConversationState(phase="confirming", current_field="age", pending_profile={"age": 72})
+    service = ConversationService(None, clock=lambda: TODAY)
+    result = asyncio.run(
+        service.turn(TurnRequest(action="correct", state=state, text="I want to die"))
+    )
+    assert result.emergency and result.state == state
+
+
+@pytest.mark.parametrize("text", ["my heart attack was in 2015", "I'm dying to see my grandkids"])
+def test_onboarding_reads_history_normally(text):
+    result = reply(ConversationState(phase="asking", current_field="age"), text)
+    assert not result.emergency
+    assert result.mascot_events[0].state == "asking"
+
+
+def test_onboarding_privacy_replies_are_true():
+    assert "stay on your phone" in PRIVATE_NOTE and "doesn't keep them" in PRIVATE_NOTE
+    assert "stay on your phone" in WHY_NOTE and "doesn't keep them" in WHY_NOTE

@@ -44,7 +44,8 @@ class ConversationState(ApiModel):
 
 
 class TurnRequest(ApiModel):
-    action: Literal["start", "reply", "confirm", "correct", "skip", "cancel", "import"]
+    # "resume": the person tapped Continue after an emergency pause.
+    action: Literal["start", "reply", "confirm", "correct", "skip", "cancel", "import", "resume"]
     state: ConversationState = Field(default_factory=ConversationState)
     text: str | None = Field(default=None, min_length=1, max_length=2000)
     input_mode: Literal["text", "transcript"] = "text"
@@ -72,7 +73,8 @@ class TurnRequest(ApiModel):
 
 
 class MascotEvent(ApiModel):
-    state: Literal["asking", "thinking", "confirming", "celebrating", "idle"]
+    # "concerned": a calm pose beside the emergency line, never a cheerful one.
+    state: Literal["asking", "thinking", "confirming", "celebrating", "idle", "concerned"]
     caption: str = Field(min_length=1, max_length=1500)
 
 
@@ -88,6 +90,10 @@ class TurnResponse(ApiModel):
     # Set when the person asked to hear the prompt again more slowly or more loudly;
     # the message repeats the prompt, and a voice client may adjust playback.
     speech_hint: Literal["slower", "louder"] | None = None
+    # The reply said something urgent is happening. The conversation is paused on the
+    # same question: the app shows a "Call 911" button the person taps themselves, and
+    # "Continue" (action "resume", or any reply) goes on where it stopped.
+    emergency: bool = False
     accepted_input_modes: list[Literal["text", "transcript"]] = Field(
         default_factory=lambda: ["text", "transcript"], min_length=2, max_length=2
     )

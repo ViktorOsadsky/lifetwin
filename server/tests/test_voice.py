@@ -133,6 +133,45 @@ def test_upstream_failures_become_plain_503(handler, caplog):
         assert leaked not in caplog.text
 
 
+@pytest.mark.parametrize(
+    "first",
+    [
+        httpx.ConnectTimeout("slow venue network"),
+        httpx.ConnectError("connection reset"),
+        httpx.Response(503, text="busy"),
+    ],
+)
+def test_one_transient_failure_is_retried(first):
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        if len(calls) == 1:
+            if isinstance(first, Exception):
+                raise first
+            return first
+        return httpx.Response(200, json={"token": UPSTREAM_TOKEN})
+
+    with configured_client(handler) as client:
+        response = client.post("/api/voice/token", json={"voice_consent": True})
+    assert response.status_code == 200
+    assert response.json()["token"] == UPSTREAM_TOKEN
+    assert len(calls) == 2
+
+
+def test_client_errors_are_not_retried():
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(401, text="bad key")
+
+    with configured_client(handler) as client:
+        response = client.post("/api/voice/token", json={"voice_consent": True})
+    assert response.status_code == 503
+    assert len(calls) == 1
+
+
 def test_response_and_request_match_contract_schemas():
     from pathlib import Path
 

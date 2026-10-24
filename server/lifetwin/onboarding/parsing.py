@@ -26,7 +26,7 @@ from datetime import date
 
 from pydantic import ValidationError
 
-from lifetwin.core.models import HealthProfile
+from lifetwin.core.models import CheckinValues, HealthProfile
 from lifetwin.onboarding.models import ExtractionResult, ProfileField
 
 QUESTIONS: dict[ProfileField, str] = {
@@ -62,6 +62,11 @@ FRIENDLY_LABELS: dict[ProfileField, str] = {
     "diabetes": "diabetes",
     "systolic_bp": "top blood pressure number",
     "diastolic_bp": "bottom blood pressure number",
+    # Check-in questions about one night or one day, and how the person feels.
+    "sleep_hours_last_night": "sleep",
+    "exercise_minutes_today": "exercise",
+    "alcohol_drinks_yesterday": "drinks",
+    "wellbeing": "feeling",
 }
 # The value each question's own example stands for, so "yes, that's right" said
 # right after it can be offered back for confirmation.
@@ -180,7 +185,21 @@ FIELD_CUES: dict[ProfileField, str] = {
     "diastolic_bp": r"diastolic|blood pressure|mmhg|\bbottom\b|\d\s*(?:/|over)\s*\d",
 }
 BP_FIELDS = {"systolic_bp", "diastolic_bp"}
-CATEGORICAL = {"sex", "smoking_status", "diabetes"}
+# Check-in questions about one night or one day read like their profile question,
+# in their own time frame ("How many hours did you sleep last night?").
+CHECKIN_BASE: dict[str, ProfileField] = {
+    "sleep_hours_last_night": "sleep_hours",
+    "exercise_minutes_today": "exercise_minutes_weekly",
+    "alcohol_drinks_yesterday": "alcohol_drinks_weekly",
+}
+FEELING_CUE = (
+    r"\b(?:feel\w*|felt|good|great|okay|ok|alright|all right|fine|well|bad|poorly|terrible|"
+    r"awful|rough|lousy|so so|fair|wonderful|tired|sick|week)\b"
+)
+for _day, _base_field in CHECKIN_BASE.items():
+    FIELD_CUES[_day] = FIELD_CUES[_base_field]
+FIELD_CUES["wellbeing"] = FEELING_CUE
+CATEGORICAL = {"sex", "smoking_status", "diabetes", "wellbeing"}
 NOTHING = r"(?!)"  # a pattern that never matches
 
 # ---------------------------------------------------------------------------
@@ -583,6 +602,10 @@ PAST_OLD = re.compile(
     r"\b(?:ago|used to|use to|back then|back in|in my prime|when i was|in my youth|"
     r"younger|years back|at one time|formerly|previously|anymore|in the past|decade|before)\b"
 )
+# "Before bed", "before dinner": a time of day, not an old value.
+MEALTIME = (
+    r"\bbefore (?:bed|bedtime|going to bed|i go to bed|sleep|dinner|lunch|breakfast|supper|tea)\b"
+)
 PAST_VERB = re.compile(r"\b(?:was|were|had been|weighed|slept|measured|walked|exercised|drank)\b")
 RECENT = re.compile(
     r"\b(?:last (?:check ?up|time|visit|appointment|reading|physical|week|month|night)|"
@@ -634,7 +657,12 @@ TOPIC_UNITS: dict[str, str] = {
 }
 
 
+def _base(field: str) -> str:
+    return CHECKIN_BASE.get(field, field)
+
+
 def _topic(field: str) -> str:
+    field = _base(field)
     return "blood_pressure" if field in BP_FIELDS else field
 
 
@@ -714,14 +742,20 @@ def _spoiled(field: str, rest: str) -> bool:
     if field != "age" and PAST_SPOIL.search(rest):
         return True
     if ADVICE.search(rest) or (
-        field in HABITS and (REPORTED.search(rest) or SEASONAL.search(rest))
+        _base(field) in HABITS and (REPORTED.search(rest) or SEASONAL.search(rest))
     ):
         return True
-    return field == "alcohol_drinks_weekly" and bool(re.search(NON_ALCOHOL, rest))
+    return _base(field) == "alcohol_drinks_weekly" and bool(re.search(NON_ALCOHOL, rest))
 
 
-def _clean_measurement(field: str, text: str, spans: list[tuple[int, int]]) -> bool:
-    """Whether the value found at ``spans`` is the reply's only, current, own answer."""
+def _clean_measurement(
+    field: str, text: str, spans: list[tuple[int, int]], recent: bool = False
+) -> bool:
+    """Whether the value found at ``spans`` is the reply's only, current, own answer.
+
+    ``recent``: the question asks about last night, today or this week, so a past
+    verb ("I slept 7 hours") is the expected tense, not an old value.
+    """
     # "maybe 60": right before the one number, maybe is a hedge (it is read back);
     # "maybe I weigh 70" doubts the whole statement.
     starts = {start for start, _ in spans}
@@ -736,13 +770,16 @@ def _clean_measurement(field: str, text: str, spans: list[tuple[int, int]]) -> b
     if _spoiled(field, rest):
         return False
     local_raw = _context(text, spans)
+    if _base(field) != "sleep_hours":
+        # "A whiskey before bed" is a time of day; to the sleep question it stays a clue.
+        local_raw = re.sub(MEALTIME, " ", local_raw)
     local = _unhedged(local_raw)
     if NEGATION.search(local) or PAST_OLD.search(local) or CHANGE.search(local):
         return False
     # A blood pressure is always a past reading; only an old one ("years ago") is refused.
     # "were you just getting 5'4": a past verb said to someone else is not the person's past.
     own_past = PAST_VERB.search(re.sub(r"\b(?:were|was|did) you\b", " ", local))
-    stale = own_past and not RECENT.search(local_raw) and field not in BP_FIELDS
+    stale = own_past and not recent and not RECENT.search(local_raw) and field not in BP_FIELDS
     if FUTURE.search(local) or stale:
         return False
     return not _other_topic(field, local)
@@ -1230,7 +1267,7 @@ def _times_per_week(text: str) -> tuple[list[int], list[tuple[int, int]]]:
         spans.append(match.span())
     # The question is per week, so "3 times" and "4 days" are a week's count.
     for match in re.finditer(
-        r"\b(?:(once|twice|thrice)|(\d) ?(?:times?|x|days?))\b"
+        r"\b(?:(once|twice|thrice)|(\d) ?(?:times?|x|days?|nights?|evenings?))\b"
         r"(?!\s+(?:a|per|each|every|in a|of the)\s+(?:day|month|year)\b)(?!\s+ago\b)",
         _blank(text, spans),
     ):
@@ -1283,7 +1320,32 @@ def _sessions(text: str) -> Found:
     return [total], spans
 
 
-def _exercise(text: str, today: date, nested: bool = False) -> Found:
+def _minutes(duration: re.Match) -> float | None:
+    """Minutes in one DURATION match: "45 minutes", "an hour and fifteen minutes", "30 to 40"."""
+    hours = duration.group(3) == "hour"
+    value = float(duration.group(2))
+    if duration.group(1):
+        low = float(duration.group(1))
+        if not 0 < value - low <= (0.5 if hours else 15):
+            return None
+        value = (low + value) / 2
+    minutes = value * (60 if hours else 1)
+    if duration.group(4):
+        if not hours:
+            return None
+        minutes += int(duration.group(4))  # "an hour and fifteen minutes"
+    return minutes
+
+
+# "I didn't exercise this week": a no about a past week or day the question names.
+PAST_NO_EXERCISE = (
+    r"\b(?:didn't|did not|haven't|have not|couldn't|could not)\s+(?:get\s+(?:to\s+)?)?"
+    r"(?:do\s+any(?:thing)?|exercise\w*|work\s+out|walk\w*|move|get\s+out|go\s+out|"
+    r"go for (?:a|any) walks?|get (?:any|a) (?:exercise|walk))\b"
+)
+
+
+def _exercise(text: str, today: date, nested: bool = False, past: bool = False) -> Found:
     if _twice_daily(text):
         return None
     durations = list(re.finditer(DURATION, text))
@@ -1298,7 +1360,8 @@ def _exercise(text: str, today: date, nested: bool = False) -> Found:
         zero = re.search(
             r"\b(?:none|nothing|zero|not a thing|not any|no exercise|nada|zilch)\b|"
             r"\b(?:don't|do not|never)\s+(?:do\s+any(?:thing)?|exercise|work\s+out)\b|"
-            r"^(?:no )?i (?:don't|do not)$",
+            r"^(?:no )?i (?:don't|do not)$"
+            + (rf"|{PAST_NO_EXERCISE}|^(?:no|nope)$" if past else ""),
             text,
         )
         vague = re.search(r"\b(?:much|a lot|often|enough|regularly|as much|very)\b", text)
@@ -1307,17 +1370,9 @@ def _exercise(text: str, today: date, nested: bool = False) -> Found:
         return None if nested else _sessions(text)
     duration = durations[0]
     hours = duration.group(3) == "hour"
-    value = float(duration.group(2))
-    if duration.group(1):
-        low = float(duration.group(1))
-        if not 0 < value - low <= (0.5 if hours else 15):
-            return None
-        value = (low + value) / 2
-    minutes = value * (60 if hours else 1)
-    if duration.group(4):
-        if not hours:
-            return None
-        minutes += int(duration.group(4))  # "an hour and fifteen minutes"
+    minutes = _minutes(duration)
+    if minutes is None:
+        return None
     spans = [duration.span()]
     after = text[duration.end() :]
     weekly, daily = re.match(WEEKLY, after), re.match(DAILY_RATE, after)
@@ -1364,7 +1419,10 @@ DRINK = (
 )
 SIZE = r"(?:(?:small|large|big|little|single|double|nice|cold|stiff|tall)\s+)?"
 # A count without a drink word must not be followed by another noun: "14 units" is not drinks.
-COUNT_END = r"(?=\s*(?:$|[,;.!/]|(?:a|an|per|each|every|on|in|or|with|at|tops|max|i)\b))"
+COUNT_END = (
+    r"(?=\s*(?:$|[,;.!/]|(?:a|an|per|each|every|on|in|or|with|at|tops|max|i|actually|"
+    r"exactly|total|altogether)\b))"
+)
 ZERO_DRINKS = (
     r"\bteetotal\w*|\b(?:don't|do not|never)\s+(?:drink|touch)\b|\bnone\b|\bzero\b|\bnothing\b|"
     r"\bnot a drop\b|\bno alcohol\b|\bnon ?drinker\b|\bnot a drinker\b|\babstain\w*|\bsober\b|"
@@ -1386,7 +1444,35 @@ ZERO_QUALIFIED = (
 )
 
 
-def _alcohol(text: str, today: date) -> Found:
+# "I didn't have any", "no, not a drop": a no about the day or week the question names.
+PAST_NO_DRINKS = (
+    r"\b(?:didn't|did not|haven't|have not)\s+(?:have\s+|had\s+|touch\s+|drink\s+)?"
+    r"(?:any(?:thing)?|a (?:drink|drop|thing)|drink(?:s|ing)?|alcohol)\b|\bhad (?:no|none)\b|"
+    r"^(?:no|nope|nah)(?: i (?:didn't|did not|haven't))?$|"
+    r"\bnot (?:a (?:single )?(?:one|drink|drop)|one|any)\b"
+)
+
+
+def _drinks_by_day(text: str, counts: list, spans: list, worded: list) -> Found:
+    """ "Two gin and tonics on Thursday and one on Sunday": each count with its own day."""
+    order = sorted(range(len(spans)), key=lambda i: spans[i])
+    if not worded[order[0]] or re.search(r"\bor\b", _blank(text, spans)):
+        return None
+    days = []
+    for k, i in enumerate(order):
+        stop = spans[order[k + 1]][0] if k + 1 < len(order) else len(text)
+        named = re.findall(DAY_NAMES, text[spans[i][1] : stop])
+        if len(named) != 1:
+            return None
+        days.append(named[0])
+    rest = _blank(text, spans + [m.span() for m in re.finditer(DAY_NAMES, text)])
+    if len(set(days)) != len(days) or re.search(rf"{FREQUENCY}|\bweekly\b|\bdaily\b", rest):
+        return None
+    return [sum(counts)], spans + [m.span() for m in re.finditer(DAY_NAMES, text)]
+
+
+def _alcohol(text: str, today: date, one_day: bool = False, past: bool = False) -> Found:
+    """Drinks in a week, or with ``one_day`` on one day ("a glass of wine" is then 1)."""
     # "I quit drinking 20 years ago": the years describe the quitting, not a count.
     quit_time = (
         r"\b\d+\s+year\s+ago\b|\b(?:in|since|back in)\s+'?\d{2,4}\b|"
@@ -1394,20 +1480,21 @@ def _alcohol(text: str, today: date) -> Found:
     )
     if _twice_daily(text) or re.search(NON_ALCOHOL, text):
         return None
-    zero = re.search(ZERO_DRINKS, text)
+    zero = re.search(ZERO_DRINKS + (f"|{PAST_NO_DRINKS}" if past else ""), text)
     if zero and not re.search(r"\d", re.sub(quit_time, " ", text)):
         qualified = re.search(ZERO_QUALIFIED, re.sub(quit_time, " ", text))
         return None if qualified else _zero("alcohol_drinks_weekly", text)
-    counts, spans, article = [], [], False
+    counts, spans, article, worded = [], [], False, []
     for pattern, read in (
         (
             rf"(?:\bbetween\s+{N}(?:\s+{SIZE}{DRINK})?\s+and|{N}(?:\s+{SIZE}{DRINK})?(?:\s*(?:or|to|-)|,))"
             rf"\s*{NUM}(?!\d)(?:\s+{SIZE}{DRINK}|{COUNT_END})",
             0,
         ),
-        (rf"\b(?:a|an)\s+{SIZE}{DRINK}\s+or\s+{NUM}(?!\d)", 1),
+        (rf"(?<!half )\b(?:a|an)\s+{SIZE}{DRINK}\s+or\s+{NUM}(?!\d)", 1),
         (rf"{N}(?:\s+{SIZE}{DRINK}|{COUNT_END})", 2),
-        (rf"\b(?:a|an)\s+{SIZE}{DRINK}", 3),
+        (rf"\bhalf (?:a|an)\s+{SIZE}{DRINK}", 4),
+        (rf"(?<!half )\b(?:a|an)\s+{SIZE}{DRINK}", 3),
     ):
         for match in re.finditer(pattern, _blank(text, spans)):
             if read == 0:
@@ -1415,12 +1502,23 @@ def _alcohol(text: str, today: date) -> Found:
             elif read == 1:
                 low, high = 1.0, float(match.group(1))
             else:
-                low = high = 1.0 if read == 3 else float(match.group(1))
-                article = article or read == 3
+                low = high = {3: 1.0, 4: 0.5}.get(read) or float(match.group(1))
+                article = article or read >= 3
             if read < 2 and not 0 < high - low <= 1:
                 return None
             counts.append((low + high) / 2)
             spans.append(match.span())
+            worded.append(read >= 3 or bool(re.search(DRINK, match.group(0))))
+    if one_day:
+        # "A beer and two glasses of wine": each part says what it counts.
+        rest = _blank(text, spans)
+        if not counts or (len(counts) > 1 and (not all(worded) or re.search(r"\bor\b", rest))):
+            return None
+        if re.search(rf"{FREQUENCY}|\bweekly\b|\bdaily\b", rest):
+            return None  # a habit, not one day
+        return [sum(counts)], spans
+    if past and len(counts) > 1:
+        return _drinks_by_day(text, counts, spans, worded)
     if len(counts) != 1:
         return None
     article = article or bool(re.search(r"\ba \d", text))  # "a bottle of wine", rewritten
@@ -1443,6 +1541,211 @@ def _alcohol(text: str, today: date) -> Found:
     if not rates and (article or re.search(FREQUENCY, rest)):
         return None  # "a glass of wine": how often is not stated; or unrecognized frequency
     return [counts[0] * (rates[0] if rates else 1)], spans + rate_spans
+
+
+# ---------------------------------------------------------------------------
+# Check-in answers: one night, one day, this week, how the person feels
+# ---------------------------------------------------------------------------
+
+# Words for the time each check-in question asks about: read, then left out.
+# A reply about another time ("usually", "yesterday" for today) is not the answer.
+HABIT_TIME = (
+    r"\b(?:usually|normally|typically|generally|as a rule|on average|most (?:days|nights|weeks)|"
+    r"every (?:day|night|morning|evening|week)|each (?:day|night|week)|(?:a|per) (?:day|night|week)|"
+    r"daily|nightly|weekly)\b"
+)
+WEEKDAY = r"\b(?:mon|tues|wednes|thurs|fri|satur|sun)days?\b"
+PERIODS: dict[str, tuple[str, str]] = {
+    # field: (words for the asked time, words for another time)
+    "sleep_hours_last_night": (
+        r"\b(?:last night|overnight|yesterday|through the night|the night)\b",
+        rf"{HABIT_TIME}|\btonight\b|\bthis week\b|\bthe other night\b|{WEEKDAY}",
+    ),
+    "exercise_minutes_today": (
+        r"(?<!not )\b(?:so far )?today(?: so far)?\b|\bthis (?:morning|afternoon|evening)\b|"
+        r"\bearlier(?: on)?\b|\bso far\b",
+        rf"{HABIT_TIME}|\byesterday\b|\blast night\b|\b(?:this|last) week\b|{WEEKDAY}",
+    ),
+    "alcohol_drinks_yesterday": (
+        r"\byesterday(?: (?:evening|afternoon))?\b|\blast night\b",
+        rf"{HABIT_TIME}|\btoday\b|\btonight\b|\bthis (?:morning|afternoon|evening|week)\b",
+    ),
+    "wellbeing": (r"\btoday\b|\bthis week\b|\bright now\b", NOTHING),
+}
+THIS_WEEK = (
+    r"\b(?:this|the) (?:past |last )?week\b|\b(?:over )?the (?:past|last) (?:7|seven) days\b|"
+    r"\bthis past week\b"
+)
+# Habits asked about "this week": a reply about last week is about another week.
+WEEK_HABITS = {"sleep_hours", "exercise_minutes_weekly", "alcohol_drinks_weekly"}
+
+
+def _in_period(text: str, field: str, period: str | None) -> str | None:
+    """The reply without the words naming the asked time; None when it names another."""
+    if field in PERIODS:
+        asked, other = PERIODS[field]
+        if re.search(other, text):
+            return None
+        return " ".join(re.sub(asked, " ", text).split())
+    if period != "week":
+        return text
+    if field in WEEK_HABITS and re.search(r"(?<!this )(?<!the )\blast week\b", text):
+        return None
+    if field == "sleep_hours":
+        # Asked about a usual night: "most nights" is that night.
+        text = re.sub(r"\bmost (?:of the )?nights\b", " ", text)
+    said = re.search(THIS_WEEK, text)
+    text = " ".join(re.sub(THIS_WEEK, " ", text).split())
+    if said and field == "exercise_minutes_weekly":
+        # "This week I walked two hours" is the week's total, as "two hours a week" is.
+        durations = list(re.finditer(DURATION, text))
+        if len(durations) == 1 and not re.search(FREQUENCY, _blank(text, [durations[0].span()])):
+            end = durations[0].end()
+            text = text[:end] + " a week" + text[end:]
+    return text
+
+
+SLEEP_ZERO = (
+    r"\b(?:didn't|did not|couldn't|could not|never)\s+(?:get\s+(?:any\s+)?)?(?:sleep|slept)\s+"
+    r"(?:a wink|at all)\b(?!\s+(?:well|good))|\bno sleep at all\b|\bnot (?:a )?(?:single )?wink\b|"
+    r"\bdidn't get (?:a wink|any sleep)\b"
+)
+
+
+def _sleep_night(text: str, today: date) -> Found:
+    """Hours slept last night; "I didn't sleep a wink" is none."""
+    if not re.search(r"\d", text) and re.search(SLEEP_ZERO, text):
+        if re.search(r"\b(?:hardly|barely|much|well|good|nap\w*)\b", text):
+            return None
+        return _zero("sleep_hours_last_night", text)
+    return _sleep(text, today)
+
+
+DAY_NO_EXERCISE = (
+    r"\b(?:none|nothing|zero|nada|zilch|not a thing|no exercise|not at all|not today|not yet)\b|"
+    rf"{PAST_NO_EXERCISE}|^(?:no|nope|nah)(?: i (?:didn't|did not|haven't|have not))?$|"
+    r"^i (?:didn't|did not|haven't)$"
+)
+TIMES_EACH = r"\b(?:each(?: time| one)?|apiece|every time)\b"
+# As DURATION, but "and 30 minutes" joins only an hour: "20 minutes and 30 minutes" is two.
+DAY_DURATION = (
+    rf"(?:{N}\s?(?:to|-|or)\s?)?{N}\s?(minute|hour)\b"
+    rf"(?:(?<=hour),?\s?(?:and\s)?(\d{{1,2}})\s?minute\b)?"
+)
+
+
+def _exercise_day(text: str, today: date) -> Found:
+    """Minutes moved today: "an hour" is 60; "twice, 20 minutes each" is 40."""
+    durations = list(re.finditer(DAY_DURATION, text))
+    if not durations:
+        if re.search(r"\d", text):
+            # A bare count answers "about how many minutes?"; a small one may be hours.
+            found = _collect(rf"{N}(?=\s*(?:$|[,;.!]))", text, lambda m: float(m.group(1)))
+            return found if found and len(found[0]) == 1 and found[0][0] >= 10 else None
+        zero = re.search(DAY_NO_EXERCISE, text)
+        vague = re.search(
+            r"\b(?:much|a lot|enough|very|a little|a bit|hardly|barely|really)\b", text
+        )
+        return _zero("exercise_minutes_today", text) if zero and not vague else None
+    times = re.search(r"\b(?:(once|twice|thrice)|(\d) times)\b", text)
+    if len(durations) == 1:
+        minutes = _minutes(durations[0])
+        if minutes is None:
+            return None
+        spans = [durations[0].span()]
+        if times:
+            each = re.search(TIMES_EACH, text)
+            if not each:
+                return None  # "twice for 30 minutes": in all, or each time?
+            minutes *= {"once": 1, "twice": 2, "thrice": 3}.get(times.group(1)) or int(
+                times.group(2)
+            )
+            spans += [times.span(), each.span()]
+        return [minutes], spans
+    if times:
+        return None
+    # "20 minutes this morning and half an hour after lunch": parts, each with a unit.
+    gaps = [text[a.end() : b.start()] for a, b in zip(durations, durations[1:], strict=False)]
+    if not all(re.search(r"\b(?:and|plus|then)\b|[,;]", gap) for gap in gaps) or any(
+        re.search(r"\bor\b", gap) for gap in gaps
+    ):
+        return None
+    parts = [_minutes(duration) for duration in durations]
+    if None in parts:
+        return None
+    return [sum(parts)], [duration.span() for duration in durations]
+
+
+# How the person feels, in families of everyday words. Phrases are read before single
+# words, and each is left out once read, so "not bad" is never "bad".
+WELLBEING_PHRASES: list[tuple[str, str]] = [
+    ("good", r"\bcouldn't be better\b|\bnever (?:felt |been )?better\b|\bon top of the world\b"),
+    ("not_great", r"\bcouldn't be worse\b"),
+    (
+        "okay",
+        r"\bcould be (?:worse|better)\b|\bcan't complain\b|\bmustn't grumble\b|"
+        r"\bnot (?:too |so |that |all that )?bad\b|\bso so\b|\bfair to middling\b|"
+        r"\bup and down\b|\bgetting by\b|\bhanging in(?: there)?\b|\bnothing special\b",
+    ),
+    (
+        "not_great",
+        r"\bnot (?:feeling |doing |been )?(?:so |too |very |that |all that |really |terribly )?"
+        r"(?:great|good|well|hot|wonderful|fine|fantastic|brilliant|grand|okay|ok|alright|"
+        r"all right)\b|\b(?:don't|do not|didn't|did not)\s+feel\s+(?:so |too |very |that |"
+        r"all that |really )?(?:great|good|well|right|myself|fine)\b|\bunder the weather\b|"
+        r"\bnot myself\b|\bfeeling (?:a bit |a little )?(?:off|down)\b|\bdown in the dumps\b|"
+        r"\bworn out\b|\bin pain\b",
+    ),
+    (
+        "not_great",
+        r"\b(?:bad|badly|poorly|terrible|terribly|awful|lousy|rough|rotten|crummy|horrible|"
+        r"miserable|sick|ill|unwell|sad|blue|depressed|lonely|tired|exhausted|achy|sore|"
+        r"hurting|dreadful|wretched|worse|low)\b",
+    ),
+    (
+        "okay",
+        r"\b(?:okay|ok|alright|all right|fine|fair|average|decent|normal|steady|middling|meh)\b",
+    ),
+    (
+        "good",
+        r"\b(?:good|great|well|wonderful|fantastic|excellent|terrific|super|marvell?ous|happy|"
+        r"grand|lovely|brilliant|fabulous|chipper|peachy|splendid|tremendous|amazing|perfect|"
+        r"swell|cheerful|chirpy|smashing|top notch|in good spirits)\b",
+    ),
+]
+NOT_FEELING = (
+    r"\bgood (?:morning|afternoon|evening|night|day)\b|\bas well\b|\bthank (?:you|god|goodness)\b|"
+    r"\b(?:and|how about|what about) (?:you|yourself)\b|\bhow are (?:you|things)(?: doing)?\b"
+)
+
+
+def _wellbeing(text: str) -> str | None:
+    text = re.sub(NOT_FEELING, " ", text)
+    families: set[str] = set()
+    own = _own_text(text)
+    for family, pattern in WELLBEING_PHRASES:
+        found = [m.span() for m in re.finditer(pattern, own)]
+        if found:
+            families.add(family)
+            own = _blank(own, found)
+    rest = _unhedged(own)
+    if len(families) != 1 or _doubtful(rest) or NEGATION.search(rest) or re.search(r"\d", rest):
+        return None
+    return families.pop()
+
+
+def _grammar(field: str, period: str | None):
+    if field == "sleep_hours_last_night":
+        return _sleep_night
+    if field == "exercise_minutes_today":
+        return _exercise_day
+    if field == "alcohol_drinks_yesterday":
+        return lambda text, today: _alcohol(text, today, one_day=True, past=True)
+    if period == "week" and field == "exercise_minutes_weekly":
+        return lambda text, today: _exercise(text, today, past=True)
+    if period == "week" and field == "alcohol_drinks_weekly":
+        return lambda text, today: _alcohol(text, today, past=True)
+    return NUMERIC[field]
 
 
 NUMERIC = {
@@ -1607,7 +1910,8 @@ SMOKING_RATE = (
 )
 OCCASIONAL = (
     r"\b(?:still|now and then|occasionally|occasional|sometimes|once in a while|socially|"
-    r"at parties|here and there|on occasion|the odd)\b"
+    r"at parties|here and there|on occasion|the odd|on holidays?|on special occasions|"
+    r"at christmas|at weddings)\b"
 )
 NEVER_WORDS = {
     "i",
@@ -1879,18 +2183,30 @@ def _now_after_past(text: str) -> str:
     return text[:a] + NOW_CLAUSE.sub(" ", text[a:b]) + text[b:]
 
 
-def parse_value(field: ProfileField, text: str, *, today: date | None = None) -> dict:
-    """Accept explicit, current, single answers; do not guess units or diagnoses."""
+def parse_value(
+    field: ProfileField, text: str, *, today: date | None = None, period: str | None = None
+) -> dict:
+    """Accept explicit, current, single answers; do not guess units or diagnoses.
+
+    ``period`` is "week" for a weekly check-in question ("this week"); a check-in
+    question about last night or today names its own time in its field.
+    """
     today = today or date.today()
     canonical = _drop_correction(_canonical(text))
+    recent = period is not None or field in PERIODS
+    if recent:
+        timed = _in_period(canonical, field, period)
+        if timed is None:
+            return {}
+        canonical = timed
     if field in BP_FIELDS:
         # A corrected half of a reading ("130 over 80, no, 85") is asked about.
         return _blood_pressure(field, canonical)
     if field not in CATEGORICAL:
         canonical = re.sub(MODEST_LEAD, "", _drop_self_correction(canonical))
-    if field in NOW_AFTER_PAST:
+    if _base(field) in NOW_AFTER_PAST:
         canonical = _now_after_past(canonical)
-    if field == "sleep_hours":
+    if _base(field) == "sleep_hours":
         canonical = re.sub(WAKING, " ", canonical)
     if field == "sex":
         sex = _sex(canonical)
@@ -1901,20 +2217,23 @@ def parse_value(field: ProfileField, text: str, *, today: date | None = None) ->
     if field == "diabetes":
         answer = _diabetes(canonical)
         return {} if answer is None else _validated({field: answer})
+    if field == "wellbeing":
+        feeling = _wellbeing(canonical)
+        return _validated({field: feeling}) if feeling else {}
     if field == "weight_kg":
         canonical = re.sub(
             SPLIT_POUNDS, lambda m: str(int(m.group(1)) * 100 + int(m.group(2))), canonical
         )
-    found = NUMERIC[field](canonical, today)
+    found = _grammar(field, period)(canonical, today)
     if not found or not found[0]:
         return {}
     values, spans = found
     if any(abs(value - values[0]) > 1e-6 for value in values):
         return {}
-    if not _clean_measurement(field, canonical, spans):
+    if not _clean_measurement(field, canonical, spans, recent=recent):
         return {}
     result: float | int = values[0]
-    if field == "exercise_minutes_weekly":
+    if field in {"exercise_minutes_weekly", "exercise_minutes_today"}:
         result = int(round(result))  # "25 minutes every 3 days": an estimate, read back
     elif field == "age":
         if abs(result - round(result)) > 1e-6:
@@ -1953,7 +2272,9 @@ def birth_year_ages(text: str, *, today: date | None = None) -> tuple[int, int, 
     return (high, low, lead) if late else (low, high, lead)
 
 
-def clarify(text: str, field: ProfileField, *, today: date | None = None) -> str | None:
+def clarify(
+    text: str, field: ProfileField, *, today: date | None = None, period: str | None = None
+) -> str | None:
     """Field-specific follow-up for an answer that is close but not safe to read.
 
     An answer with exactly two readings gets a question that names both.
@@ -1963,6 +2284,10 @@ def clarify(text: str, field: ProfileField, *, today: date | None = None) -> str
     if competing(normalize_text(text), field):
         return f"I heard more than one number. What is your own {FRIENDLY_LABELS[field]}?"
     canonical = _canonical(text)
+    if period is not None or field in PERIODS:
+        canonical = _in_period(canonical, field, period)
+        if canonical is None:
+            return None
     if _doubtful(canonical) or OTHER_PERSON.search(canonical):
         return None
     if field == "alcohol_drinks_weekly" and re.search(NON_ALCOHOL, canonical):
@@ -1970,7 +2295,7 @@ def clarify(text: str, field: ProfileField, *, today: date | None = None) -> str
             "I only count alcoholic drinks, like beer, wine or spirits. "
             "How many of those do you have in a week? Say none if you have none."
         )
-    if field in HABITS and SEASONAL.search(canonical):
+    if _base(field) in HABITS and SEASONAL.search(canonical):
         return "How much is that in a usual week, all year round?"
     # A past value, goal or advice gets no unit or how-often question.
     if _spoiled(field, canonical) or NOT_CURRENT.search(canonical):
@@ -2069,9 +2394,13 @@ def clarify(text: str, field: ProfileField, *, today: date | None = None) -> str
     return None
 
 
+CHECKIN_ONLY = set(CheckinValues.model_fields) - set(HealthProfile.model_fields)
+
+
 def _validated(values: dict) -> dict:
+    model = CheckinValues if set(values) & CHECKIN_ONLY else HealthProfile
     try:
-        return HealthProfile.model_validate(values).model_dump(exclude_none=True)
+        return model.model_validate(values).model_dump(exclude_none=True)
     except ValidationError:
         return {}
 
@@ -2112,7 +2441,10 @@ def _part_fields(part: str, asked: ProfileField, several: bool) -> set[str]:
         or re.search(TOPIC_UNITS[topic], text)
     }
     bp = asked if asked in BP_FIELDS else "systolic_bp"
-    return {bp if topic == "blood_pressure" else topic for topic in named}
+    return {
+        asked if topic == _topic(asked) else bp if topic == "blood_pressure" else topic
+        for topic in named
+    }
 
 
 # No answer has seven digits in a row; refusing them early keeps huge inputs cheap.
@@ -2175,7 +2507,12 @@ def competing(text: str, field: ProfileField) -> bool:
 
 
 def parse_reply(
-    text: str, field: ProfileField, *, today: date | None = None, strict: bool = False
+    text: str,
+    field: ProfileField,
+    *,
+    today: date | None = None,
+    strict: bool = False,
+    period: str | None = None,
 ) -> dict:
     """Handle a short answer, or clauses that each say what they answer.
 
@@ -2199,7 +2536,7 @@ def parse_reply(
             return {}
         text = ". ".join(part.strip() for part in mine)
     # One measurement may contain commas or "and" ("5 feet, 10 inches").
-    whole = parse_value(field, text, today=today)
+    whole = parse_value(field, text, today=today, period=period)
     split = re.sub(SEX_AND_NUMBER, lambda m: (m.group(1) or m.group(2)) + ", ", text, flags=re.I)
     parts = [part for part in re.split(r"[;,]|\s+and\s+", split, flags=re.I) if part.strip()]
     labeled = any(re.fullmatch(LABELED, part, re.I) for part in parts)
@@ -2228,12 +2565,12 @@ def parse_reply(
                 if len(named) == 1
                 else None
             )
-        parsed = parse_value(target, part, today=today) if target else {}
+        parsed = parse_value(target, part, today=today, period=period) if target else {}
         if not parsed:
             return whole
-        # Contradictory repeated values require clarification of the whole turn,
-        # unless the reply read as one answer ("30 minutes 4 days and an hour on Saturday").
-        if any(key in values and values[key] != val for key, val in parsed.items()):
+        # Parts for the same question are pieces of one answer ("two beers on Friday and
+        # two on Saturday" is never 2): the reply is read as a whole, or asked about.
+        if any(key in values for key in parsed):
             return whole
         values.update(parsed)
     return values if whole.items() <= values.items() else {}
@@ -2379,3 +2716,146 @@ def grounded_candidates(
             if field in other and other[field] != values[field]:
                 return {}
     return values
+
+
+# ---------------------------------------------------------------------------
+# Check-in follow-ups and replies that depend on the last answer
+# ---------------------------------------------------------------------------
+
+# "A bit more than usual", "not as much": a comparison is asked as a number, never guessed.
+COMPARED = (
+    r"\b(?:more|less|fewer|longer|shorter|better|worse|extra|higher|lower|heavier|lighter)\b|"
+    r"\bnot as (?:much|many|long|well|often)\b"
+)
+NUMBER_ASKS: dict[str, str] = {
+    "sleep_hours_last_night": "About how many hours did you sleep last night?",
+    "exercise_minutes_today": "About how many minutes did you move today?",
+    "alcohol_drinks_yesterday": "How many alcoholic drinks did you have yesterday?",
+    "sleep_hours": "About how many hours did you sleep on a usual night this week?",
+    "exercise_minutes_weekly": "About how many minutes did you exercise this week, all together?",
+    "alcohol_drinks_weekly": "How many alcoholic drinks did you have this week?",
+    "weight_kg": "What do you weigh now? For example, 160 pounds.",
+}
+OTHER_TIME_LEADS = {
+    "sleep_hours_last_night": "And last night? ",
+    "exercise_minutes_today": "And today? ",
+    "alcohol_drinks_yesterday": "And yesterday? ",
+}
+BAD_NIGHT = (
+    r"\b(?:bad|rough|terrible|awful|poor|restless|lousy|rotten|horrible|long|broken|"
+    r"sleepless)\s+night\b|\b(?:didn't|did not|couldn't|could not) sleep(?: very)? "
+    r"(?:well|good|much)\b|\bslept (?:badly|poorly|terribly|awful|bad)\b|\btoss\w* and turn\w*|"
+    r"\b(?:hardly|barely) (?:slept|sleep)\b|\bnot (?:much|a lot of|enough) sleep\b|"
+    r"\bup (?:and down|a lot)\b|\binsomnia\b"
+)
+GOOD_NIGHT = (
+    r"\b(?:good|great|lovely|wonderful|fine|decent|nice|restful)\s+night\b|"
+    r"\bslept (?:well|great|fine|good|like a (?:log|baby|top|rock))\b"
+)
+MOVED = (
+    r"^(?:yes|yeah|yep|yup|sure|i did|a little|a bit|some)\b|\b(?:walk\w*|gym|swim\w*|"
+    r"garden\w*|danc\w*|yoga|bik\w*|cycl\w*|stretch\w*|exercis\w*|class|housework|chores|"
+    r"vacuum\w*|golf|tennis|hik\w*|pilates|tai chi|errands|shopping)\b"
+)
+HAD_DRINKS = (
+    r"^(?:yes|yeah|yep|yup|i did|a few|some|a little|a bit)\b|"
+    r"\b(?:wine|beers?|whiske?y|drinks?|cocktails?|glass(?:es)?|pints?|martinis?|scotch)\b"
+)
+
+
+def checkin_clarify(text: str, field: str, *, period: str | None = None) -> str | None:
+    """A targeted check-in follow-up: a number for a comparison or a feeling, not a guess."""
+    canonical = _canonical(text)
+    if LONG_NUMBER.search(canonical) or OTHER_PERSON.search(canonical):
+        return None
+    if field == "wellbeing":
+        return "Would you say good, okay, or not great?"
+    if field in BP_FIELDS:
+        if len(re.findall(r"(?<![\d.])\d{2,3}(?![\d.])", canonical)) == 1:
+            return 'Please tell me both blood pressure numbers, for example "120 over 80".'
+        return None
+    ask = NUMBER_ASKS.get(field)
+    if ask is None:
+        return None
+    if field == "weight_kg" and CHANGE.search(canonical):
+        return "Thanks for telling me. " + ask
+    if not re.search(r"\d", canonical) and re.search(COMPARED, canonical):
+        return "More or less is fine, but I need a number. " + ask
+    if field in PERIODS and re.search(PERIODS[field][1], canonical):
+        return OTHER_TIME_LEADS[field] + ask
+    if (
+        period == "week"
+        and field in WEEK_HABITS
+        and re.search(r"(?<!this )(?<!the )\blast week\b", canonical)
+    ):
+        return "And this past week? " + ask
+    if _base(field) == "exercise_minutes_weekly" and re.search(r"\bsteps\b", canonical):
+        return "Thank you. " + ask
+    if re.search(r"\d", canonical):
+        if period == "week" and field == "exercise_minutes_weekly":
+            if re.search(r"\b(?:a|per)\s+day\b", canonical) and not _times_per_week(canonical)[0]:
+                return 'How many days this week did you do that? For example, "30 minutes, 4 days".'
+            if re.fullmatch(rf"(?:\D*\s)?{NUM}\s?hour\b\D*", canonical):
+                return 'Was that all week, or each time? For example, "an hour, 3 times".'
+        return None
+    if _base(field) == "sleep_hours":
+        if re.search(BAD_NIGHT, canonical):
+            return "I'm sorry to hear that. " + ask
+        if re.search(GOOD_NIGHT, canonical):
+            return "Glad to hear it. " + ask
+    if field == "exercise_minutes_today" and re.search(MOVED, canonical):
+        return "Good for you! " + ask
+    if _base(field) == "alcohol_drinks_weekly" and re.search(HAD_DRINKS, canonical):
+        if not re.search(NON_ALCOHOL, canonical):
+            return ask
+    return None
+
+
+_POLITE_TAIL = (
+    r"(?: (?:these days|this week|lately|at the moment|right now|now|thank you|thanks|dear))*"
+)
+SMOKE_YES = (
+    r"(?:yes|yeah|yep|yup|ya|i do|i still do|still do|yes i do|yeah i do|yes still|yeah still|"
+    r"still|unfortunately yes|afraid so|i'm afraid so|yes i'm afraid so|sadly yes|guilty)"
+)
+SMOKE_NO = (
+    r"(?:no|nope|nah|not at all|no not at all|i don't|i do not|no i don't|no i do not|"
+    r"(?:no )?i don't smoke|(?:no )?i do not smoke|no smoking|not me|(?:no )?i haven't|"
+    r"(?:no )?i have not|(?:no )?i haven't smoked|(?:no )?not (?:a single )?one|no cigarettes|none)"
+)
+SMOKE_STOPPED = (
+    r"(?:no )?(?:not anymore|not any more|no longer|i stopped|i've stopped|i quit|i've quit|"
+    r"i gave up|i've given up|i gave it up)"
+)
+
+
+def checkin_smoking(text: str, previous: str | None) -> str | None:
+    """A yes or no to "Do you smoke at all these days?", read against the last answer.
+
+    A plain no keeps "never" or "former", and turns "current" into "former"; with no
+    last answer it is asked about ("Did you ever smoke?").
+    """
+    words = _plain(text)
+    if re.fullmatch(SMOKE_YES + _POLITE_TAIL, words):
+        return "current"
+    if re.fullmatch(SMOKE_STOPPED + _POLITE_TAIL, words):
+        return "former"
+    if re.fullmatch(SMOKE_NO + _POLITE_TAIL, words):
+        return {"never": "never", "former": "former", "current": "former"}.get(previous or "")
+    return None
+
+
+NO_READING = (
+    r"(?:(?:no|nope|nah|not really) )?(?:i )?(?:haven't|have not|didn't|did not|hasn't been)"
+    r"(?: had| got)?(?: it| that| my blood pressure| one)?(?: been)? (?:checked|taken|measured|done)"
+    r"(?: it)?(?: lately| recently| this week| in a while| for a while)?"
+    r"|(?:no|nope|nah)(?: not)? (?:lately|recently|this week|in a while|yet)"
+    r"|not (?:lately|recently|this week|yet)"
+    r"|(?:no )?(?:i )?(?:don't|do not) have (?:a|one|any)(?: new| newer| recent)?(?: reading| one| numbers)?"
+    r"|(?:no )?(?:no )?(?:new |newer |recent )?(?:reading|readings|numbers)|no new one|nothing new"
+)
+
+
+def no_new_reading(text: str) -> bool:
+    """ "No", "I haven't had it checked": no blood pressure reading to give."""
+    return bool(re.fullmatch(NO_READING, _plain(text)))
