@@ -40,6 +40,12 @@ void main() {
     await t.pumpWidget(const LifeTwinApp());
     await waitFor(t, find.text('Talk'));
     await look('01-room');
+    // The bear wanders: Exercise sends it across the room to the mat. A few frames, 1.2 s apart.
+    await tapText(t, 'Exercise');
+    for (var i = 1; i <= 4; i++) {
+      await qaAction(t, 'shot', name: '$label-01w-wander-$i', wait: const Duration(milliseconds: 1200));
+    }
+    await waitFor(t, find.text('Feeling strong'), seconds: 30);
     await tapText(t, 'Customize');
     await waitFor(t, find.text('Save look'));
     await look('01b-customize');
