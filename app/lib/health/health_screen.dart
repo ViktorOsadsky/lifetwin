@@ -47,8 +47,7 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
 
   DateTime get _now => (widget.now ?? DateTime.now)();
 
-  bool get _imperial =>
-      usesImperial(WidgetsBinding.instance.platformDispatcher.locale.countryCode);
+  bool get _imperial => usesImperial(WidgetsBinding.instance.platformDispatcher.locale.countryCode);
 
   Future<void> _start() async {
     setState(() => _step = _Step.reading);
@@ -115,37 +114,43 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
           padding: const EdgeInsets.all(24),
           child: switch (_step) {
             _Step.intro => _Page(
-                title: "Use your iPhone's Health app?",
-                body: 'I can read your height, weight, exercise, sleep and blood pressure from the Health app, '
-                    "so you don't have to type them.\n\n"
-                    "I'll check each one with you. The readings are also sent to LifeTwin's assistant, "
-                    'an AI service, so it can give you advice.',
-                primary: ('Yes, use my Health app', _start),
-                secondary: ("No thanks, I'll answer myself", _skip),
-              ),
-            _Step.reading => const _Page(title: 'Reading your Health app…', body: 'This takes a few seconds.', busy: true),
+              title: "Use your iPhone's Health app?",
+              body:
+                  'I can read your height, weight, exercise, sleep and blood pressure from the Health app, '
+                  "so you don't have to type them.\n\n"
+                  "I'll check each one with you. The readings are also sent to LifeTwin's assistant, "
+                  'an AI service, so it can give you advice.',
+              primary: ('Yes, use my Health app', _start),
+              secondary: ("No thanks, I'll answer myself", _skip),
+            ),
+            _Step.reading => const _Page(
+              title: 'Reading your Health app…',
+              body: 'This takes a few seconds.',
+              busy: true,
+            ),
             _Step.confirm => _Page(
-                title: 'Question ${_index + 1} of ${_candidates.length}',
-                body: readBack(_candidates[_index], imperial: _imperial, now: _now),
-                primary: (confirmLabel, () => _answer(true)),
-                secondary: (fixLabel, () => _answer(false)),
-                back: _answers.isEmpty ? null : _back,
-              ),
+              title: 'Question ${_index + 1} of ${_candidates.length}',
+              body: readBack(_candidates[_index], imperial: _imperial, now: _now),
+              primary: (confirmLabel, () => _answer(true)),
+              secondary: (fixLabel, () => _answer(false)),
+              back: _answers.isEmpty ? null : _back,
+            ),
             _Step.nothingFound => _Page(
-                title: "I couldn't find any readings",
-                body: "That's okay. Either the Health app has no readings yet, or it isn't sharing them with LifeTwin. "
-                    'You can change that later in the Health app. For now, I will ask you instead.',
-                primary: ('Continue', _finish),
-              ),
+              title: "I couldn't find any readings",
+              body:
+                  "That's okay. Either the Health app has no readings yet, or it isn't sharing them with LifeTwin. "
+                  'You can change that later in the Health app. For now, I will ask you instead.',
+              primary: ('Continue', _finish),
+            ),
             _Step.done => _Page(
-                title: 'Thank you',
-                body: _confirmed.isEmpty
-                    ? 'I will ask you about each one instead.'
-                    : 'You checked ${_confirmed.length} ${_confirmed.length == 1 ? 'reading' : 'readings'}.'
+              title: 'Thank you',
+              body: _confirmed.isEmpty
+                  ? 'I will ask you about each one instead.'
+                  : 'You checked ${_confirmed.length} ${_confirmed.length == 1 ? 'reading' : 'readings'}.'
                         '${_toAsk.isEmpty ? '' : ' I will ask you about the rest.'}',
-                primary: ('Continue', _finish),
-                back: _back,
-              ),
+              primary: ('Continue', _finish),
+              back: _back,
+            ),
           },
         ),
       ),

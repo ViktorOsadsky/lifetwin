@@ -41,7 +41,7 @@
  },
  {
   "field": "age",
-  "text": "I\u2019m 88 years young!",
+  "text": "I’m 88 years young!",
   "expected": {
    "age": 88
   },
@@ -49,7 +49,7 @@
  },
  {
   "field": "age",
-  "text": "I\u2019d say 72",
+  "text": "I’d say 72",
   "expected": {
    "age": 72
   },
@@ -301,7 +301,7 @@
  },
  {
   "field": "sex",
-  "text": "I\u2019m a woman",
+  "text": "I’m a woman",
   "expected": {
    "sex": "female"
   },
@@ -366,34 +366,26 @@
  {
   "field": "sex",
   "text": "I was born intersex",
-  "expected": {
-   "sex": "intersex"
-  },
-  "why": "direct synonym for intersex"
+  "expected": null,
+  "why": "direct synonym for intersex (sex at birth is female/male only; this now skips or explains)"
  },
  {
   "field": "sex",
   "text": "I'm intersex, yes",
-  "expected": {
-   "sex": "intersex"
-  },
-  "why": "direct synonym for intersex"
+  "expected": null,
+  "why": "direct synonym for intersex (sex at birth is female/male only; this now skips or explains)"
  },
  {
   "field": "sex",
   "text": "prefer not to say",
-  "expected": {
-   "sex": "prefer_not_to_say"
-  },
-  "why": "direct synonym for prefer_not_to_say"
+  "expected": null,
+  "why": "direct synonym for prefer_not_to_say (sex at birth is female/male only; this now skips or explains)"
  },
  {
   "field": "sex",
   "text": "I'd rather not say",
-  "expected": {
-   "sex": "prefer_not_to_say"
-  },
-  "why": "direct synonym for prefer_not_to_say"
+  "expected": null,
+  "why": "direct synonym for prefer_not_to_say (sex at birth is female/male only; this now skips or explains)"
  },
  {
   "field": "sex",
@@ -842,8 +834,10 @@
  {
   "field": "weight_kg",
   "text": "about a hundred and sixty",
-  "expected": null,
-  "why": "no unit"
+  "expected": {
+   "weight_kg": 72.57
+  },
+  "why": "bare adult weight proposed as pounds (US default) for confirmation"
  },
  {
   "field": "weight_kg",
@@ -1403,7 +1397,7 @@
  },
  {
   "field": "smoking_status",
-  "text": "I\u2019m trying to quit but I still smoke",
+  "text": "I’m trying to quit but I still smoke",
   "expected": {
    "smoking_status": "current"
   },
@@ -1917,7 +1911,7 @@
  },
  {
   "field": "diabetes",
-  "text": "I\u2019m not diabetic but my wife is",
+  "text": "I’m not diabetic but my wife is",
   "expected": {
    "diabetes": false
   },
@@ -1925,7 +1919,7 @@
  },
  {
   "field": "diabetes",
-  "text": "no, my doctor says I don\u2019t",
+  "text": "no, my doctor says I don’t",
   "expected": {
    "diabetes": false
   },

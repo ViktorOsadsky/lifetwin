@@ -90,9 +90,7 @@
         {
           "enum": [
             "female",
-            "male",
-            "intersex",
-            "prefer_not_to_say"
+            "male"
           ],
           "type": "string"
         },

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'voice_token.dart';
@@ -8,18 +9,16 @@ import 'voice_token.dart';
 class CartesiaWire {
   const CartesiaWire._();
 
-  static Uri ttsUri(VoiceToken t) => _withQuery(t.ttsUrl, {
-        'cartesia_version': t.cartesiaVersion,
-        'access_token': t.token,
-      });
+  static Uri ttsUri(VoiceToken t) =>
+      _withQuery(t.ttsUrl, {'cartesia_version': t.cartesiaVersion, 'access_token': t.token});
 
   static Uri sttUri(VoiceToken t) => _withQuery(t.sttUrl, {
-        'model': t.sttModel,
-        'encoding': t.sttEncoding,
-        'sample_rate': '${t.sttSampleRate}',
-        'cartesia_version': t.cartesiaVersion,
-        'access_token': t.token,
-      });
+    'model': t.sttModel,
+    'encoding': t.sttEncoding,
+    'sample_rate': '${t.sttSampleRate}',
+    'cartesia_version': t.cartesiaVersion,
+    'access_token': t.token,
+  });
 
   static Uri _withQuery(String base, Map<String, String> q) {
     final u = Uri.parse(base);
@@ -27,15 +26,15 @@ class CartesiaWire {
   }
 
   static String ttsRequest(VoiceToken t, String text, String contextId) => jsonEncode({
-        'model_id': t.ttsModel,
-        'transcript': text,
-        'voice': {'id': t.voiceId},
-        'output_format': {'container': 'raw', 'encoding': 'pcm_s16le', 'sample_rate': t.ttsSampleRate},
-        'context_id': contextId,
-        'continue': false,
-        'language': 'en',
-        'generation_config': {'speed': t.speed, 'volume': 1.0, 'emotion': t.emotion},
-      });
+    'model_id': t.ttsModel,
+    'transcript': text,
+    'voice': {'id': t.voiceId},
+    'output_format': {'container': 'raw', 'encoding': 'pcm_s16le', 'sample_rate': t.ttsSampleRate},
+    'context_id': contextId,
+    'continue': false,
+    'language': 'en',
+    'generation_config': {'speed': t.speed, 'volume': 1.0, 'emotion': t.emotion},
+  });
 
   static String ttsCancel(String contextId) => jsonEncode({'context_id': contextId, 'cancel': true});
 
@@ -162,5 +161,49 @@ class ChunkBuffer {
   Uint8List? flush() {
     final rest = _pending.takeBytes();
     return rest.isEmpty ? null : rest;
+  }
+}
+
+/// Notices when the speaker pauses, so the app can ask Ink to finish the words
+/// it is still holding back. Ink keeps the last word or two until it hears more,
+/// which otherwise leaves a sentence looking unfinished until Stop is tapped.
+class PauseDetector {
+  PauseDetector({this.quietLevel = 300, this.quietChunks = 6});
+
+  /// Root-mean-square level (of 32768) below which a chunk always counts as quiet.
+  final double quietLevel;
+
+  /// How many quiet 100 ms chunks in a row make a pause.
+  final int quietChunks;
+  int _quiet = 0;
+  bool _heard = false;
+  double? _floor;
+
+  /// True once per pause, on the chunk that completes it, and only after speech.
+  bool add(Uint8List pcm16) {
+    final l = level(pcm16);
+    // Background noise: drops at once, rises slowly, so a noisy room still has pauses.
+    final f = _floor;
+    _floor = f == null || l < f ? l : f + (l - f) * 0.002;
+    if (l >= math.max(quietLevel, _floor! * 3)) {
+      _heard = true;
+      _quiet = 0;
+      return false;
+    }
+    if (!_heard || ++_quiet < quietChunks) return false;
+    _heard = false;
+    return true;
+  }
+
+  static double level(Uint8List pcm16) {
+    final samples = ByteData.sublistView(pcm16);
+    final n = pcm16.length ~/ 2;
+    if (n == 0) return 0;
+    var sum = 0.0;
+    for (var i = 0; i < n; i++) {
+      final s = samples.getInt16(i * 2, Endian.little);
+      sum += s * s;
+    }
+    return math.sqrt(sum / n);
   }
 }

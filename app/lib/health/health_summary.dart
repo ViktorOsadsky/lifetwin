@@ -5,13 +5,13 @@ enum HealthField { heightCm, weightKg, exerciseMinutesWeekly, sleepHours, systol
 
 extension HealthFieldName on HealthField {
   String get profileKey => switch (this) {
-        HealthField.heightCm => 'height_cm',
-        HealthField.weightKg => 'weight_kg',
-        HealthField.exerciseMinutesWeekly => 'exercise_minutes_weekly',
-        HealthField.sleepHours => 'sleep_hours',
-        HealthField.systolicBp => 'systolic_bp',
-        HealthField.diastolicBp => 'diastolic_bp',
-      };
+    HealthField.heightCm => 'height_cm',
+    HealthField.weightKg => 'weight_kg',
+    HealthField.exerciseMinutesWeekly => 'exercise_minutes_weekly',
+    HealthField.sleepHours => 'sleep_hours',
+    HealthField.systolicBp => 'systolic_bp',
+    HealthField.diastolicBp => 'diastolic_bp',
+  };
 }
 
 /// A suggested answer the user must confirm. Provenance lives here, on the phone only.
@@ -80,25 +80,49 @@ List<HealthCandidate> _summarize(List<HealthSample> samples, DateTime now) {
 
   final height = _latest(samples, 'HEIGHT', now, 365);
   if (height != null) {
-    out.add(HealthCandidate(
-        field: HealthField.heightCm, value: _round1(height.value! * 100), basis: 'latest reading', measuredAt: height.end));
+    out.add(
+      HealthCandidate(
+        field: HealthField.heightCm,
+        value: _round1(height.value! * 100),
+        basis: 'latest reading',
+        measuredAt: height.end,
+      ),
+    );
   }
   final weight = _latest(samples, 'WEIGHT', now, 365);
   if (weight != null) {
-    out.add(HealthCandidate(
-        field: HealthField.weightKg, value: _round1(weight.value!), basis: 'latest reading', measuredAt: weight.end));
+    out.add(
+      HealthCandidate(
+        field: HealthField.weightKg,
+        value: _round1(weight.value!),
+        basis: 'latest reading',
+        measuredAt: weight.end,
+      ),
+    );
   }
 
   final exercise = _unionMinutes(samples.where((s) => s.type == 'EXERCISE_TIME' && _within(s, now, 28)));
   if (exercise > 0) {
-    out.add(HealthCandidate(
-        field: HealthField.exerciseMinutesWeekly, value: (exercise / 4).round(), basis: 'weekly average', periodDays: 28));
+    out.add(
+      HealthCandidate(
+        field: HealthField.exerciseMinutesWeekly,
+        value: (exercise / 4).round(),
+        basis: 'weekly average',
+        periodDays: 28,
+      ),
+    );
   }
 
   final nights = _sleepMinutesByNight(samples.where((s) => sleepTypes.contains(s.type) && _within(s, now, 14)));
   if (nights.length >= 3) {
-    out.add(HealthCandidate(
-        field: HealthField.sleepHours, value: _round1(_median(nights) / 60), basis: 'typical night', periodDays: 14));
+    out.add(
+      HealthCandidate(
+        field: HealthField.sleepHours,
+        value: _round1(_median(nights) / 60),
+        basis: 'typical night',
+        periodDays: 14,
+      ),
+    );
   }
 
   for (final (type, field) in [

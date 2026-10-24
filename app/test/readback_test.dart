@@ -14,8 +14,10 @@ void main() {
 
   test('weight in pounds with the date it was measured', () {
     final c = HealthCandidate(field: HealthField.weightKg, value: 78, basis: '', measuredAt: DateTime(2026, 3, 3));
-    expect(readBack(c, imperial: true, now: now),
-        "Your iPhone's Health app says you weigh about 172 pounds. That was measured on March 3. Is this accurate?");
+    expect(
+      readBack(c, imperial: true, now: now),
+      "Your iPhone's Health app says you weigh about 172 pounds. That was measured on March 3. Is this accurate?",
+    );
     expect(readBack(c, imperial: false, now: now), contains('78 kilograms'));
   });
 

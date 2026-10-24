@@ -46,8 +46,7 @@ class FlutterPcmSoundPlayer implements PcmPlayer {
     // The microphone (record package) sets its own playAndRecord + defaultToSpeaker,
     // and the app always stops speaking before it listens, so they never overlap.
     // `playback` also plays when the silent switch is on.
-    await FlutterPcmSound.setup(
-        sampleRate: sampleRate, channelCount: 1, iosAudioCategory: IosAudioCategory.playback);
+    await FlutterPcmSound.setup(sampleRate: sampleRate, channelCount: 1, iosAudioCategory: IosAudioCategory.playback);
     FlutterPcmSound.setFeedCallback((remaining) {
       if (remaining == 0 && !(_drained?.isCompleted ?? true)) _drained!.complete();
     });
@@ -82,8 +81,8 @@ class FlutterPcmSoundPlayer implements PcmPlayer {
 /// Cartesia Sonic text-to-speech over WebSocket. Wire details are in [CartesiaWire].
 class CartesiaSpeechOutput implements SpeechOutput {
   CartesiaSpeechOutput({required this.tokens, PcmPlayer? player, SocketConnector? connect})
-      : _player = player ?? FlutterPcmSoundPlayer(),
-        _connect = connect ?? _defaultConnect;
+    : _player = player ?? FlutterPcmSoundPlayer(),
+      _connect = connect ?? _defaultConnect;
 
   final VoiceTokenProvider tokens;
   final PcmPlayer _player;
@@ -129,25 +128,29 @@ class CartesiaSpeechOutput implements SpeechOutput {
       _lastRate = token.ttsSampleRate;
       await _player.begin(token.ttsSampleRate);
       final finished = Completer<void>();
-      sub = ch.stream.listen((m) async {
-        if (m is! String) return;
-        switch (CartesiaWire.parseTts(m, contextId: id)) {
-          case TtsAudio(:final pcm):
-            gotAudio = true;
-            audio.add(pcm);
-            if (_contextId == id) await _player.feed(pcm);
-          case TtsDone():
-            if (!finished.isCompleted) finished.complete();
-          case TtsError(:final message):
-            if (!finished.isCompleted) finished.completeError(VoiceFailure(message));
-          case TtsIgnored():
-            break;
-        }
-      }, onError: (Object e) {
-        if (!finished.isCompleted) finished.completeError(VoiceFailure('$e'));
-      }, onDone: () {
-        if (!finished.isCompleted) finished.complete();
-      });
+      sub = ch.stream.listen(
+        (m) async {
+          if (m is! String) return;
+          switch (CartesiaWire.parseTts(m, contextId: id)) {
+            case TtsAudio(:final pcm):
+              gotAudio = true;
+              audio.add(pcm);
+              if (_contextId == id) await _player.feed(pcm);
+            case TtsDone():
+              if (!finished.isCompleted) finished.complete();
+            case TtsError(:final message):
+              if (!finished.isCompleted) finished.completeError(VoiceFailure(message));
+            case TtsIgnored():
+              break;
+          }
+        },
+        onError: (Object e) {
+          if (!finished.isCompleted) finished.completeError(VoiceFailure('$e'));
+        },
+        onDone: () {
+          if (!finished.isCompleted) finished.complete();
+        },
+      );
       ch.sink.add(CartesiaWire.ttsRequest(token, text, id));
       await Future.any([finished.future, done.future]);
       if (_contextId == id && gotAudio) {
@@ -210,8 +213,8 @@ class CartesiaSpeechOutput implements SpeechOutput {
 /// Cartesia streaming speech-to-text. Tap-to-talk: start, then finish.
 class CartesiaSpeechInput implements SpeechInput {
   CartesiaSpeechInput({required this.tokens, AudioRecorder? recorder, SocketConnector? connect})
-      : _recorder = recorder ?? AudioRecorder(),
-        _connect = connect ?? _defaultConnect;
+    : _recorder = recorder ?? AudioRecorder(),
+      _connect = connect ?? _defaultConnect;
 
   final VoiceTokenProvider tokens;
   final AudioRecorder _recorder;
@@ -221,6 +224,8 @@ class CartesiaSpeechInput implements SpeechInput {
   StreamSubscription<Uint8List>? _micSub;
   StreamSubscription<dynamic>? _msgSub;
   final _chunks = ChunkBuffer();
+  var _pause = PauseDetector();
+  int _flushesOwed = 0;
   final _early = <Uint8List>[];
   bool _ready = false;
   final _finals = <String>[];
@@ -229,6 +234,11 @@ class CartesiaSpeechInput implements SpeechInput {
   Completer<void>? _flushed;
   bool _forceNewToken = false;
   void Function(String)? _onCaption;
+
+  void _endFlush() {
+    final f = _flushed;
+    if (f != null && !f.isCompleted) f.complete();
+  }
 
   String get _caption => CartesiaWire.joinTranscript(_finals, _partial);
 
@@ -243,54 +253,69 @@ class CartesiaSpeechInput implements SpeechInput {
     _partial = '';
     _error = null;
     _ready = false;
+    _pause = PauseDetector();
+    _flushesOwed = 0;
     _early.clear();
     final ch = _channel = _connect(CartesiaWire.sttUri(token));
-    _msgSub = ch.stream.listen((m) {
-      if (m is! String) return;
-      switch (CartesiaWire.parseStt(m)) {
-        case SttTranscript(:final text, :final isFinal):
-          if (isFinal) {
-            if (text.isNotEmpty) _finals.add(text);
-            _partial = '';
-          } else {
-            _partial = text;
-          }
-          _onCaption?.call(_caption);
-        case SttFlushed():
-          _flushed?.complete();
-        case SttError(:final message):
-          _error = message;
-          _flushed?.complete();
-        case SttIgnored():
-          break;
-      }
-    }, onError: (Object e) {
-      _error = '$e';
-      _flushed?.complete();
-    }, onDone: () {
-      _flushed?.complete();
-    });
+    _msgSub = ch.stream.listen(
+      (m) {
+        if (m is! String) return;
+        switch (CartesiaWire.parseStt(m)) {
+          case SttTranscript(:final text, :final isFinal):
+            if (isFinal) {
+              if (text.isNotEmpty) _finals.add(text);
+              _partial = '';
+            } else {
+              _partial = text;
+            }
+            _onCaption?.call(_caption);
+          case SttFlushed():
+            // Pauses also ask for a flush; Stop waits for the last one owed.
+            if (_flushesOwed > 0) _flushesOwed--;
+            if (_flushesOwed == 0) _endFlush();
+          case SttError(:final message):
+            _error = message;
+            _endFlush();
+          case SttIgnored():
+            break;
+        }
+      },
+      onError: (Object e) {
+        _error = '$e';
+        _endFlush();
+      },
+      onDone: () {
+        _endFlush();
+      },
+    );
     // Start the mic first so the first words are not lost while the socket connects.
-    final stream = await _recorder.startStream(const RecordConfig(
-      encoder: AudioEncoder.pcm16bits,
-      sampleRate: 16000,
-      numChannels: 1,
-    ));
+    final stream = await _recorder.startStream(
+      const RecordConfig(encoder: AudioEncoder.pcm16bits, sampleRate: 16000, numChannels: 1),
+    );
     _micSub = stream.listen((data) {
       for (final c in _chunks.add(data)) {
         _ready ? ch.sink.add(c) : _early.add(c);
+        if (_pause.add(c) && _ready) {
+          _flushesOwed++;
+          ch.sink.add(CartesiaWire.sttFinalize);
+        }
       }
     });
-    unawaited(ch.ready.then((_) {
-      _ready = true;
-      for (final c in _early) {
-        ch.sink.add(c);
-      }
-      _early.clear();
-    }, onError: (Object e) {
-      _error = '$e';
-      _forceNewToken = true;
-    }));
+    unawaited(
+      ch.ready.then(
+        (_) {
+          _ready = true;
+          for (final c in _early) {
+            ch.sink.add(c);
+          }
+          _early.clear();
+        },
+        onError: (Object e) {
+          _error = '$e';
+          _forceNewToken = true;
+        },
+      ),
+    );
   }
 
   @override
@@ -304,6 +329,7 @@ class CartesiaSpeechInput implements SpeechInput {
     if (_ready) {
       if (tail != null) ch.sink.add(tail);
       _flushed = Completer<void>();
+      _flushesOwed++;
       ch.sink.add(CartesiaWire.sttFinalize);
       await _flushed!.future.timeout(const Duration(seconds: 3), onTimeout: () {});
       try {

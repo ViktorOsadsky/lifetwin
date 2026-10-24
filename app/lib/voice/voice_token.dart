@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import 'http_conversation_guide.dart';
+import 'api_base.dart';
 import 'speech.dart';
 
 /// Short-lived Cartesia access token plus the settings the server chose.
@@ -62,12 +62,13 @@ class VoiceToken {
 
 /// Mints tokens from our server (the Cartesia key never reaches the app).
 class VoiceTokenProvider {
-  VoiceTokenProvider({http.Client? client, this.baseUrl = apiBaseUrl, DateTime Function()? now})
-      : _client = client ?? http.Client(),
-        _now = now ?? DateTime.now;
+  VoiceTokenProvider({http.Client? client, String? baseUrl, ApiBase? base, DateTime Function()? now})
+    : _client = client ?? http.Client(),
+      base = base ?? ApiBase(baseUrl ?? apiBaseUrl, client),
+      _now = now ?? DateTime.now;
 
   final http.Client _client;
-  final String baseUrl;
+  final ApiBase base;
   final DateTime Function() _now;
   VoiceToken? _cached;
 
@@ -76,9 +77,13 @@ class VoiceTokenProvider {
     final c = _cached;
     if (!forceNew && c != null && c.isFresh(_now())) return c;
     try {
+      final url = await base.url();
       final r = await _client
-          .post(Uri.parse('$baseUrl/api/voice/token'),
-              headers: {'content-type': 'application/json'}, body: jsonEncode({'voice_consent': true}))
+          .post(
+            Uri.parse('$url/api/voice/token'),
+            headers: {'content-type': 'application/json'},
+            body: jsonEncode({'voice_consent': true}),
+          )
           .timeout(const Duration(seconds: 15));
       if (r.statusCode == 503) throw const VoiceUnavailableException();
       if (r.statusCode != 200) throw VoiceFailure('token HTTP ${r.statusCode}');
@@ -88,6 +93,7 @@ class VoiceTokenProvider {
     } on VoiceFailure {
       rethrow;
     } catch (e) {
+      base.forget();
       throw VoiceFailure('token: $e');
     }
   }

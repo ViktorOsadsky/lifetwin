@@ -24,8 +24,11 @@ class FakeReader extends HealthReader {
 
 Future<HealthImportResult?> run(WidgetTester t, HealthReader reader, List<String> taps) async {
   HealthImportResult? result;
-  await t.pumpWidget(MaterialApp(
-      home: HealthImportScreen(reader: reader, now: () => now, onDone: (r) => result = r)));
+  await t.pumpWidget(
+    MaterialApp(
+      home: HealthImportScreen(reader: reader, now: () => now, onDone: (r) => result = r),
+    ),
+  );
   await t.tap(find.text('Yes, use my Health app'));
   await t.pumpAndSettle();
   for (final label in taps) {
@@ -53,8 +56,11 @@ void main() {
 
   testWidgets('a quick double tap answers only one question', (t) async {
     HealthImportResult? result;
-    await t.pumpWidget(MaterialApp(
-        home: HealthImportScreen(reader: FakeReader(samples), now: () => now, onDone: (r) => result = r)));
+    await t.pumpWidget(
+      MaterialApp(
+        home: HealthImportScreen(reader: FakeReader(samples), now: () => now, onDone: (r) => result = r),
+      ),
+    );
     await t.tap(find.text('Yes, use my Health app'));
     await t.pumpAndSettle();
     expect(find.text('Question 1 of 2'), findsOneWidget);
@@ -69,8 +75,11 @@ void main() {
 
   testWidgets('go back undoes a mistaken answer', (t) async {
     HealthImportResult? result;
-    await t.pumpWidget(MaterialApp(
-        home: HealthImportScreen(reader: FakeReader(samples), now: () => now, onDone: (r) => result = r)));
+    await t.pumpWidget(
+      MaterialApp(
+        home: HealthImportScreen(reader: FakeReader(samples), now: () => now, onDone: (r) => result = r),
+      ),
+    );
     await t.tap(find.text('Yes, use my Health app'));
     await t.pumpAndSettle();
     expect(find.text('Go back'), findsNothing);
@@ -96,7 +105,11 @@ void main() {
 
   testWidgets('saying no skips Health entirely', (t) async {
     HealthImportResult? result;
-    await t.pumpWidget(MaterialApp(home: HealthImportScreen(reader: FakeReader(samples), onDone: (r) => result = r)));
+    await t.pumpWidget(
+      MaterialApp(
+        home: HealthImportScreen(reader: FakeReader(samples), onDone: (r) => result = r),
+      ),
+    );
     await t.tap(find.text("No thanks, I'll answer myself"));
     expect(result!.samples, isEmpty);
     expect(result!.toAsk, HealthField.values);

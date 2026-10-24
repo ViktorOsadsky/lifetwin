@@ -37,8 +37,18 @@ void main() {
       HealthSample(type: 'HEIGHT', start: DateTime(2026, 3, 1), end: DateTime(2026, 3, 1), value: 1.73),
       HealthSample(type: 'WEIGHT', start: DateTime(2026, 10, 20), end: DateTime(2026, 10, 20), value: 78.4),
       HealthSample(type: 'EXERCISE_TIME', start: DateTime(2026, 10, 10, 9), end: DateTime(2026, 10, 10, 10)),
-      HealthSample(type: 'BLOOD_PRESSURE_SYSTOLIC', start: DateTime(2026, 10, 20), end: DateTime(2026, 10, 20), value: 126),
-      HealthSample(type: 'BLOOD_PRESSURE_DIASTOLIC', start: DateTime(2026, 10, 20), end: DateTime(2026, 10, 20), value: 81),
+      HealthSample(
+        type: 'BLOOD_PRESSURE_SYSTOLIC',
+        start: DateTime(2026, 10, 20),
+        end: DateTime(2026, 10, 20),
+        value: 126,
+      ),
+      HealthSample(
+        type: 'BLOOD_PRESSURE_DIASTOLIC',
+        start: DateTime(2026, 10, 20),
+        end: DateTime(2026, 10, 20),
+        value: 81,
+      ),
       for (final d in [18, 19, 20])
         HealthSample(type: 'SLEEP_LIGHT', start: DateTime(2026, 10, d, 23), end: DateTime(2026, 10, d + 1, 6)),
     ];
@@ -56,8 +66,18 @@ void main() {
     final cs = summarize([
       // Height entered in centimeters as if meters, and a swapped blood pressure.
       HealthSample(type: 'HEIGHT', start: DateTime(2026, 3, 1), end: DateTime(2026, 3, 1), value: 173),
-      HealthSample(type: 'BLOOD_PRESSURE_SYSTOLIC', start: DateTime(2026, 10, 20), end: DateTime(2026, 10, 20), value: 80),
-      HealthSample(type: 'BLOOD_PRESSURE_DIASTOLIC', start: DateTime(2026, 10, 20), end: DateTime(2026, 10, 20), value: 120),
+      HealthSample(
+        type: 'BLOOD_PRESSURE_SYSTOLIC',
+        start: DateTime(2026, 10, 20),
+        end: DateTime(2026, 10, 20),
+        value: 80,
+      ),
+      HealthSample(
+        type: 'BLOOD_PRESSURE_DIASTOLIC',
+        start: DateTime(2026, 10, 20),
+        end: DateTime(2026, 10, 20),
+        value: 120,
+      ),
       HealthSample(type: 'WEIGHT', start: DateTime(2026, 10, 20), end: DateTime(2026, 10, 20), value: 78),
     ], now);
     expect(cs.map((c) => c.field), [HealthField.weightKg]);

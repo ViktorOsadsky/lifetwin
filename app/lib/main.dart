@@ -26,9 +26,11 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   late final VoiceOnboardingController _controller = widget.controller ?? _live();
 
   static VoiceOnboardingController _live() {
-    final tokens = VoiceTokenProvider();
+    // Start finding the server now, while the consent questions are on screen.
+    final api = ApiBase()..url().ignore();
+    final tokens = VoiceTokenProvider(base: api);
     return VoiceOnboardingController(
-      guide: HttpConversationGuide(),
+      guide: HttpConversationGuide(base: api),
       input: CartesiaSpeechInput(tokens: tokens),
       output: CartesiaSpeechOutput(tokens: tokens),
     );
@@ -48,18 +50,24 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       home: Builder(
         builder: (context) => VoiceOnboardingScreen(
           controller: _controller,
-          onUseHealth: () => Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => HealthImportScreen(onDone: (result) {
-              Navigator.of(context).pop();
-              // Each value was already checked on the Health screen ("Is this accurate?").
-              _controller.importHealth({for (final c in result.confirmed) c.field.profileKey: c.value});
-            }),
-          )),
-          onDone: (profile) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            duration: const Duration(days: 1),
-            showCloseIcon: true,
-            content: Text('Confirmed ${profile.length} answers.'),
-          )),
+          onUseHealth: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => HealthImportScreen(
+                onDone: (result) {
+                  Navigator.of(context).pop();
+                  // Each value was already checked on the Health screen ("Is this accurate?").
+                  _controller.importHealth({for (final c in result.confirmed) c.field.profileKey: c.value});
+                },
+              ),
+            ),
+          ),
+          onDone: (profile) => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              duration: const Duration(days: 1),
+              showCloseIcon: true,
+              content: Text('Confirmed ${profile.length} answers.'),
+            ),
+          ),
         ),
       ),
     );
