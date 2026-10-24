@@ -36,6 +36,12 @@ def test_keyless_mascot_plan_and_quiz_work_without_external_calls(client, monkey
     assert response.status_code == 200
     turn = response.json()
     assert turn["guide_mode"] == "guided"
+    assert turn["state"]["phase"] == "remembering"
+    response = client.post(
+        "/api/onboarding/turn",
+        json={"action": "reply", "state": turn["state"], "text": "yes"},
+    )
+    turn = response.json()
     assert turn["state"]["current_field"] == "age"
     response = client.post(
         "/api/onboarding/turn",

@@ -24,6 +24,7 @@ from lifetwin.onboarding.intents import (
 )
 from lifetwin.onboarding.models import ConversationState, TurnRequest, TurnResponse
 from lifetwin.onboarding.parsing import QUESTIONS, normalize_text
+from lifetwin.onboarding.script import UNKNOWN_ACKS
 from lifetwin.onboarding.service import (
     DONE_LEAD,
     LOUDER_LEAD,
@@ -78,6 +79,7 @@ def kind_of(result: TurnResponse) -> str:
         (NO_LEAD, "no"),
         ("Got it.", "confirmed"),
         (SKIPPED, "skipped"),
+        *((ack, "unknown") for ack in UNKNOWN_ACKS),
     ]
     if message.startswith(RESTART_QUESTION):
         return "restart_question"

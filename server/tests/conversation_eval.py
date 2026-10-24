@@ -199,7 +199,10 @@ def score(which: str = "a") -> dict:
         "by_kind": {kind: dict(counts) for kind, counts in sorted(by_kind.items())},
         "volunteered_notes": dict(notes),
         "total": dict(total),
-        "wrong_values": sum(by_kind[kind]["wrong"] for kind in ("unknown", "value", "jump")),
+        "wrong_values": sum(
+            by_kind[kind]["wrong"]
+            for kind in ("unknown", "value", "jump", "novalue", "smalltalk", "steer")
+        ),
         "details": details,
     }
 

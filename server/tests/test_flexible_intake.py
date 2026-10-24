@@ -633,7 +633,8 @@ def test_no_diagnosis_from_medicine_or_borderline(field, text):
         (
             "sleep_hours",
             "7 hours and I walk 30 minutes every day",
-            {"sleep_hours": 7.0, "exercise_minutes_weekly": 210},
+            # v2: walking said beside another answer is lighter activity.
+            {"sleep_hours": 7.0, "moderate_minutes_weekly": 210},
         ),
     ],
 )
