@@ -235,12 +235,12 @@
   {
     "name": "quiz-question-detail",
     "method": "GET",
-    "path": "/api/quiz/questions/soup-serving-check.v1",
+    "path": "/api/quiz/questions/soup-serving-check.v2",
     "status": 200,
     "response_schema": "quiz.question.schema.json",
     "response_subset": {
       "schema_version": "1.0",
-      "id": "soup-serving-check.v1",
+      "id": "soup-serving-check.v2",
       "review_status": "reviewed"
     }
   },
