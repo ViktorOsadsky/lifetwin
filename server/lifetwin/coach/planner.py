@@ -747,6 +747,7 @@ class Planner:
                 body, draft = f"{line} {body}", f"{draft_line} {draft}"
                 callback_id = note.id
                 self.callback_used = True
+                keep.append("you told me")
                 time = time or self.note_time(note)
                 facts = facts + [fact(f"note:{note.id}", _note_text(note) or note.topic)]
         time = time or self.default_time()
@@ -850,7 +851,7 @@ class Planner:
             "new": "A food pattern to try.",
             "kept": f"Kept {card.title.lower()}, since nothing called for a change.",
             "swapped": (
-                f"You set that one aside, so here's {card.title.lower()} instead."
+                f"You set that one aside, so here's another idea: {card.title.lower()}."
                 if dismissed
                 else f"Changed to {card.title.lower()}, to fit what you told me."
             ),
@@ -888,7 +889,9 @@ class Planner:
             )
         )
         if not card.fixed:
-            self.drafts.append(Draft("food", body, card.keep_words))
+            self.drafts.append(
+                Draft("food", body, card.keep_words + (("you told me",) if callback_id else ()))
+            )
         return PlanItem(
             id="food",
             kind="diet",
@@ -965,7 +968,7 @@ class Planner:
                 )
                 return None
             chosen, change = ids[0], "swapped"
-            explanation = f"You set that one aside, so here's {cat.HABITS[chosen].title.lower()}."
+            explanation = f"You set that one aside, so here's another idea: {cat.HABITS[chosen].title.lower()}."
         elif not ids:
             if prev_ref:
                 self.changes.append(
