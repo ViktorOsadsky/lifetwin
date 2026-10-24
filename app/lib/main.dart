@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'forecast/forecast_client.dart';
 import 'forecast/forecast_screen.dart';
+import 'health/health_reader.dart';
 import 'health/health_screen.dart';
 import 'health/health_summary.dart';
 import 'onboarding/voice_onboarding_controller.dart';
@@ -18,13 +19,16 @@ void main() => runApp(const LifeTwinApp());
 /// buttons lead to the mascot conversation (which can open the Apple Health import) and
 /// the forecast. The confirmed profile is kept in memory for this session only.
 class LifeTwinApp extends StatefulWidget {
-  const LifeTwinApp({super.key, this.controller, this.forecastClient});
+  const LifeTwinApp({super.key, this.controller, this.forecastClient, this.healthReader});
 
   /// Tests pass a controller built from fakes.
   final VoiceOnboardingController? controller;
 
   /// Tests pass a fake; otherwise POST /api/predict on the same server.
   final ForecastClient? forecastClient;
+
+  /// Tests pass a fake; otherwise Apple Health.
+  final HealthReader? healthReader;
 
   @override
   State<LifeTwinApp> createState() => _LifeTwinAppState();
@@ -81,6 +85,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
         onUseHealth: () => Navigator.of(talkContext).push(
           MaterialPageRoute<void>(
             builder: (_) => HealthImportScreen(
+              reader: widget.healthReader,
               onDone: (result) {
                 Navigator.of(talkContext).pop();
                 // Each value was already checked on the Health screen ("Is this accurate?").
