@@ -1,6 +1,6 @@
 """Score the held-out conversation v2 replies through the public onboarding API.
 
-Run from the repository root: ``uv run python server/tests/conversation_eval.py``.
+Run from the repository root: ``uv run python server/tests/conversation_eval.py [a|b] [-v]``.
 
 Each reply is sent once, to a state built from the case, and its result is scored:
 
@@ -25,7 +25,10 @@ from fastapi.testclient import TestClient
 
 from lifetwin.onboarding import ConversationService, get_service, router
 
-CASES = Path(__file__).parent / "data" / "conversation_v2_eval.json"
+DATA = Path(__file__).parent / "data"
+# Set A was written before any v2 code; set B after the owner's blood pressure,
+# proxy and steering direction, before that behaviour was built.
+CASE_FILES = {"a": DATA / "conversation_v2_eval.json", "b": DATA / "conversation_v2_eval_b.json"}
 
 
 def _client() -> TestClient:
@@ -50,6 +53,8 @@ def _state(case: dict) -> dict:
     }
     if "health_offered" in case:
         state["health_offered"] = case["health_offered"]
+    if case.get("proxy"):
+        state["proxy_field"] = case["field"]
     return state
 
 
@@ -124,6 +129,34 @@ def score_case(client: TestClient, case: dict) -> dict:
             result["false_unknown"] = True
         if "note" in case:
             result["note"] = _note_verdict(case["note"], notes, exhaustive=False)
+    elif kind in {"novalue", "smalltalk"}:
+        message = response.json()["message"].lower()
+        if pending:
+            result["verdict"] = "wrong"
+        elif state.get("phase") != "asking" or state.get("current_field") != case["field"]:
+            result["verdict"] = "miss"
+        elif kind == "smalltalk" and ("didn't catch" in message or "can't answer" in message):
+            result["verdict"] = "miss"
+        else:
+            result["verdict"] = "correct"
+        if "note" in case:
+            result["note"] = _note_verdict(case["note"], notes, exhaustive=False)
+    elif kind == "steer":
+        if state.get("phase") == "confirming":
+            confirmed = client.post(
+                "/api/onboarding/turn", json={"action": "confirm", "state": state}
+            )
+            if confirmed.status_code == 200:
+                state = confirmed.json()["state"]
+                message = confirmed.json()["message"]
+                expect = case["expect"]
+                right = state.get("current_field") == expect["current_field"]
+                said = expect["mentions"].lower() in message.lower()
+                result["verdict"] = "correct" if right and said else "miss"
+            else:
+                result["verdict"] = "miss"
+        else:
+            result["verdict"] = "miss"
     elif kind == "jump":
         if pending:
             result["verdict"] = "wrong"
@@ -144,8 +177,8 @@ def score_case(client: TestClient, case: dict) -> dict:
     return result
 
 
-def score() -> dict:
-    cases = json.loads(CASES.read_text())
+def score(which: str = "a") -> dict:
+    cases = json.loads(CASE_FILES[which].read_text())
     client = _client()
     by_kind: dict[str, Counter] = defaultdict(Counter)
     notes: Counter = Counter()
@@ -172,7 +205,8 @@ def score() -> dict:
 
 
 if __name__ == "__main__":
-    report = score()
-    if "-v" not in sys.argv:
-        report.pop("details")
-    print(json.dumps(report, indent=1))
+    for which in [arg for arg in sys.argv[1:] if arg in CASE_FILES] or list(CASE_FILES):
+        report = score(which)
+        if "-v" not in sys.argv:
+            report.pop("details")
+        print(which, json.dumps(report, indent=1))
