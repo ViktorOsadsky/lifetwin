@@ -98,3 +98,31 @@ def test_hundreds_split_by_the_transcript_are_joined(field, text, expected):
 @pytest.mark.parametrize(("field", "text"), SPLIT_HUNDRED_TRAPS)
 def test_split_hundreds_that_could_mean_something_else_are_asked_about(field, text):
     check(field, text, None)
+
+
+# "Five, ten" and "six, seven hours" come out of the transcript with a comma.
+COMMA_PAIRS = [
+    ("height_cm", "5, 11.", {"height_cm": 180.34}),
+    ("height_cm", "6, 2", {"height_cm": 187.96}),
+    ("sleep_hours", "6, 7 hours a night.", {"sleep_hours": 6.5}),
+    ("alcohol_drinks_weekly", "2, 3 beers a week.", {"alcohol_drinks_weekly": 2.5}),
+]
+COMMA_PAIR_TRAPS = [
+    ("height_cm", "5, 13"),  # no such inches
+    ("sleep_hours", "4, 8 hours."),  # too wide to be one answer
+    ("sleep_hours", "bed at 10, 6 hours"),  # a clock time and hours
+]
+
+
+@pytest.mark.parametrize(("field", "text", "expected"), COMMA_PAIRS)
+def test_a_pair_written_with_a_comma_is_read_like_one_said_together(field, text, expected):
+    check(field, text, expected)
+
+
+@pytest.mark.parametrize(("field", "text"), COMMA_PAIR_TRAPS)
+def test_a_comma_pair_that_is_not_one_answer_is_asked_about(field, text):
+    check(field, text, None)
+
+
+def test_a_comma_range_is_read_back_as_about():
+    assert "about 6.5 hours" in say("sleep_hours", "6, 7 hours a night.").message

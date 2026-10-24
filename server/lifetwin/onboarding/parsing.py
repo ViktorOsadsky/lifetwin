@@ -974,7 +974,7 @@ SPOKEN_HEIGHT = rf"(?<![\d.])(?<!-)([4-7])(0[1-9]|1[01])(?![\d.]){FOLLOW}"
 # A bare 120-219 can only be centimeters.
 BARE_CM = rf"(?<![\d.])(?<!-)(1[2-9]\d|2[01]\d)(?![\d.]){FOLLOW}"
 HEIGHT_PAIR = (
-    r"(?<![\d.])(?<!-)([4-7])(?:\s|\s?-\s?)(\d{1,2}(?:\.5)?)(?![\d.])"
+    r"(?<![\d.])(?<!-)([4-7])(?:\s|\s?-\s?|,\s?)(\d{1,2}(?:\.5)?)(?![\d.])"
     r"(?!\s?(?:ft|inch|cm|m|kg|lb|stone|hour|minute|year|over|/|on|to|or|and)\b)"
 )
 
@@ -1139,7 +1139,8 @@ def _sleep(text: str, today: date) -> Found:
             found[1].append(m.span())
     for pattern, read in (
         (
-            rf"(?:\bbetween\s+{N}(?:\s?hour)?\s?and|{N}(?:\s?hour)?\s?(?:to|or|-))\s?{NUM}(?!\d)"
+            # "7 or 8 hours", and "6, 7 hours" as transcripts write "six, seven hours".
+            rf"(?:\bbetween\s+{N}(?:\s?hour)?\s?and|{N}(?:\s?hour)?(?:\s?(?:to|or|-)|,))\s?{NUM}(?!\d)"
             r"(?!\s?(?:minute|am|pm|o'clock)\b)(?:\s?hour\b)?",
             spread,
         ),
@@ -1379,7 +1380,7 @@ def _alcohol(text: str, today: date) -> Found:
     counts, spans, article = [], [], False
     for pattern, read in (
         (
-            rf"(?:\bbetween\s+{N}(?:\s+{SIZE}{DRINK})?\s+and|{N}(?:\s+{SIZE}{DRINK})?\s*(?:or|to|-))"
+            rf"(?:\bbetween\s+{N}(?:\s+{SIZE}{DRINK})?\s+and|{N}(?:\s+{SIZE}{DRINK})?(?:\s*(?:or|to|-)|,))"
             rf"\s*{NUM}(?!\d)(?:\s+{SIZE}{DRINK}|{COUNT_END})",
             0,
         ),
@@ -2072,7 +2073,8 @@ def corrects(text: str, field: ProfileField) -> bool:
 RANGE = re.compile(
     r"\b(?:about|around|roughly|approximately|approx|give or take|or so|maybe|probably|"
     r"depends)\b|"
-    r"\bbetween\b|(?<![:\d])\d+(?:\.\d+)?(?: [a-z]+){0,2} (?:or|to|-) (?:an? |\d)|\ban? \w+ or \d"
+    r"\bbetween\b|(?<![:\d])\d+(?:\.\d+)?(?: [a-z]+){0,2} (?:or|to|-) (?:an? |\d)|\ban? \w+ or \d|"
+    r"(?<![:\d.])\d+, \d+(?: [a-z]+)? (?:hour|drinks?|beers?|glass(?:es)?)\b"
 )
 
 
