@@ -95,7 +95,15 @@ Nothing below 12. Flutter applies `MediaQuery.textScaler` so Dynamic Type scales
 ## 3. Characters
 
 - **Twin** (the user's avatar): original flat vector built from swappable layers. Head circle r50 at M size, cheeks, round body, simple stroke eyes and mouth, no outline on light backgrounds (soft shadow instead). Variants: `mood` happy / calm / tired / thinking / sick / recovering; `size` S 56, M 120, L 240. Properties: skin (5), hair style short / bob / curly × colour (5), top colour (5), extra none / glasses / headband.
-- **Twin reflects the user (user-chosen, cosmetic only; added 2026-10-23):** so people can see themselves, the Studio offers **body shape** (5 silhouettes: slim, average, broad, round, plus-size; shown as drawings, never numbers or labels like "overweight"), **height** (shorter / average / taller), **age cues** (none, grey streaks, silver hair, laugh lines), **hair** (adds coily, bald, long, hijab/head covering), **facial hair** (none, stubble, beard, moustache), and **access aids** (glasses, hearing aid, cane, wheelchair). Every shape gets the same quality of pose, expression and clothing fit, and every mood/pose works for every shape. These are chosen by the user in Studio and saved with cosmetics. **They are never derived from, or changed by, weight, BMI or any health input or experiment**, as AGENTS.md and MASTER_PLAN require (no body shaming; cosmetics separate from health). A healthier tier changes the habitat and the twin's energy and pose, never its body size. **Decided (Tier-1 ruling by Daniel, 2026-10-23, option A):** body shape is chosen by the user in Studio only. It is never suggested from, derived from, or changed by height, weight, BMI, experiments or any health data. On the first Studio visit, offer the choice prominently, with no shape pre-selected as "normal"; until the user picks, use the average silhouette.
+- **Twin body reflects the user's data (Tier-1 ruling by Daniel, 2026-10-23, superseding the earlier "user-chosen only" ruling A):** the twin's **body shape and height follow the user's confirmed measurements and data**: height and weight confirmed in the conversation or the Apple Health read-back, plus wearable data, through the agent conversation. Safeguards:
+  1. **Only confirmed values** drive the body, never drafts, guesses or unconfirmed wearable readings. It changes only through the same explicit confirm or "Record real measurements" path as the baseline.
+  2. **Experiments and plans never reshape the body.** The experiment twin keeps the baseline body; a better scenario shows through the habitat tier, energy and pose. That keeps "thinner = healthier" out of the Lab.
+  3. **A small set of dignified, equally well-drawn silhouettes**, mapped from the measurements with no numbers, BMI or labels ("overweight", etc.) ever shown on the twin or in Studio. Every mood, pose and outfit fits every shape.
+  4. **Body shape never signals health.** Health shows only through the habitat and tier, and the twin is drawn with the same care, joy and energy at every size.
+  5. Age cues, hair, facial hair, skin tone and access aids stay **user-chosen in Studio**.
+  6. *Recommended, not yet decided:* a gentle "That's not quite me" adjustment in Studio, one step either way, for when the data-derived shape feels wrong.
+
+  ⚠ This conflicts with `AGENTS.md` and `MASTER_PLAN.md` as written ("no body shaming", "visual claims that a heavier/lighter avatar is inherently healthier", cosmetics kept separate from health inputs). Those team docs need an agreed update before this ships.
 - **Mascot** (the guide, "Pip"): small round orb-creature with a leaf sprout, `blue-400` → `green-400` body, holds the magic ball in the fortune scene. States: idle, listening, thinking, speaking, celebrating. Clearly a different silhouette from the twin.
 - **Magic ball**: glass sphere, `blue-100` inner glow, sparkles in `sun`.
 
@@ -214,6 +222,22 @@ These are binding, and critics treat violations as **blockers**.
    Rows sit on the sheet with **generous 12–16 pt gaps**, and the tinted icon squares give the warmth. No heavy cards, no hairline-only rows, no number circles, no pill chips.
 7. One featured item per list may be emphasised (a slightly larger tile, or the twin pictured beside it).
 8. Keep §7b's seamless habitat, one filled button per screen, calm uncoloured numbers, two-radii limit (tiles use the 12 radius) and floating tab bar.
+
+## 7d. Quality check: nothing clipped (owner feedback 2026-10-23: "a lot of the assets that are circles are kind of cut off — quality check everything")
+
+**Rule:** every circle and round asset (sun, shading, badges, glyphs, avatars, icon backdrops, twin and Pip parts, the magic ball) sits **fully inside** all of its clipping ancestors at every size and in every instance. The only exception is deliberate edge-bleed scenery, which must be **named with a `bleed/` prefix** (e.g. `bleed/bush-front`), never clipped to a straight edge *inside* the scene, and never a focal object. Unintended clipping on a core screen is a **blocker**.
+
+**Figma audit, read-only, 2026-10-23 ~23:45.** Fix these at the root (the components) so instances inherit the fix:
+- **Habitat component** (Components page; `Aspect=Room` 27:662, `Aspect=Compact` 27:698): its `shade` ellipses are clipped by their own parents, `bush/back`, `bush/front` and `tree/canopy` (clipsContent on). That gives hard straight edges on the shading, 41 hits across the component and its tier instances. Turn off clipping on those part frames and keep each shade inside its shape (or boolean-intersect it). Rename deliberate edge bushes and the light bloom to `bleed/…`.
+- **The sun is cut off** in every screen where a Habitat sits in a cropping `Scene` frame: F2–F6, `light/sun` clipped up to 124 pt at the top. Never crop a scene above the sun. Position the sun inside the visible sky for each aspect.
+- **F1 need badges:** the `status-glyph` circles (20×20) are clipped 2 pt by the `Needs` row. Give the row enough height or padding.
+- **F8 Experiment:** the boxed `Baseline · Steady` / `Experiment · Thriving` tiles clip the scene art (23 hits). Replace them with the continuous-sky layout from §7b.
+- `Thriving` tier `sunlight-bloom` is clipped 200 pt by its tier frame. Rename it to bleed or contain it.
+
+**How to verify (builders and critics must run this):**
+1. A read-only script per page finds every ELLIPSE, or node with corner radius ≥ min(w,h)/2, whose bounds exceed a clipping ancestor by more than 0.75 px, excluding `bleed/*`. The result must be **0** on Components, Flow, Flow · handoff v1 and States.
+2. Look at every screen at phone scale, and every component at its smallest size (Twin S, Pip S, badges, icon tiles).
+3. In Flutter, Read the captures at 320×693 ×1.6 and 430×932 ×1.0 and check that no circle, avatar part, icon backdrop or sun is cut. Painters keep their art inside a bounded region (no `ClipOval` or `ClipRect` cutting the character), and the character stays the dominant subject even at 320 pt with large text.
 
 ## 7. Flutter mapping
 
