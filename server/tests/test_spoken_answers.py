@@ -184,3 +184,18 @@ def test_a_modest_lead_in_before_the_number_is_color(field, text, expected):
 @pytest.mark.parametrize(("field", "text"), MODEST_TRAPS)
 def test_a_modest_word_that_changes_the_amount_still_asks(field, text):
     check(field, text, None)
+
+
+# "In my late 60s, 68 to be exact": the exact age settles the decade when it fits it.
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("I'm in my late 60s, 68 to be exact.", {"age": 68}),
+        ("I'm in my early 70s, 72 exactly.", {"age": 72}),
+        ("in my sixties, 66 to be precise", {"age": 66}),
+        ("I'm in my 70s, 68 to be exact.", None),  # the two do not fit
+        ("I'm in my late 60s, 68 or so.", None),  # not exact
+    ],
+)
+def test_an_exact_age_inside_its_decade_is_read(text, expected):
+    check("age", text, expected)

@@ -404,6 +404,22 @@ UNIT_SPELLINGS = [
 ]
 
 
+DECADE_WORDS = {
+    word: n for n, word in enumerate("twenties thirties forties fifties sixties".split(), 2)
+} | {"seventies": 7, "eighties": 8, "nineties": 9}
+DECADE_THEN_EXACT = (
+    r"\bin (?:my|the) (?:early |mid |middle |late )?(?:(\d)0 ?'?s|("
+    + "|".join(DECADE_WORDS)
+    + r"))\b[,.;]?\s*(?=(?:(?:i'm|i am) )?(\d{2})(?: years?(?: old)?)? "
+    r"(?:to be (?:exact|precise)|exactly|precisely)\b)"
+)
+
+
+def _exact_in_decade(match: re.Match) -> str:
+    decade = int(match.group(1)) if match.group(1) else DECADE_WORDS[match.group(2)]
+    return "" if int(match.group(3)) // 10 == decade else match.group(0)
+
+
 def _canonical(text: str) -> str:
     s = normalize_text(text).lower().replace("&", " and ")
     s = re.sub(r"(?<=\d),(?=\d{3}\b)", "", s)  # 10,000
@@ -412,6 +428,9 @@ def _canonical(text: str) -> str:
     s = re.sub(r"\bnoon\b", "12 pm", s)
     s = re.sub(r"\b([ap])\.m\.", r"\1m", s)
     s = re.sub(r"\b(lbs?|ft|in|yrs?|hrs?|mins?|kgs?|cms?|approx|st)\.", r"\1", s)
+    # "In my late 60s, 68 to be exact": the exact age settles the decade, when it fits.
+    s = re.sub(DECADE_THEN_EXACT, _exact_in_decade, s)
+    s = re.sub(r"(?<=\d) (?:to be (?:exact|precise)|precisely)\b", " ", s)
     # Decades are ranges, not ages: "in my 70s", "seventies".
     s = re.sub(r"\b\d0 ?'?s\b", " decades ", s)
     # A two-digit year is a year, never an age: "born in '80" -> 1980.
