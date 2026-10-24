@@ -1,0 +1,71 @@
+[
+  {
+    "profile": {
+      "age": 45,
+      "sex_nhanes": 1,
+      "bmi": 25,
+      "sleep_hours": 7,
+      "smoking_status": 0,
+      "diabetes_diagnosed": 0,
+      "hypertension_diagnosed": 0,
+      "general_health": 2,
+      "vigorous_recreation_min_week": 60,
+      "moderate_recreation_min_week": 120,
+      "sedentary_min_day": 360
+    },
+    "log_relative_hazard_score": -1.558015201300663,
+    "survival_probabilities": {
+      "1": 0.9988050317356533,
+      "2": 0.9976671789349414,
+      "3": 0.9962932635299774,
+      "4": 0.9948999562278703,
+      "5": 0.9931850509406549
+    }
+  },
+  {
+    "profile": {
+      "age": 55,
+      "sex_nhanes": 1,
+      "bmi": 27,
+      "sleep_hours": 7,
+      "smoking_status": 2,
+      "diabetes_diagnosed": 0,
+      "hypertension_diagnosed": 0,
+      "general_health": 3,
+      "vigorous_recreation_min_week": 60,
+      "moderate_recreation_min_week": 120,
+      "sedentary_min_day": 360
+    },
+    "log_relative_hazard_score": -0.09228936794200376,
+    "survival_probabilities": {
+      "1": 0.9948352572376845,
+      "2": 0.9899364631708792,
+      "3": 0.9840460984319885,
+      "4": 0.9781001619112472,
+      "5": 0.9708197840812451
+    }
+  },
+  {
+    "profile": {
+      "age": 68,
+      "sex_nhanes": 2,
+      "bmi": 29,
+      "sleep_hours": 8,
+      "smoking_status": 1,
+      "diabetes_diagnosed": 1,
+      "hypertension_diagnosed": 1,
+      "general_health": 3,
+      "vigorous_recreation_min_week": 0,
+      "moderate_recreation_min_week": 90,
+      "sedentary_min_day": 420
+    },
+    "log_relative_hazard_score": 1.0967333230216636,
+    "survival_probabilities": {
+      "1": 0.9831394624606102,
+      "2": 0.9673307930776381,
+      "3": 0.9485574151671525,
+      "4": 0.9298654379817842,
+      "5": 0.9073292052999756
+    }
+  }
+]

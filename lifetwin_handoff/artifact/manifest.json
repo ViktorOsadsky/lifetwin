@@ -1,0 +1,9 @@
+{
+  "source_model_version": "personal-cox-v2-20261024T182404Z",
+  "source_model_sha256": "cec0ed5cdf831a4596afd505571e43203226f8d686f38ee17be67a3507ba5f1e",
+  "files_sha256": {
+    "model.json": "d60aa0dd044848519f3d6b599dee57fd23e26f76846bd26f4700628619e066ce",
+    "support_reference.npz": "f48a7c45a13baf7de38c09cea290aeb83a426def8d3f809c30c5894274f65544",
+    "golden_vectors.json": "88b5fb04137d6912de6d362d26cda62d2b9ce01e12e12e4a8c73b9c15d622e4d"
+  }
+}
