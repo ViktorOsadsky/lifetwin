@@ -1,0 +1,87 @@
+<!doctype html>
+<!-- Flutter: the plate window shrinks first (Fortune to 160pt min, Customize to 200pt min), then the bottom panel scrolls. Test at 375x667 and at 1.3x text. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>V Room human</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.scr{width:390px;height:844px;position:relative;overflow:hidden;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#4A2F25;-webkit-font-smoothing:antialiased}
+.g-lav{background:radial-gradient(140% 70% at 50% 18%,#F0ECFD 0%,#E6E0FA 72%)}
+.g-mint{background:radial-gradient(140% 70% at 50% 18%,#E3F5EC 0%,#D3EEE2 72%)}
+.g-peach{background:radial-gradient(140% 70% at 50% 18%,#FDEBE1 0%,#FBE0D2 72%)}
+.g-night{background:radial-gradient(140% 70% at 50% 22%,#1B2245 0%,#121731 72%)}
+.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.pn{position:absolute;box-sizing:border-box;border:1.5px solid #A88B7D;border-radius:28px;background:#FFFDF8;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.g-night .pn{box-shadow:0 6px 16px rgba(5,8,25,.35),inset 0 1px 0 rgba(255,255,255,.08)}
+.win{border-radius:30px}
+.pa{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border-radius:24px;overflow:hidden}
+.pa img.plate{position:absolute;display:block;object-fit:cover}
+.key{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(226,179,87,.7);border-radius:24px;pointer-events:none}
+.spk{position:absolute;width:16px;height:16px;pointer-events:none}
+.banner{position:absolute;left:50%;transform:translateX(-50%);height:44px;max-width:240px;box-sizing:border-box;padding:0 20px;display:flex;align-items:center;justify-content:center;gap:6px;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;white-space:nowrap;z-index:3}
+.banner .nm{overflow:hidden;text-overflow:ellipsis}
+.banner .br{color:#B4532F}
+.btn{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:#4A2F25;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid #8C6B5D;background:#FFFDF8;padding:0}
+.btn.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.lip{background:#9FD9C3;box-shadow:inset 0 -3px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-cream{background:#FFFDF8;box-shadow:inset 0 -3px 0 rgba(233,223,208,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.link{border:0;background:transparent;box-shadow:none;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;font-weight:700;font-size:18px;min-height:48px}
+.back{position:absolute;width:52px;height:52px;border-radius:26px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);z-index:2}
+.tail{position:absolute;width:20px;height:20px;background:#FFFDF8;border:1.5px solid #A88B7D;border-top-color:transparent;border-right-color:transparent;box-sizing:border-box}
+.dots{display:flex;gap:8px;justify-content:center;align-items:center}
+.dot{width:12px;height:12px;border-radius:6px;border:2px solid #8C6B5D;box-sizing:border-box;background:#FFFDF8}
+.dot.done{background:#4A2F25;border-color:#4A2F25}
+.dot.now{width:30px;background:#9FD9C3;border-color:#7A5B4E}
+.chip{width:100%;height:52px;border-radius:26px;justify-content:flex-start;padding:0 16px;font-size:17px;font-weight:700;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.tab{width:66px;height:70px;border-radius:18px;border:2px solid transparent;background:transparent;flex-direction:column;gap:3px;font-size:17px}
+.tab.on{background:#9FD9C3;border-color:#7A5B4E;font-weight:700}
+.tile{width:104px;height:88px;border-radius:22px;background:#FFFDF8;flex-direction:column;gap:2px;font-size:17px;position:relative;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.tile:nth-child(odd){transform:rotate(-1deg)}
+.tile:nth-child(even){transform:rotate(1deg)}
+.tile svg.it{filter:drop-shadow(0 2px 3px rgba(74,47,37,.18))}
+.tile.on{background:#9FD9C3;border-color:#7A5B4E;font-weight:700;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.badge{position:absolute;right:-8px;top:-8px;width:30px;height:30px;border-radius:15px;background:#4A2F25;display:flex;align-items:center;justify-content:center;border:2px solid #FFFDF8}
+.thumb{width:42px;height:42px;border-radius:21px;overflow:hidden;position:relative;border:2px solid #8C6B5D;background:#FBF4EA;flex:none;box-sizing:border-box}
+.thumb img{position:absolute;display:block}
+.ncard{background:#1E2547;color:#FBF4EA;border-color:#0B0F26}
+.ncard .nkey{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(232,182,76,.7);border-radius:22px;pointer-events:none}
+.ncard .link{color:#E8B64C}
+</style>
+</helmet>
+<div class="scr g-lav">
+<div class="pn win" style="left: 14px; top: 77px; width: 362px; height: 615px"><div class="pa" style=""><img class="plate" src="../../../app/assets/scene/3.0x/room.jpg" alt="Floating island in a soft lavender sky" style="width: 446px; height: 669px; left: -50px; top: 0px;"><div aria-hidden="true" style="position: absolute; left: 53px; top: 100px; width: 290px; height: 259px; background: radial-gradient(closest-side at 60% 42%, rgba(255,227,176,.30), rgba(255,227,176,0))"></div><div aria-hidden="true" style="position: absolute; left: 88px; top: 354px; width: 170px; height: 30px; border-radius: 50%; background: rgba(74,47,37,.10); filter: blur(8px)"></div><div aria-hidden="true" style="position: absolute; left: 113px; top: 361px; width: 120px; height: 16px; border-radius: 50%; background: rgba(74,47,37,.28); filter: blur(3px)"></div><img src="../../../app/assets/twin/human/base/3.0x/cal_hat.png" alt="Mochi the human twin in the Cal hat" style="position: absolute; left: 37px; top: 110px; width: 273px; height: 273px; display: block"><svg aria-hidden="true" focusable="false" width="30" height="16" viewBox="0 0 30 16" style="position: absolute; left: 104px; top: 361px"><path d="M2 16C4 11 5 7 4 2c3 4 4.5 9 4.5 14zM9 16c1-6 3-9 6-12-.5 5-1.5 8-1 12zM15 16c1.5-5 4-7.5 8-9-2 4-3 6.5-2.5 9zM21 16c2-3.5 4.5-5 8-5.5-2.5 2-3.5 3.5-3.5 5.5z" fill="#93AE5B"></path><path d="M6 16c.5-4 1.5-6.5 3.5-8.5-.3 3.5-.8 5.5-.3 8.5zM17.5 16c1-3 2.5-4.5 5-5.5-1 2-1.6 3.5-1.4 5.5z" fill="#AFC877"></path></svg><svg aria-hidden="true" focusable="false" width="30" height="16" viewBox="0 0 30 16" style="position: absolute; left: 202px; top: 363px"><path d="M2 16C4 11 5 7 4 2c3 4 4.5 9 4.5 14zM9 16c1-6 3-9 6-12-.5 5-1.5 8-1 12zM15 16c1.5-5 4-7.5 8-9-2 4-3 6.5-2.5 9zM21 16c2-3.5 4.5-5 8-5.5-2.5 2-3.5 3.5-3.5 5.5z" fill="#93AE5B"></path><path d="M6 16c.5-4 1.5-6.5 3.5-8.5-.3 3.5-.8 5.5-.3 8.5zM17.5 16c1-3 2.5-4.5 5-5.5-1 2-1.6 3.5-1.4 5.5z" fill="#AFC877"></path></svg></div><div class="key"></div></div>
+<!-- Name banner: max-width 240px; the name scales down to 18px, then truncates with an ellipsis. -->
+<div class="banner" style="top: 55px" aria-label="Twin name: Mochi"><span class="br">{</span><span class="nm">Mochi</span><span class="br">}</span></div>
+<div class="pn" style="left: 240px; top: 100px; width: 130px; padding: 14px 18px; border-radius: 26px; z-index: 2"><span class="tail" style="left: 18px; bottom: -11px; transform: rotate(-45deg)"></span><p class="fd" style="margin: 0; font-size: 21px; line-height: 1.18; text-align: left; position: relative">Hi! Want<br>to chat?</p></div>
+<div class="pn" style="left: 28px; top: 606px; border-radius: 18px; padding: 9px 16px 9px 12px; display: flex; align-items: center; gap: 8px; transform: rotate(-3deg); font-size: 17px; font-weight: 700" role="status">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="#F8D98A" stroke="#4A2F25" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.2c1.8 2 5.2 2 7 0"/><path d="M9 9.8h.01M15 9.8h.01"/></svg><span>Feeling cozy</span>
+</div>
+<div class="pn" style="left: 14px; top: 668px; width: 362px; height: 138px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px">
+<button class="btn" style="width: 94px; height: 104px; flex-direction: column; gap: 6px; border: 0; background: transparent; font-size: 17px; font-weight: 700">
+<span style="width: 62px; height: 62px; border-radius: 31px; border: 2px solid #8C6B5D; display: flex; align-items: center; justify-content: center; box-sizing: border-box; background: #F8B9A0; box-shadow: inset 0 -3px 0 rgba(232,149,122,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M8.5 3.5L3 6.5l2 5 3-1.2V20.5h8V10.3l3 1.2 2-5-5.5-3c-.6 1.6-2.2 2.7-4 2.7s-3.4-1.1-4-2.7z"/></svg></span>
+<span>Customize</span>
+</button>
+<button class="btn lip fd" style="width: 144px; height: 72px; border-radius: 36px; font-size: 26px">
+<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span>Talk</span>
+</button>
+<button class="btn" style="width: 94px; height: 104px; flex-direction: column; gap: 6px; border: 0; background: transparent; font-size: 17px; font-weight: 700">
+<span style="width: 62px; height: 62px; border-radius: 31px; border: 2px solid #8C6B5D; display: flex; align-items: center; justify-content: center; box-sizing: border-box; background: #1E2547; box-shadow: inset 0 -3px 0 rgba(15,20,48,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E8B64C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="10" r="6.5"/><path d="M6.5 20.5h11l-1.8-3.6H8.3z"/><path d="M9.2 8.6a3.2 3.2 0 0 1 2.6-2.2"/></svg></span>
+<span>Fortune</span>
+</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
