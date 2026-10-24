@@ -396,6 +396,8 @@ def read_notes(
         topics.append("sleep")
     if re.search(SITTING_CUE, text):
         topics.append("sitting")
+    if re.search(r"\bsmok\w*|\bcigar\w*", text):
+        topics.append("smoking")  # "I quit smoking 20 years ago" said beside the age
     notes = []
     for name in dict.fromkeys(topics):
         if name == "sleep":

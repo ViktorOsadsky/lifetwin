@@ -246,8 +246,9 @@ def test_person_who_volunteers_everything_at_once():
     d.say("yes")
     confirmed = d.state["confirmed_profile"]
     assert confirmed["age"] == 70 and confirmed["diabetes"] is False
-    assert d.state["current_probe"] == "quit_story"  # right after the smoking answer
-    d.say("oh, twenty years now")
+    # "Quit 20 years ago" was already said, so the quitting follow-up is not asked.
+    assert d.state["current_probe"] is None
+    assert any(n.get("quit_ago") == "20 years" for n in d.state["habit_notes"])
     # Steered by their own words: the dog walks come next, before the Health offer.
     assert d.state["current_field"] == "moderate_minutes_weekly"
     assert "your dog" in d.result["message"]

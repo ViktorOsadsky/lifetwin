@@ -57,7 +57,7 @@ SCRIPT: tuple[Question, ...] = (
         "smoking",
         (
             "Do you smoke now, did you smoke before, or have you never smoked?",
-            "Do you smoke now, did you used to, or have you never smoked?",
+            "Do you smoke now, did you use to, or have you never smoked?",
         ),
         'I\'m asking about smoking cigarettes. Say "never" if you never smoked, '
         '"I quit" if you smoked in the past, or "I smoke" if you smoke now.',
@@ -168,7 +168,14 @@ SCRIPT: tuple[Question, ...] = (
         "walk, gardening or dancing. Add up a usual week. A 30-minute walk, 5 days a week, "
         'is 150 minutes. If you don\'t do any, say "none".',
         '"150 minutes a week"',
-        ("None", "30 minutes a week", "1 hour a week", "2 hours a week", "5 hours a week"),
+        (
+            "None",
+            "30 minutes a week",
+            "1 hour a week",
+            "2 hours a week",
+            "5 hours a week",
+            NOT_SURE,
+        ),
         proxy="That's okay. Do you walk, garden or dance at all?",
         proxy_replies=("Yes", "No"),
         example_value="150 minutes",
@@ -184,7 +191,7 @@ SCRIPT: tuple[Question, ...] = (
         "I'm asking about exercise that makes you breathe hard and talk only in short "
         'bursts, like jogging, fast cycling or singles tennis. "None" is a fine answer.',
         '"none"',
-        ("None", "30 minutes a week", "1 hour a week", "2 hours a week"),
+        ("None", "30 minutes a week", "1 hour a week", "2 hours a week", NOT_SURE),
         proxy="That's okay. Do you ever do anything that leaves you out of breath?",
         proxy_replies=("Yes", "No"),
         with_health=(
@@ -379,7 +386,7 @@ STEERS: tuple[tuple[str, ProfileField], ...] = (
 )
 STEER_LEADS = ("You mentioned {said}.", "You said {said}.")
 # Something for a later question, said to this one: thanked, kept for later.
-LATER = ("Lovely, we'll come to that in a moment.", "I'll remember that for in a moment.")
+LATER = ("Lovely, we'll come to that in a moment.", "I'll come back to that.")
 # First person to second, for saying their words back.
 FLIP = {
     "i": "you",
