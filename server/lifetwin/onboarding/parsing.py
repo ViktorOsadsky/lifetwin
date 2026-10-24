@@ -30,31 +30,23 @@ from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.models import ExtractionResult, ProfileField
 
 QUESTIONS: dict[ProfileField, str] = {
-    "age": "How old are you? You can skip any question you don't know.",
+    "age": "How old are you?",
     "sex": "What sex were you at birth: female or male?",
-    "height_cm": "How tall are you? For example, 5 feet 10 inches, or 178 cm.",
-    "weight_kg": "How much do you weigh? For example, 160 pounds, or 72 kg.",
-    "sleep_hours": "How many hours do you usually sleep each night? For example, 7 hours.",
+    "height_cm": "How tall are you? For example, 5 feet 10 inches.",
+    "weight_kg": "How much do you weigh? For example, 160 pounds.",
+    "sleep_hours": "How many hours do you sleep on a usual night?",
     "exercise_minutes_weekly": (
-        "How many minutes of exercise do you get in a whole week? "
-        "For example, a 30-minute walk 5 days a week is 150 minutes."
+        "About how many minutes do you exercise in a week? "
+        "A 30-minute walk, 5 days a week, is 150 minutes."
     ),
-    "smoking_status": "Do you smoke now, did you smoke in the past, or have you never smoked?",
+    "smoking_status": "Do you smoke now, did you smoke before, or have you never smoked?",
     "alcohol_drinks_weekly": (
-        "How many alcoholic drinks do you usually have in a week? "
-        'For example, 3 drinks. If you don\'t drink, say "none".'
+        "How many alcoholic drinks do you have in a week? Say none if you don't drink."
     ),
-    "diabetes": (
-        "Has a doctor ever told you that you have diabetes? Please say yes or no. "
-        "If you're not sure, say \"I don't know\"."
-    ),
-    "systolic_bp": (
-        "What is your blood pressure? For example, 120 over 80. "
-        "If you don't know it, just say \"I don't know\"."
-    ),
+    "diabetes": "Has a doctor ever told you that you have diabetes?",
+    "systolic_bp": "What is your blood pressure? For example, 120 over 80.",
     "diastolic_bp": (
-        "What is the bottom number of your blood pressure? For example, the 80 in 120 over 80. "
-        "If you don't know it, just say \"I don't know\"."
+        "What is the bottom number of your blood pressure? For example, the 80 in 120 over 80."
     ),
 }
 # Plain names for messages; code identifiers never reach the person.
@@ -76,9 +68,7 @@ FRIENDLY_LABELS: dict[ProfileField, str] = {
 QUESTION_EXAMPLE_VALUES: dict[ProfileField, str] = {
     "height_cm": "5 feet 10 inches",
     "weight_kg": "160 pounds",
-    "sleep_hours": "7 hours",
     "exercise_minutes_weekly": "150 minutes",
-    "alcohol_drinks_weekly": "3 drinks",
 }
 EXAMPLES: dict[ProfileField, str] = {
     "age": '"I\'m 72"',
@@ -1845,7 +1835,7 @@ def clarify(text: str, field: ProfileField, *, today: date | None = None) -> str
     if field == "alcohol_drinks_weekly" and re.search(NON_ALCOHOL, canonical):
         return (
             "I only count alcoholic drinks, like beer, wine or spirits. "
-            'How many of those do you have in a week? If none, just say "none".'
+            "How many of those do you have in a week? Say none if you have none."
         )
     if field in HABITS and SEASONAL.search(canonical):
         return "How much is that in a usual week, all year round?"
@@ -1855,7 +1845,7 @@ def clarify(text: str, field: ProfileField, *, today: date | None = None) -> str
     if field == "sex" and OTHER_SEX.search(canonical):
         return (
             "For the forecast I can only use female or male at birth. "
-            'Which fits best? If you\'d rather not say, just say "skip".'
+            "Which fits best? You can also skip this question."
         )
     if field == "age":
         readings = _age_readings(canonical, today or date.today()) or []
