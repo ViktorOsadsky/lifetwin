@@ -1810,6 +1810,9 @@ def _drop_self_correction(text: str) -> str:
     return " ".join(text.split())
 
 
+# "Not much, maybe 4", "not a lot. 90 minutes a week": a modest word before the number
+# itself. Only at the start, so "more than 7" and "not much exercise" still count.
+MODEST_LEAD = r"^(?:oh,? )?not (?:(?:that |very |too )?much|(?:a )?(?:whole )?lot|many)\b[\s,.;:-]*(?=[^\d]*\d)"
 # "I used to be 5'9", I'm 5'8" now", "I was 200 pounds, now I'm 185": an old value set
 # against one marked as now. Only the now value is read; nothing else may hold a number.
 PAST_CLAUSE = re.compile(
@@ -1847,7 +1850,7 @@ def parse_value(field: ProfileField, text: str, *, today: date | None = None) ->
         # A corrected half of a reading ("130 over 80, no, 85") is asked about.
         return _blood_pressure(field, canonical)
     if field not in CATEGORICAL:
-        canonical = _drop_self_correction(canonical)
+        canonical = re.sub(MODEST_LEAD, "", _drop_self_correction(canonical))
     if field in NOW_AFTER_PAST:
         canonical = _now_after_past(canonical)
     if field == "sex":

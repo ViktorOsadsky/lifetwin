@@ -160,3 +160,27 @@ def test_the_value_marked_now_replaces_the_old_one(field, text, expected):
 @pytest.mark.parametrize(("field", "text"), NOW_AFTER_PAST_TRAPS)
 def test_an_old_value_without_a_clear_now_value_is_asked_about(field, text):
     check(field, text, None)
+
+
+# "Not much, maybe 4": a modest word before the number, not a vague amount.
+MODEST = [
+    ("sleep_hours", "not much maybe 4", {"sleep_hours": 4.0}),
+    ("sleep_hours", "Not much, maybe 4 or 5 hours.", {"sleep_hours": 4.5}),
+    ("exercise_minutes_weekly", "Not a lot, 90 minutes a week.", {"exercise_minutes_weekly": 90}),
+    ("alcohol_drinks_weekly", "Not many. 2 a week.", {"alcohol_drinks_weekly": 2}),
+]
+MODEST_TRAPS = [
+    ("sleep_hours", "Not much more than 5."),
+    ("sleep_hours", "Not much, I sleep a lot during the day."),
+    ("exercise_minutes_weekly", "I walk 30 minutes, not much"),  # only at the start
+]
+
+
+@pytest.mark.parametrize(("field", "text", "expected"), MODEST)
+def test_a_modest_lead_in_before_the_number_is_color(field, text, expected):
+    check(field, text, expected)
+
+
+@pytest.mark.parametrize(("field", "text"), MODEST_TRAPS)
+def test_a_modest_word_that_changes_the_amount_still_asks(field, text):
+    check(field, text, None)
