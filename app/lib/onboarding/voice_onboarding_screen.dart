@@ -129,6 +129,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   bool get _justChanged => _turnLock?.isActive ?? false;
 
   final _noticeKey = GlobalKey(debugLabel: 'notice');
+  final _quickKey = GlobalKey(debugLabel: 'quick answers');
   String? _shownNotice;
 
   void _useHealth() {
@@ -197,26 +198,27 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     final listening = c.phase == VoicePhase.listening;
     if (listening != _wasListening) HapticFeedback.mediumImpact();
     _wasListening = listening;
-    // A new notice may land below the fold (the controls take the lower part of the
-    // screen): scroll it into view, its Try again or Open Settings button included.
-    if (c.notice != null && c.notice != _shownNotice) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final notice = _noticeKey.currentContext;
-        if (notice == null || !notice.mounted) return;
-        Scrollable.ensureVisible(
-          notice,
-          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
-          duration: MediaQuery.disableAnimationsOf(notice) ? Duration.zero : const Duration(milliseconds: 250),
-        );
-      });
-    }
+    // A new notice, or the quick answers of a new question, may land below the fold (the
+    // controls take the lower part of the screen): scroll them into view, buttons included.
+    if (c.notice != null && c.notice != _shownNotice) _reveal(_noticeKey);
     _shownNotice = c.notice;
     if (!identical(c.turn, _shownTurn)) {
       _shownTurn = c.turn;
       _turnLock?.cancel();
       _turnLock = Timer(secondTapGuard, () {});
+      if (c.notice == null && _quickInStory) _reveal(_quickKey);
     }
   }
+
+  void _reveal(GlobalKey key) => WidgetsBinding.instance.addPostFrameCallback((_) {
+    final target = key.currentContext;
+    if (target == null || !target.mounted) return;
+    Scrollable.ensureVisible(
+      target,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      duration: MediaQuery.disableAnimationsOf(target) ? Duration.zero : const Duration(milliseconds: 250),
+    );
+  });
 
   void _send() {
     final t = _text.text;
@@ -508,7 +510,10 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
             ),
           ),
         ],
-        if (quick) ...[const SizedBox(height: LtSpace.lg), _pad(_quickAnswers(busy))],
+        if (quick) ...[
+          const SizedBox(height: LtSpace.lg),
+          KeyedSubtree(key: _quickKey, child: _pad(_quickAnswers(busy))),
+        ],
       ],
       bottom: scene ? PipScene(mood: mood, beside: voiceLine) : null,
     );

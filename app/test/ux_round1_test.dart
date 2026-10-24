@@ -342,6 +342,22 @@ void main() {
   });
 
   group('notices', () {
+    testWidgets('typing: a new question\'s quick answers scroll into view', (t) async {
+      final r = Rig(guide: StepGuide(message: 'Got it. What sex were you at birth: female or male?'));
+      await r.pump(t);
+      await r.start(t, voice: false);
+      await t.enterText(find.byType(TextField), '70');
+      await t.tap(find.text('Send'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Yes'));
+      await t.pumpAndSettle();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pumpAndSettle();
+      expect(r.c.state?['current_field'], 'sex');
+      expect(find.text('Female').hitTestable(), findsOneWidget);
+      expect(find.text('Male').hitTestable(), findsOneWidget);
+    });
+
     testWidgets('a new notice scrolls into view with its button (mic denied, no network)', (t) async {
       final r = Rig();
       r.fakeInput.startError = const MicDeniedException();
