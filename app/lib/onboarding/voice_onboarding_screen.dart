@@ -159,6 +159,18 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   /// Leaving LifeTwin (home screen, another app, a call) closes the microphone and stops
   /// Pip: nothing is heard or said while the app is not on screen, and words heard so far
   /// are dropped, not sent. Coming back shows the same question, ready to answer.
+  /// The keyboard going up or down (or a rotation) resizes the story: once it settles,
+  /// the end of Pip's line is brought back into view.
+  Timer? _resized;
+
+  @override
+  void didChangeMetrics() {
+    _resized?.cancel();
+    _resized = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) _reveal(_lineKey);
+    });
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Every way out passes through hidden (before paused), so this runs once.
@@ -189,6 +201,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     WidgetsBinding.instance.removeObserver(this);
     _aiLock?.cancel();
     _turnLock?.cancel();
+    _resized?.cancel();
     _text.dispose();
     _focus.dispose();
     super.dispose();

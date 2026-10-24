@@ -362,6 +362,24 @@ void main() {
       expect(t.getRect(text).bottom, lessThanOrEqualTo(visible().bottom + 0.5));
     });
 
+    testWidgets('large text: a turn that arrives with the keyboard up is in view once it goes down', (t) async {
+      const line =
+          "Hi, I'm your guide. You can talk or type, and you can skip any question. How old are you?";
+      final r = Rig(guide: StepGuide(message: line));
+      await r.pump(t, scale: 2);
+      await r.start(t, voice: false);
+      t.view.viewInsets = const FakeViewPadding(bottom: 336); // the keyboard
+      await t.pumpAndSettle();
+      await t.enterText(find.byType(TextField), '70');
+      await t.tap(find.text('Send'));
+      await t.pumpAndSettle();
+      t.view.resetViewInsets(); // read-back: no typing box, so the keyboard goes down
+      await t.pump(const Duration(milliseconds: 400));
+      await t.pumpAndSettle();
+      final end = t.getRect(find.textContaining('How old are you?')).bottom;
+      expect(end, lessThanOrEqualTo(t.getRect(find.byType(Scrollable).first).bottom + 0.5));
+    });
+
     testWidgets('typing: a new question\'s quick answers scroll into view', (t) async {
       final r = Rig(guide: StepGuide(message: 'Got it. What sex were you at birth: female or male?'));
       await r.pump(t);
