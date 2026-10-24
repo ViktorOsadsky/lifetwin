@@ -137,6 +137,47 @@ void main() {
     expect(a.missingInputs, ['bmi', 'smoking_status']);
   });
 
+  test('exactly one model input missing: missing_inputs naming it, and no number', () {
+    final complete = appProfileFor(_golden0());
+    // Each package input and the app field(s) that carry it.
+    const carriers = {
+      'age': ['age'],
+      'bmi': ['weight_kg'],
+      'sleep_hours': ['sleep_hours'],
+      'vigorous_recreation_min_week': ['vigorous_recreation_min_week'],
+      'moderate_recreation_min_week': ['moderate_recreation_min_week'],
+      'sedentary_min_day': ['sedentary_min_day'],
+      'sex_nhanes': ['sex'],
+      'smoking_status': ['smoking_status'],
+      'diabetes_diagnosed': ['diabetes'],
+      'hypertension_diagnosed': ['hypertension_diagnosed'],
+      'general_health': ['general_health'],
+    };
+    expect(carriers.keys.toSet(), modelInputs.toSet());
+    for (final MapEntry(key: input, value: fields) in carriers.entries) {
+      final p = {...complete}..removeWhere((k, _) => fields.contains(k));
+      final a = model.assess(p);
+      expect(a.status, 'missing_inputs', reason: input);
+      expect(a.missingInputs, [input], reason: input);
+      expect(a.percentByYear, isEmpty, reason: input);
+      expect(Forecast.fromAssessment(a).supported, isFalse, reason: input);
+    }
+  });
+
+  test('hypertension_diagnosed wins over the hypertension alias', () {
+    expect(toModelProfile({'hypertension_diagnosed': false, 'hypertension': true})['hypertension_diagnosed'], 0);
+    expect(toModelProfile({'hypertension_diagnosed': true, 'hypertension': false})['hypertension_diagnosed'], 1);
+    expect(toModelProfile({'hypertension': true})['hypertension_diagnosed'], 1);
+  });
+
+  test('a fractional general health or a numeric string is left out, not guessed', () {
+    expect(toModelProfile({'general_health': 2.6}), isEmpty);
+    expect(toModelProfile({'general_health': '2'}), isEmpty);
+    expect(toModelProfile({'age': '70'}), isEmpty);
+    expect(toModelProfile({'sleep_hours': '7', 'height_cm': '175', 'weight_kg': 70}), isEmpty);
+    expect(toModelProfile({'diabetes': 'no', 'hypertension_diagnosed': 2}), isEmpty);
+  });
+
   test('a value the package refuses asks for a correction, with no number', () {
     final a = model.assess({...appProfileFor(_golden0()), 'height_cm': 60});
     expect(a.status, 'invalid_input');

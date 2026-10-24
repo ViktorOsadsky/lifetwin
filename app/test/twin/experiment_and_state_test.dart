@@ -111,6 +111,32 @@ void main() {
       expect(e.result.status, 'no_change');
     });
 
+    test('weight is never a lever, at BMI 20 or at BMI 25', () {
+      for (final bmi in [20.0, 25.0]) {
+        final e = experimentFor({...smoker, 'weight_kg': bmi * 1.75 * 1.75});
+        final w = e.lever(LeverId.weightKg);
+        expect(w.supported, isFalse, reason: 'BMI $bmi');
+        expect(w.reason, LeverReason.weightNotALever, reason: 'BMI $bmi');
+        e.set(LeverId.weightKg, w.current! - 5);
+        expect(e.lever(LeverId.weightKg).value, w.current);
+        expect(e.result.status, 'no_change');
+      }
+    });
+
+    test('an exercise value off the 15-minute grid: near it snaps back to the person\'s own value', () {
+      final e = experimentFor({...smoker, 'moderate_recreation_min_week': 100});
+      final l = e.lever(LeverId.moderate);
+      expect((l.current, l.min, l.step), (100, 100, 15));
+      e.set(LeverId.moderate, 106); // within half a step of 100
+      expect(e.lever(LeverId.moderate).value, 100);
+      expect(e.result.status, 'no_change');
+      e.set(LeverId.moderate, 130); // nearest grid value is 135
+      expect(e.lever(LeverId.moderate).value, 135);
+      e.set(LeverId.moderate, 90); // below the person's own value: back to 100
+      expect(e.lever(LeverId.moderate).value, 100);
+      expect(e.result.status, 'no_change');
+    });
+
     test('set snaps to the step and stays in range; only the healthy direction', () {
       final e = experimentFor(smoker);
       e.set(LeverId.moderate, 10000);
