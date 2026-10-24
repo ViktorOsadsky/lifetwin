@@ -1,0 +1,25 @@
+{
+  "name": "lifetwin-convex-backend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Experimental Convex port of the LifeTwin non-prediction backend (branch only)",
+  "type": "module",
+  "scripts": {
+    "dev:local": "CONVEX_AGENT_MODE=anonymous convex dev --local",
+    "typecheck": "tsc --noEmit -p convex",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "convex": "1.47.0"
+  },
+  "devDependencies": {
+    "@edge-runtime/vm": "5.0.0",
+    "@types/node": "22.18.0",
+    "convex-test": "0.0.63",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}
