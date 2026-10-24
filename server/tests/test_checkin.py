@@ -1194,3 +1194,37 @@ def test_health_values_never_reach_the_logs(monkeypatch, caplog):
     logged = " ".join(record.getMessage() for record in caplog.records)
     assert "158" not in logged and "pounds" not in logged
     assert "RuntimeError" in logged
+
+
+# -- Conversation v2, lightly: unknowns, one habit follow-up, supplements ----------------
+
+
+def test_one_habit_follow_up_with_memory_and_none_without():
+    state = at("daily", "exercise_minutes_today", memory_consent=True)
+    asked = say(say(state, "a 20 minute walk").state, "yes")
+    assert asked.state.phase == "probing" and asked.state.probe_topic == "exercise"
+    assert asked.message.endswith("What did you do? Or we can just move on.")
+    told = say(asked.state, "I walked with my neighbor after dinner")
+    assert told.state.phase == "asking" and told.state.current_field == "wellbeing"
+    note = told.state.habit_notes[0]
+    assert (note.kind, note.with_, note.time_of_day) == ("walking", "neighbor", "after dinner")
+    plain = say(say(at("daily", "exercise_minutes_today"), "a 20 minute walk").state, "yes")
+    assert plain.state.phase == "asking" and plain.state.habit_notes == []
+
+
+def test_the_follow_up_is_skippable_and_asked_once():
+    state = at("daily", "sleep_hours_last_night", memory_consent=True)
+    asked = say(say(state, "about 5 hours").state, "yes")
+    assert asked.state.probe_topic == "sleep"
+    moved = say(asked.state, "let's move on")
+    assert moved.state.phase == "asking" and moved.state.habit_notes == []
+    again = say(say(moved.state, "30 minutes").state, "yes")
+    assert again.state.phase != "probing"
+
+
+def test_checkin_supplement_question_gets_the_fixed_reply():
+    from lifetwin.onboarding.script import SUPPLEMENT_REPLY
+
+    result = say(at("weekly", "weight_kg"), "should I take fish oil?")
+    assert result.message.startswith(SUPPLEMENT_REPLY)
+    assert result.state.current_field == "weight_kg"

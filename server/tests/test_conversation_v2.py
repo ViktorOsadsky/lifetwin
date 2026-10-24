@@ -764,3 +764,36 @@ def test_capabilities_name_the_provider_that_would_be_called(setting, name):
     assert app.state.personalizer.name == name
     assert app.state.conversation_service.personalizer is app.state.personalizer
     assert DISPLAY_NAMES["muse"] == "Muse by Meta"
+
+
+def test_muse_adapter_sends_json_and_logs_only_the_error_type(caplog):
+    import httpx
+
+    from lifetwin.personalize.providers import MusePersonalizer
+
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.content)
+        seen["auth"] = request.headers["authorization"]
+        reply = {"lines": ["Lovely walks."]}
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(reply)}}]
+            },
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    muse = MusePersonalizer(api_key="k", model="muse-spark-1.3", client=client)
+    assert asyncio.run(muse.phrase("rules", {"items": [{"draft": "Walk"}]})) == {
+        "lines": ["Lovely walks."]
+    }
+    assert seen["auth"] == "Bearer k" and seen["body"]["model"] == "muse-spark-1.3"
+    assert json.loads(seen["body"]["messages"][1]["content"]) == {"items": [{"draft": "Walk"}]}
+
+    broken = httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(500)))
+    muse = MusePersonalizer(api_key="k", model="m", client=broken)
+    with caplog.at_level(logging.WARNING), pytest.raises(PhrasingUnavailable):
+        asyncio.run(muse.phrase("rules", {"said": "my secret walk"}))
+    assert "secret" not in caplog.text and "HTTPStatusError" in caplog.text

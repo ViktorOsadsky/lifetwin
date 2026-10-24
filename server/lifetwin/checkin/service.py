@@ -68,7 +68,9 @@ from lifetwin.onboarding.parsing import (
     normalize_text,
     parse_reply,
 )
+from lifetwin.onboarding.script import SUPPLEMENT_REPLY
 from lifetwin.onboarding.service import (
+    ASKING,
     LOUDER_LEAD,
     NO_LEAD,
     NOT_CAUGHT,
@@ -76,6 +78,7 @@ from lifetwin.onboarding.service import (
     REPEAT_LEAD,
     SKIPPED,
     SLOWER_LEAD,
+    SUPPLEMENTS,
     THANKS,
     UNSURE_LEAD,
     WHAT_NOW,
@@ -329,6 +332,9 @@ class CheckinService:
                 return respond(DONE_AGAIN)
             if ASKED_HOW_I_AM.fullmatch(words_of(text)):
                 return respond(HOW_ARE_YOU + self._prompt(state))
+            if SUPPLEMENTS.search(words_of(text)) and ASKING.search(text.lower()):
+                # Mochi never suggests a supplement: the same fixed reply as onboarding.
+                return respond(SUPPLEMENT_REPLY + " " + self._prompt(state))
             intent = control_intent(text)
             kind = intent.kind if intent else None
             if kind in {"repeat", "slower", "louder"}:
