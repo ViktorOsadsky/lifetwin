@@ -2,8 +2,9 @@
 
 Every path of the change conversation, the development corpus in
 data/change_requests.json (realistic older-adult change requests, typed and as voice
-transcripts), and the held-out set in data/change_heldout.json, which was written
-before the change module and scored once before this guard was added. A wrong value
+transcripts), and two held-out sets: data/change_heldout.json, written before the
+change module, and data/change_heldout_independent.json, written by a separate agent
+that never saw the code. Both were scored once before this guard was added. A wrong value
 is worse than a miss, so no case may save a value other than the expected one.
 """
 
@@ -133,8 +134,10 @@ def test_development_corpus_covers_every_answer():
     assert sum(c["mode"] == "transcript" for c in cases) >= 5
 
 
-def test_held_out_set_has_no_wrong_values():
-    result = score(DATA / "change_heldout.json")
+@pytest.mark.parametrize("name", ["change_heldout.json", "change_heldout_independent.json"])
+def test_held_out_sets_have_no_wrong_values(name):
+    # Scored once before this guard: misses (asked again) are allowed, wrong values never.
+    result = score(DATA / name)
     assert result["total"] >= 50
     wrong = [f[2]["turns"] for f in result["failures"] if f[1] == "wrong"]
     assert result["counts"]["wrong"] == 0, wrong
