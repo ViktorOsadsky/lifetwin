@@ -166,6 +166,23 @@ CHANGE_CUE = re.compile(
     r"starting|stopped|quit|gave up|cut (?:down|back)|new|changed|different|now|since|been|"
     r"higher|lower|heavier|lighter|thinner|shrunk|shrank|doctor|diagnos\w*|high|low)\b"
 )
+# "She wrote down 150 over 95", "he weighed me at 163": a clinician reporting the
+# person's own measurement. Only these reporting words go; "she weighs 140" or "her
+# blood pressure is 120 over 70" is still someone else's value.
+CLINICIAN_REPORT = re.compile(
+    r"\b(?:she|he)\s+(?:(?:just|also)\s+)?(?:said|says|wrote|writes|told me|measured|"
+    r"took|put|recorded|read|weighed|checked|got|has|had|noted)"
+    r"(?:\s+(?:it|that|me|my \w+(?: \w+)?|it down|down|it all down))*"
+    r"(?:\s+(?:at|as|was|is|it was|it's|that|i'm|i am|i was|me at))*\b",
+    re.I,
+)
+MEASURED = {"weight_kg", "height_cm", "systolic_bp"}
+# "Her blood pressure is 120 over 70", "his weight's 180": someone else's own answer.
+THEIR_VALUE = re.compile(
+    r"\b(?:her|his|their)\s+(?:latest |last |new |top |bottom )?(?:blood pressure|pressure|bp|"
+    r"reading|numbers?|weight|height|sleep|age|sugar|diabetes|drinking|smoking|exercise)\b",
+    re.I,
+)
 WHY_AFTER = re.compile(
     r"[\s,;.-]+(?:since|because|cause|'cause|after|thanks to|due to|now that|ever since)\b", re.I
 )
@@ -462,6 +479,12 @@ class ChangeService:
             return self._unchanged(state, BP_NO_READING)
         if field == "diabetes" and old is True and DIABETES_GONE.search(low):
             return self._unchanged(state, DIABETES_STAYS)
+        said = text
+        if THEIR_VALUE.search(text):
+            return OTHERS + " " + before + NEW_VALUE[field]
+        if field in MEASURED:
+            # The measurement a doctor or nurse reported is the person's own.
+            text = " ".join(CLINICIAN_REPORT.sub(" ", text).split()) or text
         values, hint, about, metric = self._read(field, text, turn)
         if not values and field == "age" and old is not None:
             # "I had a birthday", or "yes" to "Have you had a birthday?"
@@ -472,7 +495,7 @@ class ChangeService:
             state.doctor_said = True
         if not values:
             if turn.consent and REASON.search(low) and state.note is None:
-                state.note = _note(text)
+                state.note = _note(said)
             if _safe(someone_else, text):
                 return OTHERS + " " + before + NEW_VALUE[field]
             if hint:
@@ -493,7 +516,7 @@ class ChangeService:
         if field == "age" and old is not None and new["age"] != old + 1:
             return AGE_RULE.format(old=old, new=new["age"], next=old + 1)
         if turn.consent and REASON.search(low) and state.note is None:
-            state.note = _note(text)
+            state.note = _note(said)
         state.pending = HealthProfile.model_validate(new)
         if (
             turn.consent

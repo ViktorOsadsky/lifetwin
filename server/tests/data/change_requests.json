@@ -64,6 +64,15 @@
   {"field": "weight_kg", "profile": {}, "consent": true, "mode": "text", "turns": ["150 pounds, since I started swimming"], "expected": {"weight_kg": 68.0389}, "why": "reason given, no probe"},
   {"field": null, "profile": {}, "consent": false, "mode": "transcript", "turns": ["okay so um I gotta update my sleep. I'm getting about seven and a half hours now"], "expected": {"sleep_hours": 7.5}, "why": "free transcript sleep"},
   {"field": "alcohol_drinks_weekly", "profile": {}, "consent": false, "mode": "transcript", "turns": ["Ellen turn that down. I have maybe one beer a week now"], "expected": {"alcohol_drinks_weekly": 1}, "why": "transcript chatter drinks"},
-  {"field": "systolic_bp", "profile": {}, "consent": false, "mode": "transcript", "turns": ["the machine said one thirty eight over eighty six"], "expected": {"systolic_bp": 138, "diastolic_bp": 86}, "why": "transcript spoken bp"}
+  {"field": "systolic_bp", "profile": {}, "consent": false, "mode": "transcript", "turns": ["the machine said one thirty eight over eighty six"], "expected": {"systolic_bp": 138, "diastolic_bp": 86}, "why": "transcript spoken bp"},
+  {"field": "systolic_bp", "profile": {}, "consent": false, "mode": "text", "turns": ["She wrote it down as 142 over 88"], "expected": {"systolic_bp": 142, "diastolic_bp": 88}, "why": "clinician wrote it down"},
+  {"field": null, "profile": {}, "consent": false, "mode": "text", "turns": ["The nurse checked my blood pressure", "she said it was 136 over 84"], "expected": {"systolic_bp": 136, "diastolic_bp": 84}, "why": "clinician said, two turns"},
+  {"field": "weight_kg", "profile": {}, "consent": false, "mode": "text", "turns": ["He weighed me at 163 this morning"], "expected": {"weight_kg": 73.9356}, "why": "clinician weighed me"},
+  {"field": "weight_kg", "profile": {}, "consent": false, "mode": "transcript", "turns": ["the nurse weighed me and she got 157"], "expected": {"weight_kg": 71.214}, "why": "clinician got, transcript"},
+  {"field": "height_cm", "profile": {}, "consent": false, "mode": "text", "turns": ["she measured me at 5 foot 3"], "expected": {"height_cm": 160.02}, "why": "clinician measured"},
+  {"field": "systolic_bp", "profile": {}, "consent": false, "mode": "text", "turns": ["her blood pressure is 120 over 70"], "expected": {}, "why": "her value refused"},
+  {"field": null, "profile": {}, "consent": false, "mode": "text", "turns": ["his weight is 180 pounds"], "expected": {}, "why": "his value refused"},
+  {"field": "weight_kg", "profile": {}, "consent": false, "mode": "text", "turns": ["she weighs 140"], "expected": {}, "why": "she weighs refused"},
+  {"field": "weight_kg", "profile": {}, "consent": false, "mode": "text", "turns": ["she said she weighs 140"], "expected": {}, "why": "reported someone else refused"}
  ]
 }

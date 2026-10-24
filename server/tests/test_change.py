@@ -435,6 +435,43 @@ def test_other_peoples_values_are_refused(said, field):
     assert OTHERS in result.message and pending(result) == {}
 
 
+@pytest.mark.parametrize(
+    ("field", "said", "expected"),
+    [
+        ("systolic_bp", "She put it down as 144 over 86", {"systolic_bp": 144, "diastolic_bp": 86}),
+        ("systolic_bp", "he told me it was 128 over 76", {"systolic_bp": 128, "diastolic_bp": 76}),
+        ("weight_kg", "she had me at 162 pounds", {"weight_kg": pytest.approx(162 * LB)}),
+    ],
+)
+def test_a_clinicians_reported_measurement_is_the_persons_own(field, said, expected):
+    result = last(said, field=field)
+    assert OTHERS not in result.message
+    assert pending(result) == expected
+
+
+def test_she_wrote_down_after_naming_the_doctor_is_read_back():
+    heard = last("My doctor said my blood pressure is up", "She wrote down 148 over 92")
+    assert heard.state.phase == "confirming"
+    assert pending(heard) == {"systolic_bp": 148, "diastolic_bp": 92}
+    assert OTHERS not in heard.message
+
+
+@pytest.mark.parametrize(
+    ("field", "said"),
+    [
+        ("systolic_bp", "her blood pressure is 118 over 72"),
+        ("systolic_bp", "his reading was 150 over 90"),
+        ("weight_kg", "she weighs 135"),
+        ("weight_kg", "his weight is 190 pounds"),
+        ("weight_kg", "he said he weighs 190"),
+        ("height_cm", "her height is 5 foot 1"),
+    ],
+)
+def test_an_explicit_other_persons_value_is_still_refused(field, said):
+    result = last(said, field=field)
+    assert OTHERS in result.message and pending(result) == {}
+
+
 # --- Understanding free answers -----------------------------------------------------
 
 
