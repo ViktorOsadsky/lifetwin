@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -99,11 +100,24 @@ class _RoomScreenState extends State<RoomScreen> {
     if (mounted) _sim.fortuneDone();
   }
 
+  /// A second press of the same action within 0.7 s (a double tap, a tremor) is ignored:
+  /// pressing an action again stops it, so a double tap would undo the first tap.
+  Timer? _pressLock;
+  RoomAction? _lastPress;
+
+  void _press(RoomAction a) {
+    if (_lastPress == a && (_pressLock?.isActive ?? false)) return;
+    _lastPress = a;
+    _pressLock?.cancel();
+    _pressLock = Timer(const Duration(milliseconds: 700), () {});
+    _sim.press(a);
+  }
+
   /// Fortune and the outlook card: with no finished conversation nothing opens and the
   /// twin says why, as on main.
   void _fortune() {
     if (widget.hasProfile) {
-      _sim.press(RoomAction.fortune);
+      _press(RoomAction.fortune);
     } else {
       setState(() => _needTalk = true);
     }
@@ -124,6 +138,7 @@ class _RoomScreenState extends State<RoomScreen> {
 
   @override
   void dispose() {
+    _pressLock?.cancel();
     _sim.dispose();
     super.dispose();
   }
@@ -200,7 +215,7 @@ class _RoomScreenState extends State<RoomScreen> {
                                         ],
                                       ),
                                       const SizedBox(height: 10),
-                                      _ActivityRow(sim: _sim),
+                                      _ActivityRow(sim: _sim, press: _press),
                                       const SizedBox(height: 10),
                                       _Dock(
                                         frame: f,
@@ -360,8 +375,9 @@ class _OneLine extends StatelessWidget {
 /// Exercise · Eat · Sleep: compact toggles above the dock. Each gets the
 /// width its label needs, and the spare width is shared out evenly.
 class _ActivityRow extends StatelessWidget {
-  const _ActivityRow({required this.sim});
+  const _ActivityRow({required this.sim, required this.press});
   final RoomSim sim;
+  final void Function(RoomAction) press;
 
   static const _items = [
     (RoomAction.exercise, 'Exercise', Icons.fitness_center_rounded),
@@ -380,10 +396,10 @@ class _ActivityRow extends StatelessWidget {
         toggled: on,
         label: label,
         excludeSemantics: true,
-        onTap: () => sim.press(a),
+        onTap: () => press(a),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () => sim.press(a),
+          onTap: () => press(a),
           child: Container(
             constraints: const BoxConstraints(minHeight: 52),
             padding: const EdgeInsets.symmetric(horizontal: _padX, vertical: 6),

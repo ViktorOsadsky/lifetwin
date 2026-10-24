@@ -339,6 +339,8 @@ class _RoomSceneState extends State<RoomScene> {
         height: boxH,
         child: Semantics(
           button: true,
+          // Named, so VoiceOver never meets an unlabelled button.
+          label: twinDescription(widget.appearance.type, widget.appearance.look),
           hint: sim.onBed ? 'Tap to wake' : 'Tap to hop, hold for dizzy',
           onTap: sim.tapTwin,
           onLongPress: sim.longPressTwin,
