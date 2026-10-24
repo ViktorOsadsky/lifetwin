@@ -280,6 +280,62 @@ void main() {
     });
   }
 
+  testWidgets('a double tap on the Apple Health pill opens the import once', (t) async {
+    var opened = 0;
+    await pumpRoom(t, onUseHealth: () => opened++);
+    final at = t.getCenter(find.text('Use my Apple Health'));
+    await t.tapAt(at);
+    await t.pump(const Duration(milliseconds: 60));
+    await t.tapAt(at);
+    await t.pump();
+    expect(opened, 1);
+    await t.pump(const Duration(milliseconds: 800));
+    await t.tapAt(at);
+    expect(opened, 2, reason: 'a later tap works again');
+  });
+
+  testWidgets('the pill stays when the import is not taken (an answer is still being checked)', (t) async {
+    setPhone(t);
+    final now = DateTime.now();
+    final c = fakeController();
+    final reader = FakeReader([
+      HealthSample(
+        type: 'WEIGHT',
+        start: now.subtract(const Duration(days: 2)),
+        end: now.subtract(const Duration(days: 2)),
+        value: 68,
+      ),
+    ]);
+    await t.pumpWidget(LifeTwinApp(controller: c, healthReader: reader));
+    await t.pump();
+    await t.tap(find.text('Talk'));
+    await t.pumpAndSettle();
+    await t.tap(find.text("No, I'll type"));
+    await t.pumpAndSettle();
+    await t.pump(const Duration(milliseconds: 700));
+    await t.ensureVisible(find.text('Not now'));
+    await t.tap(find.text('Not now'));
+    await t.pumpAndSettle();
+    await t.enterText(find.byType(TextField), '70');
+    await t.tap(find.text('Send'));
+    await t.pumpAndSettle();
+    expect(c.confirming, isTrue);
+    await t.tap(find.bySemanticsLabel('Home'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Use my Apple Health'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Yes, use Apple Health'));
+    await t.pumpAndSettle();
+    await t.tap(find.text("Yes, that's right"));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Continue'));
+    await t.pumpAndSettle();
+    expect(find.byType(RoomScreen), findsOneWidget);
+    expect(c.notice, healthWaitNotice);
+    expect(c.confirmedProfile, isNot(contains('weight_kg')));
+    expect(find.text('Use my Apple Health'), findsOneWidget, reason: 'nothing was imported, so it is offered again');
+  });
+
   testWidgets('no Apple Health pill once Health data is confirmed (no import callback)', (t) async {
     await pumpRoom(t);
     expect(find.text('Use my Apple Health'), findsNothing);

@@ -113,6 +113,16 @@ class _RoomScreenState extends State<RoomScreen> {
     _sim.press(a);
   }
 
+  /// "Use my Apple Health" ignores a second tap for 0.7 s, so a double tap opens the
+  /// import once.
+  Timer? _healthLock;
+
+  void _useHealth() {
+    if (_healthLock?.isActive ?? false) return;
+    _healthLock = Timer(const Duration(milliseconds: 700), () {});
+    widget.onUseHealth?.call();
+  }
+
   /// Fortune and the outlook card: with no finished conversation nothing opens and the
   /// twin says why, as on main.
   void _fortune() {
@@ -139,6 +149,7 @@ class _RoomScreenState extends State<RoomScreen> {
   @override
   void dispose() {
     _pressLock?.cancel();
+    _healthLock?.cancel();
     _sim.dispose();
     super.dispose();
   }
@@ -211,7 +222,7 @@ class _RoomScreenState extends State<RoomScreen> {
                                         runSpacing: 8,
                                         children: [
                                           StatusPill(label: _sim.status, icon: Icons.circle),
-                                          if (widget.onUseHealth != null) _HealthPill(onTap: widget.onUseHealth!),
+                                          if (widget.onUseHealth != null) _HealthPill(onTap: _useHealth),
                                         ],
                                       ),
                                       const SizedBox(height: 10),
