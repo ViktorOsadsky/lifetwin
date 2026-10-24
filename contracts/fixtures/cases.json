@@ -584,5 +584,188 @@
       "code": "voice_unavailable",
       "message": "Voice isn't available right now. You can keep going by typing."
     }
+  },
+  {
+    "name": "checkin-daily-start",
+    "method": "POST",
+    "path": "/api/checkin/start",
+    "request_schema": "checkin.start.request.schema.json",
+    "request": {
+      "kind": "daily",
+      "local_date": "2026-10-21",
+      "previous": {
+        "sleep_hours_last_night": 7
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": false,
+      "guide_mode": "guided",
+      "provider_status": "not_configured",
+      "message": "Hi, it's Mochi! Time for our little daily check-in. It's just a few quick questions, and you can skip any of them. Last time you slept 7 hours. How many hours did you sleep last night?",
+      "state": {
+        "kind": "daily",
+        "phase": "asking",
+        "current_field": "sleep_hours_last_night",
+        "questions": [
+          "sleep_hours_last_night",
+          "exercise_minutes_today",
+          "wellbeing"
+        ]
+      }
+    }
+  },
+  {
+    "name": "checkin-weekly-same-as-last-week",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "about the same as last week",
+      "input_mode": "transcript",
+      "state": {
+        "kind": "weekly",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours",
+          "exercise_minutes_weekly",
+          "alcohol_drinks_weekly",
+          "smoking_status",
+          "weight_kg",
+          "systolic_bp",
+          "wellbeing"
+        ],
+        "current_field": "sleep_hours",
+        "previous": {
+          "sleep_hours": 7
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": false,
+      "message": "Same as last time, then. I heard you slept 7 hours on a usual night this week. Is that right?",
+      "state": {
+        "phase": "confirming",
+        "current_field": "sleep_hours",
+        "pending": {
+          "sleep_hours": 7.0
+        },
+        "confirmed": {
+          "sleep_hours": null
+        }
+      }
+    }
+  },
+  {
+    "name": "checkin-weekly-confirm",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "yes",
+      "state": {
+        "kind": "weekly",
+        "phase": "confirming",
+        "questions": [
+          "sleep_hours",
+          "exercise_minutes_weekly",
+          "alcohol_drinks_weekly",
+          "smoking_status",
+          "weight_kg",
+          "systolic_bp",
+          "wellbeing"
+        ],
+        "current_field": "sleep_hours",
+        "pending": {
+          "sleep_hours": 7
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "exercise_minutes_weekly",
+        "confirmed": {
+          "sleep_hours": 7.0
+        },
+        "pending": {
+          "sleep_hours": null
+        }
+      }
+    }
+  },
+  {
+    "name": "checkin-confirm-nothing-read-back",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "confirm",
+      "state": {
+        "kind": "daily",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours_last_night",
+          "exercise_minutes_today",
+          "wellbeing"
+        ],
+        "current_field": "sleep_hours_last_night"
+      }
+    },
+    "status": 409,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_checkin_transition"
+    }
+  },
+  {
+    "name": "checkin-unknown-script",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request_schema_valid": true,
+    "request": {
+      "action": "reply",
+      "text": "7 hours",
+      "state": {
+        "kind": "daily",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours"
+        ],
+        "current_field": "sleep_hours"
+      }
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "checkin-unknown-kind",
+    "method": "POST",
+    "path": "/api/checkin/start",
+    "request_schema": "checkin.start.request.schema.json",
+    "request_schema_valid": false,
+    "request": {
+      "kind": "monthly"
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
   }
 ]

@@ -1,0 +1,434 @@
+{
+  "$defs": {
+    "CheckinState": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmed": {
+          "$ref": "#/$defs/CheckinValues"
+        },
+        "current_field": {
+          "anyOf": [
+            {
+              "enum": [
+                "sleep_hours_last_night",
+                "exercise_minutes_today",
+                "alcohol_drinks_yesterday",
+                "wellbeing",
+                "sleep_hours",
+                "exercise_minutes_weekly",
+                "alcohol_drinks_weekly",
+                "smoking_status",
+                "weight_kg",
+                "systolic_bp",
+                "diastolic_bp"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Current Field"
+        },
+        "kind": {
+          "enum": [
+            "daily",
+            "weekly"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "pending": {
+          "$ref": "#/$defs/CheckinValues"
+        },
+        "phase": {
+          "default": "asking",
+          "enum": [
+            "asking",
+            "confirming",
+            "ready",
+            "cancelled"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "previous": {
+          "$ref": "#/$defs/CheckinValues"
+        },
+        "questions": {
+          "items": {
+            "enum": [
+              "sleep_hours_last_night",
+              "exercise_minutes_today",
+              "alcohol_drinks_yesterday",
+              "wellbeing",
+              "sleep_hours",
+              "exercise_minutes_weekly",
+              "alcohol_drinks_weekly",
+              "smoking_status",
+              "weight_kg",
+              "systolic_bp",
+              "diastolic_bp"
+            ],
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1,
+          "title": "Questions",
+          "type": "array"
+        },
+        "skipped_fields": {
+          "items": {
+            "enum": [
+              "sleep_hours_last_night",
+              "exercise_minutes_today",
+              "alcohol_drinks_yesterday",
+              "wellbeing",
+              "sleep_hours",
+              "exercise_minutes_weekly",
+              "alcohol_drinks_weekly",
+              "smoking_status",
+              "weight_kg",
+              "systolic_bp",
+              "diastolic_bp"
+            ],
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Skipped Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "phase",
+        "questions",
+        "current_field",
+        "previous",
+        "confirmed",
+        "pending",
+        "skipped_fields"
+      ],
+      "title": "CheckinState",
+      "type": "object"
+    },
+    "CheckinValues": {
+      "additionalProperties": false,
+      "description": "Answers from a daily or weekly check-in, in the profile's own units and ranges.\n\nWeekly answers use the profile's field names, so a caller can offer them as\nprofile updates. Daily answers are about one night or one day and have their\nown names, so they never pass for a usual week.",
+      "properties": {
+        "alcohol_drinks_weekly": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alcohol Drinks Weekly"
+        },
+        "alcohol_drinks_yesterday": {
+          "anyOf": [
+            {
+              "maximum": 50,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alcohol Drinks Yesterday"
+        },
+        "diastolic_bp": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 20,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diastolic Bp"
+        },
+        "exercise_minutes_today": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exercise Minutes Today"
+        },
+        "exercise_minutes_weekly": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exercise Minutes Weekly"
+        },
+        "sleep_hours": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours"
+        },
+        "sleep_hours_last_night": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours Last Night"
+        },
+        "smoking_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "never",
+                "former",
+                "current",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Smoking Status"
+        },
+        "systolic_bp": {
+          "anyOf": [
+            {
+              "maximum": 300,
+              "minimum": 40,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Systolic Bp"
+        },
+        "weight_kg": {
+          "anyOf": [
+            {
+              "maximum": 700,
+              "minimum": 10,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weight Kg"
+        },
+        "wellbeing": {
+          "anyOf": [
+            {
+              "enum": [
+                "good",
+                "okay",
+                "not_great"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wellbeing"
+        }
+      },
+      "required": [
+        "sleep_hours_last_night",
+        "exercise_minutes_today",
+        "alcohol_drinks_yesterday",
+        "wellbeing",
+        "sleep_hours",
+        "exercise_minutes_weekly",
+        "smoking_status",
+        "alcohol_drinks_weekly",
+        "weight_kg",
+        "systolic_bp",
+        "diastolic_bp"
+      ],
+      "title": "CheckinValues",
+      "type": "object"
+    },
+    "MascotEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "caption": {
+          "maxLength": 1500,
+          "minLength": 1,
+          "title": "Caption",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "asking",
+            "thinking",
+            "confirming",
+            "celebrating",
+            "idle"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state",
+        "caption"
+      ],
+      "title": "MascotEvent",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The same shape as an onboarding turn: what to say, the state, and whether it's done.",
+  "properties": {
+    "accepted_input_modes": {
+      "items": {
+        "enum": [
+          "text",
+          "transcript"
+        ],
+        "type": "string"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "title": "Accepted Input Modes",
+      "type": "array"
+    },
+    "complete": {
+      "title": "Complete",
+      "type": "boolean"
+    },
+    "guide_mode": {
+      "const": "guided",
+      "default": "guided",
+      "title": "Guide Mode",
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "mascot_events": {
+      "items": {
+        "$ref": "#/$defs/MascotEvent"
+      },
+      "maxItems": 2,
+      "minItems": 1,
+      "title": "Mascot Events",
+      "type": "array"
+    },
+    "message": {
+      "maxLength": 1500,
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "provider_status": {
+      "const": "not_configured",
+      "default": "not_configured",
+      "title": "Provider Status",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "speech_hint": {
+      "anyOf": [
+        {
+          "enum": [
+            "slower",
+            "louder"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Speech Hint"
+    },
+    "state": {
+      "$ref": "#/$defs/CheckinState"
+    },
+    "voice_status": {
+      "default": "deferred",
+      "enum": [
+        "deferred",
+        "available",
+        "unavailable"
+      ],
+      "title": "Voice Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "state",
+    "message",
+    "guide_mode",
+    "provider_status",
+    "voice_status",
+    "speech_hint",
+    "accepted_input_modes",
+    "mascot_events",
+    "complete",
+    "limitations"
+  ],
+  "title": "CheckinResponse",
+  "type": "object"
+}
