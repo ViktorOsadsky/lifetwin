@@ -205,7 +205,8 @@ class VoiceOnboardingController extends ChangeNotifier {
     }
     if (_busy) return false;
     if (values.isEmpty) {
-      _set(() => notice = healthNoneNotice);
+      // Once every question is answered there is nothing left to "keep asking".
+      if (turn?.complete != true) _set(() => notice = healthNoneNotice);
       return false;
     }
     if (confirming) {
