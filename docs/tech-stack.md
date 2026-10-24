@@ -1,6 +1,6 @@
 # Prospective LifeTwin tech stack
 
-Read [MASTER_PLAN.md](../MASTER_PLAN.md) for product behavior and [team-plan.md](team-plan.md) for ownership. Flutter and LottieFiles are user-confirmed; the app stack remains prospective. The [backend run guide](../server/README.md) now records implemented FastAPI/Pydantic, HTTPX provider adapters, uv, contracts, quiz assets, tests and container setup. All API keys remain blank; the user's latest request defers prediction/model/scan implementation. Voice implementation remains deferred too. Other choices below are future defaults, not evidence of live services.
+Read [MASTER_PLAN.md](../MASTER_PLAN.md) for product behavior and [team-plan.md](team-plan.md) for ownership. Flutter and LottieFiles are user-confirmed; the app stack remains prospective. The [backend run guide](../server/README.md) now records implemented FastAPI/Pydantic, HTTPX provider adapters, uv, contracts, quiz assets, tests and container setup. The tables below retain original proposed defaults; implementation has moved ahead with Flutter, Cartesia voice, check-in APIs and separate server/on-device models. Use the master guide and linked run guides for actual boundaries. This refinement selects no new package, provider or storage service.
 
 Sources were checked October 23, 2026 (Pacific time). Pin compatible versions during the first implementation PR and commit lockfiles; do not copy “latest” version numbers into the plan without running the build. Prospective service choices do not establish credentials, account access, budget, or deployment.
 
@@ -35,7 +35,7 @@ A full game engine is unnecessary for the initial scene-based pet game. Reconsid
 | Sensitivity search | **Deterministic Python service using the model adapter** | Finite differences, bounded candidates, re-evaluated combined scenarios; no LLM-generated probabilities. Keep CPU inference off the async request loop if latency measurements require it. |
 | Storage/jobs | **No durable health-data store or queue initially** | Short bounded requests, cancellation/timeouts and explicit unavailable states. A durable job contract/storage choice requires a follow-up design if measured research latency makes it necessary. |
 
-## LLM, research and deferred voice
+## LLM, research and voice
 
 | Layer | Proposed default | Purpose and boundary |
 | --- | --- | --- |
@@ -44,9 +44,9 @@ A full game engine is unnecessary for the initial scene-based pet game. Reconsid
 | Agent orchestration | **Plain async Python workflow** | Explicit steps: validate context → scan → bounded search/fetch → grounded plan → validate references and claims. Start with a bounded orchestrator that can be inspected and replayed. |
 | Web research | **Tavily Search**, bounded public-source retrieval and curated fallback | Server-side search returns candidate source URLs; verify health claims against the source itself and record citations. Keep queries topic-only. Use HTTPX retrieval with the network restrictions above. [Tavily Search API](https://docs.tavily.com/documentation/api-reference/endpoint/search). |
 | Quiz content | **Reviewed local JSON bank with source links** | D authors/reviews; C renders and scores. LLMs may draft questions offline, but cannot improvise authoritative scored answers during a session. |
-| Speech recognition | **Provider undecided — deferred** | Implement a `SpeechInput` adapter emitting final transcript, partial transcript, cancellation and errors. Audio capture format/transport, provider and credential exchange are decided together later. |
-| Speech synthesis | **Provider undecided — deferred** | `SpeechOutput` adapter receives only approved mascot text and emits playback lifecycle events. Captions/text must remain complete when audio is unavailable. |
-| Voice transport | **Deferred** | Choose streaming versus turn-based after provider/device evaluation. Start with text and explicitly labeled development stubs. Provider keys stay server-side; a later direct-to-provider audio path needs provider-supported short-lived credentials. |
+| Speech recognition | **Cartesia Ink — integration exists** | Direct client streaming with consent and a short-lived server-minted token; see [voice guide](voice-cartesia.md) for setup and validation limits. |
+| Speech synthesis | **Cartesia Sonic — integration exists** | Speak approved mascot text; preserve full captions and typing fallback. See [voice guide](voice-cartesia.md). |
+| Voice transport | **Direct client WebSockets + server token route** | Provider keys remain server-side; the app receives a short-lived access token. Device interruption and real-provider validation remain separate from code availability. |
 
 Use strict structured results for extraction and planning, handle refusals/incomplete responses, and validate their meaning against the profile/model context. Keep prompts and schemas versioned. Do not retain raw audio or conversation transcripts by default; disclose third-party processing and validate the selected provider's retention settings before real health-data testing.
 
@@ -65,9 +65,21 @@ Expected backend configuration: `OPENAI_API_KEY`, `OPENAI_MODEL`, `TAVILY_API_KE
 
 ## Decisions still needed
 
-- Voice/STT/TTS provider, transport, microphone capture/playback packages and interruption behavior; preserve the common voice/text conversation contract while deferred.
+- Validate the existing Cartesia voice path on device, including interruption, fallback and older-adult usability; preserve shared confirmation semantics.
 - Exact LLM model ID based on actual account access and a short evaluation; provider proposal is OpenAI, not an established integration.
-- A's final model, feature set, validated population and horizons; no UI promise may exceed these.
+- Choose and integrate the serving boundary deliberately: current server DeepSurv and on-device Cox have distinct versions, feature sets and population/support rules; no UI promise may exceed the selected model.
 - Public app URL versus phone-only demo, and owners/access/budget for proposed external services.
 
 Everything else above is a default agents can implement against. Revise the relevant schema/docs in a PR when evidence warrants a change; do not introduce competing packages for the same responsibility without a reason.
+
+## October 23 product refinement: design dependencies
+
+The [meeting decisions](meetings/2026-10-23-product-refinement.md) add two planned capabilities, without changing current APIs or selecting dependencies:
+
+| Capability | Design needed before implementation | Existing boundary to preserve |
+| --- | --- | --- |
+| Health-document upload | File picker/types/limits, bounded extraction/OCR, provider consent, candidate value/units/date/source, correction and ephemeral deletion | Apple Health is a separate import path. Extraction proposes fields; confirmation and model eligibility decide use. No documents or identifiers in logs/research queries |
+| Daily planning agent | Opted-in local history and deletion, local-day schedule, foreground/resume versus unattended execution, revision identity and stale-result rejection, evidence/retry budgets | No durable server health store or queue exists. Current check-ins are stateless; daily answers are history only. Notifications are an optional delivery mechanism |
+| Forecast reassessment | Explicit choice of model, supported window and provenance mapping | Server DeepSurv and packaged Cox have distinct schemas/eligibility. Do not mix results or turn a completed activity into years gained |
+
+Current Cartesia setup is recorded in [voice-cartesia.md](voice-cartesia.md). The [Cox integration guide](../model_handoff/lifetwin_on_device/README.md) and [backend run guide](../server/README.md) supersede earlier model-deferral assumptions. Neither committed integration code nor this plan establishes live-provider or device validation. Persistent scheduling on iOS must be validated before promising unattended daily execution.
