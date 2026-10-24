@@ -207,5 +207,13 @@ void main() {
       debugPrint('ok: "$answer" -> $expect');
     }
     await waitFor(t, find.text('Continue'));
+    // The forecast runs on the phone. This intake has no sitting, high blood pressure,
+    // general health or hard/moderate split yet, so it shows the model's status, no number.
+    await tapText(t, 'Continue');
+    await waitFor(t, find.text('Ask the ball'));
+    await Future<void>.delayed(const Duration(milliseconds: 900)); // it ignores taps while sliding in
+    await tapText(t, 'Ask the ball');
+    await waitFor(t, find.textContaining('Complete every model input to show annual survival percentages.'));
+    expect(find.textContaining('still living'), findsNothing);
   });
 }

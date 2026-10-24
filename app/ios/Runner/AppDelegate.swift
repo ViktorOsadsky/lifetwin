@@ -56,7 +56,12 @@ enum ProtectedStore {
         result(nil)
       case "protection":
         let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
-        result((attributes[.protectionKey] as? FileProtectionType)?.rawValue)
+        #if targetEnvironment(simulator)
+          // The simulator does not implement data protection classes.
+          result("simulator")
+        #else
+          result((attributes[.protectionKey] as? FileProtectionType)?.rawValue ?? "none")
+        #endif
       default:
         result(FlutterMethodNotImplemented)
       }

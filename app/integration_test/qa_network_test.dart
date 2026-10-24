@@ -2,6 +2,7 @@
 // must end in a plain message and a way on, without losing confirmed answers.
 //   python3 integration_test/support/qa_proxy.py 8051 http://127.0.0.1:8050 &
 //   flutter test integration_test/qa_network_test.dart -d <sim> --dart-define=API_BASE_URL=http://127.0.0.1:8051
+// The forecast runs on the phone (lib/twin/), so it never touches the server.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -13,24 +14,32 @@ import 'support/qa_support.dart';
 
 const cantReach = "I can't reach LifeTwin right now.";
 
+/// Today's intake has no sitting, high blood pressure, general health or hard/moderate
+/// split, so the on-device model reports missing inputs and shows no number.
+const missingInputs =
+    "I can't make a forecast for you yet. Complete every model input to show annual survival percentages.";
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   tearDown(qaReset);
 
-  testWidgets('typed happy path: room, talk, done, forecast, back, room, forecast again', (t) async {
+  testWidgets('typed happy path: room, talk, done, forecast on the phone, back, room, forecast again', (t) async {
     await startTyped(t);
     await answerAll(t);
     await tapText(t, 'Continue');
     await askTheBall(t);
-    await waitFor(t, find.textContaining('were still living 5 years later'));
+    await waitFor(t, find.textContaining(missingInputs));
+    expect(find.textContaining('time spent sitting each day'), findsOneWidget);
+    expect(find.textContaining('still living'), findsNothing);
     await tapRound(t, 'Back');
     await waitFor(t, find.byType(RoomScreen));
-    expect(find.textContaining('in 100'), findsWidgets); // the outlook card shows the real forecast
+    expect(find.text('Ask the ball'), findsWidgets); // no number on the outlook card
     await openFortune(t);
-    await waitFor(t, find.textContaining('were still living 5 years later'));
+    await waitFor(t, find.textContaining(missingInputs));
     await tapRound(t, 'Back');
     await waitFor(t, find.byType(RoomScreen));
+    expect(await qaCount('/api/predict'), 0);
   });
 
   testWidgets('server down before the first question: Try again starts the talk', (t) async {
@@ -150,30 +159,22 @@ void main() {
     }
   });
 
-  testWidgets('forecast: 500, garbage and slow answers recover with Try again', (t) async {
+  testWidgets('forecast: the server down, slow or broken changes nothing, it runs on the phone', (t) async {
     await startTyped(t);
     await answerAll(t);
-    await qaMode('500', path: '/api/predict', times: 1);
+    await qaMode('down');
     await tapText(t, 'Continue');
     await askTheBall(t);
-    await waitFor(t, find.text("I couldn't get your forecast just now."));
-    expect(find.textContaining('Something went wrong on our side'), findsOneWidget);
-    await qaMode('html', path: '/api/predict', times: 1);
-    await tapText(t, 'Try again');
-    await waitFor(t, find.textContaining('check the connection'));
-    await qaMode('down', path: '/api/predict', times: 1);
-    await tapText(t, 'Try again');
-    await waitFor(t, find.textContaining('check the connection'));
-    await qaMode('429', path: '/api/predict', times: 1);
-    await tapText(t, 'Try again');
-    await waitFor(t, find.textContaining('Too many tries'));
-    await tapText(t, 'Try again');
-    await waitFor(t, find.textContaining('were still living 5 years later'));
+    await waitFor(t, find.textContaining(missingInputs));
+    expect(find.text("I couldn't get your forecast just now."), findsNothing);
+    expect(find.text('Try again'), findsNothing);
+    await qaMode('pass');
     await tapRound(t, 'Back');
     await waitFor(t, find.byType(RoomScreen));
+    expect(await qaCount('/api/predict'), 0);
   });
 
-  testWidgets('unsupported forecast (age 85, sex skipped): plain reason and a way to add the answer', (t) async {
+  testWidgets('no forecast (age 85, sex skipped): the status message, what is needed, and a way to add it', (t) async {
     await startTyped(t);
     await say(t, '85', 'you are 85');
     await yes(t, 'What sex');
@@ -187,7 +188,7 @@ void main() {
     }
     await tapText(t, 'Continue');
     await askTheBall(t);
-    await waitFor(t, find.textContaining("I can't make a forecast for you yet."));
+    await waitFor(t, find.textContaining(missingInputs));
     expect(find.textContaining('sex at birth'), findsOneWidget);
     expect(find.textContaining('still living'), findsNothing);
     // The way back must lead somewhere the missing answer can be added.
@@ -206,7 +207,9 @@ void main() {
     await yes(t, 'Continue');
     await tapText(t, 'Continue');
     await askTheBall(t);
-    // Still unsupported for age 85, with its own plain reason.
-    await waitFor(t, find.textContaining('above 80'));
+    // Still no number: the other inputs are missing (and 85 is outside 35–79).
+    await waitFor(t, find.textContaining(missingInputs));
+    expect(find.textContaining('sex at birth'), findsNothing);
+    expect(find.textContaining('still living'), findsNothing);
   });
 }
