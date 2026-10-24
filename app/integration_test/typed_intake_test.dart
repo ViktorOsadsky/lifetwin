@@ -104,7 +104,9 @@ final healthDeclined = words("i'll just ask you|we'll do it together");
 const followUpTail = 'Or we can move on.';
 
 /// A forecast with a number, shown once every model input is known.
-final forecastNumber = RegExp(r'Out of 100 people with answers like yours, about \d+ were still living \d+ years? later\.');
+final forecastNumber = RegExp(
+  r'Out of 100 people with answers like yours, about \d+ were still living \d+ years? later\.',
+);
 const noNumber = 'Complete every model input to show annual survival percentages.';
 
 /// Taps Yes on a read-back and waits for [next]. A habit follow-up may come first when

@@ -198,7 +198,9 @@ const healthOffer = 'Shall I fill in your height, weight, sleep and activity fro
 final healthDeclined = _words("i'll just ask you|we'll do it together");
 
 /// The forecast screen's sentence once every model input is known (a number, 1 to 5 years).
-final forecastNumber = RegExp(r'Out of 100 people with answers like yours, about \d+ were still living \d+ years? later\.');
+final forecastNumber = RegExp(
+  r'Out of 100 people with answers like yours, about \d+ were still living \d+ years? later\.',
+);
 
 /// The sentence at the end of an optional habit follow-up.
 const followUpTail = 'Or we can move on.';

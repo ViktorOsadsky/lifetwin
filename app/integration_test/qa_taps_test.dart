@@ -76,8 +76,14 @@ void main() {
     await waitFor(t, find.textContaining(ageQuestion));
     await pumpFor(t, const Duration(seconds: 1));
     await settled(t);
-    check((await qaTurnActions()).where((a) => a == 'reply').length == 1, 'Send twice (memory): ${await qaTurnActions()}');
-    check(ctl(t).state?['current_field'] == 'age' && ctl(t).confirmedProfile['age'] == null, 'memory answer leaked into age');
+    check(
+      (await qaTurnActions()).where((a) => a == 'reply').length == 1,
+      'Send twice (memory): ${await qaTurnActions()}',
+    );
+    check(
+      ctl(t).state?['current_field'] == 'age' && ctl(t).confirmedProfile['age'] == null,
+      'memory answer leaked into age',
+    );
 
     await t.enterText(find.byType(TextField), '71');
     await doubleTapText(t, 'Send');
