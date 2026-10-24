@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "const": "prediction_not_implemented",
+      "default": "prediction_not_implemented",
+      "title": "Code",
+      "type": "string"
+    },
+    "message": {
+      "default": "Prediction functionality is reserved for a later implementation.",
+      "title": "Message",
+      "type": "string"
+    },
+    "model_version": {
+      "default": null,
+      "title": "Model Version",
+      "type": "null"
+    },
+    "prediction": {
+      "default": null,
+      "title": "Prediction",
+      "type": "null"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "const": "not_implemented",
+      "default": "not_implemented",
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "title": "DeferredFeature",
+  "type": "object"
+}

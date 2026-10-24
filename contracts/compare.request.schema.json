@@ -1,0 +1,188 @@
+{
+  "$defs": {
+    "HealthProfile": {
+      "additionalProperties": false,
+      "description": "Explicitly supplied metric inputs; no risk or lifespan inference.",
+      "properties": {
+        "age": {
+          "anyOf": [
+            {
+              "maximum": 120,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age"
+        },
+        "alcohol_drinks_weekly": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alcohol Drinks Weekly"
+        },
+        "diabetes": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diabetes"
+        },
+        "diastolic_bp": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 20,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diastolic Bp"
+        },
+        "exercise_minutes_weekly": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exercise Minutes Weekly"
+        },
+        "height_cm": {
+          "anyOf": [
+            {
+              "maximum": 280,
+              "minimum": 50,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Height Cm"
+        },
+        "sex": {
+          "anyOf": [
+            {
+              "enum": [
+                "female",
+                "male",
+                "intersex",
+                "prefer_not_to_say"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sex"
+        },
+        "sleep_hours": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours"
+        },
+        "smoking_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "never",
+                "former",
+                "current",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Smoking Status"
+        },
+        "systolic_bp": {
+          "anyOf": [
+            {
+              "maximum": 300,
+              "minimum": 40,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Systolic Bp"
+        },
+        "weight_kg": {
+          "anyOf": [
+            {
+              "maximum": 700,
+              "minimum": 10,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weight Kg"
+        }
+      },
+      "title": "HealthProfile",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "baseline": {
+      "$ref": "#/$defs/HealthProfile"
+    },
+    "scenario": {
+      "$ref": "#/$defs/HealthProfile"
+    }
+  },
+  "required": [
+    "baseline",
+    "scenario"
+  ],
+  "title": "CompareRequest",
+  "type": "object"
+}

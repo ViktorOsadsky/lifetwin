@@ -1,0 +1,320 @@
+{
+  "$defs": {
+    "ConversationState": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmed_profile": {
+          "$ref": "#/$defs/HealthProfile"
+        },
+        "current_field": {
+          "anyOf": [
+            {
+              "enum": [
+                "age",
+                "sex",
+                "height_cm",
+                "weight_kg",
+                "sleep_hours",
+                "exercise_minutes_weekly",
+                "smoking_status",
+                "alcohol_drinks_weekly",
+                "diabetes",
+                "systolic_bp",
+                "diastolic_bp"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Current Field"
+        },
+        "pending_profile": {
+          "$ref": "#/$defs/HealthProfile"
+        },
+        "phase": {
+          "default": "idle",
+          "enum": [
+            "idle",
+            "asking",
+            "confirming",
+            "ready",
+            "cancelled"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "skipped_fields": {
+          "items": {
+            "enum": [
+              "age",
+              "sex",
+              "height_cm",
+              "weight_kg",
+              "sleep_hours",
+              "exercise_minutes_weekly",
+              "smoking_status",
+              "alcohol_drinks_weekly",
+              "diabetes",
+              "systolic_bp",
+              "diastolic_bp"
+            ],
+            "type": "string"
+          },
+          "maxItems": 11,
+          "title": "Skipped Fields",
+          "type": "array"
+        }
+      },
+      "title": "ConversationState",
+      "type": "object"
+    },
+    "HealthProfile": {
+      "additionalProperties": false,
+      "description": "Explicitly supplied metric inputs; no risk or lifespan inference.",
+      "properties": {
+        "age": {
+          "anyOf": [
+            {
+              "maximum": 120,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age"
+        },
+        "alcohol_drinks_weekly": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alcohol Drinks Weekly"
+        },
+        "diabetes": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diabetes"
+        },
+        "diastolic_bp": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 20,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diastolic Bp"
+        },
+        "exercise_minutes_weekly": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exercise Minutes Weekly"
+        },
+        "height_cm": {
+          "anyOf": [
+            {
+              "maximum": 280,
+              "minimum": 50,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Height Cm"
+        },
+        "sex": {
+          "anyOf": [
+            {
+              "enum": [
+                "female",
+                "male",
+                "intersex",
+                "prefer_not_to_say"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sex"
+        },
+        "sleep_hours": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours"
+        },
+        "smoking_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "never",
+                "former",
+                "current",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Smoking Status"
+        },
+        "systolic_bp": {
+          "anyOf": [
+            {
+              "maximum": 300,
+              "minimum": 40,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Systolic Bp"
+        },
+        "weight_kg": {
+          "anyOf": [
+            {
+              "maximum": 700,
+              "minimum": 10,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weight Kg"
+        }
+      },
+      "title": "HealthProfile",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "enum": [
+        "start",
+        "reply",
+        "confirm",
+        "correct",
+        "skip",
+        "cancel"
+      ],
+      "title": "Action",
+      "type": "string"
+    },
+    "field": {
+      "anyOf": [
+        {
+          "enum": [
+            "age",
+            "sex",
+            "height_cm",
+            "weight_kg",
+            "sleep_hours",
+            "exercise_minutes_weekly",
+            "smoking_status",
+            "alcohol_drinks_weekly",
+            "diabetes",
+            "systolic_bp",
+            "diastolic_bp"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Field"
+    },
+    "input_mode": {
+      "default": "text",
+      "enum": [
+        "text",
+        "transcript"
+      ],
+      "title": "Input Mode",
+      "type": "string"
+    },
+    "provider_consent": {
+      "default": false,
+      "title": "Provider Consent",
+      "type": "boolean"
+    },
+    "state": {
+      "$ref": "#/$defs/ConversationState"
+    },
+    "text": {
+      "anyOf": [
+        {
+          "maxLength": 2000,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Text"
+    }
+  },
+  "required": [
+    "action"
+  ],
+  "title": "TurnRequest",
+  "type": "object"
+}

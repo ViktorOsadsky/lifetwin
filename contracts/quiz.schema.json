@@ -1,0 +1,324 @@
+{
+  "$defs": {
+    "GameEffect": {
+      "additionalProperties": false,
+      "properties": {
+        "game_health_delta": {
+          "maximum": 10,
+          "minimum": -10,
+          "title": "Game Health Delta",
+          "type": "integer"
+        },
+        "mascot_event": {
+          "enum": [
+            "quiz_sick",
+            "quiz_recovering"
+          ],
+          "title": "Mascot Event",
+          "type": "string"
+        },
+        "reduced_motion_text": {
+          "maxLength": 180,
+          "minLength": 1,
+          "title": "Reduced Motion Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "game_health_delta",
+        "mascot_event",
+        "reduced_motion_text"
+      ],
+      "title": "GameEffect",
+      "type": "object"
+    },
+    "LocalScoringRules": {
+      "additionalProperties": false,
+      "properties": {
+        "affects_confirmed_profile": {
+          "const": false,
+          "default": false,
+          "title": "Affects Confirmed Profile",
+          "type": "boolean"
+        },
+        "affects_prediction": {
+          "const": false,
+          "default": false,
+          "title": "Affects Prediction",
+          "type": "boolean"
+        },
+        "answer_metadata": {
+          "const": "included_for_local_offline_scoring",
+          "default": "included_for_local_offline_scoring",
+          "title": "Answer Metadata",
+          "type": "string"
+        },
+        "clamp_after_each_effect": {
+          "const": true,
+          "default": true,
+          "title": "Clamp After Each Effect",
+          "type": "boolean"
+        },
+        "initial_game_health": {
+          "const": 100,
+          "default": 100,
+          "title": "Initial Game Health",
+          "type": "integer"
+        },
+        "label": {
+          "const": "Game health",
+          "default": "Game health",
+          "title": "Label",
+          "type": "string"
+        },
+        "maximum_game_health": {
+          "const": 100,
+          "default": 100,
+          "title": "Maximum Game Health",
+          "type": "integer"
+        },
+        "minimum_game_health": {
+          "const": 0,
+          "default": 0,
+          "title": "Minimum Game Health",
+          "type": "integer"
+        },
+        "network_failure_is_unscored": {
+          "const": true,
+          "default": true,
+          "title": "Network Failure Is Unscored",
+          "type": "boolean"
+        },
+        "retry_after_review_is_unscored": {
+          "const": true,
+          "default": true,
+          "title": "Retry After Review Is Unscored",
+          "type": "boolean"
+        },
+        "review_once_after_wrong_answer": {
+          "const": true,
+          "default": true,
+          "title": "Review Once After Wrong Answer",
+          "type": "boolean"
+        },
+        "score_once_per_question_version": {
+          "const": true,
+          "default": true,
+          "title": "Score Once Per Question Version",
+          "type": "boolean"
+        },
+        "state_scope": {
+          "const": "game_health_only",
+          "default": "game_health_only",
+          "title": "State Scope",
+          "type": "string"
+        }
+      },
+      "title": "LocalScoringRules",
+      "type": "object"
+    },
+    "QuizOption": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-d]$",
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 400,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "title": "QuizOption",
+      "type": "object"
+    },
+    "QuizQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "correct_effect": {
+          "$ref": "#/$defs/GameEffect"
+        },
+        "correct_option_id": {
+          "pattern": "^[a-d]$",
+          "title": "Correct Option Id",
+          "type": "string"
+        },
+        "difficulty": {
+          "enum": [
+            "moderate",
+            "challenging"
+          ],
+          "title": "Difficulty",
+          "type": "string"
+        },
+        "explanation": {
+          "maxLength": 1200,
+          "minLength": 20,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{2,60}\\.v[1-9][0-9]{0,2}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/QuizOption"
+          },
+          "maxItems": 4,
+          "minItems": 3,
+          "title": "Options",
+          "type": "array"
+        },
+        "review_effect": {
+          "$ref": "#/$defs/GameEffect"
+        },
+        "review_status": {
+          "const": "reviewed",
+          "title": "Review Status",
+          "type": "string"
+        },
+        "reviewed_on": {
+          "format": "date",
+          "title": "Reviewed On",
+          "type": "string"
+        },
+        "scenario": {
+          "maxLength": 1000,
+          "minLength": 20,
+          "title": "Scenario",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/QuizSource"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "title": "Sources",
+          "type": "array"
+        },
+        "topic": {
+          "enum": [
+            "nutrition",
+            "food_safety",
+            "activity"
+          ],
+          "title": "Topic",
+          "type": "string"
+        },
+        "wrong_effect": {
+          "$ref": "#/$defs/GameEffect"
+        }
+      },
+      "required": [
+        "id",
+        "topic",
+        "difficulty",
+        "scenario",
+        "options",
+        "correct_option_id",
+        "explanation",
+        "sources",
+        "review_status",
+        "reviewed_on",
+        "wrong_effect",
+        "correct_effect",
+        "review_effect"
+      ],
+      "title": "QuizQuestion",
+      "type": "object"
+    },
+    "QuizSource": {
+      "additionalProperties": false,
+      "properties": {
+        "accessed_on": {
+          "format": "date",
+          "title": "Accessed On",
+          "type": "string"
+        },
+        "publisher": {
+          "enum": [
+            "CDC",
+            "FDA"
+          ],
+          "title": "Publisher",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "publisher",
+        "url",
+        "accessed_on"
+      ],
+      "title": "QuizSource",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bank_version": {
+      "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+      "title": "Bank Version",
+      "type": "string"
+    },
+    "local_scoring": {
+      "$ref": "#/$defs/LocalScoringRules"
+    },
+    "questions": {
+      "items": {
+        "$ref": "#/$defs/QuizQuestion"
+      },
+      "maxItems": 100,
+      "title": "Questions",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "total": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Total",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "bank_version",
+    "total",
+    "questions"
+  ],
+  "title": "QuizBankResponse",
+  "type": "object"
+}

@@ -1,0 +1,248 @@
+{
+  "$defs": {
+    "EvidenceSource": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "publisher": {
+          "title": "Publisher",
+          "type": "string"
+        },
+        "reviewed_on": {
+          "const": "2026-10-23",
+          "default": "2026-10-23",
+          "title": "Reviewed On",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "topic": {
+          "enum": [
+            "physical_activity",
+            "sleep",
+            "nutrition",
+            "smoking",
+            "supplements"
+          ],
+          "title": "Topic",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "topic",
+        "title",
+        "url",
+        "publisher"
+      ],
+      "title": "EvidenceSource",
+      "type": "object"
+    },
+    "PlanAction": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_kind": {
+          "const": "public_health_guidance",
+          "default": "public_health_guidance",
+          "title": "Evidence Kind",
+          "type": "string"
+        },
+        "evidence_summary": {
+          "title": "Evidence Summary",
+          "type": "string"
+        },
+        "experiment_assumptions": {
+          "default": null,
+          "title": "Experiment Assumptions",
+          "type": "null"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "modeled_effect": {
+          "default": null,
+          "title": "Modeled Effect",
+          "type": "null"
+        },
+        "modeled_effect_status": {
+          "const": "unmodeled",
+          "default": "unmodeled",
+          "title": "Modeled Effect Status",
+          "type": "string"
+        },
+        "next_step": {
+          "title": "Next Step",
+          "type": "string"
+        },
+        "optional": {
+          "default": true,
+          "title": "Optional",
+          "type": "boolean"
+        },
+        "source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "topic": {
+          "enum": [
+            "physical_activity",
+            "sleep",
+            "nutrition",
+            "smoking",
+            "supplements"
+          ],
+          "title": "Topic",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "topic",
+        "title",
+        "next_step",
+        "evidence_summary",
+        "source_ids"
+      ],
+      "title": "PlanAction",
+      "type": "object"
+    },
+    "ResearchResult": {
+      "additionalProperties": false,
+      "properties": {
+        "limitation": {
+          "title": "Limitation",
+          "type": "string"
+        },
+        "page_count": {
+          "default": 0,
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Page Count",
+          "type": "integer"
+        },
+        "query_count": {
+          "default": 0,
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Query Count",
+          "type": "integer"
+        },
+        "retrieved_source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "title": "Retrieved Source Ids",
+          "type": "array"
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/EvidenceSource"
+          },
+          "maxItems": 5,
+          "title": "Sources",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "not_requested",
+            "unconfigured",
+            "retrieved",
+            "partial",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "limitation"
+      ],
+      "title": "ResearchResult",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "actions": {
+      "items": {
+        "$ref": "#/$defs/PlanAction"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Actions",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "mascot_message": {
+      "title": "Mascot Message",
+      "type": "string"
+    },
+    "mode": {
+      "const": "curated_educational",
+      "default": "curated_educational",
+      "title": "Mode",
+      "type": "string"
+    },
+    "research": {
+      "$ref": "#/$defs/ResearchResult"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/EvidenceSource"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "title": "Sources",
+      "type": "array"
+    },
+    "status": {
+      "const": "educational",
+      "default": "educational",
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mascot_message",
+    "actions",
+    "sources",
+    "research",
+    "limitations"
+  ],
+  "title": "AdvisorResponse",
+  "type": "object"
+}
