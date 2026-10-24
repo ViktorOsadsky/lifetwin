@@ -74,8 +74,8 @@ void main() {
       expect(r.guide.calls.single['action'], 'start');
       expect(r.c.aiHelper, isFalse);
       // The first question's Health chip must not catch a second tap meant for "Not now".
-      if (find.text('Use my Health app').hitTestable().evaluate().isNotEmpty) {
-        await t.tapAt(t.getCenter(find.text('Use my Health app')));
+      if (find.text('Use my Apple Health').hitTestable().evaluate().isNotEmpty) {
+        await t.tapAt(t.getCenter(find.text('Use my Apple Health')));
         await t.pumpAndSettle();
         expect(r.health, isFalse, reason: 'a second tap opened the Health import');
       }
@@ -137,7 +137,7 @@ void main() {
     expect(find.text('Tap to talk'), findsNothing);
     expect(r.output.spoken, isEmpty);
     await t.pump(const Duration(milliseconds: 700)); // the first question's Health link ignores a second tap at first
-    await t.tap(find.text('Use my Health app'));
+    await t.tap(find.text('Use my Apple Health'));
     expect(r.health, true);
     await t.enterText(find.byType(TextField), '70');
     await t.tap(find.text('Send'));
@@ -227,11 +227,11 @@ void main() {
     expect(find.text('Talk with me?'), findsOneWidget);
     await choose(t, "No, I'll type");
     await t.pump(const Duration(milliseconds: 700)); // the first question's Health link ignores a second tap at first
-    await t.ensureVisible(find.text('Use my Health app'));
+    await t.ensureVisible(find.text('Use my Apple Health'));
     await t.pumpAndSettle();
-    await t.tap(find.text('Use my Health app'));
+    await t.tap(find.text('Use my Apple Health'));
     await t.pumpAndSettle();
-    expect(find.text("Use your iPhone's Health app?"), findsOneWidget);
+    expect(find.text('Use Apple Health?'), findsOneWidget);
   });
 
   testWidgets('AI helper consent explains where answers go; yes turns it on for every turn', (t) async {

@@ -69,7 +69,7 @@ class OutlookDetailScreen extends StatelessWidget {
                 _Row(
                   label: label,
                   source: healthKeys.contains(key) || (key == 'systolic_bp' && healthKeys.contains('diastolic_bp'))
-                      ? 'Health app'
+                      ? 'Apple Health'
                       : 'you told me',
                   health: healthKeys.contains(key),
                 ),

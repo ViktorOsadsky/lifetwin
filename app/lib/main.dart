@@ -86,6 +86,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     ),
   );
 
+  /// The Apple Health import, from the conversation or the Room. From the Room, before the
+  /// conversation started, the checked values wait for its first question.
   void _health(BuildContext context) => Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (_) => HealthImportScreen(
@@ -94,7 +96,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           Navigator.of(context).pop();
           // Each value was already checked on the Health screen ("Is this accurate?").
           final values = {for (final c in result.confirmed) c.field.profileKey: c.value};
-          _healthKeys.addAll(values.keys);
+          setState(() => _healthKeys.addAll(values.keys)); // the Room's pill goes away
           _controller.importHealth(values);
         },
       ),
@@ -155,6 +157,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
         builder: (context, _) => RoomScreen(
           appearance: _look,
           hasProfile: _profile != null,
+          onUseHealth: _healthKeys.isEmpty ? () => _health(context) : null,
           onTalk: () => _talk(context),
           onCustomize: () => _customize(context),
           onFortune: () => _ceremony(context),

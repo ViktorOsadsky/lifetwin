@@ -215,7 +215,7 @@ void main() {
                 onTap: () {},
               ),
               LipButton(label: 'Go back to my answers', onTap: () {}),
-              LtChip(label: 'Use my Health app', icon: Icons.favorite_border_rounded, onTap: () {}),
+              LipButton(label: 'Use my Apple Health', icon: Icons.favorite_border_rounded, kind: LipKind.secondary, onTap: () {}),
               LtToggleChip(label: 'AI helper: Off', value: false, onChanged: (_) {}),
               const Bubble(text: "Let's talk first, so I can make your forecast."),
               Center(

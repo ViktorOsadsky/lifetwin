@@ -128,19 +128,15 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
         appearance: widget.appearance,
         child: switch (_step) {
           _Step.intro => _Page(
-            title: "Use your iPhone's Health app?",
+            title: 'Use Apple Health?',
             body:
-                'I can read your height, weight, exercise, sleep and blood pressure from the Health app, '
+                'I can read your height, weight, exercise, sleep and blood pressure from Apple Health, '
                 "so you don't have to type them.\n\n"
                 "I'll check each one with you, and only the ones you say are right are used.",
-            primary: ('Yes, use my Health app', _start),
+            primary: ('Yes, use Apple Health', _start),
             secondary: ("No thanks, I'll answer myself", _skip),
           ),
-          _Step.reading => const _Page(
-            title: 'Reading your Health app…',
-            body: 'This takes a few seconds.',
-            busy: true,
-          ),
+          _Step.reading => const _Page(title: 'Reading Apple Health…', body: 'This takes a few seconds.', busy: true),
           _Step.confirm => _Page(
             title: 'Question ${_index + 1} of ${_candidates.length}',
             step: (_index + 1, _candidates.length),
@@ -152,8 +148,8 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
           _Step.nothingFound => _Page(
             title: "I couldn't find any readings",
             body:
-                "That's okay. Either the Health app has no readings yet, or it isn't sharing them with LifeTwin. "
-                'You can change that later in the Health app. For now, I will ask you instead.',
+                "That's okay. Either Apple Health has no readings yet, or it isn't sharing them with LifeTwin. "
+                'You can change that later in Apple Health. For now, I will ask you instead.',
             primary: ('Continue', _finish),
           ),
           _Step.done => _Page(

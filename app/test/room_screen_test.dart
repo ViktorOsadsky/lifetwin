@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/forecast/forecast_client.dart';
+import 'package:lifesim/health/health_sample.dart';
+import 'package:lifesim/health/health_screen.dart';
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
@@ -11,6 +13,7 @@ import 'package:lifesim/ui/widgets/widgets.dart';
 import 'package:lifesim/voice/fakes.dart';
 
 import 'forecast_screen_test.dart' show FakeForecastClient, supportedJson;
+import 'health_screen_test.dart' show FakeReader;
 
 VoiceOnboardingController fakeController() =>
     VoiceOnboardingController(guide: FakeConversationGuide(), input: FakeSpeechInput(), output: FakeSpeechOutput());
@@ -26,6 +29,7 @@ Future<void> pumpRoom(
   bool hasProfile = false,
   VoidCallback? onTalk,
   VoidCallback? onFortune,
+  VoidCallback? onUseHealth,
   double scale = 1,
 }) async {
   final look = ValueNotifier(const TwinAppearance());
@@ -41,6 +45,7 @@ Future<void> pumpRoom(
             onTalk: onTalk ?? () {},
             onCustomize: () {},
             onFortune: onFortune ?? () {},
+            onUseHealth: onUseHealth,
           ),
         ),
       ),
@@ -90,6 +95,32 @@ void main() {
     expect(fortune, 0);
     expect(find.text(RoomScreen.talkFirst), findsOneWidget);
     expect(find.text('Talk'), findsOneWidget);
+  });
+
+  for (final scale in [1.0, 3.1]) {
+    testWidgets('scale $scale: "Use my Apple Health" pill: one line, at least 48 pt, opens the import', (t) async {
+      setPhone(t);
+      var opened = 0;
+      await pumpRoom(t, scale: scale, onUseHealth: () => opened++);
+      expect(t.takeException(), isNull);
+      final pill = find.ancestor(of: find.text('Use my Apple Health'), matching: find.byType(GestureDetector)).first;
+      expect(t.getSize(pill).height, greaterThanOrEqualTo(48));
+      expect(t.widget<Text>(find.text('Use my Apple Health')).style!.fontSize, greaterThanOrEqualTo(17));
+      // One line: shrunk to fit rather than wrapped.
+      expect(
+        t.getSize(find.ancestor(of: find.text('Use my Apple Health'), matching: find.byType(FittedBox))).height,
+        lessThan(t.getSize(pill).height),
+      );
+      await t.ensureVisible(pill);
+      await t.tap(pill);
+      expect(opened, 1);
+    });
+  }
+
+  testWidgets('no pill once Health data is confirmed (no import callback)', (t) async {
+    setPhone(t);
+    await pumpRoom(t);
+    expect(find.text('Use my Apple Health'), findsNothing);
   });
 
   testWidgets('Room swaps to the human twin when the look changes', (t) async {
@@ -167,6 +198,42 @@ void main() {
       await t.tap(find.text('Ask the ball')); // the ceremony comes first
       await t.pumpAndSettle();
     }
+
+    testWidgets('the Room pill imports Apple Health, then goes; the talk adds the values when it starts', (t) async {
+      setPhone(t);
+      final now = DateTime.now();
+      final c = fakeController();
+      final reader = FakeReader([
+        HealthSample(
+          type: 'WEIGHT',
+          start: now.subtract(const Duration(days: 2)),
+          end: now.subtract(const Duration(days: 2)),
+          value: 68,
+        ),
+      ]);
+      await t.pumpWidget(LifeTwinApp(controller: c, healthReader: reader));
+      await t.tap(find.text('Use my Apple Health'));
+      await t.pumpAndSettle();
+      expect(find.byType(HealthImportScreen), findsOneWidget);
+      await t.tap(find.text('Yes, use Apple Health'));
+      await t.pumpAndSettle();
+      await t.tap(find.text("Yes, that's right"));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Continue'));
+      await t.pumpAndSettle();
+      expect(find.byType(RoomScreen), findsOneWidget);
+      expect(find.text('Use my Apple Health'), findsNothing);
+      expect(c.hasPendingHealth, isTrue);
+      await t.tap(find.text('Talk'));
+      await t.pumpAndSettle();
+      await t.tap(find.text("No, I'll type"));
+      await t.pumpAndSettle();
+      await t.pump(const Duration(milliseconds: 700));
+      await t.ensureVisible(find.text('Not now'));
+      await t.tap(find.text('Not now'));
+      await t.pumpAndSettle();
+      expect(c.confirmedProfile, {'weight_kg': 68});
+    });
 
     testWidgets('Talk swooshes to the conversation and Home returns to the Room', (t) async {
       await start(t);

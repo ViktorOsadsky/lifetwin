@@ -22,6 +22,7 @@ class RoomScreen extends StatefulWidget {
     required this.onCustomize,
     required this.onFortune,
     this.hasProfile = false,
+    this.onUseHealth,
     this.mood = 'Feeling cozy',
   });
 
@@ -35,6 +36,9 @@ class RoomScreen extends StatefulWidget {
 
   /// True once an intake has been confirmed (and is still complete) this session.
   final bool hasProfile;
+
+  /// "Use my Apple Health": the Health import. Null (no pill) once Health data is confirmed.
+  final VoidCallback? onUseHealth;
   final String mood;
 
   static const firstGreeting = 'Hi! Want to chat?';
@@ -116,6 +120,10 @@ class _RoomScreenState extends State<RoomScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (large) ...[bubble, const SizedBox(height: 12)],
+                    if (widget.onUseHealth != null) ...[
+                      Center(child: _HealthPill(onTap: widget.onUseHealth!)),
+                      const SizedBox(height: 10),
+                    ],
                     _Dock(frame: f, onTalk: widget.onTalk, onCustomize: widget.onCustomize, onFortune: _fortune),
                   ],
                 ),
@@ -282,6 +290,50 @@ class _DockItem extends StatelessWidget {
                   label,
                   textAlign: TextAlign.center,
                   style: LtText.body(weight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Use my Apple Health", compact: a plain heart (never Apple's Health app icon) and one
+/// line that shrinks rather than wraps. At least 48 pt tall.
+class _HealthPill extends StatelessWidget {
+  const _HealthPill({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Use my Apple Health',
+      excludeSemantics: true,
+      onTap: onTap,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: LtColors.paper,
+            borderRadius: BorderRadius.circular(LtRadii.chip),
+            border: Border.all(color: LtColors.control, width: LtBorders.control),
+            boxShadow: LtShadows.small,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.favorite_border_rounded, size: 24, color: LtColors.ink),
+              const SizedBox(width: 8),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: WholeWordText('Use my Apple Health', style: LtText.body(weight: FontWeight.w700)),
                 ),
               ),
             ],

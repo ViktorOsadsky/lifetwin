@@ -121,7 +121,7 @@ void main() {
     expect(find.text('Female'), findsOneWidget);
     expect(find.text('Former smoker'), findsOneWidget);
     expect(find.text('Exercise 60 min/week'), findsOneWidget);
-    expect(find.text('Health app'), findsNWidgets(2)); // height and sleep
+    expect(find.text('Apple Health'), findsNWidgets(2)); // height and sleep
     await t.scrollUntilVisible(find.text('We assumed'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('We assumed'), findsOneWidget);
     for (final label in [

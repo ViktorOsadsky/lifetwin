@@ -699,7 +699,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     if (c.phase == VoicePhase.done) {
       return [
         LipButton(label: 'Continue', height: 72, onTap: () => widget.onDone(c.confirmedProfile)),
-        if (widget.onUseHealth != null) ...[const SizedBox(height: 14), _healthChip()],
+        if (widget.onUseHealth != null) ...[const SizedBox(height: 14), _healthButton()],
       ];
     }
     if (c.confirming && c.correcting) {
@@ -745,18 +745,19 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       if (quick) ...[_quickAnswers(busy), const SizedBox(height: 8)],
       // With quick answers on screen they are the big choices; Talk is the smaller one.
       if (quick) TalkButton(controller: c, compact: true) else ..._answerControls(busy, keyboard),
+      // On the first question: Apple Health instead of answering, right under Talk (or Send).
+      if (!keyboard && widget.onUseHealth != null && c.questionNumber == 1 && c.phase != VoicePhase.listening) ...[
+        const SizedBox(height: 12),
+        _healthButton(),
+      ],
       if (!keyboard) _switchMode(),
       LinkButton(label: 'Skip this question', onTap: busy ? null : _skip),
       if (!keyboard) ..._chips(),
     ];
   }
 
-  /// V-2's chips: the Health app (first question only) and the AI helper switch.
+  /// V-2's chip: the AI helper switch.
   List<Widget> _chips() => [
-    if (widget.onUseHealth != null && c.questionNumber == 1 && c.phase != VoicePhase.listening) ...[
-      const SizedBox(height: 8),
-      _healthChip(),
-    ],
     const SizedBox(height: 10),
     LtToggleChip(
       label: c.aiHelper ? 'AI helper: On' : 'AI helper: Off',
@@ -767,10 +768,12 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     ),
   ];
 
-  Widget _healthChip() => LtChip(
-    label: 'Use my Health app',
+  /// A plain heart, never Apple's Health app icon (HealthKit guidelines).
+  Widget _healthButton() => LipButton(
+    label: 'Use my Apple Health',
     icon: Icons.favorite_border_rounded,
-    trailing: const Icon(Icons.chevron_right_rounded, color: LtColors.ink),
+    kind: LipKind.secondary,
+    height: 64,
     onTap: _useHealth,
   );
 

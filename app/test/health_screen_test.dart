@@ -30,7 +30,7 @@ Future<HealthImportResult?> run(WidgetTester t, HealthReader reader, List<String
       home: HealthImportScreen(reader: reader, now: () => now, onDone: (r) => result = r),
     ),
   );
-  await t.tap(find.text('Yes, use my Health app'));
+  await t.tap(find.text('Yes, use Apple Health'));
   await t.pumpAndSettle();
   for (final label in taps) {
     await t.tap(find.text(label));
@@ -62,7 +62,7 @@ void main() {
         home: HealthImportScreen(reader: FakeReader(samples), now: () => now, onDone: (r) => result = r),
       ),
     );
-    await t.tap(find.text('Yes, use my Health app'));
+    await t.tap(find.text('Yes, use Apple Health'));
     await t.pumpAndSettle();
     expect(find.text('Question 1 of 2'), findsOneWidget);
     await t.tap(find.text("Yes, that's right"));
@@ -81,7 +81,7 @@ void main() {
         home: HealthImportScreen(reader: FakeReader(samples), now: () => now, onDone: (r) => result = r),
       ),
     );
-    await t.tap(find.text('Yes, use my Health app'));
+    await t.tap(find.text('Yes, use Apple Health'));
     await t.pumpAndSettle();
     expect(find.text('Go back'), findsNothing);
     await t.tap(find.text("Yes, that's right"));
@@ -149,7 +149,7 @@ void main() {
         await t.pump(const Duration(seconds: 1));
       }
 
-      await check('Yes, use my Health app');
+      await check('Yes, use Apple Health');
       await t.pumpAndSettle();
       await check("Yes, that's right");
       await check('No, let me fix it');

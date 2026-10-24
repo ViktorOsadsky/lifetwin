@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/whole_word_text.dart';
 import '../theme.dart';
 
-/// A full-width 52pt chip with a leading icon (e.g. "Use my Health app").
+/// A full-width 52pt chip with a leading icon.
 /// With [selected] set it behaves as a choice (radio-like) chip.
 class LtChip extends StatelessWidget {
   const LtChip({

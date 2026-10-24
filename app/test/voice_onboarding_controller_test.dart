@@ -242,6 +242,18 @@ void main() {
     expect(r.c.phase, VoicePhase.idle);
   });
 
+  test('Apple Health answers checked before the talk are added when it starts', () async {
+    final r = Rig();
+    await r.c.importHealth({'weight_kg': 68.0}); // from the Room: no question yet
+    expect(r.guide.calls, isEmpty);
+    expect(r.c.hasPendingHealth, isTrue);
+    await r.c.answerConsent(false);
+    expect(r.guide.calls.map((c) => c['action']), ['start', 'import']);
+    expect(r.guide.calls.last['values'], {'weight_kg': 68.0});
+    expect(r.c.confirmedProfile, {'weight_kg': 68.0});
+    expect(r.c.hasPendingHealth, isFalse);
+  });
+
   test('Health import waits while an answer is being confirmed, and says why', () async {
     final r = Rig();
     await r.c.answerConsent(false);
@@ -268,7 +280,7 @@ void main() {
     final line = r.c.mascotLine;
     r.guide.rejectNext = 'Please check these answers: height. Then try again.';
     await r.c.importHealth({'height_cm': 17300});
-    expect(r.c.notice, "I couldn't add your Health app answers. Please check these answers: height. Then try again.");
+    expect(r.c.notice, "I couldn't add your Apple Health answers. Please check these answers: height. Then try again.");
     expect(r.c.canRetry, isFalse);
     expect(r.c.mascotLine, line);
     expect(r.c.phase, VoicePhase.idle);
