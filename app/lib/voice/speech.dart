@@ -70,6 +70,7 @@ class GuideTurn {
     this.mascotState = 'asking',
     this.providerStatus = 'not_configured',
     this.modelInputs,
+    this.clientAction,
   });
 
   final Map<String, dynamic> state;
@@ -84,6 +85,10 @@ class GuideTurn {
   /// only, and `status` (`ready`, `still_learning` or `unsupported_age`). Null from a
   /// server that doesn't send it.
   final Map<String, dynamic>? modelInputs;
+
+  /// What the server asks the app to do now: `open_health_import` after a yes to the
+  /// Apple Health offer.
+  final String? clientAction;
 
   String get phase => (state['phase'] as String?) ?? 'idle';
   bool get isConfirming => phase == 'confirming';
