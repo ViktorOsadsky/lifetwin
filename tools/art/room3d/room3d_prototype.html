@@ -437,10 +437,11 @@
 const HASH = Object.fromEntries(location.hash.replace(/^#/, '').split('&').filter(Boolean).map(kv => kv.split('=')));
 const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
 let REDUCED = mq.matches || HASH.reduced === '1';
-/* Layer export for the Flutter room (local only): #layer=bg|noball|noapple|fg_bed|fg_table|calib&dpr=3
+/* Layer export for the Flutter room (local only): #layer=bg|noball|noapple|fg_bed|fg_bed_full|fg_table|calib&dpr=3
    bg: room without the bear or UI. noball: same, crystal ball taken off the shelf.
    noapple: same, the apple taken out of the fruit bowl (Eat).
    fg_bed: only the bed pixels in front of the sleeping bear (transparent elsewhere).
+   fg_bed_full: the whole bed (frame, quilt, footboard; transparent elsewhere), drawn over a bear behind it.
    fg_table: only the table (transparent elsewhere). calib: camera matrix + key points as JSON in <pre id="calib">. */
 const LAYER = HASH.layer || '';
 if (LAYER) {
@@ -793,7 +794,7 @@ for (let i = 0; i < 9; i++) {
 // Yoga mat with two dumbbells
 const MAT = { x: 1.05, z: 1.1 };
 mesh(rbox(0.78, 0.035, 1.5, 0.015), toon(C.mat), scene, [MAT.x, 0.018, MAT.z], { outline: true, cast: false });
-mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.78, 24), toon(0x7DB396), scene, [MAT.x, 0.11, MAT.z - 0.8], { rot: [0, 0, Math.PI / 2], outline: true });
+const bolster = mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.78, 24), toon(0x7DB396), scene, [MAT.x, 0.11, MAT.z - 0.8], { rot: [0, 0, Math.PI / 2], outline: true });
 const bellMat = toon(C.bell), barMat = toon(0xB9C3E8);
 function dumbbell(x, z, ry) {
   const g = new THREE.Group(); g.position.set(x, 0.075, z); g.rotation.y = ry; scene.add(g);
@@ -801,7 +802,7 @@ function dumbbell(x, z, ry) {
   [-1, 1].forEach(s => mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.07, 6), bellMat, g, [s * 0.13, 0, 0], { rot: [0, 0, Math.PI / 2], outline: true }));
   return g;
 }
-dumbbell(1.68, 0.85, 0.4); dumbbell(1.72, 1.2, -0.2);
+const bells = [dumbbell(1.68, 0.85, 0.4), dumbbell(1.72, 1.2, -0.2)];
 
 // Table with fruit bowl
 const TABLE = { x: -1.1, z: 1.78, r: 0.44, h: 0.6 };
@@ -818,15 +819,20 @@ mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.05, 6), woodDarkMat, bowlApple, 
 mesh(new THREE.TorusGeometry(0.09, 0.022, 8, 16, 2.2), toon(C.banana), table, [0.04, TABLE.h + 0.12, -0.08], { rot: [Math.PI / 2 - 0.4, 0, 2.2] });
 
 /* ---------------- Walkable floor ---------------- */
+// Each piece of floor furniture's true footprint [x0, z0, x1, z1]: the floor-plane extent of its meshes'
+// boxes (Box3). OBST pads them by the bear's radius; the bear's feet never enter a padded box.
 const PAD = 0.28;
-const OBST = [
-  [BED.x - BED.w / 2 - 0.1, BED.z - BED.l / 2, BED.x + BED.w / 2 + 0.1, BED.z + BED.l / 2 + 0.05],
-  [TABLE.x - TABLE.r, TABLE.z - TABLE.r, TABLE.x + TABLE.r, TABLE.z + TABLE.r],
-  [plant.position.x - 0.3, plant.position.z - 0.3, plant.position.x + 0.3, plant.position.z + 0.3]
-].map(b => [b[0] - PAD, b[1] - PAD, b[2] + PAD, b[3] + PAD]);
+function footprint(o) {
+  const b = new THREE.Box3().setFromObject(o);
+  return [b.min.x, b.min.z, b.max.x, b.max.z].map(v => +v.toFixed(4));
+}
+const FOOTPRINT = { bed: footprint(bed), table: footprint(table), plant: footprint(plant),
+  bolster: footprint(bolster), dumbbellA: footprint(bells[0]), dumbbellB: footprint(bells[1]) };
+const OBST = Object.values(FOOTPRINT).map(b => [b[0] - PAD, b[1] - PAD, b[2] + PAD, b[3] + PAD].map(v => +v.toFixed(4)));
 const BOUNDS = [-2.0, -2.0, 2.0, 2.0];
-const WAYPTS = [[0.25, 0.2], [1.2, -0.3], [-1.0, -0.5], [-0.35, 1.05], [0.3, 1.9], [-1.9, -0.6], [1.5, 0.3]];
-const WANDER = [[0.3, 0.1], [-1.0, 0.4], [1.0, -0.2], [-0.3, 1.1], [0.2, 1.7], [-1.4, -1.0], [1.3, -1.0], [-0.2, -0.25], [0.15, 0.8], [1.6, 0.3]];
+// Detour and idle-wander points: all on open floor, outside every padded footprint.
+const WAYPTS = [[0.25, 0.2], [1.2, -0.3], [-1.4, -0.3], [-0.3, 0.95], [0.3, 1.9], [-1.9, -0.6], [0.7, -0.13]];
+const WANDER = [[0.3, 0.1], [-1.0, 0.4], [1.4, -0.55], [-0.3, 1.1], [0.2, 1.7], [-1.4, -1.0], [1.3, -1.0], [-0.25, 0.1], [0.15, 0.8], [1.6, 1.8]];
 
 function segHitsBox(a, b, box) {
   let t0 = 0, t1 = 1;
@@ -1479,6 +1485,9 @@ function applyLayer() {
   if (LAYER === 'fg_table') {
     scene.children.forEach(o => { if (!o.isLight && o !== table) o.visible = false; });
   }
+  if (LAYER === 'fg_bed_full') {
+    scene.children.forEach(o => { if (!o.isLight && o !== bed) o.visible = false; });
+  }
   if (LAYER === 'fg_bed') {
     // Stencil mask = the sleeping bear's billboard (with margin). Scene pixels pass only inside the
     // mask and in front of it, i.e. exactly what covers a sleeping bear: quilt front and footboard.
@@ -1517,7 +1526,7 @@ function applyLayer() {
         position: camera.position.toArray().map(v => +v.toFixed(5)) },
       viewProjection: vp.elements.map(v => +v.toFixed(7)),
       bearHeight: BEAR_H, leanDeg: LEAN * 180 / Math.PI, sleepY: SLEEP_Y,
-      bounds: BOUNDS, obstacles: OBST, waypoints: WAYPTS, wander: WANDER, spots: SPOT,
+      bounds: BOUNDS, pad: PAD, footprints: FOOTPRINT, obstacles: OBST, waypoints: WAYPTS, wander: WANDER, spots: SPOT,
       bed: BED, table: TABLE, shelfBall: [ballP.x, ballP.y, ballP.z], shelfBallScreen: proj(ballP.x, ballP.y, ballP.z),
       shelfBallRadius: 0.14,
       bowlApple: [+appleP.x.toFixed(4), +appleP.y.toFixed(4), +appleP.z.toFixed(4)], bowlAppleScreen: proj(appleP.x, appleP.y, appleP.z),

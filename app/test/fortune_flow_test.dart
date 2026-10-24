@@ -264,14 +264,14 @@ void main() {
     });
   });
 
-  test('poses fall back to the twin\'s own standing sprite when it lacks them', () {
+  test('every twin has every pose, with the hat or without it', () {
     expect(twinAsset(TwinType.human, TwinLook.calHat, TwinPose.holdBall), 'assets/twin/human/pose/hold_ball.png');
-    expect(twinAsset(TwinType.human, TwinLook.calHat, TwinPose.sleep), 'assets/twin/human/base/cal_hat.png');
-    expect(twinAsset(TwinType.human, TwinLook.calHat), 'assets/twin/human/base/cal_hat.png');
+    expect(twinAsset(TwinType.human, TwinLook.calHat, TwinPose.sleep), 'assets/twin/human/pose/sleep.png');
+    expect(twinAsset(TwinType.human, TwinLook.calHat), 'assets/twin/human/pose/stand.png');
     expect(twinAsset(TwinType.bear, TwinLook.calHat, TwinPose.shrug), 'assets/twin/bear/pose/shrug.png');
-    expect(twinAsset(TwinType.bear, TwinLook.plain, TwinPose.holdBall), 'assets/twin/bear/base/default.png');
-    expect(twinAsset(TwinType.human, TwinLook.plain, TwinPose.shrug), 'assets/twin/human/base/default.png');
-    expect(twinFeetAnchor(TwinType.human, TwinLook.calHat, TwinPose.shrug), 0.967);
-    expect(twinFeetAnchor(TwinType.human, TwinLook.calHat, TwinPose.sleep), 0.954);
+    expect(twinAsset(TwinType.bear, TwinLook.plain, TwinPose.holdBall), 'assets/twin/bear/pose_nohat/hold_ball.png');
+    expect(twinAsset(TwinType.human, TwinLook.plain, TwinPose.shrug), 'assets/twin/human/pose_nohat/shrug.png');
+    expect(twinFeetAnchor(TwinType.human, TwinLook.calHat, TwinPose.shrug), 0.9649);
+    expect(twinFeetAnchor(TwinType.human, TwinLook.plain, TwinPose.sleep), 0.9668);
   });
 }

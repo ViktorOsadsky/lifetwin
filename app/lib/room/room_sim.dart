@@ -147,6 +147,12 @@ class RoomSim extends ChangeNotifier {
       wake();
       return;
     }
+    if (action == RoomAction.sleep && _phase == 'climb') {
+      // Mid-hop onto the bed: land, then get up and go (never walk off
+      // through the bed).
+      _pending = name == RoomAction.sleep ? null : name;
+      return;
+    }
     _cancel();
     action = name;
     const go = {
@@ -582,6 +588,7 @@ class RoomSim extends ChangeNotifier {
             _actT = 0;
             onBed = true;
             _zIn = 0;
+            if (_pending != null) wake();
           }
         }
         if (_phase == 'sleep') {

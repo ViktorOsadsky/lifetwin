@@ -129,15 +129,16 @@ void main() {
     expect(image(roomLayout.bgAsset), findsOneWidget);
     expect(find.byType(TwinSprite), findsOneWidget);
     expect(t.widget<TwinSprite>(find.byType(TwinSprite)).appearance.sprite(), 'assets/twin/bear/pose/stand.png');
-    // Standing in front of the bed and behind the table line: the table covers, the quilt does not.
-    expect(image(roomLayout.fgTable.asset), findsOneWidget);
+    // Standing in front of the bed and right of the table: nothing covers it (room_furniture_test
+    // covers the twin behind the bed or the table).
+    expect(image(roomLayout.fgTable.asset), findsNothing);
     expect(image(roomLayout.fgBed.asset), findsNothing);
+    expect(image(roomLayout.fgBedFull.asset), findsNothing);
     final stack = find.descendant(of: find.byType(RoomScene), matching: find.byType(Stack)).first;
     final order = t.widget<Stack>(stack).children;
     final bgAt = order.indexWhere((w) => w is Positioned && w.child is Image);
     final twinAt = order.indexWhere((w) => w.key == const ValueKey('room-twin'));
-    final fgAt = order.lastIndexWhere((w) => w is Positioned && w.child is IgnorePointer);
-    expect(bgAt < twinAt && twinAt < fgAt, isTrue, reason: 'bg, then the twin, then the foreground');
+    expect(bgAt >= 0 && bgAt < twinAt, isTrue, reason: 'bg, then the twin');
     expect(find.bySemanticsLabel('Twin name: My twin'), findsOneWidget);
     expect(find.text('Hanging out'), findsOneWidget);
     expect(find.text('Ask the ball'), findsOneWidget); // no forecast yet: no number
@@ -268,21 +269,30 @@ void main() {
     await pumpUntil(t, find.text('Feeling strong'), seconds: 4);
   });
 
-  testWidgets('a human twin uses its own poses and falls back where it has none', (t) async {
+  testWidgets('a human twin uses its own poses for every room action', (t) async {
     const human = TwinAppearance(type: TwinType.human);
     expect(resolveRoomPose(human, RoomPose.walk).$1, TwinPose.walkSide);
-    expect(resolveRoomPose(human, RoomPose.walkFront).$1, TwinPose.walkSide);
+    expect(resolveRoomPose(human, RoomPose.walkFront).$1, TwinPose.walkFront);
     expect(resolveRoomPose(human, RoomPose.ball).$1, TwinPose.holdBall);
-    expect(resolveRoomPose(human, RoomPose.eat).$1, TwinPose.sit);
-    expect(resolveRoomPose(human, RoomPose.sleep).$1, TwinPose.sit);
-    expect(resolveRoomPose(human, RoomPose.think).$1, TwinPose.stand);
-    expect(resolveRoomPose(const TwinAppearance(look: TwinLook.plain), RoomPose.sleep).$1, TwinPose.stand);
+    expect(resolveRoomPose(human, RoomPose.eat).$1, TwinPose.eat);
+    expect(resolveRoomPose(human, RoomPose.sleep).$1, TwinPose.sleep);
+    expect(resolveRoomPose(human, RoomPose.think).$1, TwinPose.think);
+    expect(resolveRoomPose(const TwinAppearance(look: TwinLook.plain), RoomPose.sleep).$1, TwinPose.sleep);
     await pumpRoom(t, look: human);
     await t.tap(find.text('Sleep'));
     await pumpUntil(t, find.text('Sleeping. Tap to wake'));
     await t.pump(const Duration(milliseconds: 300));
     final sprite = t.widget<TwinSprite>(find.byType(TwinSprite));
-    expect(sprite.appearance.sprite(sprite.pose), 'assets/twin/human/pose/sit.png');
+    expect(sprite.appearance.sprite(sprite.pose), 'assets/twin/human/pose/sleep.png');
+  });
+
+  testWidgets('a twin without the hat sleeps in its no-hat pose', (t) async {
+    await pumpRoom(t, look: const TwinAppearance(look: TwinLook.plain));
+    await t.tap(find.text('Sleep'));
+    await pumpUntil(t, find.text('Sleeping. Tap to wake'));
+    await t.pump(const Duration(milliseconds: 300));
+    final sprite = t.widget<TwinSprite>(find.byType(TwinSprite));
+    expect(sprite.appearance.sprite(sprite.pose), 'assets/twin/bear/pose_nohat/sleep.png');
   });
 
   testWidgets('no overflow on a small phone at 1.3x text', (t) async {
@@ -451,9 +461,16 @@ void main() {
     });
 
     test('paths go around the bed', () {
-      final path = roomLayout.planPath(const Offset(-1.0, -0.1), const Offset(1.0, -0.1));
-      expect(path.last, const Offset(1.0, -0.1));
-      expect(roomLayout.planPath(const Offset(0.3, 0.1), const Offset(1.0, 1.15)), [const Offset(1.0, 1.15)]);
+      const a = Offset(-1.4, -1.0), b = Offset(1.3, -1.0);
+      final path = roomLayout.planPath(a, b);
+      expect(path.last, b);
+      expect(path.length, greaterThan(1));
+      var from = a;
+      for (final p in path) {
+        expect(roomLayout.clear(from, p), isTrue);
+        from = p;
+      }
+      expect(roomLayout.planPath(const Offset(0.3, 0.1), const Offset(-1.0, 0.4)), [const Offset(-1.0, 0.4)]);
     });
   });
 

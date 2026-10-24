@@ -68,7 +68,7 @@ void main() {
 
     // Back in the Room, with the new look.
     expect(find.byType(CustomizeScreen), findsNothing);
-    expect(t.widget<TwinSprite>(find.byType(TwinSprite)).appearance.sprite(), 'assets/twin/human/base/default.png');
+    expect(t.widget<TwinSprite>(find.byType(TwinSprite)).appearance.sprite(), 'assets/twin/human/pose_nohat/stand.png');
     // Nothing reached the server, the profile or the forecast.
     expect(guide.calls, isEmpty);
     expect(c.confirmedProfile, before);

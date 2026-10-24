@@ -1,12 +1,16 @@
 /// Asset paths for the LifeTwin twin sprites and scene plates.
 ///
-/// Names mirror the Figma page "Twin · Assets" one to one: the Figma
-/// component `twin/bear/pose/walk_side` is the file
-/// `app/assets/twin/bear/pose/walk_side.png`, loaded as
-/// `assets/twin/bear/pose/walk_side.png`. Flutter picks the `2.0x/` and
-/// `3.0x/` variants automatically. Anchors and suggested uses live in
-/// `assets/twin/manifest.json`; the naming rule is in
+/// The Cal-hat poses live in `assets/twin/{bear,human}/pose/` (the names
+/// mirror the Figma page "Twin · Assets": the component
+/// `twin/bear/pose/walk_side` is `assets/twin/bear/pose/walk_side.png`) and
+/// the same poses without the hat in `assets/twin/{bear,human}/pose_nohat/`.
+/// Flutter picks the `2.0x/` and `3.0x/` variants automatically. Anchors
+/// live in `assets/twin/manifest.json`; the naming rule is in
 /// `docs/design/painted-card-direction.md`.
+///
+/// The art is the v2 sprite set: each hat pose is its no-hat pose with one
+/// canonical Cal hat composited on, and the two share one canvas (same size,
+/// same feet anchor), so taking the hat off never moves or rescales the body.
 library;
 
 import 'dart:ui' show Offset, Size;
@@ -22,61 +26,43 @@ enum TwinLook {
   final String slug;
 }
 
-/// Poses. All pose art wears the Cal hat. The bear has every pose; the
-/// human has [humanPoses]. See [twinAsset] for the fallback.
+/// Poses. Both twins have every pose, with and without the Cal hat.
 enum TwinPose {
-  stand('stand', 0.956, 0.954),
-  wave('wave', 0.96, 0.961),
-  walkSide('walk_side', 0.963, 0.963), // faces right; flip horizontally to walk left
-  walkFront('walk_front', 0.966),
-  walkBack('walk_back', 0.967),
-  sit('sit', 0.959, 0.961),
-  jump('jump', 0.963, 0.967),
-  think('think', 0.965),
-  stretch('stretch', 0.967),
-  sleep('sleep', 0.94),
-  eat('eat', 0.956),
-  holdBall('hold_ball', 0.964, 0.961),
-  shrug('shrug', 0.968, 0.967), // fortune still learning / unsupported
-  dizzy('dizzy', 0.964); // game-health reaction only, never medical
+  stand('stand', 0.9646, 0.9639, Size(121, 180), Size(97, 180)),
+  wave('wave', 0.9641, 0.9661, Size(132, 180), Size(111, 180)),
+  walkSide('walk_side', 0.9648, 0.9652, Size(122, 180), Size(96, 180)), // faces right; flip to walk left
+  walkFront('walk_front', 0.9656, 0.9644, Size(119, 180), Size(96, 180)),
+  walkBack('walk_back', 0.9641, 0.965, Size(128, 180), Size(92, 180)),
+  sit('sit', 0.9648, 0.9653, Size(149, 180), Size(131, 180)),
+  jump('jump', 0.9661, 0.9648, Size(138, 180), Size(132, 180)),
+  think('think', 0.9644, 0.9639, Size(119, 180), Size(105, 180)),
+  stretch('stretch', 0.9664, 0.9657, Size(151, 180), Size(108, 180)),
+  sleep('sleep', 0.9641, 0.9668, Size(180, 118), Size(180, 101)),
+  eat('eat', 0.9644, 0.9649, Size(134, 180), Size(113, 180)),
+  holdBall('hold_ball', 0.964, 0.964, Size(137, 180), Size(114, 180)),
+  shrug('shrug', 0.9637, 0.9649, Size(156, 180), Size(107, 180)), // fortune still learning / unsupported
+  dizzy('dizzy', 0.9663, 0.9656, Size(144, 180), Size(113, 180)); // game-health reaction only, never medical
 
-  const TwinPose(this.slug, this.bearFeet, [this.humanFeet]);
+  const TwinPose(this.slug, this.bearFeet, this.humanFeet, this.bearSize1x, this.humanSize1x);
   final String slug;
 
-  /// Feet baselines (`anchor.y` in `assets/twin/manifest.json`).
+  /// Feet baselines (`anchor.y` in `assets/twin/manifest.json`), shared by
+  /// the hat and no-hat sprite of the pose.
   final double bearFeet;
-  final double? humanFeet;
+  final double humanFeet;
+
+  /// 1x sprite size (`size1x` in the manifest), shared by hat and no-hat.
+  final Size bearSize1x;
+  final Size humanSize1x;
 }
 
-/// Poses that exist for the human (in the Cal hat).
-const Set<TwinPose> humanPoses = {
-  TwinPose.holdBall,
-  TwinPose.shrug,
-  TwinPose.wave,
-  TwinPose.walkSide,
-  TwinPose.sit,
-  TwinPose.jump,
-};
+/// True when [pose] has its own art for this twin. Every twin now has every
+/// pose in both looks; the room keeps its fallback chain for future looks.
+bool twinHasPose(TwinType type, TwinLook look, TwinPose pose) => true;
 
-/// True when [pose] has its own art for this twin (otherwise [twinAsset]
-/// falls back to the standing sprite).
-bool twinHasPose(TwinType type, TwinLook look, TwinPose pose) {
-  if (pose == TwinPose.stand) return true;
-  if (look != TwinLook.calHat) return false; // pose art always wears the Cal hat
-  return type == TwinType.bear || humanPoses.contains(pose);
-}
-
-/// The sprite for a twin. A pose the twin lacks (any pose without the Cal
-/// hat, or a bear-only pose for the human) falls back to the twin's own
-/// standing sprite, so the chosen look is never swapped for another.
-String twinAsset(TwinType type, TwinLook look,
-    [TwinPose pose = TwinPose.stand]) {
-  if (look == TwinLook.calHat && twinHasPose(type, look, pose)) {
-    if (type == TwinType.bear) return 'assets/twin/bear/pose/${pose.slug}.png';
-    if (pose != TwinPose.stand) return 'assets/twin/human/pose/${pose.slug}.png';
-  }
-  return 'assets/twin/${type.name}/base/${look.slug}.png';
-}
+/// The sprite for a twin: the Cal-hat pose, or the same pose without the hat.
+String twinAsset(TwinType type, TwinLook look, [TwinPose pose = TwinPose.stand]) =>
+    'assets/twin/${type.name}/${look == TwinLook.calHat ? 'pose' : 'pose_nohat'}/${pose.slug}.png';
 
 /// The Cal hat on its own (Customize tile; not an overlay for the bear,
 /// whose ears go through the hat).
@@ -101,49 +87,37 @@ enum ScenePlate {
 
 /// Feet baseline as a fraction of the sprite's height (`anchor.y` in
 /// `assets/twin/manifest.json`). Swapping sprites never moves the feet.
-double twinFeetAnchor(TwinType type, TwinLook look, [TwinPose pose = TwinPose.stand]) {
-  if (!twinHasPose(type, look, pose) || pose == TwinPose.stand) {
-    if (type == TwinType.human) return look == TwinLook.calHat ? 0.954 : 0.926;
-    return 0.956;
-  }
-  return type == TwinType.human ? pose.humanFeet! : pose.bearFeet;
-}
+double twinFeetAnchor(TwinType type, TwinLook look, [TwinPose pose = TwinPose.stand]) =>
+    type == TwinType.human ? pose.humanFeet : pose.bearFeet;
 
 /// Centre of the ball in a [TwinPose.holdBall] sprite, as fractions of the
 /// square sprite box (the art is bottom-centred in it), for the glow.
 Offset twinBallCenter(TwinType type) =>
-    type == TwinType.bear ? const Offset(0.436, 0.53) : const Offset(0.42, 0.53);
+    type == TwinType.bear ? const Offset(0.509, 0.606) : const Offset(0.499, 0.672);
+
+/// Radius of that ball, as a fraction of the square sprite box.
+double twinBallRadius(TwinType type) => type == TwinType.bear ? 0.105 : 0.084;
+
+/// The vector crystal-ball glow (design/lottie, `ball_glow`: 2.4 s loop).
+const String ballGlowLottie = 'assets/lottie/ball_glow.json';
 
 /// Plain words for screen readers.
 String twinDescription(TwinType type, TwinLook look) =>
     'Your ${type == TwinType.bear ? 'bear' : 'human'} twin${look == TwinLook.calHat ? ' in the Cal hat' : ''}';
 
 /// Each sprite's 1x size (`size1x` in `assets/twin/manifest.json`), for
-/// layouts that size the painted content itself (the room).
-const Map<String, Size> twinSpriteSize1x = {
-  'assets/twin/bear/base/default.png': Size(180, 180),
-  'assets/twin/bear/base/cal_hat.png': Size(180, 180),
-  'assets/twin/human/base/default.png': Size(180, 180),
-  'assets/twin/human/base/cal_hat.png': Size(180, 180),
-  'assets/twin/accessory/hat/cal.png': Size(180, 180),
-  'assets/twin/bear/pose/stand.png': Size(180, 180),
-  'assets/twin/bear/pose/wave.png': Size(145, 180),
-  'assets/twin/bear/pose/walk_side.png': Size(130, 180),
-  'assets/twin/bear/pose/walk_front.png': Size(142, 180),
-  'assets/twin/bear/pose/walk_back.png': Size(135, 180),
-  'assets/twin/bear/pose/sit.png': Size(155, 180),
-  'assets/twin/bear/pose/jump.png': Size(155, 180),
-  'assets/twin/bear/pose/think.png': Size(122, 180),
-  'assets/twin/bear/pose/stretch.png': Size(132, 180),
-  'assets/twin/bear/pose/sleep.png': Size(180, 113),
-  'assets/twin/bear/pose/eat.png': Size(151, 180),
-  'assets/twin/bear/pose/hold_ball.png': Size(144, 180),
-  'assets/twin/bear/pose/dizzy.png': Size(158, 180),
-  'assets/twin/bear/pose/shrug.png': Size(142, 180),
-  'assets/twin/human/pose/hold_ball.png': Size(128, 180),
-  'assets/twin/human/pose/shrug.png': Size(127, 180),
-  'assets/twin/human/pose/wave.png': Size(124, 180),
-  'assets/twin/human/pose/walk_side.png': Size(124, 180),
-  'assets/twin/human/pose/sit.png': Size(144, 180),
-  'assets/twin/human/pose/jump.png': Size(135, 180),
+/// layouts that size the painted content itself (the room). The `base/`
+/// files are the standing sprites, kept at their old paths.
+final Map<String, Size> twinSpriteSize1x = {
+  for (final t in TwinType.values) ...{
+    for (final look in TwinLook.values)
+      'assets/twin/${t.name}/base/${look.slug}.png': _size(t, TwinPose.stand),
+    for (final p in TwinPose.values) ...{
+      'assets/twin/${t.name}/pose/${p.slug}.png': _size(t, p),
+      'assets/twin/${t.name}/pose_nohat/${p.slug}.png': _size(t, p),
+    },
+  },
+  calHatAsset: const Size(180, 180),
 };
+
+Size _size(TwinType t, TwinPose p) => t == TwinType.bear ? p.bearSize1x : p.humanSize1x;

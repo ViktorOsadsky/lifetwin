@@ -39,6 +39,7 @@ dependencies:
   web_socket_channel: ^3.0.3
   flutter_pcm_sound: ^3.3.3
   http: ^1.6.0
+  lottie: ^3.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -70,11 +71,15 @@ flutter:
     - assets/twin/            # manifest.json
     - assets/twin/bear/base/
     - assets/twin/bear/pose/
+    - assets/twin/bear/pose_nohat/
     - assets/twin/human/base/
     - assets/twin/human/pose/
+    - assets/twin/human/pose_nohat/
     - assets/twin/accessory/hat/
     - assets/scene/
     - assets/scene/room/      # pre-rendered room layers + room_layers.json
+    - assets/lottie/          # design/lottie/out (ball_glow in the fortune ceremony)
+    # assets/twin/svg/ (v2 vector sprites) is kept in the repo for future use and is not bundled.
 
   # SIL Open Font License 1.1; the license texts are in assets/fonts/.
   # Fredoka is a variable font (wght axis), set via fontVariations in lib/ui/theme.dart.
