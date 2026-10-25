@@ -12,21 +12,46 @@ class FakeSpeechOutput implements SpeechOutput {
 
   /// When true, [speak] waits until [finishSpeaking] or [stop].
   bool holdSpeech = false;
+
+  /// When true, the first audio of a line waits for [startAudio] (a slow speech service).
+  bool holdAudio = false;
+
+  /// How many lines started playing audio.
+  int audioStarts = 0;
   Object? speakError;
 
   Completer<void>? _gate;
+  void Function()? _audio;
+
+  /// A line is being spoken now.
+  bool get speaking => !(_gate?.isCompleted ?? true);
 
   @override
   bool get canReplay => spoken.isNotEmpty;
 
   @override
-  Future<void> speak(String text) async {
+  Future<void> speak(String text, {void Function()? onAudio}) async {
     if (speakError != null) throw speakError!;
     spoken.add(text);
+    if (holdAudio) {
+      _audio = onAudio;
+    } else {
+      audioStarts++;
+      onAudio?.call();
+    }
     if (holdSpeech) {
       final g = _gate = Completer<void>();
       await g.future;
     }
+  }
+
+  /// The held line's audio starts now.
+  void startAudio() {
+    final a = _audio;
+    _audio = null;
+    if (a == null) return;
+    audioStarts++;
+    a();
   }
 
   void finishSpeaking() {
@@ -36,6 +61,7 @@ class FakeSpeechOutput implements SpeechOutput {
   @override
   Future<void> stop() async {
     stops++;
+    _audio = null;
     finishSpeaking();
   }
 
@@ -64,6 +90,9 @@ class FakeSpeechInput implements SpeechInput {
   int warmUps = 0;
 
   int starts = 0;
+
+  /// The microphone is open now: started, and not finished, cancelled or dropped since.
+  bool listening = false;
   int finishes = 0;
   int cancels = 0;
   int disposals = 0;
@@ -91,17 +120,22 @@ class FakeSpeechInput implements SpeechInput {
     if (!await hasPermission()) throw const MicDeniedException(); // as the real recorder does
     this.onCaption = onCaption;
     this.onDropped = onDropped;
+    listening = true;
     for (final c in captions) {
       onCaption(c);
     }
   }
 
   /// The connection is lost while listening.
-  void drop([Object error = const VoiceFailure('dropped')]) => onDropped?.call(error);
+  void drop([Object error = const VoiceFailure('dropped')]) {
+    listening = false;
+    onDropped?.call(error);
+  }
 
   @override
   Future<String> finish() async {
     finishes++;
+    listening = false;
     if (finishError != null) throw finishError!;
     return transcript;
   }
@@ -109,11 +143,13 @@ class FakeSpeechInput implements SpeechInput {
   @override
   Future<void> cancel() async {
     cancels++;
+    listening = false;
   }
 
   @override
   Future<void> dispose() async {
     disposals++;
+    listening = false;
   }
 }
 

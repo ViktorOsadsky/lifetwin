@@ -214,6 +214,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       guide: HttpConversationGuide(base: api),
       input: CartesiaSpeechInput(tokens: tokens),
       output: CartesiaSpeechOutput(tokens: tokens),
+      handsFree: true,
     );
   }
 

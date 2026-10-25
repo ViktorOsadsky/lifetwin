@@ -85,7 +85,7 @@ What the `ReadbackAdapter` calls:
 
 | Member | Use |
 |---|---|
-| `CheckinController({guide, input, output, store, reminders, healthSamples, onFinished, clock, voiceUsable})` | `guide: HttpCheckinClient()`, `store: TwinCheckinStore(repo)`, `reminders: repo.reminders`, `healthSamples`: `() => HealthReader().read(now: DateTime.now(), days: 3)` when Apple Health is connected. `onFinished` is optional (e.g. an animation); the store already saved the check-in, so don't pass it to `applyCheckin` again |
+| `CheckinController({guide, input, output, store, reminders, healthSamples, onFinished, clock, voiceUsable, handsFree})` | `guide: HttpCheckinClient()`, `store: TwinCheckinStore(repo)`, `reminders: repo.reminders`, `healthSamples`: `() => HealthReader().read(now: DateTime.now(), days: 3)` when Apple Health is connected. `onFinished` is optional (e.g. an animation); the store already saved the check-in, so don't pass it to `applyCheckin` again. `handsFree: true` (the app, via `CheckInScope.handsFree`) makes voice one continuous session: Mochi speaks first, the mic listens whenever Mochi isn't speaking, quiet never closes it (one nudge at 20 s, recognizer restarted every 50 s); off with VoiceOver, while typing, in an emergency or the care question, and whenever the screen isn't the top route in the foreground (the screen sets `mayListen` and calls `pauseVoice`/`resumeVoice`) |
 | `Future<bool> start({kind = 'quick'})` | false when nothing is due today |
 | `phase` (`CheckinPhase`), `mascotLine`, `caption`, `notice`, `turn.mascotState` | what to show |
 | `startTalk()`, `stopTalk()`, `cancelTalk()`, `listenSecondsLeft` | the Talk button |

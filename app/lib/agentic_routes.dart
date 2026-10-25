@@ -155,6 +155,7 @@ class AgenticRoutes {
         speechInput: v.input,
         speechOutput: v.output,
         voiceUsable: () => v.voiceUsable,
+        handsFree: true,
         healthSamples: healthSamples,
         appearance: look,
         todayPlan: TodayPlanHook(

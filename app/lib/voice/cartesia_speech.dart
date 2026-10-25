@@ -169,20 +169,25 @@ class CartesiaSpeechOutput implements SpeechOutput {
   bool get canReplay => _hasLast;
 
   @override
-  Future<void> speak(String text) async {
+  Future<void> speak(String text, {void Function()? onAudio}) async {
     await stop();
     final id = _contextId = _newContextId();
     try {
-      await _speakOnce(text, id, forceNewToken: false);
+      await _speakOnce(text, id, forceNewToken: false, onAudio: onAudio);
     } on VoiceUnavailableException {
       rethrow;
     } catch (_) {
       if (_contextId != id) return; // stopped meanwhile
-      await _speakOnce(text, id, forceNewToken: true); // re-mint once, then give up
+      await _speakOnce(text, id, forceNewToken: true, onAudio: onAudio); // re-mint once, then give up
     }
   }
 
-  Future<void> _speakOnce(String text, String id, {required bool forceNewToken}) async {
+  Future<void> _speakOnce(
+    String text,
+    String id, {
+    required bool forceNewToken,
+    void Function()? onAudio,
+  }) async {
     final token = await tokens.get(forceNew: forceNewToken);
     final done = Completer<void>();
     _stopped = done;
@@ -214,7 +219,12 @@ class CartesiaSpeechOutput implements SpeechOutput {
               gotAudio = true;
               armSilence();
               audio.add(pcm);
-              if (_contextId == id) await _player.feed(pcm);
+              if (_contextId == id) {
+                final first = onAudio;
+                onAudio = null;
+                first?.call();
+                await _player.feed(pcm);
+              }
             case TtsDone():
               if (!finished.isCompleted) finished.complete();
             case TtsError(:final message):
