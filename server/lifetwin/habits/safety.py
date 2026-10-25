@@ -27,7 +27,7 @@ EATING_CARE = re.compile(
     r"\bpurg\w*|\bthrow(?:ing)? up\b|\bthrew up\b|\bvomit\w*|\bmake myself (?:sick|throw up|vomit)\b|"
     r"\bearn(?:ing)? (?:my |the )?(?:food|meals?|dinner|lunch|dessert|treats?)\b|"
     r"\bburn (?:it |that |them )?off\b|\bmake up for (?:eating|what i ate|food|dinner|lunch)\b|"
-    r"\b(?:lose|losing|drop|dropping) (?:weight|pounds|lbs|kilos|kg)\b|\bweight loss\b|"
+    r"\b(?:lose|losing|drop|dropping|shed|shedding) (?:\d+ |a few |some |the )?(?:weight|pounds|lbs|kilos|kg|stone)\b|\bweight loss\b|"
     r"\bhate (?:my|how my) (?:body|stomach|thighs|belly)\b|\b(?:too|so|look|looking|feel|feeling) fat\b|"
     r"\bbody shape\b|\bbefore and after\b|\bthinner\b|\bskinn(?:y|ier)\b|\bthigh gap\b"
 )
@@ -54,8 +54,8 @@ ALCOHOL = re.compile(
 REPLIES: dict[SafetyKind, str] = {
     "emergency": EMERGENCY_MESSAGE,
     "eating_care": (
-        "Thank you for telling me. I don't make habits about eating less, skipping meals, "
-        "weight, or making up for food. Worries about food or your body are worth talking "
+        "Thank you for telling me. I don't make habits about eating less, skipping meals "
+        "or making up for food. Worries about food or your body are worth talking "
         "over with a doctor or someone you trust. I'm here whenever you'd like a small, "
         "kind habit instead."
     ),

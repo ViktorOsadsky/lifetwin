@@ -1,0 +1,318 @@
+[
+ {
+  "text": "yes",
+  "expected": "done"
+ },
+ {
+  "text": "Yes!",
+  "expected": "done"
+ },
+ {
+  "text": "yeah",
+  "expected": "done"
+ },
+ {
+  "text": "yep",
+  "expected": "done"
+ },
+ {
+  "text": "yup, did it",
+  "expected": "done"
+ },
+ {
+  "text": "I did",
+  "expected": "done"
+ },
+ {
+  "text": "I did it",
+  "expected": "done"
+ },
+ {
+  "text": "Sure did",
+  "expected": "done"
+ },
+ {
+  "text": "done",
+  "expected": "done"
+ },
+ {
+  "text": "of course",
+  "expected": "done"
+ },
+ {
+  "text": "absolutely",
+  "expected": "done"
+ },
+ {
+  "text": "uh huh",
+  "expected": "done"
+ },
+ {
+  "text": "mhm",
+  "expected": "done"
+ },
+ {
+  "text": "yes I managed it",
+  "expected": "done"
+ },
+ {
+  "text": "I got it done",
+  "expected": "done"
+ },
+ {
+  "text": "did it twice",
+  "expected": "done"
+ },
+ {
+  "text": "Yeah I did, how are you?",
+  "expected": "done"
+ },
+ {
+  "text": "yes. yes I did.",
+  "expected": "done"
+ },
+ {
+  "text": "YES",
+  "expected": "done"
+ },
+ {
+  "text": "yes i walked for half an hour",
+  "expected": "done"
+ },
+ {
+  "text": "Yeah, a little walk after lunch",
+  "expected": "done"
+ },
+ {
+  "text": "sort of",
+  "expected": "partly"
+ },
+ {
+  "text": "sorta",
+  "expected": "partly"
+ },
+ {
+  "text": "kind of",
+  "expected": "partly"
+ },
+ {
+  "text": "kinda",
+  "expected": "partly"
+ },
+ {
+  "text": "partly",
+  "expected": "partly"
+ },
+ {
+  "text": "I kind of did it",
+  "expected": "partly"
+ },
+ {
+  "text": "not completely",
+  "expected": "partly"
+ },
+ {
+  "text": "not fully",
+  "expected": "partly"
+ },
+ {
+  "text": "almost",
+  "expected": "partly"
+ },
+ {
+  "text": "nearly",
+  "expected": "partly"
+ },
+ {
+  "text": "yes and no",
+  "expected": "partly"
+ },
+ {
+  "text": "more or less",
+  "expected": "partly"
+ },
+ {
+  "text": "only for a minute",
+  "expected": "partly"
+ },
+ {
+  "text": "I did half",
+  "expected": "partly"
+ },
+ {
+  "text": "halfway",
+  "expected": "partly"
+ },
+ {
+  "text": "just a bit",
+  "expected": "partly"
+ },
+ {
+  "text": "not quite",
+  "expected": "partly"
+ },
+ {
+  "text": "sort of, a shorter one",
+  "expected": "partly"
+ },
+ {
+  "text": "I sort of did it",
+  "expected": "partly"
+ },
+ {
+  "text": "not today",
+  "expected": "not_today"
+ },
+ {
+  "text": "no",
+  "expected": "not_today"
+ },
+ {
+  "text": "nope",
+  "expected": "not_today"
+ },
+ {
+  "text": "nah",
+  "expected": "not_today"
+ },
+ {
+  "text": "not really",
+  "expected": "not_today"
+ },
+ {
+  "text": "I didn't",
+  "expected": "not_today"
+ },
+ {
+  "text": "didn't get to it",
+  "expected": "not_today"
+ },
+ {
+  "text": "I forgot",
+  "expected": "not_today"
+ },
+ {
+  "text": "not yet",
+  "expected": "not_today"
+ },
+ {
+  "text": "no time today",
+  "expected": "not_today"
+ },
+ {
+  "text": "Nah, tomorrow",
+  "expected": "not_today"
+ },
+ {
+  "text": "not this time",
+  "expected": "not_today"
+ },
+ {
+  "text": "I couldn't",
+  "expected": "not_today"
+ },
+ {
+  "text": "no I didn't",
+  "expected": "not_today"
+ },
+ {
+  "text": "not at all",
+  "expected": "not_today"
+ },
+ {
+  "text": "I did not",
+  "expected": "not_today"
+ },
+ {
+  "text": "haven't done it",
+  "expected": "not_today"
+ },
+ {
+  "text": "skip",
+  "expected": "unknown"
+ },
+ {
+  "text": "pass",
+  "expected": "unknown"
+ },
+ {
+  "text": "skip this one",
+  "expected": "unknown"
+ },
+ {
+  "text": "I don't remember",
+  "expected": "unknown"
+ },
+ {
+  "text": "can't remember",
+  "expected": "unknown"
+ },
+ {
+  "text": "not sure",
+  "expected": "unknown"
+ },
+ {
+  "text": "I don't know",
+  "expected": "unknown"
+ },
+ {
+  "text": "no idea",
+  "expected": "unknown"
+ },
+ {
+  "text": "rather not say",
+  "expected": "unknown"
+ },
+ {
+  "text": "no, I did it",
+  "expected": null
+ },
+ {
+  "text": "yes I didn't",
+  "expected": null
+ },
+ {
+  "text": "maybe",
+  "expected": null
+ },
+ {
+  "text": "I think so",
+  "expected": null
+ },
+ {
+  "text": "probably",
+  "expected": null
+ },
+ {
+  "text": "what was my habit again?",
+  "expected": null
+ },
+ {
+  "text": "banana",
+  "expected": null
+ },
+ {
+  "text": "123",
+  "expected": null
+ },
+ {
+  "text": "...",
+  "expected": null
+ },
+ {
+  "text": "the weather was nice",
+  "expected": null
+ },
+ {
+  "text": "I guess",
+  "expected": null
+ },
+ {
+  "text": "perhaps",
+  "expected": null
+ },
+ {
+  "text": "kind of, not really",
+  "expected": null
+ }
+]

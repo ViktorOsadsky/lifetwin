@@ -29,7 +29,8 @@ PARTLY = re.compile(
 )
 NOT_TODAY = re.compile(
     r"\bnot today\b|\bno\b|\bnope\b|\bnah\b|\bnot really\b|\bnot yet\b|"
-    r"\b(?:i )?(?:didn't|did not|haven't|have not|couldn't|could not|wasn't able to)\b|"
+    r"\b(?:i )?(?:didn't|did not|haven't|have not|couldn't|could not|wasn't able to)"
+    r"(?: (?:do|done|get|got|manage|make)(?: it| to it)?)?\b|"
     r"\bforgot\b|\bnot this time\b|\bno time\b|\bnot at all\b|\bmissed it\b|\bskipped it\b|"
     r"\bdidn't get (?:to it|round to it|around to it)\b|\bnext time\b|\btomorrow\b"
 )
