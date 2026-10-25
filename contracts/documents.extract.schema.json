@@ -59,7 +59,8 @@
           "default": "parser",
           "enum": [
             "parser",
-            "muse"
+            "muse",
+            "claude"
           ],
           "title": "Method",
           "type": "string"

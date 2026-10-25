@@ -120,6 +120,8 @@ from lifetwin.onboarding.service import (
     _plain,
     _weight,
 )
+from lifetwin.personalize.providers import Personalizer
+from lifetwin.personalize.service import consented, phrase_care
 
 logger = logging.getLogger(__name__)
 
@@ -494,11 +496,13 @@ class CheckinService:
         self,
         *,
         clock: Callable[[], date] = date.today,
-        care_rewriter: Callable[[str, str], str | None] | None = None,
+        personalizer: Personalizer | None = None,
+        timeout_seconds: float = 6,
     ):
-        # care_rewriter(template, reply) -> reworded text: the plug-in point for a later
-        # Muse/Claude rewording of the care reply. None (the default): templates only.
-        self.care_rewriter = care_rewriter
+        # The shared outside-AI provider, which may reword the care reply only with the
+        # person's consent for it. None (the default): templates only.
+        self.personalizer = personalizer
+        self.timeout = timeout_seconds
         # The habit rotation and spoken dates are read against today; tests fix the day.
         self.clock = clock
 
@@ -552,8 +556,30 @@ class CheckinService:
     # -- turns -------------------------------------------------------------------
 
     def turn(self, request: CheckinTurnRequest) -> CheckinResponse:
+        """Templates only (no outside AI)."""
         response = self._turn(request)
-        before, after = request.state, response.state
+        template = self._care_template(request, response)
+        return self._with_care(response, template) if template else response
+
+    async def aturn(self, request: CheckinTurnRequest) -> CheckinResponse:
+        """The route's turn: with consent for the active provider, the care reply may be
+        reworded. It may only change the words, and the safety phrase must survive, or
+        the template stands."""
+        response = self._turn(request)
+        template = self._care_template(request, response)
+        if not template:
+            return response
+        message = template
+        if consented(request.outside_ai_consent, self.personalizer):
+            reworded = await phrase_care(
+                self.personalizer, template, request.text or "", self.timeout
+            )
+            if reworded and SAFETY_PHRASE in reworded:
+                message = reworded
+        return self._with_care(response, message)
+
+    def _care_template(self, request: CheckinTurnRequest, response: CheckinResponse) -> str | None:
+        before = request.state
         if (
             request.action == "reply"
             and not before.care_line_shown
@@ -562,27 +588,24 @@ class CheckinService:
             and before.current_field == "wellbeing"
             and low_mood(request.text or "")
         ):
-            # Empathy, gentle support, the safety line softly, then one question. Once per
-            # check-in, and the check-in is not paused.
             day = date.fromisoformat(before.local_date) if before.local_date else self.clock()
-            message = care_reply(request.text or "", day.toordinal())
-            if self.care_rewriter:
-                # Hook for a Muse/Claude rewording: it may only change the words, and the
-                # safety phrase must survive, or the template stands.
-                reworded = self.care_rewriter(message, request.text or "")
-                message = reworded if reworded and SAFETY_PHRASE in reworded else message
-            message += " " + CARE_QUESTION
-            events = [e.model_copy(update={"caption": message}) for e in response.mascot_events]
-            response = response.model_copy(
-                update={
-                    "message": message,
-                    "mascot_events": events,
-                    "state": after.model_copy(
-                        update={"care_line_shown": True, "care_question_open": True}
-                    ),
-                }
-            )
-        return response
+            return care_reply(request.text or "", day.toordinal())
+        return None
+
+    def _with_care(self, response: CheckinResponse, care: str) -> CheckinResponse:
+        # Empathy, gentle support, the safety line softly, then one question. Once per
+        # check-in, and the check-in is not paused.
+        message = care + " " + CARE_QUESTION
+        events = [e.model_copy(update={"caption": message}) for e in response.mascot_events]
+        return response.model_copy(
+            update={
+                "message": message,
+                "mascot_events": events,
+                "state": response.state.model_copy(
+                    update={"care_line_shown": True, "care_question_open": True}
+                ),
+            }
+        )
 
     def _turn(self, request: CheckinTurnRequest) -> CheckinResponse:
         state = request.state.model_copy(deep=True)
