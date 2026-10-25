@@ -34,6 +34,36 @@ def assert_subset(actual: object, expected: object, path: str = "response") -> N
         raise AssertionError(f"{path}: differs from the expected fixture")
 
 
+class ClaudeStub:
+    """A fake Anthropic client for ``claude_stub`` cases: a fixed reply, calls counted."""
+
+    def __init__(self, reply: dict):
+        self.messages = self
+        self.calls = 0
+        self._text = json.dumps(reply)
+
+    async def create(self, **_kwargs):
+        from types import SimpleNamespace
+
+        self.calls += 1
+        return SimpleNamespace(
+            stop_reason="end_turn",
+            content=[SimpleNamespace(type="text", text=self._text)],
+            stop_details=None,
+        )
+
+
+def install_claude_stub(app, reply: dict) -> ClaudeStub:
+    """Documents read by a stubbed Claude (in-process replay only; never a live call)."""
+    from lifetwin.documents.pdf import ClaudeDocumentReader
+
+    stub = ClaudeStub(reply)
+    app.state.document_service.pdf_reader = ClaudeDocumentReader(
+        api_key="contract-stub", model="claude-haiku-5-5", client=stub
+    )
+    return stub
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     target = parser.add_mutually_exclusive_group()
@@ -70,6 +100,7 @@ def main() -> None:
                             app_env="test",
                             openai_api_key="",
                             openai_model="",
+                            anthropic_api_key="",
                             tavily_api_key="",
                             cartesia_api_key="",
                             cartesia_voice_id="",
@@ -96,6 +127,14 @@ def main() -> None:
                 checked_requests += 1
             if "response" in case:
                 validators[case["response_schema"]].validate(case["response"])
+            stub = None
+            if "claude_stub" in case and client is not None:
+                if args.base_url:
+                    # A running server has no stub to install; it is never called live.
+                    print(f"SKIP {case['name']} (needs the in-process Claude stub)")
+                    continue
+                original_reader = client.app.state.document_service.pdf_reader
+                stub = install_claude_stub(client.app, case["claude_stub"])
             if client is not None:
                 response = client.request(
                     case["method"],
@@ -116,6 +155,10 @@ def main() -> None:
                     raise SystemExit(f"{case['name']}: response differs from fixture")
                 if "response_subset" in case:
                     assert_subset(response.json(), case["response_subset"], case["name"])
+                if stub is not None:
+                    client.app.state.document_service.pdf_reader = original_reader
+                    if stub.calls != case["claude_stub_calls"]:
+                        raise SystemExit(f"{case['name']}: Claude was called {stub.calls} times")
                 checked_responses += 1
             elif "response" in case:
                 checked_responses += 1

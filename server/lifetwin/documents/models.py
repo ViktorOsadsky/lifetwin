@@ -12,6 +12,10 @@ from lifetwin.core.models import SCHEMA_VERSION, ApiModel
 
 MAX_PAGES = 10
 MAX_PAGE_CHARS = 12000
+# A PDF the person chose to have Claude read (POST /api/documents/read).
+MAX_PDF_BYTES = 10 * 1024 * 1024
+MAX_PDF_PAGES = 20
+MAX_PDF_BASE64_CHARS = 4 * -(-MAX_PDF_BYTES // 3)
 
 # Model inputs use the survival model's own input names; the app maps them onto
 # the profile it confirms (diabetes_diagnosed -> profile "diabetes").
@@ -58,6 +62,15 @@ class DocumentExtractRequest(ApiModel):
     outside_ai_consent: bool | dict[Literal["claude", "muse"], bool] = False
 
 
+class DocumentReadRequest(ApiModel):
+    # The PDF itself, base64 (at most 10 MB decoded and 20 pages). Held in memory for this
+    # request only, and sent to the documents provider only with the yes below.
+    pdf_base64: str = Field(min_length=4, max_length=MAX_PDF_BASE64_CHARS)
+    # The person's yes, for this document, to the documents provider reading the whole PDF:
+    # {"claude": true}. Without it the PDF is sent nowhere.
+    outside_ai_consent: dict[Literal["claude", "muse"], bool] = Field(default_factory=dict)
+
+
 class DocumentCandidate(ApiModel):
     field: DocumentField
     use: Literal["model_input", "information"]
@@ -70,11 +83,13 @@ class DocumentCandidate(ApiModel):
     date_basis: Literal["line", "document"] | None = None
     # The identifier-stripped line the value came from, for the read-back.
     source_text: str = Field(min_length=1, max_length=300)
-    page: int = Field(ge=1, le=MAX_PAGES)
+    # Up to 10 recognised pages, or up to 20 pages of a PDF read by Claude.
+    page: int = Field(ge=1, le=MAX_PDF_PAGES)
     # The heading the line sat under ("Vitals", "Assessment"), if any.
     section: str | None = Field(default=None, max_length=60)
     confidence: Literal["high", "medium", "low"]
-    # parser, or the outside-AI provider that pointed at the line (with consent).
+    # parser, or the outside-AI provider that pointed at the line (with consent). A Claude
+    # candidate's quote was found in the PDF's own text and read again by the parser.
     method: Literal["parser", "muse", "claude"] = "parser"
 
 

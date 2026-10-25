@@ -69,7 +69,8 @@ class ClaudeJSON:
     ):
         self._api_key = api_key.strip()
         self._model = model.strip()
-        self._timeout = max(0.1, min(timeout_seconds, 10.0))
+        # Voice callers pass ~6 s; reading a whole PDF needs up to ~25 s.
+        self._timeout = max(0.1, min(timeout_seconds, 30.0))
         self._max_tokens = max_tokens
         self._client = client
 
@@ -77,8 +78,11 @@ class ClaudeJSON:
     def configured(self) -> bool:
         return bool(self._api_key and self._model)
 
-    def request(self, system: str, user: str, schema: dict) -> dict:
-        """The Messages API arguments (kept separate so tests can check the shape)."""
+    def request(self, system: str, user: str | list[dict], schema: dict) -> dict:
+        """The Messages API arguments (kept separate so tests can check the shape).
+
+        ``user`` is plain text, or content blocks (a PDF ``document`` block, then text).
+        """
         return {
             "model": self._model,
             "max_tokens": self._max_tokens,
@@ -92,7 +96,7 @@ class ClaudeJSON:
             },
         }
 
-    async def complete(self, system: str, user: str, schema: dict) -> str:
+    async def complete(self, system: str, user: str | list[dict], schema: dict) -> str:
         """The reply's JSON text, or ClaudeUnavailable."""
         if not self.configured:
             raise ClaudeUnavailable()

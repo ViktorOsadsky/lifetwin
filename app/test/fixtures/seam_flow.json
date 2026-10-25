@@ -10,7 +10,18 @@
   "prediction": "available",
   "voice": "unavailable",
   "health_data_storage": "none",
-  "documents": "text_extraction",
+  "documents": {
+   "text_extraction": true,
+   "pdf": {
+    "provider": "local",
+    "display_name": null,
+    "company": null,
+    "configured": false,
+    "endpoint": "/api/documents/read",
+    "max_bytes": 10485760,
+    "max_pages": 20
+   }
+  },
   "personalize": {
    "provider": "muse",
    "display_name": "Muse by Meta",
@@ -42,7 +53,18 @@
   "prediction": "available",
   "voice": "unavailable",
   "health_data_storage": "none",
-  "documents": "text_extraction",
+  "documents": {
+   "text_extraction": true,
+   "pdf": {
+    "provider": "muse",
+    "display_name": "Muse by Meta",
+    "company": "Meta",
+    "configured": false,
+    "endpoint": "/api/documents/read",
+    "max_bytes": 10485760,
+    "max_pages": 20
+   }
+  },
   "personalize": {
    "provider": "muse",
    "display_name": "Muse by Meta",
