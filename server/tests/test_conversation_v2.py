@@ -730,7 +730,7 @@ def test_consent_for_another_provider_does_not_count():
 def test_consent_sends_answers_and_their_words_but_never_a_name(caplog):
     lines = lambda facts: {  # noqa: E731
         "lines": [
-            item["approved_wordings"][1] if item["approved_wordings"] else None
+            item["approved_wordings"][1] if item["approved_wordings"] else item["draft"]
             for item in facts["items"]
         ]
     }

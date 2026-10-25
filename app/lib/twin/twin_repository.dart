@@ -528,9 +528,9 @@ class TwinRepository extends ChangeNotifier {
   bool get outsideAiConsent => store.outsideAiConsent;
   String? get outsideAiProvider => store.outsideAiProvider;
 
-  /// Sets the consent for [provider] (`muse` today; the app shows the name from
-  /// `/api/capabilities` `personalize.display_name`).
-  Future<void> setOutsideAiConsent(bool consent, {String provider = 'muse'}) async {
+  /// Sets the consent for [provider], the id from `/api/capabilities` `personalize.provider`
+  /// (`claude` or `muse`). Required: no caller can record a consent for a provider by default.
+  Future<void> setOutsideAiConsent(bool consent, {required String provider}) async {
     await store._saveOutsideAiConsent(consent, provider);
     notifyListeners();
   }

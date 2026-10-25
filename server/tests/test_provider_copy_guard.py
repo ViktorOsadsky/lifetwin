@@ -75,6 +75,7 @@ def client(provider=None):
         app.state.personalizer = provider
         app.state.conversation_service.personalizer = provider
         app.state.coach_phraser = provider
+        app.state.checkin_service.personalizer = provider
     return TestClient(app)
 
 
@@ -313,3 +314,61 @@ def test_length_limit_keeps_whole_drafts_without_truncating_actions():
     assert wording_choices(draft) == (draft,)
     assert grounded_line(draft, wording_choices(draft)) == draft
     assert grounded_line(draft + " There's no rush.", wording_choices(draft)) is None
+
+
+def wellbeing_state(c):
+    state = c.post("/api/checkin/start", json={"kind": "daily"}).json()["state"]
+    for _ in range(10):
+        if state["current_field"] == "wellbeing":
+            return state
+        state = c.post("/api/checkin/turn", json={"action": "skip", "state": state}).json()["state"]
+    raise AssertionError("did not reach wellbeing")
+
+
+@pytest.mark.parametrize("provider_name", ["muse", "claude"])
+@pytest.mark.parametrize("attack", ATTACKS)
+def test_care_endpoint_rejects_added_claims_even_when_full_safety_line_survives(
+    provider_name, attack
+):
+    provider = Provider(lambda facts: attack + " " + facts["line"])
+    provider.name = provider_name
+    c = client(provider)
+    state = wellbeing_state(c)
+    body = {"action": "reply", "state": state, "text": "awful"}
+    baseline = c.post("/api/checkin/turn", json=body).json()
+    out = c.post(
+        "/api/checkin/turn", json={**body, "outside_ai_consent": {provider_name: True}}
+    ).json()
+    assert provider.calls == 1
+    assert out == baseline
+    assert out["message"].count("911") == 1
+
+
+@pytest.mark.parametrize("provider_name", ["muse", "claude"])
+@pytest.mark.parametrize("index", [0, 1])
+def test_care_endpoint_can_select_bounded_variants_without_changing_safety_or_state(
+    provider_name, index
+):
+    selected = []
+
+    def choose(facts):
+        selected.append(facts["approved_wordings"][index])
+        return selected[-1]
+
+    provider = Provider(choose)
+    provider.name = provider_name
+    c = client(provider)
+    state = wellbeing_state(c)
+    body = {"action": "reply", "state": state, "text": "awful"}
+    baseline = c.post("/api/checkin/turn", json=body).json()
+    out = c.post(
+        "/api/checkin/turn", json={**body, "outside_ai_consent": {provider_name: True}}
+    ).json()
+    assert provider.calls == 1
+    assert out["message"].startswith(selected[0])
+    assert out["message"].count("911") == 1
+    assert {k: v for k, v in out.items() if k not in {"message", "mascot_events"}} == {
+        k: v for k, v in baseline.items() if k not in {"message", "mascot_events"}
+    }
+    original_safety_tail = selected[0].split("If ", 1)[-1]
+    assert original_safety_tail in baseline["message"]

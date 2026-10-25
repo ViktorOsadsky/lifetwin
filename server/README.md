@@ -65,7 +65,9 @@ For onboarding questions and recommendations (including intake-completion sugges
 
 Recommendation drafts derived from free-text habit notes have no provider choices and retain their existing deterministic wording; when all drafts are ineligible no provider call is made. Question choices use the plain server question, excluding the free-text steering lead. Profile/notes cannot add choices, and provider replies cannot redefine them. This does not clinically validate templates or change existing note-slot rendering. Coach plans retain their separate draft/keep-word check; this bounded choice rule does not certify arbitrary Coach prose. `phrased_by` retains its existing meaning (which wording source was used). See the [#124 handoff](../docs/design/provider-copy-guard-handoff.md) for coverage and limits.
 
-`PERSONALIZE_PROVIDER=muse` (default) reuses `LLM_API_KEY`/`LLM_MODEL`/`LLM_BASE_URL`; `claude` is a placeholder that reports unconfigured until built. `/api/capabilities` returns `personalize: {provider, display_name, company, configured}`; app consent text must use `display_name` ("Muse by Meta"), and consent for one provider never covers another. Payloads hold answers and habit notes, never a name or contact details, and are never logged.
+The optional check-in care reply also selects complete server templates, with at most a neutral “I'm here with you.” prefix. Its final safety sentence stays unchanged; the caller's safety check remains in force. The reflected mood is a fixed phrase selected by the server, never the user's raw prose.
+
+`PERSONALIZE_PROVIDER` selects `claude` or `muse`; blank selects Claude when `ANTHROPIC_API_KEY` is configured, otherwise Muse. Claude uses `CLAUDE_MODEL` (default `claude-haiku-5-5`); Muse reuses `LLM_API_KEY`/`LLM_MODEL`/`LLM_BASE_URL`. `/api/capabilities` returns `personalize: {provider, display_name, company, configured}`; app consent text must use the active `display_name` ("Claude by Anthropic" or "Muse by Meta"), and consent for one provider never covers another. Payloads hold answers and habit notes, never a name or contact details, and are never logged.
 
 Get a keyless plan:
 
@@ -82,7 +84,8 @@ Quiz answer metadata is intentionally public because scoring runs immediately on
 - `OPENAI_API_KEY` and `OPENAI_MODEL`: both must be explicitly configured for the HTTPX Responses structured-extraction adapter. Before sending a turn to it, the caller must set `provider_consent: true`; otherwise guided mode continues. No model ID is guessed. Refused, invalid, ambiguous, incomplete and timed-out provider results fall back to clarification/guided mode. See [official Structured Outputs documentation](https://developers.openai.com/api/docs/guides/structured-outputs).
 - `TAVILY_API_KEY`: used only when `use_web_research: true`. The adapter sends fixed topic queries, not profiles/transcripts, and retrieves only reviewed authority URLs. At most three searches and five extraction URLs, with request/overall deadlines and bounded response sizes. Blank key returns labeled curated/unconfigured research without a network call.
 - `MODEL_ARTIFACT_PATH`: folder with the survival model files; blank means the repository root. Missing files keep `/api/predict` at 501.
-- `PERSONALIZE_PROVIDER`: `muse` (default, owner ruling: on) or `claude` (later, by config). Outside-AI wording is used only on turns that carry the person's consent for that provider.
+- `PERSONALIZE_PROVIDER`: `claude` or `muse`. Blank picks `claude` when `ANTHROPIC_API_KEY` is set (owner ruling 2026-10-24: switch to Claude Haiku), else `muse`. Outside-AI wording is used only on turns that carry the person's consent for that provider (`outside_ai_consent: {"claude": true}`; a Muse consent never carries over). The check-in care reply may be reworded the same way (`outside_ai_consent` on `/api/checkin/turn`), and the safety sentence must survive or the template stands.
+- `ANTHROPIC_API_KEY`, `CLAUDE_MODEL` (default `claude-haiku-5-5`): Claude by Anthropic through the official `anthropic` SDK (`lifetwin/core/claude.py`). Structured outputs (JSON schema), thinking off at effort `low`, short `max_tokens`, a cached system prompt, one attempt within 6 s. A refusal, a cut-off reply, any API error or a timeout falls back silently to the templates or the local parser; only the error type is logged. `LLM_ALLOW_CONTRIBUTOR` does not apply to Claude.
 - `ONBOARDING_DEMO`: `1` shortens the onboarding demo to one habit follow-up. The memory question, the Apple Health offer after age, sex and smoking, and the question order are unchanged. Default off. Estimated spoken time of the demo path with Apple Health: about 138 s (150 s with three follow-ups); most of the rest is the read-backs and the opening and closing lines.
 
 Live provider access has **not** been exercised; all provider tests use doubles/mock transports. The implemented advisor is curated, not an LLM-personalized planning agent. Cartesia voice is implemented as token minting only. These distinctions are returned in API modes/capabilities.
@@ -113,13 +116,13 @@ Select the extraction provider with environment variables (all blank by default;
 
 | Variable | Meaning |
 | --- | --- |
-| `LLM_PROVIDER` | `openai` (default; uses `OPENAI_API_KEY`/`OPENAI_MODEL` exactly as before) or `chat_completions`. |
+| `LLM_PROVIDER` | `anthropic` (Claude; `ANTHROPIC_API_KEY`/`CLAUDE_MODEL`), `chat_completions` (Muse), or `openai` (uses `OPENAI_API_KEY`/`OPENAI_MODEL` exactly as before). Blank: `anthropic` when `ANTHROPIC_API_KEY` is set, else `openai`. |
 | `LLM_BASE_URL` | Chat Completions base URL; defaults to `https://api.meta.ai/v1` when `chat_completions`. Requests go to `{base}/chat/completions`. |
 | `LLM_MODEL` | Model ID, required. |
 | `LLM_ALLOW_CONTRIBUTOR` | `false` (default). A `-contributor` model ID (e.g. `muse-spark-1.3-contributor`, cheaper; Meta may train on content) is refused unless this is `true`. `/api/capabilities` then reports `may_train_on_content: true` in `personalize` and `coach.personalize`; the app's consent screens must disclose it. |
 | `LLM_API_KEY` | Bearer key, required; kept server-side and never logged or returned. |
 | `LLM_REASONING_EFFORT` | `minimal` (default), `low`, `medium`, `high`, or blank to omit. Reasoning models such as Muse otherwise spend the whole token budget thinking and return no answer (observed live). |
-| `DOCUMENT_MUSE_ENABLED` | `true` (default, owner ruling). With `chat_completions` configured, Muse may read identifier-stripped document text, only for requests with `outside_ai_consent: true`. Set `false` to disable. |
+| `DOCUMENT_MUSE_ENABLED` | `true` (default, owner ruling). With `chat_completions` or `anthropic` configured, that provider may read identifier-stripped document text (the words only, never the photo), only for requests whose `outside_ai_consent` names it: `{"claude": true}` or `{"muse": true}`. A bare `true` (older app, asked naming Muse) covers Muse only. Set `false` to disable. |
 
 Muse example (supply your own key):
 
@@ -130,7 +133,7 @@ LLM_MODEL=muse-spark-1.3
 LLM_API_KEY=...
 ```
 
-`ChatCompletionsExtractor` sends a system instruction plus the user's reply with `response_format` `json_schema` ([Meta structured output docs](https://dev.meta.ai/docs/structured-output)), then validates the reply strictly against `ExtractionResult` and applies the same grounding rules (exact quote, asked field) as every provider. HTTP errors, timeouts, non-JSON, refusals, truncated or schema-invalid output all fall back to guided clarification with no value filled. `/api/capabilities` `llm_configured` reflects the selected provider. Claude can be added later through its own adapter or an OpenAI-compatible endpoint by changing these variables.
+`ChatCompletionsExtractor` sends a system instruction plus the user's reply with `response_format` `json_schema` ([Meta structured output docs](https://dev.meta.ai/docs/structured-output)), then validates the reply strictly against `ExtractionResult` and applies the same grounding rules (exact quote, asked field) as every provider. HTTP errors, timeouts, non-JSON, refusals, truncated or schema-invalid output all fall back to guided clarification with no value filled. `/api/capabilities` `llm_configured` reflects the selected provider. `AnthropicExtractor` supplies the Claude path with the same local candidate grounding; select it with `LLM_PROVIDER=anthropic`.
 
 Privacy: when `provider_consent` is true, the user's typed or transcribed reply text is sent to the configured provider. Collecting consent and explaining this is the app's job. Meta's `-contributor` model variants are cheaper because content "may be used to train future Meta models" ([models](https://dev.meta.ai/docs/models)); they are refused unless `LLM_ALLOW_CONTRIBUTOR=true`, and the consent copy must then say so (see `may_train_on_content` in capabilities).
 

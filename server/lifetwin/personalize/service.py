@@ -22,13 +22,18 @@ RULES = (
 SUGGESTIONS = RULES + (
     "Select one complete entry from each item's approved_wordings, verbatim. "
     "These are the only permitted lines: do not add, combine, omit or rewrite words. "
-    "For an item with no approved_wordings return null; its template stays unchanged. "
-    'Reply with JSON: {"lines": [one selected string or null per item, in order]}.'
+    "For an item with no approved_wordings copy its draft unchanged; the server will keep its template. "
+    'Reply with JSON: {"lines": [one selected string per item, in order]}.'
 )
 QUESTION = RULES + (
     "Select one complete entry from approved_wordings, verbatim. "
     "Do not add, combine, omit or rewrite words, even to echo the person's words. "
     'Reply with JSON: {"line": "one selected question"}.'
+)
+CARE = RULES + (
+    "Select one complete entry from approved_wordings, verbatim. "
+    "Keep its full care reply and final safety sentence; no rewriting or extra words. "
+    'Reply with JSON: {"line": "one selected care reply"}.'
 )
 
 
@@ -112,3 +117,20 @@ async def phrase_question(
     text = reply.get("line") if isinstance(reply, dict) else None
     canonical = grounded_line(text, choices, max_length=200)
     return canonical if canonical is not None and canonical.endswith("?") else None
+
+
+async def phrase_care(
+    personalizer: Personalizer, line: str, said: str, timeout: float = 6
+) -> str | None:
+    """Select a whole care template, preserving its final safety sentence."""
+    choices = wording_choices(line, care=True)
+    if not choices:
+        return None
+    facts = {"line": line, "said": said, "approved_wordings": list(choices)}
+    try:
+        async with asyncio.timeout(timeout):
+            reply = await personalizer.phrase(CARE, facts)
+    except (PhrasingUnavailable, TimeoutError):
+        return None
+    text = reply.get("line") if isinstance(reply, dict) else None
+    return grounded_line(text, choices)

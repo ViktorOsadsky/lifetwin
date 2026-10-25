@@ -11,7 +11,7 @@ from collections.abc import Sequence
 
 
 def wording_choices(
-    draft: str, *, question: bool = False, max_length: int = 400
+    draft: str, *, question: bool = False, care: bool = False, max_length: int = 400
 ) -> tuple[str, ...]:
     """Keep the whole trusted draft; vary only reviewed, neutral encouragement.
 
@@ -21,7 +21,10 @@ def wording_choices(
     """
     if not draft or draft != draft.strip() or "\n" in draft or "\r" in draft:
         return ()
-    if question:
+    if care:
+        # A prefix leaves the complete safety sentence at the end unchanged.
+        candidates = (draft, f"I'm here with you. {draft}")
+    elif question:
         candidates = (draft, f"Take your time. {draft}", f"When you're ready: {draft}")
     else:
         candidates = (draft, f"{draft} We can go at your pace.", f"{draft} There's no rush.")
