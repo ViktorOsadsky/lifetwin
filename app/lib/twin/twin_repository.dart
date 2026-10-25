@@ -8,6 +8,7 @@ import '../checkin/checkin_models.dart' show CheckinSettings, DayLog, shiftDay;
 import '../checkin/checkin_reminders.dart' show CheckinReminders;
 import '../checkin/checkin_store.dart' show mergeDayLogs;
 import '../checkin/daily_logs.dart' show weekProgress;
+import '../documents/document_extract.dart' show DocumentCandidate;
 import 'checkin_applier.dart';
 import 'history_log.dart';
 import 'profile_mapping.dart' show toModelProfile;
@@ -92,6 +93,36 @@ class TwinRepository extends ChangeNotifier {
 
   /// The confirmed profile on the phone.
   Map<String, dynamic> get profile => store.profile;
+
+  /// The health score: the model's `log_relative_hazard_score` as is (lower is lower
+  /// modelled risk, 0 is the average survey participant; includes age and sex). Null
+  /// unless the model gave a number; see [healthScoreStatus].
+  double? get healthScore => _current?.healthScore;
+
+  /// Healthier than this share (0–100) of people like you in the survey (same sex, nearby
+  /// ages); see [TwinAssessment.ageGroupPercentile]. Null when there is no score.
+  double? get ageGroupPercentile => _current?.ageGroupPercentile;
+  int? get ageGroupSize => _current?.ageGroupSize;
+  String? get ageGroupBand => _current?.ageGroupBand;
+  int? get ageGroupWidth => _current?.ageGroupWidth;
+  bool? get ageGroupNearestBand => _current?.ageGroupNearestBand;
+
+  /// Why [healthScore] has or lacks a number; null before a profile.
+  HealthScoreStatus? get healthScoreStatus => _current?.healthScoreStatus;
+
+  /// The model's message when there is no number (null otherwise).
+  String? get healthScoreMessage => _current?.message;
+
+  /// The score history between [from] and [to] (local dates, inclusive; open-ended when
+  /// null), oldest first. Appended whenever an assessment is made after a Mochi
+  /// conversation, a check-in that feeds the forecast, a day correction or an import.
+  List<HealthScorePoint> healthScoreHistory({DateTime? from, DateTime? to}) {
+    final lo = from == null ? null : isoDate(from), hi = to == null ? null : isoDate(to);
+    return [
+      for (final p in store.healthScorePoints)
+        if ((lo == null || p.date.compareTo(lo) >= 0) && (hi == null || p.date.compareTo(hi) <= 0)) p,
+    ];
+  }
 
   /// The package's guidance cards for the current assessment, with `source_url`.
   List<WellnessCard> get wellnessCards => _current?.wellnessCards ?? const [];
@@ -221,6 +252,7 @@ class TwinRepository extends ChangeNotifier {
     await _recordReading({for (final k in merge.changed) k: merge.profile[k]}, fallback);
     final a = assess(null, modelInputs);
     _current = a;
+    await _recordHealthScore(a);
     notifyListeners();
     return a;
   });
@@ -249,6 +281,7 @@ class TwinRepository extends ChangeNotifier {
                 HistoryItem(field: e.key, value: e.value, source: source, estimated: estimated || band),
           ],
         );
+        if (_current != null) await _recordHealthScore(_current!);
         notifyListeners();
       });
 
@@ -345,7 +378,11 @@ class TwinRepository extends ChangeNotifier {
       // A weekly answer is a fresh measurement even when unchanged; a refused value is not one.
       await _recordReading(record.answers, HistorySource.said);
     }
-    _refresh();
+    final a = _refresh();
+    // Only a check-in that feeds the forecast (day rows, a weekly summary, a profile change).
+    if (outcome.dayLogParts.isNotEmpty || outcome.weeklySummary != null || outcome.changedFields.isNotEmpty) {
+      await _recordHealthScore(a);
+    }
     return outcome;
   });
 
@@ -392,7 +429,7 @@ class TwinRepository extends ChangeNotifier {
       corrects: original.$1.id,
     );
     if (logInput) {
-      _refresh();
+      await _recordHealthScore(_refresh());
     } else {
       notifyListeners();
     }
@@ -502,8 +539,16 @@ class TwinRepository extends ChangeNotifier {
     ];
   }
 
-  /// Confirmed blood pressure readings over time, oldest first: information for the
-  /// person and the coach, never a model input.
+  /// Confirmed readings over time, oldest first: information for the person and the coach,
+  /// never a model, forecast or health score input. They are the `reading` entries of
+  /// [history], and their items are:
+  /// - `systolic_bp`, `diastolic_bp` (mmHg, whole numbers) from weekly check-ins, Mochi
+  ///   changes and documents;
+  /// - `hba1c` (%, 3-20) and `ldl_cholesterol` (mg/dL, 20-400), from documents only.
+  ///
+  /// Date: an item's `date` is the document's own date (YYYY-MM-DD) when it had one; a
+  /// check-in reading has no item date. Otherwise the entry's `at` is the confirmation time
+  /// and, for a document, [HistoryEntry.dateNotOnDocument] is true.
   List<HistoryEntry> readings() => [
     for (final e in history().reversed)
       if (e.kind == HistoryKind.reading) e,
@@ -584,6 +629,19 @@ class TwinRepository extends ChangeNotifier {
     return entry;
   }
 
+  /// Appends the score the model gave for [a] (also when it gave none, with its status).
+  Future<void> _recordHealthScore(TwinAssessment a) => store._addHealthScore(
+    HealthScorePoint(
+      at: _clock(),
+      score: a.healthScore,
+      status: a.healthScoreStatus,
+      ageGroupPercentile: a.ageGroupPercentile,
+      ageGroupSize: a.ageGroupSize,
+      ageGroupBand: a.ageGroupBand,
+      modelVersion: a.modelVersion.isEmpty ? model.modelVersion : a.modelVersion,
+    ),
+  );
+
   /// A confirmed blood pressure reading in [values] becomes its own dated entry, with
   /// only the numbers that pass the profile's checks.
   Future<void> _recordReading(Map<String, dynamic> values, String source) async {
@@ -596,6 +654,47 @@ class TwinRepository extends ChangeNotifier {
             HistoryItem(field: f, value: values[f], source: source),
       ],
     );
+  }
+
+  /// The blood pressure, A1c and LDL values the person kept ("Keep") from a document,
+  /// each its own `reading` entry item with its unit and the document's date (none when
+  /// the document had none). Values outside the plausible range are dropped, never clamped.
+  /// History only: nothing here reaches the profile, the forecast or the health score.
+  Future<void> recordDocumentReadings(Iterable<DocumentCandidate> kept) => _atomically(() async {
+    for (final c in kept) {
+      final items = _documentReadingItems(c);
+      if (items.isEmpty) continue;
+      await _record(kind: HistoryKind.reading, source: HistorySource.document, items: items);
+    }
+    notifyListeners();
+  });
+
+  List<HistoryItem> _documentReadingItems(DocumentCandidate c) {
+    final date = c.date == null ? null : isoDate(c.date!);
+    HistoryItem item(String f, Object v) =>
+        HistoryItem(field: f, value: v, source: HistorySource.document, date: date);
+    final v = c.value;
+    switch (c.field) {
+      case 'blood_pressure':
+        final m = v is String ? RegExp(r'^(\d{2,3})/(\d{2,3})$').firstMatch(v) : null;
+        if (m == null) return const [];
+        final sys = int.parse(m.group(1)!), dia = int.parse(m.group(2)!);
+        return [
+          if (profileSchema['systolic_bp']!(sys)) item('systolic_bp', sys),
+          if (profileSchema['diastolic_bp']!(dia)) item('diastolic_bp', dia),
+        ];
+      case 'hba1c':
+        if (v is! num || (c.unit != null && c.unit != '%') || !readingSchema['hba1c']!(v)) return const [];
+        return [item('hba1c', v)];
+      case 'ldl_cholesterol':
+        if (v is! num) return const [];
+        // mmol/L is converted; the stored unit is always mg/dL.
+        final mg = c.unit == 'mmol/L' ? (v * 38.67).roundToDouble() : v;
+        if (!readingSchema['ldl_cholesterol']!(mg)) return const [];
+        return [item('ldl_cholesterol', mg)];
+      default:
+        return const [];
+    }
   }
 
   /// One write per event (see `TwinStore._transaction`); if it fails, memory and the

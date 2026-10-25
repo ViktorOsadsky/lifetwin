@@ -87,7 +87,7 @@ void main() {
     expect(curve.curve, hasLength(6)); // now, then years 1-5
     expect(
       find.bySemanticsLabel(
-        'Out of 100 people with answers like yours: about 99 after 1 year, about 97 after 2 years, '
+        'Modeled survival of similar people. Out of 100 people with answers like yours: about 99 after 1 year, about 97 after 2 years, '
         'about 95 after 3 years, about 93 after 4 years, about 91 after 5 years.',
       ),
       findsOneWidget,
@@ -221,7 +221,7 @@ void main() {
     expect(twinAsset(TwinType.bear, TwinLook.calHat, TwinPose.shrug), 'assets/twin/bear/pose/shrug.png');
     expect(twinAsset(TwinType.bear, TwinLook.plain, TwinPose.holdBall), 'assets/twin/bear/pose_nohat/hold_ball.png');
     expect(twinAsset(TwinType.human, TwinLook.plain, TwinPose.shrug), 'assets/twin/human/pose_nohat/shrug.png');
-    expect(twinFeetAnchor(TwinType.human, TwinLook.calHat, TwinPose.shrug), 0.9649);
-    expect(twinFeetAnchor(TwinType.human, TwinLook.plain, TwinPose.sleep), 0.9668);
+    expect(twinFeetAnchor(TwinType.human, TwinLook.calHat, TwinPose.shrug), 0.9694);
+    expect(twinFeetAnchor(TwinType.human, TwinLook.plain, TwinPose.sleep), 0.9459);
   });
 }
