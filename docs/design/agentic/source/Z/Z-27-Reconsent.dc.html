@@ -1,6 +1,7 @@
 <!doctype html>
 <!-- LifeTwin agentic screens (prefix Z), v1. Tokens and components match V and X. Twin sprites: sprites/v2, one scale per character (stand pose = 196px), feet on one baseline. -->
 <!-- Flutter: the page is a scroll view with the dock AND back/close pinned (never inside the scroll view); scroll content gets bottom padding = dock height + 16. Sections are flow layout with min-heights, never fixed heights, so 200% text grows. Only the plate window has a fixed height; the twin sits in a fixed 200px box. -->
+<!-- Training disclosure: shown ONLY when GET /api/capabilities -> personalize.may_train_on_content is true (Muse contributor mode). Never hard-coded on: the line is absent when the flag is false. The company name is bound to the provider (personalize.company, ASSUMED field; falls back to the part of personalize.display_name after "by"): "Meta" today. It sits directly above the Yes / No pair (not behind "What&#8217;s sent?"); No keeps equal weight. -->
 <!-- Outside AI: provider name is DYNAMIC from GET /api/capabilities -> personalize.display_name ("Muse by Meta" today, "Claude by Anthropic" later, with no copy change); never hard-code it. outside_ai_consent is stored on the phone, keyed by provider id ({"muse": true}), and sent with each request; the server keeps nothing. Delete my data clears it. (Storage location assumed; confirm with engine.) A provider switch asks again (Z-27). Nothing is sent before a yes. This consent is its own screen and its own yes (it includes health answers and Apple Health numbers), never bundled with the Apple Health or notification permissions. Shown once, right before the first personal suggestion; never inside onboarding. Yes and No are the same size, style and weight; nothing is pre-selected. -->
 <!-- TBD: provider terms. Retention and training wording is verified before launch (no provider account chosen yet). -->
 <!-- Full sentence behind "What's sent?": everything you tell Mochi, including health answers and Apple Health numbers, and your conversation notes. Never your name or contact details. -->
@@ -84,6 +85,9 @@ body{margin:0}
 .rg{display:inline-flex;align-items:center;gap:6px;min-height:48px;height:48px;padding:0 16px;border-radius:24px;border:2px solid #8C6B5D;background:#FFF6DD;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
 p{overflow-wrap:break-word}
 h1,h2{margin:0}
+.medal{flex:none;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#9FD9C3;border:2px solid #7A5B4E;outline:1px solid rgba(226,179,87,.8);outline-offset:-8px;box-shadow:inset 0 -4px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);color:#4A2F25}
+.medal b{font-family:Fredoka,system-ui,sans-serif;font-weight:600;line-height:1;letter-spacing:-.01em}
+.medal span{font-weight:700;line-height:1.1}
 </style>
 </helmet>
 <div class="scr g-mint" style="height: 844px">
@@ -101,7 +105,7 @@ h1,h2{margin:0}
 <p style="margin: 6px 0 0; font-size: 18px; line-height: 1.35; color: #6B4E42">Same things are sent.</p><div><button class="btn link" style="gap: 6px; padding: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01" stroke-width="3"/></svg><span>What&#8217;s sent?</span></button></div>
 <div class="terms-slot" style="min-height: 0"></div><!-- Terms line slot: reserved here, rendered only once the provider terms are verified. TBD before launch: provider retention/training terms (one short line here, e.g. "{provider} keeps / doesn't keep what you send; uses / doesn't use it for training") -->
 <div style="height: 12px"></div>
-<div style="display: flex; gap: 10px"><button class="btn lip-cream fd" style="flex: 1; min-height: 64px; border-radius: 32px; font-size: 22px">No thanks</button><button class="btn lip-cream fd" style="flex: 1; min-height: 64px; border-radius: 32px; font-size: 22px">Yes, that&#8217;s OK</button></div>
+<!-- if personalize.may_train_on_content --><p style="margin: 0px 0 10px; display: flex; gap: 10px; align-items: flex-start; font-size: 18px; line-height: 1.3; font-weight: 700"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01" stroke-width="3"/></svg><span><span data-bind="personalize.company">Meta</span> may use what you share to improve its AI.</span></p><div style="display: flex; gap: 10px"><button class="btn lip-cream fd" style="flex: 1; min-height: 64px; border-radius: 32px; font-size: 22px">No thanks</button><button class="btn lip-cream fd" style="flex: 1; min-height: 64px; border-radius: 32px; font-size: 22px">Yes, that&#8217;s OK</button></div>
 <p class="sub" style="text-align: center; margin-top: 10px">No thanks? You&#8217;ll still get built-in tips.</p>
 </section>
 </div>
