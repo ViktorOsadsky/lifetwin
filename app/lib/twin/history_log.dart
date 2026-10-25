@@ -3,7 +3,7 @@
 /// appended as it happens and never edited. Read it with `TwinRepository.history()`.
 library;
 
-import 'twin_model.dart' show HealthScoreStatus, isoDate;
+import 'twin_model.dart' show HealthScoreStatus, healthScoreFromRaw, isoDate;
 
 /// Entry kinds.
 abstract final class HistoryKind {
@@ -33,10 +33,13 @@ abstract final class HistoryKind {
 /// One point of the health score's trend: the score the model gave after an event that
 /// changed its inputs. Appended on the phone, never edited. [score] is null when the model
 /// gave no number ([status] says why).
+///
+/// Stored as the model's raw `log_relative_hazard_score` (JSON key `score`, unchanged, so
+/// existing history stays valid); [score] is computed on read, higher is better.
 class HealthScorePoint {
   const HealthScorePoint({
     required this.at,
-    required this.score,
+    required this.rawLogRelativeHazard,
     required this.status,
     required this.modelVersion,
     this.ageGroupPercentile,
@@ -46,7 +49,7 @@ class HealthScorePoint {
 
   factory HealthScorePoint.fromJson(Map<String, dynamic> j) => HealthScorePoint(
     at: DateTime.tryParse('${j['at']}') ?? DateTime.fromMillisecondsSinceEpoch(0),
-    score: (j['score'] as num?)?.toDouble(),
+    rawLogRelativeHazard: (j['score'] as num?)?.toDouble(),
     status: HealthScoreStatus.fromWire(j['status']),
     modelVersion: '${j['model_version'] ?? ''}',
     ageGroupPercentile: (j['age_group_percentile'] as num?)?.toDouble(),
@@ -55,7 +58,12 @@ class HealthScorePoint {
   );
 
   final DateTime at;
-  final double? score;
+
+  /// The model's own number as stored (lower is lower modelled risk).
+  final double? rawLogRelativeHazard;
+
+  /// The displayed health score: higher is better (see [healthScoreFromRaw]).
+  double? get score => healthScoreFromRaw(rawLogRelativeHazard);
   final HealthScoreStatus status;
   final String modelVersion;
 
@@ -70,7 +78,7 @@ class HealthScorePoint {
   Map<String, dynamic> toJson() => {
     'at': at.toIso8601String(),
     'date': date,
-    'score': score,
+    'score': rawLogRelativeHazard,
     'status': status.wire,
     'model_version': modelVersion,
     if (ageGroupPercentile != null) 'age_group_percentile': ageGroupPercentile,

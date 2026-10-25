@@ -80,7 +80,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('\u22120.4'), findsOneWidget);
+    expect(find.text('\u22120.42'), findsOneWidget);
     expect(find.text(HomeWellnessPanel.tagline), findsOneWidget);
     expect(find.text('Healthier than 62 of 100 people your age'), findsOneWidget);
     expect(find.text(RoughGuideBadge.label), findsOneWidget);
@@ -102,7 +102,7 @@ void main() {
       scale: 1.6,
     );
     expect(find.text(HomeWellnessPanel.tagline), findsNothing);
-    expect(find.text('+0.3'), findsOneWidget);
+    expect(find.text('+0.30'), findsOneWidget);
     expect(find.text(RoughGuideBadge.label), findsNothing);
     await phone(
       t,
@@ -113,7 +113,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('+0.3'), findsNothing);
+    expect(find.text('+0.30'), findsNothing);
     expect(find.text(HomeWellnessPanel.underAgeLine), findsOneWidget);
     expect(find.text('See your estimate'), findsNothing);
     expect(t.takeException(), isNull);

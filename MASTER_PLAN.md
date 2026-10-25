@@ -25,6 +25,10 @@ New explicit user decisions take precedence. Otherwise this guide resolves the d
 | Recommendations | A daily health-planning agent is the target: incorporate confirmed updates and feedback, research feasible actions, and revise a short daily schedule with reasons. Model sensitivity is one input; reminders and score calculations alone do not fulfill this requirement. Supplement discovery remains optional and unmodeled. |
 | Delivery | Short branches, PRs, then merges to `main`. Direct pushes to `main` are superseded by the user's PR requirement. |
 
+**Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [docs/lifespan-estimate.md](docs/lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else. This covers the "No exact death year … life-expectancy" limit in the Longevity output row above. Daniel, after talking to Viktor in person:
+
+> "We should extrapolate an expected death year or date, but then it basically goes away as we focus on relative health score. It doesn't matter how accurate it is for this, as it will never be truly accurate if we extrapolate. it is more of a proof of concept. Age bands should be extrapolated and adjusted. [...] He [Viktor] is okay with the extrapolation. We don't really need beyond five years."
+
 See [the prospective tech stack](docs/tech-stack.md) for package/provider defaults and pending upload/planner choices; use the voice guide for the implemented Cartesia path. See [the PRD reconciliation](docs/prd-reconciliation.md) for updates to the original spec.
 
 ## Current repository state

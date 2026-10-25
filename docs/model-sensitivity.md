@@ -286,6 +286,7 @@ Show the result as "Modeled difference between profiles", never as years gained.
 
 - **Observational, not causal.** These are differences between modeled profiles of NHANES survey participants, including any confounding and reverse causation in the data. They are not the effect of an intervention (`causal_interpretation: false`).
 - **5-year horizon only.** Effects at years 1–4 are smaller; for any one person the lever ordering is the same at every horizon. Nothing here extends beyond 5 years, and no result may be turned into life expectancy, a death date or "years gained".
+  - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [lifespan-estimate.md](lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else.
 - **The model is a snapshot.** It was fit on one survey assessment per person and was not trained on changes over time.
 - **BMI caveat** as above: there is no favourable weight direction in this model, and weight is not offered.
 - **Profile set.** The profiles are the model's own 2,000-row support reference: fitting participants, not survey-weighted to the US population. BMI in 23–27 and sleep in 7–8 h are imputed, though the model is flat in both regions.

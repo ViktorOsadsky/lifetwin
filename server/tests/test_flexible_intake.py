@@ -37,7 +37,12 @@ def reply(field: str, text: str, service: ConversationService | None = None, **s
 
 def test_grounding_accepts_every_quoted_value_of_a_multi_answer_reply():
     text = "Well, I'm 72, five foot six, and I weigh 150 pounds"
-    assert parse_reply(text, "age") == {}  # "Well" answers nothing: the parser asks again
+    # A leading "Well" is filler and no longer stops the parser reading the rest.
+    assert parse_reply(text, "age") == {
+        "age": 72,
+        "height_cm": pytest.approx(167.64),
+        "weight_kg": pytest.approx(68.0389),
+    }
     quotes = extraction(
         ("age", "I'm 72"), ("height_cm", "five foot six"), ("weight_kg", "150 pounds")
     )
