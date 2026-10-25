@@ -232,15 +232,15 @@ void main() {
       },
     );
 
-    test('the raw model value rises with age; the score (health index) is relative to the age group', () {
+    test('the raw model value rises with age; the score (centred) is relative to the age group', () {
       for (final sex in ['male', 'female']) {
         double? last;
         for (final age in [20, 30, 40, 50, 60, 70, 80, 85]) {
           final a = model.assess(person(age: age, sex: sex));
-          // The score is the index against people of the same age and sex, so it does not
+          // The score is centred on people of the same age and sex, so it does not
           // fall with age by itself; the raw Cox value (age term included) does rise.
-          expect(a.healthScore!, greaterThan(0));
-          if (a.healthScore != 1.0) expect(a.healthScore! > 1, a.ageGroupPercentile! > 50);
+          expect(a.healthScore!.isFinite, isTrue);
+          if (a.healthScore != 0) expect(a.healthScore! > 0, a.ageGroupPercentile! > 50);
           if (last != null) {
             expect(a.rawLogRelativeHazard!, greaterThan(last), reason: '$sex $age');
           }

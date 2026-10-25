@@ -70,17 +70,17 @@ class TwinAssessment {
     return available && s is num ? s.toDouble() : null;
   }
 
-  /// The health score shown to the person, the HEALTH INDEX (owner ruling 2026-10-24:
-  /// "invert so higher is better"): `exp(median s of the age group − s)`, where s is the Cox
-  /// log relative hazard without the age and sex terms, over exactly the rows and band that
-  /// [ageGroupPercentile] ranks (see [AgeGroup.medianScore]). 1.0 is the middle of people
-  /// your age and sex in the survey; HIGHER IS BETTER; above 1 exactly when the percentile
-  /// is above 50 (up to a tie at the median). Ages 18–34 and 80–85 use the percentile's
-  /// extrapolation and carry its [extrapolated] ("Rough guide") flag. Null unless the model
-  /// gave a number ([rawLogRelativeHazard]); never filled in. A ratio of modelled hazards,
-  /// not a probability.
+  /// The health score shown to the person, CENTRED ON 0 (owner: "i wish health score would
+  /// be positive if it is good"): `median s of the age group − s`, where s is the Cox log
+  /// relative hazard without the age and sex terms, over exactly the rows and band that
+  /// [ageGroupPercentile] ranks (see [AgeGroup.medianScore]). 0 is the middle of people your
+  /// age and sex in the survey; POSITIVE IS HEALTHIER than typical, negative less healthy;
+  /// above 0 exactly when the percentile is above 50 (a tie at the median gives 0). It is
+  /// the log of a ratio of modelled hazards, not a probability. Ages 18–34 and 80–85 use the
+  /// percentile's extrapolation and carry its [extrapolated] ("Rough guide") flag. Null
+  /// unless the model gave a number ([rawLogRelativeHazard]); never filled in.
   double? get healthScore {
-    final h = (raw['age_group'] as Map?)?['health_index'];
+    final h = (raw['age_group'] as Map?)?['health_score'];
     return rawLogRelativeHazard != null && h is double && h.isFinite ? h : null;
   }
 
@@ -192,10 +192,10 @@ class WellnessCard {
   final String sourceUrl;
 }
 
-/// The engine (and scale) of the health score: the Cox health index ([AgeGroup.healthIndex]).
+/// The engine (and scale) of the health score: the centred Cox score ([AgeGroup.healthScore]).
 /// Stored on every score history point; readers keep only this engine's points, so scales
-/// never mix.
-const healthScoreEngine = 'cox_index_v1';
+/// never mix (earlier `cox_index_v1` and untagged points are left out).
+const healthScoreEngine = 'cox_centered_v1';
 
 /// The tag a history point stored before the engine tag existed reads as: the earlier
 /// −(Cox log relative hazard) scale, which readers leave out.
@@ -324,8 +324,8 @@ class TwinModelService {
   /// the modelled difference is zero in every year, with `weight_guard: true` and
   /// [weightGuardWarning]. Every experiment, plan and recommendation goes through here.
   ///
-  /// Also `health_index_current`, `health_index_alternative` (each side's
-  /// [TwinAssessment.healthScore]) and `health_index_delta` = alternative − current: the
+  /// Also `health_score_current`, `health_score_alternative` (each side's
+  /// [TwinAssessment.healthScore]) and `health_score_delta` = alternative − current: the
   /// experiment's score change (null when either side has no score; 0 under the guard).
   Map<String, dynamic> compare(Map<String, dynamic> request) {
     var result = _compare(request);
@@ -341,24 +341,24 @@ class TwinModelService {
         'warnings': [...result['warnings'] as List? ?? const [], weightGuardWarning],
       };
     }
-    final now = _healthIndex(result['current'] as Map, current);
-    final then = guarded ? now : _healthIndex(result['alternative'] as Map, alternative);
+    final now = _healthScore(result['current'] as Map, current);
+    final then = guarded ? now : _healthScore(result['alternative'] as Map, alternative);
     return {
       ...result,
-      'health_index_current': now,
-      'health_index_alternative': then,
-      'health_index_delta': now == null || then == null ? null : (guarded ? 0.0 : then - now),
+      'health_score_current': now,
+      'health_score_alternative': then,
+      'health_score_delta': now == null || then == null ? null : (guarded ? 0.0 : then - now),
     };
   }
 
-  /// The health index for a compare() side: its moved score against [profile]'s age group.
-  double? _healthIndex(Map survival, Map profile) {
+  /// The centred health score for a compare() side: its moved score against [profile]'s age group.
+  double? _healthScore(Map survival, Map profile) {
     final score = survival['log_relative_hazard_score'];
     final age = profile['age'], sex = profile['sex_nhanes'];
     if (survival['status'] != 'available' || score is! num || age is! num || sex is! num || _ageGroups == null) {
       return null;
     }
-    final h = _ageGroups.compare(score: score.toDouble(), age: age, female: sex == 2).healthIndex;
+    final h = _ageGroups.compare(score: score.toDouble(), age: age, female: sex == 2).healthScore;
     return h.isFinite ? h : null;
   }
 
@@ -490,9 +490,9 @@ class AgeGroup {
   /// even), so that `ownScore < medianScore` exactly when [percentile] > 50.
   final double medianScore;
 
-  /// The health index `exp(medianScore − ownScore)`: 1.0 is the middle of the band, higher
-  /// is better, above 1 exactly when [percentile] > 50 (a tie at the median gives 1.0).
-  double get healthIndex => math.exp(medianScore - ownScore);
+  /// The centred health score `medianScore − ownScore`: 0 is the middle of the band,
+  /// positive is healthier, above 0 exactly when [percentile] > 50 (a tie gives 0).
+  double get healthScore => medianScore - ownScore;
 
   /// The band actually used, e.g. `women 59–69`.
   String get label => '${female ? 'women' : 'men'} ${_age(bandLow)}–${_age(bandHigh)}';
@@ -512,7 +512,7 @@ class AgeGroup {
     'band_high': bandHigh,
     'width': width,
     'nearest_band': nearestBand,
-    'health_index': healthIndex,
+    'health_score': healthScore,
     'label': label,
   };
 }
