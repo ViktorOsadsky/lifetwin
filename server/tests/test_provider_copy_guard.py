@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 import lifetwin.onboarding  # noqa: F401 (load before recommendations; existing import cycle)
 from lifetwin.app import create_app
 from lifetwin.core.config import Settings
+from lifetwin.onboarding.intents import CARE_QUESTION, SAFETY_PHRASE
 from lifetwin.personalize.providers import PhrasingUnavailable
 from lifetwin.personalize.safety import grounded_line, wording_choices
 from lifetwin.personalize.service import phrase_question
@@ -316,8 +317,10 @@ def test_length_limit_keeps_whole_drafts_without_truncating_actions():
     assert grounded_line(draft + " There's no rush.", wording_choices(draft)) is None
 
 
-def wellbeing_state(c):
-    state = c.post("/api/checkin/start", json={"kind": "daily"}).json()["state"]
+def wellbeing_state(c, local_date="2026-10-24"):
+    state = c.post("/api/checkin/start", json={"kind": "daily", "local_date": local_date}).json()[
+        "state"
+    ]
     for _ in range(10):
         if state["current_field"] == "wellbeing":
             return state
@@ -346,29 +349,33 @@ def test_care_endpoint_rejects_added_claims_even_when_full_safety_line_survives(
 
 @pytest.mark.parametrize("provider_name", ["muse", "claude"])
 @pytest.mark.parametrize("index", [0, 1])
+@pytest.mark.parametrize(
+    "local_date", ["2026-10-24", "2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28"]
+)
 def test_care_endpoint_can_select_bounded_variants_without_changing_safety_or_state(
-    provider_name, index
+    provider_name, index, local_date
 ):
     selected = []
 
     def choose(facts):
-        selected.append(facts["approved_wordings"][index])
-        return selected[-1]
+        selected.append((facts["line"], facts["approved_wordings"][index]))
+        return selected[-1][1]
 
     provider = Provider(choose)
     provider.name = provider_name
     c = client(provider)
-    state = wellbeing_state(c)
+    state = wellbeing_state(c, local_date)
     body = {"action": "reply", "state": state, "text": "awful"}
     baseline = c.post("/api/checkin/turn", json=body).json()
     out = c.post(
         "/api/checkin/turn", json={**body, "outside_ai_consent": {provider_name: True}}
     ).json()
     assert provider.calls == 1
-    assert out["message"].startswith(selected[0])
+    draft, canonical = selected[0]
+    assert baseline["message"] == f"{draft} {CARE_QUESTION}"
+    assert out["message"] == f"{canonical} {CARE_QUESTION}"
+    assert draft.endswith(SAFETY_PHRASE) and canonical.endswith(draft)
     assert out["message"].count("911") == 1
     assert {k: v for k, v in out.items() if k not in {"message", "mascot_events"}} == {
         k: v for k, v in baseline.items() if k not in {"message", "mascot_events"}
     }
-    original_safety_tail = selected[0].split("If ", 1)[-1]
-    assert original_safety_tail in baseline["message"]
