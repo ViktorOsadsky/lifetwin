@@ -2193,8 +2193,14 @@
       },
       "profile_update": { "$ref": "#/$defs/HealthProfile" },
       "provider_status": {
-        "const": "not_configured",
         "default": "not_configured",
+        "enum": [
+          "not_configured",
+          "consent_required",
+          "used",
+          "unavailable",
+          "not_needed"
+        ],
         "title": "Provider Status",
         "type": "string"
       },

@@ -383,6 +383,11 @@ def _height(cm: float) -> str:
     shown_in, shown_cm = str(round(inches)), _plain(cm, 0)
     feet, rest = divmod(round(inches), 12)
     imperial = f"{_about(inches, shown_in)}{feet} feet" + (f" {rest} inches" if rest else "")
+    if abs(inches - int(inches) - 0.5) < 0.01:
+        # "5 3 and a half" is read back as said, not rounded to a whole inch.
+        shown_in = str(int(inches) + 0.5)
+        feet, rest = divmod(int(inches), 12)
+        imperial = f"{feet} feet {rest} and a half inches"
     metric = f"{_about(cm, shown_cm)}{shown_cm} cm"
     return _both(metric, imperial, not _about(cm, shown_cm), not _about(inches, shown_in))
 

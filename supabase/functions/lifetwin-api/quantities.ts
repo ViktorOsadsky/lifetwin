@@ -247,6 +247,18 @@ function height(text: string): Reading {
     cm = text.match(CM),
     metres = text.match(METRES),
     inches = text.match(INCHES);
+  const said = feet ?? cm ?? metres ?? inches;
+  if (
+    said &&
+    /\d/.test(
+      text.slice(0, said.index) + " " +
+        text.slice((said.index ?? 0) + said[0].length),
+    )
+  ) {
+    // "5 foot 4, well, probably 5 3 and a half": a second height. The reader never
+    // picks one of the two.
+    return no("ambiguous");
+  }
   if (feet) {
     const extra = +(feet[2] ?? 0);
     if (extra >= 12) return no("ambiguous");
