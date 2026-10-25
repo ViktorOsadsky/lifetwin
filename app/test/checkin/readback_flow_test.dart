@@ -106,6 +106,23 @@ class ContractGuide implements CheckinGuide {
     calls.add((action, text));
     final pending = Map<String, dynamic>.from(state['pending'] as Map);
     final field = state['current_field'] as String?;
+    // A clearly low answer gets one warm reply and "keep going or stop?" (not the emergency pause).
+    if (action == 'reply' && text == 'awful' && state['care_line_shown'] != true) {
+      return CheckinTurn(
+        _raw(
+          {..._state('asking', field, pending: pending), 'care_line_shown': true, 'care_question_open': true},
+          'I’m sorry it’s been hard. If you’re ever thinking about hurting yourself, please call 911. Keep going, or stop here for today?',
+        ),
+      );
+    }
+    if (state['care_question_open'] == true && action == 'reply') {
+      if (text == 'stop') {
+        return CheckinTurn(
+          _raw(_state('confirming', null, pending: pending), 'Before I save anything... Is that right?'),
+        );
+      }
+      return _next(pending);
+    }
     if (action == 'confirm' && state['phase'] == 'confirming' && field == null) {
       return CheckinTurn(_raw(_state('ready', null, confirmed: pending), 'All saved.', complete: true));
     }

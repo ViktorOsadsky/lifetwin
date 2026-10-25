@@ -113,6 +113,18 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
   bool get _finished => c.turn?.complete ?? false;
 
+  /// "Stop for today" was chosen after Mochi's care reply.
+  bool _stopped = false;
+
+  /// Back to the Room; after "Stop for today" Mochi says it is okay.
+  void _leave() {
+    if (_stopped && _finished) {
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(const SnackBar(content: Text('That’s okay. I saved what you told me.')));
+    }
+    widget.onDone();
+  }
+
   TwinState _twin() {
     if (c.emergency) {
       return const TwinState(mood: TwinMood.concerned, pose: TwinPose.stand, reason: TwinStateReason.emergency);
@@ -331,11 +343,42 @@ class _CheckInScreenState extends State<CheckInScreen> {
     if (_nothing || _finished) {
       return Padding(
         padding: pad,
-        child: LipButton(label: 'Back to my room', fontSize: 24, onTap: widget.onDone),
+        child: LipButton(label: 'Back to my room', fontSize: 24, onTap: _leave),
       );
     }
     if (c.turn == null) return const SizedBox.shrink();
     final busy = c.phase == CheckinPhase.interpreting;
+    if (c.careQuestionOpen) {
+      // Two equal choices, no red: the warm reply (with the soft 911 line) is Mochi's bubble above.
+      return Padding(
+        padding: pad,
+        child: Row(
+          children: [
+            Expanded(
+              child: LipButton(
+                label: 'Stop for today',
+                kind: LipKind.secondary,
+                fontSize: 20,
+                onTap: busy
+                    ? null
+                    : () {
+                        _stopped = true;
+                        c.submitQuick('stop');
+                      },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: LipButton(
+                label: 'Keep going',
+                fontSize: 20,
+                onTap: busy ? null : () => c.submitQuick('keep going'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     // A yes or no is open (the final read-back, a check on an unusual value, Apple Health's value, or a weekly
     // answer), unless the person is saying what to change.
     final yesNo = (c.confirming || c.confirmingHealth) && !c.correcting;

@@ -48,6 +48,10 @@ class CheckinTurn {
   /// Quick and daily: the one read-back of every answer at the end (no open question).
   bool get isFinalReadback => isConfirming && currentField == null;
 
+  /// Quick and daily: the one warm reply to a clearly low mood answer is open; the next reply is "keep going" or
+  /// "stop". It is not the emergency pause.
+  bool get careQuestionOpen => state['care_question_open'] == true;
+
   /// Quick and daily: a yes/no check about one unusual answer, mid check-in.
   bool get isCheckQuestion => isConfirming && checking.isNotEmpty;
 

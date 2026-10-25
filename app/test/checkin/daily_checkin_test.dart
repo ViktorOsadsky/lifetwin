@@ -155,6 +155,35 @@ void main() {
       },
     );
 
+    testWidgets('a low answer gets a warm reply with Keep going / Stop for today; Stop saves what was heard', (
+      t,
+    ) async {
+      repo = await repoWith(profile);
+      guide = ContractGuide();
+      await pumpRoom(t);
+      await t.tap(find.text('Check in'));
+      await t.pumpAndSettle();
+      await t.enterText(find.byType(TextField), '7 hours');
+      await t.testTextInput.receiveAction(TextInputAction.send);
+      await t.pumpAndSettle();
+      await t.enterText(find.byType(TextField), 'awful');
+      await t.testTextInput.receiveAction(TextInputAction.send);
+      await t.pumpAndSettle();
+      expect(find.textContaining('please call 911'), findsWidgets);
+      expect(find.text('Call 911'), findsNothing, reason: 'not the emergency pause');
+      expect(find.text('Keep going'), findsOneWidget);
+      expect(find.text('Stop for today'), findsOneWidget);
+      expect(repo.store.checkins, isEmpty);
+      await t.tap(find.text('Stop for today'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Looks right'));
+      await t.pumpAndSettle();
+      expect(repo.store.checkins, hasLength(1));
+      await t.tap(find.text('Back to my room'));
+      await t.pump();
+      expect(find.text('That’s okay. I saved what you told me.'), findsWidgets);
+    });
+
     testWidgets('skip is quick, and a skipped answer is never filled in', (t) async {
       repo = await repoWith(profile);
       await pumpRoom(t);
