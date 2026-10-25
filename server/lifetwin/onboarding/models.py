@@ -309,7 +309,8 @@ class RecommendationIdea(ApiModel):
     source_title: str
     source_url: str
     # How much the model's difference for people like this person is, as a category only
-    # (never a number). Null for guideline-only items and ages outside 18-85.
+    # (never a number). Null for guideline-only items, coping tricks that are not the habit
+    # change itself (a craving tip, a wind-down routine) and ages outside 18-85.
     effect: Literal["big", "some", "small", "tiny"] | None = None
     effect_note: Literal["Modeled difference for people like you, not a promise."] = (
         "Modeled difference for people like you, not a promise."

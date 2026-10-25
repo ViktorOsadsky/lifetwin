@@ -54,8 +54,12 @@ from lifetwin.onboarding.parsing import (
     EXAMPLES,
     FRIENDLY_LABELS,
     NO_WORDS,
+    NOTHING,
     QUESTION_EXAMPLE_VALUES,
     QUESTIONS,
+    SELF_AGE,
+    SENTENCE_END,
+    TOPIC_UNITS,
     TOPICS,
     UNKNOWN_WORDS,
     YES_WORDS,
@@ -446,13 +450,20 @@ def heard(values: dict, about: set[str] = frozenset()) -> str:
     return " ".join(f"I heard {fact}." for fact in facts)
 
 
+def _same_value(a, b) -> bool:
+    """Equal answers, allowing for unit rounding (150 pounds read twice)."""
+    if isinstance(a, (bool, str)) or isinstance(b, (bool, str)):
+        return a == b
+    return abs(float(a) - float(b)) <= max(0.06, 0.01 * abs(float(a)))
+
+
 def _lower_first(text: str) -> str:
     return text[:1].lower() + text[1:] if text[:2] != "I " else text
 
 
 def _flip(clause: str) -> str:
     """ "I walk my dog every morning" -> "you walk your dog every morning"."""
-    words = re.split(r"(\W+)", clause)
+    words = re.split(r"([^\w']+)", clause)
     return "".join(FLIP.get(word.lower(), word) for word in words)
 
 
@@ -686,10 +697,22 @@ class ConversationService:
                     # "I walk the dog, and I sit about 6 hours": the answer to a later
                     # question is read, recorded and its question skipped.
                     found = _safe(parse_reply, text, state.current_field, today=today) or {}
+                    if not found:
+                        # "About 20 years. I'm 5'7 by the way": the probe's answer, then
+                        # another answer in a sentence of its own.
+                        later = self._later_sentence(state, text, today)
+                        if later:
+                            text, found = later
                     # Only when it names the topic: "about 40 years" is no height or sleep.
-                    if PROFILE_WORDS.search(text.lower()) and any(
-                        self._open(state, f) for f in found
-                    ):
+                    # A unit counts ("I'm 5'7"); "years" does not.
+                    units = _canonical(text)
+                    if (
+                        PROFILE_WORDS.search(text.lower())
+                        or any(
+                            f != "age" and re.search(TOPIC_UNITS.get(f, NOTHING), units)
+                            for f in found
+                        )
+                    ) and any(self._open(state, f) for f in found):
                         answered = await self._turn(
                             TurnRequest(
                                 action="reply",
@@ -734,6 +757,10 @@ class ConversationService:
                 if YES_REPLY.fullmatch(plain):
                     return respond(HEALTH_OPEN, client_action="open_health_import")
                 answer = HEALTH_DECLINE_LEAD.sub("", text, count=1).strip()
+                sentences = [p for p in re.split(r"(?<=[.!?])\s+", answer) if p.strip()]
+                while len(sentences) > 1 and not PROFILE_TALK.search(sentences[0].lower()):
+                    sentences.pop(0)  # "I don't have a watch." declines; the rest answers
+                answer = " ".join(sentences)
                 if answer and PROFILE_TALK.search(answer.lower()):
                     # They would rather tell Mochi (or already are, after "yes" opened the
                     # import): not a yes to Apple Health, so the answer is read as usual.
@@ -872,7 +899,9 @@ class ConversationService:
                     return respond(message)
         from_read_back = False
         if action == "reply" and state.phase == "confirming" and read_back is None:
-            early = YES_AND.match(text)
+            # Before room chatter is filtered: "correct, and I never smoked" to the sex
+            # read-back is not chatter about sex.
+            early = YES_AND.match(raw_text) or YES_AND.match(text)
             if early and self._says_answers(early.group("rest"), today):
                 # "Yes, and I also sleep 7 hours": the yes confirms, the rest is an answer.
                 confirmed = await self._turn(
@@ -997,6 +1026,23 @@ class ConversationService:
             self._advance(state)
             return respond(SKIPPED + self._prompt(state))
         if state.phase == "ready" and action == "reply":
+            late = self._late_field(state, raw_text, today)
+            if late:
+                # "Oh, I do know my weight, it's 160 pounds": read back like any answer.
+                asked = state.model_copy(deep=True)
+                asked.phase, asked.current_field = "asking", late[0]
+                answered = await self._turn(
+                    TurnRequest(
+                        action="reply",
+                        state=asked,
+                        text=late[1],
+                        input_mode=request.input_mode,
+                        provider_consent=request.provider_consent,
+                    )
+                )
+                if answered.state.phase == "confirming":
+                    return answered
+        if state.phase == "ready" and action == "reply":
             # "Thank you", "ok", "bye", "what now?": a kind word, never an error.
             thanks = "You're welcome! " if THANKS.search(text) else ""
             return respond(thanks + DONE_LEAD)
@@ -1018,6 +1064,19 @@ class ConversationService:
                 if len(_safe(parse_reply, text, "systolic_bp", today=today) or {}) != 2:
                     return respond(BOTH_BP_MESSAGE)
                 pending_fields = ["systolic_bp"]
+            if len(pending_fields) != 1:
+                # "The age is wrong, I'm 46": the answer it names and gives is replaced.
+                named = [
+                    field
+                    for field in pending_fields
+                    if (
+                        re.search(TOPICS.get(field, NOTHING), text.lower())
+                        or (field == "age" and re.search(SELF_AGE, text.lower()))
+                    )
+                    and field in (_safe(parse_reply, text, field, today=today) or {})
+                ]
+                if len(named) == 1:
+                    pending_fields = named
             if len(pending_fields) != 1:
                 return respond(
                     "I'm waiting on more than one answer: "
@@ -1180,6 +1239,8 @@ class ConversationService:
                 return respond(
                     BP_READING.format(reading=reading.reading) + _lower_first(QUESTIONS[target])
                 )
+        if not candidates and asking and not hint:
+            candidates = self._elsewhere(state, text, target, today, voice)
         if not candidates and configured and not hint:
             if request.provider_consent:
                 try:
@@ -1201,14 +1262,46 @@ class ConversationService:
         saved = state.confirmed_profile.model_dump(exclude_none=True)
         # A reopened question may replace its own saved answer (both blood pressure numbers).
         asked = {target} | (BP_FIELDS if reopened and target in BP_FIELDS else set())
+        heard_all = dict(candidates)
         candidates = {
             field: value
             for field, value in candidates.items()
             if field not in saved
             or field == request.field
             or corrects(text, field)
+            or corrects(raw_text, field)
             or (reopened and field in asked)
         }
+        # "I sleep 7 hours, I'm 74" with 72 saved: a different value for a saved answer.
+        conflicts = (
+            {
+                field: value
+                for field, value in heard_all.items()
+                if field not in candidates
+                and field in saved
+                and field not in BP_FIELDS
+                and not _same_value(saved[field], value)
+            }
+            if asking and not reopened
+            else {}
+        )
+        conflict_lead = ""
+        if conflicts and not candidates:
+            # Nothing else was said: the new value is read back, and only a yes changes it.
+            candidates = conflicts
+            conflict_lead = (
+                "Earlier you told me "
+                + " and ".join(_facts({field: saved[field] for field in conflicts}))
+                + ". "
+            )
+        elif conflicts:
+            # Read back the rest; the saved answer stays until the person asks to change it.
+            field = next(iter(conflicts))
+            conflict_lead = (
+                f"You also said {_facts({field: conflicts[field]})[0]}, but earlier you told me "
+                f"{_facts({field: saved[field]})[0]}. If that has changed, just say "
+                f'"change my {self._label(field)}" after this. '
+            )
         if from_read_back:
             # "No, I'm 47 and I weigh 150" to "Age: 46": only the age is replaced.
             held = state.pending_profile.model_dump(exclude_none=True)
@@ -1294,10 +1387,10 @@ class ConversationService:
         state.current_field = next(iter(pending)) if len(pending) == 1 else None
         state.pending_estimate = estimate
         if birth_note and len(pending) == 1:
-            return respond(birth_note)
+            return respond(conflict_lead + birth_note)
         # A middle of a range ("7 or 8 hours") is read back as "about".
         about = set(candidates) if (hedged or estimate or _safe(approximate, text)) else set()
-        return respond(self._prompt(state, about=about))
+        return respond(conflict_lead + self._prompt(state, about=about))
 
     # -- answers, unknowns and estimates ---------------------------------------------
 
@@ -1503,6 +1596,54 @@ class ConversationService:
             _safe(parse_reply, text, field, today=today)
             for field in ("age", "sex", "smoking_status", "general_health")
         )
+
+    def _later_sentence(self, state: ConversationState, text: str, today):
+        """(sentence, values) for a sentence that answers an open question by itself."""
+        sentences = [p.strip() for p in re.split(SENTENCE_END, text) if p.strip()]
+        if len(sentences) < 2:
+            return None
+        for sentence in sentences[1:]:
+            found = _safe(parse_reply, sentence, state.current_field, today=today) or {}
+            if any(self._open(state, f) for f in found):
+                return sentence, found
+        return None
+
+    @staticmethod
+    def _elsewhere(state: ConversationState, text: str, target: str, today, voice: bool) -> dict:
+        """A reply that plainly gives a saved answer differently and nothing else ("I'm 74"
+        to the sleep question, with 72 saved). It is read back; only a yes changes it."""
+        found = {}
+        for field in ASKED:
+            if field == target or getattr(state.confirmed_profile, field) is None:
+                continue
+            said = re.search(TOPICS.get(field, NOTHING), text.lower()) or (
+                field == "age" and re.search(SELF_AGE, text.lower())
+            )
+            value = (_safe(parse_reply, text, field, today=today, strict=voice) or {}).get(field)
+            if said and value is not None:
+                found[field] = value
+        return found if len(found) == 1 else {}
+
+    def _late_field(self, state: ConversationState, text: str, today) -> tuple[str, str] | None:
+        """(question, words) a reply at the end answers: one still open, or a saved answer
+        said differently ("I sleep 9 hours actually"). None for "thanks" or "bye"."""
+        if not self._says_answers(text, today):
+            return None
+        # The whole reply first, then from each clause on ("Thanks! I'd say very good").
+        pieces = re.split(r"(?<=[,.!?;])\s+", text)
+        for start in range(len(pieces)):
+            words = " ".join(pieces[start:])
+            for field in ASKED:
+                found = _safe(parse_reply, words, field, today=today) or {}
+                cue = TOPICS.get(field, NOTHING) + "|" + TOPIC_UNITS.get(field, NOTHING)
+                if field == "age":
+                    cue += "|" + SELF_AGE
+                if field not in found or not re.search(cue, words.lower()):
+                    continue
+                saved = getattr(state.confirmed_profile, field)
+                if saved is None or not _same_value(saved, found[field]):
+                    return field, words
+        return None
 
     def _decline_health(self, state: ConversationState) -> str:
         state.health_offered = True
