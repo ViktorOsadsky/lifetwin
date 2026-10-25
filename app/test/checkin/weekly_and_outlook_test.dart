@@ -144,4 +144,51 @@ void main() {
     expect(find.text('Exact numbers'), findsOneWidget);
     expect(find.text('Your confirmed week'), findsOneWidget);
   });
+
+  testWidgets('the weekly check-in shows the same Keep going / Stop for today choice for the care reply', (t) async {
+    final repo = TwinRepository(
+      model: model,
+      store: await TwinStore.open(MemoryBackend()),
+      clock: () => DateTime(2026, 11, 1, 18),
+    );
+    await repo.saveConversationProfile(profile);
+    t.view.physicalSize = const Size(390, 844);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final look = ValueNotifier(const TwinAppearance());
+    addTearDown(look.dispose);
+    await t.pumpWidget(
+      MaterialApp(
+        theme: lifeTwinTheme(),
+        builder: (c, child) => CheckInScope(
+          repository: repo,
+          guide: FakeWeeklyGuide(),
+          speechInput: FakeSpeechInput(),
+          speechOutput: FakeSpeechOutput(),
+          appearance: look,
+          now: () => DateTime(2026, 11, 1, 18),
+          child: child!,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => openCheckIn(context, kind: CheckInKind.weekly),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await t.tap(find.text('open'));
+    await t.pumpAndSettle();
+    await t.enterText(find.byType(TextField), 'awful');
+    await t.testTextInput.receiveAction(TextInputAction.send);
+    await t.pumpAndSettle();
+    expect(find.text('Keep going'), findsOneWidget);
+    expect(find.text('Stop for today'), findsOneWidget);
+    expect(find.text('Call 911'), findsNothing, reason: 'not the emergency pause');
+    await t.tap(find.text('Stop for today'));
+    await t.pumpAndSettle();
+    expect(find.text('Keep going'), findsNothing);
+  });
 }
