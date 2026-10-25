@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/agentic_routes.dart';
+import 'package:lifesim/band/band_file_intake.dart';
+import 'package:lifesim/band/band_file_session.dart';
+import 'package:lifesim/band/band_screens.dart';
+import 'package:lifesim/band/band_service.dart';
+import 'package:lifesim/band/band_store.dart';
 import 'package:lifesim/checkin/check_in_entry.dart';
 import 'package:lifesim/checkin/checkin_screen.dart' show CheckInScreen;
 import 'package:lifesim/checkin/consents.dart';
@@ -13,6 +18,7 @@ import 'package:lifesim/ui/twin_appearance.dart';
 import 'package:lifesim/voice/api_base.dart';
 import 'package:lifesim/voice/fakes.dart';
 
+import '../band/band_file_test.dart' show FakeFiles, bytes, sample;
 import '../support/app_fonts.dart';
 import '../support/fake_change_client.dart';
 import '../health_screen_test.dart' show FakeReader;
@@ -42,8 +48,9 @@ void main() {
   late AgenticRoutes routes;
   late BuildContext home;
   var deleted = 0;
+  tearDown(BandFileSession.disposeIfCreated);
 
-  Future<void> pump(WidgetTester t, {AiProvider? provider}) async {
+  Future<void> pump(WidgetTester t, {AiProvider? provider, BandFilePicker? files}) async {
     t.view.physicalSize = const Size(390, 844);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -65,6 +72,8 @@ void main() {
       guide: ContractGuide(),
       changeClient: FakeChangeClient(),
       capabilities: FakeCapabilities(provider),
+      bandClient: files == null ? null : StubBandClient(),
+      bandFilePicker: files,
       onDeleted: () => deleted++,
     )..attach(repo);
     await t.pumpWidget(
@@ -83,7 +92,9 @@ void main() {
 
   const meta = AiProvider(id: 'muse', displayName: 'Meta Muse', configured: true);
 
-  testWidgets('My data opens from the Settings hub route; deleting wipes the phone, tells the shell and returns', (t) async {
+  testWidgets('My data opens from the Settings hub route; deleting wipes the phone, tells the shell and returns', (
+    t,
+  ) async {
     await pump(t);
     routes.myData(home);
     await t.pumpAndSettle();
@@ -230,5 +241,82 @@ void main() {
     expect(await read(), isEmpty);
     connected = true;
     expect(await read(), [sample]);
+  });
+
+  testWidgets('Import band file: a lifetwin.band_day.v0 file feeds the band days; Unpair and Delete forget it', (
+    t,
+  ) async {
+    final files = FakeFiles()..chosen = [bytes(sample())];
+    await pump(t, files: files);
+    await t.pumpWidget(
+      MaterialApp(
+        theme: lifeTwinTheme(),
+        builder: routes.wrap,
+        home: Builder(
+          builder: (c) => Scaffold(body: Column(children: routes.pills(c))),
+        ),
+      ),
+    );
+    await t.tap(find.text('Add band'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Import band file'));
+    await t.pumpAndSettle();
+    expect(routes.band.hasImportedFile, isTrue);
+    expect(find.text('Added 1 day from the file.'), findsOneWidget);
+    // The panel followed; settings has the row and Unpair forgets the files.
+    await t.ensureVisible(find.text('Band settings'));
+    await t.tap(find.text('Band settings'));
+    await t.pumpAndSettle();
+    expect(find.text('Import band file'), findsOneWidget);
+    await t.ensureVisible(find.text('Unpair band'));
+    await t.tap(find.text('Unpair band'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Unpair'));
+    await t.pumpAndSettle();
+    expect(files.clears, 1);
+    expect(routes.band.hasImportedFile, isFalse);
+    // Delete my data forgets them too.
+    files.chosen = [bytes(sample())];
+    await routes.intake.importFromFiles();
+    expect(routes.band.hasImportedFile, isTrue);
+    routes.myData(home);
+    await t.pumpAndSettle();
+    await t.tap(find.text('Delete my data'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Delete everything'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Yes, delete'));
+    await t.pumpAndSettle();
+    expect(files.clears, 2);
+    expect(routes.band.hasImportedFile, isFalse);
+  });
+
+  testWidgets('the band panel Today card fits at 390 and 320 wide, and at 1.6x text', (t) async {
+    await pump(t);
+    final files = FakeFiles()..chosen = [bytes(sample())];
+    final store = BandStore(StubBandClient());
+    await BandFileIntake(store: store, picker: files).importFromFiles();
+    expect(store.hasImportedFile, isTrue);
+    for (final (width, scale) in [(390.0, 1.0), (320.0, 1.0), (390.0, 1.6), (320.0, 1.6)]) {
+      t.view.physicalSize = Size(width, 844);
+      await t.pumpWidget(
+        MaterialApp(
+          theme: lifeTwinTheme(),
+          builder: (c, child) => MediaQuery(
+            data: MediaQuery.of(c).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: BandPanelScreen(
+            store: store,
+            service: BandService(repository: repo),
+            onBack: () {},
+            onSettings: () {},
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull, reason: '$width wide at $scale x');
+      expect(find.textContaining('min moderate'), findsOneWidget);
+    }
   });
 }

@@ -23,6 +23,7 @@ class TodayWithMochiCard extends StatefulWidget {
     required this.confirmedContext,
     required this.onOpen,
     this.beforeFirstPlan,
+    this.onPlan,
     this.openUrl = defaultOpenUrl,
   });
 
@@ -30,6 +31,9 @@ class TodayWithMochiCard extends StatefulWidget {
   final Map<String, dynamic> Function() confirmedContext;
   final VoidCallback onOpen;
   final Future<void> Function()? beforeFirstPlan;
+
+  /// Told each plan the coach gives (the first and every revision).
+  final void Function(DailyPlan plan)? onPlan;
   final OpenUrl openUrl;
 
   @override
@@ -53,6 +57,7 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
     try {
       await widget.beforeFirstPlan?.call();
       final plan = await widget.client.plan(_context());
+      widget.onPlan?.call(plan);
       if (mounted) setState(() => _plan = plan);
     } catch (_) {
       if (mounted) setState(() => _failed = true);
@@ -85,6 +90,7 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
           {'item_id': item['id'], 'status': status, 'reason': ?reason},
         ]),
       );
+      widget.onPlan?.call(next);
       if (mounted) {
         setState(() {
           _plan = next;

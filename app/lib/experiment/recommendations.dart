@@ -75,7 +75,7 @@ class StubRecommendations implements RecommendationsSource {
             ),
           );
         case 'activity':
-          final q = quoteFor('walks');
+          final q = quoteFor('exercise');
           out.add(
             Recommendation(
               id: 'activity',

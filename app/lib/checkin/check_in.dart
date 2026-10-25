@@ -36,11 +36,20 @@ import '../experiment/widgets/source_link.dart';
 /// `quick` is the 1-minute daily chat; `weekly` is the longer one.
 enum CheckInKind { quick, weekly }
 
-/// After a check-in finishes: Mochi's encouragement (the coach's `encourage` slot; null means use the built-in
-/// line) and "Here's today's plan", which opens the plan (the Home screen's Today card).
+/// What the coach says after a check-in: its `encourage` line (null: use the built-in one) and, when it
+/// had a plan to compare with, the changes it made, one reason per line (empty: the plan stays the same;
+/// null: nothing to say about the plan).
+class TodayUpdate {
+  const TodayUpdate({this.encouragement, this.changes});
+  final String? encouragement;
+  final List<String>? changes;
+}
+
+/// After a check-in finishes: the coach revises today's plan with the check-in results ([update]) and
+/// "Here's today's plan" opens it ([open]).
 class TodayPlanHook {
-  const TodayPlanHook({required this.encouragement, required this.open});
-  final Future<String?> Function() encouragement;
+  const TodayPlanHook({required this.update, required this.open});
+  final Future<TodayUpdate> Function() update;
   final void Function(BuildContext context) open;
 }
 

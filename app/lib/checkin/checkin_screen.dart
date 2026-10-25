@@ -635,18 +635,42 @@ class _Encouragement extends StatefulWidget {
 
 class _EncouragementState extends State<_Encouragement> {
   // Asked once, not on every rebuild.
-  late final Future<String?> _line = widget.hook.encouragement().catchError((Object _) => null);
+  late final Future<TodayUpdate> _update = widget.hook.update().catchError((Object _) => const TodayUpdate());
 
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      FutureBuilder<String?>(
-        future: _line,
-        builder: (_, snap) => Semantics(
-          liveRegion: true,
-          child: WholeWordText(snap.data ?? _Encouragement.fallback, style: LtText.body(weight: FontWeight.w700)),
-        ),
+      FutureBuilder<TodayUpdate>(
+        future: _update,
+        builder: (_, snap) {
+          final u = snap.data;
+          final changes = u?.changes;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Semantics(
+                liveRegion: true,
+                child: WholeWordText(
+                  u?.encouragement ?? _Encouragement.fallback,
+                  style: LtText.body(weight: FontWeight.w700),
+                ),
+              ),
+              if (changes != null) ...[
+                const SizedBox(height: 10),
+                if (changes.isEmpty)
+                  WholeWordText('Your plan stays the same today.', style: LtText.body())
+                else ...[
+                  Semantics(
+                    header: true,
+                    child: Text('Mochi updated your plan', style: LtText.body(weight: FontWeight.w700)),
+                  ),
+                  for (final line in changes) WholeWordText(line, style: LtText.body()),
+                ],
+              ],
+            ],
+          );
+        },
       ),
       const SizedBox(height: 8),
       LipButton(

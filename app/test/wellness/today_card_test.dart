@@ -49,7 +49,11 @@ DailyPlan fourSlots({String revision = 'r1'}) => DailyPlan.fromJson({
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(loadAppFonts);
+  late TwinModelService model;
+  setUpAll(() async {
+    await loadAppFonts();
+    model = await TwinModelService.load();
+  });
 
   Future<void> pump(WidgetTester t, Widget card) async {
     t.view.physicalSize = const Size(390, 1200);
@@ -130,10 +134,9 @@ void main() {
     expect(find.text('Why?'), findsNothing);
   });
 
-  testWidgets('after a check-in: Mochi\'s encouragement and Here\'s today\'s plan', (t) async {
-    final repo = TwinRepository(model: await TwinModelService.load(), store: await TwinStore.open(MemoryBackend()));
+  Future<int> afterCheckIn(WidgetTester t, TodayUpdate update) async {
+    final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()));
     await repo.saveConversationProfile(profile);
-    final coach = FakeCoach()..responses.add(fourSlots());
     var opened = 0;
     t.view.physicalSize = const Size(390, 844);
     t.view.devicePixelRatio = 1;
@@ -149,11 +152,7 @@ void main() {
           speechInput: FakeSpeechInput(),
           speechOutput: FakeSpeechOutput(),
           appearance: look,
-          todayPlan: TodayPlanHook(
-            encouragement: () async =>
-                (await coach.plan({})).items.firstWhere((i) => i['kind'] == 'encourage')['message'] as String,
-            open: (_) => opened++,
-          ),
+          todayPlan: TodayPlanHook(update: () async => update, open: (_) => opened++),
           child: child!,
         ),
         home: Builder(
@@ -175,10 +174,84 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('Looks right'));
     await t.pumpAndSettle();
-    expect(find.text('You are doing great, gently.'), findsOneWidget);
+    return opened;
+  }
+
+  testWidgets('after a check-in the plan changed: one line per change, then Here\'s today\'s plan', (t) async {
+    await afterCheckIn(
+      t,
+      const TodayUpdate(
+        encouragement: 'Thanks for telling me.',
+        changes: [
+          'Swapped the brisk walk for chair marching, because you said your knee hurt.',
+          'Moved dinner earlier.',
+        ],
+      ),
+    );
+    expect(find.text('Mochi updated your plan'), findsOneWidget);
+    expect(find.text('Swapped the brisk walk for chair marching, because you said your knee hurt.'), findsOneWidget);
+    expect(find.text('Moved dinner earlier.'), findsOneWidget);
+    expect(find.text('Your plan stays the same today.'), findsNothing);
     await t.tap(find.text('Here’s today’s plan'));
     await t.pumpAndSettle();
-    expect(opened, 1);
     expect(find.text('open'), findsOneWidget, reason: 'back on the screen the check-in was opened from');
+  });
+
+  testWidgets('after a check-in with nothing changed: Your plan stays the same today', (t) async {
+    await afterCheckIn(t, const TodayUpdate(encouragement: 'Nice work.', changes: []));
+    expect(find.text('Your plan stays the same today.'), findsOneWidget);
+    expect(find.text('Mochi updated your plan'), findsNothing);
+    expect(find.text('Here’s today’s plan'), findsOneWidget);
+  });
+
+  test('a revision lists only real changes (the live coach also reports kept items and fresh encouragement)', () {
+    final plan = DailyPlan.fromJson({
+      'schema_version': '1.0',
+      'status': 'ok',
+      'revision_id': 'r2',
+      'local_date': '2026-10-24',
+      'based_on': 'r1',
+      'inputs': {'snapshot_id': 's1'},
+      'plan_type': 'personal',
+      'items': [
+        item('move', 'workout', 'Swimming', minutes: 20),
+        item('food', 'diet', 'Protein at each meal'),
+        item('cheer', 'encourage', 'A word from Mochi'),
+      ],
+      'changes': [
+        {
+          'item_id': 'move',
+          'change': 'swapped',
+          'explanation': 'You said a brisk walk hurt your knee, so today is swimming.',
+        },
+        {'item_id': 'food', 'change': 'kept', 'explanation': 'Kept protein, since nothing called for a change.'},
+        {'item_id': 'cheer', 'change': 'new', 'explanation': 'Fresh words from how your days went.'},
+      ],
+    });
+    expect(plan.changedLines, ['You said a brisk walk hurt your knee, so today is swimming.']);
+  });
+
+  test('the coach request maps the phone\'s 1-5 general health to the server labels, and passes labels through', () {
+    for (final (n, label) in [(1, 'excellent'), (2, 'very_good'), (3, 'good'), (4, 'fair'), (5, 'poor')]) {
+      final body = coachRequestBody({
+        'profile': {'age': 64, 'general_health': n},
+      });
+      expect((body['profile'] as Map)['general_health'], label);
+    }
+    expect(
+      (coachRequestBody({
+            'profile': {'general_health': 'good'},
+          })['profile']
+          as Map)['general_health'],
+      'good',
+    );
+    expect(
+      (coachRequestBody({
+            'profile': {'general_health': 7},
+          })['profile']
+          as Map)['general_health'],
+      7,
+    );
+    expect(coachRequestBody({'local_date': 'x'}), {'local_date': 'x'});
   });
 }
