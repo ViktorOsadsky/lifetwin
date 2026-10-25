@@ -91,11 +91,18 @@ class RequestBudgetMiddleware:
             bucket.append(now)
         self.active += 1
         try:
-            async with asyncio.timeout(self.settings.request_timeout_seconds):
+            pdf = scope["path"] == "/api/documents/read"
+            deadline = self.settings.request_timeout_seconds
+            if pdf:
+                # Room for Claude's own time budget, so its timeout answers "unavailable".
+                deadline = max(deadline, self.settings.document_read_timeout_seconds + 5)
+            async with asyncio.timeout(deadline):
                 # Buffer a bounded JSON body so chunked requests cannot bypass the limit.
                 body = bytearray()
                 limit = (
-                    self.settings.max_document_body_bytes
+                    self.settings.max_pdf_body_bytes
+                    if pdf
+                    else self.settings.max_document_body_bytes
                     if scope["path"] == "/api/documents/extract"
                     else self.settings.max_body_bytes
                 )
@@ -110,7 +117,10 @@ class RequestBudgetMiddleware:
                         await error(
                             413,
                             "body_too_large",
-                            "That message is too long. Please shorten it and try again.",
+                            "That PDF is too big to send. Please choose one under 10 MB, "
+                            "or read it on this phone."
+                            if pdf
+                            else "That message is too long. Please shorten it and try again.",
                         )
                         return
                     body.extend(chunk)
