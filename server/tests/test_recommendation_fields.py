@@ -1,0 +1,140 @@
+import pytest
+from fastapi.testclient import TestClient
+
+import lifetwin.onboarding  # noqa: F401  (import first: avoids a pre-existing import cycle)
+from lifetwin.app import create_app
+from lifetwin.core.config import Settings
+from lifetwin.core.models import HealthProfile
+from lifetwin.onboarding.models import HabitNote
+from lifetwin.recommendations.service import WHY_SHORT, suggest
+
+ALL_MISSING = [
+    "smoking_status",
+    "vigorous_recreation_min_week",
+    "moderate_recreation_min_week",
+    "sleep_hours",
+    "sedentary_min_day",
+]
+
+
+@pytest.fixture(scope="module")
+def client():
+    return TestClient(create_app(Settings(_env_file=None)))
+
+
+def post(client, profile, notes=None):
+    body = client.post(
+        "/api/recommendations", json={"profile": profile, "habit_notes": notes or []}
+    )
+    assert body.status_code == 200
+    return body.json()
+
+
+def test_missing_inputs_all_in_ranking_order(client):
+    out = post(client, {})
+    assert out["status"] == "not_enough_information"
+    assert out["missing_inputs"] == ALL_MISSING
+
+
+def test_missing_inputs_only_the_empty_ones(client):
+    out = post(
+        client, {"age": 60, "smoking_status": "never", "sleep_hours": 8, "sedentary_min_day": 120}
+    )
+    assert out["status"] == "not_enough_information"
+    assert out["missing_inputs"] == ["vigorous_recreation_min_week", "moderate_recreation_min_week"]
+
+
+def test_missing_inputs_empty_when_ok(client):
+    out = post(client, {"smoking_status": "current"})
+    assert out["status"] == "ok"
+    assert out["missing_inputs"] == []
+
+
+def targets(**profile):
+    return {
+        r.lever: (r.experiment_lever, r.experiment_target)
+        for r in suggest(HealthProfile(**profile), [])
+    }
+
+
+def test_targets_per_lever():
+    found = targets(
+        age=55,
+        smoking_status="current",
+        sleep_hours=6,
+        moderate_recreation_min_week=60,
+        vigorous_recreation_min_week=20,
+    )
+    assert found["quit_smoking"] == ("smoking_status", "former")
+    assert found["short_sleep_plus_1h"] == ("sleep_hours", 7)
+    assert found["moderate_plus_90"] == ("moderate_recreation_min_week", 150)
+    assert targets(sedentary_min_day=480)["sitting_minus_60_realistic"] == (
+        "sedentary_min_day",
+        420,
+    )
+
+
+def test_vigorous_target_for_walkers():
+    found = targets(moderate_recreation_min_week=60, vigorous_recreation_min_week=0)
+    assert found["vigorous_plus_60"] == ("vigorous_recreation_min_week", 60)
+
+
+def test_guideline_only_item_has_no_lever():
+    items = suggest(HealthProfile(moderate_recreation_min_week=200), [])
+    keep = next(r for r in items if r.lever == "keep_it_up")
+    assert keep.experiment_lever is None and keep.experiment_target is None
+
+
+def test_sitting_target_never_negative():
+    found = targets(sedentary_min_day=300)
+    assert found["sitting_minus_60_realistic"][1] == 240
+
+
+def test_why_short_templates_are_short_and_number_free():
+    for text in WHY_SHORT.values():
+        assert 0 < len(text) <= 90
+        assert not any(ch.isdigit() for ch in text)
+
+
+def test_why_short_on_every_produced_item():
+    profiles = [
+        {"smoking_status": "current", "sleep_hours": 5, "sedentary_min_day": 600},
+        {"moderate_recreation_min_week": 0},
+        {"moderate_recreation_min_week": 60, "vigorous_recreation_min_week": 0},
+        {"moderate_recreation_min_week": 30},
+        {"moderate_recreation_min_week": 300},
+    ]
+    for profile in profiles:
+        for rec in suggest(HealthProfile(**profile), []):
+            assert rec.why_short and len(rec.why_short) <= 90
+
+
+def test_activity_kind_only_uses_enjoy_template():
+    recs = suggest(HealthProfile(), [HabitNote(topic="exercise", kind="walking")])
+    assert recs[0].why_short == WHY_SHORT["activity_enjoy"]
+
+
+def test_source_domain():
+    recs = suggest(HealthProfile(smoking_status="current", sleep_hours=5), [])
+    assert {r.source_domain for r in recs} == {"cdc.gov"}
+
+
+def test_under_age(client):
+    out = post(client, {"age": 17, "smoking_status": "current"})
+    assert out["status"] == "under_age"
+    assert out["recommendations"] == []
+    assert out["message"] and out["missing_inputs"] == []
+    assert post(client, {"age": 18, "smoking_status": "current"})["status"] == "ok"
+
+
+def test_existing_fields_unchanged(client):
+    out = post(client, {"age": 70, "sex": "male", "smoking_status": "current"})
+    rec = out["recommendations"][0]
+    assert rec["id"] == rec["lever"] == "quit_smoking"
+    assert rec["title"] == "Support for quitting"
+    assert rec["effect"] == "big"
+    assert rec["wellness_card"] == "smoking"
+    assert rec["source_url"] == "https://www.cdc.gov/tobacco/about/"
+    assert rec["causal_interpretation"] is False
+    assert out["lever_ranking"]["order"][0] == "quit_smoking"
+    assert out["message"].startswith("Here are a few ideas")
