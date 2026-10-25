@@ -264,7 +264,7 @@ void main() {
       expect(store.paired, isTrue);
       expect(find.text('Band paired'), findsOneWidget);
       expect(find.text('Minutes stay on this phone'), findsOneWidget);
-      expect(find.text('Heart rate, later'), findsOneWidget);
+      expect(find.textContaining('Heart rate'), findsNothing);
       await t.tap(find.text('See today'));
       expect(seen, 1);
     });
@@ -392,7 +392,8 @@ void main() {
         final svc = BandService(repository: repo, now: () => today);
         await pump(t, BandPanelScreen(store: store, service: svc, onBack: () {}, onSettings: () {}));
         expect(find.text('Not enough wear time today'), findsOneWidget);
-        expect(find.text('Coming soon'), findsOneWidget);
+        expect(find.textContaining('oming soon'), findsNothing);
+        expect(find.textContaining('Heart rate'), findsNothing);
         expect(find.text('Wear it on your leg 4 days to get a weekly number.'), findsOneWidget);
         for (final s in t.widgetList<Text>(find.byType(Text)).map((w) => w.data ?? '')) {
           expect(RegExp(r'in 100|survival|alive').hasMatch(s), isFalse, reason: s);

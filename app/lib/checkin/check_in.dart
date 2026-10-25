@@ -31,6 +31,7 @@ import '../voice/speech.dart';
 import 'checkin_client.dart';
 import 'checkin_controller.dart';
 import 'checkin_screen.dart';
+import '../experiment/ideas_hub.dart';
 import '../experiment/widgets/source_link.dart';
 
 /// `quick` is the 1-minute daily chat; `weekly` is the longer one.
@@ -67,6 +68,7 @@ class CheckInScope extends InheritedWidget {
     this.openUrl = defaultOpenUrl,
     this.now,
     this.todayPlan,
+    this.ideas,
     this.handsFree = false,
     this.answerMissing,
     required super.child,
@@ -99,6 +101,9 @@ class CheckInScope extends InheritedWidget {
 
   /// Encouragement and "Here's today's plan" on the finished check-in. Null: neither is shown.
   final TodayPlanHook? todayPlan;
+
+  /// "Mochi has an idea for today" on the finished daily check-in. Null: not shown (under 18).
+  final IdeasAccess? Function()? ideas;
 
   static CheckInScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<CheckInScope>();
@@ -142,6 +147,7 @@ Future<void> openCheckIn(BuildContext context, {required CheckInKind kind}) {
               appearance: look,
               open: scope.openUrl,
               todayPlan: scope.todayPlan,
+              ideas: scope.ideas?.call(),
               onDone: () => Navigator.of(route).pop(),
             ),
           ),

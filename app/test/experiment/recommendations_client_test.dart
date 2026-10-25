@@ -43,7 +43,7 @@ void main() {
   tearDown(() => repo.dispose());
 
   HttpRecommendations source(http.Client client) =>
-      HttpRecommendations(repo, base: ApiBase('http://test'), client: client);
+      HttpRecommendations(repo, base: ApiBase('http://test'), client: client, now: () => DateTime(2026, 10, 26, 9, 30));
 
   group('Recommendation.fromJson', () {
     test('reads the server shape into the fields the Ideas screen uses', () {
@@ -101,7 +101,8 @@ void main() {
           );
         }),
       ).load();
-      expect(sent.keys.toSet(), {'profile', 'habit_notes', 'outside_ai_consent'});
+      expect(sent.keys.toSet(), {'profile', 'habit_notes', 'outside_ai_consent', 'local_date'});
+      expect(sent['local_date'], '2026-10-26');
       expect(sent['profile'], {'age': 66, 'sleep_hours': 6, 'general_health': 'good'});
       expect(sent['habit_notes'], isEmpty, reason: 'no notes leave the phone without memory consent');
       expect(sent['outside_ai_consent'], isEmpty);

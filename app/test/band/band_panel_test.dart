@@ -13,6 +13,7 @@ import 'package:lifesim/band/band_store.dart';
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/ui/theme.dart';
+import 'package:lifesim/ui/twin_appearance.dart';
 
 import '../checkin/daily_checkin_test.dart' show profile;
 import '../support/app_fonts.dart';
@@ -109,6 +110,8 @@ void main() {
     );
     expect(find.text('Stood up ${d.standUps} times'), findsOneWidget);
     expect(find.text('Demo data'), findsOneWidget);
+    expect(find.textContaining('oming soon'), findsNothing);
+    expect(find.textContaining('Heart rate'), findsNothing);
     expect(find.text('Mochi has a suggestion'), findsOneWidget);
 
     final strip = find.byType(BandWeekStrip);
@@ -223,6 +226,78 @@ void main() {
     await t.ensureVisible(find.text('Mochi has a suggestion'));
     await t.tap(find.text('Mochi has a suggestion'));
     expect(used, 1);
+  });
+
+  for (final scale in [1.0, 1.6]) {
+    testWidgets('pairing: demo band up front, no search, opens the demo panel, text ${scale}x', (
+      t,
+    ) async {
+      final (store, svc) = await demoPanel();
+      store.setDemo(false);
+      t.view.physicalSize = const Size(402, 874);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      await t.pumpWidget(
+        MaterialApp(
+          theme: lifeTwinTheme(),
+          builder: (c, child) => MediaQuery(
+            data: MediaQuery.of(c).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: Builder(
+            builder: (c) => BandPairScreen(
+              store: store,
+              appearance: const TwinAppearance(),
+              onClose: () {},
+              onImportFile: () async {},
+              onSeeToday: () => Navigator.of(c).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => BandPanelScreen(store: store, service: svc, onBack: () {}, onSettings: () {}),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await t.pump();
+      expect(t.takeException(), isNull);
+      expect(find.textContaining('Live pairing isn’t available'), findsOneWidget);
+      expect(find.text('Import band file'), findsOneWidget);
+      expect(find.textContaining('oming soon'), findsNothing);
+      expect((store.client as StubBandClient).scans, 0);
+      expect(find.bySemanticsLabel('Try the demo band'), findsOneWidget);
+      await t.tap(find.text('Try the demo band'));
+      await t.pumpAndSettle();
+      expect((store.client as StubBandClient).scans, 0);
+      expect(store.demo, isTrue);
+      expect(find.text('Demo data'), findsOneWidget);
+      expect(find.textContaining('oming soon'), findsNothing);
+      expect(t.takeException(), isNull);
+    });
+  }
+
+  testWidgets('pairing: search path is still secondary but works', (t) async {
+    final (store, _) = await demoPanel();
+    store.setDemo(false);
+    t.view.physicalSize = const Size(402, 874);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await t.pumpWidget(
+      MaterialApp(
+        theme: lifeTwinTheme(),
+        home: BandPairScreen(
+          store: store,
+          appearance: const TwinAppearance(),
+          onClose: () {},
+          onSeeToday: () {},
+        ),
+      ),
+    );
+    await t.pump();
+    await t.tap(find.text('Find my band'));
+    await t.pumpAndSettle();
+    expect((store.client as StubBandClient).scans, 1);
+    expect(find.text('Can’t find your band'), findsOneWidget);
   });
 
   for (final (scale, size) in [

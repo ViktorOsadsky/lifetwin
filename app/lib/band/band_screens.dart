@@ -70,6 +70,11 @@ class _BandPairScreenState extends State<BandPairScreen> {
     });
   }
 
+  void _openDemo() {
+    widget.store.setDemo(true);
+    widget.onSeeToday();
+  }
+
   Future<void> _pair(BandDevice d) async {
     final ok = await widget.store.pair(d);
     if (!mounted) return;
@@ -122,6 +127,11 @@ class _BandPairScreenState extends State<BandPairScreen> {
           WholeWordText('Mochi uses Bluetooth to find your band.', style: LtText.body()),
           const SizedBox(height: 8),
           WholeWordText('Strap it around your leg, just above the ankle.', style: LtText.body()),
+          const SizedBox(height: 8),
+          WholeWordText(
+            'Live pairing isn’t available in this version yet. Try a recorded demo band, or import a file from your band.',
+            style: LtText.body(weight: FontWeight.w700),
+          ),
         ];
       case _Step.searching:
         return [NoNumberBox(icon: Icons.bluetooth_searching_rounded, title: 'Looking for your band…')];
@@ -181,7 +191,6 @@ class _BandPairScreenState extends State<BandPairScreen> {
             (Icons.directions_walk_rounded, 'Steps', false),
             (Icons.directions_run_rounded, 'Moderate minutes', false),
             (Icons.directions_walk_rounded, 'Time worn', false),
-            (Icons.favorite_border_rounded, 'Heart rate, later', true),
           ])
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
@@ -206,7 +215,21 @@ class _BandPairScreenState extends State<BandPairScreen> {
     switch (_step) {
       case _Step.before:
         return col([
-          LipButton(label: 'Find my band', icon: Icons.bluetooth_rounded, fontSize: 24, onTap: _search),
+          LipButton(
+            label: 'Try the demo band',
+            icon: Icons.play_circle_outline_rounded,
+            fontSize: 24,
+            onTap: _openDemo,
+          ),
+          const SizedBox(height: 8),
+          LipButton(
+            label: 'Find my band',
+            icon: Icons.bluetooth_rounded,
+            kind: LipKind.secondary,
+            height: 56,
+            fontSize: 20,
+            onTap: _search,
+          ),
           if (widget.onImportFile != null)
             TextButton(
               onPressed: () => widget.onImportFile!(),
@@ -230,10 +253,7 @@ class _BandPairScreenState extends State<BandPairScreen> {
               kind: LipKind.secondary,
               height: 56,
               fontSize: 20,
-              onTap: () {
-                widget.store.setDemo(true);
-                widget.onSeeToday();
-              },
+              onTap: _openDemo,
             ),
             const SizedBox(height: 8),
           ],
@@ -244,10 +264,7 @@ class _BandPairScreenState extends State<BandPairScreen> {
           ),
           if (_tries < 2)
             TextButton(
-              onPressed: () {
-                widget.store.setDemo(true);
-                widget.onSeeToday();
-              },
+              onPressed: _openDemo,
               child: Text('Try a recorded demo', style: LtText.body(weight: FontWeight.w700)),
             ),
         ]);
@@ -428,18 +445,6 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
             if (light != null && mod != null)
               _fact(Icons.directions_walk_rounded, 'Walking ${durationText(light)} light · ${durationText(mod)} moderate'),
           ],
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Icon(Icons.favorite_border_rounded, size: 22, color: LtColors.secondary),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text('Heart rate', style: LtText.body(color: LtColors.secondary)),
-              ),
-              const SizedBox(width: 8),
-              const ModeTag(text: 'Coming soon'),
-            ],
-          ),
         ],
       ),
     );
@@ -1017,16 +1022,6 @@ class BandSettingsScreen extends StatelessWidget {
               ),
             ),
           Text('Never stored on our server.', style: LtText.body(weight: FontWeight.w700)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(Icons.favorite_border_rounded, size: 22, color: LtColors.secondary),
-              const SizedBox(width: 8),
-              Text('Heart rate', style: LtText.body(color: LtColors.secondary)),
-              const Spacer(),
-              const ModeTag(text: 'Coming soon'),
-            ],
-          ),
           const SizedBox(height: 12),
           MergeSemantics(
             child: SwitchListTile(

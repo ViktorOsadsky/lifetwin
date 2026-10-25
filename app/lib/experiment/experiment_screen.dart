@@ -9,6 +9,7 @@ import '../widgets/whole_word_text.dart';
 import 'experiment_copy.dart';
 import 'experiment_page.dart';
 import 'experiment_twins.dart';
+import 'ideas_hub.dart';
 import 'lever_copy.dart';
 import 'lever_detail_screen.dart';
 import 'result_display.dart';
@@ -35,6 +36,7 @@ class ExperimentScreen extends StatefulWidget {
     this.onTellMochi,
     this.openUrl = defaultOpenUrl,
     this.onIdeas,
+    this.ideas,
     this.presetLever,
     this.presetValue,
     this.backLabel = 'Back to room',
@@ -42,6 +44,9 @@ class ExperimentScreen extends StatefulWidget {
 
   /// "Ideas for you" row (null hides it: under 18, or no ideas source).
   final VoidCallback? onIdeas;
+
+  /// "More ideas like this ›" on the result (null: hidden, under 18).
+  final IdeasAccess? ideas;
 
   /// An idea's lever to open on arrival, and the value to start it on (null: no preset value).
   final String? presetLever;
@@ -282,6 +287,7 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
             whatIf: exp,
             appearance: widget.appearance,
             open: widget.openUrl,
+            ideas: widget.ideas,
           ),
         ),
       );
