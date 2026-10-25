@@ -25,7 +25,7 @@ import 'widgets/widgets.dart';
 /// the [TwinExperiment]: nothing here, and nothing under it, writes to the profile or the history.
 ///
 /// Without a result for the person today it shows the matching screen instead, never a number:
-/// missing answers (Y-8), an age outside 30 to 85 (Y-9), a rare profile (Y-10).
+/// missing answers (Y-8), an age outside 18 to 85 (Y-9), a rare profile (Y-10).
 class ExperimentScreen extends StatefulWidget {
   const ExperimentScreen({
     super.key,
