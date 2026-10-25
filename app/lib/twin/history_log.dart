@@ -34,9 +34,9 @@ abstract final class HistoryKind {
 /// changed its inputs. Appended on the phone, never edited. [score] is null when the model
 /// gave no number ([status] says why).
 ///
-/// [score] is the health index (JSON key `health_index`, higher is better, 1.0 is the
+/// [score] is the centred health score (JSON key `centered_score`, positive is healthier, 0 is the
 /// middle of the age group) and [engine] names its scale. A point stored before the tag
-/// existed reads as [legacyHealthScoreEngine] (the old −log-hazard scale, no index), and
+/// existed reads as [legacyHealthScoreEngine] (the old −log-hazard scale, no centred score), and
 /// `TwinRepository.healthScoreHistory` leaves out every point not of [healthScoreEngine].
 /// The raw Cox log relative hazard stays under the JSON key `score`, as before.
 class HealthScorePoint {
@@ -56,7 +56,7 @@ class HealthScorePoint {
     engine: '${j['engine'] ?? legacyHealthScoreEngine}',
     at: DateTime.tryParse('${j['at']}') ?? DateTime.fromMillisecondsSinceEpoch(0),
     rawLogRelativeHazard: (j['score'] as num?)?.toDouble(),
-    score: (j['health_index'] as num?)?.toDouble(),
+    score: (j['centered_score'] as num?)?.toDouble(),
     status: HealthScoreStatus.fromWire(j['status']),
     modelVersion: '${j['model_version'] ?? ''}',
     ageGroupPercentile: (j['age_group_percentile'] as num?)?.toDouble(),
@@ -66,13 +66,13 @@ class HealthScorePoint {
 
   final DateTime at;
 
-  /// The engine (scale) of [score], e.g. `cox_index_v1`; readers filter on it.
+  /// The engine (scale) of [score], e.g. `cox_centered_v1`; readers filter on it.
   final String engine;
 
   /// The model's own number as stored (lower is lower modelled risk). Internal use.
   final double? rawLogRelativeHazard;
 
-  /// The displayed health score, the health index: higher is better, 1.0 is the middle.
+  /// The displayed health score, centred: positive is healthier, 0 is the middle.
   final double? score;
   final HealthScoreStatus status;
   final String modelVersion;
@@ -89,7 +89,7 @@ class HealthScorePoint {
     'at': at.toIso8601String(),
     'date': date,
     'engine': engine,
-    'health_index': score,
+    'centered_score': score,
     'score': rawLogRelativeHazard,
     'status': status.wire,
     'model_version': modelVersion,

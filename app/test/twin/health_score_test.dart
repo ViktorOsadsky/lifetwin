@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -21,16 +20,16 @@ void main() {
 
   Map<String, dynamic> g(int i) => Map<String, dynamic>.from(golden[i]['profile'] as Map);
 
-  test('the raw score is predict()\'s log_relative_hazard_score exactly; the score is the health index', () {
+  test('the raw score is predict()\'s log_relative_hazard_score exactly; the score is the centred score', () {
     for (var i = 0; i < golden.length; i++) {
       final a = model.assessModel(g(i));
       final predicted = model.engine.model.predict(g(i));
       expect(predicted['status'], 'available');
       expect(a.rawLogRelativeHazard, predicted['log_relative_hazard_score']);
       expect(a.rawLogRelativeHazard, closeTo((golden[i]['log_relative_hazard_score'] as num).toDouble(), 1e-12));
-      // The health index: higher = better, above 1 exactly when the percentile is above 50.
-      expect(a.healthScore!, greaterThan(0));
-      if (a.healthScore != 1.0) expect(a.healthScore! > 1, a.ageGroupPercentile! > 50);
+      // The centred score: positive = healthier, above 0 exactly when the percentile is above 50.
+      expect(a.healthScore!.isFinite, isTrue);
+      if (a.healthScore != 0) expect(a.healthScore! > 0, a.ageGroupPercentile! > 50);
       expect(a.healthScoreStatus, HealthScoreStatus.available);
     }
   });
@@ -146,18 +145,18 @@ void main() {
       expect(f.percentile, closeTo(100 * 20 / 40, 1e-9)); // women k = 20..39 are higher than -7.05
     });
 
-    test('hand-computed health index: exp(lower median − own), 1.0 at the median', () {
+    test('hand-computed centred score: lower median − own, 0 at the median', () {
       // 60 men: sedentary k/10, k = 0..59; the 30th smallest (k = 29) is the lower median.
       final median = (2.9 - centre[7]) * coef[7];
       final r = ref.compare(score: scoreOf(3.05, 45, false), age: 45, female: false);
       expect(r.medianScore, closeTo(median, 1e-12));
-      expect(r.healthIndex, closeTo(math.exp(median - (3.05 - centre[7]) * coef[7]), 1e-12));
-      expect(r.healthIndex, lessThan(1)); // percentile 48.3 < 50
+      expect(r.healthScore, closeTo(median - (3.05 - centre[7]) * coef[7], 1e-12));
+      expect(r.healthScore, lessThan(0)); // percentile 48.3 < 50
       final at = ref.compare(score: scoreOf(2.9, 45, false), age: 45, female: false);
-      expect(at.healthIndex, closeTo(1.0, 1e-12));
+      expect(at.healthScore, closeTo(0, 1e-12));
       expect(at.percentile, 50); // k = 30..59 are higher
       final just = ref.compare(score: scoreOf(2.85, 45, false), age: 45, female: false);
-      expect(just.healthIndex, greaterThan(1));
+      expect(just.healthScore, greaterThan(0));
       expect(just.percentile, greaterThan(50));
       expect(r.label, 'men 40–50');
     });
@@ -294,7 +293,7 @@ void main() {
       expect((await repoOn(backend)).lifespanRevealSeen, isFalse);
     });
 
-    test('stored history keeps the raw value and the health index; old-scale points are left out', () async {
+    test('stored history keeps the raw value and the centred score; old-scale points are left out', () async {
       final backend = MemoryBackend();
       final repo = await repoOn(backend);
       await repo.saveConversationProfile(fullProfile);
@@ -303,7 +302,7 @@ void main() {
       final point = repo.healthScoreHistory().single;
       expect(point.rawLogRelativeHazard, repo.rawLogRelativeHazard);
       expect(point.score, repo.healthScore);
-      expect((stored.single as Map)['health_index'], repo.healthScore);
+      expect((stored.single as Map)['centered_score'], repo.healthScore);
       // A point written before the engine tag (the old −log-hazard scale) has no index and a
       // legacy engine, so the history readers leave it out.
       final old = HealthScorePoint.fromJson({'at': '2026-10-01T09:00:00.000', 'score': 0.5, 'status': 'available'});

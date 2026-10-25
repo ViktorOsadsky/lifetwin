@@ -71,7 +71,7 @@ void main() {
         body: SingleChildScrollView(
           child: HomeWellnessPanel(
             snapshot: const WellnessSnapshot(
-              healthScore: 0.66,
+              healthScore: -0.42,
               status: HealthScoreStatus.extrapolated,
               ageGroupPercentile: 61.6,
             ),
@@ -80,7 +80,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('0.66'), findsOneWidget);
+    expect(find.text('\u22120.42'), findsOneWidget);
     expect(find.text(HomeWellnessPanel.tagline), findsOneWidget);
     expect(find.text('Healthier than 62 of 100 people your age'), findsOneWidget);
     expect(find.text(RoughGuideBadge.label), findsOneWidget);
@@ -94,7 +94,7 @@ void main() {
       Scaffold(
         body: SingleChildScrollView(
           child: HomeWellnessPanel(
-            snapshot: const WellnessSnapshot(healthScore: 1.3, status: HealthScoreStatus.available),
+            snapshot: const WellnessSnapshot(healthScore: 0.3, status: HealthScoreStatus.available),
             onEstimate: () {},
           ),
         ),
@@ -102,18 +102,18 @@ void main() {
       scale: 1.6,
     );
     expect(find.text(HomeWellnessPanel.tagline), findsNothing);
-    expect(find.text('1.30'), findsOneWidget);
+    expect(find.text('+0.30'), findsOneWidget);
     expect(find.text(RoughGuideBadge.label), findsNothing);
     await phone(
       t,
       Scaffold(
         body: HomeWellnessPanel(
-          snapshot: const WellnessSnapshot(healthScore: 1.3, status: HealthScoreStatus.underAge),
+          snapshot: const WellnessSnapshot(healthScore: 0.3, status: HealthScoreStatus.underAge),
           onEstimate: () {},
         ),
       ),
     );
-    expect(find.text('1.30'), findsNothing);
+    expect(find.text('+0.30'), findsNothing);
     expect(find.text(HomeWellnessPanel.underAgeLine), findsOneWidget);
     expect(find.text('See your estimate'), findsNothing);
     expect(t.takeException(), isNull);

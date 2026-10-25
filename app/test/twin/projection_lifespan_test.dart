@@ -1,4 +1,4 @@
-// The health index (the health score), the projection-based lifespan estimate, the weight guard and the
+// The centred health score, the projection-based lifespan estimate, the weight guard and the
 // score history's engine tag.
 import 'dart:convert';
 import 'dart:io';
@@ -39,7 +39,7 @@ void main() {
     });
   });
 
-  group('health index (the health score: Cox, against the age group median)', () {
+  group('health score (Cox, centred on the age group median)', () {
     // The support reference rows, scored as AgeGroupReference does (no age or sex term),
     // decoded back to model profiles with the same score.
     late List<({double age, bool female, double s, Map<String, dynamic> profile})> rows;
@@ -80,7 +80,7 @@ void main() {
       }
     });
 
-    test('is exactly 1.0 for a profile whose score equals the group median (Rosa\'s group)', () {
+    test('is exactly 0 for a profile whose score equals the group median (Rosa\'s group)', () {
       final a = model.assessModel(rosa());
       final low = int.parse(a.ageGroupBand!.split('–').first), high = int.parse(a.ageGroupBand!.split('–').last);
       final band = [
@@ -92,24 +92,24 @@ void main() {
       final m = model.assessModel({...median.profile, 'age': 64, 'sex_nhanes': 2});
       expect(m.healthScoreStatus, HealthScoreStatus.available);
       expect(m.ageGroupBand, a.ageGroupBand);
-      expect(m.healthScore, closeTo(1.0, 1e-9));
+      expect(m.healthScore, closeTo(0, 1e-9));
       expect(m.healthGroupLabel, 'women ${a.ageGroupBand}');
     });
 
-    test('is exp(group median − s), s being exactly what the percentile ranks', () {
+    test('is group median − s, s being exactly what the percentile ranks', () {
       final a = model.assessModel(rosa());
       final better = model.assessModel({...rosa(), 'vigorous_recreation_min_week': 150});
       final worse = model.assessModel({...rosa(), 'smoking_status': 2});
       expect(better.healthScore!, greaterThan(a.healthScore!));
       expect(worse.healthScore!, lessThan(a.healthScore!));
-      // Same band and same median: the ratio of two indexes is exp(Δ raw score).
+      // Same band and same median: the difference of two scores is −Δ raw score.
       expect(
-        better.healthScore! / a.healthScore!,
-        closeTo(math.exp(a.rawLogRelativeHazard! - better.rawLogRelativeHazard!), 1e-12),
+        better.healthScore! - a.healthScore!,
+        closeTo(a.rawLogRelativeHazard! - better.rawLogRelativeHazard!, 1e-12),
       );
     });
 
-    test('above 1 exactly when the percentile is above 50: 200+ profiles, ages 18–85, both sexes', () {
+    test('above 0 exactly when the percentile is above 50: 200+ profiles, ages 18–85, both sexes', () {
       final base = rosa();
       final variants = <Map<String, dynamic>>[
         {},
@@ -132,9 +132,9 @@ void main() {
             final index = a.healthScore!, pct = a.ageGroupPercentile!;
             expect(a.healthGroupLabel, '${sex == 2 ? 'women' : 'men'} ${a.ageGroupBand}');
             expect(a.extrapolated, age < 35 || age > 79, reason: 'Rough guide flag, age $age');
-            if (index == 1.0) continue; // an exact tie at the median
-            expect(index > 1, pct > 50, reason: 'age $age sex $sex $v: index $index, percentile $pct');
-            index > 1 ? above++ : below++;
+            if (index == 0) continue; // an exact tie at the median
+            expect(index > 0, pct > 50, reason: 'age $age sex $sex $v: score $index, percentile $pct');
+            index > 0 ? above++ : below++;
           }
         }
       }
@@ -452,8 +452,8 @@ void main() {
             expect(d.values, everyElement(0.0), reason: 'age $age bmi $bmi +$up');
             expect(c['weight_guard'], isTrue);
             expect(c['warnings'], contains(weightGuardWarning));
-            expect(c['health_index_delta'], 0.0, reason: 'age $age bmi $bmi +$up');
-            expect(c['health_index_alternative'], c['health_index_current']);
+            expect(c['health_score_delta'], 0.0, reason: 'age $age bmi $bmi +$up');
+            expect(c['health_score_alternative'], c['health_score_current']);
             expect(
               (c['alternative'] as Map)['survival_percent_by_year'],
               (c['current'] as Map)['survival_percent_by_year'],
@@ -474,7 +474,7 @@ void main() {
         'current_profile': current,
         'alternative_profile': {...current, 'bmi': 24.0},
       });
-      expect(guarded['health_index_delta'], 0.0);
+      expect(guarded['health_score_delta'], 0.0);
     });
 
     test('weight gain through height and weight is guarded too', () {
@@ -485,7 +485,7 @@ void main() {
       });
       expect((c['modeled_difference_percentage_points'] as Map).values, everyElement(0.0));
       expect(c['weight_guard'], isTrue);
-      expect(c['health_index_delta'], 0.0);
+      expect(c['health_score_delta'], 0.0);
     });
 
     test('other changes, and a lower BMI, are not touched', () {
@@ -497,10 +497,10 @@ void main() {
       expect(((c['modeled_difference_percentage_points'] as Map)['5'] as num), greaterThan(0));
       // The experiment delta is the changed twin's index minus the current twin's.
       final now = model.assessModel(smoker).healthScore!, then = model.assessModel({...quit, 'bmi': 31.0}).healthScore!;
-      expect(c['health_index_current'], closeTo(now, 1e-12));
-      expect(c['health_index_alternative'], closeTo(then, 1e-12));
-      expect(c['health_index_delta'], closeTo(then - now, 1e-12));
-      expect(c['health_index_delta'] as double, greaterThan(0));
+      expect(c['health_score_current'], closeTo(now, 1e-12));
+      expect(c['health_score_alternative'], closeTo(then, 1e-12));
+      expect(c['health_score_delta'], closeTo(then - now, 1e-12));
+      expect(c['health_score_delta'] as double, greaterThan(0));
       final lower = model.compare({'current_profile': current, 'alternative_profile': {...current, 'bmi': 28.0}});
       expect(lower['weight_guard'], isNull);
       expect(model.compare({'current_profile': current, 'alternative_profile': current})['weight_guard'], isNull);
@@ -508,29 +508,31 @@ void main() {
   });
 
   group('score history engine tag', () {
-    test('points carry engine cox_index_v1 and the index; untagged and old-tag points are left out', () async {
+    test('points carry engine cox_centered_v1 and the score; untagged, cox_v1 and cox_index_v1 points are left out', () async {
       final backend = MemoryBackend();
       final repo = TwinRepository(model: model, store: await TwinStore.open(backend));
       await repo.saveConversationProfile(Map<String, dynamic>.from(fullProfile));
       final doc = jsonDecode(backend.text!) as Map<String, dynamic>;
       final stored = (doc['health_score'] as List).cast<Map<String, dynamic>>();
       expect(stored, isNotEmpty);
-      expect(stored.every((p) => p['engine'] == 'cox_index_v1'), isTrue);
-      expect(stored.last['health_index'], repo.healthScore);
+      expect(stored.every((p) => p['engine'] == 'cox_centered_v1'), isTrue);
+      expect(stored.last['centered_score'], repo.healthScore);
       expect(stored.last['score'], repo.rawLogRelativeHazard);
 
       // A point from before the tag (old −log-hazard scale), one with the old tag, and one
       // from another engine.
-      final untagged = {...stored.first, 'score': -0.5}..remove('engine')..remove('health_index');
+      final untagged = {...stored.first, 'score': -0.5}..remove('engine')..remove('centered_score');
       final oldTag = {...untagged, 'engine': 'cox_v1', 'score': -0.6};
-      final other = {...stored.first, 'engine': 'neural_v1', 'health_index': 9.0};
-      doc['health_score'] = [untagged, ...stored, oldTag, other];
+      final index = {...stored.first, 'engine': 'cox_index_v1', 'health_index': 1.65}..remove('centered_score');
+      final other = {...stored.first, 'engine': 'neural_v1', 'centered_score': 9.0};
+      doc['health_score'] = [untagged, ...stored, oldTag, index, other];
       backend.text = jsonEncode(doc);
       final reopened = TwinRepository(model: model, store: await TwinStore.open(backend));
       final points = reopened.healthScoreHistory();
       expect(points.length, stored.length);
       expect(points.every((p) => p.engine == healthScoreEngine), isTrue);
-      expect(points.map((p) => p.score), [for (final p in stored) p['health_index']]);
+      expect(points.map((p) => p.score), [for (final p in stored) p['centered_score']]);
+      expect(reopened.healthScoreHistory(engine: 'cox_index_v1'), hasLength(1));
       expect(reopened.healthScoreHistory(engine: legacyHealthScoreEngine).map((p) => p.rawLogRelativeHazard), [-0.5, -0.6]);
       expect(reopened.healthScoreHistory(engine: 'neural_v1').single.score, 9.0);
       // The sparkline reads the same filtered history.

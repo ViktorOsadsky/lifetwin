@@ -166,7 +166,7 @@ class ExperimentResult {
     this.alternativeScore,
   });
 
-  /// The health score change: the changed twin's health index − the current twin's (both
+  /// The health score change: the changed twin's centred score − the current twin's (both
   /// from one compare(); higher is better). 0 under the weight guard. Null unless
   /// [available].
   final double? scoreDelta;
@@ -319,9 +319,9 @@ class TwinExperiment extends ChangeNotifier {
         extrapolated: x,
         status: 'available',
         differenceByYear: TwinAssessment.yearMap(c['modeled_difference_percentage_points']),
-        scoreDelta: (c['health_index_delta'] as num?)?.toDouble(),
-        currentScore: (c['health_index_current'] as num?)?.toDouble(),
-        alternativeScore: (c['health_index_alternative'] as num?)?.toDouble(),
+        scoreDelta: (c['health_score_delta'] as num?)?.toDouble(),
+        currentScore: (c['health_score_current'] as num?)?.toDouble(),
+        alternativeScore: (c['health_score_alternative'] as num?)?.toDouble(),
         currentPercentByYear: cur.percentByYear,
         alternativePercentByYear: alt.percentByYear,
         levers: flags,
