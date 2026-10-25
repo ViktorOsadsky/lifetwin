@@ -74,9 +74,9 @@ class _ExperimentPageState extends State<ExperimentPage> {
     final d = reduced ? Duration.zero : const Duration(milliseconds: 200);
     final barOn = titled || _scrolled;
     final homeShown = HomeButton.shownFor(context);
-    // On a short phone or at large text a pinned dock would leave almost no room for the page,
-    // so it scrolls at the end of the page instead.
-    final pinDock = MediaQuery.textScalerOf(context).scale(1) < 1.5 && MediaQuery.sizeOf(context).height >= 600;
+    // On a short phone (320 x 568) a pinned dock would leave almost no room for the page, so it
+    // scrolls at the end of the page instead.
+    final pinDock = MediaQuery.sizeOf(context).height >= 600;
     return ModeScaffold(
       mode: widget.mode,
       child: Column(
@@ -262,7 +262,7 @@ class ExperimentPlate extends StatelessWidget {
                 () {
                   // Large text starts the bubble higher (unless a pill sits up there); what still does
                   // not fit above the sheet's edge is scaled down whole, never hidden under the sheet.
-                  final top = overlay == null && MediaQuery.textScalerOf(context).scale(1) >= 1.5 ? 34.0 : 119.0;
+                  final top = overlay == null && MediaQuery.textScalerOf(context).scale(1) >= 1.5 ? 80.0 : 119.0;
                   final width = math.min(170.0, box.maxWidth * 0.5);
                   return Positioned(
                     right: 6,
