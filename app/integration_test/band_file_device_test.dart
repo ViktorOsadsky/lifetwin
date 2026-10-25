@@ -1,4 +1,4 @@
-// Hardware acceptance: copy the user-supplied report into this test app's
+// Native iOS acceptance (simulator; physical device reserved for Daniel): copy the user-supplied report into this test app's
 // Documents/Inbox before running. No real report is bundled or committed.
 import 'dart:convert';
 import 'dart:typed_data';
@@ -12,7 +12,7 @@ import 'package:lifesim/band/band_store.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   testWidgets(
-    'real iPhone: supplied report traverses native Inbox and phone intake',
+    'native iOS: supplied report traverses Inbox and phone intake',
     (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
