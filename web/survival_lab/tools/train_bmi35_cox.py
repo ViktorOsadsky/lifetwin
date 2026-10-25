@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Reproduce the website-only Cox refit from the prepared NHANES CSV.
+"""Reproduce the evaluated Cox BMI35 refit from the prepared NHANES CSV.
 
 Run from this folder's repository root with the original processed data:
   python web/survival_lab/tools/train_bmi35_cox.py --data ../output/lifestyle_v2/lifestyle_long_followup.csv
 
-The Flutter handoff deliberately remains on its separately approved artifact.
+After evaluation, use model_handoff/sync_cox_from_lab.py to refresh the Dart packages.
 """
 import argparse
 import hashlib

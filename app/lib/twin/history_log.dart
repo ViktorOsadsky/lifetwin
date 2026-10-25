@@ -66,7 +66,7 @@ class HealthScorePoint {
 
   final DateTime at;
 
-  /// The engine (scale) of [score], e.g. `cox_centered_v1`; readers filter on it.
+  /// The engine (scale) of [score], e.g. `cox_centered_bmi35_v2`; readers filter on it.
   final String engine;
 
   /// The model's own number as stored (lower is lower modelled risk). Internal use.

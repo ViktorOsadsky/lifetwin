@@ -97,12 +97,12 @@ void main() {
     await launch(t, repo);
     await finishOnboarding(t);
     expect(repo.lifespanRevealSeen, isTrue);
-    // Rosa's yearly projection: 50% at 98.93, 75% at 87.39, 25% at 108.89.
+    // Cox v3: Rosa's yearly projection crosses 50% at 99.09, 75% at 87.58, 25% at 109.00.
     final est = repo.lifespanEstimate!;
     expect(est.expectedYear, year + 35);
-    expect((est.expectedAge.round(), est.p25Age.round(), est.p75Age.round()), (99, 87, 109));
+    expect((est.expectedAge.round(), est.p25Age.round(), est.p75Age.round()), (99, 88, 109));
     expect(find.text('Around ${est.expectedYear}'), findsOneWidget);
-    expect(find.text('age 87–109'), findsOneWidget);
+    expect(find.text('age 88–109'), findsOneWidget);
     expect(find.text('Rough guide'), findsNothing, reason: 'age 64 is inside 35–79: no flag badge');
     expect(est.status, LifespanStatus.available, reason: 'the engine flag is off for Rosa');
     expect(find.text('Estimate, rough guide'), findsOneWidget, reason: 'the lifespan is always a rough guide');

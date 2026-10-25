@@ -25,7 +25,7 @@ Node.js is used only for tests:
 node --test test/model.test.mjs
 ```
 
-The tests compare browser-side Cox and neural calculations with frozen lifelines/Keras vectors, compare both projected 50% crossings with independent lifelines calculations, and check the BMI direction, permissive out-of-distribution inputs, and impossible values. The Cox artifact is `personal-cox-bmi35-v3-20261024`; the unchanged neural artifact is `temporal-deepsurv-35-79-20261024T184421Z`. The [website Cox model card](MODEL_CARD.md) records the refit, validation, and limits. The website is independent from the Flutter package at runtime; **the Flutter package still uses its original Cox v2 artifact**.
+The tests compare browser-side Cox and neural calculations with frozen lifelines/Keras vectors, compare both projected 50% crossings with independent lifelines calculations, and check the BMI direction, permissive out-of-distribution inputs, and impossible values. The Cox artifact is `personal-cox-bmi35-v3-20261024`; the unchanged neural artifact is `temporal-deepsurv-35-79-20261024T184421Z`. The [website Cox model card](MODEL_CARD.md) records the refit, validation, and limits. The website runs independently of the Flutter package; the Cox v3 artifact is now synchronized to the handoff and app package.
 
 To reproduce the Cox refit, use the prepared `lifestyle_long_followup.csv` from the original training workspace and an environment with the pinned packages in [training requirements](tools/requirements.txt):
 

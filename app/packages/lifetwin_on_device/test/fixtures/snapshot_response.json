@@ -17,7 +17,7 @@
     "source": "profile_snapshot"
   },
   "survival": {
-    "model_version": "personal-cox-v2-20261024T182404Z",
+    "model_version": "personal-cox-bmi35-v3-20261024",
     "causal_interpretation": false,
     "horizons_years": [
       1,
@@ -27,23 +27,23 @@
       5
     ],
     "survival_probabilities": {
-      "1": 0.9988050317356533,
-      "2": 0.9976671789349414,
-      "3": 0.9962932635299774,
-      "4": 0.9948999562278703,
-      "5": 0.9931850509406549
+      "1": 0.99881510102113,
+      "2": 0.9976866051517587,
+      "3": 0.9963243186331642,
+      "4": 0.9949429885696104,
+      "5": 0.993242941735678
     },
     "survival_percent_by_year": {
-      "1": 99.88050317356533,
-      "2": 99.76671789349413,
-      "3": 99.62932635299774,
-      "4": 99.48999562278703,
-      "5": 99.31850509406549
+      "1": 99.881510102113,
+      "2": 99.76866051517587,
+      "3": 99.63243186331641,
+      "4": 99.49429885696104,
+      "5": 99.3242941735678
     },
     "death_date": null,
     "estimated_age_at_death": null,
     "status": "available",
-    "log_relative_hazard_score": -1.558015201300663,
+    "log_relative_hazard_score": -1.566277627711532,
     "interpretation": "Estimated cumulative survival among similar survey profiles, not an individual death date or medical prognosis."
   },
   "wellness_cards": [

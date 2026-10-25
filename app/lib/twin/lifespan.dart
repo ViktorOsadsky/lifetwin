@@ -549,12 +549,17 @@ void _checkProfile(Map<String, dynamic> p) {
 /// order of [riskFeatureNames].
 List<double> encodeRisk(Map<String, dynamic> p) {
   final bmi = _num(p, 'bmi');
+  final highBmiFeature = riskFeatureNames[1];
+  if (!highBmiFeature.startsWith('bmi_above')) {
+    throw StateError('Unexpected high-BMI feature: $highBmiFeature');
+  }
+  final highBmiKnot = double.parse(highBmiFeature.substring('bmi_above'.length));
   final sleep = _num(p, 'sleep_hours');
   final smoking = p['smoking_status'];
   final health = p['general_health'];
   return [
     math.max(23 - bmi, 0) / 5,
-    math.max(bmi - 27, 0) / 5,
+    math.max(bmi - highBmiKnot, 0) / 5,
     math.max(7 - sleep, 0).toDouble(),
     math.max(sleep - 8, 0).toDouble(),
     math.log(1 + _num(p, 'vigorous_recreation_min_week')) / math.log(76),

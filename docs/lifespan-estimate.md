@@ -6,7 +6,7 @@
 
 > "We should extrapolate an expected death year or date, but then it basically goes away as we focus on relative health score. It doesn't matter how accurate it is for this, as it will never be truly accurate if we extrapolate. it is more of a proof of concept. Age bands should be extrapolated and adjusted. higher should mean better health rating. the set is fine. He [Viktor] is okay with the extrapolation. We don't really need beyond five years."
 
-The written rules stay in place for everything else: [AGENTS.md](../AGENTS.md) ("never fabricate personal predictions or exact death dates"), [MASTER_PLAN.md](../MASTER_PLAN.md) ("no exact death year") and the [model card](../model_handoff/lifetwin_on_device/MODEL_CARD.md) ("Do not extrapolate a life expectancy"). Each rule site carries an "Owner override (2026-10-24)" note scoped to this reveal. The model card belongs to the model package and was not edited; Viktor's agreement is recorded in the ruling above.
+The written rules stay in place for everything else: [AGENTS.md](../AGENTS.md) and [MASTER_PLAN.md](../MASTER_PLAN.md) scope the one-time reveal as a proof of concept. The [model card](../model_handoff/lifetwin_on_device/MODEL_CARD.md) documents the Cox model's validated five-year scope and the unvalidated long-range projection.
 
 **Presentation ruling (owner, 2026-10-24): option 1.** The headline is an expected age rounded to a whole year, with the 25th–75th percentile ages as the range:
 
@@ -40,7 +40,7 @@ Confirmed-profile writes use [`mergeConfirmed`](../app/lib/twin/checkin_applier.
 
 Supported current Cox outputs remain years 1–5 for supported assessment ages 35–79. Neither repeating one-year steps nor blending extends that validation. Nothing past 79 is validated. The recurrence assumes unchanged future inputs; comparisons remain observational, without causal years gained. The [source projection handoff](../model_handoff/SURVIVAL_PROJECTION_HANDOFF.md) and [36-case SSA sanity report](research/lifespan-sanity.md) explain the limits. The pinned sanity grid samples only pure weights 0/1 and does not validate interior blends or fractional-age behavior.
 
-The large hard-switch steps were reduced by blending, but increasing remaining years over 35–45 and falling expected age over 70–79 remain acknowledged model issues. Exact app/model simulator acceptance, accessibility and recording timing are tracked separately in [#107](https://github.com/ViktorOsadsky/lifetwin/issues/107), [#134](https://github.com/ViktorOsadsky/lifetwin/issues/134) and [#133](https://github.com/ViktorOsadsky/lifetwin/issues/133).
+Blending was introduced to reduce the earlier hard-switch steps. The seam and long-range trends must be reassessed for Cox BMI35 v3; the prior Cox v2 measurements do not establish this refit's behavior.
 
 ## Retained CDC component: code and reproduction
 
@@ -52,7 +52,7 @@ Code:
 - [`app/lib/twin/lifespan_data.dart`](../app/lib/twin/lifespan_data.dart): generated data.
 - [`server/tools/lifespan_reference.py`](../server/tools/lifespan_reference.py): Python reference.
 - [`server/tools/lifespan_validation.py`](../server/tools/lifespan_validation.py): produces the tables below.
-- Golden vectors: [`app/test/twin/lifespan_golden.json`](../app/test/twin/lifespan_golden.json). Dart and Python agree to 1e-9.
+- Golden vectors: [`app/test/twin/lifespan_golden.json`](../app/test/twin/lifespan_golden.json). The regenerated vectors await app implementation checks.
 
 Reproduce:
 
@@ -84,7 +84,7 @@ The packaged Cox model gives S(t | x) = S0(t)^exp(β·(x − c)) only for t = 1�
 
    **Implementation:** log HR is held at full strength for the model's validated 5 years, then multiplied by 0.5^((t − 5)/h), evaluated at the midpoint of each life-table year. Default h = **20 years**; `None` turns attenuation off.
 
-   **External check for h:** Li et al. ([Circulation 2018;138:345–55](https://pubmed.ncbi.nlm.nih.gov/29712712/)) used the same life-table method with HRs from 34 years of follow-up. Their *extreme* contrast, 5 vs 0 low-risk lifestyle factors, separated life expectancy at 50 by **14.0 years (women) and 12.2 (men)**. Here the 10th-to-90th-percentile NHANES HR profiles at 50 are separated by:
+   **Historical development check for h (Cox v2):** Li et al. ([Circulation 2018;138:345–55](https://pubmed.ncbi.nlm.nih.gov/29712712/)) used a life-table method with HRs from 34 years of follow-up. Their *extreme* contrast, 5 vs 0 low-risk lifestyle factors, separated life expectancy at 50 by **14.0 years (women) and 12.2 (men)**. The following 10th-to-90th-percentile NHANES comparisons were computed with the earlier Cox v2 artifact; the current v3 examples and validation are below.
 
    | half-life | women | men |
    |---|---|---|
@@ -95,7 +95,7 @@ The packaged Cox model gives S(t | x) = S0(t)^exp(β·(x − c)) only for t = 1�
 
    These spreads were computed before the age-band factor (step 2). The factor multiplies everyone in a band by the same k, so it shifts the level, not the ordering, and changes these spreads only slightly.
 
-   Without attenuation, the 10th–90th percentile spread already equals or exceeds Li's extreme contrast, which can't be right. 20 y puts it at about half to three-quarters of Li's extreme. That fits both Clarke's dilution data and Li's long-follow-up HRs. 10 y is also defensible, and the sensitivity is reported throughout.
+   In that v2 check, the unattenuated 10th–90th percentile spread was as large as Li's extreme contrast. The 20-year setting reduced it. The attenuation setting remains an unvalidated modeling choice for v3; see the current sensitivity in the tables below.
 5. **CDC component outputs** (`LifespanCurve`; the app blends this with the projection as described above):
    - survival curve from the current age to 110;
    - life expectancy (the integral of S) and the expected age at death;
@@ -110,113 +110,7 @@ The packaged Cox model gives S(t | x) = S0(t)^exp(β·(x − c)) only for t = 1�
 
 ## CDC component calculation checks
 
-Generated by `lifespan_reference.py validate` (model `personal-cox-v2-20261024T182404Z`). Section numbers (§) below refer to these tables.
-
-### 1. Life table reproduction (HR = 1, no attenuation)
-
-| Sex | e65 published (Table A) | e65 spreadsheet | e65 this method | max abs diff vs spreadsheet e(x), ages 1-99 | max abs diff vs recomputation from q(x) |
-|---|---|---|---|---|---|
-| male | 18.4 | 18.3587 | 18.3587 | 9.8e-06 | 7.0e-13 |
-| female | 20.8 | 20.8307 | 20.8307 | 1.2e-05 | 6.5e-13 |
-
-### 2. Personal hazard ratio among NHANES training profiles
-
-HR relative to the same-sex, same-age reference (log-mean-exp). Mean HR should be ~1 by construction; the median sits below 1 because a minority of high-risk profiles carries most of the deaths.
-
-| Sex | Ages | n | mean HR | median HR | 10th-90th pct HR | HR of the mean profile |
-|---|---|---|---|---|---|---|
-| male | 35-44 | 257 | 0.96 | 0.77 | 0.41-1.68 | 0.83 |
-| male | 45-54 | 242 | 0.98 | 0.81 | 0.35-1.90 | 0.81 |
-| male | 55-64 | 212 | 1.02 | 0.80 | 0.42-1.85 | 0.85 |
-| male | 65-74 | 221 | 1.03 | 0.81 | 0.37-1.95 | 0.84 |
-| male | 75-79 | 66 | 1.03 | 0.84 | 0.46-1.76 | 0.90 |
-| female | 35-44 | 255 | 0.96 | 0.73 | 0.41-1.80 | 0.80 |
-| female | 45-54 | 254 | 1.01 | 0.79 | 0.41-1.91 | 0.85 |
-| female | 55-64 | 252 | 1.03 | 0.81 | 0.40-1.95 | 0.82 |
-| female | 65-74 | 176 | 0.97 | 0.74 | 0.39-2.01 | 0.79 |
-| female | 75-79 | 65 | 1.01 | 0.80 | 0.45-1.93 | 0.86 |
-
-### 3. Five-year survival: Cox model vs. life-table version
-
-Same NHANES training profiles. Cox = the packaged model (NHANES 2007-2012, deaths to 2019). Life table = this method (2024 US period table x personal HR), before and after the per-band hazard factor k. Gap = life table - Cox, percentage points.
-
-| Sex | Ages | n | mean Cox S5 % | life-table S5 % before | gap before pp | k | life-table S5 % after | gap after pp | rank correlation |
-|---|---|---|---|---|---|---|---|---|---|
-| male | 35-44 | 257 | 98.62 | 98.55 | -0.07 | 0.954 | 98.62 | +0.00 | 0.985 |
-| male | 45-54 | 242 | 96.88 | 97.34 | +0.46 | 1.179 | 96.88 | +0.00 | 0.999 |
-| male | 55-64 | 212 | 93.06 | 93.93 | +0.88 | 1.152 | 93.06 | +0.00 | 0.999 |
-| male | 65-74 | 221 | 87.49 | 88.09 | +0.60 | 1.056 | 87.49 | +0.00 | 0.997 |
-| male | 75-79 | 66 | 80.52 | 78.01 | -2.52 | 0.866 | 80.52 | +0.00 | 0.992 |
-| female | 35-44 | 255 | 99.02 | 99.19 | +0.17 | 1.207 | 99.02 | +0.00 | 0.998 |
-| female | 45-54 | 254 | 97.70 | 98.32 | +0.62 | 1.374 | 97.70 | +0.00 | 0.998 |
-| female | 55-64 | 252 | 94.90 | 96.07 | +1.17 | 1.313 | 94.90 | +0.00 | 0.998 |
-| female | 65-74 | 176 | 91.16 | 92.09 | +0.93 | 1.127 | 91.16 | +0.00 | 0.993 |
-| female | 75-79 | 65 | 85.96 | 83.59 | -2.37 | 0.839 | 85.96 | +0.00 | 0.989 |
-
-### 4. Example profiles (attenuation half-life: none / 20 y default / 10 y)
-
-| Profile | HR | headline (20 y): about / range | table avg age at death | expected age (none / 20 / 10) | median | 25th-75th pct | SD y | P(80) | P(90) | P(100) |
-|---|---|---|---|---|---|---|---|---|---|---|
-| female_20_typical | 0.54 | 84 / 78-92 | 82.1 | 88.4 / 83.6 / 82.7 | 86.4 | 77.8-92.5 | 12.9 | 70% | 35% | 4% |
-| male_30_typical | 0.37 | 82 / 75-91 | 78.1 | 88.9 / 81.8 / 80.0 | 84.5 | 75.2-90.9 | 12.8 | 64% | 29% | 2% |
-| male_45_readme | 0.36 | 84 / 78-92 | 79.6 | 90.2 / 84.4 / 82.5 | 86.4 | 78.3-92.3 | 11.1 | 71% | 35% | 3% |
-| female_55_former_smoker_htn | 1.45 | 82 / 75-90 | 84.2 | 81.1 / 82.2 / 82.9 | 84.0 | 75.2-90.4 | 10.9 | 63% | 27% | 2% |
-| female_72_never_smoker_active | 0.25 | 94 / 89-100 | 87.4 | 99.0 / 94.3 / 92.5 | 94.9 | 89.4-99.6 | 8.0 | 95% | 73% | 23% |
-| female_72_smoker_diabetes | 0.68 | 89 / 84-95 | 87.4 | 90.1 / 89.4 / 89.0 | 90.0 | 84.1-95.0 | 7.6 | 87% | 50% | 7% |
-| male_84_hypertension | 0.67 | 92 / 88-96 | 90.6 | 92.5 / 92.3 / 92.2 | 91.9 | 88.2-95.8 | 5.1 | - | 63% | 8% |
-
-### 5. Sanity case: 72-year-old women
-
-| Contrast | model log-HR gap | none | 20 y | 10 y |
-|---|---|---|---|---|
-| active never-smoker vs same + current smoker + diabetes | 1.00 (HR x2.72) | 8.9 y | 4.9 y | 3.5 y |
-| active never-smoker vs inactive, fair health, smoker, diabetes | 2.41 (HR x11.09) | 17.5 y | 12.3 y | 10.0 y |
-| literature HRs (smoking 3.0 x diabetes 1.80), average woman | 1.69 (HR x5.40) | 9.1 y | 8.7 y | 8.2 y |
-
-### 6. Edge ages (expected age at death, default 20 y half-life)
-
-| Age | avg man | README man (HR) | avg woman | 55F profile (HR) |
-|---|---|---|---|---|
-| 18 | 77.28 | 80.58 (0.34) | 82.08 | 80.37 (1.85) |
-| 19 | 77.33 | 80.69 (0.34) | 82.10 | 80.35 (1.85) |
-| 30 | 78.09 | 82.10 (0.34) | 82.42 | 80.13 (1.85) |
-| 34 | 78.44 | 82.68 (0.34) | 82.59 | 80.10 (1.85) |
-| 35 | 78.54 | 82.84 (0.34) | 82.64 | 80.10 (1.85) |
-| 36 | 78.63 | 83.04 (0.34) | 82.69 | 80.11 (1.85) |
-| 44 | 79.50 | 84.92 (0.29) | 83.19 | 80.66 (1.70) |
-| 45 | 79.62 | 84.36 (0.36) | 83.27 | 80.11 (1.90) |
-| 78 | 87.77 | 95.63 (0.21) | 89.19 | 89.78 (0.89) |
-| 79 | 88.19 | 96.07 (0.21) | 89.55 | 90.11 (0.89) |
-| 80 | 88.63 | 96.49 (0.21) | 89.91 | 90.47 (0.89) |
-| 81 | 89.09 | 96.92 (0.21) | 90.31 | 90.85 (0.89) |
-| 84 | 90.60 | 98.32 (0.21) | 91.61 | 92.11 (0.89) |
-| 85 | 91.15 | 98.83 (0.21) | 92.09 | 92.58 (0.89) |
-
-### 7. Calendar-year computation (README man, born 1981-03-14, assessed 2026-10-24)
-
-- exact age = 45.6135 y; log HR = -1.0415
-- remaining life expectancy = 38.8978 y = 14207.1 days
-- expected calendar year = 2065 (no day or date is exposed)
-- headline: You're likely to live to about 85. Most people like you live to between 79 and 92.
-
-### Reading the validation
-
-- **Life table reproduction is exact.** HR = 1 matches a textbook recomputation from q(x) to 7e−13 years. It matches the spreadsheet e(x) to 1e−5, which is the float32 storage in the NCHS files. It matches Table A after rounding.
-- **The reference does what it claims.** Mean HR is 0.96–1.03 in every age/sex band. The *median* HR is 0.73–0.84, so most people come out somewhat above the table average. That is real: a minority of high-risk profiles carries most deaths. The owner should still expect "most users beat the average" in the product, and note that this is not flattery.
-- **Calibration gap at 5 years (§3), now closed by the band factor.** Before the factor, the 5-year survival this method produces stayed within ±1.2 percentage points of the Cox model's own five-year survival for ages 35–74, and at 75–79 it was 2.4–2.5 pp *lower*. After it, every band matches to 0.00 pp (tests require < 0.5 pp in Python and Dart). k is 0.95–1.18 for men and 1.13–1.37 for women at 35–74, and 0.87 (men) and 0.84 (women) at 75–79. Likely reasons for the original gap:
-  - The 2024 table includes nursing-home residents; NHANES (civilian, non-institutionalized) does not.
-  - NHANES tops ages out at 80.
-  - The Cox baseline averages 2007–2019 mortality.
-
-  Rank correlation is 0.985–0.999. Ordering within each band is preserved, so the two disagree on level, not on who is at higher risk.
-- **Sanity case (§5).** Compare a 72-year-old woman who is an active never-smoker with the same woman as a current smoker with diabetes:
-  - The model separates them by 4.9 years at the default half-life (8.9 with no attenuation, 3.5 at 10 y).
-  - Published HRs on the same table give 8.7 years at the default (9.1 with none): Jha et al. ([NEJM 2013;368:341–50](https://pubmed.ncbi.nlm.nih.gov/23343063/)) report current vs never smoking at HR 3.0 for women, and the ERFC ([NEJM 2011;364:829–41](https://pubmed.ncbi.nlm.nih.gov/21366474/)) reports diabetes at HR 1.80.
-  - For context: Jha reports smokers lose more than 10 years of life expectancy. Taylor et al. ([Am J Public Health 2002;92:990–6](https://pubmed.ncbi.nlm.nih.gov/12036794/)) found that women who quit at 65 gain 2.7–3.7 years. The ERFC found a 50-year-old with diabetes dies about 6 years earlier, and having 2 of diabetes/stroke/MI costs about 12 years at 60 ([JAMA 2015;314:52–60](https://pubmed.ncbi.nlm.nih.gov/26151266/)).
-
-  The model's smoking × diabetes hazard ratio (2.7) is half the literature's (5.4). It adjusts for self-rated health and hypertension, which partly mediate smoking and diabetes, so the smoking and diabetes gap is understated. The full contrast, which adds inactivity and fair health, is 12.3 years (default) and is driven by self-rated health and activity. **Consequence:** in example 5, a 72-year-old woman who smokes and has diabetes but is active and rates her health "very good" comes out *above* the table average (89 vs 87). That is what the model says, but a user would find it surprising.
-- **Edges (§6).** The age term is not extrapolated, so the estimate is continuous through 34→35 and 79→80. Each year adds the life table's increment, and the personal HR changes only through the reference and the band factor, both held flat outside 35–79. The band factor steps at 44→45 and the other band boundaries. The HRs at 18–34 and 80–85 use reference profiles and band factors from 35–44 and 75–79 and are unvalidated (`LifespanStatus.extrapolated`). The model never saw anyone under 35, and NHANES ages above 80 are top-coded.
-- **Precision.** The SD of the age at death is about 13 years at 30, 11 at 45 and 8 at 72. A whole-year headline with a p25–p75 range is the honest resolution. A day-level date would carry roughly 4,000 days of SD. The closed-form mean and SD agree with brute-force numerical integration to 1e−7.
+The v3 five-year Cox evaluation is in the [model card](../web/survival_lab/MODEL_CARD.md). The CDC component tables previously printed here used an outdated BMI knot in the lifespan reference encoder, so they have been withdrawn. The encoder and generated app vectors now use the knot named in the model artifact. Regenerate and review the component report during app implementation before quoting its lifespan figures. No blended lifetime validation has been done.
 
 ## Limits
 
@@ -227,8 +121,8 @@ Same NHANES training profiles. Cox = the packaged model (NHANES 2007-2012, death
   - an unweighted sample (no survey weights);
   - no external validation;
   - the non-monotone general-health term ("very good" is fitted below "excellent");
-  - the near-zero, slightly inverse BMI slope above 27, and lower BMI below 23 fitted as worse.
-- **Attenuation is a modelling choice.** Its shape (exponential) and half-life come from the literature, not from LifeTwin data. The reported sensitivity matters most for low-HR (very healthy) profiles. For example, the active 72-year-old woman's expected age is 100.4 with none, 94.9 at 20 y and 92.9 at 10 y.
+  - BMI 23–35 is flat by design; above 35 the fitted slope is positive, and below 23 lower BMI is fitted as worse. None of these associations estimates a weight-change benefit.
+- **Attenuation is a modelling choice.** Its shape (exponential) and half-life come from the literature, not from LifeTwin data. The impact of this assumption should be reviewed with the corrected encoder before quoting numerical lifespan examples.
 - **Not population-specific.** Race, income and geography are not in the model or this table.
 
 ## Recommended presentation

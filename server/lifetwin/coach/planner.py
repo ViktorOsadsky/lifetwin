@@ -62,7 +62,7 @@ NOT_FOR_ME = re.compile(
     re.I,
 )
 
-LEVER_SOURCE = "docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z)"
+LEVER_SOURCE = "docs/model-sensitivity.json (personal-cox-bmi35-v3-20261024)"
 LEVER_ORDER = (
     "quit_smoking",
     "vigorous_plus_60",
