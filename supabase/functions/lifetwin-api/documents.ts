@@ -12,7 +12,7 @@ function pattern(name: string, global = false): RegExp {
 }
 const words = (value: string): string[] =>
   value.toLowerCase().match(/[a-z][a-z'-]+/g) ?? [];
-function redact(
+export function redact(
   pages: string[],
 ): { pages: string[]; removed: number; patients: number } {
   let removed = 0;
@@ -105,7 +105,7 @@ function redact(
 }
 const sections = new Set(data.patient_sections),
   diagnosisSections = new Set(data.diagnosis_sections);
-function heading(line: string): string | null {
+export function heading(line: string): string | null {
   const text = line.trim().replace(/^[*#=\-_ ]+|[*#=\-_ ]+$/g, "").trim();
   const [head, ...rest] = text.split(":");
   const normalized = head.trim().toLowerCase().replace(/\s+/g, " ").replace(
@@ -142,7 +142,7 @@ function isoDate(y: number, m: number, d: number): string | null {
     String(d).padStart(2, "0")
   }`;
 }
-function dates(
+export function dates(
   text: string,
 ): { start: number; length: number; date: string }[] {
   const out: { start: number; length: number; date: string }[] = [];
@@ -195,7 +195,7 @@ function dates(
   }
   return out.sort((a, b) => a.start - b.start);
 }
-function documentDate(pages: string[]): string | null {
+export function documentDate(pages: string[]): string | null {
   for (const labels of data.date_labels) {
     for (const page of pages) {
       for (const line of page.split("\n")) {
@@ -214,7 +214,7 @@ function documentDate(pages: string[]): string | null {
   }
   return null;
 }
-type Candidate = {
+export type Candidate = {
   field: string;
   use: string;
   value: number | boolean | string;
@@ -227,7 +227,7 @@ type Candidate = {
   confidence: string;
   method: string;
 };
-function readLine(
+export function readLine(
   line: string,
   page: number,
   section: string | null,

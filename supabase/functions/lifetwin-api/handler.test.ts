@@ -204,3 +204,42 @@ Deno.test("Slow chunked request is cancelled at the body deadline and releases i
     "slot released",
   );
 });
+
+Deno.test("PDF upload honors its configured byte budget before opening a document", async () => {
+  const handler = createHandler(async () => ({
+    API_MAX_PDF_BODY_BYTES: "1024",
+  }));
+  const response = await handler(
+    request("/api/documents/read", { pdf_base64: "a".repeat(1500) }),
+  );
+  assert(response.status === 413);
+  assert((await response.json()).code === "body_too_large");
+});
+
+Deno.test("Only one PDF upload occupies an isolate and its slot is released", async () => {
+  let controller!: ReadableStreamDefaultController<Uint8Array>;
+  const stream = new ReadableStream<Uint8Array>({
+    start(value) {
+      controller = value;
+      value.enqueue(new TextEncoder().encode('{"pdf_base64":"'));
+    },
+  });
+  const handler = createHandler(async () => ({}));
+  const pending = handler(
+    new Request(
+      "https://example.test/lifetwin-api/api/documents/read",
+      { method: "POST", body: stream, duplex: "half" } as RequestInit,
+    ),
+  );
+  const second = await handler(
+    request("/api/documents/read", { pdf_base64: "eA==" }),
+  );
+  assert(second.status === 429);
+  controller.enqueue(new TextEncoder().encode('eA=="}'));
+  controller.close();
+  assert((await pending).status === 200);
+  assert(
+    (await handler(request("/api/documents/read", { pdf_base64: "eA==" })))
+      .status === 200,
+  );
+});

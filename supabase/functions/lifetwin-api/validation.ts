@@ -63,6 +63,10 @@ export const routes: Record<string, [string, string]> = {
     "documents.extract.request.schema.json",
     "documents.extract.schema.json",
   ],
+  "/api/documents/read": [
+    "documents.read.request.schema.json",
+    "documents.extract.schema.json",
+  ],
   "/api/voice/token": [
     "voice.token.request.schema.json",
     "voice.token.schema.json",

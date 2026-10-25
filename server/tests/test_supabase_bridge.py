@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -106,7 +107,7 @@ def test_provider_file_filters_non_edge_settings_and_rejects_public_tokens(tmp_p
         f"LLM_API_KEY={SECRET}\nAPI_GATEWAY_TOKEN=obsolete\nSUPABASE_SERVICE_ROLE_KEY=never-copy\nMODEL_ARTIFACT_PATH=/tmp/model\n",
     )
     assert bridge.provision_values(path) == {"LLM_API_KEY": SECRET}
-    assert len(bridge.SETTING_NAMES) == 19
+    assert len(bridge.SETTING_NAMES) == 22
 
 
 @pytest.mark.parametrize("cors_name", ["CORS_ORIGINS", "LIFETWIN_CORS_ORIGINS"])
@@ -284,3 +285,55 @@ def test_only_numeric_failure_diagnostics_are_displayed(error_code):
         assert "error_code=" not in message
     assert SECRET not in message
     assert len(runner.calls) == 1
+
+
+def test_pdf_configuration_imports_and_validates_server_limits(tmp_path):
+    path = private_source(
+        tmp_path,
+        "DOCUMENT_PROVIDER=claude\nDOCUMENT_READ_TIMEOUT_SECONDS=25\nAPI_MAX_PDF_BODY_BYTES=14000000\n",
+    )
+    assert bridge.provision_values(path) == {
+        "DOCUMENT_PROVIDER": "claude",
+        "DOCUMENT_READ_TIMEOUT_SECONDS": "25",
+        "API_MAX_PDF_BODY_BYTES": "14000000",
+    }
+    for setting, value in [
+        ("DOCUMENT_PROVIDER", "unknown"),
+        ("DOCUMENT_READ_TIMEOUT_SECONDS", "31"),
+        ("DOCUMENT_READ_TIMEOUT_SECONDS", "0"),
+        ("API_MAX_PDF_BODY_BYTES", "16000001"),
+        ("API_MAX_PDF_BODY_BYTES", "1023"),
+    ]:
+        path.write_text(f"{setting}={value}\n")
+        with pytest.raises(bridge.BridgeFailure):
+            bridge.provision_values(path)
+
+
+def test_runtime_provisioner_and_database_pdf_allowlists_agree():
+    repository = SCRIPTS.parent
+    runtime = (repository / "supabase/functions/lifetwin-api/settings.ts").read_text()
+    runtime_array = runtime.split("export const SETTING_NAMES = [", 1)[1].split("] as const", 1)[0]
+    runtime_names = set(re.findall(r'"([A-Z][A-Z0-9_]+)"', runtime_array))
+    migrations = list((repository / "supabase/migrations").glob("*pdf_provider_config.sql"))
+    assert len(migrations) == 1
+    migration = migrations[0].read_text()
+    sql_array = migration.split("all(array[", 1)[1].split("])", 1)[0]
+    database_names = set(re.findall(r"'([A-Z][A-Z0-9_]+)'", sql_array))
+    assert runtime_names == database_names == bridge.SETTING_NAMES
+    assert migration.count("create or replace function") == 1
+    assert "create or replace function public.lifetwin_set_provider_config" in migration
+    assert "set search_path = ''" in migration
+    assert (
+        "revoke all on function public.lifetwin_set_provider_config(jsonb) from public, anon, authenticated, service_role;"
+        in migration
+    )
+    assert "create table" not in migration and "alter table" not in migration
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "API_BASE_URL", "SUPABASE_GATEWAY_URL"],
+)
+def test_frontend_and_administrative_keys_cannot_enter_provider_config(name):
+    with pytest.raises(bridge.BridgeFailure):
+        bridge.provisioning_query({name: SECRET})

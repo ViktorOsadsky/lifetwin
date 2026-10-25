@@ -206,7 +206,7 @@ abstract class PdfDocumentReader {
 /// `POST /api/documents/read` with the PDF as base64. The server holds it for that request only.
 class HttpPdfDocumentReader implements PdfDocumentReader {
   HttpPdfDocumentReader({http.Client? client, ApiBase? base})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       base = base ?? ApiBase(apiBaseUrl, client);
 
   final http.Client _client;

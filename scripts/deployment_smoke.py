@@ -135,7 +135,12 @@ def run_checks(
     caps = request_json(client, base_url, "capabilities", "GET", "/api/capabilities")
     require(caps.get("health_data_storage") == "none", "stateless health boundary")
     require(caps.get("prediction") == prediction_state, "prediction capability")
-    require(caps.get("documents") == "text_extraction", "document capability")
+    documents = caps.get("documents")
+    require(
+        documents == "text_extraction"
+        or (isinstance(documents, dict) and documents.get("text_extraction") is True),
+        "document capability",
+    )
     if require_providers:
         require(caps.get("llm_configured") is True, "configured intake provider")
         require(caps.get("personalize", {}).get("configured") is True, "configured personalizer")

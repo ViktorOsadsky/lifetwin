@@ -63,7 +63,9 @@ Supabase MCP URL. The updater refuses other projects and never changes the
 connection, extracts its credential, or falls back to a direct session.
 
 Apply the repository's `20261025082417_lifetwin_backend_credentials.sql` migration before
-first provisioning. This helper deliberately does not create or migrate schema.
+first provisioning, and the subsequent `lifetwin_pdf_provider_config` migration
+before provisioning PDF provider settings. This helper deliberately does not
+create or migrate schema.
 To replace the server configuration using a complete protected file:
 
 ```sh
@@ -71,7 +73,7 @@ uv run python scripts/supabase_bridge.py \
   --provision-env-file .env.deploy/next.env
 ```
 
-Only the Edge API's 19 supported setting names can enter the provider-config RPC.
+Only the Edge API's 22 supported setting names can enter the provider-config RPC.
 `CORS_ORIGINS` is accepted as an alias for `LIFETWIN_CORS_ORIGINS`; both use the
 server's exact-origin validation. Supabase administrative tokens and unrelated
 settings are discarded. This replaces the entire stored configuration, so retain

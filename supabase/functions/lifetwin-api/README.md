@@ -35,6 +35,9 @@ override Vault settings. The service-role key is provided by Supabase at
 runtime. See
 [credential entry and updates](../../../docs/backend-credentials.md).
 
+Apply the later `lifetwin_pdf_provider_config` migration as well before
+configuring PDF options.
+
 The database stores encrypted provider configuration and anonymous aggregate
 provider-call counters only. It stores no profiles, documents, transcripts or
 audio. Anonymous and authenticated app roles cannot invoke the config getter,
@@ -47,26 +50,31 @@ consume budget. An unavailable budget store prevents provider calls.
 The hosted implementation includes guided onboarding, confirmation, Health
 import, daily/weekly/quick check-ins, changing saved answers, reviewed quizzes,
 curated advisor plans, recommendations, conservative general coach plans,
-parser-only document extraction, and Cartesia token minting. Outside-AI intake
-extraction requires consent for the selected provider, proposes an exact quoted
-span, and passes the deterministic parser before a confirmation. It never writes
-confirmed health inputs on the provider's authority.
+parser-only OCR text extraction, consent-gated Claude PDF reading, and Cartesia
+token minting. Outside-AI intake extraction requires consent for the selected
+provider, proposes an exact quoted span, and passes the deterministic parser
+before a confirmation. It never writes confirmed health inputs on the provider's
+authority.
 
-Requests and responses use the existing 28 JSON schemas. Ordinary bodies are
+Requests and responses use the existing 29 JSON schemas. Ordinary bodies are
 limited to 32 KiB and document bodies to 384 KiB, with a five-second body
-deadline. Provider calls have explicit deadlines, fixed hosts and bounded
-responses. An isolate also limits concurrency to 16 and traffic to 120 requests
-per minute. These isolate limits supplement the shared provider budgets; they
-are not a per-person identity or a distributed general API rate limiter. No
-request payloads, provider responses or credentials are logged by this code.
-Browser CORS requires an exact HTTPS origin in `LIFETWIN_CORS_ORIGINS`; native
-Flutter needs no CORS.
+deadline. Whole-PDF JSON is capped at 14,000,000 bytes (10 MiB decoded, 20
+pages) with a ten-second upload deadline and only one PDF request per isolate.
+Claude PDF findings are checked against PDF text and the local parser; scans
+carry low confidence and an unverified-quote limitation. Provider calls have
+explicit deadlines, fixed hosts and bounded responses. An isolate also limits
+concurrency to 16 and traffic to 120 requests per minute. These isolate limits
+supplement the shared provider budgets; they are not a per-person identity or a
+distributed general API rate limiter. No request payloads, provider responses or
+credentials are logged by this code. Browser CORS requires an exact HTTPS origin
+in `LIFETWIN_CORS_ORIGINS`; native Flutter needs no CORS.
 
 This is a bounded port, not full FastAPI parity: advanced transcript parsing,
 proxy estimates, optional habit probes, completion recommendations and optional
-LLM wording remain reference-server features. Document extraction uses its local
-parser without AI. The hosted coach gives reviewed general plans without the
-Python planner's individualized progression or memory callbacks. Web research is
+LLM wording remain reference-server features. OCR text extraction uses the local
+parser without AI; whole-PDF reading uses Claude only after consent for that
+document. The hosted coach gives reviewed general plans without the Python
+planner's individualized progression or memory callbacks. Web research is
 unconfigured. `/api/predict`, `/api/compare` and `/api/sensitivity` return
 honest 501 responses; no survival model was ported to Deno and no estimates are
 fabricated.

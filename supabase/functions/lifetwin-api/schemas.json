@@ -6686,7 +6686,7 @@
             "type": "string"
           },
           "page": {
-            "maximum": 10,
+            "maximum": 20,
             "minimum": 1,
             "title": "Page",
             "type": "integer"
@@ -6810,6 +6810,27 @@
       "limitations"
     ],
     "title": "DocumentExtractResponse",
+    "type": "object"
+  },
+  "documents.read.request.schema.json": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "outside_ai_consent": {
+        "additionalProperties": { "type": "boolean" },
+        "propertyNames": { "enum": ["claude", "muse"] },
+        "title": "Outside Ai Consent",
+        "type": "object"
+      },
+      "pdf_base64": {
+        "maxLength": 13981016,
+        "minLength": 4,
+        "title": "Pdf Base64",
+        "type": "string"
+      }
+    },
+    "required": ["pdf_base64"],
+    "title": "DocumentReadRequest",
     "type": "object"
   },
   "error.schema.json": {

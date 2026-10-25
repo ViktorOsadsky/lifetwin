@@ -1,5 +1,6 @@
 import { conversationRoute } from "./conversation.ts";
 import { wellnessRoute } from "./wellness.ts";
+import { documentInfo, readDocument } from "./document-read.ts";
 import { type Config, providerInfo, voiceToken } from "./providers.ts";
 import { routes, validate } from "./validation.ts";
 
@@ -33,14 +34,18 @@ export function apiError(
   };
 }
 
-async function readBody(request: Request, limit: number): Promise<unknown> {
+async function readBody(
+  request: Request,
+  limit: number,
+  timeoutMs = 5000,
+): Promise<unknown> {
   if (!request.body) return {};
   const reader = request.body.getReader();
   let timedOut = false;
   const timer = setTimeout(() => {
     timedOut = true;
     reader.cancel().catch(() => {});
-  }, 5000);
+  }, timeoutMs);
   const chunks: Uint8Array[] = [];
   let size = 0;
   try {
@@ -68,6 +73,7 @@ async function readBody(request: Request, limit: number): Promise<unknown> {
 /** JWT verification is mandatory at Supabase ingress (supabase/config.toml). */
 export function createHandler(load: Loader) {
   let active = 0;
+  let activePdfs = 0;
   let windowStart = 0;
   let count = 0;
   return async (request: Request): Promise<Response> => {
@@ -114,7 +120,8 @@ export function createHandler(load: Loader) {
           body: { status: "ok", service: "lifetwin-backend" },
         });
       }
-      if (active >= 16) {
+      const isPdf = path === "/api/documents/read" && request.method === "POST";
+      if (active >= 16 || (isPdf && activePdfs >= 1)) {
         return respond(
           apiError(429, "server_busy", "Please try again in a few seconds."),
         );
@@ -134,6 +141,7 @@ export function createHandler(load: Loader) {
         );
       }
       active++;
+      if (isPdf) activePdfs++;
       try {
         config = await load();
         if (request.method === "OPTIONS") {
@@ -165,7 +173,10 @@ export function createHandler(load: Loader) {
                 ? "available"
                 : "unavailable",
               health_data_storage: "none",
-              documents: "text_extraction",
+              documents: {
+                text_extraction: true,
+                pdf: documentInfo(config),
+              },
               personalize: info,
               coach: {
                 endpoint: "/api/coach/plan",
@@ -179,10 +190,22 @@ export function createHandler(load: Loader) {
         let payload: unknown = {};
         const contract = routes[path];
         if (request.method === "POST" && contract) {
+          const configuredPdfLimit = Number(
+            config.API_MAX_PDF_BODY_BYTES || 14_000_000,
+          );
+          const pdfLimit = Number.isSafeInteger(configuredPdfLimit) &&
+              configuredPdfLimit >= 1024 && configuredPdfLimit <= 16_000_000
+            ? configuredPdfLimit
+            : 14_000_000;
           try {
             payload = await readBody(
               request,
-              path === "/api/documents/extract" ? 393216 : 32768,
+              path === "/api/documents/read"
+                ? pdfLimit
+                : path === "/api/documents/extract"
+                ? 393216
+                : 32768,
+              isPdf ? 10000 : 5000,
             );
           } catch (error) {
             return respond(
@@ -251,6 +274,8 @@ export function createHandler(load: Loader) {
             "voice_unavailable",
             "Voice isn't available right now. You can keep going by typing.",
           );
+        } else if (path === "/api/documents/read") {
+          result = await readDocument(payload, config);
         } else if (
           path.startsWith("/api/onboarding/") ||
           path.startsWith("/api/checkin/") || path.startsWith("/api/change/")
@@ -282,6 +307,7 @@ export function createHandler(load: Loader) {
         return respond(result);
       } finally {
         active--;
+        if (isPdf) activePdfs--;
       }
     } catch {
       return respond(

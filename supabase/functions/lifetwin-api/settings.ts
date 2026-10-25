@@ -19,6 +19,9 @@ export const SETTING_NAMES = [
   "CARTESIA_TOKEN_TTL_SECONDS",
   "ONBOARDING_DEMO",
   "DOCUMENT_MUSE_ENABLED",
+  "DOCUMENT_PROVIDER",
+  "DOCUMENT_READ_TIMEOUT_SECONDS",
+  "API_MAX_PDF_BODY_BYTES",
   "LIFETWIN_CORS_ORIGINS",
 ] as const;
 let cached: { value: Config; expires: number } | undefined;
