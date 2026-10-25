@@ -4,9 +4,9 @@ This folder (`lib/twin/`) is the data and logic layer behind the forecast, "expe
 
 ## The model package
 
-`packages/lifetwin_on_device/` is a copy of `model_handoff/lifetwin_on_device/` (model `personal-cox-v2-20261024T182404Z`). The app's `pubspec.yaml` depends on it by path.
+`packages/lifetwin_on_device/` is a pinned Cox snapshot (model `personal-cox-v2-20261024T182404Z`), originally copied from `model_handoff/lifetwin_on_device/`. The root handoff has since added experimental projection/neural APIs; this vendored copy has not automatically adopted them. The app's `pubspec.yaml` depends on the vendored path. [#108](https://github.com/ViktorOsadsky/lifetwin/issues/108) selects Cox for the score, a same-age/sex hazard index and a rough yearly projection; the latter two remain pending in the reviewed `0417b45` app. [Transition handoff](../../docs/handoffs/hazard-projection-docs.md).
 
-- **Why a copy:** the package README says to copy it. The copy also pins the model the app was tested with, so a new export in `model_handoff/` can't silently change app results. To update, copy the new folder over and rerun the checks below.
+- **Why a copy:** it pins the model/API the app was tested with, so a new root export cannot silently change app results. The current root package removed the assessment/guidance API used here; adoption requires an explicit adapter integration and relevant checks, rather than a blind copy.
 - **Checks** (run in `packages/lifetwin_on_device/`): `flutter test` and `dart tool/check.dart`. Both pass on macOS. `flutter analyze` in `app/` excludes `packages/**` because the vendored code uses its own style.
 - **Loading:** `TwinRepository.open()` loads the model once at startup (`main.dart`, `_twin`).
 - **Server route:** `POST /api/predict` (`server/lifetwin/prediction/`) still works but the app no longer calls it. It should be removed later.
@@ -65,9 +65,19 @@ Added beside the score; the score itself is unchanged, and the percentile alread
 
 History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it. Each point stores the **raw** value under the JSON key `score` (as before the sign change, so older history stays valid); `HealthScorePoint.score` negates it on read.
 
-## Lifespan reveal (one-time, proof of concept)
+## Hazard index (pending peer-engine integration)
 
-Owner override (2026-10-24): a rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method and validation: [docs/lifespan-estimate.md](../../docs/lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band).
+The selected [#108](https://github.com/ViktorOsadsky/lifetwin/issues/108) index compares the person's Cox relative hazard with a reference person of their own age and sex. **1.0 is typical for that reference; lower is better.** It is separate from the sign-flipped health score and the “Healthier than X of 100 people your age” survey percentile; neither is a survival probability. The root neural lab's ratio against a fixed age-55 profile is a different reference and must not be substituted. Neural models are shelved for the app direction, although their research artifacts remain in the root handoff.
+
+No hazard-index API is present in the reviewed `0417b45` app. Confirm the peer implementation's reference calculation and returned fields before wiring UI or changing this status. [Current/pending handoff](../../docs/handoffs/hazard-projection-docs.md).
+
+## Lifespan: current CDC wrapper and pending yearly projection
+
+The selected replacement is a **rough-guide projection from repeated one-year Cox steps, assuming nothing changes**: advance age each year, hold all other inputs fixed, and multiply each new one-year survival. It is **not life expectancy**. Nothing past age 79 is validated, and the recurrence itself has not been validated as a longitudinal model even within the checked age range. The root lab's 50% crossing is a simulation threshold, not an expected lifetime or a personal death age. [Projection definition](../../model_handoff/lifetwin_on_device/README.md#projection-definitions), [transition handoff](../../docs/handoffs/hazard-projection-docs.md).
+
+App adoption is pending at `0417b45`: `TwinRepository.lifespanEstimate` still uses the CDC wrapper described below. Once the peer engine replaces it, this CDC method becomes historical for the product flow. Its expected year, 25th–75th-percentile range, age-band factors and attenuation are not definitions of the new yearly Cox projection. The eventual engine contract must supply any displayed age/year or range; this documentation does not create one.
+
+**Current CDC API (before the replacement lands).** Owner override (2026-10-24): a rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method and validation: [docs/lifespan-estimate.md](../../docs/lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band).
 
 | API | Meaning |
 |---|---|

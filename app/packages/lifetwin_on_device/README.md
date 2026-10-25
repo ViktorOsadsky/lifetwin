@@ -2,6 +2,18 @@
 
 This package runs the trained LifeTwin Cox model **inside the Flutter app on iOS**. The app bundle contains `model.json` (learned coefficients and baseline survival) and `support_reference.f64.gz` (encoded training reference vectors for the model's input-support check). Inference uses Dart only. There is no Python interpreter, HTTP request, backend process, internet connection, TensorFlow, Core ML, or TFLite at runtime.
 
+## App presentation and pending engine transition
+
+This vendored copy is pinned to the Cox engine below; the root `model_handoff` package has a separate experimental API. Do not replace this copy without checking the app adapters. See the [integration README](../../lib/README-model.md) and [#108 handoff](../../../docs/handoffs/hazard-projection-docs.md) for the current/pending boundary.
+
+- **Health score, implemented in the app adapter:** the Cox `log_relative_hazard_score` with its sign flipped, so higher is better. The raw value is a log relative hazard; it is not a survival percentage or a 0–100 clinical score.
+- **Age-group comparison, implemented:** “Healthier than X of 100 people your age,” qualified as people like you in the survey. X is the same-sex, similar-age percentile of the unweighted NHANES reference, not a ranking of the national population.
+- **Hazard index, pending:** a separate Cox ratio against a person of the same age and sex; 1.0 is typical for that reference and lower is better. It is not the health score, percentile or a probability. The selected reference is not the neural lab's fixed age-55 profile.
+- **Rough lifespan guide, pending:** the selected replacement uses yearly repeated one-year Cox steps, advancing age while all other inputs stay fixed: “assuming nothing changes.” It is not life expectancy. Nothing past age 79 is validated, and even the within-range recurrence has not been validated as a longitudinal model. The app's current CDC life-table wrapper is the earlier method; its expected-age/range calculations must not be reused as definitions of this new projection.
+- **Neural models are shelved** for this app direction. Historical neural benchmark figures remain in the [model card](MODEL_CARD.md); the root research package retaining a neural artifact does not make it the app's score or hazard index.
+
+These transition statements describe the requested product direction in [#108](https://github.com/ViktorOsadsky/lifetwin/issues/108), not a completed peer-engine integration. The model's measured Cox scope remains supported assessment ages 35–79 and years 1–5. [Source model card](../../../model_handoff/lifetwin_on_device/MODEL_CARD.md), [yearly projection definition](../../../model_handoff/lifetwin_on_device/README.md#projection-definitions).
+
 ## Add it to the iOS Flutter app
 
 Copy the whole `lifetwin_on_device` folder into your Flutter repository, for example `packages/lifetwin_on_device/`. In the app's `pubspec.yaml`:
