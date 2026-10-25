@@ -25,6 +25,7 @@ Further rulings:
   - Show numbers only when status is `available`. Otherwise show the status message and no number.
   - Label the curve **"Modeled survival of similar people"** and a comparison **"Modeled difference between profiles"**.
   - Never show a death date, life expectancy or years gained.
+    - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [docs/lifespan-estimate.md](../../lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else.
   - Never fill in healthy defaults. An unknown input stays unknown and the UI shows "still learning".
   - Show wellness cards beside the avatar, each with a visible source link. They are public-health guidance, not model output.
 - **Weight:** BMI above 27 has a near-zero, slightly inverse fitted association, which is NOT evidence that gaining weight helps. A weight lever may only move toward the healthy range. If `compare()` shows a gain for moving away from it, show "Not counted" instead of a number.
@@ -255,6 +256,7 @@ Daniel: "Make the statement of death timeline stronger, but make it clear in the
   - "It can't tell when any one person will die."
   - "Linked, not proven."
 - **Still forbidden** (model card, AGENTS.md): no death date, no age at death, no life expectancy, no years gained. The model only supports years 1–5. Status gating still applies, and so does the Rough guide badge.
+  - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [docs/lifespan-estimate.md](../../lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else.
 
 ## Answer provenance (engine)
 - Every stored answer and every `history()` item carries `source`: you_said | apple_health | document | mochi_change | wristband, plus `estimated: true` for sensor or proxy estimates.
@@ -278,8 +280,10 @@ Never promise anything about Muse's own retention; it's unverified.
 1. **Health score leads Home and everything after onboarding.** The outlook is shown ONCE as the reveal at the end of onboarding, then stays reachable behind a quiet "See your estimate" tap. Never front and centre after that.
 2. **Healthy habits for all ages.** Tone works for a 25-year-old: habits, gentle consistency, energy, sleep, movement, mood. Keep large text and 48pt targets. Nothing reads "for old people".
 3. **Daily check-in is the core loop.** The check-in entry is obvious on Home every day (primary button, not a chip).
+- **Health score direction (owner ruling 2026-10-24):** `repo.healthScore` is now higher = better (0 = survey average, typically about −3 to +3); see app/lib/README-model.md.
 - `healthScore` is a PLACEHOLDER, assumed 0–100, until Viktor's spec lands. Do not invent a formula, bands, or how many points any habit is worth. "What moves it" shows directions only (up/down), no point values. Trend data is placeholder and labelled so in board notes.
-- **Pending Tier-1 ruling (do not ship):** the owner asked for a reveal of "You're likely to live to about X" with a range. The on-device Cox model only supports 5-year survival (ages 30–85); it does not produce a lifespan. Until the owner rules, the reveal uses the supported 5-year statement (Outlook framing ruling). A lifespan-layout variant may be drawn with "X–Y" placeholders and a visible "Awaiting Viktor's method, not for build" tag outside the phone frame. (Draft method: PR #52, CDC 2024 life table x Cox relative risk; expected age + 25th–75th range. AGENTS.md conflict stays open until Viktor and the team sign off.) No real-looking lifespan numbers anywhere.
+- **Ruled 2026-10-24 (see the owner override above):** the one-time reveal may show the rough expected year and age range from `repo.lifespanEstimate` (ages 18–85, with its caveat; `lifespanRevealSeen` de-emphasises it afterwards). The text below is the earlier pending state, kept for history.
+- **Earlier, pending Tier-1 ruling:** the owner asked for a reveal of "You're likely to live to about X" with a range. The on-device Cox model only supports 5-year survival (ages 30–85); it does not produce a lifespan. Until the owner rules, the reveal uses the supported 5-year statement (Outlook framing ruling). A lifespan-layout variant may be drawn with "X–Y" placeholders and a visible "Awaiting Viktor's method, not for build" tag outside the phone frame. (Draft method: PR #52, CDC 2024 life table x Cox relative risk; expected age + 25th–75th range. AGENTS.md conflict stays open until Viktor and the team sign off.) No real-looking lifespan numbers anywhere.
 - Body never signals health; the score never reshapes the twin. Experiments stay hypothetical and never change the score.
 - **Owner rulings (via dqi26-45, 2026-10-24):**
   1. The score, lifespan, outlook and health advice need age 18 or over. Under 18 gets Mochi, the room, Customize and the quiz only.

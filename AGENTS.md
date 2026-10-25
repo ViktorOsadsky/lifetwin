@@ -9,6 +9,10 @@ Before making changes, read [MASTER_PLAN.md](MASTER_PLAN.md), [docs/team-plan.md
 - Build a pet-game experience: mascot-led voice/text intake, magic-ball fortune, customizable SVG/Lottie twin, experiments, and quiz. Do not substitute a traditional multi-page intake form.
 - Keep cosmetic settings, quiz/game health, confirmed health inputs, and hypothetical experiments separate. Wrong quiz answers immediately change only game health and sick/recovery reactions; they never alter medical predictions.
 - Use supported survival probabilities and curves; never fabricate personal predictions or exact death dates. Maximize modeled survival at a supported horizon, and distinguish observational associations from causal effects.
+  - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [docs/lifespan-estimate.md](docs/lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else. Daniel, after talking to Viktor in person:
+
+    > "We should extrapolate an expected death year or date, but then it basically goes away as we focus on relative health score. It doesn't matter how accurate it is for this, as it will never be truly accurate if we extrapolate. it is more of a proof of concept. Age bands should be extrapolated and adjusted. [...] He [Viktor] is okay with the extrapolation. We don't really need beyond five years."
+
 - Research and plans must cite supporting sources. Unsupported actions or supplements receive no invented survival benefit. Keep raw profiles out of logs and web queries; keep provider keys server-side.
 - Run checks relevant to your change and report what actually ran. The master guide identifies planned tooling that does not yet exist.
 - Leave a handoff with the PR/merge state, affected contracts, validation, limitations, and next dependency. See the template in the master guide.
