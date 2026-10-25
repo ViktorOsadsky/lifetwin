@@ -40,6 +40,7 @@ class RoomScreen extends StatefulWidget {
     this.hasProfile = false,
     this.wellness,
     this.onQuiz,
+    this.onExperiment,
     this.onHistory,
     this.extraPills = const [],
     this.onDrivers,
@@ -67,6 +68,9 @@ class RoomScreen extends StatefulWidget {
   /// Health score from the twin repository (the model's number as is).
   final WellnessSnapshot? wellness;
   final VoidCallback? onQuiz;
+
+  /// "Experiment with your twin": the big primary button in the bottom section.
+  final VoidCallback? onExperiment;
   final VoidCallback? onHistory;
   /// More pills beside the status line (`roomPills`).
   final List<Widget> extraPills;
@@ -214,6 +218,7 @@ class _RoomScreenState extends State<RoomScreen> {
                               valueListenable: widget.appearance,
                               builder: (context, look, _) => NameBanner(name: look.name),
                             ),
+                            quiz: widget.onQuiz == null ? null : _QuizChip(onTap: widget.onQuiz!),
                             actions: [
                               if (widget.onBand != null)
                                 _HeaderIcon(icon: Icons.directions_walk_rounded, label: 'Add band', onTap: widget.onBand!),
@@ -237,7 +242,8 @@ class _RoomScreenState extends State<RoomScreen> {
                                     key: _bottomKey,
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
-                                      const CheckInEntry(),
+                                      // With the Today row, Check in lives inside it (compact); otherwise its own bar.
+                                      if (widget.today == null) const CheckInEntry(),
                                       if (_needTalk && !widget.hasProfile) ...[
                                         const Bubble(
                                           text: RoomScreen.talkFirst,
@@ -247,7 +253,7 @@ class _RoomScreenState extends State<RoomScreen> {
                                         ),
                                         const SizedBox(height: 10),
                                       ],
-                                      if (widget.today != null) ...[widget.today!, const SizedBox(height: 10)],
+                                      if (widget.today != null) ...[widget.today!, const SizedBox(height: 6)],
                                       if (widget.extraPills.isNotEmpty) ...[
                                         Wrap(
                                           alignment: WrapAlignment.center,
@@ -257,7 +263,16 @@ class _RoomScreenState extends State<RoomScreen> {
                                           children: widget.extraPills,
                                         ),
                                       ],
-                                      const SizedBox(height: 10),
+                                      if (widget.onExperiment != null) ...[
+                                        LipButton(
+                                          label: 'Experiment with your twin',
+                                          icon: Icons.science_outlined,
+                                          height: 64,
+                                          fontSize: 22,
+                                          onTap: widget.onExperiment,
+                                        ),
+                                        const SizedBox(height: 6),
+                                      ],
                                       _ActivityRow(sim: _sim, press: _press),
                                       const SizedBox(height: 10),
                                       _Dock(
@@ -265,7 +280,6 @@ class _RoomScreenState extends State<RoomScreen> {
                                         onTalk: widget.onTalk,
                                         onCustomize: widget.onCustomize,
                                         onFortune: _fortune,
-                                        onQuiz: widget.onQuiz,
                                       ),
                                     ],
                                   ),
@@ -303,11 +317,47 @@ class _HeaderIcon extends StatelessWidget {
   );
 }
 
+/// The quiz entry: small and secondary, under the header, above the score card.
+class _QuizChip extends StatelessWidget {
+  const _QuizChip({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: 'Quiz. Play',
+    excludeSemantics: true,
+    onTap: onTap,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: LtColors.night,
+          borderRadius: BorderRadius.circular(LtRadii.chip),
+          boxShadow: LtShadows.small,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.quiz_outlined, color: LtColors.gold, size: 22),
+            const SizedBox(width: 6),
+            Text('Quiz · play', style: LtText.body(size: 16, weight: FontWeight.w700, color: LtColors.cream)),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 /// The banner and the outlook card side by side, stacked when the screen is
 /// narrow or the text is large (so nothing wraps letter by letter).
 class _TopBar extends StatelessWidget {
-  const _TopBar({super.key, required this.banner, required this.card, this.actions = const []});
+  const _TopBar({super.key, required this.banner, required this.card, this.actions = const [], this.quiz});
   final Widget banner;
+  final Widget? quiz;
   final List<Widget> actions;
   final Widget card;
 
@@ -333,7 +383,8 @@ class _TopBar extends StatelessWidget {
                     ...actions,
                   ],
                 ),
-                const SizedBox(height: 8),
+                if (quiz != null) Align(alignment: Alignment.centerRight, child: quiz),
+                const SizedBox(height: 4),
                 card,
               ],
             ),
@@ -476,8 +527,8 @@ class _ActivityRow extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTap: () => press(a),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 52),
-            padding: const EdgeInsets.symmetric(horizontal: _padX, vertical: 6),
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: _padX, vertical: 4),
             decoration: BoxDecoration(
               color: on ? LtColors.mint : LtColors.paper,
               borderRadius: BorderRadius.circular(LtRadii.chip),
@@ -536,8 +587,7 @@ class _ActivityRow extends StatelessWidget {
 }
 
 class _Dock extends StatelessWidget {
-  const _Dock({required this.frame, required this.onTalk, required this.onCustomize, required this.onFortune, this.onQuiz});
-  final VoidCallback? onQuiz;
+  const _Dock({required this.frame, required this.onTalk, required this.onCustomize, required this.onFortune});
   final SwooshRoomFrame frame;
   final VoidCallback onTalk;
   final VoidCallback onCustomize;
@@ -549,7 +599,7 @@ class _Dock extends StatelessWidget {
     // Customize and Fortune share the rest, so their labels stay on one line.
     final talkW = 40 + 32 + 10 + _labelWidth(context, 'Talk', LtText.display(26)) + LtBorders.control * 2 + 4;
     return Sheet(
-      padding: const EdgeInsets.fromLTRB(8, 14, 8, 14),
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
       child: LayoutBuilder(
         builder: (context, box) {
           // Never squeeze Customize or Fortune under the 15 px floor: Talk gives way first.
@@ -593,12 +643,12 @@ class _Dock extends StatelessWidget {
               ),
               Expanded(
                 child: _DockItem(
-                  label: onQuiz == null ? 'Fortune' : 'Quiz',
-                  icon: onQuiz == null ? Icons.auto_awesome_rounded : Icons.quiz_outlined,
+                  label: 'Fortune',
+                  icon: Icons.auto_awesome_rounded,
                   face: LtColors.night,
                   lip: const Color(0xFF0F1430),
                   iconColor: LtColors.gold,
-                  onTap: onQuiz ?? onFortune,
+                  onTap: onFortune,
                 ),
               ),
             ],

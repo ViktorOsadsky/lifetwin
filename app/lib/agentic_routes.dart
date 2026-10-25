@@ -395,7 +395,9 @@ class AgenticRoutes {
 
   /// "Today with Mochi" for Home: mount it where the Today card goes. It asks the outside-AI consent once
   /// before the first plan (the coach may use the same provider), and opens the full plan on a tap.
-  Widget todayCard(BuildContext context, {VoidCallback? onTalk}) => TodayWithMochiCard(
+  Widget todayCard(BuildContext context, {VoidCallback? onTalk, bool condensed = false, Widget? trailing}) => TodayWithMochiCard(
+    condensed: condensed,
+    trailing: trailing,
     client: coach,
     onPlan: (p) => _lastPlan = p,
     confirmedContext: () => coachContext(repo!),
@@ -577,13 +579,8 @@ class _ResumeRefreshState extends State<ResumeRefresh> with WidgetsBindingObserv
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    final repo = widget.repository;
-    repo.refresh();
-    final reminders = repo.reminders;
-    final settings = repo.checkinSettings;
-    if (reminders != null && settings.remindersOn) {
-      reminders.reschedule(settings, localNow: (widget.now ?? DateTime.now)(), history: repo.store.checkins).ignore();
-    }
+    // refresh() also plans the reminders again, so they are planned once per resume.
+    widget.repository.refresh();
   }
 
   @override
