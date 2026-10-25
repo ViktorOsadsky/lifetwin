@@ -37,6 +37,7 @@ part 'twin_store.dart';
 /// - [applyMemoryConsent] / [addHabitNote]: habit notes, only with `memory_consent`;
 /// - [saveTwinLook], [saveCheckinSettings] and [markLifespanRevealSeen]: preferences, not
 ///   health data;
+/// - [saveTodayPlan]: the coach's latest daily plan, so its next revision has a base after a relaunch;
 /// - [deleteMyData].
 /// Experiments ([experiment]) are hypothetical and never write. Every health write also
 /// appends its [HistoryEntry], so [history] shows what happened as it happened.
@@ -166,6 +167,17 @@ class TwinRepository extends ChangeNotifier {
     await store._setLifespanRevealSeen();
     notifyListeners();
   }
+
+  /// The coach's latest plan given today (local date), as its JSON; null when none was given today.
+  /// Persisted, so "what changed" survives a relaunch; [deleteMyData] clears it.
+  Map<String, dynamic>? get todayPlan {
+    final kept = store.lastPlan;
+    final plan = kept?['plan'];
+    return kept?['date'] == isoDay(dayOf(_clock())) && plan is Map ? Map<String, dynamic>.from(plan) : null;
+  }
+
+  /// Keeps [plan] (a `DailyPlan`'s JSON) as today's latest plan.
+  Future<void> saveTodayPlan(Map<String, dynamic> plan) => store._setLastPlan(isoDay(dayOf(_clock())), plan);
 
   /// Why [healthScore] has or lacks a number; null before a profile.
   HealthScoreStatus? get healthScoreStatus => _current?.healthScoreStatus;
