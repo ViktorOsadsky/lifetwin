@@ -666,3 +666,68 @@ def test_the_rewording_hook_must_keep_the_safety_line():
     request = CheckinTurnRequest(action="reply", state=mood_state(), text="awful")
     assert keep.turn(request).message.startswith("Gentler. ")
     assert SAFETY in drop.turn(request).message
+
+
+# --- The same care reply in the weekly check-in ---------------------------------------------
+
+
+def weekly_mood(**values) -> CheckinState:
+    return CheckinState(
+        kind="weekly",
+        questions=list(WEEKLY),
+        current_field="wellbeing",
+        local_date="2026-10-24",
+        **values,
+    )
+
+
+@pytest.mark.parametrize("text", LOW)
+def test_weekly_low_mood_gets_the_warm_reply_with_the_safety_line_once(text):
+    result = say(weekly_mood(), text)
+    assert result.message.count(SAFETY) == 1 and result.message.endswith(CARE_QUESTION)
+    assert result.message.index("sorry") < result.message.index(SAFETY)
+    assert "988" not in result.message and not result.emergency
+    assert result.state.care_line_shown and result.state.care_question_open
+    assert result.mascot_events[0].caption == result.message
+
+
+def test_weekly_reflects_the_persons_word():
+    assert "Feeling lonely is really hard." in say(weekly_mood(), "so lonely").message
+
+
+@pytest.mark.parametrize("text", NOT_LOW)
+def test_weekly_neutral_and_look_alike_moods_show_nothing(text):
+    result = say(weekly_mood(), text)
+    assert SAFETY not in result.message and not result.state.care_line_shown
+    assert not result.state.care_question_open
+
+
+def test_weekly_care_reply_is_once_per_check_in():
+    state = say(weekly_mood(), "awful").state.model_copy(
+        update={"pending": CheckinValues(), "phase": "asking", "care_question_open": False}
+    )
+    again = say(state, "not great")
+    assert SAFETY not in again.message and again.state.care_line_shown
+
+
+def test_weekly_explicit_crisis_still_pauses():
+    result = say(weekly_mood(), "I feel awful, I don't want to be here anymore")
+    assert result.emergency and result.message == EMERGENCY_MESSAGE
+    assert not result.state.care_line_shown
+
+
+def test_weekly_keep_going_asks_for_the_yes():
+    result = say(say(weekly_mood(), "awful").state, "keep going")
+    assert result.message.startswith("Okay, let's keep going.")
+    assert result.message.endswith("Is that right?") and not result.state.care_question_open
+
+
+def test_weekly_stop_goes_to_the_yes_and_keeps_confirmed_answers():
+    state = weekly_mood(confirmed=CheckinValues(sleep_hours=7))
+    stopped = say(say(state, "awful").state, "stop")
+    assert stopped.message.startswith("Okay, we'll stop here for today.")
+    assert stopped.state.confirmed.wellbeing is None  # nothing saved without a yes
+    assert stopped.state.confirmed.sleep_hours == 7
+    done = SERVICE.turn(CheckinTurnRequest(action="confirm", state=stopped.state))
+    assert done.complete and done.state.confirmed.wellbeing == "not_great"
+    assert done.state.confirmed.sleep_hours == 7
