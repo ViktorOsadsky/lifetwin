@@ -132,6 +132,8 @@ class AgenticRoutes {
           consents: c,
           onBack: () => Navigator.of(page).pop(),
           onAiPrivacy: () => aiPrivacy(page),
+          onWeeklyCheckIn: () => weeklyCheckIn(page),
+          onReminders: () => reminders(page),
           onDeleted: () {
             onDeleted?.call();
             Navigator.of(page).popUntil((route) => route.isFirst);

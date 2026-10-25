@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/agentic_routes.dart';
+import 'package:lifesim/checkin/check_in_entry.dart';
 import 'package:lifesim/checkin/checkin_screen.dart' show CheckInScreen;
 import 'package:lifesim/checkin/consents.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
@@ -169,5 +170,31 @@ void main() {
     expect(await routes.ensureOutsideAiConsent(home), isFalse);
     await t.pumpAndSettle();
     expect(find.text('No thanks'), findsNothing);
+  });
+
+  testWidgets('the weekly check-in opens on demand from My data and by long-press on the Room entry', (t) async {
+    await pump(t);
+    routes.myData(home);
+    await t.pumpAndSettle();
+    await t.tap(find.text('Weekly check-in'));
+    await t.pumpAndSettle();
+    expect(find.byType(CheckInScreen), findsOneWidget);
+    Navigator.of(home).pop();
+    await t.pumpAndSettle();
+    Navigator.of(home).pop();
+    await t.pumpAndSettle();
+
+    await t.pumpWidget(
+      MaterialApp(
+        theme: lifeTwinTheme(),
+        builder: routes.wrap,
+        home: const Scaffold(body: CheckInEntry()),
+      ),
+    );
+    await t.pump();
+    final entry = find.byType(CheckInEntry);
+    await t.longPress(entry);
+    await t.pumpAndSettle();
+    expect(find.byType(CheckInScreen), findsOneWidget);
   });
 }

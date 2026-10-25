@@ -24,6 +24,8 @@ class MyDataScreen extends StatelessWidget {
     required this.onDeleted,
     this.onNotebook,
     this.onHealthSettings,
+    this.onWeeklyCheckIn,
+    this.onReminders,
   });
 
   final TwinRepository repository;
@@ -35,6 +37,10 @@ class MyDataScreen extends StatelessWidget {
   final VoidCallback onDeleted;
   final VoidCallback? onNotebook;
   final VoidCallback? onHealthSettings;
+
+  /// The weekly check-in whenever the person wants it, whether or not one is due.
+  final VoidCallback? onWeeklyCheckIn;
+  final VoidCallback? onReminders;
 
   /// Wipes the phone: [TwinRepository.deleteMyData] clears answers, history, notes, the outside-AI consent, the
   /// twin look and the planned reminders; the conversation's AI helper choice goes too. Apple Health is not touched.
@@ -159,6 +165,25 @@ class MyDataScreen extends StatelessWidget {
                 sub: '$notes ${notes == 1 ? 'note' : 'notes'} · read only',
                 onTap: onNotebook,
                 semantic: 'Mochi’s notebook, $notes notes, read only',
+              ),
+            ],
+            if (onWeeklyCheckIn != null) ...[
+              const SizedBox(height: 8),
+              _Row(
+                icon: Icons.calendar_month_outlined,
+                title: 'Weekly check-in',
+                sub: 'Do it now',
+                onTap: onWeeklyCheckIn,
+                semantic: 'Weekly check-in. Do it now.',
+              ),
+            ],
+            if (onReminders != null) ...[
+              const SizedBox(height: 8),
+              _Row(
+                icon: Icons.notifications_none_rounded,
+                title: 'Reminders',
+                onTap: onReminders,
+                semantic: 'Reminders',
               ),
             ],
             const SizedBox(height: 8),
