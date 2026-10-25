@@ -710,29 +710,37 @@ class _HealthDocumentsHost extends StatefulWidget {
 class _HealthDocumentsHostState extends State<_HealthDocumentsHost> {
   List<String> _notices = const [];
 
-  void _upload() => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (c) => DocumentUploadScreen(
-        service:
-            widget.routes.documentService?.call() ??
-            liveDocumentService(
-              extractor: HttpDocumentExtractor(base: widget.routes._api),
-            ),
-        onDone: (result) async {
-          Navigator.of(c).pop();
-          final r = widget.repository;
-          final values = result.profileValues;
-          if (values.isNotEmpty) {
-            await r.recordImport(values, source: HistorySource.document);
-          }
-          if (result.notes.isNotEmpty) {
-            await r.recordDocumentReadings(result.notes);
-          }
-          if (mounted) setState(() => _notices = result.notices);
-        },
+  Future<void> _upload() async {
+    AiProvider? provider;
+    try {
+      provider = await widget.routes.provider();
+    } catch (_) {}
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (c) => DocumentUploadScreen(
+          provider: provider,
+          service:
+              widget.routes.documentService?.call() ??
+              liveDocumentService(
+                extractor: HttpDocumentExtractor(base: widget.routes._api),
+              ),
+          onDone: (result) async {
+            Navigator.of(c).pop();
+            final r = widget.repository;
+            final values = result.profileValues;
+            if (values.isNotEmpty) {
+              await r.recordImport(values, source: HistorySource.document);
+            }
+            if (result.notes.isNotEmpty) {
+              await r.recordDocumentReadings(result.notes);
+            }
+            if (mounted) setState(() => _notices = result.notices);
+          },
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   @override
   Widget build(BuildContext context) => HealthDocumentsScreen(

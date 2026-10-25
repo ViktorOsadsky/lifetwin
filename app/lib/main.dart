@@ -387,6 +387,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     MaterialPageRoute<void>(
       builder: (_) => DocumentUploadScreen(
         confirmedValues: _profile ?? _controller.confirmedProfile,
+        provider: _aiProvider,
         service: widget.documentService ?? liveDocumentService(extractor: HttpDocumentExtractor(base: _api)),
         onDone: (result) async {
           Navigator.of(context).pop();
