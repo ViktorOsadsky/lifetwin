@@ -17,6 +17,23 @@ from datetime import date
 
 from fastapi import HTTPException
 
+from lifetwin.core.intent import (
+    HEALTH_OFFER as HEALTH_OFFER_QUESTION,
+)
+from lifetwin.core.intent import MEMORY as MEMORY_QUESTION
+from lifetwin.core.intent import MISSING as MISSING_QUESTION
+from lifetwin.core.intent import (
+    ClaudeIntentReader,
+    IntentResult,
+    explained,
+    read_back,
+    read_intent,
+    read_local,
+    widen_read_back,
+)
+from lifetwin.core.intent import (
+    ack as consent_ack,
+)
 from lifetwin.core.models import HealthProfile
 from lifetwin.core.quantities import contradicts
 from lifetwin.onboarding.computed import checked_values
@@ -184,6 +201,8 @@ ESTIMATE_FIELDS: tuple[ProfileField, ...] = tuple(
 # End of the intake with estimate answers missing: said once, never a loop.
 MISSING_REPLIES = ("Yes", "Not now")
 MISSING_LATER = "That's okay. You can answer them any time from Home. "
+# An unclear reply to the one memory check: nothing is remembered.
+MEMORY_UNCLEAR = "I'll keep just your answers for now. You can change this any time."
 # Plainer names where two fields share one (both activity questions are "exercise").
 ESTIMATE_LABELS = {
     "vigorous_recreation_min_week": "vigorous exercise",
@@ -483,8 +502,11 @@ class ConversationService:
         seed: Callable[[], int] | None = None,
         personalizer: Personalizer | None = None,
         max_probes: int = MAX_PROBES,
+        intent_reader: ClaudeIntentReader | None = None,
     ):
         self.extractor = extractor
+        # Claude reads unclear yes/no replies (never a consent question), with consent.
+        self.intent_reader = intent_reader
         # The habit follow-ups per onboarding: 1 in the short demo (ONBOARDING_DEMO=1).
         self.max_probes = max(0, min(max_probes, MAX_PROBES))
         # Outside-AI wording (opt-in per provider); never used to read or decide values.
@@ -515,6 +537,36 @@ class ConversationService:
         if provider == "claude":
             return request.outside_ai_consent.get("claude") is True
         return True
+
+    @staticmethod
+    def _claude_consented(request: TurnRequest) -> bool:
+        """The AI helper's yes and the yes for Claude itself (#220)."""
+        return bool(request.provider_consent) and request.outside_ai_consent.get("claude") is True
+
+    async def _yes_no(
+        self, request: TurnRequest, text: str, question, ask: bool = False
+    ) -> IntentResult:
+        """Rules first; Claude only when they are unsure, with consent, never for consent."""
+        return await read_intent(
+            text,
+            question,
+            self.intent_reader,
+            allowed=self._claude_consented(request),
+            ask_claude=ask,
+        )
+
+    async def _widen(
+        self, request: TurnRequest, text: str, said: str, rest: str, prompt: str
+    ) -> tuple[str, str]:
+        """A read-back reply the strict reader could not settle, read by the one interpreter."""
+        if said not in {"unsure", "other"} or re.search(r"\d", text):
+            return widen_read_back(said, rest, text)
+        heard = None
+        question = read_back(prompt)
+        if not (read_local(text, question).confident and explained(text, question)):
+            heard = await self._yes_no(request, text, question, ask=True)
+            heard = heard if heard.source == "claude" else None
+        return widen_read_back(said, rest, text, heard)
 
     async def _phrase(self, response: TurnResponse) -> TurnResponse:
         """With consent: the provider may phrase the next question or the suggestions."""
@@ -568,6 +620,9 @@ class ConversationService:
         if not urgent_reply:
             state.small_talk = False
         was_ready = state.phase == "ready"
+        # The one "just to check" is for the reply right after it; any other turn ends it.
+        checked = state.yes_no_checked
+        state.yes_no_checked = False
         # Ink also transcribes other people in the room: only a voice transcript is
         # held to "someone else's number beside yours is asked about".
         voice = request.input_mode == "transcript"
@@ -676,25 +731,36 @@ class ConversationService:
             intent = control_intent(text) if action == "reply" else None
             # Politeness kept: "please do" is a yes here.
             plain = " ".join(re.sub(r"[^\w'\s]", " ", text.lower()).split())
-            if intent and intent.kind in {"why", "private", "help"}:
+            if intent and intent.kind in {"why", "private", "help", "ask"}:
                 return respond(MEMORY_WHY + MEMORY_ASK)
             if intent is None or intent.kind == "skip":
+                # Read by the rules only: this is asked before Claude may hear anything.
+                heard = read_local(text, MEMORY_QUESTION) if action == "reply" else None
+                if action == "reply" and (
+                    YES_REPLY.fullmatch(plain) or MEMORY_YES_REPLY.fullmatch(plain)
+                ):
+                    heard = heard if heard.clear_yes else IntentResult(intent="yes", confidence=1)
                 if (
-                    action == "reply"
-                    and YES_REPLY.fullmatch(plain)
-                    or MEMORY_YES_REPLY.fullmatch(plain)
+                    heard
+                    and heard.clear_yes
+                    and not heard.corrected_value
+                    and not (NO_REPLY.fullmatch(plain) or MEMORY_NO_REPLY.fullmatch(plain))
                 ):
                     state.memory_consent = True
                     self._advance(state)
-                    return respond(MEMORY_YES + " " + self._prompt(state))
+                    return respond(
+                        consent_ack(heard, MEMORY_YES, MEMORY_NO) + " " + self._prompt(state)
+                    )
                 if (
                     action == "skip"
                     or NO_REPLY.fullmatch(plain)
                     or MEMORY_NO_REPLY.fullmatch(plain)
+                    or (heard and heard.clear_no and not heard.corrected_value)
                 ):
                     state.memory_consent = False
                     self._advance(state)
-                    return respond(MEMORY_NO + " " + self._prompt(state))
+                    no = consent_ack(heard, MEMORY_YES, MEMORY_NO) if heard else MEMORY_NO
+                    return respond(no + " " + self._prompt(state))
                 lead = CONSENT_LEAD.match(text)
                 if action == "reply" and lead and self._says_answers(lead.group("rest"), today):
                     # "Yes, and I'm 72": the consent is answered, the rest is an answer.
@@ -711,7 +777,15 @@ class ConversationService:
                     )
                     note = MEMORY_YES if state.memory_consent else MEMORY_NO
                     return answered.model_copy(update={"message": f"{note} {answered.message}"})
-                return respond(NOT_CAUGHT + ' Just say "yes" or "no". ' + MEMORY_ASK)
+                if checked:
+                    # Unclear after the one check: a false yes is worse than a no.
+                    state.memory_consent = False
+                    self._advance(state)
+                    return respond(MEMORY_UNCLEAR + " " + self._prompt(state))
+                state.yes_no_checked = True
+                if heard.intent in {"yes", "no", "unsure"}:
+                    return respond(MEMORY_QUESTION.check)
+                return respond(NOT_CAUGHT + " " + MEMORY_QUESTION.check)
         if action == "reply" and state.phase == "probing":
             intent = control_intent(text)
             if intent is None or intent.kind in {"skip", "ask"}:
@@ -759,7 +833,13 @@ class ConversationService:
             return respond(RESUME_LEAD + self._prompt(state))
         if action in {"reply", "skip"} and state.phase == "missing":
             # Asked once: "yes" asks only the missing answers; anything else ends the intake.
-            if action == "reply" and YES_REPLY.fullmatch(words_of(text)):
+            heard = (
+                await self._yes_no(request, text, MISSING_QUESTION) if action == "reply" else None
+            )
+            if action == "reply" and (
+                YES_REPLY.fullmatch(words_of(text))
+                or (heard.clear_yes and not heard.corrected_value)
+            ):
                 missing = self._estimate_missing(state)
                 state.ask_only = missing
                 state.unknown_fields = [f for f in state.unknown_fields if f not in missing]
@@ -800,14 +880,25 @@ class ConversationService:
                     )
                     lead = pick(HEALTH_DECLINED, state.seed, "health")
                     return answered.model_copy(update={"message": f"{lead} {answered.message}"})
+                heard = await self._yes_no(request, text, HEALTH_OFFER_QUESTION)
+                if (
+                    heard.clear_yes
+                    and not heard.corrected_value
+                    and not HEALTH_DECLINE.search(plain)
+                ):
+                    return respond(HEALTH_OPEN, client_action="open_health_import")
                 if (
                     (intent and intent.kind == "skip")
                     or NO_REPLY.fullmatch(plain)
                     or HEALTH_DECLINE.search(plain)
+                    or heard.clear_no
                     or state.health_reasked
                 ):
                     return respond(self._decline_health(state))
                 state.health_reasked = True
+                if heard.intent == "yes":
+                    # A yes said unsurely ("I guess?"): one short check.
+                    return respond(HEALTH_OFFER_QUESTION.check)
                 return respond(NOT_CAUGHT + " " + self._prompt(state))
         if action == "skip" and state.phase == "offering":
             return respond(self._decline_health(state))
@@ -945,6 +1036,8 @@ class ConversationService:
             # Only an unmistakable yes confirms; a no never does, and a correction
             # replaces only the answer being read back.
             heard_, rest = (read_back, "") if read_back else read_back_reply(text)
+            if not read_back:
+                heard_, rest = await self._widen(request, text, heard_, rest, self._prompt(state))
             if read_back == "correction":
                 rest = text
             pending = state.pending_profile.model_dump(exclude_none=True)
@@ -955,9 +1048,12 @@ class ConversationService:
                 heard_ = "yes" if said == pending else "unsure"
             if heard_ == "yes":
                 action = "confirm"
-            elif heard_ == "unsure":
+            elif heard_ == "unsure" and not checked:
+                state.yes_no_checked = True
                 return respond(UNSURE_LEAD + self._prompt(state))
-            elif heard_ == "no":
+            if heard_ == "unsure":
+                heard_ = "no"  # still unclear after the one check: nothing is saved
+            if heard_ == "no":
                 pending_fields = list(pending)
                 state.pending_estimate = None
                 if len(pending_fields) == 1:
@@ -972,7 +1068,7 @@ class ConversationService:
                     NO_LEAD + "Which answer should I change? "
                     'Please say its name and the right answer, like "my weight is 150 pounds".'
                 )
-            else:
+            elif heard_ != "yes":
                 text = rest if heard_ == "correction" else text
                 action, from_read_back = "correct", True
         if action == "confirm":

@@ -1206,7 +1206,8 @@
     "seed": 0,
     "small_talk": false,
     "ask_only": null,
-    "missing_offered": false
+    "missing_offered": false,
+    "yes_no_checked": false
   },
   "changeState": {
     "phase": "choosing",

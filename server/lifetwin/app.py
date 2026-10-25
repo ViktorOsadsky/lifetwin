@@ -15,7 +15,9 @@ from lifetwin.checkin import CheckinService
 from lifetwin.checkin import router as checkin_router
 from lifetwin.coach import DailyCap
 from lifetwin.coach import router as coach_router
+from lifetwin.core.claude import ClaudeJSON
 from lifetwin.core.config import Settings
+from lifetwin.core.intent import ClaudeIntentReader
 from lifetwin.core.middleware import RequestBudgetMiddleware
 from lifetwin.core.models import (
     BP_ORDER_MESSAGE,
@@ -208,6 +210,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     else:
         conversation_extractor, conversation_personalizer = None, None
     application.state.conversation_personalizer = conversation_personalizer
+    # Unclear yes/no replies may be read by Claude (CONVERSATION_PROVIDER=claude), only with
+    # the person's yes for Claude and never for a consent question; the rules go first.
+    intent_reader = (
+        ClaudeIntentReader(
+            ClaudeJSON(
+                api_key=claude_key,
+                model=settings.claude_model,
+                timeout_seconds=voice_timeout,
+                max_tokens=200,
+            ),
+            timeout_seconds=min(4, voice_timeout),
+        )
+        if settings.conversation_provider == "claude"
+        else None
+    )
     # The provider a conversation turn may reach: "muse" also covers the OpenAI extractor.
     conversation_name = (
         None
@@ -220,6 +237,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         timeout_seconds=settings.provider_timeout_seconds,
         personalizer=conversation_personalizer,
         max_probes=1 if settings.onboarding_demo else MAX_PROBES,
+        intent_reader=intent_reader,
     )
     # Documents: the deterministic parser always; the selected outside AI (Muse over Chat
     # Completions, or Claude) only when enabled, configured and the person agreed for
@@ -247,7 +265,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Check-ins are guided only and stateless: the caller sends the previous answers.
     # The care reply may be reworded by the conversation provider, only with consent for it.
     application.state.checkin_service = CheckinService(
-        personalizer=conversation_personalizer, timeout_seconds=voice_timeout
+        personalizer=conversation_personalizer,
+        timeout_seconds=voice_timeout,
+        intent_reader=intent_reader,
     )
     # Changing a saved answer is a stateless talk with Mochi: the caller sends the profile.
     # It calls no model today; if it ever does, it takes the conversation provider.

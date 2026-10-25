@@ -127,7 +127,8 @@
    "seed": 0,
    "small_talk": false,
    "ask_only": null,
-   "missing_offered": true
+   "missing_offered": true,
+   "yes_no_checked": false
   },
   "message": "Got it. All done, thank you! One idea for you: You said you walk. Make a playlist of upbeat songs and match your steps to the beat for a song or two, then cool off with a slower one. More ideas are on the next screen.",
   "guide_mode": "guided",
@@ -503,7 +504,8 @@
    "seed": 0,
    "small_talk": false,
    "ask_only": null,
-   "missing_offered": true
+   "missing_offered": true,
+   "yes_no_checked": false
   },
   "message": "Got it. All done, thank you! One idea for you: You said you're active. Make a playlist of upbeat songs and match your steps to the beat for a song or two, then cool off with a slower one. More ideas are on the next screen.",
   "guide_mode": "guided",
