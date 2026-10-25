@@ -1732,10 +1732,10 @@ def _in_period(text: str, field: str, period: str | None) -> str | None:
     if field == "sleep_hours":
         # Asked about a usual night: "most nights" is that night.
         text = re.sub(r"\bmost (?:of the )?nights\b", " ", text)
-    said = re.search(THIS_WEEK, text)
     text = " ".join(re.sub(THIS_WEEK, " ", text).split())
-    if said and field == "exercise_minutes_weekly":
-        # "This week I walked two hours" is the week's total, as "two hours a week" is.
+    if field == "exercise_minutes_weekly":
+        # "Two hours" to the weekly question is the week's total, as "two hours a week" is
+        # (owner, 2026-10-25: "2 hours cannot be translated into 120 minutes").
         durations = list(re.finditer(DURATION, text))
         if len(durations) == 1 and not re.search(FREQUENCY, _blank(text, [durations[0].span()])):
             end = durations[0].end()

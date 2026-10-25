@@ -341,6 +341,9 @@ class TurnResponse(ApiModel):
     provider_status: Literal[
         "not_configured", "consent_required", "used", "unavailable", "not_needed"
     ] = "not_configured"
+    # Claude judged the transcript background speech, TV or another person, not the
+    # person answering: the question stays open and the app asks once to say it again.
+    off_topic: bool = False
     voice_status: Literal["deferred", "available", "unavailable"] = "deferred"
     # Set when the person asked to hear the prompt again more slowly or more loudly;
     # the message repeats the prompt, and a voice client may adjust playback.
@@ -382,7 +385,13 @@ class TurnResponse(ApiModel):
 class ExtractionCandidate(ApiModel):
     field: ProfileField
     quote: str = Field(min_length=1, max_length=2000)
+    # Claude only: the answer in the field's own unit, with the arithmetic done ("2 hours"
+    # to a minutes question is 120). Never trusted: the deterministic reader re-checks it
+    # (lifetwin/onboarding/computed.py) and wins when the two disagree.
+    value: float | None = None
 
 
 class ExtractionResult(ApiModel):
     candidates: list[ExtractionCandidate] = Field(max_length=FIELD_COUNT)
+    # Claude only: the words are clearly not the person answering (TV, another person).
+    off_topic: bool = False

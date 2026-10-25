@@ -62,6 +62,7 @@ from lifetwin.checkin.understanding import (
     read_sitting,
 )
 from lifetwin.core.models import CheckinValues
+from lifetwin.core.quantities import contradicts
 from lifetwin.onboarding.habits import merge, read_notes
 from lifetwin.onboarding.intents import (
     CARE_QUESTION,
@@ -1386,6 +1387,9 @@ class CheckinService:
             )
             if hint and hint.endswith(" "):
                 hint += self._question(state)
+            if field in values and contradicts(text, field):
+                # "7 and a half hours of sleep", "2 hours a week": not a day's sitting.
+                return {}, None, False
             return values, hint, False
         period = "week" if state.kind == "weekly" else None
         if field == "smoking_status":
@@ -1394,6 +1398,9 @@ class CheckinService:
                 return {field: status}, None, False
         found = parse_reply(text, field, today=today, strict=voice, period=period)
         values = {name: found[name] for name in names if name in found}
+        if field in values and contradicts(text, field):
+            # "About 2 hours a week" to a nightly sleep question: asked again, never stored.
+            values = {}
         if field == "systolic_bp" and len(values) != 2:
             values = {}
         if values:
@@ -1431,6 +1438,8 @@ class CheckinService:
         if not read.values and hint is None and week:
             # The weekly question's own follow-ups: "how often?", "a number, please".
             hint = checkin_clarify(text, "exercise_minutes_weekly", period="week")
+        if read.values and contradicts(text, field):
+            return {}, None, False  # "7 and a half hours of sleep" is no activity
         if read.values and field not in read.values and not set(read.values) & set(names):
             return {}, None, False
         return read.values, hint, False

@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     # ANTHROPIC_API_KEY and CLAUDE_MODEL. Unset (or blank): "claude" when ANTHROPIC_API_KEY
     # is present, else "muse".
     personalize_provider: Literal["muse", "claude"] | None = None
+    # Who reads and words a conversation turn (onboarding, check-in, change): every model
+    # call made while Mochi listens. Owner ruling (2026-10-25): Claude decides voice turns.
+    # "claude" uses ANTHROPIC_API_KEY and CLAUDE_MODEL for the AI helper and the wording,
+    # whatever LLM_PROVIDER and PERSONALIZE_PROVIDER say; "muse" keeps those two settings
+    # (the earlier behaviour); "local" calls no outside AI. Unset (or blank): "claude"
+    # when ANTHROPIC_API_KEY is present, else "muse".
+    conversation_provider: Literal["claude", "muse", "local"] | None = None
     # Short onboarding demo: at most one habit follow-up. Same questions, same order, the
     # memory question and the Apple Health offer after age, sex and smoking stay.
     onboarding_demo: bool = False
@@ -87,7 +94,13 @@ class Settings(BaseSettings):
     )
     cors_origins: str = ""
 
-    @field_validator("llm_provider", "personalize_provider", "document_provider", mode="before")
+    @field_validator(
+        "llm_provider",
+        "personalize_provider",
+        "document_provider",
+        "conversation_provider",
+        mode="before",
+    )
     @classmethod
     def blank_provider_is_unset(cls, value):
         return None if isinstance(value, str) and not value.strip() else value
@@ -101,6 +114,10 @@ class Settings(BaseSettings):
             self.llm_provider = "anthropic" if claude else "openai"
         if self.personalize_provider is None:
             self.personalize_provider = "claude" if claude else "muse"
+        if self.conversation_provider is None:
+            # Owner ruling (2026-10-25): conversation turns go to Claude once it is set up,
+            # even when LLM_PROVIDER or PERSONALIZE_PROVIDER name Muse for the rest.
+            self.conversation_provider = "claude" if claude else "muse"
         if self.document_provider is None:
             # Owner ruling (2026-10-25): PDFs go to Claude, with consent, when it is set up.
             muse = self.document_muse_enabled and self.llm_provider == "chat_completions"

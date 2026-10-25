@@ -1771,6 +1771,11 @@
     "model_inputs": {
       "$ref": "#/$defs/ModelInputs"
     },
+    "off_topic": {
+      "default": false,
+      "title": "Off Topic",
+      "type": "boolean"
+    },
     "phrased_by": {
       "default": "templates",
       "enum": [
@@ -1851,6 +1856,7 @@
     "message",
     "guide_mode",
     "provider_status",
+    "off_topic",
     "voice_status",
     "speech_hint",
     "emergency",
