@@ -73,6 +73,8 @@ def main() -> None:
                             tavily_api_key="",
                             cartesia_api_key="",
                             cartesia_voice_id="",
+                            # More cases than the default per-minute limit allows.
+                            rate_limit_per_minute=1000,
                         )
                     )
                 )

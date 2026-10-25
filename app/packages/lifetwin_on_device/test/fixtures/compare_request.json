@@ -1,0 +1,28 @@
+{
+  "current_profile": {
+    "age": 45,
+    "sex_nhanes": 1,
+    "bmi": 25,
+    "sleep_hours": 7,
+    "smoking_status": 0,
+    "diabetes_diagnosed": 0,
+    "hypertension_diagnosed": 0,
+    "general_health": 2,
+    "vigorous_recreation_min_week": 60,
+    "moderate_recreation_min_week": 120,
+    "sedentary_min_day": 360
+  },
+  "alternative_profile": {
+    "age": 45,
+    "sex_nhanes": 1,
+    "bmi": 25,
+    "sleep_hours": 7,
+    "smoking_status": 2,
+    "diabetes_diagnosed": 0,
+    "hypertension_diagnosed": 0,
+    "general_health": 2,
+    "vigorous_recreation_min_week": 60,
+    "moderate_recreation_min_week": 120,
+    "sedentary_min_day": 360
+  }
+}

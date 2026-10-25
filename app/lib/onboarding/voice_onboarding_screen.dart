@@ -745,8 +745,11 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       if (quick) ...[_quickAnswers(busy), const SizedBox(height: 8)],
       // With quick answers on screen they are the big choices; Talk is the smaller one.
       if (quick) TalkButton(controller: c, compact: true) else ..._answerControls(busy, keyboard),
-      // On the first question: Apple Health instead of answering, right under Talk (or Send).
-      if (!keyboard && widget.onUseHealth != null && c.questionNumber == 1 && c.phase != VoicePhase.listening) ...[
+      // On the first question, and when Mochi offers it (or the person just said yes):
+      // Apple Health, right under Talk (or Send). Shown with the keyboard too at the offer.
+      if (widget.onUseHealth != null &&
+          c.phase != VoicePhase.listening &&
+          (c.healthOffer || (!keyboard && c.questionNumber == 1))) ...[
         const SizedBox(height: 12),
         _healthButton(),
       ],

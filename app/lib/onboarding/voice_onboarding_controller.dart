@@ -35,6 +35,8 @@ const voiceTroubleNotice = "I couldn't use the voice just now. You can try again
 const speakTroubleNotice = "I couldn't say that out loud. You can read my words above.";
 const healthWaitNotice = 'Please answer Yes or No first. Then you can add your Apple Health answers.';
 const healthNoneNotice = "No Apple Health answers were added, so I'll keep asking you. That's okay.";
+const documentWaitNotice = 'Please answer Yes or No first. Then you can add the answers from your document.';
+const documentNoneNotice = "No answers from your document were added, so I'll keep asking you. That's okay.";
 const healthRejectedPrefix = "I couldn't add your Apple Health answers. ";
 
 /// Runs the conversation loop. The server decides what happens; this class only
@@ -82,8 +84,25 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// aloud, so the mascot does not speak them a second time. Set by the screen.
   bool screenReader = false;
 
-  /// How many questions the intake has (one per profile field).
-  static const questionCount = 11;
+  /// The fields the intake asks about, in the server's order (its ASKED list). Blood pressure
+  /// comes from Apple Health or a reading, not from a question.
+  static const askedFields = [
+    'age',
+    'sex',
+    'smoking_status',
+    'height_cm',
+    'weight_kg',
+    'sleep_hours',
+    'general_health',
+    'hypertension_diagnosed',
+    'diabetes',
+    'sedentary_min_day',
+    'moderate_recreation_min_week',
+    'vigorous_recreation_min_week',
+  ];
+
+  /// How many questions the intake has (one per asked field).
+  static int get questionCount => askedFields.length;
 
   /// The microphone closes by itself after this long with no new words, or
   /// after [listenLimit] in all, so it is never left open by mistake.
@@ -119,6 +138,13 @@ class VoiceOnboardingController extends ChangeNotifier {
   Map<String, dynamic> get confirmedProfile =>
       Map<String, dynamic>.from((turn?.state['confirmed_profile'] as Map?) ?? const {});
 
+  /// Mochi is offering Apple Health (after age, sex and smoking), or the person said yes
+  /// and the server asked the app to open the import: show the Apple Health button.
+  bool get healthOffer => turn?.clientAction == 'open_health_import' || turn?.phase == 'offering';
+
+  /// The latest turn's `model_inputs` (see GuideTurn.modelInputs).
+  Map<String, dynamic>? get modelInputs => turn?.modelInputs;
+
   bool get canRetry => _retry != null;
   bool get canHearAgain => voiceUsable && mascotLine.isNotEmpty && !typing && phase != VoicePhase.interpreting;
 
@@ -129,7 +155,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     return left <= 10 ? left : null;
   }
 
-  /// Questions answered or skipped, not counting one reopened by "go back".
+  /// Questions answered, skipped or marked "I don't know", not counting one reopened by "go back".
   Set<String> get _doneFields {
     final s = state;
     if (s == null) return {};
@@ -138,14 +164,18 @@ class VoiceOnboardingController extends ChangeNotifier {
       for (final e in confirmed.entries)
         if (e.value != null) '${e.key}',
       for (final f in (s['skipped_fields'] as List?) ?? const []) '$f',
+      for (final f in (s['unknown_fields'] as List?) ?? const []) '$f',
     }..remove(s['current_field']);
   }
 
-  /// "Question N of 11", worked out from the server's state. Null when there is no question.
+  /// "Question N of 12", worked out from the server's state. Null when there is no question
+  /// (done, or a habit follow-up). Only the asked fields count, so a follow-up or a blood
+  /// pressure reading never moves the number past the last question.
   int? get questionNumber {
     final t = turn;
-    if (t == null || t.complete) return null;
-    return (_doneFields.length + 1).clamp(1, questionCount);
+    if (t == null || t.complete || t.phase == 'probing') return null;
+    final done = _doneFields.where(askedFields.contains).length;
+    return (done + 1).clamp(1, questionCount);
   }
 
   /// "Go back" reopens the answer before this question; once done, the last one, so an
@@ -183,7 +213,9 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- Apple Health --------------------------------------------------------
 
-  Map<String, num>? _pendingHealth;
+  /// Confirmed Apple Health or document answers waiting for the conversation to start.
+  Map<String, Object>? _pendingHealth;
+  String _pendingSource = 'apple_health';
 
   /// True while Apple Health values wait for the conversation to start.
   bool get hasPendingHealth => _pendingHealth != null;
@@ -197,25 +229,39 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// True when the values were taken: queued for the start, or sent and accepted. False
   /// when nothing was added (none checked, busy, an answer still being confirmed, or the
   /// server refused them or could not be reached); the reason is in [notice].
-  Future<bool> importHealth(Map<String, num> values) async {
+  Future<bool> importHealth(Map<String, num> values) =>
+      _importConfirmed(values, source: 'apple_health', none: healthNoneNotice, wait: healthWaitNotice);
+
+  /// Adds answers the person confirmed one by one from an uploaded document
+  /// (app/lib/documents/). Same rules as [importHealth]; a separate source.
+  Future<bool> importDocument(Map<String, Object> values) =>
+      _importConfirmed(values, source: 'document', none: documentNoneNotice, wait: documentWaitNotice);
+
+  Future<bool> _importConfirmed(
+    Map<String, Object> values, {
+    required String source,
+    required String none,
+    required String wait,
+  }) async {
     if (turn == null) {
       if (values.isEmpty) return false;
       _pendingHealth = {...?_pendingHealth, ...values};
+      _pendingSource = source;
       return true;
     }
     if (_busy) return false;
     if (values.isEmpty) {
       // Once every question is answered there is nothing left to "keep asking".
-      if (turn?.complete != true) _set(() => notice = healthNoneNotice);
+      if (turn?.complete != true) _set(() => notice = none);
       return false;
     }
     if (confirming) {
-      _set(() => notice = healthWaitNotice);
+      _set(() => notice = wait);
       return false;
     }
     await _stopSpeech();
     final before = turn;
-    await _send('import', values: values);
+    await _send('import', values: values, importSource: source);
     return notice == null && !identical(turn, before);
   }
 
@@ -460,7 +506,13 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- server turn -----------------------------------------------------------
 
-  Future<void> _send(String action, {String? text, bool fromTranscript = false, Map<String, num>? values}) async {
+  Future<void> _send(
+    String action, {
+    String? text,
+    bool fromTranscript = false,
+    Map<String, Object>? values,
+    String? importSource,
+  }) async {
     if (_busy) return;
     if (turn == null && action != 'start') {
       // The first question never arrived (e.g. no network), so there is nothing to answer
@@ -487,6 +539,7 @@ class VoiceOnboardingController extends ChangeNotifier {
             fromTranscript: fromTranscript,
             values: values,
             aiHelper: aiHelper,
+            importSource: importSource,
           )
           .timeout(_turnLimit);
     } on GuideRejected catch (e) {
@@ -502,7 +555,8 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() {
         phase = VoicePhase.idle;
         notice = e is GuideTooBusy ? e.message : noNetworkNotice;
-        _retry = () => _send(action, text: text, fromTranscript: fromTranscript, values: values);
+        _retry = () =>
+            _send(action, text: text, fromTranscript: fromTranscript, values: values, importSource: importSource);
       });
       if (!typing) await _speakNotice(notice!);
       return;
@@ -518,7 +572,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (action == 'start' && pending != null) {
       // The answer to the import asks the first open question, so only it is spoken.
       _pendingHealth = null;
-      return _send('import', values: pending);
+      return _send('import', values: pending, importSource: _pendingSource);
     }
     if (!typing && voiceUsable && !screenReader) await _speak(t.message);
   }

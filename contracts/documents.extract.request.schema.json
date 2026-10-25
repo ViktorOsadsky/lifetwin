@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "outside_ai_consent": {
+      "default": false,
+      "title": "Outside Ai Consent",
+      "type": "boolean"
+    },
+    "pages": {
+      "items": {
+        "maxLength": 12000,
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 1,
+      "title": "Pages",
+      "type": "array"
+    }
+  },
+  "required": [
+    "pages"
+  ],
+  "title": "DocumentExtractRequest",
+  "type": "object"
+}

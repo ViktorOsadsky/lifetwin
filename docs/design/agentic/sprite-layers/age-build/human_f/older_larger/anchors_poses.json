@@ -1,0 +1,146 @@
+{
+ "wave": {
+  "size": [
+   219,
+   395
+  ],
+  "feet_anchor": {
+   "x": 0.605,
+   "y": 0.9797
+  },
+  "scale": 0.788,
+  "sheet": "human_f_older_larger_A"
+ },
+ "walk_side": {
+  "size": [
+   203,
+   395
+  ],
+  "feet_anchor": {
+   "x": 0.5222,
+   "y": 0.9797
+  },
+  "scale": 0.788,
+  "sheet": "human_f_older_larger_A"
+ },
+ "sit": {
+  "size": [
+   228,
+   323
+  ],
+  "feet_anchor": {
+   "x": 0.4912,
+   "y": 0.9752
+  },
+  "scale": 0.788,
+  "sheet": "human_f_older_larger_A"
+ },
+ "jump": {
+  "size": [
+   271,
+   349
+  ],
+  "feet_anchor": {
+   "x": 0.4465,
+   "y": 0.9771
+  },
+  "scale": 0.788,
+  "sheet": "human_f_older_larger_A"
+ },
+ "sleep": {
+  "size": [
+   356,
+   178
+  ],
+  "feet_anchor": {
+   "x": 0.6545,
+   "y": 0.9551
+  },
+  "scale": 0.788,
+  "sheet": "human_f_older_larger_A"
+ },
+ "eat": {
+  "size": [
+   212,
+   324
+  ],
+  "feet_anchor": {
+   "x": 0.5142,
+   "y": 0.9753
+  },
+  "scale": 0.788,
+  "sheet": "human_f_older_larger_A"
+ },
+ "stretch": {
+  "size": [
+   195,
+   403
+  ],
+  "feet_anchor": {
+   "x": 0.6,
+   "y": 0.9801
+  },
+  "scale": 0.788,
+  "sheet": "human_f_older_larger_A"
+ },
+ "concerned": {
+  "size": [
+   165,
+   395
+  ],
+  "feet_anchor": {
+   "x": 0.5061,
+   "y": 0.9797
+  },
+  "scale": 0.566,
+  "sheet": "human_f_older_larger_B"
+ },
+ "listening": {
+  "size": [
+   182,
+   393
+  ],
+  "feet_anchor": {
+   "x": 0.5412,
+   "y": 0.9796
+  },
+  "scale": 0.566,
+  "sheet": "human_f_older_larger_B"
+ },
+ "thinking": {
+  "size": [
+   172,
+   396
+  ],
+  "feet_anchor": {
+   "x": 0.5378,
+   "y": 0.9798
+  },
+  "scale": 0.566,
+  "sheet": "human_f_older_larger_B"
+ },
+ "sleepy": {
+  "size": [
+   200,
+   397
+  ],
+  "feet_anchor": {
+   "x": 0.465,
+   "y": 0.9798
+  },
+  "scale": 0.566,
+  "sheet": "human_f_older_larger_B"
+ },
+ "proud": {
+  "size": [
+   172,
+   398
+  ],
+  "feet_anchor": {
+   "x": 0.5378,
+   "y": 0.9799
+  },
+  "scale": 0.566,
+  "sheet": "human_f_older_larger_B"
+ }
+}

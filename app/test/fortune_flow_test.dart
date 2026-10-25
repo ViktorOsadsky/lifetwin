@@ -7,6 +7,8 @@ import 'package:lifesim/ui/twin_appearance.dart';
 import 'package:lifesim/ui/twin_assets.dart';
 import 'package:lifesim/ui/widgets/widgets.dart';
 
+import 'support/assessments.dart';
+
 class FakeForecastClient implements ForecastClient {
   final calls = <Map<String, dynamic>>[];
   final answers = <Object>[]; // Forecast or ForecastFailure, in order
@@ -20,34 +22,9 @@ class FakeForecastClient implements ForecastClient {
   }
 }
 
-/// Real model output for design profile C (68 F, 165 cm / 68 kg, 60 min/wk,
-/// former smoker, 7 h), deepsurv-nhanes-73700ee880b6 via POST /api/predict
-/// on 2026-10-24 (docs/design/painted-card-direction.md §2).
-Map<String, dynamic> profileCJson() => {
-  'schema_version': '1.0',
-  'status': 'supported',
-  'model_version': 'deepsurv-nhanes-73700ee880b6',
-  'max_horizon_years': 5,
-  'survival': [
-    {'years': 1, 'survival': 0.9852},
-    {'years': 3, 'survival': 0.9484},
-    {'years': 5, 'survival': 0.9080},
-  ],
-  'curve': [
-    {'years': 0.0, 'survival': 1.0},
-    {'years': 1.0, 'survival': 0.9852},
-    {'years': 3.0, 'survival': 0.9484},
-    {'years': 5.0, 'survival': 0.9080},
-  ],
-  'filled_in': [
-    {'feature': 'sedentary_min_day', 'label': 'time spent sitting each day'},
-    {'feature': 'diabetes_diagnosed', 'label': 'diabetes'},
-    {'feature': 'hypertension_diagnosed', 'label': 'high blood pressure'},
-    {'feature': 'general_health', 'label': 'how you rate your health'},
-  ],
-  'reason': null,
-  'limitations': ['No causal effects of changing lifestyle are estimated.'],
-};
+/// An on-device result shaped like design profile C (68 F, 165 cm / 68 kg, former
+/// smoker, 7 h), the package's assess() output.
+Map<String, dynamic> profileCJson() => availableAssessment(const {1: 0.9852, 2: 0.967, 3: 0.9484, 4: 0.928, 5: 0.9080});
 
 const profileC = {
   'age': 68,
@@ -82,7 +59,7 @@ Future<FakeForecastClient> pumpForecast(WidgetTester t, Object answer, {VoidCall
 
 void main() {
   testWidgets('supported (profile C): About 91 in 100, 91 bear heads, the exact sentence, nothing invented', (t) async {
-    final client = await pumpForecast(t, Forecast.parse(profileCJson()));
+    final client = await pumpForecast(t, forecastFrom(profileCJson()));
     expect(client.calls.single, profileC);
     expect(find.text('Your look ahead'), findsOneWidget);
     expect(find.textContaining('About 91 in 100', findRichText: true), findsOneWidget);
@@ -98,21 +75,20 @@ void main() {
     }
   });
 
-  testWidgets('See what shaped it: the curve, confirmed answers with sources, the filled_in labels, the limits', (
-    t,
-  ) async {
-    await pumpForecast(t, Forecast.parse(profileCJson()));
+  testWidgets('See what shaped it: the curve, confirmed answers with sources, the limits, nothing assumed', (t) async {
+    await pumpForecast(t, forecastFrom(profileCJson()));
     await t.ensureVisible(find.text('See what shaped it'));
     await t.pumpAndSettle();
     await t.tap(find.text('See what shaped it'));
     await t.pumpAndSettle();
 
     final curve = t.widget<SurvivalCurve>(find.byType(SurvivalCurve));
-    expect(curve.markers, {1: 0.9852, 3: 0.9484, 5: 0.9080});
-    expect(curve.curve, hasLength(4));
+    expect(curve.markers, {1: 0.9852, 2: 0.967, 3: 0.9484, 4: 0.928, 5: 0.9080});
+    expect(curve.curve, hasLength(6)); // now, then years 1-5
     expect(
       find.bySemanticsLabel(
-        'Out of 100 people with answers like yours: about 99 after 1 year, about 95 after 3 years, about 91 after 5 years.',
+        'Modeled survival of similar people. Out of 100 people with answers like yours: about 99 after 1 year, about 97 after 2 years, '
+        'about 95 after 3 years, about 93 after 4 years, about 91 after 5 years.',
       ),
       findsOneWidget,
     );
@@ -122,18 +98,9 @@ void main() {
     expect(find.text('Former smoker'), findsOneWidget);
     expect(find.text('Exercise 60 min/week'), findsOneWidget);
     expect(find.text('Apple Health'), findsNWidgets(2)); // height and sleep
-    await t.scrollUntilVisible(find.text('We assumed'), 200, scrollable: find.byType(Scrollable).first);
-    expect(find.text('We assumed'), findsOneWidget);
-    for (final label in [
-      'Time spent sitting each day',
-      'Diabetes',
-      'High blood pressure',
-      'How you rate your health',
-    ]) {
-      await t.scrollUntilVisible(find.text(label), 200, scrollable: find.byType(Scrollable).first);
-      expect(find.text(label), findsOneWidget);
-    }
-    expect(find.text('Add an answer'), findsNWidgets(4));
+    // Nothing is filled in: there is no 'We assumed' section.
+    expect(find.text('We assumed'), findsNothing);
+    expect(find.text('Add an answer'), findsNothing);
     await t.scrollUntilVisible(find.text('Not a promise, not a date'), 200, scrollable: find.byType(Scrollable).first);
     for (final line in ['Looks 5 years ahead at most', 'A US health survey', 'Links, not causes']) {
       expect(find.text(line), findsOneWidget);
@@ -142,22 +109,9 @@ void main() {
   });
 
   testWidgets('unsupported: the plain reason, Go back to my answers, no number and no bear heads', (t) async {
-    const reason =
-        'The survey this forecast learns from does not record exact ages above 80, '
-        'so we cannot make a forecast for you yet.';
+    const reason = 'Annual estimates support ages 35–79 only.';
     var backs = 0;
-    await pumpForecast(
-      t,
-      Forecast.parse({
-        ...profileCJson(),
-        'status': 'unsupported',
-        'survival': <Object>[],
-        'curve': <Object>[],
-        'filled_in': <Object>[],
-        'reason': reason,
-      }),
-      onBack: () => backs++,
-    );
+    await pumpForecast(t, forecastFrom(unavailableAssessment(message: reason)), onBack: () => backs++);
     expect(find.text("I can't make a forecast for you yet. $reason"), findsOneWidget);
     expect(find.byType(BearHeadArray), findsNothing);
     expect(find.textContaining('in 100', findRichText: true), findsNothing);
@@ -233,7 +187,7 @@ void main() {
     });
 
     testWidgets('Human: the supported result holds the ball', (t) async {
-      await pumpHuman(t, forecast(Forecast.parse(profileCJson())));
+      await pumpHuman(t, forecast(forecastFrom(profileCJson())));
       expect(find.text(sentenceC), findsOneWidget);
       expect(spriteAsset(t), 'assets/twin/human/pose/hold_ball.png');
       expect(plateAsset(t), 'assets/scene/night.jpg');
@@ -249,15 +203,7 @@ void main() {
       await pumpHuman(
         t,
         ForecastScreen(
-          client: FakeForecastClient()
-            ..answers.add(
-              Forecast.parse({
-                ...profileCJson(),
-                'status': 'unsupported',
-                'survival': <Object>[],
-                'reason': 'Not covered.',
-              }),
-            ),
+          client: FakeForecastClient()..answers.add(forecastFrom(unavailableAssessment(message: 'Not covered.'))),
           profile: profileC,
           onBack: () {},
         ),
@@ -275,7 +221,7 @@ void main() {
     expect(twinAsset(TwinType.bear, TwinLook.calHat, TwinPose.shrug), 'assets/twin/bear/pose/shrug.png');
     expect(twinAsset(TwinType.bear, TwinLook.plain, TwinPose.holdBall), 'assets/twin/bear/pose_nohat/hold_ball.png');
     expect(twinAsset(TwinType.human, TwinLook.plain, TwinPose.shrug), 'assets/twin/human/pose_nohat/shrug.png');
-    expect(twinFeetAnchor(TwinType.human, TwinLook.calHat, TwinPose.shrug), 0.9649);
-    expect(twinFeetAnchor(TwinType.human, TwinLook.plain, TwinPose.sleep), 0.9668);
+    expect(twinFeetAnchor(TwinType.human, TwinLook.calHat, TwinPose.shrug), 0.9694);
+    expect(twinFeetAnchor(TwinType.human, TwinLook.plain, TwinPose.sleep), 0.9459);
   });
 }

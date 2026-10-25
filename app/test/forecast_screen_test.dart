@@ -1,53 +1,22 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:lifesim/forecast/forecast_client.dart';
 import 'package:lifesim/forecast/forecast_screen.dart';
 import 'package:lifesim/main.dart';
 import 'package:lifesim/room/room_screen.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/ui/widgets/widgets.dart';
-import 'package:lifesim/voice/api_base.dart';
 import 'package:lifesim/voice/fakes.dart';
 
-/// The server's answer for a 70-year-old man (contracts/fixtures/cases.json).
-Map<String, dynamic> supportedJson() => {
-  'schema_version': '1.0',
-  'status': 'supported',
-  'model_version': 'deepsurv-nhanes-73700ee880b6',
-  'max_horizon_years': 5,
-  'survival': [
-    {'years': 1, 'survival': 0.9805},
-    {'years': 3, 'survival': 0.9324},
-    {'years': 5, 'survival': 0.8802},
-  ],
-  'curve': [
-    {'years': 0.0, 'survival': 1.0},
-    {'years': 5.0, 'survival': 0.8802},
-  ],
-  'filled_in': [
-    {'feature': 'sedentary_min_day', 'label': 'time spent sitting each day'},
-    {'feature': 'hypertension_diagnosed', 'label': 'being told you have high blood pressure'},
-    {'feature': 'general_health', 'label': 'how you rate your health'},
-  ],
-  'reason': null,
-  'limitations': ['No causal effects of changing lifestyle are estimated.'],
-};
+import 'support/assessments.dart';
 
-Map<String, dynamic> unsupportedJson() => {
-  ...supportedJson(),
-  'status': 'unsupported',
-  'survival': <Object>[],
-  'curve': <Object>[],
-  'filled_in': <Object>[],
-  'reason':
-      'The survey this forecast learns from does not record exact ages above 80, '
-      'so we cannot make a forecast for you yet.',
-};
+/// An on-device result for a 70-year-old man.
+Map<String, dynamic> supportedJson() =>
+    availableAssessment(const {1: 0.9805, 2: 0.958, 3: 0.9324, 4: 0.907, 5: 0.8802});
+
+Map<String, dynamic> unsupportedJson() => unavailableAssessment();
 
 class FakeForecastClient implements ForecastClient {
   final calls = <Map<String, dynamic>>[];
@@ -109,7 +78,7 @@ void expectBigButtons(WidgetTester t) {
 
 void main() {
   testWidgets('reveals the 5-year result in one sentence, the number, bear heads and what it means', (t) async {
-    final r = Rig()..client.answers.add(Forecast.parse(supportedJson()));
+    final r = Rig()..client.answers.add(forecastFrom(supportedJson()));
     r.client.gate = Completer<void>();
     await r.pump(t);
     expect(find.text('Looking into the magic ball…'), findsOneWidget);
@@ -131,17 +100,14 @@ void main() {
     expect(find.text('What this means'), findsOneWidget);
     expect(find.textContaining('not a promise, and they are not a date'), findsOneWidget);
     expect(find.textContaining('links, not causes'), findsOneWidget);
-    expect(
-      find.textContaining(
-        'time spent sitting each day, being told you have high blood pressure and how you rate your health',
-      ),
-      findsOneWidget,
-    );
-    expect(find.textContaining('No causal effects of changing lifestyle are estimated.'), findsOneWidget);
+    expect(find.textContaining('Nothing is filled in for you.'), findsOneWidget);
+    expect(find.textContaining('not an individual death date or medical prognosis'), findsOneWidget);
     await t.ensureVisible(find.text('Got it'));
     await t.pumpAndSettle();
     await t.tap(find.text('Got it'));
     await t.pumpAndSettle();
+    // Survival is labelled on the forecast itself, not only on the detail screen.
+    expect(find.text('Modeled survival of similar people'), findsOneWidget);
     // The 1- and 3-year values live on the detail curve.
     await t.ensureVisible(find.text('See what shaped it'));
     await t.pumpAndSettle();
@@ -149,11 +115,13 @@ void main() {
     await t.pumpAndSettle();
     expect(
       find.bySemanticsLabel(
-        'Out of 100 people with answers like yours: about 98 after 1 year, about 93 after 3 years, about 88 after 5 years.',
+        'Modeled survival of similar people. Out of 100 people with answers like yours: about 98 after 1 year, about 96 after 2 years, '
+        'about 93 after 3 years, about 91 after 4 years, about 88 after 5 years.',
       ),
       findsOneWidget,
     );
-    expect(find.text('Time spent sitting each day'), findsOneWidget);
+    expect(find.text('Modeled survival of similar people'), findsOneWidget);
+    expect(find.text('We assumed'), findsNothing);
     await t.tap(find.bySemanticsLabel('Back to your look ahead'));
     await t.pumpAndSettle();
     expect(r.speech.spoken, [sentence]);
@@ -164,7 +132,7 @@ void main() {
   });
 
   testWidgets('reduced motion shows the result at once, with no reveal animation', (t) async {
-    final r = Rig()..client.answers.add(Forecast.parse(supportedJson()));
+    final r = Rig()..client.answers.add(forecastFrom(supportedJson()));
     await r.pump(t, reduceMotion: true);
     await t.pump(); // the answer arrives
     await t.pump();
@@ -177,7 +145,7 @@ void main() {
   });
 
   testWidgets('Back calls onBack', (t) async {
-    final r = Rig()..client.answers.add(Forecast.parse(supportedJson()));
+    final r = Rig()..client.answers.add(forecastFrom(supportedJson()));
     await r.pump(t);
     await t.pumpAndSettle();
     await t.tap(find.bySemanticsLabel('Back'));
@@ -185,7 +153,7 @@ void main() {
   });
 
   testWidgets('voice off: nothing is spoken', (t) async {
-    final r = Rig()..client.answers.add(Forecast.parse(supportedJson()));
+    final r = Rig()..client.answers.add(forecastFrom(supportedJson()));
     await r.pump(t, voice: false);
     await t.pumpAndSettle();
     expect(find.text(sentence), findsOneWidget);
@@ -194,10 +162,10 @@ void main() {
   });
 
   testWidgets('unsupported: the mascot explains why and offers to go back to the answers', (t) async {
-    final r = Rig()..client.answers.add(Forecast.parse(unsupportedJson()));
+    final r = Rig()..client.answers.add(forecastFrom(unsupportedJson()));
     await r.pump(t);
     await t.pumpAndSettle();
-    final line = "I can't make a forecast for you yet. ${unsupportedJson()['reason']}";
+    const line = "I can't make a forecast for you yet. Annual estimates support ages 35–79 only.";
     expect(find.text(line), findsOneWidget);
     expect(r.speech.spoken, [line]);
     expect(find.byType(BearHeadArray), findsNothing);
@@ -210,7 +178,7 @@ void main() {
   });
 
   testWidgets('an error offers Try again, which asks again', (t) async {
-    final r = Rig()..client.answers.addAll([const ForecastFailure('offline'), Forecast.parse(supportedJson())]);
+    final r = Rig()..client.answers.addAll([const ForecastFailure('offline'), forecastFrom(supportedJson())]);
     await r.pump(t);
     await t.pumpAndSettle();
     expect(find.text(couldNotReach), findsOneWidget);
@@ -224,8 +192,8 @@ void main() {
     testWidgets('no overflow at text scale 2.0 on 390x844 ($kind), buttons at least 56 pt', (t) async {
       final r = Rig();
       r.client.answers.add(switch (kind) {
-        'supported' => Forecast.parse(supportedJson()),
-        'unsupported' => Forecast.parse(unsupportedJson()),
+        'supported' => forecastFrom(supportedJson()),
+        'unsupported' => forecastFrom(unsupportedJson()),
         _ => const ForecastFailure('offline'),
       });
       await r.pump(t, scale: 2);
@@ -243,51 +211,8 @@ void main() {
     });
   }
 
-  group('HttpForecastClient', () {
-    test('sends only the confirmed request fields and parses the forecast', () async {
-      late http.Request sent;
-      final client = HttpForecastClient(
-        base: ApiBase('http://x'),
-        client: MockClient((req) async {
-          sent = req;
-          return http.Response(jsonEncode(supportedJson()), 200);
-        }),
-      );
-      final f = await client.predict({'age': 70, 'sex': 'male', 'diabetes': null, 'game_health': 3});
-      expect(sent.url.toString(), 'http://x/api/predict');
-      expect(jsonDecode(sent.body), {'age': 70, 'sex': 'male'});
-      expect(f.supported, isTrue);
-      expect(f.outOf100(5), 88);
-      expect(f.filledIn, hasLength(3));
-      expect(f.curve, hasLength(2));
-    });
-
-    test('501 means the forecast is not set up; 422 keeps the server words', () async {
-      for (final (status, words) in [
-        (501, 'The forecast is not set up on this server yet.'),
-        (422, 'Please check these answers: age. Then try again.'),
-      ]) {
-        final client = HttpForecastClient(
-          base: ApiBase('http://x'),
-          client: MockClient(
-            (_) async => http.Response(jsonEncode({'status': 'error', 'code': 'x', 'message': words}), status),
-          ),
-        );
-        await expectLater(
-          client.predict({'age': 70}),
-          throwsA(isA<ForecastFailure>().having((e) => e.plain, 'plain', words)),
-        );
-      }
-    });
-
-    test('a supported answer without the 5-year value is refused', () {
-      final broken = supportedJson()..['survival'] = <Object>[];
-      expect(() => Forecast.parse(broken), throwsA(isA<ForecastFailure>()));
-    });
-  });
-
   testWidgets('Continue after the intake opens the forecast with the confirmed answers', (t) async {
-    final forecast = FakeForecastClient()..answers.add(Forecast.parse(supportedJson()));
+    final forecast = FakeForecastClient()..answers.add(forecastFrom(supportedJson()));
     final c = VoiceOnboardingController(
       guide: FakeConversationGuide(),
       input: FakeSpeechInput(),

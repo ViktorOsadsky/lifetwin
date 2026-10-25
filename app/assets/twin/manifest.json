@@ -106,7 +106,7 @@
         "y": 0.9646
       },
       "flipX": false,
-      "note3x": "2.0x 228x339, 3.0x kept at native 228x339 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 228x339 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:35",
@@ -115,7 +115,7 @@
       "notes": "Greeting; mascot intake hello.",
       "path": "assets/twin/bear/pose/wave.png",
       "size1x": {
-        "w": 132,
+        "w": 139,
         "h": 180
       },
       "variants": {
@@ -123,11 +123,11 @@
         "3.0x": "assets/twin/bear/pose/3.0x/wave.png"
       },
       "anchor": {
-        "x": 0.549,
-        "y": 0.9641
+        "x": 0.5682,
+        "y": 0.965
       },
       "flipX": false,
-      "note3x": "2.0x 245x334, 3.0x kept at native 245x334 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 264x343 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:41",
@@ -136,7 +136,7 @@
       "notes": "Art faces right. Flip horizontally to walk left (this mirrors the Cal script, accepted for motion).",
       "path": "assets/twin/bear/pose/walk_side.png",
       "size1x": {
-        "w": 122,
+        "w": 129,
         "h": 180
       },
       "variants": {
@@ -144,11 +144,11 @@
         "3.0x": "assets/twin/bear/pose/3.0x/walk_side.png"
       },
       "anchor": {
-        "x": 0.474,
-        "y": 0.9648
+        "x": 0.498,
+        "y": 0.9646
       },
       "flipX": false,
-      "note3x": "2.0x 231x341, 3.0x kept at native 231x341 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 243x339 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:47",
@@ -157,7 +157,7 @@
       "notes": "Walking toward the camera (down the screen).",
       "path": "assets/twin/bear/pose/walk_front.png",
       "size1x": {
-        "w": 119,
+        "w": 117,
         "h": 180
       },
       "variants": {
@@ -165,11 +165,11 @@
         "3.0x": "assets/twin/bear/pose/3.0x/walk_front.png"
       },
       "anchor": {
-        "x": 0.4155,
+        "x": 0.4159,
         "y": 0.9656
       },
       "flipX": false,
-      "note3x": "2.0x 231x349, 3.0x kept at native 231x349 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 226x349 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:53",
@@ -190,7 +190,7 @@
         "y": 0.9641
       },
       "flipX": false,
-      "note3x": "2.0x 238x334, 3.0x kept at native 238x334 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 238x334 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:59",
@@ -199,7 +199,7 @@
       "notes": "Resting idle variant.",
       "path": "assets/twin/bear/pose/sit.png",
       "size1x": {
-        "w": 149,
+        "w": 150,
         "h": 180
       },
       "variants": {
@@ -207,11 +207,11 @@
         "3.0x": "assets/twin/bear/pose/3.0x/sit.png"
       },
       "anchor": {
-        "x": 0.498,
-        "y": 0.9648
+        "x": 0.4981,
+        "y": 0.9618
       },
       "flipX": false,
-      "note3x": "2.0x 259x312, 3.0x kept at native 259x312 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 261x314 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:65",
@@ -220,7 +220,7 @@
       "notes": "Celebrate: correct quiz answer, reward.",
       "path": "assets/twin/bear/pose/jump.png",
       "size1x": {
-        "w": 138,
+        "w": 146,
         "h": 180
       },
       "variants": {
@@ -228,11 +228,11 @@
         "3.0x": "assets/twin/bear/pose/3.0x/jump.png"
       },
       "anchor": {
-        "x": 0.5,
-        "y": 0.9661
+        "x": 0.6558,
+        "y": 0.9648
       },
       "flipX": false,
-      "note3x": "2.0x 249x325, 3.0x kept at native 249x325 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 276x341 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:77",
@@ -241,7 +241,7 @@
       "notes": "Exercise experiments.",
       "path": "assets/twin/bear/pose/stretch.png",
       "size1x": {
-        "w": 151,
+        "w": 144,
         "h": 180
       },
       "variants": {
@@ -249,11 +249,11 @@
         "3.0x": "assets/twin/bear/pose/3.0x/stretch.png"
       },
       "anchor": {
-        "x": 0.4964,
-        "y": 0.9664
+        "x": 0.4983,
+        "y": 0.9656
       },
       "flipX": false,
-      "note3x": "2.0x 274x327, 3.0x kept at native 274x327 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 279x349 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:71",
@@ -270,11 +270,11 @@
         "3.0x": "assets/twin/bear/pose/3.0x/think.png"
       },
       "anchor": {
-        "x": 0.5225,
+        "x": 0.5247,
         "y": 0.9644
       },
       "flipX": false,
-      "note3x": "2.0x 222x337, 3.0x kept at native 222x337 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 223x337 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:83",
@@ -284,18 +284,18 @@
       "path": "assets/twin/bear/pose/sleep.png",
       "size1x": {
         "w": 180,
-        "h": 118
+        "h": 120
       },
       "variants": {
         "2.0x": "assets/twin/bear/pose/2.0x/sleep.png",
         "3.0x": "assets/twin/bear/pose/3.0x/sleep.png"
       },
       "anchor": {
-        "x": 0.5529,
-        "y": 0.9641
+        "x": 0.5522,
+        "y": 0.9329
       },
       "flipX": false,
-      "note3x": "2.0x 255x167, 3.0x kept at native 255x167 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 268x179 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:89",
@@ -312,11 +312,11 @@
         "3.0x": "assets/twin/bear/pose/3.0x/eat.png"
       },
       "anchor": {
-        "x": 0.4956,
-        "y": 0.9644
+        "x": 0.4957,
+        "y": 0.9614
       },
       "flipX": false,
-      "note3x": "2.0x 230x309, 3.0x kept at native 230x309 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 232x311 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:95",
@@ -334,10 +334,10 @@
       },
       "anchor": {
         "x": 0.5043,
-        "y": 0.964
+        "y": 0.961
       },
       "flipX": false,
-      "note3x": "2.0x 233x306, 3.0x kept at native 233x306 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 235x308 (padded v2 art; never upscaled)"
     },
     {
       "use": "shrug",
@@ -356,7 +356,7 @@
         "y": 0.9637
       },
       "flipX": false,
-      "note3x": "2.0x 287x331, 3.0x kept at native 287x331 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 287x331 (padded v2 art; never upscaled)"
     },
     {
       "figmaComponentId": "52:101",
@@ -365,7 +365,7 @@
       "notes": "Game-health sick reaction to a wrong quiz answer. Never tied to medical predictions.",
       "path": "assets/twin/bear/pose/dizzy.png",
       "size1x": {
-        "w": 144,
+        "w": 137,
         "h": 180
       },
       "variants": {
@@ -373,11 +373,11 @@
         "3.0x": "assets/twin/bear/pose/3.0x/dizzy.png"
       },
       "anchor": {
-        "x": 0.4866,
-        "y": 0.9663
+        "x": 0.4941,
+        "y": 0.9638
       },
       "flipX": false,
-      "note3x": "2.0x 261x326, 3.0x kept at native 261x326 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 253x332 (padded v2 art; never upscaled)"
     },
     {
       "path": "assets/twin/bear/pose_nohat/stand.png",
@@ -394,7 +394,7 @@
         "y": 0.9646
       },
       "flipX": false,
-      "note3x": "2.0x 228x339, 3.0x kept at native 228x339 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 228x339 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/stand.png",
       "use": "idle",
       "notes": "Same art as twin/bear/base/cal_hat; the default room pose."
@@ -402,7 +402,7 @@
     {
       "path": "assets/twin/bear/pose_nohat/wave.png",
       "size1x": {
-        "w": 132,
+        "w": 139,
         "h": 180
       },
       "variants": {
@@ -410,11 +410,11 @@
         "3.0x": "assets/twin/bear/pose_nohat/3.0x/wave.png"
       },
       "anchor": {
-        "x": 0.549,
-        "y": 0.9641
+        "x": 0.5682,
+        "y": 0.965
       },
       "flipX": false,
-      "note3x": "2.0x 245x334, 3.0x kept at native 245x334 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 264x343 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/wave.png",
       "use": "greet",
       "notes": "Greeting; mascot intake hello."
@@ -422,7 +422,7 @@
     {
       "path": "assets/twin/bear/pose_nohat/walk_side.png",
       "size1x": {
-        "w": 122,
+        "w": 129,
         "h": 180
       },
       "variants": {
@@ -430,11 +430,11 @@
         "3.0x": "assets/twin/bear/pose_nohat/3.0x/walk_side.png"
       },
       "anchor": {
-        "x": 0.474,
-        "y": 0.9648
+        "x": 0.498,
+        "y": 0.9646
       },
       "flipX": false,
-      "note3x": "2.0x 231x341, 3.0x kept at native 231x341 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 243x339 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/walk_side.png",
       "use": "walk",
       "notes": "Art faces right. Flip horizontally to walk left (this mirrors the Cal script, accepted for motion)."
@@ -442,7 +442,7 @@
     {
       "path": "assets/twin/bear/pose_nohat/walk_front.png",
       "size1x": {
-        "w": 119,
+        "w": 117,
         "h": 180
       },
       "variants": {
@@ -450,11 +450,11 @@
         "3.0x": "assets/twin/bear/pose_nohat/3.0x/walk_front.png"
       },
       "anchor": {
-        "x": 0.4155,
+        "x": 0.4159,
         "y": 0.9656
       },
       "flipX": false,
-      "note3x": "2.0x 231x349, 3.0x kept at native 231x349 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 226x349 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/walk_front.png",
       "use": "walk",
       "notes": "Walking toward the camera (down the screen)."
@@ -474,7 +474,7 @@
         "y": 0.9641
       },
       "flipX": false,
-      "note3x": "2.0x 238x334, 3.0x kept at native 238x334 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 238x334 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/walk_back.png",
       "use": "walk",
       "notes": "Walking away (up the screen). Hat logo is not visible, so flipping is safe."
@@ -482,7 +482,7 @@
     {
       "path": "assets/twin/bear/pose_nohat/sit.png",
       "size1x": {
-        "w": 149,
+        "w": 150,
         "h": 180
       },
       "variants": {
@@ -490,11 +490,11 @@
         "3.0x": "assets/twin/bear/pose_nohat/3.0x/sit.png"
       },
       "anchor": {
-        "x": 0.498,
-        "y": 0.9648
+        "x": 0.4981,
+        "y": 0.9618
       },
       "flipX": false,
-      "note3x": "2.0x 259x312, 3.0x kept at native 259x312 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 261x314 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/sit.png",
       "use": "idle_rest",
       "notes": "Resting idle variant."
@@ -502,7 +502,7 @@
     {
       "path": "assets/twin/bear/pose_nohat/jump.png",
       "size1x": {
-        "w": 138,
+        "w": 146,
         "h": 180
       },
       "variants": {
@@ -510,11 +510,11 @@
         "3.0x": "assets/twin/bear/pose_nohat/3.0x/jump.png"
       },
       "anchor": {
-        "x": 0.5,
-        "y": 0.9661
+        "x": 0.6558,
+        "y": 0.9648
       },
       "flipX": false,
-      "note3x": "2.0x 249x325, 3.0x kept at native 249x325 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 276x341 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/jump.png",
       "use": "celebrate",
       "notes": "Celebrate: correct quiz answer, reward."
@@ -522,7 +522,7 @@
     {
       "path": "assets/twin/bear/pose_nohat/stretch.png",
       "size1x": {
-        "w": 151,
+        "w": 144,
         "h": 180
       },
       "variants": {
@@ -530,11 +530,11 @@
         "3.0x": "assets/twin/bear/pose_nohat/3.0x/stretch.png"
       },
       "anchor": {
-        "x": 0.4964,
-        "y": 0.9664
+        "x": 0.4983,
+        "y": 0.9656
       },
       "flipX": false,
-      "note3x": "2.0x 274x327, 3.0x kept at native 274x327 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 279x349 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/stretch.png",
       "use": "exercise",
       "notes": "Exercise experiments."
@@ -550,11 +550,11 @@
         "3.0x": "assets/twin/bear/pose_nohat/3.0x/think.png"
       },
       "anchor": {
-        "x": 0.5225,
+        "x": 0.5247,
         "y": 0.9644
       },
       "flipX": false,
-      "note3x": "2.0x 222x337, 3.0x kept at native 222x337 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 223x337 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/think.png",
       "use": "think",
       "notes": "Thinking, loading, a quiz question."
@@ -563,18 +563,18 @@
       "path": "assets/twin/bear/pose_nohat/sleep.png",
       "size1x": {
         "w": 180,
-        "h": 118
+        "h": 120
       },
       "variants": {
         "2.0x": "assets/twin/bear/pose_nohat/2.0x/sleep.png",
         "3.0x": "assets/twin/bear/pose_nohat/3.0x/sleep.png"
       },
       "anchor": {
-        "x": 0.5529,
-        "y": 0.9641
+        "x": 0.5522,
+        "y": 0.9329
       },
       "flipX": false,
-      "note3x": "2.0x 255x167, 3.0x kept at native 255x167 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 268x179 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/sleep.png",
       "use": "sleep",
       "notes": "Sleep, night, low energy."
@@ -590,11 +590,11 @@
         "3.0x": "assets/twin/bear/pose_nohat/3.0x/eat.png"
       },
       "anchor": {
-        "x": 0.4956,
-        "y": 0.9644
+        "x": 0.4957,
+        "y": 0.9614
       },
       "flipX": false,
-      "note3x": "2.0x 230x309, 3.0x kept at native 230x309 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 232x311 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/eat.png",
       "use": "eat",
       "notes": "Eating; nutrition experiments."
@@ -611,10 +611,10 @@
       },
       "anchor": {
         "x": 0.5043,
-        "y": 0.964
+        "y": 0.961
       },
       "flipX": false,
-      "note3x": "2.0x 233x306, 3.0x kept at native 233x306 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 235x308 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/hold_ball.png",
       "use": "fortune",
       "notes": "Fortune ball ceremony (composite on an empty night plate)."
@@ -634,7 +634,7 @@
         "y": 0.9637
       },
       "flipX": false,
-      "note3x": "2.0x 287x331, 3.0x kept at native 287x331 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 287x331 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/shrug.png",
       "use": "shrug",
       "notes": "Palms up: fortune still learning or unsupported. Cut from a 1024 square generation; no Figma component yet."
@@ -642,7 +642,7 @@
     {
       "path": "assets/twin/bear/pose_nohat/dizzy.png",
       "size1x": {
-        "w": 144,
+        "w": 137,
         "h": 180
       },
       "variants": {
@@ -650,11 +650,11 @@
         "3.0x": "assets/twin/bear/pose_nohat/3.0x/dizzy.png"
       },
       "anchor": {
-        "x": 0.4866,
-        "y": 0.9663
+        "x": 0.4941,
+        "y": 0.9638
       },
       "flipX": false,
-      "note3x": "2.0x 261x326, 3.0x kept at native 261x326 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 253x332 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/bear/pose/dizzy.png",
       "use": "sick_reaction",
       "notes": "Game-health sick reaction to a wrong quiz answer. Never tied to medical predictions."
@@ -662,7 +662,7 @@
     {
       "path": "assets/twin/human/pose/stand.png",
       "size1x": {
-        "w": 97,
+        "w": 95,
         "h": 180
       },
       "variants": {
@@ -670,18 +670,18 @@
         "3.0x": "assets/twin/human/pose/3.0x/stand.png"
       },
       "anchor": {
-        "x": 0.4822,
-        "y": 0.9639
+        "x": 0.4836,
+        "y": 0.9705
       },
       "flipX": false,
-      "note3x": "2.0x 195x360, 3.0x kept at native 225x416 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 214x407 (padded v2 art; never upscaled)"
     },
     {
       "use": "greet",
       "notes": "Greeting; mascot intake hello.",
       "path": "assets/twin/human/pose/wave.png",
       "size1x": {
-        "w": 111,
+        "w": 107,
         "h": 180
       },
       "variants": {
@@ -689,18 +689,18 @@
         "3.0x": "assets/twin/human/pose/3.0x/wave.png"
       },
       "anchor": {
-        "x": 0.504,
-        "y": 0.9661
+        "x": 0.5202,
+        "y": 0.9712
       },
       "flipX": false,
-      "note3x": "2.0x 221x360, 3.0x kept at native 254x413 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 248x417 (padded v2 art; never upscaled)"
     },
     {
       "use": "walk",
       "notes": "Art faces right. Flip horizontally to walk left (mirrors the Cal script, accepted for motion).",
       "path": "assets/twin/human/pose/walk_side.png",
       "size1x": {
-        "w": 96,
+        "w": 95,
         "h": 180
       },
       "variants": {
@@ -708,16 +708,16 @@
         "3.0x": "assets/twin/human/pose/3.0x/walk_side.png"
       },
       "anchor": {
-        "x": 0.5256,
-        "y": 0.9652
+        "x": 0.5308,
+        "y": 0.9699
       },
       "flipX": false,
-      "note3x": "2.0x 192x360, 3.0x kept at native 215x403 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 211x399 (padded v2 art; never upscaled)"
     },
     {
       "path": "assets/twin/human/pose/walk_front.png",
       "size1x": {
-        "w": 96,
+        "w": 93,
         "h": 180
       },
       "variants": {
@@ -725,16 +725,16 @@
         "3.0x": "assets/twin/human/pose/3.0x/walk_front.png"
       },
       "anchor": {
-        "x": 0.5422,
-        "y": 0.9644
+        "x": 0.5421,
+        "y": 0.9709
       },
       "flipX": false,
-      "note3x": "2.0x 192x360, 3.0x kept at native 225x421 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 214x412 (padded v2 art; never upscaled)"
     },
     {
       "path": "assets/twin/human/pose/walk_back.png",
       "size1x": {
-        "w": 92,
+        "w": 90,
         "h": 180
       },
       "variants": {
@@ -742,18 +742,18 @@
         "3.0x": "assets/twin/human/pose/3.0x/walk_back.png"
       },
       "anchor": {
-        "x": 0.5954,
-        "y": 0.965
+        "x": 0.6066,
+        "y": 0.9715
       },
       "flipX": false,
-      "note3x": "2.0x 185x360, 3.0x kept at native 220x429 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 211x421 (padded v2 art; never upscaled)"
     },
     {
       "use": "idle_rest",
       "notes": "Resting idle variant.",
       "path": "assets/twin/human/pose/sit.png",
       "size1x": {
-        "w": 131,
+        "w": 132,
         "h": 180
       },
       "variants": {
@@ -762,10 +762,10 @@
       },
       "anchor": {
         "x": 0.4981,
-        "y": 0.9653
+        "y": 0.965
       },
       "flipX": false,
-      "note3x": "2.0x 252x346, 3.0x kept at native 252x346 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 252x343 (padded v2 art; never upscaled)"
     },
     {
       "use": "celebrate",
@@ -780,11 +780,11 @@
         "3.0x": "assets/twin/human/pose/3.0x/jump.png"
       },
       "anchor": {
-        "x": 0.5223,
-        "y": 0.9648
+        "x": 0.5227,
+        "y": 0.9694
       },
       "flipX": false,
-      "note3x": "2.0x 264x360, 3.0x kept at native 291x397 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 287x392 (padded v2 art; never upscaled)"
     },
     {
       "path": "assets/twin/human/pose/stretch.png",
@@ -797,16 +797,16 @@
         "3.0x": "assets/twin/human/pose/3.0x/stretch.png"
       },
       "anchor": {
-        "x": 0.4959,
-        "y": 0.9657
+        "x": 0.4958,
+        "y": 0.9702
       },
       "flipX": false,
-      "note3x": "2.0x 217x360, 3.0x kept at native 246x409 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 242x403 (padded v2 art; never upscaled)"
     },
     {
       "path": "assets/twin/human/pose/think.png",
       "size1x": {
-        "w": 105,
+        "w": 103,
         "h": 180
       },
       "variants": {
@@ -814,33 +814,33 @@
         "3.0x": "assets/twin/human/pose/3.0x/think.png"
       },
       "anchor": {
-        "x": 0.4824,
-        "y": 0.9639
+        "x": 0.475,
+        "y": 0.9687
       },
       "flipX": false,
-      "note3x": "2.0x 211x360, 3.0x kept at native 227x388 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 220x384 (padded v2 art; never upscaled)"
     },
     {
       "path": "assets/twin/human/pose/sleep.png",
       "size1x": {
         "w": 180,
-        "h": 101
+        "h": 104
       },
       "variants": {
         "2.0x": "assets/twin/human/pose/2.0x/sleep.png",
         "3.0x": "assets/twin/human/pose/3.0x/sleep.png"
       },
       "anchor": {
-        "x": 0.6254,
-        "y": 0.9668
+        "x": 0.6221,
+        "y": 0.9459
       },
       "flipX": false,
-      "note3x": "2.0x 360x203, 3.0x kept at native 375x211 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 385x222 (padded v2 art; never upscaled)"
     },
     {
       "path": "assets/twin/human/pose/eat.png",
       "size1x": {
-        "w": 113,
+        "w": 114,
         "h": 180
       },
       "variants": {
@@ -848,18 +848,18 @@
         "3.0x": "assets/twin/human/pose/3.0x/eat.png"
       },
       "anchor": {
-        "x": 0.4977,
-        "y": 0.9649
+        "x": 0.5,
+        "y": 0.9646
       },
       "flipX": false,
-      "note3x": "2.0x 215x342, 3.0x kept at native 215x342 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 214x339 (padded v2 art; never upscaled)"
     },
     {
       "use": "fortune",
       "notes": "Fortune ball ceremony and result (composite on scene/night).",
       "path": "assets/twin/human/pose/hold_ball.png",
       "size1x": {
-        "w": 114,
+        "w": 115,
         "h": 180
       },
       "variants": {
@@ -868,10 +868,10 @@
       },
       "anchor": {
         "x": 0.5048,
-        "y": 0.964
+        "y": 0.9636
       },
       "flipX": false,
-      "note3x": "2.0x 211x334, 3.0x kept at native 211x334 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 211x330 (padded v2 art; never upscaled)"
     },
     {
       "use": "shrug",
@@ -887,15 +887,15 @@
       },
       "anchor": {
         "x": 0.4979,
-        "y": 0.9649
+        "y": 0.9694
       },
       "flipX": false,
-      "note3x": "2.0x 214x360, 3.0x kept at native 237x399 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 233x393 (padded v2 art; never upscaled)"
     },
     {
       "path": "assets/twin/human/pose/dizzy.png",
       "size1x": {
-        "w": 113,
+        "w": 112,
         "h": 180
       },
       "variants": {
@@ -903,16 +903,16 @@
         "3.0x": "assets/twin/human/pose/3.0x/dizzy.png"
       },
       "anchor": {
-        "x": 0.5211,
-        "y": 0.9656
+        "x": 0.5213,
+        "y": 0.9682
       },
       "flipX": false,
-      "note3x": "2.0x 226x360, 3.0x kept at native 237x378 (source is under 540 px; never upscaled)"
+      "note3x": "2.0x and 3.0x kept at native 235x377 (padded v2 art; never upscaled)"
     },
     {
       "path": "assets/twin/human/pose_nohat/stand.png",
       "size1x": {
-        "w": 97,
+        "w": 95,
         "h": 180
       },
       "variants": {
@@ -920,17 +920,17 @@
         "3.0x": "assets/twin/human/pose_nohat/3.0x/stand.png"
       },
       "anchor": {
-        "x": 0.4822,
-        "y": 0.9639
+        "x": 0.4836,
+        "y": 0.9705
       },
       "flipX": false,
-      "note3x": "2.0x 195x360, 3.0x kept at native 225x416 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 214x407 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/stand.png"
     },
     {
       "path": "assets/twin/human/pose_nohat/wave.png",
       "size1x": {
-        "w": 111,
+        "w": 107,
         "h": 180
       },
       "variants": {
@@ -938,11 +938,11 @@
         "3.0x": "assets/twin/human/pose_nohat/3.0x/wave.png"
       },
       "anchor": {
-        "x": 0.504,
-        "y": 0.9661
+        "x": 0.5202,
+        "y": 0.9712
       },
       "flipX": false,
-      "note3x": "2.0x 221x360, 3.0x kept at native 254x413 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 248x417 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/wave.png",
       "use": "greet",
       "notes": "Greeting; mascot intake hello."
@@ -950,7 +950,7 @@
     {
       "path": "assets/twin/human/pose_nohat/walk_side.png",
       "size1x": {
-        "w": 96,
+        "w": 95,
         "h": 180
       },
       "variants": {
@@ -958,11 +958,11 @@
         "3.0x": "assets/twin/human/pose_nohat/3.0x/walk_side.png"
       },
       "anchor": {
-        "x": 0.5256,
-        "y": 0.9652
+        "x": 0.5308,
+        "y": 0.9699
       },
       "flipX": false,
-      "note3x": "2.0x 192x360, 3.0x kept at native 215x403 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 211x399 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/walk_side.png",
       "use": "walk",
       "notes": "Art faces right. Flip horizontally to walk left (mirrors the Cal script, accepted for motion)."
@@ -970,7 +970,7 @@
     {
       "path": "assets/twin/human/pose_nohat/walk_front.png",
       "size1x": {
-        "w": 96,
+        "w": 93,
         "h": 180
       },
       "variants": {
@@ -978,17 +978,17 @@
         "3.0x": "assets/twin/human/pose_nohat/3.0x/walk_front.png"
       },
       "anchor": {
-        "x": 0.5422,
-        "y": 0.9644
+        "x": 0.5421,
+        "y": 0.9709
       },
       "flipX": false,
-      "note3x": "2.0x 192x360, 3.0x kept at native 225x421 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 214x412 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/walk_front.png"
     },
     {
       "path": "assets/twin/human/pose_nohat/walk_back.png",
       "size1x": {
-        "w": 92,
+        "w": 90,
         "h": 180
       },
       "variants": {
@@ -996,17 +996,17 @@
         "3.0x": "assets/twin/human/pose_nohat/3.0x/walk_back.png"
       },
       "anchor": {
-        "x": 0.5954,
-        "y": 0.965
+        "x": 0.6066,
+        "y": 0.9715
       },
       "flipX": false,
-      "note3x": "2.0x 185x360, 3.0x kept at native 220x429 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 211x421 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/walk_back.png"
     },
     {
       "path": "assets/twin/human/pose_nohat/sit.png",
       "size1x": {
-        "w": 131,
+        "w": 132,
         "h": 180
       },
       "variants": {
@@ -1015,10 +1015,10 @@
       },
       "anchor": {
         "x": 0.4981,
-        "y": 0.9653
+        "y": 0.965
       },
       "flipX": false,
-      "note3x": "2.0x 252x346, 3.0x kept at native 252x346 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 252x343 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/sit.png",
       "use": "idle_rest",
       "notes": "Resting idle variant."
@@ -1034,11 +1034,11 @@
         "3.0x": "assets/twin/human/pose_nohat/3.0x/jump.png"
       },
       "anchor": {
-        "x": 0.5223,
-        "y": 0.9648
+        "x": 0.5227,
+        "y": 0.9694
       },
       "flipX": false,
-      "note3x": "2.0x 264x360, 3.0x kept at native 291x397 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 287x392 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/jump.png",
       "use": "celebrate",
       "notes": "Celebrate: correct quiz answer, reward."
@@ -1054,17 +1054,17 @@
         "3.0x": "assets/twin/human/pose_nohat/3.0x/stretch.png"
       },
       "anchor": {
-        "x": 0.4959,
-        "y": 0.9657
+        "x": 0.4958,
+        "y": 0.9702
       },
       "flipX": false,
-      "note3x": "2.0x 217x360, 3.0x kept at native 246x409 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 242x403 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/stretch.png"
     },
     {
       "path": "assets/twin/human/pose_nohat/think.png",
       "size1x": {
-        "w": 105,
+        "w": 103,
         "h": 180
       },
       "variants": {
@@ -1072,35 +1072,35 @@
         "3.0x": "assets/twin/human/pose_nohat/3.0x/think.png"
       },
       "anchor": {
-        "x": 0.4824,
-        "y": 0.9639
+        "x": 0.475,
+        "y": 0.9687
       },
       "flipX": false,
-      "note3x": "2.0x 211x360, 3.0x kept at native 227x388 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 220x384 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/think.png"
     },
     {
       "path": "assets/twin/human/pose_nohat/sleep.png",
       "size1x": {
         "w": 180,
-        "h": 101
+        "h": 104
       },
       "variants": {
         "2.0x": "assets/twin/human/pose_nohat/2.0x/sleep.png",
         "3.0x": "assets/twin/human/pose_nohat/3.0x/sleep.png"
       },
       "anchor": {
-        "x": 0.6254,
-        "y": 0.9668
+        "x": 0.6221,
+        "y": 0.9459
       },
       "flipX": false,
-      "note3x": "2.0x 360x203, 3.0x kept at native 375x211 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 385x222 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/sleep.png"
     },
     {
       "path": "assets/twin/human/pose_nohat/eat.png",
       "size1x": {
-        "w": 113,
+        "w": 114,
         "h": 180
       },
       "variants": {
@@ -1108,17 +1108,17 @@
         "3.0x": "assets/twin/human/pose_nohat/3.0x/eat.png"
       },
       "anchor": {
-        "x": 0.4977,
-        "y": 0.9649
+        "x": 0.5,
+        "y": 0.9646
       },
       "flipX": false,
-      "note3x": "2.0x 215x342, 3.0x kept at native 215x342 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 214x339 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/eat.png"
     },
     {
       "path": "assets/twin/human/pose_nohat/hold_ball.png",
       "size1x": {
-        "w": 114,
+        "w": 115,
         "h": 180
       },
       "variants": {
@@ -1127,10 +1127,10 @@
       },
       "anchor": {
         "x": 0.5048,
-        "y": 0.964
+        "y": 0.9636
       },
       "flipX": false,
-      "note3x": "2.0x 211x334, 3.0x kept at native 211x334 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 211x330 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/hold_ball.png",
       "use": "fortune",
       "notes": "Fortune ball ceremony and result (composite on scene/night)."
@@ -1147,10 +1147,10 @@
       },
       "anchor": {
         "x": 0.4979,
-        "y": 0.9649
+        "y": 0.9694
       },
       "flipX": false,
-      "note3x": "2.0x 214x360, 3.0x kept at native 237x399 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 233x393 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/shrug.png",
       "use": "shrug",
       "notes": "Fortune still learning or unsupported."
@@ -1158,7 +1158,7 @@
     {
       "path": "assets/twin/human/pose_nohat/dizzy.png",
       "size1x": {
-        "w": 113,
+        "w": 112,
         "h": 180
       },
       "variants": {
@@ -1166,11 +1166,11 @@
         "3.0x": "assets/twin/human/pose_nohat/3.0x/dizzy.png"
       },
       "anchor": {
-        "x": 0.5211,
-        "y": 0.9656
+        "x": 0.5213,
+        "y": 0.9682
       },
       "flipX": false,
-      "note3x": "2.0x 226x360, 3.0x kept at native 237x378 (source is under 540 px; never upscaled)",
+      "note3x": "2.0x and 3.0x kept at native 235x377 (padded v2 art; never upscaled)",
       "pairedWith": "assets/twin/human/pose/dizzy.png"
     },
     {
@@ -1191,6 +1191,366 @@
       "anchor_meaning": "bottom-centre of the brim",
       "flipX": false,
       "notes": "Overlay or Customize tile only; Cal-hat looks ship as whole-character sprites because ears go through the hat."
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/bear/pose/concerned.png",
+      "size1x": {
+        "w": 118,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/concerned.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/concerned.png"
+      },
+      "anchor": {
+        "x": 0.5152,
+        "y": 0.9655
+      },
+      "note3x": "2.0x and 3.0x kept at native 229x348 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/bear/pose/sleepy.png",
+      "size1x": {
+        "w": 124,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/sleepy.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/sleepy.png"
+      },
+      "anchor": {
+        "x": 0.4936,
+        "y": 0.965
+      },
+      "note3x": "2.0x and 3.0x kept at native 237x343 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/bear/pose/proud.png",
+      "size1x": {
+        "w": 120,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/proud.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/proud.png"
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9641
+      },
+      "note3x": "2.0x and 3.0x kept at native 223x334 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/bear/pose/thinking.png",
+      "size1x": {
+        "w": 110,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/thinking.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/thinking.png"
+      },
+      "anchor": {
+        "x": 0.5302,
+        "y": 0.9659
+      },
+      "note3x": "2.0x and 3.0x kept at native 215x352 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/bear/pose/listening.png",
+      "size1x": {
+        "w": 121,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose/2.0x/listening.png",
+        "3.0x": "assets/twin/bear/pose/3.0x/listening.png"
+      },
+      "anchor": {
+        "x": 0.4895,
+        "y": 0.9661
+      },
+      "note3x": "2.0x and 3.0x kept at native 238x354 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/bear/pose_nohat/concerned.png",
+      "size1x": {
+        "w": 118,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose_nohat/2.0x/concerned.png",
+        "3.0x": "assets/twin/bear/pose_nohat/3.0x/concerned.png"
+      },
+      "anchor": {
+        "x": 0.5152,
+        "y": 0.9655
+      },
+      "note3x": "2.0x and 3.0x kept at native 229x348 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/bear/pose_nohat/sleepy.png",
+      "size1x": {
+        "w": 124,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose_nohat/2.0x/sleepy.png",
+        "3.0x": "assets/twin/bear/pose_nohat/3.0x/sleepy.png"
+      },
+      "anchor": {
+        "x": 0.4936,
+        "y": 0.965
+      },
+      "note3x": "2.0x and 3.0x kept at native 237x343 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/bear/pose_nohat/proud.png",
+      "size1x": {
+        "w": 120,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose_nohat/2.0x/proud.png",
+        "3.0x": "assets/twin/bear/pose_nohat/3.0x/proud.png"
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9641
+      },
+      "note3x": "2.0x and 3.0x kept at native 223x334 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/bear/pose_nohat/thinking.png",
+      "size1x": {
+        "w": 110,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose_nohat/2.0x/thinking.png",
+        "3.0x": "assets/twin/bear/pose_nohat/3.0x/thinking.png"
+      },
+      "anchor": {
+        "x": 0.5302,
+        "y": 0.9659
+      },
+      "note3x": "2.0x and 3.0x kept at native 215x352 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/bear/pose_nohat/listening.png",
+      "size1x": {
+        "w": 121,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/bear/pose_nohat/2.0x/listening.png",
+        "3.0x": "assets/twin/bear/pose_nohat/3.0x/listening.png"
+      },
+      "anchor": {
+        "x": 0.4895,
+        "y": 0.9661
+      },
+      "note3x": "2.0x and 3.0x kept at native 238x354 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/human/pose/concerned.png",
+      "size1x": {
+        "w": 93,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/pose/2.0x/concerned.png",
+        "3.0x": "assets/twin/human/pose/3.0x/concerned.png"
+      },
+      "anchor": {
+        "x": 0.514,
+        "y": 0.9713
+      },
+      "note3x": "2.0x and 3.0x kept at native 216x418 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/human/pose/sleepy.png",
+      "size1x": {
+        "w": 101,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/pose/2.0x/sleepy.png",
+        "3.0x": "assets/twin/human/pose/3.0x/sleepy.png"
+      },
+      "anchor": {
+        "x": 0.4631,
+        "y": 0.9724
+      },
+      "note3x": "2.0x and 3.0x kept at native 244x435 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/human/pose/proud.png",
+      "size1x": {
+        "w": 96,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/pose/2.0x/proud.png",
+        "3.0x": "assets/twin/human/pose/3.0x/proud.png"
+      },
+      "anchor": {
+        "x": 0.4953,
+        "y": 0.9702
+      },
+      "note3x": "2.0x and 3.0x kept at native 214x403 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/human/pose/thinking.png",
+      "size1x": {
+        "w": 88,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/pose/2.0x/thinking.png",
+        "3.0x": "assets/twin/human/pose/3.0x/thinking.png"
+      },
+      "anchor": {
+        "x": 0.531,
+        "y": 0.972
+      },
+      "note3x": "2.0x and 3.0x kept at native 210x429 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/human/pose/listening.png",
+      "size1x": {
+        "w": 90,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/pose/2.0x/listening.png",
+        "3.0x": "assets/twin/human/pose/3.0x/listening.png"
+      },
+      "anchor": {
+        "x": 0.5231,
+        "y": 0.9722
+      },
+      "note3x": "2.0x and 3.0x kept at native 216x433 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/human/pose_nohat/concerned.png",
+      "size1x": {
+        "w": 93,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/pose_nohat/2.0x/concerned.png",
+        "3.0x": "assets/twin/human/pose_nohat/3.0x/concerned.png"
+      },
+      "anchor": {
+        "x": 0.514,
+        "y": 0.9713
+      },
+      "note3x": "2.0x and 3.0x kept at native 216x418 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/human/pose_nohat/sleepy.png",
+      "size1x": {
+        "w": 101,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/pose_nohat/2.0x/sleepy.png",
+        "3.0x": "assets/twin/human/pose_nohat/3.0x/sleepy.png"
+      },
+      "anchor": {
+        "x": 0.4631,
+        "y": 0.9724
+      },
+      "note3x": "2.0x and 3.0x kept at native 244x435 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/human/pose_nohat/proud.png",
+      "size1x": {
+        "w": 96,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/pose_nohat/2.0x/proud.png",
+        "3.0x": "assets/twin/human/pose_nohat/3.0x/proud.png"
+      },
+      "anchor": {
+        "x": 0.4953,
+        "y": 0.9702
+      },
+      "note3x": "2.0x and 3.0x kept at native 214x403 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/human/pose_nohat/thinking.png",
+      "size1x": {
+        "w": 88,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/pose_nohat/2.0x/thinking.png",
+        "3.0x": "assets/twin/human/pose_nohat/3.0x/thinking.png"
+      },
+      "anchor": {
+        "x": 0.531,
+        "y": 0.972
+      },
+      "note3x": "2.0x and 3.0x kept at native 210x429 (padded v2 art; never upscaled)"
+    },
+    {
+      "use": "mood",
+      "notes": "Mood pose (v2 set).",
+      "path": "assets/twin/human/pose_nohat/listening.png",
+      "size1x": {
+        "w": 90,
+        "h": 180
+      },
+      "variants": {
+        "2.0x": "assets/twin/human/pose_nohat/2.0x/listening.png",
+        "3.0x": "assets/twin/human/pose_nohat/3.0x/listening.png"
+      },
+      "anchor": {
+        "x": 0.5231,
+        "y": 0.9722
+      },
+      "note3x": "2.0x and 3.0x kept at native 216x433 (padded v2 art; never upscaled)"
     }
   ],
   "scenes": [

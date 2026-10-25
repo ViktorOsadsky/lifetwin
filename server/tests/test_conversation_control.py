@@ -24,6 +24,7 @@ from lifetwin.onboarding.intents import (
 )
 from lifetwin.onboarding.models import ConversationState, TurnRequest, TurnResponse
 from lifetwin.onboarding.parsing import QUESTIONS, normalize_text
+from lifetwin.onboarding.script import UNKNOWN_ACKS
 from lifetwin.onboarding.service import (
     DONE_LEAD,
     LOUDER_LEAD,
@@ -78,6 +79,7 @@ def kind_of(result: TurnResponse) -> str:
         (NO_LEAD, "no"),
         ("Got it.", "confirmed"),
         (SKIPPED, "skipped"),
+        *((ack, "unknown") for ack in UNKNOWN_ACKS),
     ]
     if message.startswith(RESTART_QUESTION):
         return "restart_question"
@@ -695,6 +697,64 @@ EMERGENCIES = [
     "the cut won't stop bleeding",
     "call 911",
     "my wife is having a stroke",
+    # Mutation audit: each pattern and marker has its own phrasing.
+    "my chest has been hurting since last week",
+    "I took too many of my pills",
+    "I fell in the bathroom and can't get up",
+    "I had a fall yesterday and I still can't get up",
+    "I don't see the point in living anymore",
+    "I'd be better off dead",
+    "there's no reason to live",
+    "I have a pain in my chest",
+    "there's a tightness in my chest",
+    "I can't stop the bleeding",
+    "I need an ambulance",
+    "send an ambulance",
+    "I'm having trouble breathing",
+    "it's hard to breathe",
+    "I have difficulty breathing",
+    "I had chest pain yesterday and I still have it",
+    "I had chest pain last week and it's back again",
+    "I had a heart attack in 2015 but my chest hurts",
+    # Passive self-harm wording (owner audit, 2026-10).
+    "I don't want to be here anymore",
+    "i dont want to be here any more",
+    "I've been thinking about ending it",
+    "i was thinking of ending things",
+    "everyone would be better off without me",
+    "honestly i want to unalive myself",
+    "unalive",
+    "I've been self harming again",
+    "self-harm",
+    "there's no reason to keep going",
+    "no point going on",
+    "I feel like such a burden",
+    "I wish I could just not wake up",
+    "I can't go on like this anymore",
+    "life isn't worth living",
+    "I want to hurt myself",
+    "i dont want to exist anymore",
+    "i dont want to be around anymore",
+    "kms",
+    "I was suicidal last week",
+    "I don't see the point anymore",
+    "what's the point of anything",
+    "honestly i just want to disappear",
+    "I hope I don't wake up tomorrow",
+    "I'm so tired of living",
+    "they'd be better off if I was gone",
+    "I'd rather be dead",
+    "I want it all to stop",
+    "thinking about taking all my pills",
+    "sewer slide thoughts again",
+    # Saving up the means, not waking up, and "no point in me being here".
+    "ive got pills saved up for when it gets bad",
+    "I've been stockpiling my sleeping tablets",
+    "I keep a stash of painkillers for when I can't take it anymore",
+    "I've been thinking about not waking up",
+    "honestly I wouldn't mind not waking up",
+    "No point in me being here at all, my family would cope fine",
+    "they'd manage fine without me",
 ]
 NOT_EMERGENCIES = [
     "my heart attack was in 2015",
@@ -707,7 +767,57 @@ NOT_EMERGENCIES = [
     "killing myself laughing",
     "a stroke of luck",
     "I'm 72",
+    "short of breath on the stairs",
+    "I fell last year but I'm fine now",
+    "I took my pills this morning",
+    "I had a fall in 2019",
+    # Look-alikes of the self-harm wording.
+    "I don't want to be here at the gym anymore",
+    "I don't want to be here in the rain",
+    "I don't want to be around people today",
+    "this meeting is killing me",
+    "dying to try that",
+    "I hurt myself at the gym",
+    "cut myself shaving",
+    "thinking about ending it with my boyfriend",
+    "I want to end the call",
+    "I could kill for a coffee",
+    "killing it at work",
+    "we're better off without the car",
+    "no point going to the gym today",
+    "my legs are dead after leg day",
+    "I self harmed years ago, I'm fine now",
+    "what's the point of the gym",
+    "I'm tired of this weather",
+    "I took all my pills this morning like the doctor said",
+    "I didn't wake up till 9",
+    "I was thinking about not waking up so early tomorrow",
+    "I keep my pills in the kitchen in case I get a migraine",
+    "saving up for a holiday",
+    "the team would cope fine without me for a week",
 ]
+
+
+def test_no_reply_in_the_test_corpora_is_a_false_emergency():
+    """Every reply in server/tests/data is an ordinary answer; none may pause."""
+    data = Path(__file__).parent / "data"
+    replies = set()
+    for path in data.glob("*.json"):
+        data_file = json.loads(path.read_text())
+        # Held-out sets wrap their cases with an "about" note.
+        for case in data_file["cases"] if isinstance(data_file, dict) else data_file:
+            if case.get("emergency") is True:
+                continue  # the change corpora's deliberate emergencies
+            if "text" in case:
+                replies.add(case["text"])
+            # Dialogues give turns as {"say": ...}; the change corpora as plain strings.
+            replies.update(
+                turn if isinstance(turn, str) else turn["say"]
+                for turn in case.get("turns", [])
+                if not (isinstance(turn, str) and turn.startswith("@"))  # "@resume": an action
+            )
+    assert len(replies) >= 800
+    assert [text for text in sorted(replies) if emergency(text)] == []
 
 
 @pytest.mark.parametrize("text", EMERGENCIES)

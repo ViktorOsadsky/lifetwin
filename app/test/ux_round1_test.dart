@@ -43,8 +43,9 @@ class StepGuide implements ConversationGuide {
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
-    Map<String, num>? values,
+    Map<String, Object>? values,
     bool aiHelper = false,
+    String? importSource,
   }) async {
     calls.add({'action': action, 'text': ?text});
     if (gate != null) await gate!.future;
@@ -611,21 +612,21 @@ void main() {
       final r = Rig(guide: StepGuide());
       await r.pump(t);
       await r.start(t, voice: false);
-      expect(find.text('Question 1 of 11'), findsOneWidget);
+      expect(find.text('Question 1 of 12'), findsOneWidget);
       expect(find.text('Go back'), findsNothing);
 
       await t.enterText(find.byType(TextField), '70');
       await t.tap(find.text('Send'));
       await t.pumpAndSettle();
-      expect(find.text('Question 1 of 11'), findsOneWidget); // still checking the first answer
+      expect(find.text('Question 1 of 12'), findsOneWidget); // still checking the first answer
       expect(find.text('Go back'), findsNothing);
       await t.tap(find.text('Yes'));
       await t.pumpAndSettle();
-      expect(find.text('Question 2 of 11'), findsOneWidget);
+      expect(find.text('Question 2 of 12'), findsOneWidget);
 
       await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
       await tapText(t, 'Skip this question');
-      expect(find.text('Question 3 of 11'), findsOneWidget);
+      expect(find.text('Question 3 of 12'), findsOneWidget);
 
       expect(t.getSize(button('Go back')).height, greaterThanOrEqualTo(56));
       await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
@@ -633,7 +634,7 @@ void main() {
       expect(r.calls.last, {'action': 'reply', 'text': 'go back'});
       expect(find.textContaining('Question about sex'), findsOneWidget);
       // The reopened question counts as the one being asked.
-      expect(find.text('Question 2 of 11'), findsOneWidget);
+      expect(find.text('Question 2 of 12'), findsOneWidget);
       expect(find.text('You said: go back'), findsNothing);
     });
   });

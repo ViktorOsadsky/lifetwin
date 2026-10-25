@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../twin/twin_model.dart' show TwinAssessment;
 import '../theme.dart';
 
 /// One point of the model's monthly curve: years from now, share still living.
@@ -29,7 +30,7 @@ class SurvivalCurve extends StatelessWidget {
     final parts = [
       for (final y in years) 'about ${(100 * markers[y]!).round()} after $y ${y == 1 ? 'year' : 'years'}',
     ];
-    return 'Out of 100 people with answers like yours: ${parts.join(', ')}.';
+    return '${TwinAssessment.survivalTitle}. Out of 100 people with answers like yours: ${parts.join(', ')}.';
   }
 
   @override

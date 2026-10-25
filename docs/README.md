@@ -14,8 +14,12 @@ Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent im
 | [tracks/B-api.md](tracks/B-api.md) | FastAPI server and deployment |
 | [tracks/C-flutter-app.md](tracks/C-flutter-app.md) | Flutter app screens and visualizations |
 | [tracks/D-advisor-demo.md](tracks/D-advisor-demo.md) | AI advisor, safety copy, demo |
+| [demo/upload-demo.md](demo/upload-demo.md) | Synthetic portal PDFs, matching text and upload demo sequence; no real patient data |
+| [demo/voice-usability-demo.md](demo/voice-usability-demo.md) | Clearly labeled synthetic voice-session dataset; not real study evidence |
 | [ios-testing.md](ios-testing.md) | Running the app on the test iPhone and the simulator |
 | [model-sensitivity.md](model-sensitivity.md) | Which inputs move the packaged Cox model's 5-year estimate most, by age band and sex, with [machine-readable lever ranking](model-sensitivity.json); observational, not causal |
 | [lifespan-estimate.md](lifespan-estimate.md) | Research prototype (not wired into the app): expected age at death from the Cox model plus the CDC 2024 US life table, with validation, attenuation sensitivity and the owner's presentation ruling |
+| [document-upload.md](document-upload.md) | Health-document upload: on-device text recognition, `/api/documents/extract`, confirmation, privacy boundary, failure modes |
 | [apple-health.md](apple-health.md) | Apple Health import: what is read, read-back rules, privacy decisions, what is left |
 | [design/painted-card-direction.md](design/painted-card-direction.md) | UI remake direction: painted-card look, bear or human twin, final screens, art assets and pipeline, Flutter notes |
+| [wearable-prototype-plan.md](wearable-prototype-plan.md) | Draft wrist activity-tracker prototype: hardware, metrics, feature list, phases and team decisions |

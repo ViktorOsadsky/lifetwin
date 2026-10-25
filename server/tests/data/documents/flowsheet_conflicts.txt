@@ -1,0 +1,35 @@
+LAKESHORE INTERNAL MEDICINE
+880 Harbor Blvd
+Port Example, WA 98099
+Tel (555) 010-5300
+PATIENT FLOWSHEET SUMMARY
+Patient: Ruth Chartwell-Test
+DOB: 05/05/1947
+MRN 2290145
+Phone: (555) 010-5342
+Date of service: 09/14/2026
+Vitals History
+BP 150/92 (03/02/2026)
+BP 148/90 (04/06/2026)
+BP 146/90 (05/11/2026)
+BP 142/88 (06/15/2026)
+BP 140/86 (07/20/2026)
+BP 138/84 (08/24/2026)
+BP 136/82 (09/14/2026)
+Blood pressure 136/82 mmHg
+Height 5'6" (03/02/2026)
+Height 5'5" (09/14/2026)
+Weight 190 lb
+Wt 188 lb
+Active Problems
+Hypertension
+Denies diabetes symptoms.
+Hyperlipidemia
+Social History
+Current every day smoker
+Medications
+Lisinopril 20 mg daily
+Amlodipine 5 mg daily
+Notes
+Two scales were used today and read differently.
+Page 1 of 1

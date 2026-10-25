@@ -69,6 +69,8 @@ class GuideTurn {
     required this.complete,
     this.mascotState = 'asking',
     this.providerStatus = 'not_configured',
+    this.modelInputs,
+    this.clientAction,
   });
 
   final Map<String, dynamic> state;
@@ -79,6 +81,15 @@ class GuideTurn {
   /// The server's AI-helper status for this turn, e.g. `consent_required`.
   final String providerStatus;
 
+  /// The server's `model_inputs`: the on-device model's `profile` from confirmed answers
+  /// only, and `status` (`ready`, `still_learning` or `unsupported_age`). Null from a
+  /// server that doesn't send it.
+  final Map<String, dynamic>? modelInputs;
+
+  /// What the server asks the app to do now: `open_health_import` after a yes to the
+  /// Apple Health offer.
+  final String? clientAction;
+
   String get phase => (state['phase'] as String?) ?? 'idle';
   bool get isConfirming => phase == 'confirming';
 }
@@ -88,13 +99,15 @@ abstract class ConversationGuide {
   /// [action] is one of start, reply, confirm, correct, skip, cancel, import.
   /// [values] carries already-confirmed answers for import (e.g. Apple Health).
   /// [aiHelper] is the person's consent for the server's AI helper to read replies.
+  /// [importSource] names where imported values came from: `apple_health` (default) or `document`.
   Future<GuideTurn> turn({
     required String action,
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
-    Map<String, num>? values,
+    Map<String, Object>? values,
     bool aiHelper = false,
+    String? importSource,
   });
 }
 

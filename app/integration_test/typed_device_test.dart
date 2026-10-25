@@ -1,7 +1,10 @@
-// End-to-end TYPED test on a real iPhone, no person needed: the whole intake by
-// typing (real keyboard up, answer put in the box, Send tapped), the done screen,
-// the fortune (ceremony, result, outlook), back to the Room, Apple Health opened
-// and cancelled, and the Home, Settings, Hide keyboard, Skip and Go back controls.
+// End-to-end TYPED test on a real iPhone, no person needed: the whole conversation v2
+// by typing (real keyboard up, answer put in the box, Send tapped): the memory question,
+// age, sex and smoking, the Apple Health offer (opened, cancelled, declined), the rest of
+// the questions with "I don't know", Skip and Go back, the habit follow-ups, the done
+// screen, the fortune (ceremony, result checked against the on-device model, outlook),
+// back to the Room, the onboarding entry in History, Apple Health from the Room, and the
+// Home, Settings and Hide keyboard controls.
 //
 // `flutter test` / `flutter drive` cannot attach to the phone, so this file is
 // built as the app itself and posts its progress to the Mac's harness (/log):
@@ -9,11 +12,15 @@
 //     --dart-define=API_BASE_URL=http://<mac>:8000 --dart-define=VOICE_HARNESS_URL=http://<mac>:8099
 //   (then xcodebuild, devicectl install, devicectl process launch)
 //
+// The test keeps its data in memory (its own TwinRepository on a MemoryBackend), so it
+// never reads or writes the owner's LifeTwin data on the phone.
+//
 // In a Profile build `tester.enterText` is ignored (the engine checks the input
 // client id), so the test sets the box's text itself after tapping into it.
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -26,8 +33,12 @@ import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
 import 'package:lifesim/room/room_screen.dart';
+import 'package:lifesim/twin/profile_mapping.dart';
+import 'package:lifesim/twin/twin_model.dart' show extrapolationCaveat;
+import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/voice/speech.dart';
 import 'package:lifesim/ui/widgets/widgets.dart';
+import 'package:lifetwin_on_device/lifetwin_on_device.dart';
 
 const harnessUrl = String.fromEnvironment('VOICE_HARNESS_URL', defaultValue: 'http://169.254.4.42:8099');
 
@@ -77,6 +88,14 @@ VoiceOnboardingController ctl(WidgetTester t) =>
 
 String fieldOf(VoiceOnboardingController c) => '${c.turn?.state['current_field']}';
 
+/// The server's conversation phase: `remembering`, `asking`, `confirming`, `offering`,
+/// `probing` (a habit follow-up) or `ready`.
+String serverPhase(VoiceOnboardingController c) => '${c.turn?.state['phase']}';
+
+List<String> listOf(VoiceOnboardingController c, String key) => [
+  for (final f in (c.turn?.state[key] as List?) ?? const []) '$f',
+];
+
 String oneLine(String s) => s.replaceAll('\n', ' ');
 
 /// Every piece of text on screen (each Text builds a RichText).
@@ -106,6 +125,25 @@ Future<bool> tapLink(WidgetTester t, String label, {int seconds = 20}) =>
 
 Finder roundButton(String label) => find.byWidgetPredicate((w) => w is RoundBackButton && w.label == label);
 
+/// Mochi's wording varies by a per-session seed, so a question is found by the words
+/// every wording shares, in any case (as in typed_intake_test.dart).
+RegExp words(String pattern) => RegExp(pattern, caseSensitive: false, dotAll: true);
+
+const memoryQuestion = 'Can I remember the little things you tell me';
+final ageQuestion = words('how old are you');
+const healthOfferLine = 'Shall I fill in your height, weight, sleep and activity from Apple Health?';
+final healthDeclined = words("i'll just ask you|we'll do it together");
+final heightQuestion = words('how tall');
+
+/// Puts the keyboard away with the screen's own button, as a person would: "Go back" and
+/// Home are hidden while it is up.
+Future<bool> hideKeyboard(WidgetTester t) async {
+  if (keyboardHeight(t) > 0) await tapButton(t, 'Hide keyboard', seconds: 2);
+  final down = await waitUntil(t, () => keyboardHeight(t) == 0, seconds: 4);
+  await pumpFor(t, const Duration(milliseconds: 400));
+  return down;
+}
+
 /// Waits for the server's next turn. Taps "Try again" after a rate limit, as a person would.
 Future<bool> waitForTurn(WidgetTester t, GuideTurn? before, {int seconds = 60}) async {
   final c = ctl(t);
@@ -132,6 +170,7 @@ final timings = <String>[];
 
 class Reply {
   String typed = '';
+  String field = '';
   String reply = '';
   bool confirming = false;
   bool keyboardWasUp = false;
@@ -149,7 +188,9 @@ class Reply {
 /// waits for LifeTwin's reply.
 Future<Reply> type(WidgetTester t, String text) async {
   final c = ctl(t);
-  final r = Reply()..typed = text;
+  final r = Reply()
+    ..typed = text
+    ..field = fieldOf(c);
   final box = find.byKey(const ValueKey('answer-field'));
   if (!await waitUntil(t, () => shows(box) && c.phase != VoicePhase.interpreting, seconds: 30)) {
     r.error = 'no typing box (phase ${c.phase}); screen: ${screenText()}';
@@ -187,7 +228,7 @@ Future<Reply> type(WidgetTester t, String text) async {
   r.confirming = c.confirming;
   r.notice = c.notice;
   if (!got) r.error ??= 'no new turn from the server';
-  timings.add('send "$text": ${r.ms} ms');
+  timings.add('send "$text" (on ${r.field}): ${r.ms} ms');
   return r;
 }
 
@@ -232,9 +273,14 @@ final _dateLike = [
   RegExp(r'\blive (to|until) \d+', caseSensitive: false),
 ];
 
-List<String> dateProblems(String text) => [
-  for (final r in _dateLike) ...r.allMatches(text).map((m) => m[0]!),
-];
+/// The model's own disclaimer ("... not an individual death date or medical prognosis.")
+/// denies a date; it is the one place those words may appear.
+final _disclaimer = RegExp(r'\bnot an? (individual )?death date', caseSensitive: false);
+
+List<String> dateProblems(String text) {
+  final checked = text.replaceAll(_disclaimer, 'not an individual [disclaimer]');
+  return [for (final r in _dateLike) ...r.allMatches(checked).map((m) => m[0]!)];
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -243,6 +289,14 @@ void main() {
     var pass = 0;
     var fail = 0;
     final results = <String>[];
+    // The test's own store, in memory: the owner's data on the phone is never touched.
+    final backend = MemoryBackend();
+    final twin = TwinRepository.open(backend: backend);
+    // "Question N of 11" when each question is first asked, in order.
+    final steps = <String, int?>{};
+    // The habit follow-ups Mochi asked (memory consent is yes), and what was typed.
+    final followUps = <String>[];
+    var sittingNote = false;
 
     Future<void> record(String name, bool ok, String detail, [String why = '']) async {
       ok ? pass++ : fail++;
@@ -251,24 +305,62 @@ void main() {
       await log(line);
     }
 
+    /// A habit follow-up (only with memory consent) after a confirmed answer: the sitting
+    /// one is answered, so a habit note is kept; any other with "let's move on".
+    Future<void> settleFollowUps() async {
+      final c = ctl(t);
+      for (var i = 0; i < 4; i++) {
+        await waitUntil(t, () => c.phase != VoicePhase.interpreting, seconds: 30);
+        if (serverPhase(c) != 'probing') return;
+        final asked = c.mascotLine;
+        final sitting = !sittingNote && RegExp(r'\bsit', caseSensitive: false).hasMatch(asked);
+        final words = sitting ? 'mostly TV and reading' : "let's move on";
+        final r = await type(t, words);
+        if (sitting) sittingNote = true;
+        followUps.add('"${oneLine(asked)}" -> "$words"');
+        final ok = r.error == null && !r.confirming && serverPhase(c) != 'probing' && fieldOf(c) != 'null';
+        await record(
+          'follow-up ${followUps.length}',
+          ok,
+          'asked="${oneLine(asked)}" $r next=${fieldOf(c)}',
+          ok ? '' : r.error ?? 'did not move on to the next question',
+        );
+        if (!ok) return;
+      }
+    }
+
+    /// Taps Yes on a read-back, then answers any habit follow-up.
+    Future<void> yes() async {
+      final (went, _) = await tapAndWait(t, 'Yes');
+      if (!went) {
+        await recover(t);
+      } else {
+        await settleFollowUps();
+      }
+    }
+
     /// One question answered by typing, its read-back checked, then Yes.
-    Future<void> answer(String field, String words, List<String> expects, {bool yes = true}) async {
+    Future<void> answer(String field, String words, List<String> expects, {bool yes_ = true}) async {
       final c = ctl(t);
       await waitUntil(t, () => c.phase != VoicePhase.interpreting, seconds: 30);
-      if (fieldOf(c) != field) await log('  note: expected field $field but the app is on ${fieldOf(c)}');
+      final onField = fieldOf(c) == field;
+      steps.putIfAbsent(field, () => c.questionNumber);
       final r = await type(t, words);
       final missing = expects.where((e) => !r.reply.contains(e)).toList();
-      final ok = r.error == null && r.confirming && missing.isEmpty;
+      final ok = onField && r.error == null && r.confirming && missing.isEmpty;
       await record(
         '$field: "$words"',
         ok,
         '$r',
-        ok ? '' : r.error ?? (r.confirming ? 'read-back lacks ${missing.join(', ')}' : 'no read-back'),
+        ok
+            ? ''
+            : !onField
+            ? 'asked ${r.field}, not $field'
+            : r.error ?? (r.confirming ? 'read-back lacks ${missing.join(', ')}' : 'no read-back'),
       );
-      if (!yes) return;
-      if (ok) {
-        final (went, _) = await tapAndWait(t, 'Yes');
-        if (!went) await recover(t);
+      if (!yes_) return;
+      if (r.confirming) {
+        await yes();
       } else {
         await recover(t);
       }
@@ -277,10 +369,10 @@ void main() {
     try {
       await log('START harness=$harnessUrl');
       final launched = DateTime.now();
-      await t.pumpWidget(const LifeTwinApp());
+      await t.pumpWidget(LifeTwinApp(twin: twin));
       await tick(t);
 
-      // ---- Room -> Talk (swoosh) -> consent -> typing ----
+      // ---- Room -> Talk (swoosh) -> consent -> typing -> the memory question ----
       {
         final room = await waitUntil(t, () => shows(find.widgetWithText(LipButton, 'Talk')), seconds: 20);
         await log('room: ${screenText()}');
@@ -293,7 +385,9 @@ void main() {
         final notNow = await tapButton(t, 'Not now');
         final first = await waitUntil(t, () => c.turn != null && c.phase != VoicePhase.interpreting, seconds: 40);
         final ms = DateTime.now().difference(launched).inMilliseconds;
-        timings.add('launch to first question: $ms ms');
+        timings.add('launch to first question (memory): $ms ms');
+        final memory = c.mascotLine.contains(memoryQuestion);
+        final noAgeYet = !ageQuestion.hasMatch(c.mascotLine);
         final ok =
             room &&
             swooshed &&
@@ -302,14 +396,18 @@ void main() {
             first &&
             c.typing &&
             shows(find.byKey(const ValueKey('answer-field'))) &&
-            c.mascotLine.contains('How old are you');
+            memory &&
+            noAgeYet &&
+            serverPhase(c) == 'remembering';
         await record(
-          'Room -> Talk -> consent -> typing',
+          'Room -> Talk -> consent -> typing -> memory question',
           ok,
-          'first="${oneLine(c.mascotLine)}" typing=${c.typing} field=${fieldOf(c)} step="${shows(find.text('Question 1 of 11'))}"',
+          'first="${oneLine(c.mascotLine)}" ${ms}ms typing=${c.typing} phase=${serverPhase(c)} '
+              'step="${shows(find.text('Question 1 of 12'))}"',
           ok
               ? ''
-              : 'room=$room swoosh=$swooshed type=$typed notNow=$notNow first=$first; screen: ${screenText()}',
+              : 'room=$room swoosh=$swooshed type=$typed notNow=$notNow first=$first memory=$memory '
+                    'noAgeYet=$noAgeYet; screen: ${screenText()}',
         );
         if (!first) return;
       }
@@ -350,11 +448,12 @@ void main() {
           seconds: 5,
         );
         await pumpFor(t, const Duration(milliseconds: 300));
-        final ok = opened && intro && cancelled && back && identical(c.turn, before) && fieldOf(c) == 'age';
+        final same = identical(c.turn, before) && c.mascotLine.contains(memoryQuestion);
+        final ok = opened && intro && cancelled && back && same;
         await record(
-          'Apple Health from Q1: open + cancel',
+          'Apple Health from the first question: open + cancel',
           ok,
-          'intro=$intro cancelled=$cancelled backOnAge=${fieldOf(c) == 'age'} notice="${c.notice}"',
+          'opened=$opened intro=$intro cancelled=$cancelled backOnMemory=$same notice="${c.notice}"',
           ok ? '' : 'screen: ${screenText()}',
         );
       }
@@ -382,8 +481,24 @@ void main() {
         );
       }
 
+      // ---- memory consent, typed: "Sure" -> kept, then the age question ----
+      {
+        final r = await type(t, 'Sure');
+        final consent = c.turn?.state['memory_consent'];
+        final ok =
+            r.error == null && !r.confirming && consent == true && fieldOf(c) == 'age' && ageQuestion.hasMatch(r.reply);
+        await record(
+          'memory: "Sure" -> consent, then age',
+          ok,
+          '$r memory_consent=$consent field=${fieldOf(c)}',
+          ok ? '' : r.error ?? 'consent=$consent field=${fieldOf(c)}',
+        );
+        if (!ok) await recover(t);
+      }
+
       // ---- age from a birth year, then a correction during the read-back ----
       {
+        steps.putIfAbsent('age', () => c.questionNumber);
         final r = await type(t, 'I was born in 1952');
         final ok = r.error == null && r.confirming && r.reply.contains('74');
         await record(
@@ -404,8 +519,7 @@ void main() {
             ok2 ? '' : k.error ?? (!asked ? 'no "right answer" prompt' : 'read-back lacks "you are 73"'),
           );
           if (c.confirming) {
-            final (went, _) = await tapAndWait(t, 'Yes');
-            if (!went) await recover(t);
+            await yes();
           } else {
             await recover(t);
           }
@@ -415,6 +529,48 @@ void main() {
       }
 
       await answer('sex', 'female', ['female at birth']);
+      await answer('smoking_status', 'I used to smoke but I quit years ago', ['smoked in the past']);
+
+      // ---- the Apple Health offer: the button opens Health (cancelled), then "No thanks" ----
+      {
+        await waitUntil(t, () => c.phase != VoicePhase.interpreting, seconds: 30);
+        final offered = serverPhase(c) == 'offering' && c.mascotLine.contains(healthOfferLine) && c.healthOffer;
+        final before = c.turn;
+        await pumpFor(t, const Duration(milliseconds: 800)); // the button ignores taps right after a new turn
+        final opened = await tapButton(t, 'Use my Apple Health', seconds: 3);
+        final intro = await waitUntil(t, () => shows(find.text('Use Apple Health?')), seconds: 5);
+        final cancelled = await tapButton(t, "No thanks, I'll answer myself", seconds: 5);
+        final back = await waitUntil(
+          t,
+          () => !shows(find.byType(HealthImportScreen)) && shows(find.byKey(const ValueKey('answer-field'))),
+          seconds: 5,
+        );
+        await pumpFor(t, const Duration(milliseconds: 300));
+        final stillOffer = identical(c.turn, before) && c.mascotLine.contains(healthOfferLine);
+        final okOffer = offered && opened && intro && cancelled && back && stillOffer;
+        await record(
+          'Apple Health offer: button opens Health, cancel returns to the offer',
+          okOffer,
+          'offered=$offered opened=$opened intro=$intro cancelled=$cancelled backOnOffer=$stillOffer '
+              'notice="${c.notice}"',
+          okOffer ? '' : 'line="${oneLine(c.mascotLine)}" phase=${serverPhase(c)}; screen: ${screenText()}',
+        );
+        final r = await type(t, 'No thanks');
+        final ok =
+            r.error == null &&
+            !r.confirming &&
+            healthDeclined.hasMatch(r.reply) &&
+            heightQuestion.hasMatch(r.reply) &&
+            fieldOf(c) == 'height_cm';
+        await record(
+          'Apple Health offer: "No thanks" -> height',
+          ok,
+          '$r field=${fieldOf(c)}',
+          ok ? '' : r.error ?? 'not declined, or not on height',
+        );
+        if (!ok) await recover(t);
+      }
+
       await answer('height_cm', 'five foot four', ['5 feet 4 inches']);
       await answer('weight_kg', 'a hundred and forty five pounds', ['145 pounds']);
 
@@ -448,12 +604,16 @@ void main() {
         await pumpFor(t, const Duration(milliseconds: 800)); // the links ignore taps right after a new turn
         final (skipped, skipMs) = await tapAndWait(t, 'Skip this question', link: true);
         final skipLine = c.mascotLine;
-        final okSkip = skipped && fieldOf(c) == 'exercise_minutes_weekly' && skipLine.contains('skip');
+        final okSkip =
+            skipped &&
+            fieldOf(c) == 'general_health' &&
+            skipLine.contains('skip') &&
+            listOf(c, 'skipped_fields').contains('sleep_hours');
         await record(
           'Skip (sleep)',
           okSkip,
-          'reply="${oneLine(skipLine)}" ${skipMs}ms field=${fieldOf(c)}',
-          okSkip ? '' : 'did not move to exercise',
+          'reply="${oneLine(skipLine)}" ${skipMs}ms field=${fieldOf(c)} skipped=${listOf(c, 'skipped_fields')}',
+          okSkip ? '' : 'did not move to general health',
         );
         await pumpFor(t, const Duration(milliseconds: 800));
         final (wentBack, backMs) = await tapAndWait(t, 'Go back', link: true);
@@ -467,27 +627,88 @@ void main() {
       }
 
       await answer('sleep_hours', 'about seven hours', ['7 hours']);
-      await answer('exercise_minutes_weekly', 'I walk thirty minutes five days a week', ['150 minutes']);
-      await answer('smoking_status', 'I used to smoke but I quit years ago', ['smoked in the past']);
-      await answer('alcohol_drinks_weekly', 'two glasses of wine a week', ['2 drinks']);
-      await answer('diabetes', 'no', ['not told you that you have diabetes']);
+      await answer('general_health', 'very good', ['your health is very good']);
 
-      // ---- "I don't know" for blood pressure: skipped, and the intake ends ----
+      // ---- "I don't know" for high blood pressure: left out (still learning); Go back adds it ----
       {
         await waitUntil(t, () => c.phase != VoicePhase.interpreting, seconds: 30);
-        if (fieldOf(c) != 'systolic_bp') await log('  note: expected systolic_bp but the app is on ${fieldOf(c)}');
+        final onField = fieldOf(c) == 'hypertension_diagnosed';
+        steps.putIfAbsent('hypertension_diagnosed', () => c.questionNumber);
         final r = await type(t, "I don't know");
-        final done = await waitUntil(t, () => c.phase == VoicePhase.done, seconds: 5);
-        final ok = r.error == null && !r.confirming && done && r.reply.contains('skip');
+        final unknown = listOf(c, 'unknown_fields');
+        final ok =
+            onField &&
+            r.error == null &&
+            !r.confirming &&
+            r.reply.contains("Your twin will say it's still learning") &&
+            unknown.contains('hypertension_diagnosed') &&
+            fieldOf(c) == 'diabetes' &&
+            c.turn?.modelInputs?['status'] != 'ready';
         await record(
-          'systolic_bp: "I don\'t know" -> skipped, done',
+          'hypertension_diagnosed: "I don\'t know" -> left out, still learning',
           ok,
-          '$r phase=${c.phase} skipped=${c.turn?.state['skipped_fields']}',
-          ok ? '' : r.error ?? 'not skipped or not done',
+          '$r unknown=$unknown field=${fieldOf(c)} model_inputs=${c.turn?.modelInputs?['status']}',
+          ok ? '' : r.error ?? (onField ? 'not recorded as unknown' : 'asked ${r.field}, not hypertension_diagnosed'),
         );
+        // Go back is hidden while the keyboard is up.
+        await hideKeyboard(t);
+        await pumpFor(t, const Duration(milliseconds: 800));
+        final (wentBack, ms) = await tapAndWait(t, 'Go back', link: true);
+        final okBack =
+            wentBack && fieldOf(c) == 'hypertension_diagnosed' && c.mascotLine.contains('high blood pressure');
+        await record(
+          'Go back (to the unknown high blood pressure)',
+          okBack,
+          'reply="${oneLine(c.mascotLine)}" ${ms}ms field=${fieldOf(c)}',
+          okBack ? '' : 'did not reopen high blood pressure',
+        );
+        if (okBack) {
+          await answer('hypertension_diagnosed', 'no', ['not told you that you have high blood pressure']);
+        } else {
+          await recover(t);
+        }
       }
 
-      // ---- done screen: Continue, Apple Health and Go back are there; Go back adds the BP ----
+      await answer('diabetes', 'no', ['not told you that you have diabetes']);
+      await answer('sedentary_min_day', 'about six hours', ['sit about 6 hours']);
+      await answer('moderate_recreation_min_week', 'I walk thirty minutes five days a week', [
+        '150 minutes of lighter activity',
+      ]);
+
+      // ---- "I don't know" for harder exercise: Mochi asks a simpler question ----
+      {
+        await waitUntil(t, () => c.phase != VoicePhase.interpreting, seconds: 30);
+        final onField = fieldOf(c) == 'vigorous_recreation_min_week';
+        steps.putIfAbsent('vigorous_recreation_min_week', () => c.questionNumber);
+        final r = await type(t, "I don't know");
+        final ok =
+            onField &&
+            r.error == null &&
+            !r.confirming &&
+            fieldOf(c) == 'vigorous_recreation_min_week' &&
+            r.reply.contains('out of breath');
+        await record(
+          'vigorous_recreation_min_week: "I don\'t know" -> simpler question',
+          ok,
+          '$r field=${fieldOf(c)}',
+          ok ? '' : r.error ?? (onField ? 'no simpler question' : 'asked ${r.field}, not vigorous'),
+        );
+        final k = await type(t, 'no');
+        final ok2 = k.error == null && k.confirming && k.reply.contains('no harder exercise');
+        await record(
+          'vigorous_recreation_min_week: "no" to the simpler question',
+          ok2,
+          '$k',
+          ok2 ? '' : k.error ?? (k.confirming ? 'read-back lacks "no harder exercise"' : 'no read-back'),
+        );
+        if (k.confirming) {
+          await yes();
+        } else {
+          await recover(t);
+        }
+      }
+
+      // ---- done screen: Continue, Apple Health and Go back; Go back + "keep it" ----
       {
         // Go back and Home stay hidden until the keyboard has gone down.
         await waitUntil(t, () => keyboardHeight(t) == 0, seconds: 3);
@@ -498,27 +719,34 @@ void main() {
         final goBack = shows(find.widgetWithText(LinkButton, 'Go back'));
         final settingsHidden = !shows(find.widgetWithText(LinkButton, 'Settings'));
         await log('  done screen: ${screenText()}');
-        final ok = done && cont && health && goBack;
+        final ok = done && cont && health && goBack && c.mascotLine.contains('All done');
         await record(
           'done screen',
           ok,
           'continue=$cont appleHealth=$health goBack=$goBack settingsHidden=$settingsHidden line="${oneLine(c.mascotLine)}"',
-          ok ? '' : 'screen: ${screenText()}',
+          ok ? '' : 'phase=${c.phase} screen: ${screenText()}',
         );
         await pumpFor(t, const Duration(milliseconds: 800));
         final (wentBack, ms) = await tapAndWait(t, 'Go back', link: true);
-        final okBack = wentBack && fieldOf(c) == 'systolic_bp' && c.mascotLine.contains('blood pressure');
+        final okBack =
+            wentBack && fieldOf(c) == 'vigorous_recreation_min_week' && c.mascotLine.contains('say "keep it"');
         await record(
-          'Go back from done (to skipped BP)',
+          'Go back from done (to harder exercise)',
           okBack,
           'reply="${oneLine(c.mascotLine)}" ${ms}ms field=${fieldOf(c)}',
-          okBack ? '' : 'did not reopen blood pressure',
+          okBack ? '' : 'did not reopen harder exercise',
         );
-        if (okBack) await answer('systolic_bp', '130 over 85', ['130 over 85']);
+        if (okBack) {
+          final k = await type(t, 'keep it');
+          final okKeep = k.error == null && c.phase == VoicePhase.done && k.reply.contains('kept your answer');
+          await record('"keep it" -> done again', okKeep, '$k phase=${c.phase}', okKeep ? '' : k.error ?? 'not done');
+        }
         final finished = await waitUntil(t, () => c.phase == VoicePhase.done, seconds: 20);
         await log(
           'conversation ${finished ? 'finished' : 'NOT finished (phase ${c.phase})'}; '
-          'confirmed=${jsonEncode(c.confirmedProfile)}',
+          'confirmed=${jsonEncode(c.confirmedProfile)} model_inputs=${jsonEncode(c.modelInputs)} '
+          'unknown=${listOf(c, 'unknown_fields')} skipped=${listOf(c, 'skipped_fields')} '
+          'estimated=${listOf(c, 'estimated_fields')}',
         );
         if (!finished) {
           for (var i = 0; i < 3 && c.phase != VoicePhase.done; i++) {
@@ -527,8 +755,28 @@ void main() {
         }
       }
 
+      // ---- progress and follow-ups across the conversation ----
+      {
+        final numbers = [for (final n in steps.values) n ?? -1];
+        final expected = [for (var i = 1; i <= numbers.length; i++) i];
+        final ok = numbers.length == 12 && listEquals(numbers, expected);
+        await record(
+          'progress "Question N of ${VoiceOnboardingController.questionCount}" counts each question once',
+          ok,
+          'steps=$steps',
+          ok ? '' : 'expected 1..12 in order',
+        );
+        final okF = followUps.isNotEmpty && followUps.length <= 3;
+        await record('habit follow-ups (memory consent yes): 1 to 3', okF, 'followUps=$followUps');
+      }
+
+      // The answers the forecast is made from, before Continue drops the conversation.
+      final confirmed = Map<String, dynamic>.from(c.confirmedProfile);
+      final modelInputs = c.modelInputs == null ? null : Map<String, dynamic>.from(c.modelInputs!);
+
       // ---- the fortune: Continue -> ceremony -> Ask the ball -> result ----
       var shownOutOf100 = -1;
+      var shownYears = 5;
       {
         await pumpFor(t, const Duration(milliseconds: 500));
         await tapButton(t, 'Continue', seconds: 5);
@@ -560,31 +808,60 @@ void main() {
         final text = screenText();
         await log('  forecast screen: $text');
         final supported = shows(find.text('Your look ahead'));
-        final stillLearning = shows(find.text('Still learning'));
-        final unsupported = text.contains("I can't make a forecast for you yet");
         final m = RegExp(r'About (\d+) in 100').firstMatch(text);
         shownOutOf100 = m == null ? -1 : int.parse(m[1]!);
         final years = RegExp(r'still here in (\d+) years?').firstMatch(text)?[1];
+        shownYears = int.tryParse(years ?? '') ?? 5;
         final sentence = RegExp(r'about (\d+) were still living (\d+) years? later').firstMatch(text);
         final bears = find.byType(BearHeadArray);
         final bearFilled = shows(bears) ? t.widget<BearHeadArray>(bears).filled : -1;
         final problems = dateProblems(text);
+        // Every model input was answered, so the phone must show a number.
         final consistent =
-            !supported ||
-            (shownOutOf100 >= 0 &&
-                shownOutOf100 <= 100 &&
-                sentence != null &&
-                int.parse(sentence[1]!) == shownOutOf100 &&
-                sentence[2] == years &&
-                bearFilled == shownOutOf100);
-        final ok = onForecast && settled && (supported || stillLearning || unsupported) && consistent && problems.isEmpty;
+            supported &&
+            shownOutOf100 >= 0 &&
+            shownOutOf100 <= 100 &&
+            sentence != null &&
+            int.parse(sentence[1]!) == shownOutOf100 &&
+            sentence[2] == years &&
+            bearFilled == shownOutOf100;
+        final ok = onForecast && settled && consistent && problems.isEmpty && !text.contains(extrapolationCaveat);
         await record(
-          'forecast result',
+          'forecast result (a number)',
           ok,
-          'state=${supported ? 'supported' : stillLearning ? 'still learning' : unsupported ? 'unsupported' : 'other'} '
-              'about=$shownOutOf100 in 100, years=$years, bears=$bearFilled, ${ms}ms, dates=${problems.isEmpty ? 'none' : problems}',
+          'state=${supported ? 'supported' : 'NOT supported'} about=$shownOutOf100 in 100, years=$years, '
+              'bears=$bearFilled, ${ms}ms, dates=${problems.isEmpty ? 'none' : problems}',
           ok ? '' : 'settled=$settled consistent=$consistent; screen: $text',
         );
+
+        // ---- the same profile through the on-device model, outside the app ----
+        {
+          final engine = LifeTwinEngine(await loadLifeTwinModel());
+          final appMapped = toModelProfile(confirmed);
+          final serverMapped = TwinRepository.readyModelProfile(modelInputs);
+          final raw = engine.assess({'profile': appMapped});
+          final survival = Map<String, dynamic>.from(raw['survival'] as Map);
+          final probs = Map<String, dynamic>.from(survival['survival_probabilities'] as Map? ?? const {});
+          final horizon = years ?? '5';
+          final p = (probs[horizon] as num?)?.toDouble();
+          final expected = p == null ? -1 : (100 * p).round();
+          // The app reads the server's model_inputs when ready; it must agree with the
+          // app's own mapping of the confirmed answers.
+          final sameInputs =
+              serverMapped != null &&
+              serverMapped.entries.every((e) => appMapped[e.key] == e.value) &&
+              appMapped.keys.toSet().containsAll(serverMapped.keys);
+          final ok = survival['status'] == 'available' && expected == shownOutOf100 && sameInputs;
+          await record(
+            'forecast matches the on-device model for the same profile',
+            ok,
+            'shown=$shownOutOf100 model=$expected (p${horizon}y=${p?.toStringAsFixed(4)}) '
+                'status=${survival['status']} version=${survival['model_version']} '
+                'curve=${{for (final e in probs.entries) e.key: (e.value as num).toStringAsFixed(3)}} '
+                'serverInputsAgree=$sameInputs',
+            ok ? '' : 'appMapped=${jsonEncode(appMapped)} serverMapped=${jsonEncode(serverMapped)}',
+          );
+        }
 
         if (supported) {
           // Why?: the plain meaning lines.
@@ -602,7 +879,9 @@ void main() {
             'Why? sheet',
             why && notADate && closed && dateProblems(whyText).isEmpty,
             'shown=$why notADateLine=$notADate gotItCloses=$closed dates=${dateProblems(whyText)}',
-            closed ? '' : 'Got it at $rect (after ensureVisible $after), screen ${t.view.physicalSize / t.view.devicePixelRatio}',
+            closed
+                ? ''
+                : 'Got it at $rect (after ensureVisible $after), screen ${t.view.physicalSize / t.view.devicePixelRatio}',
           );
           if (!closed) {
             await log('  closing the Why? sheet with Navigator.pop to go on');
@@ -643,15 +922,16 @@ void main() {
           await tapFinder(t, roundButton('Back to your look ahead'), seconds: 3);
           await waitUntil(t, () => !shows(find.byType(OutlookDetailScreen)), seconds: 5);
           await pumpFor(t, const Duration(milliseconds: 500));
-        } else {
-          await record('Still learning / unsupported state', stillLearning || unsupported, 'screen: $text');
         }
 
         // ---- Back to the Room ----
         await tapFinder(t, roundButton('Back'), seconds: 3);
         final room = await waitUntil(
           t,
-          () => !shows(find.byType(ForecastScreen)) && shows(find.byType(RoomScreen)) && shows(find.widgetWithText(LipButton, 'Talk')),
+          () =>
+              !shows(find.byType(ForecastScreen)) &&
+              shows(find.byType(RoomScreen)) &&
+              shows(find.widgetWithText(LipButton, 'Talk')),
           seconds: 6,
         );
         await pumpFor(t, const Duration(milliseconds: 800));
@@ -663,6 +943,68 @@ void main() {
           room && cardOk,
           'room=$room outlookCard="${card?[0]}" matches=$cardOk',
           room && cardOk ? '' : 'screen: $roomText',
+        );
+      }
+
+      // ---- History: the onboarding entry, with every confirmed answer, and memory kept ----
+      {
+        final repo = await twin;
+        await waitUntil(t, () => repo.history().any((e) => e.kind == HistoryKind.onboarding), seconds: 5);
+        final entries = repo.history();
+        final onboarding = entries.where((e) => e.kind == HistoryKind.onboarding).toList();
+        final items = onboarding.isEmpty ? const <HistoryItem>[] : onboarding.first.items;
+        final byField = {for (final i in items) i.field: i};
+        const asked = [
+          'age',
+          'sex',
+          'smoking_status',
+          'height_cm',
+          'weight_kg',
+          'sleep_hours',
+          'general_health',
+          'hypertension_diagnosed',
+          'diabetes',
+          'sedentary_min_day',
+          'moderate_recreation_min_week',
+          'vigorous_recreation_min_week',
+        ];
+        final missing = [
+          for (final f in asked)
+            if (!byField.containsKey(f)) f,
+        ];
+        final wrong = [
+          for (final f in asked)
+            if (byField.containsKey(f) && byField[f]!.value != confirmed[f]) '$f=${byField[f]!.value}/${confirmed[f]}',
+        ];
+        final saidByYou = items.every((i) => i.source == HistorySource.said);
+        final stored = repo.profile;
+        final storedOk = asked.every((f) => stored[f] == confirmed[f]);
+        final current = repo.current;
+        final currentN = current == null || !current.available
+            ? -1
+            : (100 * (current.survivalByYear[shownYears] ?? -1)).round();
+        final notesOk = !sittingNote || repo.store.habitNotes.any((n) => (n['note'] as Map?)?['topic'] == 'sitting');
+        final ok =
+            onboarding.length == 1 &&
+            missing.isEmpty &&
+            wrong.isEmpty &&
+            saidByYou &&
+            storedOk &&
+            repo.store.memoryConsent &&
+            notesOk &&
+            currentN == shownOutOf100 &&
+            backend.writes > 0;
+        await record(
+          'History: onboarding entry',
+          ok,
+          'entries=${entries.map((e) => e.kind).toList()} onboarding=${onboarding.length} items=${items.length} '
+              '[${items.map((i) => '${i.label}: ${i.text}${i.estimated ? ' (${i.estimateText})' : ''}').join('; ')}] '
+              'memoryConsent=${repo.store.memoryConsent} habitNotes=${repo.store.habitNotes.map((n) => (n['note'] as Map?)?['topic']).toList()} '
+              'storedForecast=$currentN writes=${backend.writes}',
+          ok
+              ? ''
+              : 'missing=$missing wrong=$wrong saidByYou=$saidByYou storedOk=$storedOk notesOk=$notesOk '
+                    'storedForecast=$currentN shown=$shownOutOf100',
         );
       }
 

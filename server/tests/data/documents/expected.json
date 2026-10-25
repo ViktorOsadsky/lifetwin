@@ -1,0 +1,112 @@
+{
+  "visit_summary": {
+    "status": "found",
+    "candidates": [
+      {"field": "height_cm", "value": 167.6, "unit": "cm", "date": "2026-09-14", "snippet_contains": "5' 6"},
+      {"field": "weight_kg", "value": 82.6, "unit": "kg", "date": "2026-09-14", "snippet_contains": "182 lb"},
+      {"field": "blood_pressure", "value": "138/86", "unit": "mmHg", "date": "2026-09-14", "snippet_contains": "BP 138/86"},
+      {"field": "smoking_status", "value": "former", "unit": null, "date": "2026-09-14", "snippet_contains": "Former smoker"},
+      {"field": "diabetes_diagnosed", "value": true, "unit": null, "date": "2026-09-14", "snippet_contains": "Type 2 diabetes mellitus"},
+      {"field": "hypertension_diagnosed", "value": true, "unit": null, "date": "2026-09-14", "snippet_contains": "Essential hypertension"},
+      {"field": "hba1c", "value": 7.1, "unit": "%", "date": "2026-09-02", "snippet_contains": "7.1 %"},
+      {"field": "ldl_cholesterol", "value": 128, "unit": "mg/dL", "date": "2026-09-14", "snippet_contains": "128 mg/dL"}
+    ],
+    "notices": ["other_person_skipped"],
+    "forbidden": ["Harold Testman", "Testman", "Alma Fenwick", "04/12/1951", "00482913", "12 Elmwood Ln", "400 Cedar Park Dr", "Fairhaven, OH 44099", "(555) 010-2233", "(555) 010-2200", "(555) 010-2201", "h.testman@example.com"],
+    "min_identifiers_removed": 8,
+    "why": "Date of service (09/14/2026) beats the later Printed date and DOB; only A1c carries its own line date (2026-09-02). Traps: Family History 'Mother: type 2 diabetes; Father: stroke, HTN' (skipped, notice), 'Previous weight 190 lb' and 'Lost 8 lb' (skipped), 'Goal weight 170 lb', 'lisinopril for blood pressure', 'Diabetes and blood pressure check' under Reason for visit (no diagnosis heading), 'Mr. Testman' in free text, glucose not extracted. 'quit 2009' is a bare year, not a line date, so the smoking date is the document date. Diabetes and hypertension each appear twice (Assessment and Problem List) but yield one candidate."
+  },
+  "discharge_note": {
+    "status": "found",
+    "candidates": [
+      {"field": "hypertension_diagnosed", "value": true, "unit": null, "date": "2026-10-03", "snippet_contains": "HTN"},
+      {"field": "blood_pressure", "value": "168/94", "unit": "mmHg", "date": "2026-09-28", "snippet_contains": "BP on admission 168/94"},
+      {"field": "blood_pressure", "value": "132/80", "unit": "mmHg", "date": "2026-10-03", "snippet_contains": "BP at discharge 132/80"},
+      {"field": "height_cm", "value": 170, "unit": "cm", "date": "2026-10-03", "snippet_contains": "170 cm"},
+      {"field": "weight_kg", "value": 74.3, "unit": "kg", "date": "2026-10-03", "snippet_contains": "74.3 kg"},
+      {"field": "smoking_status", "value": "never", "unit": null, "date": "2026-10-03", "snippet_contains": "Tobacco: Never"},
+      {"field": "hba1c", "value": 6.2, "unit": "%", "date": "2026-09-29", "snippet_contains": "6.2 %"}
+    ],
+    "notices": ["other_person_skipped"],
+    "forbidden": ["Dolores Vandertest", "Vandertest", "11/03/1949", "7730155", "90017766", "XZQ0099871", "88 Maple Court", "Springvale, PA 19099", "(555) 010-3344", "(555) 010-3000", "(555) 010-3355", "Raymond Ostrowski", "Lena Hartwell", "Samuel Brightwater", "1500 Hospital Way"],
+    "min_identifiers_removed": 10,
+    "why": "Prediabetes in Discharge Diagnoses and 'Metformin ... for prediabetes' must not give diabetes. The undated discharge BP and other vitals take the discharge date (2026-10-03); the admission date (Sep 28) is never the document date and only dates the line that states it. 'Down 2.5 kg' is a change and skipped; Father: diabetes under Family History is skipped with a notice; amlodipine 'for high blood pressure' under Discharge Medications is not a diagnosis. Written-out dates and kg/cm units."
+  },
+  "lab_report": {
+    "status": "found",
+    "candidates": [
+      {"field": "hba1c", "value": 6.9, "unit": "%", "date": "2026-09-21", "snippet_contains": "Hemoglobin A1c"},
+      {"field": "ldl_cholesterol", "value": 142, "unit": "mg/dL", "date": "2026-09-21", "snippet_contains": "LDL Cholesterol"}
+    ],
+    "notices": [],
+    "forbidden": ["Walter Examplesmith", "Examplesmith", "02/27/1948", "5521907", "301 Birchwood Ave", "Lakeside, MI 48099", "(555) 010-4410", "(555) 010-4000", "LB26-0921-4471", "Nadia Okonkwo-Reyes"],
+    "min_identifiers_removed": 7,
+    "why": "High A1c must not produce diabetes_diagnosed (no diagnosis heading); the ADA category footnote mentions Diabetes with no heading. Collection date (2026-09-21, ISO) beats Reported and Received. 'Previous HbA1c 6.5 %' is skipped. Glucose, HDL, triglycerides, total cholesterol are not extracted."
+  },
+  "pharmacy_printout": {
+    "status": "nothing_found",
+    "candidates": [],
+    "notices": [],
+    "forbidden": ["Gloria Testfield", "Testfield", "06/30/1952", "19 Lakeview Terrace", "Brookhollow, CA 90099", "2210 Orchard Rd", "(555) 010-6177", "(555) 010-6100", "(555) 010-6101", "gloria.t@example.com", "HLX0042217", "4410087", "4410088", "4410091", "4410102", "Priya Raman", "Aaron Whitlock"],
+    "min_identifiers_removed": 8,
+    "why": "Indications ('for diabetes', 'for high blood pressure') are never diagnoses and there is no diagnosis heading. 'smoking cessation aid' has no status wording. Rx numbers, member ID, pharmacy and prescriber details must be stripped."
+  },
+  "blurry_partial": {
+    "status": "found",
+    "candidates": [
+      {"field": "height_cm", "value": 162.6, "unit": "cm", "date": null, "snippet_contains": "5 ft 4 in"}
+    ],
+    "notices": ["partly_unreadable"],
+    "forbidden": ["Eleanor Blurtest", "Blurtest"],
+    "min_identifiers_removed": 1,
+    "why": "Only 'Height: 5 ft 4 in' is clean (5 ft 4 in = 64 in = 162.6 cm). Garbled 'We ght: 1?4 lb', 'BP 1 8/7', 'Hemoglobin A1  7.?', 'LDL ... 1?2', 'Former sm ker', 'Type 2 diab', 'Essen ial hyperten' give nothing. The date of service is garbled so the date is null."
+  },
+  "spouse_section": {
+    "status": "found",
+    "candidates": [
+      {"field": "height_cm", "value": 177.8, "unit": "cm", "date": "2026-10-05", "snippet_contains": "5 ft 10 in"},
+      {"field": "weight_kg", "value": 91.2, "unit": "kg", "date": "2026-10-05", "snippet_contains": "201 lb"},
+      {"field": "blood_pressure", "value": "146/92", "unit": "mmHg", "date": "2026-10-05", "snippet_contains": "146/92"},
+      {"field": "smoking_status", "value": "never", "unit": null, "date": "2026-10-05", "snippet_contains": "Never smoker"},
+      {"field": "ldl_cholesterol", "value": 131, "unit": "mg/dL", "date": "2026-10-05", "snippet_contains": "131 mg/dL"}
+    ],
+    "notices": ["other_person_skipped"],
+    "forbidden": ["Frank Mockwell", "Linda Mockwell", "Mockwell", "08/19/1954", "CHF-2026-0173", "902 Prairie View Rd", "Hartfield, KS 66099", "(555) 010-9120", "frank.mockwell@example.com"],
+    "min_identifiers_removed": 6,
+    "why": "The Spouse / Partner heading starts a skipped section (height 5 ft 4 in, 148 lb, 118/74, current smoker) that ends at the 'Participant Results' heading, so the participant's LDL after it is still read. The spouse's name must not leak. No 'Name:' lines, so no multiple_patients."
+  },
+  "two_patients": {
+    "status": "nothing_found",
+    "candidates": [],
+    "notices": ["multiple_patients"],
+    "forbidden": ["Arthur Testwood", "Testwood", "Beatrice Fakeley", "Fakeley", "01/09/1950", "07/22/1955", "6612040", "6612077", "15 Willow St", "(555) 010-7000", "Mina Calloway"],
+    "min_identifiers_removed": 0,
+    "why": "Two different 'Patient name:' lines on different pages: nothing is offered even though each page has clean vitals and a diagnosis."
+  },
+  "non_english": {
+    "status": "nothing_found",
+    "candidates": [],
+    "notices": ["language_not_supported"],
+    "forbidden": ["Rosa Ejemplo-Prueba", "Ejemplo-Prueba", "15/03/1950", "4401828", "Calle Olmo 45", "Valle Sereno, TX 78099", "(555) 010-8800", "Camila Reyes-Prueba"],
+    "min_identifiers_removed": 0,
+    "why": "A Spanish summary with Peso, Talla, Presion arterial and Diabetes tipo 2 must produce nothing, only the language notice."
+  },
+  "flowsheet_conflicts": {
+    "status": "found",
+    "candidates": [
+      {"field": "blood_pressure", "value": "136/82", "unit": "mmHg", "date": "2026-09-14", "snippet_contains": "136/82"},
+      {"field": "blood_pressure", "value": "138/84", "unit": "mmHg", "date": "2026-08-24", "snippet_contains": "138/84"},
+      {"field": "blood_pressure", "value": "140/86", "unit": "mmHg", "date": "2026-07-20", "snippet_contains": "140/86"},
+      {"field": "blood_pressure", "value": "142/88", "unit": "mmHg", "date": "2026-06-15", "snippet_contains": "142/88"},
+      {"field": "blood_pressure", "value": "146/90", "unit": "mmHg", "date": "2026-05-11", "snippet_contains": "146/90"},
+      {"field": "blood_pressure", "value": "148/90", "unit": "mmHg", "date": "2026-04-06", "snippet_contains": "148/90"},
+      {"field": "height_cm", "value": 165.1, "unit": "cm", "date": "2026-09-14", "snippet_contains": "5'5"},
+      {"field": "smoking_status", "value": "current", "unit": null, "date": "2026-09-14", "snippet_contains": "Current every day smoker"},
+      {"field": "hypertension_diagnosed", "value": true, "unit": null, "date": "2026-09-14", "snippet_contains": "Hypertension"}
+    ],
+    "notices": ["conflicting_values"],
+    "forbidden": ["Ruth Chartwell-Test", "Chartwell-Test", "05/05/1947", "2290145", "880 Harbor Blvd", "Port Example, WA 98099", "(555) 010-5300", "(555) 010-5342"],
+    "min_identifiers_removed": 5,
+    "why": "Seven dated BP readings: keep the six most recent (03/02 reading dropped); the undated 136/82 equals the 09/14 reading and collapses to one. Heights 5'6\" (03/02) vs 5'5\" (09/14): latest wins (165.1). Undated Weight 190 lb and Wt 188 lb share the document date, so both are dropped with conflicting_values. 'Denies diabetes symptoms' gives nothing."
+  }
+}
