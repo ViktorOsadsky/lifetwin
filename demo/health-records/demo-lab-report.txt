@@ -1,0 +1,16 @@
+SYNTHETIC DEMO DATA - NOT A REAL HEALTH RECORD
+LifeTwin Demonstration Clinic
+Laboratory results
+Patient: Rosa Sample (fictional)
+DOB: 1960-04-12 | Sex: Female
+MRN: DEMO-0001
+Date of service: 2026-10-21
+
+Lab Results
+Hemoglobin A1c: 6.6 %
+LDL Cholesterol: 118 mg/dL
+
+Report Notes
+No height, weight, smoking history or diagnosis list is included in this sample.
+
+Not affiliated with Epic or MyChart. All identities and values are invented.
