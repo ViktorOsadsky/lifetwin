@@ -2,8 +2,9 @@
 
     uv run python server/tests/eval_quick_heldout.py [path ...]
 
-A case is the first reply to one question. "Correct" means the read-back holds
-exactly the expected values, or Mochi asked again when the expected value is null.
+A case is the first reply to one question. "Correct" means the values heard (quick)
+or read back (weekly) are exactly the expected values, or Mochi asked again when the
+expected value is null.
 "Miss" means Mochi asked again although a value was expected (safe). "Wrong" means
 any other value was read back, or a value was read back when none was expected.
 The goal is zero wrong values. Not collected by pytest, and never used for tuning.
@@ -72,6 +73,9 @@ def score(path: Path) -> dict:
             wrong.append((case["text"], f"error: {type(exc).__name__}"))
             continue
         got = result.state.pending.model_dump(exclude_none=True)
+        # Quick: a value the check question asks about ("Did I hear 15 hours of sleep?")
+        # is not heard yet, so it counts as asked again.
+        got = {k: v for k, v in got.items() if k not in result.state.checking}
         expected = case["expected"]
         if expected is None:
             outcome = "correct" if not got else "wrong"

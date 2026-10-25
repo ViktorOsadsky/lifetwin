@@ -52,6 +52,20 @@ void main() {
       expect(reminders.shouldOffer(reminders.decline(const CheckinSettings()), history), isFalse);
     });
 
+    test('are offered at the end of onboarding too, still only once', () {
+      expect(reminders.shouldOffer(const CheckinSettings(), [], onboarded: true), isTrue);
+      expect(reminders.shouldOffer(reminders.decline(const CheckinSettings()), [], onboarded: true), isFalse);
+      expect(reminders.shouldOffer(on, [], onboarded: true), isFalse); // already on
+    });
+
+    test('a week away ends with a gentle pause, not silence', () async {
+      await reminders.reschedule(on, localNow: DateTime(2026, 10, 24, 8), history: []);
+      final bodies = port.scheduled.map((s) => s.$3).toList();
+      expect(bodies, hasLength(reminderDays));
+      expect(bodies.last, reminderPauseLine);
+      expect(bodies.take(reminderDays - 1), everyElement(isIn(reminderLines)));
+    });
+
     test('default to 10:00 and plan a week ahead, each at the chosen wall time', () async {
       final planned = await reminders.reschedule(on, localNow: DateTime(2026, 10, 24, 8), history: []);
       expect(planned, hasLength(reminderDays));
@@ -110,7 +124,7 @@ void main() {
     });
 
     test('the words invite; they never mention missed days, streaks or health claims', () {
-      for (final line in reminderLines) {
+      for (final line in [...reminderLines, reminderPauseLine]) {
         expect(line.length, lessThan(80));
         expect(
           RegExp(r'missed|streak|forgot|again|late|healthier|improv|risk|should', caseSensitive: false).hasMatch(line),

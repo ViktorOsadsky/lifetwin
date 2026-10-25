@@ -5,9 +5,14 @@
 /// a week ahead and planned again on every app open and after every check-in, so a day
 /// that's already done gets no reminder.
 ///
-/// Permission is asked at a sensible moment, never on first launch: once, right after the
-/// first finished check-in, and only if the person says yes to reminders. Notification
-/// permission is separate from Apple Health access and from consent to process answers.
+/// Permission is asked at a sensible moment, never on first launch: once, at the end of
+/// onboarding or right after the first finished check-in, and only if the person says yes
+/// to reminders. Notification permission is separate from Apple Health access and from
+/// consent to process answers.
+///
+/// Someone who doesn't open the app for a week gets the week's reminders, and the last one
+/// says, gently, that reminders pause until they're back. The next app open plans a new
+/// week.
 library;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -41,6 +46,9 @@ const reminderLines = [
   'Mochi would love to hear how you slept.',
 ];
 
+/// The last planned reminder: reminders pause after it until the next app open.
+const reminderPauseLine = "I'll pause reminders until you're back. I'm here whenever you like.";
+
 /// How many days ahead are planned (iOS keeps at most 64 pending).
 const reminderDays = 7;
 
@@ -49,9 +57,10 @@ class CheckinReminders {
 
   final NotificationPort port;
 
-  /// Offer reminders now? Only after the first finished check-in, and only once.
-  bool shouldOffer(CheckinSettings settings, List<CheckinEntry> history) =>
-      !settings.reminderOffered && !settings.remindersOn && history.isNotEmpty;
+  /// Offer reminders now? At the end of onboarding ([onboarded]: a profile is saved) or
+  /// after the first finished check-in, and only once.
+  bool shouldOffer(CheckinSettings settings, List<CheckinEntry> history, {bool onboarded = false}) =>
+      !settings.reminderOffered && !settings.remindersOn && (onboarded || history.isNotEmpty);
 
   /// The person said yes to reminders at [hour]:[minute]: asks the phone, then plans
   /// them. Returns the new settings for the store; reminders stay off if the phone said no.
@@ -83,7 +92,8 @@ class CheckinReminders {
   }
 
   /// Plans the next [reminderDays] reminders. Call on app open and after each check-in.
-  /// Today is skipped once its check-in is done or its time has passed.
+  /// Today is skipped once its check-in is done or its time has passed. The last one is
+  /// [reminderPauseLine], so a week away ends with a kind word instead of silence.
   Future<List<DateTime>> reschedule(
     CheckinSettings settings, {
     required DateTime localNow,
@@ -103,7 +113,9 @@ class CheckinReminders {
         id: id,
         localWallTime: at,
         title: reminderTitle,
-        body: reminderLines[day.difference(DateTime.utc(2026)).inDays % reminderLines.length],
+        body: planned.length == reminderDays - 1
+            ? reminderPauseLine
+            : reminderLines[day.difference(DateTime.utc(2026)).inDays % reminderLines.length],
       );
       planned.add(at);
     }

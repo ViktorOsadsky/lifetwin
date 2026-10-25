@@ -48,11 +48,12 @@ class CheckinState(ApiModel):
     # and sitting questions are about (the app's choice: "today" in the evening).
     local_date: str | None = Field(default=None, pattern=ISO_DATE)
     activity_day: DayWord | None = None
-    # Quick only: Apple Health values the person has not confirmed yet. Each is read
-    # back once, as "Looks right?", when its question comes up; never saved without a yes.
+    # Quick only: Apple Health values the person has not confirmed yet. Each is
+    # offered in its question ("Does that sound right?") when it comes up; never saved
+    # without the yes to the read-back at the end.
     suggested: CheckinValues = Field(default_factory=CheckinValues)
     suggested_activity_min: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1440)
-    # The pending answer is Apple Health's value (read back as "Looks right?"), or the
+    # Apple Health's value is offered in the open question (quick), or the
     # held minutes below are Apple Health's exercise minutes.
     from_health: bool = False
     # The activity question is down to one pace: a follow-up ("And anything easier?"),
@@ -61,18 +62,48 @@ class CheckinState(ApiModel):
     # An activity duration whose pace Mochi asked about ("about 20 minutes": out of
     # breath, or easy?). Apple Health's exercise minutes start here too.
     held_minutes: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=10080)
+    # Quick and daily only: the answers in ``pending`` that the check question is about
+    # ("Did I hear 15 hours of sleep? That's a lot for one night..."). They are read back
+    # with ``phase`` "confirming" and the question still open (``current_field``).
+    checking: list[CheckinField] = Field(default_factory=list, max_length=2)
+    # Quick and daily only: the open question was reopened ("go back"), so a new answer
+    # replaces the heard one in full (both activity paces, not just the follow-up).
+    reopened: bool = False
+    # From the app (the profile's age): which everyday examples the questions use.
+    # "older" (60 and over) keeps gardening and pottering about; "younger" uses the gym,
+    # running, cycling, the commute and desk time; null uses examples for anyone.
+    age_band: Literal["younger", "older"] | None = None
 
     @model_validator(mode="after")
     def consistent_state(self):
         if tuple(self.questions) not in SCRIPTS[self.kind]:
             raise ValueError("The questions must be one of this check-in's scripts")
         pending = self.pending.model_dump(exclude_none=True)
-        if bool(pending) != (self.phase == "confirming"):
-            raise ValueError("Only the confirming phase may contain pending values")
+        if self.kind == "weekly":
+            # Weekly: each answer is read back alone, so pending means a read-back.
+            if bool(pending) != (self.phase == "confirming"):
+                raise ValueError("Only the confirming phase may contain pending values")
+            if self.checking:
+                raise ValueError("Only quick and daily check-ins have a check question")
+        else:
+            # Quick and daily: answers are heard (pending) until the one read-back at the
+            # end ("confirming" without a current field), or a check question about one.
+            if pending and self.phase in {"ready", "cancelled"}:
+                raise ValueError("A finished check-in has nothing pending")
+            if self.phase == "confirming" and not pending:
+                raise ValueError("A read-back needs the answers it reads back")
+            if bool(self.checking) != (
+                self.phase == "confirming" and self.current_field is not None
+            ):
+                raise ValueError("A read-back with an open question is a check question")
+            if set(self.checking) - set(pending):
+                raise ValueError("A check question is about pending answers")
         if len(set(self.skipped_fields)) != len(self.skipped_fields):
             raise ValueError("Skipped fields must be unique")
-        if self.phase in {"asking", "confirming"} and self.current_field is None:
+        if self.phase == "asking" and self.current_field is None:
             raise ValueError("An open question requires a current field")
+        if self.phase == "confirming" and self.current_field is None and self.kind == "weekly":
+            raise ValueError("A weekly read-back is about the open question")
         if self.phase in {"ready", "cancelled", "probing"} and self.current_field is not None:
             raise ValueError("This phase cannot have a current field")
         if self.current_field is not None and self.current_field not in self.questions:
@@ -95,8 +126,18 @@ class CheckinState(ApiModel):
             self.questions
         ):
             raise ValueError("Apple Health's exercise minutes need the activity question")
-        if self.from_health and self.phase != "confirming" and self.held_minutes is None:
-            raise ValueError("Only a read-back or held minutes can come from Apple Health")
+        offered = (
+            self.kind != "weekly"
+            and self.phase == "asking"
+            and self.current_field is not None
+            and getattr(self.suggested, self.current_field, None) is not None
+        )
+        if self.from_health and not (
+            self.phase == "confirming" or self.held_minutes is not None or offered
+        ):
+            raise ValueError(
+                "Only a read-back, an offered value or held minutes can come from Apple Health"
+            )
         return self
 
 
@@ -163,7 +204,7 @@ def profile_update(state: CheckinState) -> ProfileUpdate:
 
 class QuickSuggestions(ApiModel):
     """Apple Health values for the quick check-in, read on the phone and not yet
-    confirmed. Mochi reads each back ("Looks right?"); nothing is kept without a yes."""
+    confirmed. Mochi offers each in its question; nothing is kept without the final yes."""
 
     sleep_hours_last_night: float | None = Field(default=None, ge=0, le=24)
     sleep_hours_night_before: float | None = Field(default=None, ge=0, le=24)
@@ -207,6 +248,9 @@ class CheckinStartRequest(ApiModel):
     local_date: str | None = Field(default=None, min_length=10, max_length=10)
     # The person let Mochi remember the little things (onboarding's memory_consent).
     memory_consent: bool = False
+    # The profile's age, if known: only which everyday examples Mochi uses (60 and over:
+    # gardening and pottering about; younger: the gym, running, the commute, desk time).
+    age: Annotated[int | None, WholeNumber] = Field(default=None, ge=18, le=120)
     # Quick only: what to ask (the defaults ask sleep, activity and sitting).
     quick: QuickPlan | None = None
 

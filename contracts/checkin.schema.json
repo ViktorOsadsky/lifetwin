@@ -19,6 +19,49 @@
           "default": null,
           "title": "Activity Day"
         },
+        "age_band": {
+          "anyOf": [
+            {
+              "enum": [
+                "younger",
+                "older"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age Band"
+        },
+        "checking": {
+          "items": {
+            "enum": [
+              "sleep_hours_last_night",
+              "exercise_minutes_today",
+              "alcohol_drinks_yesterday",
+              "wellbeing",
+              "sleep_hours",
+              "exercise_minutes_weekly",
+              "alcohol_drinks_weekly",
+              "smoking_status",
+              "weight_kg",
+              "systolic_bp",
+              "diastolic_bp",
+              "sleep_hours_night_before",
+              "vigorous_recreation_min",
+              "moderate_recreation_min",
+              "sedentary_min_day",
+              "vigorous_recreation_min_week",
+              "moderate_recreation_min_week"
+            ],
+            "type": "string"
+          },
+          "maxItems": 2,
+          "title": "Checking",
+          "type": "array"
+        },
         "confirmed": {
           "$ref": "#/$defs/CheckinValues"
         },
@@ -179,6 +222,11 @@
           "title": "Questions",
           "type": "array"
         },
+        "reopened": {
+          "default": false,
+          "title": "Reopened",
+          "type": "boolean"
+        },
         "skipped_fields": {
           "items": {
             "enum": [
@@ -271,7 +319,10 @@
         "suggested_activity_min",
         "from_health",
         "one_pace",
-        "held_minutes"
+        "held_minutes",
+        "checking",
+        "reopened",
+        "age_band"
       ],
       "title": "CheckinState",
       "type": "object"

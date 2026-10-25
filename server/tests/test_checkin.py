@@ -115,7 +115,10 @@ def say(state: CheckinState, text: str, mode: str = "text") -> CheckinResponse:
 
 
 def pending(result: CheckinResponse) -> dict:
-    return result.state.pending.model_dump(exclude_none=True)
+    """What was heard (weekly: what is read back). A value the check question is about
+    ("Did I hear 15 hours of sleep?") is not heard yet."""
+    values = result.state.pending.model_dump(exclude_none=True)
+    return {name: value for name, value in values.items() if name not in result.state.checking}
 
 
 def confirmed(result: CheckinResponse) -> dict:
@@ -153,8 +156,14 @@ def test_corpus_reply(case):
         assert result.state.phase == "asking"
     else:
         assert same(got, case["expected"]), f"{case['text']!r} -> {got} != {case['expected']}"
-        assert result.state.phase == "confirming"
-        assert result.message.endswith("Is that right?")
+        if case["script"] == "weekly":
+            assert result.state.phase == "confirming"
+            assert result.message.endswith("Is that right?")
+        else:
+            # Quick and daily: heard and echoed; the next question (or the one read-back
+            # at the end) follows.
+            assert result.state.phase in {"asking", "confirming", "probing"}
+            assert result.state.current_field != case["field"] or result.state.phase == "asking"
 
 
 KNOWN_MISSES = [c for c in CASES if c.get("known_miss")]
@@ -382,11 +391,15 @@ def test_not_a_plain_same(text):
 def test_same_as_last_time_reads_back_the_previous_value(kind, field, previous, expected):
     result = say(at(kind, field, previous), "um, about the same as last time", "transcript")
     assert pending(result) == expected
-    assert result.message.startswith(SAME_LEAD + "I heard ")
-    assert result.message.endswith("Is that right?")
-    # Still only saved after a yes.
+    # Still only saved after a yes: weekly to this answer, daily to the read-back at the end.
     assert confirmed(result) == {}
-    assert confirmed(say(result.state, "yes")) == expected
+    if kind == "weekly":
+        assert result.message.startswith(SAME_LEAD + "I heard ")
+        assert result.message.endswith("Is that right?")
+        assert confirmed(say(result.state, "yes")) == expected
+    else:
+        assert result.message.startswith(SAME_LEAD)
+        assert confirmed(finish(result)) == expected
 
 
 def test_same_without_a_last_answer_asks_the_question():
@@ -742,7 +755,7 @@ def test_mixed_feelings_get_the_three_choices():
 def test_a_feeling_and_a_question_back_get_a_kind_word():
     result = say(at("daily", "wellbeing"), "I'm good, how about you?")
     assert pending(result) == {"wellbeing": "good"}
-    assert result.message.startswith(HOW_ARE_YOU + "I heard you're feeling good today.")
+    assert result.message.startswith(HOW_ARE_YOU + "Glad to hear it.")
 
 
 @pytest.mark.parametrize("text", ["how are you", "How are you, Mochi?", "and you?"])
@@ -890,7 +903,30 @@ def test_the_skip_button():
 
 
 def read_back(field: str, value, kind: str = "daily") -> CheckinState:
-    return at(kind, field, phase="confirming", pending={field: value})
+    """Weekly: the read-back of one answer. Quick and daily: the one read-back at the end,
+    with only this answer heard (the other questions were skipped)."""
+    if kind == "weekly":
+        return at(kind, field, phase="confirming", pending={field: value})
+    questions = list(script_for(kind, field))
+    extra = {"local_date": "2026-10-24", "activity_day": "yesterday"} if kind == "quick" else {}
+    return CheckinState(
+        kind=kind,
+        questions=questions,
+        phase="confirming",
+        pending={field: value},
+        skipped_fields=[name for name in questions if name != field],
+        **extra,
+    )
+
+
+def finish(result: CheckinResponse) -> CheckinResponse:
+    """Quick and daily: skip what's left, then say yes to the read-back at the end."""
+    while result.state.phase in {"asking", "probing"}:
+        result = SERVICE.turn(CheckinTurnRequest(action="skip", state=result.state))
+    if result.state.phase == "confirming":
+        assert result.state.current_field is None, "a check question is still open"
+        result = say(result.state, "yes")
+    return result
 
 
 def test_only_a_clear_yes_saves():
@@ -1107,7 +1143,9 @@ def test_an_emergency_during_a_read_back_keeps_the_read_back():
     paused = say(state, "yes but I can't breathe")
     assert paused.emergency and paused.state == state
     resumed = SERVICE.turn(CheckinTurnRequest(action="resume", state=paused.state))
-    assert resumed.message == RESUME_LEAD + "I heard you slept 7 hours last night. Is that right?"
+    assert resumed.message == RESUME_LEAD + (
+        "Before I save anything, here's what I heard: you slept 7 hours last night. Is that right?"
+    )
 
 
 # --- Whole dialogues --------------------------------------------------------------------------
@@ -1183,15 +1221,12 @@ def test_a_full_daily_check_in_on_a_habit_day():
         [
             "~uh i had a bad night",
             "~maybe five hours",
-            "yep",
             "a bit more than usual",
             "40 minutes",
-            "no wait 45",
-            "yes",
+            "no wait, 45 minutes",  # corrects the answer just heard
             "a glass of wine with dinner",
-            "<confirm>",
             "~oh not too bad how are you",
-            "yes",
+            "yes",  # the one read-back at the end
         ],
         local_date="2026-10-24",
     )
@@ -1204,28 +1239,28 @@ def test_a_full_daily_check_in_on_a_habit_day():
     }
     assert messages[0].startswith(GREETINGS["daily"] + " Last time you slept 6.5 hours.")
     assert messages[1].startswith("I'm sorry to hear that.")
-    assert messages[4].startswith("More or less is fine")
-    assert messages[-1] == "Got it. " + CLOSINGS["daily"]["default"]
+    assert messages[2].startswith("5 hours of sleep, got it.")
+    assert messages[3].startswith("More or less is fine")
+    assert messages[5].startswith("45 minutes moving, got it.")
+    assert messages[7].startswith(HOW_ARE_YOU + "Thanks for telling me. Before I save anything")
+    assert messages[-1] == CLOSINGS["daily"]["default"]
 
 
 def test_start_over_needs_an_explicit_yes_and_keeps_the_previous_answers():
-    result, _ = run("daily", YESTERDAY, ["7 hours", "yes", "start over"], local_date="2026-10-19")
+    result, _ = run("daily", YESTERDAY, ["7 hours", "start over"], local_date="2026-10-19")
     assert result.message.startswith("Do you want to clear today's answers")
-    assert confirmed(result) == {"sleep_hours_last_night": 7}
+    assert pending(result) == {"sleep_hours_last_night": 7}
     result = say(result.state, "yes, start over")
-    assert confirmed(result) == {}
+    assert confirmed(result) == {} and pending(result) == {}
     assert result.state.current_field == "sleep_hours_last_night"
     assert result.state.previous == CheckinValues.model_validate(YESTERDAY)
 
 
 def test_change_a_named_answer_mid_check_in():
-    result, _ = run(
-        "daily", {}, ["7 hours", "yes", "change my sleep to 6 hours"], local_date="2026-10-19"
-    )
+    result, _ = run("daily", {}, ["7 hours", "change my sleep to 6 hours"], local_date="2026-10-19")
     assert pending(result) == {"sleep_hours_last_night": 6}
-    result = say(result.state, "yes")
-    assert confirmed(result) == {"sleep_hours_last_night": 6}
     assert result.state.current_field == "exercise_minutes_today"
+    assert confirmed(finish(result)) == {"sleep_hours_last_night": 6}
 
 
 def test_go_back_on_the_first_question():
@@ -1327,24 +1362,24 @@ def test_health_values_never_reach_the_logs(monkeypatch, caplog):
 
 def test_one_habit_follow_up_with_memory_and_none_without():
     state = at("daily", "exercise_minutes_today", memory_consent=True)
-    asked = say(say(state, "a 20 minute walk").state, "yes")
+    asked = say(state, "a 20 minute walk")
     assert asked.state.phase == "probing" and asked.state.probe_topic == "exercise"
     assert asked.message.endswith("What did you do? Or we can just move on.")
     told = say(asked.state, "I walked with my neighbor after dinner")
     assert told.state.phase == "asking" and told.state.current_field == "wellbeing"
     note = told.state.habit_notes[0]
     assert (note.kind, note.with_, note.time_of_day) == ("walking", "neighbor", "after dinner")
-    plain = say(say(at("daily", "exercise_minutes_today"), "a 20 minute walk").state, "yes")
+    plain = say(at("daily", "exercise_minutes_today"), "a 20 minute walk")
     assert plain.state.phase == "asking" and plain.state.habit_notes == []
 
 
 def test_the_follow_up_is_skippable_and_asked_once():
     state = at("daily", "sleep_hours_last_night", memory_consent=True)
-    asked = say(say(state, "about 5 hours").state, "yes")
+    asked = say(state, "about 5 hours")
     assert asked.state.probe_topic == "sleep"
     moved = say(asked.state, "let's move on")
     assert moved.state.phase == "asking" and moved.state.habit_notes == []
-    again = say(say(moved.state, "30 minutes").state, "yes")
+    again = say(moved.state, "30 minutes")
     assert again.state.phase != "probing"
 
 
@@ -1361,7 +1396,7 @@ def test_checkin_supplement_question_gets_the_fixed_reply():
 )
 def test_controls_during_the_follow_up_never_crash(text):
     state = at("daily", "exercise_minutes_today", memory_consent=True)
-    asked = say(say(state, "a 20 minute walk").state, "yes")
+    asked = say(state, "a 20 minute walk")
     assert asked.state.phase == "probing"
     result = say(asked.state, text)
     CheckinState.model_validate(result.state.model_dump())

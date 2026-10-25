@@ -1487,7 +1487,7 @@
     }
   },
   {
-    "name": "checkin-quick-start-health-read-back",
+    "name": "checkin-quick-start-health-offer",
     "method": "POST",
     "path": "/api/checkin/start",
     "request_schema": "checkin.start.request.schema.json",
@@ -1511,15 +1511,15 @@
     "response_schema": "checkin.schema.json",
     "response_subset": {
       "complete": false,
-      "message": "Hi, it's Mochi! Just a quick check-in, under a minute. You can skip anything. Apple Health says you slept about 7.5 hours last night. Looks right?",
+      "message": "Hi, it's Mochi! Just a quick check-in, under a minute. You can skip anything. Apple Health says you slept about 7.5 hours last night. Does that sound right?",
       "daily_logs": [],
       "state": {
         "kind": "quick",
-        "phase": "confirming",
+        "phase": "asking",
         "from_health": true,
         "current_field": "sleep_hours_last_night",
         "pending": {
-          "sleep_hours_last_night": 7.5
+          "sleep_hours_last_night": null
         },
         "questions": [
           "sleep_hours_last_night",
@@ -1528,7 +1528,10 @@
           "sedentary_min_day"
         ],
         "local_date": "2026-10-24",
-        "activity_day": "yesterday"
+        "activity_day": "yesterday",
+        "suggested": {
+          "sleep_hours_last_night": 7.5
+        }
       }
     }
   },
@@ -1553,7 +1556,7 @@
         "current_field": "vigorous_recreation_min",
         "local_date": "2026-10-24",
         "activity_day": "yesterday",
-        "confirmed": {
+        "pending": {
           "sleep_hours_last_night": 7.5
         }
       }
@@ -1562,12 +1565,17 @@
     "response_schema": "checkin.schema.json",
     "response_subset": {
       "complete": false,
-      "message": "I heard you did 20 minutes of activity that got you out of breath yesterday. Is that right?",
+      "message": "20 minutes out of breath, got it. And anything easier yesterday, like an easy walk or some housework? About how long?",
       "state": {
-        "phase": "confirming",
+        "phase": "asking",
+        "current_field": "moderate_recreation_min",
         "pending": {
+          "sleep_hours_last_night": 7.5,
           "vigorous_recreation_min": 20,
           "moderate_recreation_min": null
+        },
+        "confirmed": {
+          "vigorous_recreation_min": null
         }
       }
     }
@@ -1592,7 +1600,7 @@
         "current_field": "vigorous_recreation_min",
         "local_date": "2026-10-24",
         "activity_day": "yesterday",
-        "confirmed": {
+        "pending": {
           "sleep_hours_last_night": 7.5
         }
       }
@@ -1606,6 +1614,136 @@
         "phase": "asking",
         "current_field": "moderate_recreation_min",
         "one_pace": true
+      }
+    }
+  },
+  {
+    "name": "checkin-quick-last-answer-starts-the-read-back",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "about 6 hours",
+      "state": {
+        "kind": "quick",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day"
+        ],
+        "current_field": "sedentary_min_day",
+        "local_date": "2026-10-24",
+        "activity_day": "yesterday",
+        "pending": {
+          "sleep_hours_last_night": 7.5,
+          "vigorous_recreation_min": 20,
+          "moderate_recreation_min": 30
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": false,
+      "message": "6 hours sitting, got it. Before I save anything, here's what I heard: you slept 7.5 hours last night, you did 20 minutes of activity that got you out of breath yesterday, you did 30 minutes of easy activity yesterday, and you sat for 6 hours yesterday. Is that right?",
+      "daily_logs": [],
+      "state": {
+        "phase": "confirming",
+        "current_field": null,
+        "checking": [],
+        "pending": {
+          "sleep_hours_last_night": 7.5,
+          "vigorous_recreation_min": 20,
+          "moderate_recreation_min": 30,
+          "sedentary_min_day": 360
+        },
+        "confirmed": {
+          "sedentary_min_day": null
+        }
+      }
+    }
+  },
+  {
+    "name": "checkin-quick-correction-at-the-read-back",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "no, my sleep was 6 hours",
+      "state": {
+        "kind": "quick",
+        "phase": "confirming",
+        "questions": [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day"
+        ],
+        "current_field": null,
+        "local_date": "2026-10-24",
+        "activity_day": "yesterday",
+        "pending": {
+          "sleep_hours_last_night": 7.5,
+          "vigorous_recreation_min": 20,
+          "moderate_recreation_min": 30,
+          "sedentary_min_day": 360
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "confirming",
+        "current_field": null,
+        "pending": {
+          "sleep_hours_last_night": 6.0,
+          "sedentary_min_day": 360
+        }
+      }
+    }
+  },
+  {
+    "name": "checkin-quick-unusual-value-check",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "15 hours",
+      "state": {
+        "kind": "quick",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day"
+        ],
+        "current_field": "sleep_hours_last_night",
+        "local_date": "2026-10-24",
+        "activity_day": "yesterday"
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": false,
+      "message": "Did I hear 15 hours of sleep? That's a lot for one night, so I just want to check. Is that right?",
+      "state": {
+        "phase": "confirming",
+        "current_field": "sleep_hours_last_night",
+        "checking": [
+          "sleep_hours_last_night"
+        ],
+        "pending": {
+          "sleep_hours_last_night": 15.0
+        }
       }
     }
   },
@@ -1625,15 +1763,13 @@
           "moderate_recreation_min",
           "sedentary_min_day"
         ],
-        "current_field": "sedentary_min_day",
+        "current_field": null,
         "local_date": "2026-10-24",
         "activity_day": "yesterday",
-        "confirmed": {
+        "pending": {
           "sleep_hours_last_night": 7.5,
           "vigorous_recreation_min": 20,
-          "moderate_recreation_min": 30
-        },
-        "pending": {
+          "moderate_recreation_min": 30,
           "sedentary_min_day": 360
         }
       }
@@ -1642,7 +1778,7 @@
     "response_schema": "checkin.schema.json",
     "response_subset": {
       "complete": true,
-      "message": "Got it. That's all. Thank you for checking in with me!",
+      "message": "All saved. Nice work taking a minute for yourself today!",
       "profile_update": {
         "sleep_hours": null
       },
@@ -1684,7 +1820,7 @@
         "current_field": "vigorous_recreation_min",
         "local_date": "2026-10-24",
         "activity_day": "yesterday",
-        "confirmed": {
+        "pending": {
           "sleep_hours_last_night": 7.5
         }
       }
