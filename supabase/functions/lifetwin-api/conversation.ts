@@ -1,6 +1,28 @@
 /** Deterministic, stateless intake/check-in/change. No provider owns confirmed values. */
 import authored from "./conversation-data.json" with { type: "json" };
-import { completeJSON, consentFor, providerInfo } from "./providers.ts";
+import {
+  completeJSON,
+  consentFor,
+  conversationConfig,
+  conversationProvider,
+  providerInfo,
+} from "./providers.ts";
+import {
+  ack,
+  ANYTHING_ELSE,
+  clearNo,
+  clearYes,
+  explained,
+  HEALTH_OFFER,
+  type IntentResult,
+  LINES,
+  MEMORY,
+  MISSING,
+  type Question,
+  readBack,
+  readIntent,
+  readLocal,
+} from "./intent.ts";
 import { quantityFields, readQuantity } from "./quantities.ts";
 type Obj = Record<string, any>;
 type Result = { status: number; body: any };
@@ -18,10 +40,23 @@ const unique = (x: any[]) => [...new Set(x)];
 const textOf = (x: any) => String(x ?? "").replace(/[’‘]/g, "'").trim();
 const phrase = (x: string) =>
   textOf(x).toLowerCase().replace(/[.!?,]+$/g, "").trim();
-const yes = (x: string) =>
-  /^(?:(?:yes|yeah|yep|yup|sure)(?:,?\s+(?:please|that's fine|that's right|that is right|remember|remember that|use apple health))?|correct|right|that's right|that is right|looks right|sounds right|ok(?:ay)?|that's fine)$/
-    .test(phrase(x));
-const no = (x: string) =>
+/** How a yes/no reply is read: the rules, and Claude only where the turn allows it. */
+type Hear = (text: string, q: Question) => Promise<IntentResult>;
+const rulesOnly: Hear = (text, q) => Promise.resolve(readLocal(text, q));
+/** A read-back reply. A number in it is a value to read, never a yes or a no. */
+const hearBack = (hear: Hear, text: string, prompt: string) =>
+  /\d/.test(text) ? Promise.resolve(null) : hear(text, readBack(prompt));
+/** A clear yes or no, with no other answer said beside it. */
+const saidYes = (r: IntentResult | null): boolean =>
+  !!r && clearYes(r) && !r.corrected_value;
+const saidNo = (r: IntentResult | null): boolean =>
+  !!r && clearNo(r) && !r.corrected_value;
+/** A whole-reply yes or no given as a diagnosis answer ("Diabetes?" "No."). */
+const answerYes = (x: string) =>
+  /^(?:yes|yeah|yep|yup|sure|correct|right|that's right|that is right)$/.test(
+    phrase(x),
+  );
+const answerNo = (x: string) =>
   /^(?:no|nope|nah|no thanks|no thank you|not right|that's wrong)$/.test(
     phrase(x),
   );
@@ -168,9 +203,10 @@ export function parseAnswer(field: string, raw: string): Obj | null {
   } else if (["diabetes", "hypertension_diagnosed"].includes(field)) {
     // A pressure measurement does not establish a diagnosis.
     if (/\d+\s*(?:over|\/)\s*\d+/.test(low)) return null;
-    if (no(low) || /\b(?:don't|do not|never|not|no)\b/.test(low)) value = false;
-    else if (
-      yes(low) || /\b(?:have|diagnosed|doctor (?:said|told))\b/.test(low)
+    if (answerNo(low) || /\b(?:don't|do not|never|not|no)\b/.test(low)) {
+      value = false;
+    } else if (
+      answerYes(low) || /\b(?:have|diagnosed|doctor (?:said|told))\b/.test(low)
     ) value = true;
   } else if (field === "general_health") {
     if (["excellent", "very good", "good", "fair", "poor"].includes(low)) {
@@ -527,7 +563,10 @@ function intakePrompt(s: Obj): string {
   return s.proxy_field && q?.proxy ? q.proxy : q?.ask[0] ?? "How can I help?";
 }
 
-function onboardingRoute(p: Obj): Result {
+async function onboardingRoute(
+  p: Obj,
+  hear: Hear = rulesOnly,
+): Promise<Result> {
   let s = intakeState(p.state),
     action = p.action,
     text = textOf(p.text),
@@ -554,6 +593,9 @@ function onboardingRoute(p: Obj): Result {
       "proxies_asked",
     ].some((f) => unique(s[f]).length !== s[f].length)
   ) return invalid();
+  // The one "just to check" is for the reply right after it; any other turn ends it.
+  const checked = s.yes_no_checked === true;
+  s.yes_no_checked = false;
   const respond = (message = intakePrompt(s), extras: Obj = {}) =>
     response("conversation", s, message, extras);
   if (["reply", "correct"].includes(action) && urgentReply(text)) {
@@ -631,18 +673,41 @@ function onboardingRoute(p: Obj): Result {
     return respond(data.questions[s.current_field]?.help ?? intakePrompt(s));
   }
   if (s.phase === "remembering") {
-    if (yes(text) || no(text) || skip(text) || action === "skip") {
-      s.memory_consent = yes(text);
+    // Read by the rules only: this is asked before Claude may hear anything.
+    const heard = action === "skip" ? null : readLocal(text, MEMORY);
+    const declined = !heard || skip(text) || saidNo(heard);
+    if (declined || saidYes(heard)) {
+      s.memory_consent = !declined;
       intakeAdvance(s);
+      const said = heard ?? readLocal("no", MEMORY);
       return respond(
-        (s.memory_consent ? onboard.MEMORY_YES : onboard.MEMORY_NO) + " " +
-          intakePrompt(s),
+        ack(
+          declined ? { ...said, intent: "no" } : said,
+          onboard.MEMORY_YES,
+          onboard.MEMORY_NO,
+        ) + " " + intakePrompt(s),
       );
     }
-    return respond();
+    if (heard.intent === "unsure" && text.includes("?")) {
+      // "What does that mean?": explained, then asked again (not an unclear answer).
+      return respond(onboard.MEMORY_WHY + onboard.MEMORY_ASK);
+    }
+    if (checked) {
+      // Unclear after the one check: a false yes is worse than a no.
+      s.memory_consent = false;
+      intakeAdvance(s);
+      return respond(LINES.MEMORY_UNCLEAR + " " + intakePrompt(s));
+    }
+    s.yes_no_checked = true;
+    return respond(
+      (["yes", "no", "unsure"].includes(heard.intent)
+        ? ""
+        : LINES.NOT_CAUGHT + " ") + MEMORY.check,
+    );
   }
   if (s.phase === "missing") {
-    if (yes(text)) {
+    const heard = action === "skip" ? null : await hear(text, MISSING);
+    if (saidYes(heard)) {
       s.ask_only = onboard.ASKED.filter((f: string) =>
         s.confirmed_profile[f] === null
       );
@@ -657,16 +722,24 @@ function onboardingRoute(p: Obj): Result {
     return respond();
   }
   if (s.phase === "offering") {
-    if (yes(text)) {
+    const heard = action === "skip" ? null : await hear(text, HEALTH_OFFER);
+    if (saidYes(heard)) {
       return respond(onboard.HEALTH_OPEN, {
         client_action: "open_health_import",
       });
     }
-    if (no(text) || skip(text) || action === "skip") {
+    if (!heard || skip(text) || clearNo(heard) || s.health_reasked) {
+      // Declined, or still unclear after asking once more.
       intakeAdvance(s);
       return respond(onboard.HEALTH_DECLINED[0] + " " + intakePrompt(s));
     }
-    return respond();
+    s.health_reasked = true;
+    // A yes said unsurely ("I guess?"): one short check.
+    return respond(
+      heard.intent === "yes"
+        ? HEALTH_OFFER.check
+        : LINES.NOT_CAUGHT + " " + intakePrompt(s),
+    );
   }
   if (s.phase === "probing") {
     if (s.memory_consent && !skip(text) && !unknown(text)) {
@@ -686,7 +759,10 @@ function onboardingRoute(p: Obj): Result {
     return respond("Thank you, that helps. " + intakePrompt(s));
   }
   if (s.phase === "confirming") {
-    if (action === "confirm" || yes(text)) {
+    const heard = action === "confirm"
+      ? null
+      : await hearBack(hear, text, intakePrompt(s));
+    if (action === "confirm" || saidYes(heard)) {
       s.confirmed_profile = profile({
         ...s.confirmed_profile,
         ...known(s.pending_profile),
@@ -702,7 +778,7 @@ function onboardingRoute(p: Obj): Result {
       intakeAdvance(s);
       return respond("Got it. " + intakePrompt(s));
     }
-    if (no(text)) {
+    if (saidNo(heard)) {
       s.phase = "asking";
       s.pending_profile = profile();
       return respond("Thanks for setting me right. " + intakePrompt(s));
@@ -851,7 +927,7 @@ const FIELD_TOPICS: Obj = {
   general_health: /health rating|rate.*health/,
   sex: /sex|gender/,
 };
-function changeRoute(path: string, p: Obj): Result {
+async function changeRoute(path: string, p: Obj): Promise<Result> {
   let s = changeState(path.endsWith("/start") ? {} : p.state),
     text = textOf(p.text),
     low = phrase(text),
@@ -935,7 +1011,11 @@ function changeRoute(path: string, p: Obj): Result {
         : null,
     });
   }
-  if (action === "confirm" || s.phase === "confirming" && yes(text)) {
+  // Read by the rules, as the server's change talk is.
+  const heard = s.phase === "confirming" && action === "reply"
+    ? await hearBack(rulesOnly, text, prompt())
+    : null;
+  if (action === "confirm" || saidYes(heard)) {
     if (s.phase !== "confirming") return transition("change");
     if (s.field === "diabetes" && s.pending.diabetes && !s.doctor_said) {
       s.doctor_said = true;
@@ -950,7 +1030,7 @@ function changeRoute(path: string, p: Obj): Result {
       ),
     );
   }
-  if (s.phase === "confirming" && no(text)) {
+  if (saidNo(heard)) {
     if (s.field === "diabetes" && s.pending.diabetes && !s.doctor_said) {
       s.pending = profile();
       s.phase = "done";
@@ -962,7 +1042,10 @@ function changeRoute(path: string, p: Obj): Result {
   }
   if (s.phase === "done") return respond();
   if (s.phase === "probing") {
-    if (p.memory_consent && !skip(text) && !no(text) && !unknown(text)) {
+    // "Nope" or "nothing" is no note; "no, I started walking" is one.
+    const probe = { ...ANYTHING_ELSE, text: changes.PROBE };
+    const none = clearNo(readLocal(text, probe)) && explained(text, probe);
+    if (p.memory_consent && !skip(text) && !none && !unknown(text)) {
       s.note = text.slice(0, 300);
     }
     s.phase = "confirming";
@@ -1007,7 +1090,9 @@ function changeRoute(path: string, p: Obj): Result {
   let parsed = parseAnswer(f, text);
   if (
     f === "age" && savedProfile.age != null &&
-    (/birthday/.test(low) || yes(text)) && !parsed
+    (/birthday/.test(low) ||
+      saidYes(readLocal(text, readBack("Have you had a birthday?")))) &&
+    !parsed
   ) parsed = { age: savedProfile.age + 1 };
   if (!parsed) return respond(lead + changes.NEW_VALUE[f]);
   if (
@@ -1258,7 +1343,11 @@ function checkAdvance(s: Obj): void {
     : "confirming";
   s.from_health = !!next && s.suggested[next] !== null;
 }
-function checkinRoute(path: string, p: Obj): Result {
+async function checkinRoute(
+  path: string,
+  p: Obj,
+  hear: Hear = rulesOnly,
+): Promise<Result> {
   let s: Obj;
   if (path.endsWith("/start")) {
     const kind = p.kind,
@@ -1393,10 +1482,11 @@ function checkinRoute(path: string, p: Obj): Result {
     });
   }
   let field = s.current_field;
-  if (
-    action === "confirm" || s.phase === "confirming" && yes(text) ||
-    s.suggested[field] != null && yes(text)
-  ) {
+  const heard = action === "reply" &&
+      (s.phase === "confirming" || s.suggested[field] != null)
+    ? await hearBack(hear, text, checkPrompt(s))
+    : null;
+  if (action === "confirm" || saidYes(heard)) {
     if (s.phase === "asking" && s.suggested[field] != null) {
       s.pending[field] = s.suggested[field];
       s.suggested[field] = null;
@@ -1422,7 +1512,7 @@ function checkinRoute(path: string, p: Obj): Result {
   }
   if (action === "confirm") return transition("checkin");
   if (s.phase === "ready") return respond();
-  if (s.phase === "confirming" && no(text)) {
+  if (s.phase === "confirming" && saidNo(heard)) {
     if (s.kind === "weekly" || s.checking.length) {
       s.pending = values();
       s.checking = [];
@@ -1460,7 +1550,7 @@ function checkinRoute(path: string, p: Obj): Result {
       "That's okay, we'll leave that one for today. " + checkPrompt(s),
     );
   }
-  if (s.suggested[field] != null && no(text)) {
+  if (s.suggested[field] != null && saidNo(heard)) {
     s.suggested[field] = null;
     s.from_health = false;
     return respond(checkQuestion(s));
@@ -1554,26 +1644,33 @@ export async function conversationRoute(
   payload: Obj,
   config: Record<string, string> = {},
 ): Promise<Result> {
+  // Owner ruling (2026-10-25): conversation turns are decided by Claude when it is set
+  // up (CONVERSATION_PROVIDER, default "claude" with ANTHROPIC_API_KEY), whatever
+  // LLM_PROVIDER says, and only with the person's yes for Claude itself.
+  const extractionConfig = conversationConfig(config);
+  const info = providerInfo(extractionConfig);
+  const local = conversationProvider(config) === "local";
+  // Unclear yes/no replies: the rules first; Claude only when they are unsure, with the
+  // yes for Claude, never for a consent question and never to read a number.
+  const claudeAllowed = info.provider === "claude" && info.configured &&
+    !local && payload.provider_consent === true &&
+    consentFor(payload.outside_ai_consent, "claude");
+  const hear: Hear = (text, q) =>
+    readIntent(
+      text,
+      q,
+      (system, user, schema) =>
+        completeJSON(extractionConfig, system, user, schema, fetch, {
+          timeoutMs: 4000,
+          maxTokens: 200,
+        }),
+      {
+        allowed: claudeAllowed,
+      },
+    );
   if (path === "/api/onboarding/turn") {
-    const result = onboardingRoute(payload);
+    const result = await onboardingRoute(payload, hear);
     if (result.status !== 200) return result;
-    // Owner ruling (2026-10-25): conversation turns are decided by Claude when it is set
-    // up (CONVERSATION_PROVIDER, default "claude" with ANTHROPIC_API_KEY), whatever
-    // LLM_PROVIDER says, and only with the person's yes for Claude itself.
-    const conversation = config.CONVERSATION_PROVIDER ||
-      (config.ANTHROPIC_API_KEY ? "claude" : "");
-    const extractionConfig = {
-      ...config,
-      PERSONALIZE_PROVIDER: conversation === "claude"
-        ? "claude"
-        : conversation === "muse" || config.LLM_PROVIDER === "chat_completions"
-        ? "muse"
-        : config.LLM_PROVIDER === "anthropic"
-        ? "claude"
-        : "muse",
-    };
-    const info = providerInfo(extractionConfig);
-    const local = conversation === "local";
     result.body.off_topic = false;
     result.body.provider_status = info.configured && !local
       ? "not_needed"
@@ -1676,12 +1773,12 @@ export async function conversationRoute(
     return result;
   }
   if (path === "/api/change/start" || path === "/api/change/turn") {
-    const changed = changeRoute(path, payload);
+    const changed = await changeRoute(path, payload);
     if (changed.status === 200) changed.body.off_topic = false;
     return changed;
   }
   if (path === "/api/checkin/start" || path === "/api/checkin/turn") {
-    const checked = checkinRoute(path, payload);
+    const checked = await checkinRoute(path, payload, hear);
     if (checked.status === 200) checked.body.off_topic = false;
     return checked;
   }

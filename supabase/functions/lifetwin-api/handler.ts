@@ -1,7 +1,12 @@
 import { conversationRoute } from "./conversation.ts";
 import { wellnessRoute } from "./wellness.ts";
 import { documentInfo, readDocument } from "./document-read.ts";
-import { type Config, providerInfo, voiceToken } from "./providers.ts";
+import {
+  type Config,
+  conversationConfig,
+  providerInfo,
+  voiceToken,
+} from "./providers.ts";
 import { routes, validate } from "./validation.ts";
 
 type Result = { status: number; body: unknown };
@@ -179,14 +184,7 @@ export function createHandler(load: Loader) {
               },
               // Who reads and words conversation turns (owner ruling 2026-10-25).
               conversation: {
-                ...providerInfo({
-                  ...config,
-                  PERSONALIZE_PROVIDER: (config.CONVERSATION_PROVIDER ||
-                      (config.ANTHROPIC_API_KEY ? "claude" : "muse")) ===
-                      "claude"
-                    ? "claude"
-                    : "muse",
-                }),
+                ...providerInfo(conversationConfig(config)),
                 routes: [
                   "/api/onboarding/turn",
                   "/api/checkin/turn",

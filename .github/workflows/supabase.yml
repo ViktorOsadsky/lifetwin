@@ -44,3 +44,4 @@ jobs:
           uv run python scripts/export_edge_contracts.py --check
           uv run python scripts/export_edge_conversation.py --check
           uv run python scripts/export_edge_wellness.py --check
+          uv run python scripts/export_edge_intent.py --check
