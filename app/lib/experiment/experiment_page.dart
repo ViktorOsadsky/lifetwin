@@ -7,6 +7,7 @@ import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/lottie_burst.dart';
+import '../ui/widgets/home_button.dart';
 import '../ui/widgets/widgets.dart';
 import 'widgets/widgets.dart';
 
@@ -25,6 +26,7 @@ class ExperimentPage extends StatefulWidget {
     this.whatIfPill = false,
     this.mode = LtMode.sun,
     this.backLabel = 'Back',
+    this.onLeaveCheck,
   });
 
   final Widget body;
@@ -38,6 +40,9 @@ class ExperimentPage extends StatefulWidget {
   final bool whatIfPill;
   final LtMode mode;
   final String backLabel;
+
+  /// For conversation screens: true while leaving would cut a talk short (Home asks first).
+  final bool Function()? onLeaveCheck;
 
   @override
   State<ExperimentPage> createState() => _ExperimentPageState();
@@ -68,6 +73,7 @@ class _ExperimentPageState extends State<ExperimentPage> {
     final reduced = MediaQuery.disableAnimationsOf(context);
     final d = reduced ? Duration.zero : const Duration(milliseconds: 200);
     final barOn = titled || _scrolled;
+    final homeShown = HomeButton.shownFor(context);
     return ModeScaffold(
       mode: widget.mode,
       child: Column(
@@ -108,7 +114,9 @@ class _ExperimentPageState extends State<ExperimentPage> {
                           color: LtColors.paper,
                           border: Border(
                             bottom: BorderSide(
-                              color: titled && !_scrolled ? Colors.transparent : LtColors.container,
+                              color: titled && !_scrolled
+                                  ? Colors.transparent
+                                  : LtColors.container,
                               width: LtBorders.container,
                             ),
                           ),
@@ -120,16 +128,24 @@ class _ExperimentPageState extends State<ExperimentPage> {
                 AnimatedPositioned(
                   duration: d,
                   curve: Curves.easeOut,
-                  left: titled || _scrolled ? 16 : 30,
-                  top: titled || _scrolled ? 12 : 50,
-                  child: RoundBackButton(label: widget.backLabel, onTap: widget.onBack),
+                  // Back (and Home beside it) stay pinned in the bar row; a titled page's title
+                  // lives in the scrolling body, so nothing ever sits on top of it.
+                  left: titled || _scrolled || homeShown ? 16 : 30,
+                  top: titled || _scrolled || homeShown ? 12 : 50,
+                  child: RoundBackButton(
+                    label: widget.backLabel,
+                    onTap: widget.onBack,
+                    onLeaveCheck: widget.onLeaveCheck,
+                  ),
                 ),
               ],
             ),
           ),
           if (widget.dock != null)
             ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.45),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.45,
+              ),
               child: SingleChildScrollView(child: widget.dock),
             ),
         ],
@@ -141,13 +157,26 @@ class _ExperimentPageState extends State<ExperimentPage> {
 /// One twin standing in a plate window: its state, where across the window it stands, and
 /// whether a lilac halo blooms behind it (the what-if twin).
 class TwinSlot {
-  const TwinSlot({required this.state, required this.x, this.halo = false, this.height = 196});
+  const TwinSlot({
+    required this.state,
+    required this.x,
+    this.halo = false,
+    this.height = 196,
+    this.pose,
+    this.hop,
+  });
   final TwinState state;
 
   /// Where the feet are across the window, 0 to 1.
   final double x;
   final bool halo;
   final double height;
+
+  /// A pose of its own (an idea's), instead of the one the state picks.
+  final TwinPose? pose;
+
+  /// Lifts the twin by this many logical pixels (negative is up) while it plays; null: still.
+  final Animation<double>? hop;
 }
 
 /// A plate window (233 high) with the `{ Name }` banner, [twins] standing on the meadow, and
@@ -186,12 +215,23 @@ class ExperimentPlate extends StatelessWidget {
           twinBuilder: (feet, scale, box) => Stack(
             children: [
               if (divider)
-                Positioned(left: box.width / 2 - 1, top: 36, bottom: 24, width: 2, child: const _DashedLine()),
+                Positioned(
+                  left: box.width / 2 - 1,
+                  top: 36,
+                  bottom: 24,
+                  width: 2,
+                  child: const _DashedLine(),
+                ),
               for (final t in twins)
                 () {
-                  final h = math.max(60.0, math.min(t.height, box.height * 0.84));
+                  final h = math.max(
+                    60.0,
+                    math.min(t.height, box.height * 0.84),
+                  );
                   final left = box.width * t.x - h / 2;
-                  final top = feet.dy - h * twinFeetAnchor(appearance.type, appearance.look);
+                  final top =
+                      feet.dy -
+                      h * twinFeetAnchor(appearance.type, appearance.look);
                   return Positioned(
                     left: left,
                     top: top,
@@ -208,7 +248,27 @@ class ExperimentPlate extends StatelessWidget {
                             height: h * 1.2,
                             child: const LottieBurst.whatIfAppear(),
                           ),
-                        TwinStateSprite(state: t.state, appearance: appearance, height: h),
+                        if (t.hop == null)
+                          TwinStateSprite(
+                            state: t.state,
+                            appearance: appearance,
+                            height: h,
+                            pose: t.pose,
+                          )
+                        else
+                          AnimatedBuilder(
+                            animation: t.hop!,
+                            builder: (_, child) => Transform.translate(
+                              offset: Offset(0, t.hop!.value),
+                              child: child,
+                            ),
+                            child: TwinStateSprite(
+                              state: t.state,
+                              appearance: appearance,
+                              height: h,
+                              pose: t.pose,
+                            ),
+                          ),
                       ],
                     ),
                   );
@@ -218,6 +278,8 @@ class ExperimentPlate extends StatelessWidget {
         ),
         overlay: LayoutBuilder(
           builder: (context, box) => Stack(
+            clipBehavior:
+                Clip.none, // the voice pill hangs over the bottom edge
             children: [
               ?overlay,
               if (bubble != null)
@@ -227,7 +289,11 @@ class ExperimentPlate extends StatelessWidget {
                   width: math.min(170, box.maxWidth * 0.5),
                   child: Align(
                     alignment: Alignment.topRight,
-                    child: Bubble(text: bubble!, tail: BubbleTail.left, fontSize: 19),
+                    child: Bubble(
+                      text: bubble!,
+                      tail: BubbleTail.left,
+                      fontSize: 19,
+                    ),
                   ),
                 ),
             ],
@@ -241,7 +307,8 @@ class ExperimentPlate extends StatelessWidget {
 class _DashedLine extends StatelessWidget {
   const _DashedLine();
   @override
-  Widget build(BuildContext context) => CustomPaint(painter: _DashedLinePainter());
+  Widget build(BuildContext context) =>
+      CustomPaint(painter: _DashedLinePainter());
 }
 
 class _DashedLinePainter extends CustomPainter {
@@ -251,7 +318,11 @@ class _DashedLinePainter extends CustomPainter {
       ..color = LtColors.container
       ..strokeWidth = 1.5;
     for (var y = 0.0; y < size.height; y += 10) {
-      canvas.drawLine(Offset(size.width / 2, y), Offset(size.width / 2, math.min(y + 5, size.height)), p);
+      canvas.drawLine(
+        Offset(size.width / 2, y),
+        Offset(size.width / 2, math.min(y + 5, size.height)),
+        p,
+      );
     }
   }
 

@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 
 /// One suggested value from a document. Shapes match contracts/documents.extract.schema.json.
 /// Nothing here is used until the person confirms it.
@@ -40,7 +42,8 @@ class DocumentCandidate {
   final String? section;
   final String confidence;
 
-  /// parser, or muse (Muse by Meta, with the person's consent).
+  /// parser, or the outside-AI provider that pointed at the line (muse or claude, with the
+  /// person's consent).
   final String method;
 
   static DocumentCandidate fromJson(Map<String, dynamic> j) => DocumentCandidate(
@@ -113,7 +116,7 @@ abstract class DocumentExtractor {
 /// POST /api/documents/extract. Stateless: the server keeps nothing.
 class HttpDocumentExtractor implements DocumentExtractor {
   HttpDocumentExtractor({http.Client? client, ApiBase? base})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       base = base ?? ApiBase(apiBaseUrl, client);
 
   final http.Client _client;
@@ -152,5 +155,104 @@ class HttpDocumentExtractor implements DocumentExtractor {
     } catch (_) {
       return null;
     }
+  }
+}
+
+/// Who may read a whole PDF, from `GET /api/capabilities` -> `documents.pdf`. The consent sheet
+/// says [displayName]; the app never names a provider itself.
+class PdfReaderInfo {
+  const PdfReaderInfo({
+    required this.id,
+    required this.displayName,
+    this.company,
+    this.maxBytes = 10 * 1024 * 1024,
+    this.maxPages = 20,
+    this.mayTrainOnContent = false,
+  });
+
+  /// The consent key, e.g. `claude`.
+  final String id;
+  final String displayName;
+  final String? company;
+  final int maxBytes;
+  final int maxPages;
+
+  /// `documents.pdf.may_train_on_content`: absent or false means no training line is shown.
+  final bool mayTrainOnContent;
+
+  /// "Anthropic may use what you share to improve its AI." Only when the server says so.
+  String? get trainingLine =>
+      mayTrainOnContent && company != null ? '$company may use what you share to improve its AI.' : null;
+
+  /// Null unless the server says a provider is set up to read PDFs.
+  static PdfReaderInfo? fromCapabilities(Object? json) {
+    final docs = json is Map ? json['documents'] : null;
+    final p = docs is Map ? docs['pdf'] : null;
+    if (p is! Map || p['configured'] != true) return null;
+    final id = p['provider'], name = p['display_name'];
+    if (id is! String || name is! String || id.isEmpty || name.isEmpty) return null;
+    final company = p['company'], maxBytes = p['max_bytes'], maxPages = p['max_pages'];
+    return PdfReaderInfo(
+      id: id,
+      displayName: name,
+      company: company is String && company.isNotEmpty ? company : null,
+      maxBytes: maxBytes is int && maxBytes > 0 ? maxBytes : 10 * 1024 * 1024,
+      maxPages: maxPages is int && maxPages > 0 ? maxPages : 20,
+      mayTrainOnContent: p['may_train_on_content'] == true,
+    );
+  }
+}
+
+/// Sends a whole PDF to be read, only after the person's yes for that document.
+abstract class PdfDocumentReader {
+  /// Null when no provider reads PDFs (or the server cannot be reached): the phone reads them.
+  Future<PdfReaderInfo?> info();
+
+  /// [outsideAiConsent] is `{providerId: true}`. Same answer shape as [DocumentExtractor.extract].
+  Future<DocumentExtraction> readPdf(Uint8List pdf, {required Map<String, bool> outsideAiConsent});
+}
+
+/// `POST /api/documents/read` with the PDF as base64. The server holds it for that request only.
+class HttpPdfDocumentReader implements PdfDocumentReader {
+  HttpPdfDocumentReader({http.Client? client, ApiBase? base})
+    : _client = client ?? BackendHttpClient(),
+      base = base ?? ApiBase(apiBaseUrl, client);
+
+  final http.Client _client;
+  final ApiBase base;
+  PdfReaderInfo? _info;
+  bool _asked = false;
+
+  @override
+  Future<PdfReaderInfo?> info() async {
+    if (_asked) return _info;
+    try {
+      final url = await base.url();
+      final r = await _client.get(Uri.parse('$url/api/capabilities')).timeout(const Duration(seconds: 8));
+      if (r.statusCode != 200) return null;
+      _info = PdfReaderInfo.fromCapabilities(jsonDecode(utf8.decode(r.bodyBytes)));
+      _asked = true;
+      return _info;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<DocumentExtraction> readPdf(Uint8List pdf, {required Map<String, bool> outsideAiConsent}) async {
+    try {
+      final url = await base.url();
+      final r = await _client
+          .post(
+            Uri.parse('$url/api/documents/read'),
+            headers: {'content-type': 'application/json'},
+            body: jsonEncode({'pdf_base64': base64Encode(pdf), 'outside_ai_consent': outsideAiConsent}),
+          )
+          .timeout(const Duration(seconds: 45));
+      if (r.statusCode == 200) return DocumentExtraction.fromJson(jsonDecode(utf8.decode(r.bodyBytes)));
+    } catch (_) {
+      // Unreachable, too slow or an odd answer: the phone reads the PDF instead.
+    }
+    throw const DocumentExtractUnavailable();
   }
 }

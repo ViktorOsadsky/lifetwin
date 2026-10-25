@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from make_app_fixtures import TODAY, WEEKLY_REPLIES, client, onboarding, post
+from make_app_fixtures import TODAY, WEEKLY_REPLIES, client, onboarding, pinned_day, post
 
 from lifetwin.app import create_app
 from lifetwin.core.config import Settings
@@ -122,6 +122,11 @@ def error_bodies() -> dict:
 
 
 def build() -> dict:
+    with pinned_day():
+        return _build()
+
+
+def _build() -> dict:
     c = client()
     ob = onboarding(c, memory=True)
     profile = ob["state"]["confirmed_profile"]
@@ -155,7 +160,7 @@ def build() -> dict:
         "very_old_smoker": post(c, rec, {"profile": {**sure, "age": 90}}),
         "guideline_only": post(c, rec, {"profile": active}),
         "not_enough_information": post(c, rec, {"profile": {"age": 60}}),
-        "under_age": post(c, rec, {"profile": {"age": 16, "smoking_status": "never"}}),
+        "minor": post(c, rec, {"profile": {"age": 16, "smoking_status": "never"}}),
     }
 
     # Coach: the app's own request.

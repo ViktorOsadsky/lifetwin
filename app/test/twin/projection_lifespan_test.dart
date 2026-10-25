@@ -156,7 +156,7 @@ void main() {
     test('is null whenever the model gives no number', () {
       final p = rosa();
       for (final a in [
-        model.assessModel({...p}..remove('bmi')), // missing input
+        model.assessModel({...p}..remove('bmi')..remove('sleep_hours')..remove('sedentary_min_day')), // 3 missing inputs (1-2 give a rough number)
         model.assessModel({...p, 'age': 86}), // unsupported age
         model.assessModel({...p, 'age': 17}), // under age
         model.assessModel({...p, 'bmi': 60, 'sedentary_min_day': 1200, 'sleep_hours': 2}), // unsupported
@@ -184,7 +184,13 @@ void main() {
       expect(repo.healthScoreHistory().last.score, repo.healthScore);
 
       final partial = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()));
-      await partial.saveConversationProfile(Map<String, dynamic>.from(fullProfile)..remove('sedentary_min_day'));
+      // 3 missing: no number (1-2 give a rough one).
+      await partial.saveConversationProfile(
+        Map<String, dynamic>.from(fullProfile)
+          ..remove('sedentary_min_day')
+          ..remove('sleep_hours')
+          ..remove('general_health'),
+      );
       expect(partial.healthScoreStatus, HealthScoreStatus.missingInputs);
       expect(partial.healthScore, isNull);
       expect(partial.healthGroupLabel, isNull);
@@ -352,6 +358,24 @@ void main() {
       expect(LifespanEstimate.forProfile({...rosa(), 'age': 79}, currentYear: 2026, lab: null), isNotNull);
       expect(LifespanEstimate.forProfile({...rosa(), 'age': 40}, currentYear: 2026, lab: null), isNull);
       expect(LifespanEstimate.forProfile(rosa(), currentYear: 2026, lab: null), isNull);
+    });
+
+    test('at a zero projection weight (exactly 35 and 79) the text describes the life table', () {
+      for (final sex in [1, 2]) {
+        for (final age in [35, 79]) {
+          final p = {...rosa(), 'age': age, 'sex_nhanes': sex};
+          final withLab = LifespanEstimate.forProfile(p, currentYear: 2026, lab: model.projection)!;
+          final tableOnly = LifespanEstimate.forProfile(p, currentYear: 2026, lab: null)!;
+          final reason = 'sex $sex age $age';
+          expect(withLab.projectionWeight, 0, reason: reason);
+          // The numbers are the life table's, so the method note must be too, not the
+          // projection's "repeats the survey model's one-year risk".
+          expect(withLab.caveat, tableOnly.caveat, reason: reason);
+          expect(withLab.caveat, isNot(contains('one-year risk')), reason: reason);
+          expect(withLab.medianCrossingExtrapolated, tableOnly.medianCrossingExtrapolated, reason: reason);
+          expect([for (final q in withLab.annualCurve) q.age], [for (final q in tableOnly.annualCurve) q.age]);
+        }
+      }
     });
 
     test('no one-year step changes the expected age by more than 3 years, 18–85, both sexes', () {

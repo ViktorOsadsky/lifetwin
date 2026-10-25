@@ -248,33 +248,16 @@ def test_too_old_for_the_model_still_names_a_lever_but_no_effect(flow):
     assert old["experiment_lever"] == "smoking_status"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "BUG (seam): experiment_target for smoking is the string 'former'; the app's levers hold "
-        "numbers (smoking_status 0/1/2, lib/twin/twin_experiment.dart) and "
-        "Recommendation.leverValue is a double, so the preset cannot be applied."
-    ),
-)
-def test_experiment_target_is_a_number_the_app_lever_can_hold(flow):
-    for _, item in recommendation_items(flow):
-        if item["experiment_target"] is not None:
-            assert isinstance(item["experiment_target"], (int, float)), item["experiment_lever"]
+# Smoking's experiment_target is the code 'former'; the app maps it to its lever number
+# (smokingCodes). app/test/seams/server_responses_test.dart checks every target becomes a number.
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "BUG (app): the app never calls /api/recommendations and drops the `recommendations` "
-        "list of the completing onboarding turn (lib/experiment/recommendations.dart is a stub "
-        "built from wellness cards); effect, effect_note, experiment_lever, experiment_target, "
-        "why_short and source_domain are read nowhere under app/lib."
-    ),
-)
-def test_the_app_reads_the_new_recommendation_fields():
+def test_the_app_calls_recommendations_and_reads_the_new_fields():
+    """The app asks /api/recommendations and parses these fields (the parsed values are checked in
+    app/test/seams/server_responses_test.dart). effect_note is a fixed line the app shows itself."""
+    assert "/api/recommendations'" in DART_SOURCE
     for key in (
         "effect",
-        "effect_note",
         "experiment_lever",
         "experiment_target",
         "why_short",
@@ -291,7 +274,7 @@ def test_statuses_and_missing_inputs(flow):
     assert recs["not_enough_information"]["status"] == "not_enough_information"
     assert recs["not_enough_information"]["recommendations"] == []
     assert recs["not_enough_information"]["missing_inputs"]
-    assert recs["under_age"]["status"] == "under_age"
+    assert recs["minor"]["status"] == "not_enough_information"
     # The app's own statuses for the same situations (lib/twin/twin_model.dart) include these.
     for status in ("missing_inputs", "under_age"):
         assert f"'{status}'" in DART_SOURCE
@@ -401,6 +384,8 @@ def test_unread_server_fields_are_the_known_ones(flow):
             "probe_topic",
             "reopened",
             "suggested_activity_min",
+            # Always false on check-ins (rules only); the app reads it with the noise PR (#216).
+            "off_topic",
             "voice_status",
         },
     }

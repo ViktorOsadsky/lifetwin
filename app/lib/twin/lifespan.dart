@@ -215,19 +215,21 @@ class LifespanEstimate {
     Map<String, dynamic> profile, {
     required int currentYear,
     required LifeTwinProjectionLab? lab,
+    double logHazardShift = 0,
   }) {
     final age = profile['age'];
     if (age is! num || !age.isFinite || age < lifespanProfileAges.low || age > lifespanProfileAges.high) {
       return null;
     }
-    final table = _lifeTable(profile, age, currentYear);
+    final table = _lifeTable(profile, age, currentYear, logHazardShift);
     if (age < _checkedAges.low || age > _checkedAges.high) return table;
     final w = lifespanProjectionWeight(age);
+    // At exactly 35 and 79 the weight is 0: the pure life table, with its own method note.
+    if (w == 0) return table;
     // The projection steps whole years, so a fractional age runs it at the completed years
     // (the floor); the weight uses the fractional age.
     final whole = age == age.floor() ? profile : {...profile, 'age': age.floor()};
-    final projection = lab == null ? null : _projection(whole, age, currentYear, lab);
-    if (w == 0 && table != null && projection == null) return table;
+    final projection = lab == null ? null : _projection(whole, age, currentYear, lab, logHazardShift);
     if (projection == null || (w < 1 && table == null)) return null;
     return w == 1 ? projection : _blend(table!, projection, w, age, currentYear);
   }
@@ -267,8 +269,9 @@ class LifespanEstimate {
     Map<String, dynamic> profile,
     num age,
     int currentYear,
-    LifeTwinProjectionLab lab,
-  ) {
+    LifeTwinProjectionLab lab, [
+    double shift = 0,
+  ]) {
     final Map<String, dynamic> result;
     try {
       result = lab.assess(profile, includeExtrapolation: true);
@@ -281,16 +284,24 @@ class LifespanEstimate {
       for (final p in annual['points'] as List)
         (
           age: (p as Map)['age'] as int,
-          survivalPercent: (p['survival_percent'] as num).toDouble(),
+          // A rough estimate with missing answers ([logHazardShift]): every yearly hazard is
+          // multiplied by exp(shift), so the cumulative survival is raised to that power.
+          survivalPercent: shift == 0
+              ? (p['survival_percent'] as num).toDouble()
+              : 100 * math.pow((p['survival_percent'] as num) / 100, math.exp(shift)).toDouble(),
           extrapolated: p['extrapolated'] == true,
         ),
     ];
     if (points.last.age != lifespanEndAge) return null;
-    final median = (annual['median_crossing_age'] as num?)?.toDouble();
+    final median = shift == 0 ? (annual['median_crossing_age'] as num?)?.toDouble() : crossingAge(points, 50);
     final p25 = crossingAge(points, 75), p75 = crossingAge(points, 25);
     final expected = median ?? lifespanEndAge.toDouble();
     final open = median == null || p25 == null || p75 == null;
-    final beyond = median == null || annual['median_crossing_extrapolated'] == true;
+    final beyond =
+        median == null ||
+        (shift == 0
+            ? annual['median_crossing_extrapolated'] == true
+            : points.firstWhere((p) => p.age >= median).extrapolated);
     return LifespanEstimate(
       expectedAge: expected,
       p25Age: p25 ?? lifespanEndAge.toDouble(),
@@ -311,10 +322,16 @@ class LifespanEstimate {
     );
   }
 
-  static LifespanEstimate? _lifeTable(Map<String, dynamic> profile, num age, int currentYear) {
+  static LifespanEstimate? _lifeTable(Map<String, dynamic> profile, num age, int currentYear, [double shift = 0]) {
     final LifespanCurve curve;
     try {
-      curve = estimateLifespanForProfile(profile);
+      curve = shift == 0
+          ? estimateLifespanForProfile(profile)
+          : estimateLifespan(
+              sex: profile['sex_nhanes'] == 2 ? LifespanSex.female : LifespanSex.male,
+              age: (profile['age'] as num).toDouble(),
+              logHazardRatio: lifespanLogHazardRatio(profile) + shift,
+            );
     } on FormatException {
       return null;
     } on ArgumentError {

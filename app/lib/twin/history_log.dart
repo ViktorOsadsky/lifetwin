@@ -85,6 +85,9 @@ class HealthScorePoint {
   /// The local date, YYYY-MM-DD.
   String get date => isoDate(at);
 
+  /// A rough score marginalised over 1 or 2 missing answers (stored as `rough_missing: true`).
+  bool get roughMissing => status == HealthScoreStatus.roughMissing;
+
   Map<String, dynamic> toJson() => {
     'at': at.toIso8601String(),
     'date': date,
@@ -92,6 +95,8 @@ class HealthScorePoint {
     'centered_score': score,
     'score': rawLogRelativeHazard,
     'status': status.wire,
+    // A rough score with 1 or 2 answers missing, so the trend can mark it.
+    if (roughMissing) 'rough_missing': true,
     'model_version': modelVersion,
     if (ageGroupPercentile != null) 'age_group_percentile': ageGroupPercentile,
     if (ageGroupSize != null) 'age_group_size': ageGroupSize,

@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:http/http.dart' as http;
 
+import 'backend_http_client.dart';
+import 'backend_config.dart';
+
 /// One address, or several separated by commas, tried in parallel.
-const apiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8000');
+String get apiBaseUrl => BackendConfig.current.apiUrl;
 
 /// Finds which server address answers. A Mac advertises its `.local` name on
 /// every network it is on (USB cable, Wi-Fi), so a phone that can reach only one
@@ -11,12 +14,12 @@ const apiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://
 /// against `/health` (no personal data) and keeping the first that answers
 /// avoids that wait.
 class ApiBase {
-  ApiBase([String urls = apiBaseUrl, http.Client? client])
+  ApiBase([String? urls, http.Client? client])
     : candidates = [
-        for (final u in urls.split(','))
+        for (final u in (urls ?? apiBaseUrl).split(','))
           if (u.trim().isNotEmpty) u.trim(),
       ],
-      _client = client ?? http.Client();
+      _client = client ?? BackendHttpClient();
 
   final List<String> candidates;
   final http.Client _client;

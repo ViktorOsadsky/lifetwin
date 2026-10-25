@@ -36,15 +36,43 @@ abstract class DocumentOcr {
   Future<RecognisedDocument> recognize(Uint8List bytes, {bool pdf = false});
 }
 
-/// Apple Vision through `app/ios/Runner/DocumentScanner.swift`. The image and PDF bytes
-/// stay on the native side; only text comes back.
-class ChannelDocumentOcr implements DocumentOcr {
+/// A PDF the person picked, in memory only, for the "send it to be read?" question.
+class PickedPdf {
+  const PickedPdf({required this.bytes, required this.pageCount});
+  final Uint8List bytes;
+  final int pageCount;
+}
+
+/// Picks a PDF without reading it, so the person can choose who reads it.
+abstract class PdfPicker {
+  /// Throws [DocumentReadFailure] (cancelled, too_large, password_protected, ...).
+  Future<PickedPdf> pickPdf();
+}
+
+/// Apple Vision through `app/ios/Runner/DocumentScanner.swift`. Image bytes stay on the
+/// native side; only text comes back. [pickPdf] alone returns a PDF's bytes, held in memory
+/// until the person answers whether to send it.
+class ChannelDocumentOcr implements DocumentOcr, PdfPicker {
   const ChannelDocumentOcr();
 
   static const _channel = MethodChannel('lifetwin/documents');
 
   @override
   Future<RecognisedDocument> scan(DocumentSource source) => _call('scan', {'source': source.name});
+
+  @override
+  Future<PickedPdf> pickPdf() async {
+    try {
+      final r = await _channel.invokeMapMethod<String, Object?>('pick_pdf');
+      final bytes = r?['bytes'];
+      if (bytes is! Uint8List) throw const DocumentReadFailure('failed');
+      return PickedPdf(bytes: bytes, pageCount: (r?['page_count'] as int?) ?? 0);
+    } on PlatformException catch (e) {
+      throw DocumentReadFailure(e.code);
+    } on MissingPluginException {
+      throw const DocumentReadFailure('unavailable');
+    }
+  }
 
   @override
   Future<RecognisedDocument> recognize(Uint8List bytes, {bool pdf = false}) =>

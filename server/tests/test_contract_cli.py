@@ -47,8 +47,8 @@ def schema(name):
 def test_in_process_replays_success_and_error_contracts_without_sockets():
     result = run_checker("--in-process")
     assert result.returncode == 0, result.stderr
-    assert "Validated 28 schemas and 81 request fixtures" in result.stdout
-    assert "85 responses checked across 85 cases in process" in result.stdout
+    assert "Validated 29 schemas and 92 request fixtures" in result.stdout
+    assert "96 responses checked across 96 cases in process" in result.stdout
     assert "PASS invalid-conversation-transition (API response checked)" in result.stdout
     assert "PASS missing-quiz-version (API response checked)" in result.stdout
     assert "PASS quiz-question-detail (API response checked)" in result.stdout
@@ -57,7 +57,7 @@ def test_in_process_replays_success_and_error_contracts_without_sockets():
 def test_offline_mode_does_not_claim_to_check_missing_response_fixtures():
     result = run_checker()
     assert result.returncode == 0, result.stderr
-    assert "2 responses checked across 85 cases offline" in result.stdout
+    assert "2 responses checked across 96 cases offline" in result.stdout
     assert "PASS compare-deferred (static response checked)" in result.stdout
     assert "SKIP quiz-bank (requires API replay)" in result.stdout
     assert "request fixture only; response not checked" in result.stdout
@@ -72,7 +72,7 @@ def test_replay_targets_are_mutually_exclusive():
 def test_exported_schemas_are_current():
     result = run_contract_script("export.py", "--check")
     assert result.returncode == 0, result.stderr
-    assert "Checked 28 API schemas." in result.stdout
+    assert "Checked 29 API schemas." in result.stdout
 
 
 def test_export_check_rejects_schema_files_missing_from_registry(monkeypatch, tmp_path):
@@ -191,7 +191,7 @@ def replay_against(monkeypatch, mutate):
 
 def test_replay_passes_against_unmodified_keyless_app(monkeypatch, capsys):
     replay_against(monkeypatch, lambda _path, body: body)()
-    assert "85 responses checked across 85 cases against live API." in capsys.readouterr().out
+    assert "94 responses checked across 96 cases against live API." in capsys.readouterr().out
 
 
 def test_bad_api_response_diagnostic_omits_response_values(monkeypatch):

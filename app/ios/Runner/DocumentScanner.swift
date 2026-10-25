@@ -10,13 +10,17 @@ import VisionKit
 ///
 /// Only text goes back to Dart. Image and PDF bytes stay in memory in this class and are
 /// dropped as soon as recognition returns; nothing is written to disk. PDFs are read in
-/// place from Files, not copied. See docs/document-upload.md.
+/// place from Files, not copied. The one exception is "pick_pdf": the PDF's bytes go to
+/// Dart, in memory, so the person can choose to send it to be read or read it here.
+/// See docs/document-upload.md.
 final class DocumentScanner: NSObject {
   static let maxPages = 10
   static let maxBytes = 20 * 1024 * 1024
   static let maxChars = 12000
 
   private var pending: FlutterResult?
+  /// "pick_pdf": return the picked PDF's bytes instead of its text.
+  private var wantsPdfBytes = false
 
   static func register(with messenger: FlutterBinaryMessenger) -> DocumentScanner {
     let scanner = DocumentScanner()
@@ -40,6 +44,13 @@ final class DocumentScanner: NSObject {
       case "pdf": presentPdf(on: presenter)
       default: finish(.failure("unsupported_type"))
       }
+    case "pick_pdf":
+      // The PDF's bytes, unread, for the "send it to be read?" question. Held in memory only.
+      guard pending == nil else { return result(Self.error("busy")) }
+      guard let presenter = Self.topViewController() else { return result(Self.error("failed")) }
+      pending = result
+      wantsPdfBytes = true
+      presentPdf(on: presenter)
     case "recognize":
       // Tests pass a synthetic document; the real flow uses "scan".
       guard let bytes = args["bytes"] as? FlutterStandardTypedData else {
@@ -67,12 +78,15 @@ final class DocumentScanner: NSObject {
 
   enum Outcome {
     case text(pages: [String], pageCount: Int, truncated: Bool)
+    case pdf(data: Data, pageCount: Int)
     case failure(String)
 
     var flutterValue: Any {
       switch self {
       case let .text(pages, pageCount, truncated):
         return ["pages": pages, "page_count": pageCount, "truncated": truncated]
+      case let .pdf(data, pageCount):
+        return ["bytes": FlutterStandardTypedData(bytes: data), "page_count": pageCount]
       case let .failure(code):
         return DocumentScanner.error(code)
       }
@@ -86,6 +100,7 @@ final class DocumentScanner: NSObject {
   private func finish(_ outcome: Outcome) {
     let result = pending
     pending = nil
+    wantsPdfBytes = false
     result?(outcome.flutterValue)
   }
 
@@ -267,11 +282,20 @@ extension DocumentScanner: PHPickerViewControllerDelegate {
 extension DocumentScanner: UIDocumentPickerDelegate {
   func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
     guard let url = urls.first else { return finish(.failure("cancelled")) }
+    let wantsBytes = wantsPdfBytes
     finishInBackground {
       let scoped = url.startAccessingSecurityScopedResource()
       defer { if scoped { url.stopAccessingSecurityScopedResource() } }
       let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
       if size > Self.maxBytes { return .failure("too_large") }
+      if wantsBytes {
+        // In memory only; Dart decides, with the person, whether it is sent or read here.
+        guard let data = try? Data(contentsOf: url), let pdf = PDFDocument(data: data) else {
+          return .failure("unsupported_type")
+        }
+        if pdf.isLocked { return .failure("password_protected") }
+        return .pdf(data: data, pageCount: pdf.pageCount)
+      }
       guard let pdf = PDFDocument(url: url) else { return .failure("unsupported_type") }
       return Self.read(pdf: pdf)
     }

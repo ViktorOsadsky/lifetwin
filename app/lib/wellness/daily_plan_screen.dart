@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../widgets/whole_word_text.dart';
@@ -7,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../ui/theme.dart';
 import '../ui/widgets/widgets.dart';
 import 'coach_client.dart';
+import 'plan_acceptance.dart';
 import 'today_card.dart' show MoreIdeasLink;
 import 'widgets.dart';
 
@@ -20,6 +23,8 @@ class DailyPlanScreen extends StatefulWidget {
     this.initialPlan,
     this.onPlan,
     this.onIdeas,
+    this.acceptance,
+    this.onRemind,
   });
   final CoachClient client;
 
@@ -36,11 +41,17 @@ class DailyPlanScreen extends StatefulWidget {
   /// "More ideas ›": Ideas for you (null hides it: under 18).
   final VoidCallback? onIdeas;
 
+  /// Remembers which items were accepted today (survives leaving the screen and the app).
+  final PlanAcceptance? acceptance;
+
+  /// "Remind me later" on the confirmation. Null hides it (reminders are off).
+  final Future<void> Function()? onRemind;
+
   @override
   State<DailyPlanScreen> createState() => _DailyPlanScreenState();
 }
 
-class _DailyPlanScreenState extends State<DailyPlanScreen> {
+class _DailyPlanScreenState extends State<DailyPlanScreen> with WidgetsBindingObserver {
   DailyPlan? _plan;
   bool _busy = false;
   int _request = 0;
@@ -50,6 +61,10 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
   bool _choiceOpen = false;
   static const _notForMe = 'Not for me';
   bool get _canChoose => !_busy && !_refreshWithoutPrevious;
+  late final PlanAcceptance _acceptance = widget.acceptance ?? PlanAcceptance(MemoryPlanStore());
+  bool _unsynced = false;
+  bool _reminded = false;
+  String? get _date => _plan?.json['local_date'] as String?;
   static final _choiceStyle = OutlinedButton.styleFrom(
     foregroundColor: LtColors.ink,
     minimumSize: const Size(48, 48),
@@ -59,11 +74,68 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _plan = widget.initialPlan;
-    if (_plan == null) _refresh();
+    if (_plan == null) {
+      _refresh();
+    } else {
+      _seed();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _retrySync());
+    }
   }
 
-  Future<void> _refresh([List<Map<String, dynamic>>? feedback]) async {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _retrySync();
+  }
+
+  /// Shows what was accepted earlier today.
+  void _seed() {
+    final ids = _acceptance.idsFor(_date);
+    _unsynced = _acceptance.unsyncedFor(_date);
+    for (final item in _plan?.items ?? const <Map<String, dynamic>>[]) {
+      if (ids.contains(item['id']) && _choices[item['id']] == null) {
+        _choices[item['id'] as String] = 'accepted';
+      }
+    }
+  }
+
+  Set<String> get _acceptedIds => {
+    for (final item in _plan?.items ?? const <Map<String, dynamic>>[])
+      if (const ['accepted', 'done'].contains(_choices[item['id']])) item['id'] as String,
+  };
+
+  Future<void> _persist({bool? unsynced}) async {
+    _unsynced = unsynced ?? _unsynced;
+    await _acceptance.save(_date, _acceptedIds, unsynced: _unsynced);
+  }
+
+  /// The coach has not yet heard "accepted": tell it again, quietly.
+  void _retrySync() {
+    final plan = _plan;
+    if (!mounted || plan == null || _busy || !_acceptance.unsyncedFor(_date)) return;
+    final ids = _acceptance.idsFor(_date);
+    final feedback = [
+      for (final item in plan.items)
+        if (ids.contains(item['id'])) {'item_id': item['id'], 'status': 'accepted'},
+    ];
+    if (feedback.isEmpty) return;
+    _refresh(feedback, true);
+  }
+
+  void _yesAll(DailyPlan plan) {
+    setState(() {
+      for (final item in plan.items) {
+        _choices[item['id'] as String] = 'accepted';
+      }
+    });
+    _persist(unsynced: true);
+    _refresh([
+      for (final item in plan.items) {'item_id': item['id'], 'status': 'accepted'},
+    ], true);
+  }
+
+  Future<void> _refresh([List<Map<String, dynamic>>? feedback, bool quiet = false]) async {
     if (_busy || feedback != null && _refreshWithoutPrevious) return;
     final request = ++_request;
     setState(() {
@@ -93,6 +165,7 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
         setState(() {
           _plan = next;
           _refreshWithoutPrevious = false;
+          _seed();
           for (final choice in feedback ?? <Map<String, dynamic>>[]) {
             _choices[choice['item_id']
                 as String] = choice['reason'] == _notForMe
@@ -100,9 +173,21 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
                 : choice['status'] as String;
           }
         });
+        if (_plan != null && _date != null) {
+          await _persist(unsynced: quiet ? false : _unsynced);
+          if (!_unsynced && mounted) setState(() {});
+        }
       }
     } on CoachFailure catch (e) {
-      if (mounted && request == _request) {
+      if (quiet) {
+        // Keep the choice on the phone. A request that can never succeed (4xx but 429) is dropped; the
+        // rest is retried on resume or the next time this screen opens.
+        final code = e.statusCode;
+        if (mounted) {
+          await _persist(unsynced: !(code != null && code >= 400 && code < 500 && code != 429));
+          if (mounted) setState(() {});
+        }
+      } else if (mounted && request == _request) {
         if (e.statusCode == 409) _refreshWithoutPrevious = true;
         setState(
           () => _error = switch (e.statusCode) {
@@ -121,11 +206,21 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
         );
       }
     } catch (_) {
-      if (mounted && request == _request) {
+      if (quiet) {
+        if (mounted) {
+          await _persist(unsynced: true);
+          if (mounted) setState(() {});
+        }
+      } else if (mounted && request == _request) {
         setState(() => _error = 'That didn’t save. Please try again.');
       }
     } finally {
-      if (mounted && request == _request) setState(() => _busy = false);
+      if (mounted && request == _request) {
+        setState(() => _busy = false);
+        if (feedback == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _retrySync());
+        }
+      }
     }
   }
 
@@ -213,6 +308,7 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _request++;
     super.dispose();
   }
@@ -299,6 +395,7 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
             const MochiMessage(
               message: 'Let’s find a small next step together.',
             ),
+          if (_acceptedIds.isNotEmpty) _summary(plan),
           for (final item in plan.items) _item(item),
           if (widget.onIdeas != null) MoreIdeasLink(onTap: widget.onIdeas!),
         ],
@@ -318,15 +415,24 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
           ),
         if (!plan.paused && plan.items.isNotEmpty) ...[
           LinkButton(label: 'Why this plan?', onTap: () => _why(plan)),
-          LipButton(
-            label: 'Yes to all',
-            onTap: !_canChoose
-                ? null
-                : () => _refresh([
-                    for (final item in plan.items)
-                      {'item_id': item['id'], 'status': 'accepted'},
-                  ]),
-          ),
+          if (_acceptedIds.length == plan.items.length)
+            _confirmation(plan)
+          else ...[
+            LipButton(label: 'Yes to all', onTap: !_canChoose ? null : () => _yesAll(plan)),
+            if (!_canChoose)
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 8),
+                child: Semantics(
+                  liveRegion: true,
+                  child: WholeWordText(
+                    _refreshWithoutPrevious
+                        ? 'Refresh the plan first, then you can choose.'
+                        : 'Plan is still loading. Try again in a moment.',
+                    style: LtText.body(color: LtColors.secondary),
+                  ),
+                ),
+              ),
+          ],
         ],
         WholeWordText(
           'Habit ideas, not medical advice. No promised health or lifespan gains.',
@@ -335,6 +441,86 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
       ],
     ],
   );
+
+  /// "2 of 3 in your plan": follows every change to a single item.
+  Widget _summary(DailyPlan plan) {
+    final n = _acceptedIds.length;
+    final text = '$n of ${plan.items.length} in your plan';
+    return Semantics(
+      liveRegion: true,
+      label: text,
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, size: 24, color: LtColors.ink),
+            const SizedBox(width: 8),
+            Expanded(child: WholeWordText(text, style: LtText.body(weight: FontWeight.w700))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _confirmation(DailyPlan plan) {
+    String cheer = 'Nice. Small steps add up.';
+    for (final item in plan.items) {
+      if (item['kind'] == 'encourage' && (item['message'] as String).trim().isNotEmpty) {
+        cheer = item['message'] as String;
+      }
+    }
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      child: WellnessCard(
+        color: LtColors.mint,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, size: 28, color: LtColors.ink),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Semantics(
+                    header: true,
+                    label: 'You’re set for today',
+                    excludeSemantics: true,
+                    child: WholeWordText('You’re set for today ✓', style: LtText.display(26)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            WholeWordText(cheer, style: LtText.body()),
+            if (_unsynced) ...[
+              const SizedBox(height: 8),
+              WholeWordText('Saved on this phone', style: LtText.body()),
+            ],
+            const SizedBox(height: 14),
+            LipButton(
+              label: 'Back to Home',
+              onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
+            ),
+            if (widget.onRemind != null)
+              _reminded
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: WholeWordText('Reminder set. I’ll nudge you later.', style: LtText.body()),
+                    )
+                  : LinkButton(
+                      label: 'Remind me later',
+                      onTap: () async {
+                        await widget.onRemind!();
+                        if (mounted) setState(() => _reminded = true);
+                      },
+                    ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _item(Map<String, dynamic> item) => WellnessCard(
     child: Column(
@@ -370,8 +556,13 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Semantics(
               liveRegion: true,
+              excludeSemantics: status == 'accepted',
+              label: switch (status) {
+                'accepted' => 'In your plan: ${item['title']}',
+                _ => null,
+              },
               child: WholeWordText(switch (status) {
-                'accepted' => 'On your plan',
+                'accepted' => '✓ In your plan',
                 'done' => 'Done',
                 'not_done' => 'Not done · Thanks for telling me',
                 'not_for_me' => '✓ Not for me · Swapped for something else',
@@ -460,54 +651,70 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
     if (!_canChoose || _choiceOpen) return;
     _choiceOpen = true;
     String? reason;
+    var sent = false; // a second tap must not pop the plan screen under the sheet
     final choice = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (c) => StatefulBuilder(
-        builder: (c, update) => SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            24,
-            24,
-            24,
-            24 + MediaQuery.viewInsetsOf(c).bottom,
-          ),
-          child: Column(
+        builder: (c, update) {
+          // The sheet is not resized for the keyboard or the home indicator, so it pads for both itself:
+          // the reasons scroll, and "Tell Mochi" stays pinned above whichever is taller.
+          final bottom = math.max(MediaQuery.viewInsetsOf(c).bottom, MediaQuery.paddingOf(c).bottom);
+          return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              WholeWordText(
-                'Anything you’d like Mochi to know?',
-                style: LtText.display(24),
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final value in ['Too tired', 'Knee hurt', 'No time'])
-                    ChoiceChip(
-                      label: WholeWordText(value),
-                      selected: reason == value,
-                      onSelected: (_) => update(() => reason = value),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                maxLength: 300,
-                decoration: const InputDecoration(
-                  labelText: 'Say why (optional)',
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      WholeWordText(
+                        'Anything you’d like Mochi to know?',
+                        style: LtText.display(24),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final value in ['Too tired', 'Knee hurt', 'No time'])
+                            ChoiceChip(
+                              label: WholeWordText(value),
+                              selected: reason == value,
+                              onSelected: (_) => update(() => reason = value),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        maxLength: 300,
+                        decoration: const InputDecoration(
+                          labelText: 'Say why (optional)',
+                        ),
+                        onChanged: (value) => reason = value.trim(),
+                      ),
+                    ],
+                  ),
                 ),
-                onChanged: (value) => reason = value.trim(),
               ),
-              LipButton(
-                label: 'Tell Mochi',
-                onTap: () => Navigator.pop(c, reason ?? ''),
+              Padding(
+                padding: EdgeInsets.fromLTRB(24, 8, 24, 16 + bottom),
+                child: LipButton(
+                  label: 'Tell Mochi',
+                  onTap: () {
+                    if (sent) return;
+                    sent = true;
+                    Navigator.pop(c, reason ?? '');
+                  },
+                ),
               ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
     _choiceOpen = false;

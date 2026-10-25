@@ -21,3 +21,7 @@ Validation used Flutter 3.47.0 / Dart 3.13.0 in an isolated temporary copy. Only
 Real, fixture, or unavailable integrations: geometry tests render the actual ExperimentPage with synthetic body/dock content and the real fonts. Existing tests exercise actual Experiment and Check-in routes with their established fakes. No simulator, physical device, live provider, or native VoiceOver test was run for this patch.
 
 Known limits / blockers: widget geometry does not establish native accessibility traversal. Native AX5 validation of the title, scrolling, Back, and dock is the next dependency, owned by the agent holding the iOS 27 simulator. This patch does not close the remaining #134 acceptance gaps.
+
+## Merged with #212
+
+#212 (merged to main) put Back, Home and the title in one pinned top row. This branch combines the two: the pinned 76 pt bar holds Back and, where #212 shows it, Home (the Home button rides with `RoundBackButton`, which also carries `onLeaveCheck`); the title and optional What-if pill stay in the scrolling body as above, so large-text titles are never clipped and Home can never cover them. Plate-window pages without a title keep #212's behaviour (Back moves into the bar row when Home is shown). `home_button_placement_test` title-overlap assertions were updated to the new layout.

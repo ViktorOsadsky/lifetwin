@@ -626,10 +626,12 @@ def test_moving_without_minutes_asks_how_long(text):
     assert result.message == "Good for you! About how many minutes did you move today?"
 
 
-def test_an_hour_for_the_week_asks_how_often():
+def test_an_hour_for_the_week_is_the_weeks_total():
+    # Owner (2026-10-25): "2 hours cannot be translated into 120 minutes". Hours said to
+    # the weekly question are the week's total, as in onboarding; no "each time?" any more.
     result = say(at("weekly", V), "about an hour")
-    assert pending(result) == {}
-    assert "each time" in result.message
+    assert "each time" not in result.message
+    assert 60 in (result.state.held_minutes, *pending(result).values())
 
 
 # --- Smoking and blood pressure ---------------------------------------------------------
@@ -1413,3 +1415,14 @@ def test_restart_keeps_memory_consent():
 def test_someone_elses_weight_given_possessively_is_refused():
     result = say(at("weekly", "weight_kg"), "her weight is 150 pounds")
     assert pending(result) == {}
+
+
+def test_a_16_year_old_can_check_in(client):
+    start = client.post("/api/checkin/start", json={"kind": "daily", "age": 16})
+    assert start.status_code == 200
+    state = start.json()["state"]
+    turn = client.post(
+        "/api/checkin/turn", json={"action": "reply", "text": "what should I do?", "state": state}
+    )
+    assert turn.status_code == 200
+    assert turn.json()["client_action"] == "open_ideas"

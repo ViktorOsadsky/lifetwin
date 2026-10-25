@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/checkin/my_data_screen.dart';
+import 'package:lifesim/experiment/wellness_screen.dart';
 import 'package:lifesim/main.dart';
+import 'package:lifesim/wellness/settings_screen.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/voice/fakes.dart';
@@ -74,10 +76,37 @@ void main() {
       await t.scrollUntilVisible(find.text(row), 200);
       expect(find.text(row), findsWidgets, reason: row);
     }
+    // Just joined: the weekly row says when it opens.
+    await t.scrollUntilVisible(find.text('Weekly check-in'), 200);
+    expect(find.textContaining('Your first weekly check-in opens on'), findsOneWidget);
     await t.ensureVisible(find.text('See your data or delete it'));
     await t.pumpAndSettle();
     await t.tap(find.text('See your data or delete it'));
     await t.pumpAndSettle();
     expect(find.byType(MyDataScreen), findsOneWidget);
+  });
+
+  testWidgets('Settings: Weekly check-in is dimmed and does nothing in the first 7 days', (t) async {
+    await pumpApp(t);
+    await t.tap(find.byTooltip('Settings'));
+    await t.pumpAndSettle();
+    await t.scrollUntilVisible(find.text('Weekly check-in'), 200);
+    final tile = t.widget<ListTile>(find.widgetWithText(ListTile, 'Weekly check-in'));
+    expect(tile.enabled, isFalse);
+    expect(tile.onTap, isNull);
+    expect(find.textContaining('Your first weekly check-in opens on'), findsOneWidget);
+    final sem = t.getSemantics(find.widgetWithText(ListTile, 'Weekly check-in'));
+    expect(sem, isSemantics(hasEnabledState: true, isEnabled: false));
+    await t.tap(find.text('Weekly check-in'));
+    await t.pumpAndSettle();
+    expect(find.byType(WellnessSettingsScreen), findsOneWidget);
+  });
+
+  testWidgets('Settings: What I see opens the wellness cards', (t) async {
+    await pumpApp(t);
+    await openSettingsRow(t, 'What I see');
+    expect(find.byType(WellnessScreen), findsOneWidget);
+    expect(find.text('Here’s what I see so far.'), findsOneWidget);
+    expect(t.takeException(), isNull);
   });
 }

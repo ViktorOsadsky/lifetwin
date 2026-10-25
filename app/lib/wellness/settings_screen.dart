@@ -44,7 +44,7 @@ class WellnessSettingsScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     for (final entry in entries)
-                      _row(entry.label, entry.description, entry.open),
+                      _row(entry.label, entry.description, entry.open, enabled: entry.enabled),
                   ],
                 ),
               ),
@@ -89,15 +89,21 @@ class WellnessSettingsScreen extends StatelessWidget {
         ),
       );
 
-  Widget _row(String label, String? description, VoidCallback open) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    title: WholeWordText(label, style: LtText.body(weight: FontWeight.w700)),
-    subtitle: description == null
-        ? null
-        : WholeWordText(description, style: LtText.body(size: 16)),
-    trailing: const Icon(Icons.chevron_right_rounded),
-    onTap: open,
-  );
+  Widget _row(String label, String? description, VoidCallback open, {bool enabled = true}) {
+    // Muted but still above 4.5:1 on the card.
+    const muted = Color(0xFF6E5E57);
+    return ListTile(
+      enabled: enabled,
+      contentPadding: EdgeInsets.zero,
+      minVerticalPadding: 8,
+      title: WholeWordText(label, style: LtText.body(weight: FontWeight.w700, color: enabled ? LtColors.ink : muted)),
+      subtitle: description == null
+          ? null
+          : WholeWordText(description, style: LtText.body(size: 17, color: enabled ? LtColors.ink : muted)),
+      trailing: enabled ? const Icon(Icons.chevron_right_rounded) : null,
+      onTap: enabled ? open : null,
+    );
+  }
 }
 
 /// History, Apple Health, upload, wristband and voice routes supplied by the shell.
@@ -106,8 +112,12 @@ class SettingsEntry {
     required this.label,
     required this.open,
     this.description,
+    this.enabled = true,
   });
   final String label;
   final String? description;
   final VoidCallback open;
+
+  /// False: shown dimmed and not tappable (the screen reader says "dimmed").
+  final bool enabled;
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../onboarding/missing_answers.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
@@ -54,10 +55,16 @@ class ForecastScreen extends StatefulWidget {
     this.onPlayQuiz,
     this.onDrivers,
     this.healthKeys = const {},
+    this.documentKeys = const {},
     this.appearance = const TwinAppearance(),
     this.onResult,
     this.scoreCard,
+    this.onAnswerMissing,
   });
+
+  /// "Answer N more questions" when the forecast has no number because answers are missing:
+  /// Mochi asks only those (missing_answers.dart). Without it, "Go back to my answers".
+  final VoidCallback? onAnswerMissing;
 
   final ForecastClient client;
 
@@ -80,6 +87,9 @@ class ForecastScreen extends StatefulWidget {
 
   /// Profile keys that came from the Health app (the rest: "you told me").
   final Set<String> healthKeys;
+
+  /// Profile keys that came from a confirmed health document.
+  final Set<String> documentKeys;
 
   /// Cosmetic look of the twin on the night plate.
   final TwinAppearance appearance;
@@ -270,7 +280,17 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // The plain reason is in the bubble; nothing is added to it here.
-          LipButton(label: 'Go back to my answers', icon: Icons.edit_rounded, onTap: _answers),
+          if (f.missingInputs.isNotEmpty && widget.onAnswerMissing != null)
+            LipButton(
+              label: answerMoreLabel(missingQuestions(f.missingInputs, widget.profile).length),
+              icon: Icons.mic_none_rounded,
+              onTap: () {
+                if (_spoke) widget.speech?.stop();
+                widget.onAnswerMissing!();
+              },
+            )
+          else
+            LipButton(label: 'Go back to my answers', icon: Icons.edit_rounded, onTap: _answers),
           if (widget.onAnswers != null) ...[
             const SizedBox(height: 12),
             LipButton(label: 'Go back', kind: LipKind.secondary, height: 56, fontSize: 21, onTap: _back),
@@ -385,6 +405,7 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
                 forecast: f,
                 profile: widget.profile,
                 healthKeys: widget.healthKeys,
+                documentKeys: widget.documentKeys,
                 onAddAnswer: () {
                   Navigator.of(context).pop();
                   _answers();

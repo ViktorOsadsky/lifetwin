@@ -20,6 +20,7 @@ from lifetwin.app import create_app
 from lifetwin.core.config import Settings
 from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.models import HabitNote
+from lifetwin.recommendations.ideas import BY_ID
 from lifetwin.recommendations.levers import (
     EFFECT_NOTE,
     LEVER_ORDER,
@@ -135,8 +136,12 @@ def check_product_rules(profile):
             assert rec.experiment_lever is None and rec.experiment_target is None
         else:
             in_range = prof.age is None or 18 <= prof.age <= 85
-            assert (rec.effect in CATEGORIES) == in_range
-            assert rec.effect == effect_category(rec.lever, prof.age, prof.sex)
+            # Only the habit change itself carries the cue; a coping trick has none.
+            coping = BY_ID[rec.id].coping
+            assert (rec.effect in CATEGORIES) == (in_range and not coping)
+            assert rec.effect == (
+                None if coping else effect_category(rec.lever, prof.age, prof.sex)
+            )
     # Sleep only for people under 7 hours, never at 7 or more or when unknown.
     sleep = prof.sleep_hours
     if "short_sleep_plus_1h" in levers:
@@ -171,7 +176,7 @@ def check_product_rules(profile):
 )
 def test_no_activity_gets_a_small_start_not_a_target_of_150(profile):
     (rec,) = [r for r in suggest(HealthProfile(**profile), []) if r.wellness_card == "activity"]
-    assert rec.title == "A small start"
+    assert "start" in BY_ID[rec.id].stages  # a small-start idea from the catalog
     assert "10 to 15 minutes" in rec.message
     assert "150" not in rec.message
 
@@ -269,7 +274,7 @@ def test_older_smokers_get_a_bigger_cue_than_young_ones():
 # --- Response over HTTP --------------------------------------------------------------------------
 
 
-def test_under_18_gets_no_ideas_and_the_provider_is_never_asked():
+def test_under_18_gets_ideas_like_everyone():
     class Spy:
         name = "muse"
         configured = True
@@ -282,14 +287,13 @@ def test_under_18_gets_no_ideas_and_the_provider_is_never_asked():
 
     spy_client = make_client(Spy())
     body = post(spy_client, {"age": 17, "smoking_status": "current"}, consent={"muse": True})
-    assert body["status"] == "under_age" and body["recommendations"] == []
-    assert Spy.calls == 0
+    assert body["status"] == "ok" and body["recommendations"]
+    assert Spy.calls == 1
     assert not FORBIDDEN.search(body["message"])
-    assert "smok" not in body["message"].lower()
 
 
-def test_age_zero_is_under_age_not_a_crash(client):
-    assert post(client, {"age": 0})["status"] == "under_age"
+def test_age_zero_is_not_a_crash(client):
+    assert post(client, {"age": 0})["status"] in {"ok", "not_enough_information"}
 
 
 def test_unknown_age_still_gets_ideas_without_an_age_claim(client):
@@ -449,7 +453,8 @@ def test_unsafe_outside_wording_falls_back_to_the_template(line):
     body = post(make_client(provider), {"smoking_status": "current"}, consent={"muse": True})
     assert provider.calls == 1
     assert body["phrased_by"] == "templates"
-    assert body["recommendations"][0]["message"].startswith("Quitting smoking helps")
+    template = suggest(HealthProfile(smoking_status="current"), [])[0].message
+    assert body["recommendations"][0]["message"] == template
 
 
 @pytest.mark.parametrize(
@@ -518,10 +523,10 @@ def test_a_note_naming_vitamin_d_can_be_quoted():
         "A daily multivitamin or more fiber is common; ask your pharmacist before starting.",
     ],
 )
-def test_a_gentle_well_known_supplement_with_a_doctor_pointer_is_spoken(line):
+def test_an_unrelated_supplement_with_a_doctor_pointer_still_falls_back(line):
     provider = Provider(line)
     body = post(make_client(provider), {"smoking_status": "current"}, consent={"muse": True})
-    assert body["phrased_by"] == "muse", body["recommendations"][0]["message"]
+    assert body["phrased_by"] == "templates", body["recommendations"][0]["message"]
 
 
 @pytest.mark.parametrize(

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../twin/twin_repository.dart';
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 
 /// The outside AI provider, from `GET /api/capabilities` -> `personalize`. The name is never
 /// hard-coded in the app: the screens say [displayName], so changing provider changes no copy.
@@ -16,6 +17,7 @@ class AiProvider {
     required this.configured,
     this.company,
     this.mayTrainOnContent = false,
+    this.conversation,
   });
 
   final String id;
@@ -35,9 +37,30 @@ class AiProvider {
   String? get trainingLine =>
       mayTrainOnContent && company != null ? '$company may use what you share to improve its AI.' : null;
 
+  /// Who reads and words conversation turns (`GET /api/capabilities` -> `conversation`): the AI
+  /// helper's provider, which may differ from this one (owner ruling 2026-10-25: Claude decides
+  /// voice turns). Null when the server does not say: the AI helper then uses this provider.
+  final AiProvider? conversation;
+
+  /// The AI helper's provider: [conversation] when the server names one, else this one.
+  AiProvider get helper => conversation ?? this;
+
+  /// A conversation turn's `outside_ai_consent`: `{id: true}` for the AI helper's provider, only
+  /// while the AI helper is on (the switch names that provider). Otherwise empty.
+  static Map<String, bool> helperConsent(AiProvider? p, {required bool aiHelper}) {
+    final h = p?.helper;
+    if (!aiHelper || h == null || !h.configured || (h.id != 'claude' && h.id != 'muse')) return const {};
+    return {h.id: true};
+  }
+
   static AiProvider? fromCapabilities(Object? json) {
     final p = json is Map ? json['personalize'] : null;
     if (p is! Map) return null;
+    final c = json is Map ? json['conversation'] : null;
+    return _block(p, conversation: c is Map ? _block(c) : null);
+  }
+
+  static AiProvider? _block(Map p, {AiProvider? conversation}) {
     final id = p['provider'], name = p['display_name'];
     if (id is! String || name is! String || id.isEmpty || name.isEmpty) return null;
     final company = p['company'];
@@ -47,6 +70,7 @@ class AiProvider {
       configured: p['configured'] == true,
       company: company is String && company.isNotEmpty ? company : null,
       mayTrainOnContent: p['may_train_on_content'] == true,
+      conversation: conversation,
     );
   }
 }
@@ -59,7 +83,7 @@ abstract class CapabilitiesClient {
 
 class HttpCapabilitiesClient implements CapabilitiesClient {
   HttpCapabilitiesClient({http.Client? client, ApiBase? base})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       base = base ?? ApiBase();
   final http.Client _client;
   final ApiBase base;

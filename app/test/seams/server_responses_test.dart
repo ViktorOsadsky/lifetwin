@@ -67,6 +67,7 @@ class FakePort implements NotificationPort {
     required DateTime localWallTime,
     required String title,
     required String body,
+    String? payload,
   }) async {}
   @override
   Future<void> cancelAll() async {}

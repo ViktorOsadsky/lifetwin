@@ -2112,7 +2112,7 @@
     }
   },
   {
-    "name": "recommendations-under-age",
+    "name": "recommendations-under-18-treated-normally",
     "method": "POST",
     "path": "/api/recommendations",
     "request_schema": "recommendations.request.schema.json",
@@ -2125,9 +2125,38 @@
     "status": 200,
     "response_schema": "recommendations.schema.json",
     "response_subset": {
-      "status": "under_age",
-      "recommendations": [],
-      "missing_inputs": []
+      "status": "ok"
+    }
+  },
+  {
+    "name": "recommendations-with-document-context",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 50,
+        "smoking_status": "current"
+      },
+      "document_context": {
+        "readings": [
+          {
+            "field": "a1c",
+            "value": 6.1,
+            "unit": "%",
+            "date": "2026-09-14",
+            "source": "document"
+          }
+        ],
+        "diagnoses": [
+          "hypertension"
+        ]
+      }
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok"
     }
   },
   {
@@ -2343,6 +2372,191 @@
     "response_subset": {
       "status": "error",
       "code": "invalid_request"
+    }
+  },
+  {
+    "name": "documents-read-claude-stubbed",
+    "method": "POST",
+    "path": "/api/documents/read",
+    "request_schema": "documents.read.request.schema.json",
+    "request": {
+      "pdf_base64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA1IDAgUiA+PiA+PiAvQ29udGVudHMgNCAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAzNDIgPj4Kc3RyZWFtCkJUIC9GMSAxMSBUZiAxNCBUTCA1MCA3ODAgVGQgKFNZTlRIRVRJQyBURVNUIENMSU5JQyAtIEFGVEVSIFZJU0lUIFNVTU1BUlkpIFRqIFQqIChQYXRpZW50OiBUZXN0eSBNY0Zha2VmYWNlKSBUaiBUKiAoRGF0ZSBvZiBzZXJ2aWNlOiAwOS8xNC8yMDI2KSBUaiBUKiAoVml0YWxzKSBUaiBUKiAoV2VpZ2h0OiAxODIgbGIpIFRqIFQqIChCbG9vZCBwcmVzc3VyZTogMTM4Lzg2IG1tSGcpIFRqIFQqIChQcm9ibGVtIExpc3QpIFRqIFQqIChUeXBlIDIgZGlhYmV0ZXMgbWVsbGl0dXMpIFRqIFQqIChGYW1pbHkgSGlzdG9yeSkgVGogVCogKE1vdGhlcjogaHlwZXJ0ZW5zaW9uKSBUaiBUKiAoKSBUaiBUKiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDYzNCAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjcwNAolJUVPRgo=",
+      "outside_ai_consent": {
+        "claude": true
+      }
+    },
+    "claude_stub": {
+      "findings": [
+        {
+          "field": "weight_kg",
+          "value": "82.6",
+          "unit": null,
+          "quote": "Weight: 182 lb",
+          "page": 1,
+          "section": "Vitals",
+          "date": "2026-09-14"
+        },
+        {
+          "field": "diabetes_diagnosed",
+          "value": "true",
+          "unit": null,
+          "quote": "Type 2 diabetes mellitus",
+          "page": 1,
+          "section": "Problem List",
+          "date": "2026-09-14"
+        },
+        {
+          "field": "hba1c",
+          "value": "7.1",
+          "unit": null,
+          "quote": "Hemoglobin A1c: 7.1 %",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        },
+        {
+          "field": "blood_pressure",
+          "value": "128/82",
+          "unit": null,
+          "quote": "Blood pressure: 138/86 mmHg",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        },
+        {
+          "field": "hypertension_diagnosed",
+          "value": "true",
+          "unit": null,
+          "quote": "Mother: hypertension",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        }
+      ]
+    },
+    "claude_stub_calls": 1,
+    "status": 200,
+    "response_schema": "documents.extract.schema.json",
+    "response_subset": {
+      "status": "found",
+      "provider_status": "used",
+      "candidates": [
+        {
+          "field": "weight_kg",
+          "use": "model_input",
+          "value": 82.6,
+          "unit": "kg",
+          "date": "2026-09-14",
+          "date_basis": "document",
+          "source_text": "Weight: 182 lb",
+          "page": 1,
+          "section": "Vitals",
+          "confidence": "high",
+          "method": "claude"
+        },
+        {
+          "field": "diabetes_diagnosed",
+          "use": "model_input",
+          "value": true,
+          "unit": null,
+          "date": "2026-09-14",
+          "date_basis": "document",
+          "source_text": "Type 2 diabetes mellitus",
+          "page": 1,
+          "section": "Problem List",
+          "confidence": "high",
+          "method": "claude"
+        }
+      ],
+      "notices": [
+        "other_person_skipped"
+      ]
+    }
+  },
+  {
+    "name": "documents-read-claude-without-consent",
+    "method": "POST",
+    "path": "/api/documents/read",
+    "request_schema": "documents.read.request.schema.json",
+    "request": {
+      "pdf_base64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA1IDAgUiA+PiA+PiAvQ29udGVudHMgNCAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAzNDIgPj4Kc3RyZWFtCkJUIC9GMSAxMSBUZiAxNCBUTCA1MCA3ODAgVGQgKFNZTlRIRVRJQyBURVNUIENMSU5JQyAtIEFGVEVSIFZJU0lUIFNVTU1BUlkpIFRqIFQqIChQYXRpZW50OiBUZXN0eSBNY0Zha2VmYWNlKSBUaiBUKiAoRGF0ZSBvZiBzZXJ2aWNlOiAwOS8xNC8yMDI2KSBUaiBUKiAoVml0YWxzKSBUaiBUKiAoV2VpZ2h0OiAxODIgbGIpIFRqIFQqIChCbG9vZCBwcmVzc3VyZTogMTM4Lzg2IG1tSGcpIFRqIFQqIChQcm9ibGVtIExpc3QpIFRqIFQqIChUeXBlIDIgZGlhYmV0ZXMgbWVsbGl0dXMpIFRqIFQqIChGYW1pbHkgSGlzdG9yeSkgVGogVCogKE1vdGhlcjogaHlwZXJ0ZW5zaW9uKSBUaiBUKiAoKSBUaiBUKiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDYzNCAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjcwNAolJUVPRgo=",
+      "outside_ai_consent": {}
+    },
+    "claude_stub": {
+      "findings": [
+        {
+          "field": "weight_kg",
+          "value": "82.6",
+          "unit": null,
+          "quote": "Weight: 182 lb",
+          "page": 1,
+          "section": "Vitals",
+          "date": "2026-09-14"
+        },
+        {
+          "field": "diabetes_diagnosed",
+          "value": "true",
+          "unit": null,
+          "quote": "Type 2 diabetes mellitus",
+          "page": 1,
+          "section": "Problem List",
+          "date": "2026-09-14"
+        },
+        {
+          "field": "hba1c",
+          "value": "7.1",
+          "unit": null,
+          "quote": "Hemoglobin A1c: 7.1 %",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        },
+        {
+          "field": "blood_pressure",
+          "value": "128/82",
+          "unit": null,
+          "quote": "Blood pressure: 138/86 mmHg",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        },
+        {
+          "field": "hypertension_diagnosed",
+          "value": "true",
+          "unit": null,
+          "quote": "Mother: hypertension",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        }
+      ]
+    },
+    "claude_stub_calls": 0,
+    "status": 200,
+    "response_schema": "documents.extract.schema.json",
+    "response_subset": {
+      "status": "nothing_found",
+      "candidates": [],
+      "provider_status": "consent_required"
+    }
+  },
+  {
+    "name": "documents-read-keyless-stays-on-phone",
+    "method": "POST",
+    "path": "/api/documents/read",
+    "request_schema": "documents.read.request.schema.json",
+    "request": {
+      "pdf_base64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA1IDAgUiA+PiA+PiAvQ29udGVudHMgNCAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAzNDIgPj4Kc3RyZWFtCkJUIC9GMSAxMSBUZiAxNCBUTCA1MCA3ODAgVGQgKFNZTlRIRVRJQyBURVNUIENMSU5JQyAtIEFGVEVSIFZJU0lUIFNVTU1BUlkpIFRqIFQqIChQYXRpZW50OiBUZXN0eSBNY0Zha2VmYWNlKSBUaiBUKiAoRGF0ZSBvZiBzZXJ2aWNlOiAwOS8xNC8yMDI2KSBUaiBUKiAoVml0YWxzKSBUaiBUKiAoV2VpZ2h0OiAxODIgbGIpIFRqIFQqIChCbG9vZCBwcmVzc3VyZTogMTM4Lzg2IG1tSGcpIFRqIFQqIChQcm9ibGVtIExpc3QpIFRqIFQqIChUeXBlIDIgZGlhYmV0ZXMgbWVsbGl0dXMpIFRqIFQqIChGYW1pbHkgSGlzdG9yeSkgVGogVCogKE1vdGhlcjogaHlwZXJ0ZW5zaW9uKSBUaiBUKiAoKSBUaiBUKiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDYzNCAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjcwNAolJUVPRgo=",
+      "outside_ai_consent": {
+        "claude": true
+      }
+    },
+    "status": 200,
+    "response_schema": "documents.extract.schema.json",
+    "response_subset": {
+      "status": "nothing_found",
+      "candidates": [],
+      "provider_status": "unavailable"
     }
   },
   {
@@ -2570,7 +2784,6 @@
           "effect": null,
           "experiment_lever": null,
           "experiment_target": null,
-          "why_short": "You are already active, so keep doing what works for you.",
           "source_domain": "cdc.gov"
         }
       }
@@ -2677,6 +2890,289 @@
         "current_field": "wellbeing",
         "care_line_shown": true,
         "care_question_open": false
+      }
+    }
+  },
+  {
+    "name": "recommendations-ideas-with-kind-and-alternatives",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 70,
+        "sex": "female",
+        "smoking_status": "never",
+        "sleep_hours": 6,
+        "moderate_recreation_min_week": 60,
+        "vigorous_recreation_min_week": 0,
+        "sedentary_min_day": 600
+      },
+      "habit_notes": [
+        {
+          "topic": "exercise",
+          "kind": "walking",
+          "with": "dog"
+        },
+        {
+          "topic": "sitting",
+          "kind": "tv"
+        }
+      ],
+      "local_date": "2026-10-26"
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "featured": "pace_dog_home",
+      "recommendations": {
+        "$each": {
+          "causal_interpretation": false,
+          "alternatives": {
+            "$each": {
+              "effect_note": "Modeled difference for people like you, not a promise.",
+              "source_domain": "cdc.gov",
+              "causal_interpretation": false
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "recommendations-featured-idea-for-the-day",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 58,
+        "smoking_status": "current",
+        "sleep_hours": 8,
+        "moderate_recreation_min_week": 200,
+        "vigorous_recreation_min_week": 0
+      },
+      "local_date": "2026-10-26"
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "featured": "smoke_quit_jar",
+      "recommendations": {
+        "$each": {
+          "causal_interpretation": false
+        }
+      }
+    }
+  },
+  {
+    "name": "recommendations-excluded-ids-leave-coping-tips-without-effect",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 70,
+        "sex": "male",
+        "smoking_status": "current"
+      },
+      "local_date": "2026-10-26",
+      "excluded_ids": [
+        "smoke_quitline",
+        "smoke_ask_pharmacist"
+      ]
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "featured": "smoke_slow_breaths",
+      "recommendations": {
+        "$each": {
+          "lever": "quit_smoking",
+          "effect": null,
+          "experiment_lever": "smoking_status",
+          "experiment_target": "former",
+          "alternatives": {
+            "$each": {
+              "effect": null,
+              "source_domain": "cdc.gov"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "recommendations-habit-change-ideas-carry-the-effect",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 70,
+        "sex": "male",
+        "smoking_status": "current"
+      },
+      "local_date": "2026-10-26",
+      "excluded_ids": [
+        "smoke_delay",
+        "smoke_after_dinner_walk",
+        "smoke_busy_hands",
+        "smoke_slow_breaths",
+        "smoke_tell_someone",
+        "smoke_triggers",
+        "smoke_free_car",
+        "smoke_free_home",
+        "smoke_push_back_first",
+        "smoke_quit_jar"
+      ]
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "featured": "smoke_quitline",
+      "recommendations": {
+        "$each": {
+          "lever": "quit_smoking",
+          "effect": "big",
+          "alternatives": {
+            "$each": {
+              "effect": "big",
+              "source_domain": "cdc.gov"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "onboarding-ask-only-start",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "start",
+      "state": {
+        "phase": "idle",
+        "confirmed_profile": {
+          "age": 64,
+          "sex": "female",
+          "smoking_status": "never",
+          "height_cm": 165,
+          "weight_kg": 70,
+          "sleep_hours": 7,
+          "general_health": "good",
+          "hypertension_diagnosed": false,
+          "diabetes": false,
+          "sedentary_min_day": 360,
+          "moderate_recreation_min_week": 120
+        },
+        "ask_only": [
+          "vigorous_recreation_min_week",
+          "age"
+        ],
+        "memory_consent": false
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "vigorous_recreation_min_week",
+        "ask_only": [
+          "vigorous_recreation_min_week"
+        ],
+        "missing_offered": true
+      }
+    }
+  },
+  {
+    "name": "onboarding-missing-offer-yes",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "yes",
+      "state": {
+        "phase": "missing",
+        "confirmed_profile": {
+          "age": 64,
+          "sex": "female",
+          "smoking_status": "never",
+          "height_cm": 165,
+          "weight_kg": 70,
+          "sleep_hours": 7,
+          "general_health": "good",
+          "hypertension_diagnosed": false,
+          "diabetes": false,
+          "sedentary_min_day": 360,
+          "moderate_recreation_min_week": 120
+        },
+        "skipped_fields": [
+          "vigorous_recreation_min_week",
+          "exercise_minutes_weekly",
+          "alcohol_drinks_weekly",
+          "systolic_bp",
+          "diastolic_bp"
+        ],
+        "health_offered": true,
+        "missing_offered": true,
+        "memory_consent": false
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "vigorous_recreation_min_week",
+        "ask_only": [
+          "vigorous_recreation_min_week"
+        ]
+      }
+    }
+  },
+  {
+    "name": "checkin-ideas-request",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "any ideas what I should do today?",
+      "state": {
+        "kind": "daily",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours_last_night",
+          "exercise_minutes_today",
+          "wellbeing"
+        ],
+        "current_field": "exercise_minutes_today",
+        "pending": {
+          "sleep_hours_last_night": 7.0
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "client_action": "open_ideas",
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "exercise_minutes_today",
+        "pending": {
+          "exercise_minutes_today": null
+        }
       }
     }
   }

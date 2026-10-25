@@ -27,6 +27,8 @@ from lifetwin.core.models import (
 )
 from lifetwin.documents import DocumentService
 from lifetwin.documents import router as documents_router
+from lifetwin.documents.models import MAX_PDF_BYTES, MAX_PDF_PAGES
+from lifetwin.documents.pdf import ClaudeDocumentReader
 from lifetwin.onboarding import (
     AnthropicExtractor,
     ChatCompletionsExtractor,
@@ -76,12 +78,31 @@ FIELD_WORDS = {
 }
 
 
+# Pydantic error types for a list or string over its maximum length.
+TOO_LONG = {"too_long", "string_too_long"}
+
+
 def invalid_input_message(exc: RequestValidationError) -> str:
     errors = exc.errors()
     if any(list(error.get("loc", []))[-1:] == ["voice_consent"] for error in errors):
         return "Please agree to use your voice first."
-    if any("pages" in list(error.get("loc", [])) for error in errors):
+
+    def about(field: str, too_long: bool) -> bool:
+        return any(
+            field in list(error.get("loc", [])) and (error.get("type") in TOO_LONG) == too_long
+            for error in errors
+        )
+
+    if about("pages", too_long=True):
         return "That document has too many pages or too much text. Please choose up to 10 pages."
+    if about("pdf_base64", too_long=True):
+        return (
+            "That PDF is too big to send. Please choose one under 10 MB, or read it on this phone."
+        )
+    if about("pages", too_long=False):
+        return "We could not find any text to read. Please choose a document with text in it."
+    if about("pdf_base64", too_long=False):
+        return "We could not read that file as a PDF. Please choose a PDF and try again."
     if any(BP_ORDER_MESSAGE in str(error.get("msg", "")) for error in errors):
         return BP_ORDER_MESSAGE
     names = []
@@ -147,50 +168,89 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
     )
     application.state.personalizer = personalizer
+    claude_key = settings.anthropic_api_key.get_secret_value()
+    voice_timeout = min(6, settings.provider_timeout_seconds)
+    # The AI helper per LLM_PROVIDER: recognised document text, and conversation turns
+    # when CONVERSATION_PROVIDER is "muse".
+    shared_extractor = (
+        AnthropicExtractor(
+            api_key=claude_key, model=settings.claude_model, timeout_seconds=voice_timeout
+        )
+        if settings.llm_provider == "anthropic"
+        else ChatCompletionsExtractor(
+            base_url=settings.llm_endpoint,
+            api_key=settings.llm_api_key.get_secret_value(),
+            model=settings.llm_model,
+            timeout_seconds=settings.provider_timeout_seconds,
+            reasoning_effort=settings.llm_reasoning_effort,
+            allow_contributor=settings.llm_allow_contributor,
+        )
+        if settings.llm_provider == "chat_completions"
+        else OpenAIExtractor(
+            api_key=settings.openai_api_key.get_secret_value(),
+            model=settings.openai_model,
+            timeout_seconds=settings.provider_timeout_seconds,
+        )
+    )
+    # Owner ruling (2026-10-25): every model call made while Mochi listens (onboarding,
+    # check-in and change turns) goes to Claude when CONVERSATION_PROVIDER is "claude", and
+    # only with the person's yes for Claude; without it the rules answer, never Muse.
+    # Ideas, coach and recommendations keep the shared personalizer above.
+    if settings.conversation_provider == "claude":
+        conversation_extractor = AnthropicExtractor(
+            api_key=claude_key, model=settings.claude_model, timeout_seconds=voice_timeout
+        )
+        conversation_personalizer = ClaudePersonalizer(
+            api_key=claude_key, model=settings.claude_model, timeout_seconds=voice_timeout
+        )
+    elif settings.conversation_provider == "muse":
+        conversation_extractor, conversation_personalizer = shared_extractor, personalizer
+    else:
+        conversation_extractor, conversation_personalizer = None, None
+    application.state.conversation_personalizer = conversation_personalizer
+    # The provider a conversation turn may reach: "muse" also covers the OpenAI extractor.
+    conversation_name = (
+        None
+        if conversation_extractor is None
+        else getattr(conversation_extractor, "provider", None)
+        or (conversation_personalizer.name if conversation_personalizer else None)
+    )
     application.state.conversation_service = ConversationService(
-        extractor=(
-            AnthropicExtractor(
-                api_key=settings.anthropic_api_key.get_secret_value(),
-                model=settings.claude_model,
-                timeout_seconds=min(6, settings.provider_timeout_seconds),
-            )
-            if settings.llm_provider == "anthropic"
-            else ChatCompletionsExtractor(
-                base_url=settings.llm_endpoint,
-                api_key=settings.llm_api_key.get_secret_value(),
-                model=settings.llm_model,
-                timeout_seconds=settings.provider_timeout_seconds,
-                reasoning_effort=settings.llm_reasoning_effort,
-                allow_contributor=settings.llm_allow_contributor,
-            )
-            if settings.llm_provider == "chat_completions"
-            else OpenAIExtractor(
-                api_key=settings.openai_api_key.get_secret_value(),
-                model=settings.openai_model,
-                timeout_seconds=settings.provider_timeout_seconds,
-            )
-        ),
+        extractor=conversation_extractor,
         timeout_seconds=settings.provider_timeout_seconds,
-        personalizer=personalizer,
+        personalizer=conversation_personalizer,
         max_probes=1 if settings.onboarding_demo else MAX_PROBES,
     )
     # Documents: the deterministic parser always; the selected outside AI (Muse over Chat
     # Completions, or Claude) only when enabled, configured and the person agreed for
     # that provider in the request. It reads the words only, never the photo.
-    conversation_extractor = application.state.conversation_service.extractor
+    # A whole PDF goes to Claude only with DOCUMENT_PROVIDER=claude and the person's yes for
+    # that document (POST /api/documents/read); otherwise the phone reads it.
+    pdf_reader = (
+        ClaudeDocumentReader(
+            api_key=settings.anthropic_api_key.get_secret_value(),
+            model=settings.claude_model,
+            timeout_seconds=settings.document_read_timeout_seconds,
+        )
+        if settings.document_provider == "claude"
+        else None
+    )
     application.state.document_service = DocumentService(
-        conversation_extractor
+        shared_extractor
         if settings.llm_provider in {"chat_completions", "anthropic"}
+        and settings.document_provider != "local"
         else None,
         muse_enabled=settings.document_muse_enabled,
         timeout_seconds=settings.provider_timeout_seconds,
+        pdf_reader=pdf_reader,
     )
     # Check-ins are guided only and stateless: the caller sends the previous answers.
-    # The care reply may be reworded by the shared personalizer, only with consent for it.
+    # The care reply may be reworded by the conversation provider, only with consent for it.
     application.state.checkin_service = CheckinService(
-        personalizer=personalizer, timeout_seconds=min(6, settings.provider_timeout_seconds)
+        personalizer=conversation_personalizer, timeout_seconds=voice_timeout
     )
     # Changing a saved answer is a stateless talk with Mochi: the caller sends the profile.
+    # It calls no model today; if it ever does, it takes the conversation provider.
     application.state.change_service = ChangeService()
     application.state.research_client = TavilyResearch(
         api_key=settings.tavily_api_key.get_secret_value(),
@@ -263,7 +323,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "prediction": prediction_state,
             "voice": "available" if voice_configured(settings) else "unavailable",
             "health_data_storage": "none",
-            "documents": "text_extraction",
+            # Recognised text always works. "pdf": who may read a whole PDF, by name, for the
+            # app's per-document consent sheet; configured false: PDFs are read on the phone.
+            "documents": {
+                "text_extraction": True,
+                "pdf": {
+                    "provider": settings.document_provider,
+                    "display_name": DISPLAY_NAMES.get(settings.document_provider),
+                    "company": COMPANIES.get(settings.document_provider),
+                    "configured": bool(pdf_reader and pdf_reader.configured),
+                    "endpoint": "/api/documents/read",
+                    "max_bytes": MAX_PDF_BYTES,
+                    "max_pages": MAX_PDF_PAGES,
+                },
+            },
+            # Who reads and words onboarding, check-in and change turns (the AI helper). The
+            # app names it beside the AI helper switch and sends outside_ai_consent
+            # {provider: true} with conversation turns only after a yes for it.
+            "conversation": {
+                "provider": conversation_name,
+                "display_name": DISPLAY_NAMES.get(conversation_name),
+                "company": COMPANIES.get(conversation_name),
+                "configured": bool(
+                    conversation_extractor is not None and conversation_extractor.configured
+                ),
+                "may_train_on_content": bool(
+                    conversation_personalizer is not None
+                    and conversation_personalizer.may_train_on_content
+                ),
+                "routes": ["/api/onboarding/turn", "/api/checkin/turn", "/api/change/turn"],
+            },
             # The app's consent text names this provider; consent is per provider.
             "personalize": {
                 "provider": personalizer.name,
