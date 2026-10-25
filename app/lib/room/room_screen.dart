@@ -377,8 +377,8 @@ class _TopBar extends StatelessWidget {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // The quiz chip is the first thing on Home; every gap below is 8.
-                if (quiz != null) ...[Align(alignment: Alignment.centerLeft, child: quiz), const SizedBox(height: 8)],
+                // The quiz chip is the first thing on Home (right side, so a double tap on the intake's Home button at the top left never lands on it); every gap below is 8.
+                if (quiz != null) ...[Align(alignment: Alignment.centerRight, child: quiz), const SizedBox(height: 8)],
                 Row(
                   children: [
                     Expanded(child: Align(alignment: Alignment.centerLeft, child: banner)),
