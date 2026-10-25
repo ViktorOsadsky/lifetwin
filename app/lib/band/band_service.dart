@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../twin/twin_repository.dart';
 import 'band_data.dart';
 
@@ -50,7 +52,7 @@ class BandSuggestion {
 ///   (`repository.provenance`: "From your band", an estimate). A confirmed band estimate IS the person's answer and may change the outlook (owner
 ///   ruling). It goes through `TwinRepository.saveConversationProfile` like any confirmed answer.
 /// - "Not now" dismisses it until next week. A band answer is never sent to an outside AI provider.
-class BandService {
+class BandService extends ChangeNotifier {
   BandService({required this.repository, DateTime Function()? now}) : _now = now ?? DateTime.now;
 
   final TwinRepository repository;
@@ -58,6 +60,9 @@ class BandService {
 
   DateTime? _dismissedAt;
   DateTime? _offeredAt;
+
+  /// Minutes a week the person last saved through the band offer, for the panel's saved line.
+  int? savedMinutes;
 
   /// The suggestion for [week], or null. [live] is false for the recorded demo; [demo] allows ONE labelled
   /// suggestion from it (only when nothing live or imported is in play).
@@ -83,7 +88,10 @@ class BandService {
   }
 
   /// "Not now": nothing saved, the offer returns next week.
-  void dismiss() => _dismissedAt = _now();
+  void dismiss() {
+    _dismissedAt = _now();
+    notifyListeners();
+  }
 
   /// "Yes, save" / "Use about N" with the estimate (or a number the person gave Mochi instead).
   Future<void> confirm(BandSuggestion s, {int? minutes}) async {
@@ -96,6 +104,8 @@ class BandService {
       sources: {if (minutes == null) bandField: HistorySource.wristband},
     );
     _offeredAt = _now();
+    savedMinutes = value;
+    notifyListeners();
   }
 
   /// "Keep 30" (the lower variant): nothing changes; the offer returns next week.
