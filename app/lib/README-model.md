@@ -89,6 +89,8 @@ This is the one object the UI and the check-in controller (`lib/checkin/`) shoul
 | `Future<void> recordHealthImport(Map values)` / `recordImport(Map values, {required String source, bool estimated})` | Apple Health (or wristband) values confirmed after their read-back; history only |
 | `FieldProvenance? provenance(String field)` | Where the stored value came from (`source`, `estimated`, `at`, `sourceLabel`, `estimateText`); null for a value saved before provenance was kept ("You said") |
 | `Map<String, dynamic> outsideAiProfile([Map? profile])` | The profile without wristband values, for anything sent with `outside_ai_consent` |
+| `bool outsideAiConsent` / `String? outsideAiProvider` / `Future<void> setOutsideAiConsent(bool consent, {String provider = 'muse'})` | The person's yes to outside-AI wording, stored on the phone, off by default and after Delete my data. Ask with the name from `/api/capabilities` `personalize.display_name` ("Muse by Meta") |
+| `Map<String, bool> outsideAiConsentFor(String provider)` | The request's `outside_ai_consent` value: `{provider: true}` only with a yes for that same provider, else `{}` |
 | `Future<CheckinOutcome> applyCheckin(Map response, {String? localDate})` | Applies a `/api/checkin/start` or `/turn` response (below) |
 | `Future<HistoryEntry?> applyDayCorrection(DateTime date, String field, Object? value, [String source])` | A past day's answer corrected through a confirmed Mochi read-back (below) |
 | `List<HistoryEntry> history({DateTime? from, DateTime? to})` | The person's history, newest first (below) |
@@ -103,7 +105,7 @@ This is the one object the UI and the check-in controller (`lib/checkin/`) shoul
 | `List<WellnessCard> wellnessCards` | The package's guidance cards for `current` |
 | `TwinState twinState()` | The character's state now |
 | `TwinExperiment? experiment()` | A fresh experiment from `current` |
-| `Future<void> deleteMyData()` | "Delete my data": cancels the reminders, removes the file and clears memory |
+| `Future<void> deleteMyData()` | "Delete my data": cancels the reminders, removes the file (profile, provenance, history, day logs, notes, settings, outside-AI consent, twin look) and clears memory |
 
 `TwinCheckinStore(repo)` (`twin_checkin_store.dart`) is the check-in controller's `CheckinStore`: `CheckinController(store: TwinCheckinStore(repo), reminders: repo.reminders, ...)`. It saves the finished check-in through `applyCheckin`, so don't also pass the finished turn to `applyCheckin` from `onFinished`. To keep the twin's emergency state, pass each turn that is not complete to `applyCheckin` (it is never recorded).
 

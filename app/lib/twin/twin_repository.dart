@@ -438,6 +438,24 @@ class TwinRepository extends ChangeNotifier {
   /// The twin's cosmetic look (`type`, `look`, `name`); never part of the health profile.
   Future<void> saveTwinLook(Map<String, dynamic> look) => store._saveTwin(look);
 
+  /// The person's consent to outside-AI wording (owner ruling: Muse is on, but only after
+  /// this yes). Stored on the phone; off by default and after Delete my data. It covers
+  /// only [outsideAiProvider]: consent for one provider never covers another.
+  bool get outsideAiConsent => store.outsideAiConsent;
+  String? get outsideAiProvider => store.outsideAiProvider;
+
+  /// Sets the consent for [provider] (`muse` today; the app shows the name from
+  /// `/api/capabilities` `personalize.display_name`).
+  Future<void> setOutsideAiConsent(bool consent, {String provider = 'muse'}) async {
+    await store._saveOutsideAiConsent(consent, provider);
+    notifyListeners();
+  }
+
+  /// The request field `outside_ai_consent` for [provider]: `{provider: true}` only with
+  /// a yes for that same provider, else empty. Send it with [outsideAiProfile].
+  Map<String, bool> outsideAiConsentFor(String provider) =>
+      outsideAiConsent && outsideAiProvider == provider ? {provider: true} : const {};
+
   /// Reminder time and weekly day. Not health data.
   CheckinSettings get checkinSettings => store.checkinSettings;
   Future<void> saveCheckinSettings(CheckinSettings settings) async {
@@ -523,8 +541,8 @@ class TwinRepository extends ChangeNotifier {
     );
   }
 
-  /// "Delete my data": the profile, history, day logs, notes, settings and twin look, on
-  /// the phone, and the planned check-in reminders.
+  /// "Delete my data": the profile and its provenance, history, day logs, notes, settings,
+  /// the outside-AI consent and the twin look, on the phone, and the planned reminders.
   Future<void> deleteMyData() async {
     try {
       await reminders?.port.cancelAll();

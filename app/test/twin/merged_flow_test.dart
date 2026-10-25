@@ -625,6 +625,28 @@ void main() {
     });
   });
 
+  test('outside-AI consent: off by default, kept on the phone, per provider, cleared by Delete my data', () async {
+    expect(repo.outsideAiConsent, isFalse);
+    expect(repo.outsideAiConsentFor('muse'), isEmpty);
+    await repo.setOutsideAiConsent(true);
+    expect(repo.outsideAiConsent, isTrue);
+    expect(repo.outsideAiConsentFor('muse'), {'muse': true});
+    expect(repo.outsideAiConsentFor('claude'), isEmpty); // one provider never covers another
+    final reopened = TwinRepository(model: model, store: await TwinStore.open(backend), clock: () => now);
+    expect((reopened.outsideAiConsent, reopened.outsideAiProvider), (true, 'muse'));
+    await repo.setOutsideAiConsent(false);
+    expect(repo.outsideAiConsentFor('muse'), isEmpty);
+
+    await repo.setOutsideAiConsent(true);
+    await repo.saveConversationProfile({'age': 72}, sources: const {'age': HistorySource.said});
+    expect(repo.store.profileMeta, isNotEmpty);
+    await repo.deleteMyData();
+    expect(repo.outsideAiConsent, isFalse);
+    expect(repo.store.profileMeta, isEmpty);
+    expect(repo.provenance('age'), isNull);
+    expect((await TwinStore.open(backend)).outsideAiConsent, isFalse);
+  });
+
   group('review fixes', () {
     test('a weekly check-in on any weekday files the week holding most of its seven days', () {
       CheckinEntry w(String date) => CheckinEntry(

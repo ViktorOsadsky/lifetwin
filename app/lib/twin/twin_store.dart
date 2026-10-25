@@ -83,6 +83,7 @@ class MemoryBackend implements StoreBackend {
 /// - [twin]: cosmetic customization; never part of the health profile.
 /// - [checkinSettings]: reminder time and weekly day; a preference, not health data.
 /// - [memoryConsent]: the conversation's `memory_consent`; habit notes are kept only while true.
+/// - [outsideAiConsent]: the person's yes to outside-AI wording, for one provider; off by default.
 ///
 /// Reads are public. Writes are private to this library, so the only write paths are the
 /// [TwinRepository] methods the owner allows (see lib/README-model.md, "Who may write").
@@ -125,6 +126,11 @@ class TwinStore extends ChangeNotifier {
   List<Map<String, dynamic>> get habitNotes => _list('habit_notes');
   Map<String, dynamic>? get twin => _doc['twin'] == null ? null : Map<String, dynamic>.from(_doc['twin'] as Map);
   bool get memoryConsent => _doc['memory_consent'] == true;
+
+  /// The person's yes to outside-AI wording, and the provider it was given for
+  /// (`{provider, on}`); off when absent.
+  bool get outsideAiConsent => (_doc['outside_ai_consent'] as Map?)?['on'] == true;
+  String? get outsideAiProvider => (_doc['outside_ai_consent'] as Map?)?['provider'] as String?;
   CheckinSettings get checkinSettings => _doc['checkin_settings'] is Map
       ? CheckinSettings.fromJson(Map<String, dynamic>.from(_doc['checkin_settings'] as Map))
       : const CheckinSettings();
@@ -157,6 +163,9 @@ class TwinStore extends ChangeNotifier {
   Future<void> _addHistory(HistoryEntry e) => _save('history', [..._list('history'), e.toJson()]);
 
   Future<void> _saveCheckinSettings(CheckinSettings s) => _save('checkin_settings', s.toJson());
+
+  Future<void> _saveOutsideAiConsent(bool on, String provider) =>
+      _save('outside_ai_consent', {'provider': provider, 'on': on});
 
   Future<void> _addHabitNote(Map<String, dynamic> note, {DateTime? at}) => _save('habit_notes', [
     ...habitNotes,
