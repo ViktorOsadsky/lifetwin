@@ -76,14 +76,14 @@ Agents implemented the Flutter experience and its data adapters, while the packa
 
 ## Team
 
-Public names, membership and Devpost handles were supplied by the user on October 24. Contribution summaries describe the documented work, rather than assigning new responsibilities: [product-refinement meeting](meetings/2026-10-23-product-refinement.md), [model track](tracks/A-data-model.md) and [design handoff](design/agentic/agentic-handoff.md). Shivam's contribution remains to be confirmed; the hardware-owner GitHub account is not explicitly linked to his public name in the repository.
+Public names, membership and Devpost handles were supplied by the user on October 24, including explicit confirmation of Shivam's hardware contribution. The other summaries describe documented work, rather than assigning new responsibilities: [product-refinement meeting](meetings/2026-10-23-product-refinement.md), [model track](tracks/A-data-model.md) and [design handoff](design/agentic/agentic-handoff.md).
 
 | Public name | Devpost handle | Contribution |
 |---|---|---|
 | Justin Wu | [@justin-wu-ok](https://devpost.com/justin-wu-ok) | Product vision refinement |
 | Viktor Osadsky | [@viktor-osadsky](https://devpost.com/viktor-osadsky) | Survival model and model evaluation |
 | Daniel Qi | [@d-q222](https://devpost.com/d-q222) | Flutter app, UI and design integration |
-| Shivam Vishal Patel | [@shivamp795](https://devpost.com/shivamp795) | [fill in — contribution to confirm] |
+| Shivam Vishal Patel | [@shivamp795](https://devpost.com/shivamp795) | Activity-band hardware prototyping |
 
 ## Final review for Daniel
 
