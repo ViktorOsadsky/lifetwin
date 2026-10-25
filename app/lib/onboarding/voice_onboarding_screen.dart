@@ -745,6 +745,11 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           const SizedBox(height: 10),
           _pad(_ValueCard(text: _readBackValue)),
         ],
+        // The opening: one plain example. Apple Health and documents are in the "Fill this in faster" pill.
+        if (c.questionNumber == 1 && c.caption.isEmpty && !keyboard) ...[
+          const SizedBox(height: 8),
+          _pad(Text('Try saying: “I’m 62.”', style: LtText.body(color: LtColors.secondary))),
+        ],
         if (voiceLine != null) ...[
           const SizedBox(height: 4),
           _pad(Align(alignment: Alignment.centerLeft, child: voiceLine)),
@@ -880,9 +885,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       if (quick) TalkButton(controller: c, compact: true) else ..._answerControls(busy, keyboard),
       // On the first question, and when Mochi offers it (or the person just said yes):
       // Apple Health, right under Talk (or Send). Shown with the keyboard too at the offer.
-      if (widget.onUseHealth != null &&
-          c.phase != VoicePhase.listening &&
-          (c.healthOffer || (!keyboard && c.questionNumber == 1))) ...[
+      if (widget.onUseHealth != null && c.phase != VoicePhase.listening && c.healthOffer) ...[
         const SizedBox(height: 12),
         _healthButton(),
       ],

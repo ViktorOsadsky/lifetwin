@@ -239,9 +239,9 @@ void main() {
     expect(find.text('How old are you?'), findsOneWidget);
     expect(find.text('Tap to talk'), findsNothing);
     expect(r.output.spoken, isEmpty);
-    await t.pump(const Duration(milliseconds: 700)); // the first question's Health link ignores a second tap at first
-    await t.tap(find.text('Use my Apple Health'));
-    expect(r.health, true);
+    // The opening is decluttered: one plain example, no Health button (the pill carries it).
+    expect(find.text('Use my Apple Health'), findsNothing);
+    expect(find.textContaining('Try saying'), findsOneWidget);
     await t.enterText(find.byType(TextField), '70');
     await t.tap(find.text('Send'));
     await t.pumpAndSettle();
@@ -321,7 +321,7 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('app starts on the Room; Talk opens the voice screen and Apple Health import', (t) async {
+  testWidgets('app starts on the Room; Talk opens the voice screen without a Health button', (t) async {
     final r = Rig();
     await t.pumpWidget(LifeTwinApp(controller: r.c));
     expect(find.byType(RoomScreen), findsOneWidget);
@@ -329,12 +329,8 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('Talk with me?'), findsOneWidget);
     await choose(t, "No, I'll type");
-    await t.pump(const Duration(milliseconds: 700)); // the first question's Health link ignores a second tap at first
-    await t.ensureVisible(find.text('Use my Apple Health'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Use my Apple Health'));
-    await t.pumpAndSettle();
-    expect(find.text('Use Apple Health?'), findsOneWidget);
+    expect(find.text('How old are you?'), findsOneWidget);
+    expect(find.text('Use my Apple Health'), findsNothing);
   });
 
   testWidgets('AI helper consent explains where answers go; yes turns it on for every turn', (t) async {
