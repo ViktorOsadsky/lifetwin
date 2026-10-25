@@ -160,8 +160,9 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
   Widget _confirmPage() {
     final c = _confirm!.current;
-    if (c == null)
+    if (c == null) {
       return _page('Thank you', _doneBody(), [('Continue', _finish)]);
+    }
     final proposed = DocumentImportResult(confirmed: [c]).profileValues;
     final field = proposed.keys.firstOrNull;
     final saved = field == null ? null : widget.confirmedValues[field];
@@ -210,10 +211,12 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
   String _doneBody() {
     final r = _confirm!.result;
-    if (_confirm!.aboutYou == false)
+    if (_confirm!.aboutYou == false) {
       return "I won't use it. I'll ask you instead.";
-    if (r.confirmed.isEmpty)
+    }
+    if (r.confirmed.isEmpty) {
       return "I won't use any of it. I'll ask you instead.";
+    }
     final n = r.confirmed.length;
     return 'You checked $n ${n == 1 ? 'answer' : 'answers'}. I will ask you about anything else I still need.'
         '${r.notes.isEmpty ? '' : ' Additional readings are not saved yet.'}';

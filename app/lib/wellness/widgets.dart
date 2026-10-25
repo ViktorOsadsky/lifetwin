@@ -24,27 +24,36 @@ class WellnessPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ModeScaffold(
     mode: LtMode.onboarding,
-    child: Scrollbar(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
-        children: [
-          Align(
+    child: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+          child: Align(
             alignment: Alignment.centerLeft,
             child: RoundBackButton(onTap: onBack),
           ),
-          const SizedBox(height: 18),
-          Semantics(
-            header: true,
-            child: WholeWordText(title, style: LtText.display(32)),
+        ),
+        Expanded(
+          child: Scrollbar(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+              children: [
+                const SizedBox(height: 6),
+                Semantics(
+                  header: true,
+                  child: WholeWordText(title, style: LtText.display(32)),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 6),
+                  WholeWordText(subtitle!, style: LtText.body()),
+                ],
+                const SizedBox(height: 22),
+                ...children,
+              ],
+            ),
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 6),
-            WholeWordText(subtitle!, style: LtText.body()),
-          ],
-          const SizedBox(height: 22),
-          ...children,
-        ],
-      ),
+        ),
+      ],
     ),
   );
 }

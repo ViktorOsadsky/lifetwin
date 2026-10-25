@@ -19,6 +19,9 @@ import 'quiz/quiz_screen.dart';
 import 'wellness/models.dart';
 import 'wellness/repository_adapter.dart';
 import 'wellness/history_screen.dart';
+import 'wellness/daily_plan_screen.dart';
+import 'wellness/coach_client.dart';
+import 'wellness/coach_context.dart';
 import 'twin/twin_repository.dart';
 import 'ui/swoosh_route.dart';
 import 'ui/theme.dart';
@@ -312,6 +315,27 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     return fromTalk ? nav.pushAndRemoveUntil(route, (r) => r.isFirst) : nav.push(route);
   }
 
+  Future<void> _plan(BuildContext context) async {
+    final repo = await _twin;
+    if (!context.mounted) return;
+    final client = HttpCoachClient(base: _api);
+    try {
+      await Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (pageContext) => DailyPlanScreen(
+          client: client,
+          confirmedContext: () => coachContext(repo),
+          onBack: () => Navigator.of(pageContext).pop(),
+          onTalk: () {
+            Navigator.of(pageContext).pop();
+            _talk(context);
+          },
+        ),
+      ));
+    } finally {
+      client.close();
+    }
+  }
+
   void _customize(BuildContext context) => Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (_) => CustomizeScreen(appearance: _look, onDone: () => Navigator.of(context).pop()),
@@ -338,6 +362,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           // Health score stays unknown; the seven days come from the phone repository.
           wellness: _wellness?.snapshot ?? const WellnessSnapshot(),
           onHistory: _wellness == null ? null : () => _history(context),
+          onPlan: _wellness != null && (_profile?['age'] as num? ?? 0) >= 18 ? () => _plan(context) : null,
           onQuiz: () => _playQuiz(context),
         ),
       ),

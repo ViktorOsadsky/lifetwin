@@ -11,6 +11,7 @@ import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/voice/fakes.dart';
 import 'package:lifesim/wellness/history_screen.dart';
 import 'package:lifesim/wellness/models.dart';
+import 'package:lifesim/wellness/coach_context.dart';
 import 'package:lifesim/wellness/repository_adapter.dart';
 
 class NoForecast implements ForecastClient {
@@ -40,6 +41,28 @@ void main() {
     );
     adapter = RepositoryWellness(repo, now: () => now);
   });
+  test('coach reads a fresh confirmed snapshot and scoped consent, without filling gaps', () async {
+    var context = coachContext(repo, now: now);
+    expect(context['profile'], isEmpty);
+    expect(context['checkins'], isEmpty);
+    expect(context['habit_notes'], isNull);
+    expect(context['outside_ai_consent'], isEmpty);
+    expect(context['local_date'], '2026-10-26');
+    expect(context['local_time'], '09:30');
+    await repo.saveConversationProfile({'age': 60, 'height_cm': 160, 'weight_kg': 70},
+      sources: {'weight_kg': HistorySource.wristband});
+    await repo.setOutsideAiConsent(true, provider: 'muse');
+    context = coachContext(repo, now: now);
+    expect(context['profile'], {'age': 60, 'height_cm': 160});
+    expect(context['outside_ai_consent'], {'muse': true});
+    expect(context, isNot(contains('healthScore')));
+    expect(context, isNot(contains('experiment')));
+    await repo.deleteMyData();
+    context = coachContext(repo, now: now);
+    expect(context['profile'], isEmpty);
+    expect(context['outside_ai_consent'], isEmpty);
+  });
+
   tearDown(() {
     adapter.dispose();
     repo.dispose();

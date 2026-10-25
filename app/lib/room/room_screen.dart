@@ -39,6 +39,7 @@ class RoomScreen extends StatefulWidget {
     this.wellness,
     this.onQuiz,
     this.onHistory,
+    this.onPlan,
     this.onUploadDocument,
   });
 
@@ -64,6 +65,7 @@ class RoomScreen extends StatefulWidget {
   final WellnessSnapshot? wellness;
   final VoidCallback? onQuiz;
   final VoidCallback? onHistory;
+  final VoidCallback? onPlan;
   /// "Upload a document": health-document upload, offered at entry beside Apple Health.
   final VoidCallback? onUploadDocument;
 
@@ -243,6 +245,7 @@ class _RoomScreenState extends State<RoomScreen> {
                                         runSpacing: 8,
                                         children: [
                                           StatusPill(label: _sim.status, icon: Icons.circle),
+                                          if (widget.onPlan != null) _HealthPill(onTap: widget.onPlan!, label: 'Today’s plan', icon: Icons.wb_sunny_outlined),
                                           if (widget.onUseHealth != null) _HealthPill(onTap: _useHealth),
                                           if (widget.onUploadDocument != null)
                                             _HealthPill(
