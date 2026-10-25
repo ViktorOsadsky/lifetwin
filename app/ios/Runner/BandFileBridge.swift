@@ -13,6 +13,17 @@ final class BandFileBridge: NSObject, UIDocumentPickerDelegate, FlutterStreamHan
   private var queuedBytes = 0
   private var queuedError: String?
   private var generation = 0
+  private let intakeQueue = DispatchQueue(label: "com.lifetwin.band-files", qos: .userInitiated)
+  // Claimed on the main thread before work is enqueued, and released only after
+  // its result returns there. Scene delivery and startup recovery share ownership.
+  private var claimedInboxURLs = Set<URL>()
+  private let inboxDirectory: URL
+
+  init(inboxDirectory: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    .appendingPathComponent("Inbox", isDirectory: true)) {
+    self.inboxDirectory = inboxDirectory.standardizedFileURL
+    super.init()
+  }
 
   static func register(with messenger: FlutterBinaryMessenger) {
     let bridge = shared
@@ -35,16 +46,9 @@ final class BandFileBridge: NSObject, UIDocumentPickerDelegate, FlutterStreamHan
       picker.delegate = self
       presenter.present(picker, animated: true)
     case "recoverInbox":
-      let inbox = Self.inbox()
-      let urls = (try? FileManager.default.contentsOfDirectory(at: inbox, includingPropertiesForKeys: nil)) ?? []
-      let files = urls.filter(Self.accepts)
-      readBatch(files, result: result)
+      recoverInbox(result: result)
     case "clear":
-      generation += 1
-      queued.removeAll(); queuedBytes = 0; queuedError = nil
-      let files = (try? FileManager.default.contentsOfDirectory(at: Self.inbox(), includingPropertiesForKeys: nil)) ?? []
-      for url in files where Self.accepts(url) { try? FileManager.default.removeItem(at: url) }
-      result(nil)
+      clear(result: result)
     default: result(FlutterMethodNotImplemented)
     }
   }
@@ -56,12 +60,16 @@ final class BandFileBridge: NSObject, UIDocumentPickerDelegate, FlutterStreamHan
   /// SceneDelegate calls this for both cold and warm Open-in delivery.
   func receive(_ url: URL) {
     guard Self.accepts(url) else { return }
+    let files = claim([url])
+    guard !files.isEmpty else { return }
     let request = generation
-    DispatchQueue.global(qos: .userInitiated).async {
+    intakeQueue.async {
       do {
         let data = try Self.read(url)
+        self.removeInboxCopies(files)
         DispatchQueue.main.async {
           guard request == self.generation else { return }
+          self.release(files)
           if let sink = self.sink { sink(FlutterStandardTypedData(bytes: data)) }
           else if self.queued.count < 14 && self.queuedBytes + data.count <= Self.maxBytes {
             self.queued.append(data); self.queuedBytes += data.count
@@ -70,33 +78,92 @@ final class BandFileBridge: NSObject, UIDocumentPickerDelegate, FlutterStreamHan
       } catch {
         DispatchQueue.main.async {
           guard request == self.generation else { return }
+          self.release(files)
           if let sink = self.sink { sink(Self.error("unavailable")) } else { self.queuedError = "unavailable" }
         }
       }
     }
   }
 
+  func recoverInbox(result: @escaping FlutterResult) {
+    let urls = (try? FileManager.default.contentsOfDirectory(at: inboxDirectory, includingPropertiesForKeys: nil)) ?? []
+    readBatch(urls.filter(Self.accepts).sorted { $0.lastPathComponent < $1.lastPathComponent }, result: result)
+  }
+
+  func clear(result: @escaping FlutterResult) {
+    generation += 1
+    claimedInboxURLs.removeAll()
+    queued.removeAll(); queuedBytes = 0; queuedError = nil
+    let files = (try? FileManager.default.contentsOfDirectory(at: inboxDirectory, includingPropertiesForKeys: nil)) ?? []
+    // Order deletion after outstanding reads, without allowing their stale
+    // completions to repopulate the Dart session or the native event queue.
+    intakeQueue.async {
+      self.removeInboxCopies(files.filter(Self.accepts))
+      DispatchQueue.main.async { result(nil) }
+    }
+  }
+
+  private func isInboxCopy(_ url: URL) -> Bool {
+    url.deletingLastPathComponent().standardizedFileURL == inboxDirectory
+  }
+
+  private func claim(_ urls: [URL]) -> [URL] {
+    var files = [URL]()
+    for url in urls {
+      let key = url.standardizedFileURL
+      if isInboxCopy(url) {
+        // A late SceneDelegate callback can refer to a copy recovery already
+        // consumed. A fresh delivery at the same path remains eligible.
+        if claimedInboxURLs.contains(key) || !FileManager.default.fileExists(atPath: url.path) { continue }
+        claimedInboxURLs.insert(key)
+      }
+      files.append(url)
+    }
+    return files
+  }
+
+  private func release(_ urls: [URL]) {
+    for url in urls where isInboxCopy(url) { claimedInboxURLs.remove(url.standardizedFileURL) }
+  }
+
+  private func removeInboxCopies(_ urls: [URL]) {
+    for url in urls where isInboxCopy(url) { try? FileManager.default.removeItem(at: url) }
+  }
+
   private func readBatch(_ urls: [URL], result: @escaping FlutterResult) {
     guard urls.count <= 14 else { return result(Self.error("too_large")) }
+    let files = claim(urls)
     let request = generation
-    DispatchQueue.global(qos: .userInitiated).async {
+    intakeQueue.async {
       do {
         var total = 0
         var data = [Data]()
-        for url in urls {
+        for url in files {
           let bytes = try Self.read(url)
           total += bytes.count
           guard total <= Self.maxBytes else { throw ReadFailure.tooLarge }
           data.append(bytes)
         }
+        // Keep every copy on transport failure: Dart receives the whole batch
+        // or none of it, so earlier successful reads must remain retryable.
+        self.removeInboxCopies(files)
         DispatchQueue.main.async {
           guard request == self.generation else { return result(Self.error("cancelled")) }
+          self.release(files)
           result(data.map { FlutterStandardTypedData(bytes: $0) })
         }
       } catch let failure as ReadFailure {
-        DispatchQueue.main.async { result(Self.error(failure == .tooLarge ? "too_large" : "unavailable")) }
+        DispatchQueue.main.async {
+          guard request == self.generation else { return result(Self.error("cancelled")) }
+          self.release(files)
+          result(Self.error(failure == .tooLarge ? "too_large" : "unavailable"))
+        }
       } catch {
-        DispatchQueue.main.async { result(Self.error("unavailable")) }
+        DispatchQueue.main.async {
+          guard request == self.generation else { return result(Self.error("cancelled")) }
+          self.release(files)
+          result(Self.error("unavailable"))
+        }
       }
     }
   }
@@ -107,10 +174,6 @@ final class BandFileBridge: NSObject, UIDocumentPickerDelegate, FlutterStreamHan
     let access = url.startAccessingSecurityScopedResource()
     defer {
       if access { url.stopAccessingSecurityScopedResource() }
-      // Delete only OS-delivered app Inbox copies, never the user's original.
-      if url.deletingLastPathComponent().standardizedFileURL == inbox().standardizedFileURL {
-        try? FileManager.default.removeItem(at: url)
-      }
     }
     var coordinationError: NSError?
     var readError: Error?
@@ -133,9 +196,6 @@ final class BandFileBridge: NSObject, UIDocumentPickerDelegate, FlutterStreamHan
     return output
   }
 
-  private static func inbox() -> URL {
-    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("Inbox", isDirectory: true)
-  }
   private static func presenter() -> UIViewController? {
     var controller = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
       .flatMap(\.windows).first(where: \.isKeyWindow)?.rootViewController
