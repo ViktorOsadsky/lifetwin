@@ -70,9 +70,23 @@ class TwinAssessment {
     return available && s is num ? s.toDouble() : null;
   }
 
-  /// The health score shown to the person: HIGHER IS BETTER (owner ruling 2026-10-24);
-  /// 0 is the average survey participant. See [healthScoreFromRaw].
-  double? get healthScore => healthScoreFromRaw(rawLogRelativeHazard);
+  /// The health score shown to the person, the HEALTH INDEX (owner ruling 2026-10-24:
+  /// "invert so higher is better"): `exp(median s of the age group − s)`, where s is the Cox
+  /// log relative hazard without the age and sex terms, over exactly the rows and band that
+  /// [ageGroupPercentile] ranks (see [AgeGroup.medianScore]). 1.0 is the middle of people
+  /// your age and sex in the survey; HIGHER IS BETTER; above 1 exactly when the percentile
+  /// is above 50 (up to a tie at the median). Ages 18–34 and 80–85 use the percentile's
+  /// extrapolation and carry its [extrapolated] ("Rough guide") flag. Null unless the model
+  /// gave a number ([rawLogRelativeHazard]); never filled in. A ratio of modelled hazards,
+  /// not a probability.
+  double? get healthScore {
+    final h = (raw['age_group'] as Map?)?['health_index'];
+    return rawLogRelativeHazard != null && h is double && h.isFinite ? h : null;
+  }
+
+  /// The group [healthScore] and [ageGroupPercentile] compare with, as the band actually
+  /// used, e.g. `women 59–69`. Null whenever [healthScore] is null.
+  String? get healthGroupLabel => healthScore == null ? null : (raw['age_group'] as Map?)?['label'] as String?;
 
   HealthScoreStatus get healthScoreStatus => switch (status) {
     'available' => extrapolated ? HealthScoreStatus.extrapolated : HealthScoreStatus.available,
@@ -178,11 +192,19 @@ class WellnessCard {
   final String sourceUrl;
 }
 
-/// The ONE place the health score's direction is set. Owner ruling (2026-10-24): "higher
-/// should mean better health rating", so the displayed score is the negated
-/// `log_relative_hazard_score`. If the model owner changes the scoring, change only this.
-double? healthScoreFromRaw(double? rawLogRelativeHazard) =>
-    rawLogRelativeHazard == null ? null : -rawLogRelativeHazard;
+/// The engine (and scale) of the health score: the Cox health index ([AgeGroup.healthIndex]).
+/// Stored on every score history point; readers keep only this engine's points, so scales
+/// never mix.
+const healthScoreEngine = 'cox_index_v1';
+
+/// The tag a history point stored before the engine tag existed reads as: the earlier
+/// −(Cox log relative hazard) scale, which readers leave out.
+const legacyHealthScoreEngine = 'cox_v1';
+
+/// Shown with a compare() whose only change is a higher BMI ([TwinModelService.compare]).
+const weightGuardWarning =
+    'A higher weight is never shown as a benefit: the model\'s BMI link is not evidence that '
+    'gaining weight helps.';
 
 /// Owner ruling: "it is okay to extrapolate a bit below and above the age ranges".
 const extrapolatedAgeRange = (low: 18, high: 85);
@@ -212,7 +234,7 @@ num? anchorAge(Object? age) {
 /// `score += coefficient[age_decade] * (age - anchor) / 10`, `S(t) = baseline(t)^exp(score)`.
 /// The age is not clamped, so an 84-year-old is not shown a 79-year-old's survival.
 class TwinModelService {
-  TwinModelService(this.engine, {Float64List? reference})
+  TwinModelService(this.engine, {Float64List? reference, this.projection})
     : _ageGroups = reference == null
           ? null
           : AgeGroupReference(
@@ -229,6 +251,10 @@ class TwinModelService {
   }
 
   final LifeTwinEngine engine;
+
+  /// The handoff's projection lab, used only for the lifespan estimate's yearly Cox curve
+  /// (lifespan.dart). Nothing in the app reads its neural output. Null: no estimate.
+  final LifeTwinProjectionLab? projection;
   final AgeGroupReference? _ageGroups;
   final double _ageCoefficient;
   final List<double> _baseline;
@@ -237,6 +263,7 @@ class TwinModelService {
   static Future<TwinModelService> load({AssetBundle? bundle}) async {
     final assets = bundle ?? rootBundle;
     final engine = LifeTwinEngine(await loadLifeTwinModel(bundle: bundle));
+    final projection = await loadLifeTwinProjectionLab(bundle: assets, cox: engine.model);
     final data = await assets.load('packages/lifetwin_on_device/assets/support_reference.f64.gz');
     final bytes = Uint8List.fromList(gzip.decode(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)));
     final reference = Float64List(bytes.lengthInBytes ~/ 8);
@@ -244,7 +271,7 @@ class TwinModelService {
     for (var i = 0; i < reference.length; i++) {
       reference[i] = view.getFloat64(i * 8, Endian.little);
     }
-    return TwinModelService(engine, reference: reference);
+    return TwinModelService(engine, reference: reference, projection: projection);
   }
 
   String get modelVersion => engine.model.spec['model_version'] as String;
@@ -290,7 +317,68 @@ class TwinModelService {
 
   /// `LifeTwinEngine.compare()` with the same age extrapolation. Request and result have
   /// the package's shapes, plus `extrapolated` and `extrapolation_caveat`.
+  ///
+  /// Weight guard (model card: the fitted BMI link is inverse for older/heavier profiles and
+  /// is not evidence that gaining weight helps): when the only change is a higher BMI
+  /// (`bmi`, or `height_cm`/`weight_kg`), the alternative's survival is the current one and
+  /// the modelled difference is zero in every year, with `weight_guard: true` and
+  /// [weightGuardWarning]. Every experiment, plan and recommendation goes through here.
+  ///
+  /// Also `health_index_current`, `health_index_alternative` (each side's
+  /// [TwinAssessment.healthScore]) and `health_index_delta` = alternative − current: the
+  /// experiment's score change (null when either side has no score; 0 under the guard).
   Map<String, dynamic> compare(Map<String, dynamic> request) {
+    var result = _compare(request);
+    final current = request['current_profile'] as Map, alternative = request['alternative_profile'] as Map;
+    final difference = result['modeled_difference_percentage_points'];
+    final guarded = difference is Map && _onlyHigherBmi(current, alternative);
+    if (guarded) {
+      result = {
+        ...result,
+        'alternative': Map<String, dynamic>.from(result['current'] as Map),
+        'modeled_difference_percentage_points': {for (final y in difference.keys) '$y': 0.0},
+        'weight_guard': true,
+        'warnings': [...result['warnings'] as List? ?? const [], weightGuardWarning],
+      };
+    }
+    final now = _healthIndex(result['current'] as Map, current);
+    final then = guarded ? now : _healthIndex(result['alternative'] as Map, alternative);
+    return {
+      ...result,
+      'health_index_current': now,
+      'health_index_alternative': then,
+      'health_index_delta': now == null || then == null ? null : (guarded ? 0.0 : then - now),
+    };
+  }
+
+  /// The health index for a compare() side: its moved score against [profile]'s age group.
+  double? _healthIndex(Map survival, Map profile) {
+    final score = survival['log_relative_hazard_score'];
+    final age = profile['age'], sex = profile['sex_nhanes'];
+    if (survival['status'] != 'available' || score is! num || age is! num || sex is! num || _ageGroups == null) {
+      return null;
+    }
+    final h = _ageGroups.compare(score: score.toDouble(), age: age, female: sex == 2).healthIndex;
+    return h.isFinite ? h : null;
+  }
+
+  /// True when [b] differs from [a] only in weight, height or BMI, and its BMI is higher.
+  static bool _onlyHigherBmi(Map a, Map b) {
+    const bmiKeys = {'bmi', 'height_cm', 'weight_kg'};
+    final others = {...a.keys, ...b.keys}.where((k) => !bmiKeys.contains(k) && a[k] != b[k]);
+    final before = bmiOf(a), after = bmiOf(b);
+    return others.isEmpty && before != null && after != null && after > before;
+  }
+
+  /// `bmi`, else weight / height² from `height_cm` and `weight_kg`; null without either.
+  static double? bmiOf(Map p) {
+    final bmi = p['bmi'], h = p['height_cm'], w = p['weight_kg'];
+    if (bmi is num) return bmi.toDouble();
+    if (h is num && w is num && h > 0) return w / ((h / 100) * (h / 100));
+    return null;
+  }
+
+  Map<String, dynamic> _compare(Map<String, dynamic> request) {
     final current = Map<String, dynamic>.from(request['current_profile'] as Map);
     final alternative = Map<String, dynamic>.from(request['alternative_profile'] as Map);
     final a = anchorAge(current['age']), b = anchorAge(alternative['age']);
@@ -385,10 +473,30 @@ class AgeGroup {
     required this.bandHigh,
     required this.width,
     required this.nearestBand,
+    required this.female,
+    required this.ownScore,
+    required this.medianScore,
   });
 
   /// 0–100: the share of the band whose score is higher (worse) than the person's.
   final double percentile;
+
+  final bool female;
+
+  /// The person's score without the age and sex terms: the quantity [percentile] ranks.
+  final double ownScore;
+
+  /// The band's median of that score: the ⌈n/2⌉-th smallest (the lower median when n is
+  /// even), so that `ownScore < medianScore` exactly when [percentile] > 50.
+  final double medianScore;
+
+  /// The health index `exp(medianScore − ownScore)`: 1.0 is the middle of the band, higher
+  /// is better, above 1 exactly when [percentile] > 50 (a tie at the median gives 1.0).
+  double get healthIndex => math.exp(medianScore - ownScore);
+
+  /// The band actually used, e.g. `women 59–69`.
+  String get label => '${female ? 'women' : 'men'} ${_age(bandLow)}–${_age(bandHigh)}';
+  static String _age(num a) => a == a.roundToDouble() ? '${a.round()}' : '$a';
   final int size;
   final num bandLow;
   final num bandHigh;
@@ -404,6 +512,8 @@ class AgeGroup {
     'band_high': bandHigh,
     'width': width,
     'nearest_band': nearestBand,
+    'health_index': healthIndex,
+    'label': label,
   };
 }
 
@@ -470,9 +580,14 @@ class AgeGroupReference {
       if (size >= minPeople) break;
     }
     var worse = 0;
+    final band = <double>[];
     for (var r = 0; r < _rows; r++) {
-      if (_female[r] == female && _ages[r] >= low && _ages[r] <= high && _scores[r] > own) worse++;
+      if (_female[r] == female && _ages[r] >= low && _ages[r] <= high) {
+        band.add(_scores[r]);
+        if (_scores[r] > own) worse++;
+      }
     }
+    band.sort();
     return AgeGroup(
       percentile: size == 0 ? 0 : 100 * worse / size,
       size: size,
@@ -480,6 +595,9 @@ class AgeGroupReference {
       bandHigh: high,
       width: width,
       nearestBand: nearest,
+      female: female,
+      ownScore: own,
+      medianScore: band.isEmpty ? double.nan : band[(band.length + 1) ~/ 2 - 1],
     );
   }
 }

@@ -161,9 +161,19 @@ class ExperimentResult {
     this.supportIssues = const [],
     this.interpretation,
     this.extrapolated = false,
+    this.scoreDelta,
+    this.currentScore,
+    this.alternativeScore,
   });
 
-  /// - `available`: [differenceByYear] holds the numbers.
+  /// The health score change: the changed twin's health index − the current twin's (both
+  /// from one compare(); higher is better). 0 under the weight guard. Null unless
+  /// [available].
+  final double? scoreDelta;
+  final double? currentScore;
+  final double? alternativeScore;
+
+  /// - `available`: [differenceByYear] and [scoreDelta] hold the numbers.
   /// - `no_change`: nothing moved yet.
   /// - `not_counted`: every moved lever is "Not counted" (see [levers]).
   /// - `current_unavailable`: the person's own result has no number ([message],
@@ -309,6 +319,9 @@ class TwinExperiment extends ChangeNotifier {
         extrapolated: x,
         status: 'available',
         differenceByYear: TwinAssessment.yearMap(c['modeled_difference_percentage_points']),
+        scoreDelta: (c['health_index_delta'] as num?)?.toDouble(),
+        currentScore: (c['health_index_current'] as num?)?.toDouble(),
+        alternativeScore: (c['health_index_alternative'] as num?)?.toDouble(),
         currentPercentByYear: cur.percentByYear,
         alternativePercentByYear: alt.percentByYear,
         levers: flags,

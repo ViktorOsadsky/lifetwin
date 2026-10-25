@@ -248,6 +248,32 @@ class LifeTwinModel {
     };
   }
 
+  /// Mathematical Cox recurrence for the projection lab only. This deliberately
+  /// bypasses the trained-age and neighbor-support gates; callers must label it
+  /// as unvalidated when the assessment age is outside 35–79.
+  /// (Copied unchanged from model_handoff/lifetwin_on_device, commit 9ac602e.)
+  double experimentalConditionalSurvival(
+    Map<String, dynamic> profile,
+    int years,
+  ) {
+    final missing = <String>[];
+    final clean = _validate(profile, missing);
+    if (clean == null) {
+      throw FormatException('Missing model inputs: $missing');
+    }
+    if (years < 1 || years > _baseline.length) {
+      throw const FormatException('Only years 1–5 are in the Cox artifact');
+    }
+    final encoded = _encode(clean);
+    var score = 0.0;
+    for (var i = 0; i < encoded.length; i++) {
+      score += (encoded[i] - _center[i]) * _coefficients[i];
+    }
+    return math
+        .pow(_baseline[years - 1], math.exp(score.clamp(-40, 40)))
+        .toDouble();
+  }
+
   Map<String, dynamic> compare(
     Map<String, dynamic> current,
     Map<String, dynamic> alternative,

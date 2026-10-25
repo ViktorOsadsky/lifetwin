@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -20,14 +21,16 @@ void main() {
 
   Map<String, dynamic> g(int i) => Map<String, dynamic>.from(golden[i]['profile'] as Map);
 
-  test('the raw score is predict()\'s log_relative_hazard_score exactly, and the score is its negation', () {
+  test('the raw score is predict()\'s log_relative_hazard_score exactly; the score is the health index', () {
     for (var i = 0; i < golden.length; i++) {
       final a = model.assessModel(g(i));
       final predicted = model.engine.model.predict(g(i));
       expect(predicted['status'], 'available');
       expect(a.rawLogRelativeHazard, predicted['log_relative_hazard_score']);
       expect(a.rawLogRelativeHazard, closeTo((golden[i]['log_relative_hazard_score'] as num).toDouble(), 1e-12));
-      expect(a.healthScore, -(predicted['log_relative_hazard_score'] as num)); // higher = better
+      // The health index: higher = better, above 1 exactly when the percentile is above 50.
+      expect(a.healthScore!, greaterThan(0));
+      if (a.healthScore != 1.0) expect(a.healthScore! > 1, a.ageGroupPercentile! > 50);
       expect(a.healthScoreStatus, HealthScoreStatus.available);
     }
   });
@@ -60,13 +63,12 @@ void main() {
       final a = model.assessModel({...g(0), 'age': age});
       expect(a.healthScoreStatus, HealthScoreStatus.extrapolated, reason: 'age $age');
       expect(a.rawLogRelativeHazard, a.survival['log_relative_hazard_score']);
-      expect(a.healthScore, -(a.survival['log_relative_hazard_score'] as num));
       expect(a.healthScore, isNotNull);
+      expect(a.ageGroupNearestBand, isTrue);
     }
     final anchor = model.assessModel({...g(0), 'age': 35}).rawLogRelativeHazard!;
     final younger = model.assessModel({...g(0), 'age': 34}).rawLogRelativeHazard!;
     expect(younger, lessThan(anchor)); // a year younger: lower modelled risk
-    expect(model.assessModel({...g(0), 'age': 34}).healthScore!, greaterThan(-anchor)); // higher score
     expect(model.assessModel({...g(0), 'age': 79}).healthScoreStatus, HealthScoreStatus.available);
   });
 
@@ -142,6 +144,22 @@ void main() {
       final f = ref.compare(score: scoreOf(-7.05, 45, true), age: 45, female: true);
       expect(f.size, 40);
       expect(f.percentile, closeTo(100 * 20 / 40, 1e-9)); // women k = 20..39 are higher than -7.05
+    });
+
+    test('hand-computed health index: exp(lower median − own), 1.0 at the median', () {
+      // 60 men: sedentary k/10, k = 0..59; the 30th smallest (k = 29) is the lower median.
+      final median = (2.9 - centre[7]) * coef[7];
+      final r = ref.compare(score: scoreOf(3.05, 45, false), age: 45, female: false);
+      expect(r.medianScore, closeTo(median, 1e-12));
+      expect(r.healthIndex, closeTo(math.exp(median - (3.05 - centre[7]) * coef[7]), 1e-12));
+      expect(r.healthIndex, lessThan(1)); // percentile 48.3 < 50
+      final at = ref.compare(score: scoreOf(2.9, 45, false), age: 45, female: false);
+      expect(at.healthIndex, closeTo(1.0, 1e-12));
+      expect(at.percentile, 50); // k = 30..59 are higher
+      final just = ref.compare(score: scoreOf(2.85, 45, false), age: 45, female: false);
+      expect(just.healthIndex, greaterThan(1));
+      expect(just.percentile, greaterThan(50));
+      expect(r.label, 'men 40–50');
     });
 
     test('edges: nobody worse is 100, nobody better is 0; monotonic in between', () {
@@ -241,13 +259,19 @@ void main() {
       await repo.saveConversationProfile(fullProfile);
       expect(repo.healthScoreStatus, HealthScoreStatus.available);
       expect(repo.rawLogRelativeHazard, repo.current!.survival['log_relative_hazard_score']);
-      expect(repo.healthScore, -repo.rawLogRelativeHazard!);
+      expect(repo.healthScore, repo.current!.healthScore);
+      expect(repo.healthScore, isNotNull);
     });
 
     test('lifespanEstimate comes from the current profile; none before a profile or under 18', () async {
       final repo = await repoOn(MemoryBackend());
       expect(repo.lifespanEstimate, isNull);
+      // The yearly projection of this healthy 45-year-old stays above 25% at 110: the
+      // 75th-percentile age is open-ended (110), and there is still an estimate.
       await repo.saveConversationProfile(fullProfile);
+      expect(repo.lifespanEstimate!.p75OpenEnded, isTrue);
+      expect(repo.lifespanEstimate!.p75Age, 110);
+      await repo.saveConversationProfile({...fullProfile, 'age': 64, 'smoking_status': 'current'});
       final e = repo.lifespanEstimate!;
       final age = repo.current!.profileUsed['age'] as num;
       expect(e.expectedAge, greaterThan(age));
@@ -270,7 +294,7 @@ void main() {
       expect((await repoOn(backend)).lifespanRevealSeen, isFalse);
     });
 
-    test('stored history keeps the raw value; the point shows the negated score', () async {
+    test('stored history keeps the raw value and the health index; old-scale points are left out', () async {
       final backend = MemoryBackend();
       final repo = await repoOn(backend);
       await repo.saveConversationProfile(fullProfile);
@@ -279,9 +303,13 @@ void main() {
       final point = repo.healthScoreHistory().single;
       expect(point.rawLogRelativeHazard, repo.rawLogRelativeHazard);
       expect(point.score, repo.healthScore);
-      // A point written before the sign change reads the same way.
+      expect((stored.single as Map)['health_index'], repo.healthScore);
+      // A point written before the engine tag (the old −log-hazard scale) has no index and a
+      // legacy engine, so the history readers leave it out.
       final old = HealthScorePoint.fromJson({'at': '2026-10-01T09:00:00.000', 'score': 0.5, 'status': 'available'});
-      expect(old.score, -0.5);
+      expect(old.score, isNull);
+      expect(old.rawLogRelativeHazard, 0.5);
+      expect(old.engine, legacyHealthScoreEngine);
       expect(old.toJson()['score'], 0.5);
     });
 
