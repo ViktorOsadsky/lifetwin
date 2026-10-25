@@ -1,0 +1,11 @@
+{
+  "source": "1a648bd405df4c76b5c1dea3339194c31201913c",
+  "result": "INTERRUPTED before timed segment",
+  "complete_route": false,
+  "elapsed_native_session_seconds": 63.861,
+  "timed_segment_started": false,
+  "last_native_step": "Waiting for initial Experiment with your twin Home button",
+  "native_log": "Restarting after unexpected exit, crash, or test timeout; final TEST EXECUTE FAILED",
+  "cause": "Unconfirmed native-session failure; no product crash asserted",
+  "environment_change_for_next_attempt": "Wait for separately owned iOS 27 probe to restore/shut down; run only assigned iOS 26.4 booted. Concurrency is not asserted as cause."
+}
