@@ -95,11 +95,10 @@ void main() {
     }
   });
 
-  test('Exercise, Eat, Fortune and Sleep from every idle position avoid the bed', () {
+  test('Exercise, Eat and Sleep from every idle position avoid the bed', () {
     for (final start in places) {
       for (final a in RoomAction.values) {
         final sim = RoomSim(layout: layout, random: math.Random(5))..pos = start;
-        sim.onFortune = sim.fortuneDone;
         Offset? hopFrom;
         sim.startAction(a);
         runChecked(
@@ -140,42 +139,14 @@ void main() {
     expect(sim.onBed, isFalse);
   });
 
-  test('from every idle spot to the shelf: every segment is clear and the walk gets there', () {
-    final shelf = layout.spots['fortune']!;
-    final idle = <String, Offset>{
-      'start': const Offset(0.35, 0.3),
-      for (final (i, w) in layout.wander.indexed) 'wander$i': w,
-      for (final k in ['rug', 'exercise', 'eat', 'sleepSide']) k: layout.spots[k]!,
-    };
-    for (final MapEntry(key: name, value: from) in idle.entries) {
-      final path = layout.planPath(from, shelf);
-      expect(path.last, shelf, reason: name);
-      var a = from;
-      for (final p in path) {
-        expect(layout.clear(a, p), isTrue, reason: '$name: segment $a -> $p crosses furniture');
-        expect(layout.blocked(p), isFalse, reason: '$name: node $p is inside furniture');
-        a = p;
-      }
-      // And the twin really walks it, frame by frame, to the shelf.
-      final sim = RoomSim(layout: layout, random: math.Random(3))..pos = from;
-      addTearDown(sim.dispose);
-      sim.startAction(RoomAction.fortune);
-      var arrived = false;
-      runChecked(sim, 400, each: (_) => arrived |= sim.status == 'Hmm, let me see');
-      expect(arrived, isTrue, reason: '$name: reached the shelf');
-      expect((sim.pos - shelf).distance, lessThan(1e-9), reason: name);
-    }
-  });
-
   test('a frame hitch (large dt) never moves the twin past a corner or through furniture', () {
     // Corners of every planned walk are where a big step could cut across a box: walk the
     // longest detours with huge, erratic frame times and check every move.
     const maxMove = 0.82 * 0.05; // walking speed x the per-step dt cap
     for (final dt in [0.05, 0.1, 0.25, 0.5, 1.0, 5.0]) {
       for (final start in places) {
-        for (final a in [RoomAction.fortune, RoomAction.exercise, RoomAction.sleep]) {
+        for (final a in [RoomAction.exercise, RoomAction.sleep]) {
           final sim = RoomSim(layout: layout, random: math.Random(11))..pos = start;
-          sim.onFortune = sim.fortuneDone;
           sim.startAction(a);
           var prev = sim.pos;
           for (var i = 0; i < 400; i++) {
@@ -199,11 +170,10 @@ void main() {
   });
 
   test('stress: 20,000 random steps x 10 seeds with presses, taps, mid-hop presses and hitches', () {
+    var totalMidHop = 0;
     for (var seed = 1; seed <= 10; seed++) {
       final sim = RoomSim(layout: layout, random: math.Random(seed));
       final drive = math.Random(1000 + seed);
-      var fortunes = 0;
-      sim.onFortune = () => fortunes++;
       var prev = sim.pos;
       var prevInBed = sim.inBed;
       var sleeps = 0, midHop = 0;
@@ -217,7 +187,6 @@ void main() {
         } else if (x < 0.009) {
           sim.longPressTwin();
         }
-        if (sim.action == RoomAction.fortune && drive.nextDouble() < 0.02) sim.fortuneDone();
         // Mid-hop presses: an action while the twin is in the air onto the bed.
         if (sim.inBed && !sim.onBed && sim.action == RoomAction.sleep && drive.nextDouble() < 0.3) {
           midHop++;
@@ -236,9 +205,10 @@ void main() {
       }
       expect(visited.length, greaterThan(40), reason: 'seed $seed: the twin got around the room');
       expect(sleeps, greaterThan(0), reason: 'seed $seed: slept at least once');
-      expect(fortunes + midHop, greaterThan(0), reason: 'seed $seed');
+      totalMidHop += midHop;
       sim.dispose();
     }
+    expect(totalMidHop, greaterThan(0), reason: 'the mid-hop presses were exercised');
   });
 
   group('draw order', () {

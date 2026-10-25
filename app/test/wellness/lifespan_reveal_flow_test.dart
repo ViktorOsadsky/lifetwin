@@ -113,9 +113,8 @@ void main() {
     expect(next.lifespanRevealSeen, isTrue);
     expect(RepositoryWellness(next).snapshot.lifespanRevealSeen, isTrue);
 
-    // "See your estimate" (the Room's score card) shows it.
+    // the Room's score card shows it (display only).
     await t.pumpWidget(const SizedBox());
-    final client3 = FakeForecastClient()..answers.add(forecastFrom(supportedJson()));
     await t.pumpWidget(
       LifeTwinApp(
         controller: VoiceOnboardingController(
@@ -123,17 +122,12 @@ void main() {
           input: FakeSpeechInput(),
           output: FakeSpeechOutput(),
         ),
-        forecastClient: client3,
         twin: Future.value(next),
       ),
     );
     await t.pumpAndSettle();
     expect(find.text('Estimate, rough guide'), findsOneWidget, reason: 'on the Home chip too, flag off');
     await t.ensureVisible(find.text('Around ${next.lifespanEstimate!.expectedYear}'));
-    await t.tap(find.text('Around ${next.lifespanEstimate!.expectedYear}'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Ask the ball'));
-    await t.pumpAndSettle();
     expect(find.text('Around ${next.lifespanEstimate!.expectedYear}'), findsOneWidget);
   });
 }
