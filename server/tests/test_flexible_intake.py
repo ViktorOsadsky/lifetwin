@@ -263,7 +263,7 @@ def test_yes_with_a_correction_while_confirming_changes_nothing():
     pending = reply("height_cm", "5 ft 10 in", service).state
     request = TurnRequest(action="reply", state=pending, text="yes but 6 ft")
     result = asyncio.run(service.turn(request))
-    assert result.state == pending
+    assert result.state.model_copy(update={"yes_no_checked": False}) == pending
     assert result.message.endswith("Is that right?")
 
 

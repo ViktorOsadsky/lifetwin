@@ -154,6 +154,9 @@ class ConversationState(ApiModel):
     ask_only: list[ProfileField] | None = Field(default=None, max_length=FIELD_COUNT)
     # The end-of-intake offer of the missing answers was made (it is made once, never again).
     missing_offered: bool = False
+    # Mochi asked "Just to check: is that a yes?" once for the open yes/no question. An
+    # unclear reply to that check is a no (nothing is consented or saved); never a loop.
+    yes_no_checked: bool = False
 
     @model_validator(mode="after")
     def consistent_state(self):

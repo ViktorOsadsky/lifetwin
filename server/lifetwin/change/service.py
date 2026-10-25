@@ -70,6 +70,7 @@ from lifetwin.change.scripts import (
     current_line,
     heard,
 )
+from lifetwin.core.intent import ALSO_UPDATE, read_local, widen_read_back
 from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.intents import (
     EMERGENCY_MESSAGE,
@@ -625,7 +626,7 @@ class ChangeService:
     def _reply_to_read_back(self, state: ChangeState, turn: _Turn, text: str) -> str:
         field = state.field
         pending = state.pending.model_dump(exclude_none=True)
-        said, rest = read_back_reply(text)
+        said, rest = widen_read_back(*read_back_reply(text), text)
         if field == "diabetes":
             # The doctor question is the diabetes question itself: "yes, last spring".
             answer = _safe(parse_reply, text, "diabetes", today=turn.today) or {}
@@ -681,6 +682,10 @@ class ChangeService:
 
     def _after_done(self, state: ChangeState, turn: _Turn, text: str) -> str:
         said = read_back_reply(text)[0]
+        if said not in {"yes", "no"} and state.options and not self._mentioned(text):
+            # "Go for it" / "nah, I'm good" to "Would you like to update that too?"
+            heard = read_local(text, ALSO_UPDATE)
+            said = "yes" if heard.clear_yes else "no" if heard.clear_no else said
         if state.options and said == "yes":
             # "You also mentioned your drinks. Would you like to update that too?"
             following, *rest = state.options

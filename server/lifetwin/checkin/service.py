@@ -61,6 +61,15 @@ from lifetwin.checkin.understanding import (
     read_activity,
     read_sitting,
 )
+from lifetwin.core.intent import (
+    ClaudeIntentReader,
+    IntentResult,
+    explained,
+    read_back,
+    read_intent,
+    read_local,
+    widen_read_back,
+)
 from lifetwin.core.models import CheckinValues
 from lifetwin.core.quantities import contradicts
 from lifetwin.onboarding.habits import merge, read_notes
@@ -501,7 +510,10 @@ class CheckinService:
         clock: Callable[[], date] = date.today,
         personalizer: Personalizer | None = None,
         timeout_seconds: float = 6,
+        intent_reader: ClaudeIntentReader | None = None,
     ):
+        # Claude reads an unclear yes/no reply, only with the person's yes for Claude.
+        self.intent_reader = intent_reader
         # The shared outside-AI provider, which may reword the care reply only with the
         # person's consent for it. None (the default): templates only.
         self.personalizer = personalizer
@@ -570,7 +582,7 @@ class CheckinService:
         """The route's turn: with consent for the active provider, the care reply may be
         reworded. It may only change the words, and the safety phrase must survive, or
         the template stands."""
-        response = self._turn(request)
+        response = self._turn(request, await self._claude_heard(request))
         template = self._care_template(request, response)
         if not template:
             return response
@@ -582,6 +594,32 @@ class CheckinService:
             if reworded and SAFETY_PHRASE in reworded:
                 message = reworded
         return self._with_care(response, message)
+
+    async def _claude_heard(self, request: CheckinTurnRequest) -> IntentResult | None:
+        """Claude's reading of a read-back reply the rules could not settle, or None.
+
+        Only for a reply to a read-back or Apple Health's number, with no number in it,
+        and only with the person's yes for Claude.
+        """
+        state = request.state
+        text = clean_reply(normalize_text(request.text or ""))
+        if (
+            request.action != "reply"
+            or not text
+            or self.intent_reader is None
+            or request.outside_ai_consent.get("claude") is not True
+            or not (state.phase == "confirming" or self._suggestion(state) is not None)
+            or re.search(r"\d", text)
+            or read_back_reply(text)[0] not in {"unsure", "other"}
+        ):
+            return None
+        question = read_back(self._prompt(state))
+        if read_local(text, question).confident and explained(text, question):
+            return None
+        reading = await read_intent(
+            text, question, self.intent_reader, allowed=True, ask_claude=True
+        )
+        return reading if reading.source == "claude" else None
 
     def _care_template(self, request: CheckinTurnRequest, response: CheckinResponse) -> str | None:
         before = request.state
@@ -612,7 +650,9 @@ class CheckinService:
             }
         )
 
-    def _turn(self, request: CheckinTurnRequest) -> CheckinResponse:
+    def _turn(
+        self, request: CheckinTurnRequest, claude_heard: IntentResult | None = None
+    ) -> CheckinResponse:
         state = request.state.model_copy(deep=True)
         action = request.action
         text = clean_reply(normalize_text(request.text or ""))
@@ -826,6 +866,8 @@ class CheckinService:
         if action == "reply" and state.phase == "confirming" and field is None:
             # The one read-back at the end (quick and daily). Only a plain yes saves.
             said, rest = (read_back, "") if read_back else read_back_reply(text)
+            if not read_back:
+                said, rest = widen_read_back(said, rest, text, claude_heard)
             answered = self._answered_topics(state)
             if said in {"yes_value", "unsure"} and rest and not read_back:
                 # "Yes, and I also walked 20 minutes": a skipped question answered early.
@@ -865,6 +907,8 @@ class CheckinService:
         if action == "reply" and state.phase == "confirming":
             # Only an unmistakable yes confirms; a no never does.
             said, rest = (read_back, "") if read_back else read_back_reply(text)
+            if not read_back:
+                said, rest = widen_read_back(said, rest, text, claude_heard)
             if read_back == "correction":
                 rest = text
             pending = state.pending.model_dump(exclude_none=True)
@@ -943,7 +987,7 @@ class CheckinService:
         if suggestion is not None:
             # "Apple Health says about 7 hours. Does that sound right?": a yes is heard
             # like any answer; a no asks the question itself; a number replaces it.
-            said, rest = read_back_reply(text)
+            said, rest = widen_read_back(*read_back_reply(text), text, claude_heard)
             if said == "yes":
                 return self._hear(state, {field: suggestion}, request, text)
             self._drop_suggestion(state)

@@ -592,7 +592,8 @@ def test_no_with_value_while_confirming_corrects_pending(client, text):
 def test_ambiguous_reply_while_confirming_changes_nothing(client, text):
     pending = turn(client, "reply", asking("height_cm"), text="5 ft 10 in")["state"]
     result = turn(client, "reply", pending, text=text)
-    assert result["state"] == pending
+    # Only the one "Is that a yes?" check is noted; no answer changes.
+    assert result["state"] == {**pending, "yes_no_checked": result["state"]["yes_no_checked"]}
     message = result["message"]
     assert message.endswith("Is that right?") or "right answer for your height" in message
 

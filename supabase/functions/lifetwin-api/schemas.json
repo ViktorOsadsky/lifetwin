@@ -4869,6 +4869,11 @@
             "maxItems": 16,
             "title": "Unknown Fields",
             "type": "array"
+          },
+          "yes_no_checked": {
+            "default": false,
+            "title": "Yes No Checked",
+            "type": "boolean"
           }
         },
         "title": "ConversationState",
@@ -5638,6 +5643,11 @@
             "maxItems": 16,
             "title": "Unknown Fields",
             "type": "array"
+          },
+          "yes_no_checked": {
+            "default": false,
+            "title": "Yes No Checked",
+            "type": "boolean"
           }
         },
         "required": [
@@ -5662,7 +5672,8 @@
           "seed",
           "small_talk",
           "ask_only",
-          "missing_offered"
+          "missing_offered",
+          "yes_no_checked"
         ],
         "title": "ConversationState",
         "type": "object"
