@@ -221,10 +221,11 @@ void main() {
     });
 
     test('an alternative outside the model support shows the package status and no number', () {
-      // Found by scanning: 40, BMI 20, 4 h sleep, smoker, poor health with diabetes and high
-      // blood pressure; 300 min of hard exercise leaves the training profiles.
+      // Found by scanning: 45, BMI 20, 4 h sleep, 15 h sitting, smoker, poor health with diabetes and
+      // high blood pressure; with the BMI35 model, 300 min of hard exercise leaves the
+      // neighbour support (the neighbour distance cutoff tightened to 2.749).
       final e = experimentFor({
-        'age': 40,
+        'age': 45,
         'sex': 'male',
         'height_cm': 175.0,
         'weight_kg': 61.25,
@@ -235,7 +236,7 @@ void main() {
         'general_health': 'poor',
         'vigorous_recreation_min_week': 0,
         'moderate_recreation_min_week': 0,
-        'sedentary_min_day': 480,
+        'sedentary_min_day': 900,
       });
       expect(e.current.available, isTrue);
       e.set(LeverId.vigorous, 300);
