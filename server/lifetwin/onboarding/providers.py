@@ -167,8 +167,10 @@ class ChatCompletionsExtractor:
         model: str = "",
         timeout_seconds: float = 6,
         reasoning_effort: str = "minimal",
+        allow_contributor: bool = False,
         client: httpx.AsyncClient | None = None,
     ):
+        self._allow_contributor = allow_contributor
         self._reasoning_effort = reasoning_effort.strip()
         self._base_url = base_url.strip().rstrip("/")
         self._api_key = api_key.strip()
@@ -178,6 +180,9 @@ class ChatCompletionsExtractor:
 
     @property
     def configured(self) -> bool:
+        # "-contributor" variants may train on content: only with the explicit opt-in.
+        if "contributor" in self._model.lower() and not self._allow_contributor:
+            return False
         return bool(self._base_url and self._api_key and self._model)
 
     async def extract(self, text: str, field: ProfileField) -> ExtractionResult:

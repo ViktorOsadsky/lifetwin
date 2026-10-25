@@ -31,6 +31,9 @@ class Personalizer(Protocol):
     @property
     def configured(self) -> bool: ...
 
+    @property
+    def may_train_on_content(self) -> bool: ...
+
     async def phrase(self, instructions: str, facts: dict) -> dict: ...
 
 
@@ -47,8 +50,10 @@ class MusePersonalizer:
         model: str = "",
         timeout_seconds: float = 8,
         reasoning_effort: str = "minimal",
+        allow_contributor: bool = False,
         client: httpx.AsyncClient | None = None,
     ):
+        self._allow_contributor = allow_contributor
         self._base_url = (base_url.strip() or "https://api.meta.ai/v1").rstrip("/")
         self._api_key = api_key.strip()
         self._model = model.strip()
@@ -58,8 +63,16 @@ class MusePersonalizer:
 
     @property
     def configured(self) -> bool:
-        # "-contributor" variants may train on content: never use them.
-        return bool(self._api_key and self._model and "contributor" not in self._model.lower())
+        # "-contributor" variants may train on content: only with the explicit opt-in.
+        return bool(
+            self._api_key
+            and self._model
+            and (self._allow_contributor or not self.may_train_on_content)
+        )
+
+    @property
+    def may_train_on_content(self) -> bool:
+        return "contributor" in self._model.lower()
 
     async def phrase(self, instructions: str, facts: dict) -> dict:
         if not self.configured:
@@ -111,6 +124,8 @@ class ClaudePersonalizer:
     def __init__(self, *, api_key: str = "", model: str = ""):
         self._api_key = api_key.strip()
         self._model = model.strip()
+
+    may_train_on_content = False
 
     @property
     def configured(self) -> bool:

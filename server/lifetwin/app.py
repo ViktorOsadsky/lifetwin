@@ -131,6 +131,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             model=settings.llm_model,
             timeout_seconds=settings.provider_timeout_seconds,
             reasoning_effort=settings.llm_reasoning_effort,
+            allow_contributor=settings.llm_allow_contributor,
         )
     )
     application.state.personalizer = personalizer
@@ -142,6 +143,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 model=settings.llm_model,
                 timeout_seconds=settings.provider_timeout_seconds,
                 reasoning_effort=settings.llm_reasoning_effort,
+                allow_contributor=settings.llm_allow_contributor,
             )
             if settings.llm_provider == "chat_completions"
             else OpenAIExtractor(
@@ -243,6 +245,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "provider": personalizer.name,
                 "display_name": DISPLAY_NAMES[personalizer.name],
                 "configured": personalizer.configured,
+                "may_train_on_content": personalizer.may_train_on_content,
             },
             "coach": {
                 "endpoint": "/api/coach/plan",
@@ -252,6 +255,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "provider": personalizer.name,
                     "display_name": DISPLAY_NAMES[personalizer.name],
                     "configured": personalizer.configured,
+                    "may_train_on_content": personalizer.may_train_on_content,
                     "daily_cap_per_client": settings.coach_llm_daily_cap,
                 },
             },

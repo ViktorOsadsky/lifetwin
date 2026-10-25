@@ -112,6 +112,7 @@ Select the extraction provider with environment variables (all blank by default;
 | `LLM_PROVIDER` | `openai` (default; uses `OPENAI_API_KEY`/`OPENAI_MODEL` exactly as before) or `chat_completions`. |
 | `LLM_BASE_URL` | Chat Completions base URL; defaults to `https://api.meta.ai/v1` when `chat_completions`. Requests go to `{base}/chat/completions`. |
 | `LLM_MODEL` | Model ID, required. |
+| `LLM_ALLOW_CONTRIBUTOR` | `false` (default). A `-contributor` model ID (e.g. `muse-spark-1.3-contributor`, cheaper; Meta may train on content) is refused unless this is `true`. `/api/capabilities` then reports `may_train_on_content: true` in `personalize` and `coach.personalize`; the app's consent screens must disclose it. |
 | `LLM_API_KEY` | Bearer key, required; kept server-side and never logged or returned. |
 | `LLM_REASONING_EFFORT` | `minimal` (default), `low`, `medium`, `high`, or blank to omit. Reasoning models such as Muse otherwise spend the whole token budget thinking and return no answer (observed live). |
 | `DOCUMENT_MUSE_ENABLED` | `true` (default, owner ruling). With `chat_completions` configured, Muse may read identifier-stripped document text, only for requests with `outside_ai_consent: true`. Set `false` to disable. |
@@ -127,7 +128,7 @@ LLM_API_KEY=...
 
 `ChatCompletionsExtractor` sends a system instruction plus the user's reply with `response_format` `json_schema` ([Meta structured output docs](https://dev.meta.ai/docs/structured-output)), then validates the reply strictly against `ExtractionResult` and applies the same grounding rules (exact quote, asked field) as every provider. HTTP errors, timeouts, non-JSON, refusals, truncated or schema-invalid output all fall back to guided clarification with no value filled. `/api/capabilities` `llm_configured` reflects the selected provider. Claude can be added later through its own adapter or an OpenAI-compatible endpoint by changing these variables.
 
-Privacy: when `provider_consent` is true, the user's typed or transcribed reply text is sent to the configured provider. Collecting consent and explaining this is the app's job. Meta's `-contributor` model variants are cheaper because content "may be used to train future Meta models" ([models](https://dev.meta.ai/docs/models)); use a non-contributor ID such as `muse-spark-1.3` for real health data unless the consent copy says so.
+Privacy: when `provider_consent` is true, the user's typed or transcribed reply text is sent to the configured provider. Collecting consent and explaining this is the app's job. Meta's `-contributor` model variants are cheaper because content "may be used to train future Meta models" ([models](https://dev.meta.ai/docs/models)); they are refused unless `LLM_ALLOW_CONTRIBUTOR=true`, and the consent copy must then say so (see `may_train_on_content` in capabilities).
 
 ## Limits and privacy
 

@@ -987,3 +987,38 @@ def test_feedback_without_the_latest_revision_is_refused():
     body = next_day(day1, "2026-10-21", [{"item_id": "move", "status": "done"}])
     del body["latest_revision_id"]
     assert client.post("/api/coach/plan", json=body).status_code == 422
+
+
+def _muse_caps(model, allow):
+    settings = Settings(
+        llm_provider="chat_completions",
+        llm_api_key="k",
+        llm_model=model,
+        llm_allow_contributor=allow,
+    )
+    caps = TestClient(create_app(settings)).get("/api/capabilities").json()
+    return caps
+
+
+@pytest.mark.parametrize(
+    "model,allow,configured,trains",
+    [
+        ("muse-spark-1.3-contributor", False, False, True),
+        ("muse-spark-1.3-contributor", True, True, True),
+        ("muse-spark-1.3", False, True, False),
+    ],
+)
+def test_contributor_model_needs_opt_in_and_is_disclosed(model, allow, configured, trains):
+    caps = _muse_caps(model, allow)
+    for block in (caps["personalize"], caps["coach"]["personalize"]):
+        assert block["configured"] is configured
+        assert block["may_train_on_content"] is trains
+    assert caps["llm_configured"] is configured
+
+
+def test_contributor_extractor_refused_without_flag():
+    from lifetwin.onboarding import ChatCompletionsExtractor
+
+    kw = dict(base_url="https://x/v1", api_key="k", model="muse-spark-1.3-contributor")
+    assert not ChatCompletionsExtractor(**kw).configured
+    assert ChatCompletionsExtractor(**kw, allow_contributor=True).configured
