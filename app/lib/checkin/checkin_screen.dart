@@ -298,41 +298,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
         ],
         if (c.offerReminder) ...[
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            decoration: BoxDecoration(
-              color: LtColors.paper,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: LtColors.container, width: 1.5),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                WholeWordText(
-                  'Would you like a gentle reminder each day?',
-                  style: LtText.body(weight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: LipButton(
-                        label: 'Not now',
-                        kind: LipKind.secondary,
-                        height: 56,
-                        fontSize: 19,
-                        onTap: c.declineReminders,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: LipButton(label: 'Yes', height: 56, fontSize: 19, onTap: c.acceptReminders),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          ReminderOfferCard(onNotNow: c.declineReminders, onYes: c.acceptReminders),
         ],
       ],
     );
@@ -611,4 +577,49 @@ class _AnswerList extends StatelessWidget {
         ),
     ],
   );
+}
+
+/// "Would you like a gentle reminder each day?" with Not now / Yes. Shown after the first
+/// check-in and at the end of onboarding.
+class ReminderOfferCard extends StatelessWidget {
+  const ReminderOfferCard({super.key, required this.onNotNow, required this.onYes});
+  final VoidCallback onNotNow;
+  final VoidCallback onYes;
+
+  @override
+  Widget build(BuildContext context) => Container(
+   padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+   decoration: BoxDecoration(
+     color: LtColors.paper,
+     borderRadius: BorderRadius.circular(18),
+     border: Border.all(color: LtColors.container, width: 1.5),
+   ),
+   child: Column(
+     crossAxisAlignment: CrossAxisAlignment.stretch,
+     children: [
+       WholeWordText(
+         'Would you like a gentle reminder each day?',
+         style: LtText.body(weight: FontWeight.w700),
+       ),
+       const SizedBox(height: 8),
+       Row(
+         children: [
+           Expanded(
+             child: LipButton(
+               label: 'Not now',
+               kind: LipKind.secondary,
+               height: 56,
+               fontSize: 19,
+               onTap: onNotNow,
+             ),
+           ),
+           const SizedBox(width: 10),
+           Expanded(
+             child: LipButton(label: 'Yes', height: 56, fontSize: 19, onTap: onYes),
+           ),
+         ],
+       ),
+     ],
+   ),
+ );
 }

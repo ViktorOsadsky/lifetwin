@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -1156,7 +1157,7 @@ class TalkButton extends StatefulWidget {
 }
 
 class _TalkButtonState extends State<TalkButton> {
-  static const _holdThreshold = Duration(milliseconds: 600);
+  static const _holdThreshold = Duration(seconds: 1);
   DateTime? _downAt;
   bool _stoppedByThisPress = false;
 
@@ -1178,6 +1179,8 @@ class _TalkButtonState extends State<TalkButton> {
     final at = _downAt;
     if (_stoppedByThisPress || at == null) return;
     _downAt = null;
+    // Letting go while the mic is still opening would send nothing ("I didn't hear anything"): keep listening.
+    if (c.micStarting) return;
     // A long press is "hold to talk": letting go sends. A short tap keeps listening.
     if (DateTime.now().difference(at) >= _holdThreshold) c.stopTalk();
   }
@@ -1193,10 +1196,14 @@ class _TalkButtonState extends State<TalkButton> {
     final listening = c.phase == VoicePhase.listening;
     final busy = c.phase == VoicePhase.interpreting;
     final left = c.listenSecondsLeft;
+    // The very first question, before any answer: the button says it takes talking or typing.
+    final opening = !widget.compact && c.questionNumber == 1 && c.caption.isEmpty && c.phase == VoicePhase.idle;
     final label = busy
         ? 'One moment…'
         : c.phase == VoicePhase.speaking
         ? 'Tap to answer'
+        : opening
+        ? 'Talk or type'
         : 'Tap to talk';
     final big = largeText(context);
 
@@ -1285,18 +1292,27 @@ class _TalkButtonState extends State<TalkButton> {
         lip: 5,
         radius: 30,
         enabled: !busy,
-        child: lay(mic, WholeWordText(label, textAlign: TextAlign.center, style: LtText.display(26))),
+        child: lay(
+          opening
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [mic, const SizedBox(width: 6), const Icon(Icons.keyboard_outlined, size: 30, color: LtColors.ink)],
+                )
+              : mic,
+          WholeWordText(label, textAlign: TextAlign.center, style: LtText.display(26)),
+        ),
       );
     }
 
     return Semantics(
       button: true,
       enabled: !busy,
-      label: busy ? label : (listening ? 'Stop listening' : 'Talk'),
+      label: busy ? label : (listening ? 'Stop listening' : (opening ? 'Talk or type' : 'Talk')),
       value: listening ? 'Listening' : 'Not listening',
       hint: busy ? null : (listening ? 'Double tap when you are done' : 'Double tap, then speak'),
       excludeSemantics: true,
       onTap: busy ? null : () => listening ? c.stopTalk() : c.startTalk(),
+      customSemanticsActions: opening ? {const CustomSemanticsAction(label: 'Type instead'): () => c.setTyping(true)} : null,
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: _down,

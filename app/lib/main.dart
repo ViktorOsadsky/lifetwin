@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatf
 import 'band/band_file_session.dart';
 
 import 'checkin/checkin_reminders.dart';
+import 'checkin/checkin_screen.dart' show ReminderOfferCard;
 import 'checkin/consents.dart' show AiProvider;
 import 'customize/customize_screen.dart';
 import 'demo/demo_seed.dart';
@@ -177,9 +178,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
 
   /// Keeps the finished conversation on the phone: memory consent, habit notes (only
   /// with consent) and the confirmed answers, each Apple Health value labelled as such.
-  void _keepConversation() {
+  Future<TwinRepository?> _keepConversation() async {
     final state = _controller.state;
-    if (state == null) return;
+    if (state == null) return null;
     final confirmed = (state['confirmed_profile'] as Map?) ?? const {};
     final sources = {
       for (final e in _healthValues.entries)
@@ -187,8 +188,33 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       for (final e in _documentValues.entries)
         if (confirmed[e.key] == e.value) e.key: HistorySource.document,
     };
-    _twin.then((repo) => repo.saveOnboarding(state, modelInputs: _controller.modelInputs, sources: sources)).ignore();
+    try {
+      final repo = await _twin;
+      await repo.saveOnboarding(state, modelInputs: _controller.modelInputs, sources: sources);
+      return repo;
+    } catch (e) {
+      debugPrint('Could not keep the conversation: $e');
+      return null;
+    }
   }
+
+  Future<void> _offerReminders(BuildContext context, TwinRepository repo) => showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialog) => Dialog(
+      backgroundColor: Colors.transparent,
+      child: ReminderOfferCard(
+        onNotNow: () async {
+          await repo.declineReminders();
+          if (dialog.mounted) Navigator.of(dialog).pop();
+        },
+        onYes: () async {
+          await repo.acceptReminders();
+          if (dialog.mounted) Navigator.of(dialog).pop();
+        },
+      ),
+    ),
+  );
 
   @override
   void dispose() {
@@ -211,8 +237,13 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       onUseHealth: () => _health(talkContext),
       onUploadDocument: () => _documents(talkContext),
       onDone: (profile) {
-        _keepConversation();
+        final saved = _keepConversation();
         _ceremony(talkContext, fromTalk: true);
+        // The one-time reminder offer once the answers are saved, so it never delays the reveal;
+        // not offered again after the first check-in once it has been answered.
+        saved.then((repo) {
+          if (repo != null && repo.shouldOfferReminders && context.mounted) _offerReminders(context, repo);
+        }).ignore();
       },
     ),
   );
