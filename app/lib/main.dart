@@ -587,6 +587,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       title: 'LifeTwin',
       debugShowCheckedModeBanner: false,
       theme: lifeTwinTheme(),
+      navigatorKey: _agentic.navigatorKey,
       navigatorObservers: [HomeDepth.instance],
       builder: _agentic.wrap,
       home: ListenableBuilder(

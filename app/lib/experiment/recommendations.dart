@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 
 import '../twin/profile_mapping.dart';
 import '../twin/twin_experiment.dart';
-import '../twin/twin_model.dart';
 import '../twin/twin_repository.dart';
 import '../voice/api_base.dart';
 import '../wellness/coach_client.dart' show coachRequestBody;
@@ -255,68 +254,5 @@ class HttpRecommendations implements RecommendationsSource, FullIdeasSource {
       base.forget();
       throw const RecommendationsFailure(null);
     }
-  }
-}
-
-/// Stub data until the endpoint lands: one idea per opportunity card the engine returned
-/// (at most 3), in Mochi's words from a small table, with a quote from the notebook when
-/// memory is on and a note about activity exists.
-class StubRecommendations implements RecommendationsSource {
-  StubRecommendations(this.repository);
-  final TwinRepository repository;
-
-  @override
-  Future<List<Recommendation>> load() async {
-    final memory = repository.store.memoryConsent;
-    final notes = memory ? repository.store.habitNotes : const <Map<String, dynamic>>[];
-    String? quoteFor(String topic) {
-      for (final n in notes) {
-        final note = n['note'];
-        if (note is Map && note['topic'] == topic) return '${note['text']}';
-      }
-      return null;
-    }
-
-    final out = <Recommendation>[];
-    for (final WellnessCard c in repository.wellnessCards) {
-      if (c.level != 'opportunity') continue;
-      switch (c.id) {
-        case 'smoking':
-          out.add(
-            const Recommendation(
-              id: 'quit',
-              title: 'Help to quit',
-              tip: 'Quitting helps at any age.',
-              wellnessCardId: 'smoking',
-              leverId: LeverId.smoking,
-              leverValue: 1,
-            ),
-          );
-        case 'activity':
-          final q = quoteFor('exercise');
-          out.add(
-            Recommendation(
-              id: 'activity',
-              title: q == null ? 'First steps count' : 'A longer dog walk',
-              habitNoteQuote: q,
-              tip: 'A short walk is a great start.',
-              wellnessCardId: 'activity',
-              leverId: LeverId.moderate,
-              leverValue: 90,
-            ),
-          );
-        case 'sleep':
-          out.add(
-            const Recommendation(
-              id: 'sleep',
-              title: 'A little more rest',
-              tip: 'A bit more sleep can help.',
-              wellnessCardId: 'sleep',
-              leverId: LeverId.sleepHours,
-            ),
-          );
-      }
-    }
-    return out.take(3).toList();
   }
 }
