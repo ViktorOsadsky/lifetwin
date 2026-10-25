@@ -1,0 +1,78 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "wristband",
+ "category": "aid",
+ "label": "Step counter",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "wristband",
+   "slot": "wrist_l",
+   "bone": "arm_l",
+   "z": 35.25,
+   "pivot": [
+    126.5,
+    470.0
+   ],
+   "box": {
+    "x": 58,
+    "y": 576,
+    "w": 109,
+    "h": 57
+   },
+   "vector": "wristband.default.svg",
+   "painted": "wristband.default.p.png",
+   "variant": "default",
+   "follow": "arm_l"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "default",
+ "colourable": {
+  "band": {
+   "key": "#2f8f8a",
+   "tones": {
+    "hi": "#8fbdb1",
+    "lt": "#61a69c",
+    "base": "#2f8f8a",
+    "sh": "#2e7078",
+    "dk": "#26545f",
+    "ink": "#273e3e"
+   }
+  }
+ },
+ "material": "woven_band",
+ "notes": [
+  "Woven band with a small tracker face (progress ring, no numbers) on the screen-left wrist; one variant per arm variant."
+ ],
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side",
+   "back"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head"
+ }
+}

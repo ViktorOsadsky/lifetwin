@@ -1,0 +1,80 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "cane",
+ "category": "aid",
+ "label": "Walking cane",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "cane",
+   "slot": "prop_hand_r",
+   "bone": "arm_r",
+   "z": 34.9,
+   "pivot": [
+    516.5,
+    470.0
+   ],
+   "box": {
+    "x": 473,
+    "y": 638,
+    "w": 114,
+    "h": 226
+   },
+   "vector": "cane.default.svg",
+   "painted": "cane.default.p.png",
+   "variant": "default",
+   "follow": "arm_r",
+   "note": "rides arm_r (no hand bone yet); only the hanging-arm variant holds it"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "default",
+ "colourable": {
+  "wood": {
+   "key": "#9a6436",
+   "tones": {
+    "hi": "#c8a684",
+    "lt": "#b2855c",
+    "base": "#9a6436",
+    "sh": "#7b513b",
+    "dk": "#5e3e33",
+    "ink": "#4a2f22"
+   }
+  }
+ },
+ "material": "wood",
+ "notes": [
+  "Derby handle under the screen-right paw: the paw is drawn over the handle, so it reads as a grip.",
+  "Tip is planted at ground_y in the rest pose only; needs hand_r with counter-rotation to stay planted while walking."
+ ],
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side",
+   "back"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head"
+ }
+}

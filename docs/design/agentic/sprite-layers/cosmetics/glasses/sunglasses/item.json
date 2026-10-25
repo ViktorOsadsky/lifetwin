@@ -1,0 +1,82 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "sunglasses",
+ "category": "glasses",
+ "label": "Sunglasses",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "glasses",
+   "slot": "glasses",
+   "bone": "head",
+   "z": 65,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 115,
+    "y": 244,
+    "w": 414,
+    "h": 125
+   },
+   "vector": "glasses.svg",
+   "painted": "glasses.p.png"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "default",
+ "colourable": {
+  "frame": {
+   "key": "#2f6170",
+   "tones": {
+    "hi": "#8fa4a3",
+    "lt": "#618388",
+    "base": "#2f6170",
+    "sh": "#2e4f65",
+    "dk": "#263c51",
+    "ink": "#272e35"
+   }
+  },
+  "lens": {
+   "key": "#3a2c40",
+   "tones": {
+    "base": "#3a2c40"
+   }
+  }
+ },
+ "material": "acetate",
+ "notes": [
+  "Soft square frames with a slight outer lift; lens glare kept upper-left like every other cue."
+ ],
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head",
+  "back": "not visible from behind: draw nothing"
+ }
+}

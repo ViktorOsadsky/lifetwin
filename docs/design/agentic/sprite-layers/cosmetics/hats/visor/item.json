@@ -1,0 +1,168 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "visor",
+ "category": "hat",
+ "label": "Visor",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "hat_front",
+   "slot": "hat_front",
+   "bone": "head",
+   "z": 70,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 132,
+    "y": 161,
+    "w": 382,
+    "h": 112
+   },
+   "vector": "hat_front.svg",
+   "painted": "hat_front.p.png"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "default",
+ "colourable": {
+  "body": {
+   "key": "#ef8a73",
+   "tones": {
+    "hi": "#f6baa5",
+    "lt": "#f3a28b",
+    "base": "#ef8a73",
+    "sh": "#b86d67",
+    "dk": "#8a5153",
+    "ink": "#663b36"
+   }
+  },
+  "bill_under": {
+   "key": "#c76f62",
+   "tones": {
+    "hi": "#e1ac9c",
+    "lt": "#d48d7e",
+    "base": "#c76f62",
+    "sh": "#9b595b",
+    "dk": "#75434a",
+    "ink": "#593331"
+   }
+  }
+ },
+ "material": "cotton",
+ "notes": [
+  "Open crown: the head and ears show; the band is clipped to the head silhouette so it wraps around."
+ ],
+ "fit": {
+  "frame": "canonical Cal hat (rig hat_front/hd == v2 hatcomp canonical placement)",
+  "anchor": [
+   320,
+   191
+  ],
+  "band_bottom": [
+   [
+    148,
+    224
+   ],
+   [
+    200,
+    207
+   ],
+   [
+    245,
+    198
+   ],
+   [
+    320,
+    191
+   ],
+   [
+    395,
+    196
+   ],
+   [
+    440,
+    205
+   ],
+   [
+    492,
+    222
+   ]
+  ],
+  "front_max_over_eyes": [
+   [
+    150,
+    269
+   ],
+   [
+    170,
+    262
+   ],
+   [
+    200,
+    254
+   ],
+   [
+    245,
+    244
+   ],
+   [
+    320,
+    238
+   ],
+   [
+    395,
+    244
+   ],
+   [
+    440,
+    252
+   ],
+   [
+    470,
+    259
+   ],
+   [
+    490,
+    277
+   ]
+  ],
+  "ref_head": {
+   "width_at_band": 396,
+   "crown_top_y": 105
+  },
+  "per_head_scale": "for an age/build head variant: s = head_width / 396, about anchor, then move anchor to the variant crown-base centre",
+  "v2_sprites": "rig px -> v2 hat-stand px: x = (x_rig - 49) / 2.5 + 3, y = (y_rig - 45) / 2.5 + 3; then apply hatc/bear_match.json per pose like the canonical hat"
+ },
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side",
+   "back"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head"
+ }
+}

@@ -1,0 +1,1860 @@
+{
+ "convention": "feet_anchor.x = feet centre / width, feet_anchor.y = feet bottom / height (from top-left); bottom-centre of the sole contact",
+ "sprites": [
+  {
+   "path": "bear/hat/stand.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "stand",
+   "size": [
+    220,
+    331
+   ],
+   "feet_anchor": {
+    "x": 0.5114,
+    "y": 0.9758
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.0,
+    "th": 0.0,
+    "tx": 108.5,
+    "ty": 71.5
+   }
+  },
+  {
+   "path": "bear/hat/wave.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "wave",
+   "size": [
+    256,
+    335
+   ],
+   "feet_anchor": {
+    "x": 0.5703,
+    "y": 0.9761
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.0,
+    "th": 1.0,
+    "tx": 146.5,
+    "ty": 70.5
+   }
+  },
+  {
+   "path": "bear/hat/walk_side.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "walk_side",
+   "size": [
+    235,
+    331
+   ],
+   "feet_anchor": {
+    "x": 0.4979,
+    "y": 0.9758
+   },
+   "source_sheet": "composite-rev4-hatview",
+   "scale_method": "nohat-pose + view-matched hat layer (three_quarter)",
+   "hat_transform": {
+    "view": "three_quarter",
+    "s": 0.8,
+    "th": -2,
+    "x": 132,
+    "y": 60
+   }
+  },
+  {
+   "path": "bear/hat/walk_front.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "walk_front",
+   "size": [
+    218,
+    341
+   ],
+   "feet_anchor": {
+    "x": 0.4128,
+    "y": 0.9765
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.01,
+    "th": 1.0,
+    "tx": 107.5,
+    "ty": 72.5
+   }
+  },
+  {
+   "path": "bear/hat/walk_back.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "walk_back",
+   "size": [
+    230,
+    326
+   ],
+   "feet_anchor": {
+    "x": 0.5022,
+    "y": 0.9755
+   },
+   "source_sheet": "composite-rev4-hatview",
+   "scale_method": "nohat-pose + view-matched hat layer (back)",
+   "hat_transform": {
+    "view": "back",
+    "s": 0.92,
+    "th": 0,
+    "x": 115,
+    "y": 56
+   }
+  },
+  {
+   "path": "bear/hat/sit.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "sit",
+   "size": [
+    253,
+    306
+   ],
+   "feet_anchor": {
+    "x": 0.498,
+    "y": 0.9739
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.99,
+    "th": 1.0,
+    "tx": 126.5,
+    "ty": 69.5
+   }
+  },
+  {
+   "path": "bear/hat/jump.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "jump",
+   "size": [
+    268,
+    333
+   ],
+   "feet_anchor": {
+    "x": 0.6604,
+    "y": 0.976
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.0,
+    "th": 1.0,
+    "tx": 134.5,
+    "ty": 69.5
+   }
+  },
+  {
+   "path": "bear/hat/stretch.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "stretch",
+   "size": [
+    271,
+    341
+   ],
+   "feet_anchor": {
+    "x": 0.4982,
+    "y": 0.9765
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.96,
+    "th": 1.0,
+    "tx": 134.5,
+    "ty": 67.5
+   }
+  },
+  {
+   "path": "bear/hat/think.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "think",
+   "size": [
+    215,
+    329
+   ],
+   "feet_anchor": {
+    "x": 0.5256,
+    "y": 0.9757
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.98,
+    "th": -6.0,
+    "tx": 86.5,
+    "ty": 72.5
+   }
+  },
+  {
+   "path": "bear/hat/sleep.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "sleep",
+   "size": [
+    259,
+    171
+   ],
+   "feet_anchor": {
+    "x": 0.5521,
+    "y": 0.9532
+   },
+   "source_sheet": "composite-rev4-hatview",
+   "scale_method": "nohat-pose + view-matched hat layer (front)",
+   "hat_transform": {
+    "view": "front",
+    "s": 0.7,
+    "th": -30,
+    "x": 66,
+    "y": 52
+   }
+  },
+  {
+   "path": "bear/hat/eat.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "eat",
+   "size": [
+    224,
+    303
+   ],
+   "feet_anchor": {
+    "x": 0.4955,
+    "y": 0.9736
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.99,
+    "th": 1.0,
+    "tx": 111.5,
+    "ty": 68.5
+   }
+  },
+  {
+   "path": "bear/hat/hold_ball.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "hold_ball",
+   "size": [
+    227,
+    300
+   ],
+   "feet_anchor": {
+    "x": 0.5044,
+    "y": 0.9733
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.03,
+    "th": 1.0,
+    "tx": 112.5,
+    "ty": 71.5
+   }
+  },
+  {
+   "path": "bear/hat/shrug.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "shrug",
+   "size": [
+    279,
+    323
+   ],
+   "feet_anchor": {
+    "x": 0.4946,
+    "y": 0.9752
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.98,
+    "th": 2.0,
+    "tx": 137.5,
+    "ty": 68.5
+   }
+  },
+  {
+   "path": "bear/hat/dizzy.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "dizzy",
+   "size": [
+    245,
+    324
+   ],
+   "feet_anchor": {
+    "x": 0.4939,
+    "y": 0.9753
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.0,
+    "th": 15.0,
+    "tx": 133.5,
+    "ty": 79.5
+   }
+  },
+  {
+   "path": "bear/nohat/stand.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "stand",
+   "size": [
+    217,
+    331
+   ],
+   "feet_anchor": {
+    "x": 0.5046,
+    "y": 0.9758
+   },
+   "source_sheet": 1,
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "bear/nohat/wave.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "wave",
+   "size": [
+    256,
+    335
+   ],
+   "feet_anchor": {
+    "x": 0.5703,
+    "y": 0.9761
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match)"
+  },
+  {
+   "path": "bear/nohat/walk_side.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "walk_side",
+   "size": [
+    235,
+    331
+   ],
+   "feet_anchor": {
+    "x": 0.4979,
+    "y": 0.9758
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "height-match to stand (3/4 head)"
+  },
+  {
+   "path": "bear/nohat/walk_front.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "walk_front",
+   "size": [
+    205,
+    341
+   ],
+   "feet_anchor": {
+    "x": 0.4195,
+    "y": 0.9765
+   },
+   "source_sheet": 1,
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "bear/nohat/walk_back.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "walk_back",
+   "size": [
+    230,
+    326
+   ],
+   "feet_anchor": {
+    "x": 0.5022,
+    "y": 0.9755
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "bear/nohat/sit.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "sit",
+   "size": [
+    253,
+    306
+   ],
+   "feet_anchor": {
+    "x": 0.498,
+    "y": 0.9739
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "bear/nohat/jump.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "jump",
+   "size": [
+    268,
+    333
+   ],
+   "feet_anchor": {
+    "x": 0.6604,
+    "y": 0.976
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match)"
+  },
+  {
+   "path": "bear/nohat/stretch.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "stretch",
+   "size": [
+    271,
+    341
+   ],
+   "feet_anchor": {
+    "x": 0.4982,
+    "y": 0.9765
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "head/height compromise (head match x0.965)"
+  },
+  {
+   "path": "bear/nohat/think.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "think",
+   "size": [
+    195,
+    329
+   ],
+   "feet_anchor": {
+    "x": 0.4769,
+    "y": 0.9757
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "bear/nohat/sleep.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "sleep",
+   "size": [
+    259,
+    171
+   ],
+   "feet_anchor": {
+    "x": 0.5521,
+    "y": 0.9532
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "body-length"
+  },
+  {
+   "path": "bear/nohat/eat.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "eat",
+   "size": [
+    224,
+    303
+   ],
+   "feet_anchor": {
+    "x": 0.4955,
+    "y": 0.9736
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "bear/nohat/hold_ball.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "hold_ball",
+   "size": [
+    224,
+    300
+   ],
+   "feet_anchor": {
+    "x": 0.4978,
+    "y": 0.9733
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head+rescale1.05(match-seated)"
+  },
+  {
+   "path": "bear/nohat/shrug.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "shrug",
+   "size": [
+    279,
+    323
+   ],
+   "feet_anchor": {
+    "x": 0.4946,
+    "y": 0.9752
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "bear/nohat/dizzy.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "dizzy",
+   "size": [
+    245,
+    324
+   ],
+   "feet_anchor": {
+    "x": 0.4939,
+    "y": 0.9753
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match)"
+  },
+  {
+   "path": "human/hat/stand.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "stand",
+   "size": [
+    206,
+    399
+   ],
+   "feet_anchor": {
+    "x": 0.483,
+    "y": 0.9799
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.0,
+    "th": 0.0,
+    "tx": 99.5,
+    "ty": 83.5
+   }
+  },
+  {
+   "path": "human/hat/wave.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "wave",
+   "size": [
+    240,
+    409
+   ],
+   "feet_anchor": {
+    "x": 0.5209,
+    "y": 0.9804
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.98,
+    "th": 5.0,
+    "tx": 137.5,
+    "ty": 82.5
+   }
+  },
+  {
+   "path": "human/hat/walk_side.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "walk_side",
+   "size": [
+    211,
+    391
+   ],
+   "feet_anchor": {
+    "x": 0.5355,
+    "y": 0.9795
+   },
+   "source_sheet": "composite-rev4-hatview",
+   "scale_method": "nohat-pose + view-matched hat layer (three_quarter)",
+   "hat_transform": {
+    "view": "three_quarter",
+    "s": 1.0,
+    "th": 0,
+    "x": 98,
+    "y": 62
+   }
+  },
+  {
+   "path": "human/hat/walk_front.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "walk_front",
+   "size": [
+    206,
+    404
+   ],
+   "feet_anchor": {
+    "x": 0.5437,
+    "y": 0.9802
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.0,
+    "th": 0.0,
+    "tx": 98.5,
+    "ty": 83.5
+   }
+  },
+  {
+   "path": "human/hat/walk_back.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "walk_back",
+   "size": [
+    211,
+    411
+   ],
+   "feet_anchor": {
+    "x": 0.6256,
+    "y": 0.9805
+   },
+   "source_sheet": "composite-rev4-hatview",
+   "scale_method": "nohat-pose + view-matched hat layer (back)",
+   "hat_transform": {
+    "view": "back",
+    "s": 1.0,
+    "th": 0,
+    "x": 98,
+    "y": 60
+   }
+  },
+  {
+   "path": "human/hat/sit.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "sit",
+   "size": [
+    244,
+    335
+   ],
+   "feet_anchor": {
+    "x": 0.498,
+    "y": 0.9761
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.98,
+    "th": 0.0,
+    "tx": 120.5,
+    "ty": 81.5
+   }
+  },
+  {
+   "path": "human/hat/jump.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "jump",
+   "size": [
+    279,
+    384
+   ],
+   "feet_anchor": {
+    "x": 0.5233,
+    "y": 0.9792
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.99,
+    "th": 2.0,
+    "tx": 138.5,
+    "ty": 81.5
+   }
+  },
+  {
+   "path": "human/hat/stretch.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "stretch",
+   "size": [
+    234,
+    395
+   ],
+   "feet_anchor": {
+    "x": 0.4957,
+    "y": 0.9797
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.92,
+    "th": -2.0,
+    "tx": 113.5,
+    "ty": 74.5
+   }
+  },
+  {
+   "path": "human/hat/think.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "think",
+   "size": [
+    212,
+    376
+   ],
+   "feet_anchor": {
+    "x": 0.4741,
+    "y": 0.9787
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.02,
+    "th": 7.0,
+    "tx": 99.5,
+    "ty": 83.5
+   }
+  },
+  {
+   "path": "human/hat/sleep.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "sleep",
+   "size": [
+    377,
+    229
+   ],
+   "feet_anchor": {
+    "x": 0.6247,
+    "y": 0.9651
+   },
+   "source_sheet": "composite-rev4-hatview",
+   "scale_method": "nohat-pose + view-matched hat layer (front)",
+   "hat_transform": {
+    "view": "front",
+    "s": 1.04,
+    "th": -25,
+    "x": 86,
+    "y": 55
+   }
+  },
+  {
+   "path": "human/hat/eat.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "eat",
+   "size": [
+    206,
+    331
+   ],
+   "feet_anchor": {
+    "x": 0.5,
+    "y": 0.9758
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.98,
+    "th": 0.0,
+    "tx": 99.5,
+    "ty": 81.5
+   }
+  },
+  {
+   "path": "human/hat/hold_ball.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "hold_ball",
+   "size": [
+    203,
+    322
+   ],
+   "feet_anchor": {
+    "x": 0.505,
+    "y": 0.9751
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.96,
+    "th": 0.0,
+    "tx": 97.5,
+    "ty": 79.5
+   }
+  },
+  {
+   "path": "human/hat/shrug.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "shrug",
+   "size": [
+    225,
+    385
+   ],
+   "feet_anchor": {
+    "x": 0.4978,
+    "y": 0.9792
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.97,
+    "th": 1.0,
+    "tx": 115.5,
+    "ty": 80.5
+   }
+  },
+  {
+   "path": "human/hat/dizzy.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "dizzy",
+   "size": [
+    227,
+    369
+   ],
+   "feet_anchor": {
+    "x": 0.522,
+    "y": 0.9783
+   },
+   "source_sheet": "composite-rev2",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.94,
+    "th": 8.0,
+    "tx": 129.5,
+    "ty": 77.5
+   }
+  },
+  {
+   "path": "human/nohat/stand.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "stand",
+   "size": [
+    198,
+    395
+   ],
+   "feet_anchor": {
+    "x": 0.4823,
+    "y": 0.9797
+   },
+   "source_sheet": 1,
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "human/nohat/wave.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "wave",
+   "size": [
+    233,
+    402
+   ],
+   "feet_anchor": {
+    "x": 0.5365,
+    "y": 0.9801
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "head/height compromise (head match x0.98)"
+  },
+  {
+   "path": "human/nohat/walk_side.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "walk_side",
+   "size": [
+    196,
+    383
+   ],
+   "feet_anchor": {
+    "x": 0.5357,
+    "y": 0.9791
+   },
+   "source_sheet": 1,
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "human/nohat/walk_front.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "walk_front",
+   "size": [
+    198,
+    400
+   ],
+   "feet_anchor": {
+    "x": 0.5455,
+    "y": 0.98
+   },
+   "source_sheet": 1,
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "human/nohat/walk_back.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "walk_back",
+   "size": [
+    199,
+    409
+   ],
+   "feet_anchor": {
+    "x": 0.6231,
+    "y": 0.9804
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "human/nohat/sit.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "sit",
+   "size": [
+    244,
+    331
+   ],
+   "feet_anchor": {
+    "x": 0.498,
+    "y": 0.9758
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "human/nohat/jump.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "jump",
+   "size": [
+    279,
+    377
+   ],
+   "feet_anchor": {
+    "x": 0.5233,
+    "y": 0.9788
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-headx1.49"
+  },
+  {
+   "path": "human/nohat/stretch.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "stretch",
+   "size": [
+    234,
+    387
+   ],
+   "feet_anchor": {
+    "x": 0.4957,
+    "y": 0.9793
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "feet-span+rescale1.06(height-match)"
+  },
+  {
+   "path": "human/nohat/think.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "think",
+   "size": [
+    201,
+    367
+   ],
+   "feet_anchor": {
+    "x": 0.4652,
+    "y": 0.9782
+   },
+   "source_sheet": 2,
+   "scale_method": "nohat-head+rescale1.05(height-match)"
+  },
+  {
+   "path": "human/nohat/sleep.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "sleep",
+   "size": [
+    377,
+    205
+   ],
+   "feet_anchor": {
+    "x": 0.6247,
+    "y": 0.961
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "body-lengthx1.4"
+  },
+  {
+   "path": "human/nohat/eat.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "eat",
+   "size": [
+    198,
+    327
+   ],
+   "feet_anchor": {
+    "x": 0.5,
+    "y": 0.9755
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "human/nohat/hold_ball.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "hold_ball",
+   "size": [
+    196,
+    318
+   ],
+   "feet_anchor": {
+    "x": 0.5026,
+    "y": 0.9748
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "human/nohat/shrug.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "shrug",
+   "size": [
+    225,
+    380
+   ],
+   "feet_anchor": {
+    "x": 0.4978,
+    "y": 0.9789
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "human/nohat/dizzy.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "dizzy",
+   "size": [
+    224,
+    360
+   ],
+   "feet_anchor": {
+    "x": 0.529,
+    "y": 0.9778
+   },
+   "source_sheet": "codex-fix",
+   "scale_method": "nohat-head"
+  },
+  {
+   "path": "bear/nohat/concerned.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "concerned",
+   "size": [
+    205,
+    340
+   ],
+   "feet_anchor": {
+    "x": 0.478,
+    "y": 0.9765
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match vs nohat stand)"
+  },
+  {
+   "path": "bear/hat/concerned.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "concerned",
+   "size": [
+    221,
+    340
+   ],
+   "feet_anchor": {
+    "x": 0.5158,
+    "y": 0.9765
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.0,
+    "th": -3.0,
+    "tx": 93.5,
+    "ty": 73.5
+   }
+  },
+  {
+   "path": "bear/nohat/listening.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "listening",
+   "size": [
+    230,
+    346
+   ],
+   "feet_anchor": {
+    "x": 0.4891,
+    "y": 0.9769
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match vs nohat stand)"
+  },
+  {
+   "path": "bear/hat/listening.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "listening",
+   "size": [
+    230,
+    346
+   ],
+   "feet_anchor": {
+    "x": 0.4891,
+    "y": 0.9769
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.01,
+    "th": 19.0,
+    "tx": 121.5,
+    "ty": 83.5
+   }
+  },
+  {
+   "path": "bear/nohat/thinking.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "thinking",
+   "size": [
+    180,
+    344
+   ],
+   "feet_anchor": {
+    "x": 0.5444,
+    "y": 0.9767
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match vs nohat stand)"
+  },
+  {
+   "path": "bear/hat/thinking.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "thinking",
+   "size": [
+    207,
+    344
+   ],
+   "feet_anchor": {
+    "x": 0.5314,
+    "y": 0.9767
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.96,
+    "th": -13.0,
+    "tx": 87.5,
+    "ty": 78.5
+   }
+  },
+  {
+   "path": "bear/nohat/sleepy.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "sleepy",
+   "size": [
+    210,
+    335
+   ],
+   "feet_anchor": {
+    "x": 0.4476,
+    "y": 0.9761
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match vs nohat stand)"
+  },
+  {
+   "path": "bear/hat/sleepy.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "sleepy",
+   "size": [
+    229,
+    335
+   ],
+   "feet_anchor": {
+    "x": 0.4934,
+    "y": 0.9761
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.0,
+    "th": 2.0,
+    "tx": 89.5,
+    "ty": 71.5
+   },
+   "arm_front_fix": "raised arm re-layered in front of the hat (rev3/armfront.py polygon)"
+  },
+  {
+   "path": "bear/nohat/proud.png",
+   "twin": "bear",
+   "hat": false,
+   "pose": "proud",
+   "size": [
+    208,
+    326
+   ],
+   "feet_anchor": {
+    "x": 0.4976,
+    "y": 0.9755
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match vs nohat stand)"
+  },
+  {
+   "path": "bear/hat/proud.png",
+   "twin": "bear",
+   "hat": true,
+   "pose": "proud",
+   "size": [
+    215,
+    326
+   ],
+   "feet_anchor": {
+    "x": 0.5,
+    "y": 0.9755
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.99,
+    "th": 1.0,
+    "tx": 103.5,
+    "ty": 69.5
+   }
+  },
+  {
+   "path": "human/nohat/concerned.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "concerned",
+   "size": [
+    198,
+    400
+   ],
+   "feet_anchor": {
+    "x": 0.5152,
+    "y": 0.98
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match vs nohat stand)"
+  },
+  {
+   "path": "human/hat/concerned.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "concerned",
+   "size": [
+    208,
+    410
+   ],
+   "feet_anchor": {
+    "x": 0.5145,
+    "y": 0.9805
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.0,
+    "th": -5.0,
+    "tx": 98.5,
+    "ty": 81.5
+   }
+  },
+  {
+   "path": "human/nohat/listening.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "listening",
+   "size": [
+    196,
+    409
+   ],
+   "feet_anchor": {
+    "x": 0.5459,
+    "y": 0.9804
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match vs nohat stand)"
+  },
+  {
+   "path": "human/hat/listening.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "listening",
+   "size": [
+    208,
+    425
+   ],
+   "feet_anchor": {
+    "x": 0.524,
+    "y": 0.9811
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.0,
+    "th": -13.0,
+    "tx": 98.5,
+    "ty": 78.5
+   }
+  },
+  {
+   "path": "human/nohat/sleepy.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "sleepy",
+   "size": [
+    232,
+    420
+   ],
+   "feet_anchor": {
+    "x": 0.4526,
+    "y": 0.981
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match vs nohat stand)"
+  },
+  {
+   "path": "human/hat/sleepy.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "sleepy",
+   "size": [
+    236,
+    427
+   ],
+   "feet_anchor": {
+    "x": 0.4619,
+    "y": 0.9813
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 1.0,
+    "th": 2.0,
+    "tx": 99.5,
+    "ty": 82.5
+   }
+  },
+  {
+   "path": "human/nohat/proud.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "proud",
+   "size": [
+    198,
+    391
+   ],
+   "feet_anchor": {
+    "x": 0.4949,
+    "y": 0.9795
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "nohat-head (template match vs nohat stand)"
+  },
+  {
+   "path": "human/hat/proud.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "proud",
+   "size": [
+    206,
+    395
+   ],
+   "feet_anchor": {
+    "x": 0.4951,
+    "y": 0.9797
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.99,
+    "th": 0.0,
+    "tx": 99.5,
+    "ty": 81.5
+   }
+  },
+  {
+   "path": "human/nohat/thinking.png",
+   "twin": "human",
+   "hat": false,
+   "pose": "thinking",
+   "size": [
+    195,
+    409
+   ],
+   "feet_anchor": {
+    "x": 0.5513,
+    "y": 0.9804
+   },
+   "source_sheet": "codex-rev3",
+   "scale_method": "head/height compromise (head match x0.95)"
+  },
+  {
+   "path": "human/hat/thinking.png",
+   "twin": "human",
+   "hat": true,
+   "pose": "thinking",
+   "size": [
+    202,
+    421
+   ],
+   "feet_anchor": {
+    "x": 0.5322,
+    "y": 0.981
+   },
+   "source_sheet": "composite-rev3",
+   "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+   "hat_transform": {
+    "s": 0.95,
+    "th": -9.0,
+    "tx": 100.5,
+    "ty": 77.5
+   }
+  }
+ ],
+ "hat_composite": {
+  "date": "2026-10-24",
+  "note": "hat sprites = nohat pose + canonical hat cut from the rev2 hat/stand; walk_back uses the logo-free back hat. Tools: tools-v2/hatcomp/",
+  "hat_layers": "hat_layers/"
+ },
+ "human_f": {
+  "note": "female human twin; concept A (chin-length bob, cream cardigan, brown trousers). Poses: stand, wave, walk_side, walk_front, walk_back, sit, jump, stretch, eat, sleep (no think/hold_ball/shrug/dizzy yet).",
+  "sprites": [
+   {
+    "path": "human_f/hat/stand.png",
+    "twin": "human_f",
+    "hat": true,
+    "pose": "stand",
+    "size": [
+     204,
+     399
+    ],
+    "feet_anchor": {
+     "x": 0.4951,
+     "y": 0.9799
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+    "hat_transform": {
+     "s": 1.0,
+     "th": 0.0,
+     "tx": 97.0,
+     "ty": 85.0
+    }
+   },
+   {
+    "path": "human_f/hat/wave.png",
+    "twin": "human_f",
+    "hat": true,
+    "pose": "wave",
+    "size": [
+     246,
+     412
+    ],
+    "feet_anchor": {
+     "x": 0.5142,
+     "y": 0.9805
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+    "hat_transform": {
+     "s": 1.06,
+     "th": 8.0,
+     "tx": 135.0,
+     "ty": 89.0
+    }
+   },
+   {
+    "path": "human_f/hat/walk_side.png",
+    "twin": "human_f",
+    "hat": true,
+    "pose": "walk_side",
+    "size": [
+     211,
+     378
+    ],
+    "feet_anchor": {
+     "x": 0.545,
+     "y": 0.9789
+    },
+    "source_sheet": "composite-rev4-hatview",
+    "scale_method": "nohat-pose + view-matched hat layer (three_quarter)",
+    "hat_transform": {
+     "view": "three_quarter",
+     "s": 1.0,
+     "th": 0,
+     "x": 98,
+     "y": 62
+    }
+   },
+   {
+    "path": "human_f/hat/walk_front.png",
+    "twin": "human_f",
+    "hat": true,
+    "pose": "walk_front",
+    "size": [
+     206,
+     384
+    ],
+    "feet_anchor": {
+     "x": 0.5534,
+     "y": 0.9792
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+    "hat_transform": {
+     "s": 0.99,
+     "th": 1.0,
+     "tx": 101.0,
+     "ty": 84.0
+    }
+   },
+   {
+    "path": "human_f/hat/walk_back.png",
+    "twin": "human_f",
+    "hat": true,
+    "pose": "walk_back",
+    "size": [
+     211,
+     404
+    ],
+    "feet_anchor": {
+     "x": 0.6185,
+     "y": 0.9802
+    },
+    "source_sheet": "composite-rev4-hatview",
+    "scale_method": "nohat-pose + view-matched hat layer (back)",
+    "hat_transform": {
+     "view": "back",
+     "s": 1.0,
+     "th": 0,
+     "x": 98,
+     "y": 60
+    }
+   },
+   {
+    "path": "human_f/hat/sit.png",
+    "twin": "human_f",
+    "hat": true,
+    "pose": "sit",
+    "size": [
+     247,
+     319
+    ],
+    "feet_anchor": {
+     "x": 0.498,
+     "y": 0.975
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+    "hat_transform": {
+     "s": 1.0,
+     "th": -1.0,
+     "tx": 121.0,
+     "ty": 83.0
+    }
+   },
+   {
+    "path": "human_f/hat/jump.png",
+    "twin": "human_f",
+    "hat": true,
+    "pose": "jump",
+    "size": [
+     282,
+     371
+    ],
+    "feet_anchor": {
+     "x": 0.5355,
+     "y": 0.9785
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+    "hat_transform": {
+     "s": 1.08,
+     "th": 1.0,
+     "tx": 140.0,
+     "ty": 90.0
+    }
+   },
+   {
+    "path": "human_f/hat/stretch.png",
+    "twin": "human_f",
+    "hat": true,
+    "pose": "stretch",
+    "size": [
+     239,
+     399
+    ],
+    "feet_anchor": {
+     "x": 0.5,
+     "y": 0.9799
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+    "hat_transform": {
+     "s": 0.92,
+     "th": 0.0,
+     "tx": 119.0,
+     "ty": 80.0
+    }
+   },
+   {
+    "path": "human_f/hat/eat.png",
+    "twin": "human_f",
+    "hat": true,
+    "pose": "eat",
+    "size": [
+     203,
+     308
+    ],
+    "feet_anchor": {
+     "x": 0.5,
+     "y": 0.974
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "nohat-pose + canonical hat (same scale as nohat)",
+    "hat_transform": {
+     "s": 0.98,
+     "th": -1.0,
+     "tx": 98.0,
+     "ty": 83.0
+    }
+   },
+   {
+    "path": "human_f/hat/sleep.png",
+    "twin": "human_f",
+    "hat": true,
+    "pose": "sleep",
+    "size": [
+     377,
+     206
+    ],
+    "feet_anchor": {
+     "x": 0.6194,
+     "y": 0.9611
+    },
+    "source_sheet": "composite-rev4-hatview",
+    "scale_method": "nohat-pose + view-matched hat layer (front)",
+    "hat_transform": {
+     "view": "front",
+     "s": 1.04,
+     "th": -25,
+     "x": 86,
+     "y": 55
+    }
+   },
+   {
+    "path": "human_f/nohat/stand.png",
+    "twin": "human_f",
+    "hat": false,
+    "pose": "stand",
+    "size": [
+     195,
+     395
+    ],
+    "feet_anchor": {
+     "x": 0.4974,
+     "y": 0.9797
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "stand-height to human stand; head-width per pose (sleep: body-length)"
+   },
+   {
+    "path": "human_f/nohat/wave.png",
+    "twin": "human_f",
+    "hat": false,
+    "pose": "wave",
+    "size": [
+     234,
+     403
+    ],
+    "feet_anchor": {
+     "x": 0.5406,
+     "y": 0.9801
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "stand-height to human stand; head-width per pose (sleep: body-length)"
+   },
+   {
+    "path": "human_f/nohat/walk_side.png",
+    "twin": "human_f",
+    "hat": false,
+    "pose": "walk_side",
+    "size": [
+     195,
+     370
+    ],
+    "feet_anchor": {
+     "x": 0.5487,
+     "y": 0.9784
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "stand-height to human stand; head-width per pose (sleep: body-length)"
+   },
+   {
+    "path": "human_f/nohat/walk_front.png",
+    "twin": "human_f",
+    "hat": false,
+    "pose": "walk_front",
+    "size": [
+     197,
+     379
+    ],
+    "feet_anchor": {
+     "x": 0.5685,
+     "y": 0.9789
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "stand-height to human stand; head-width per pose (sleep: body-length)"
+   },
+   {
+    "path": "human_f/nohat/walk_back.png",
+    "twin": "human_f",
+    "hat": false,
+    "pose": "walk_back",
+    "size": [
+     196,
+     402
+    ],
+    "feet_anchor": {
+     "x": 0.625,
+     "y": 0.9801
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "stand-height to human stand; head-width per pose (sleep: body-length)"
+   },
+   {
+    "path": "human_f/nohat/sit.png",
+    "twin": "human_f",
+    "hat": false,
+    "pose": "sit",
+    "size": [
+     247,
+     312
+    ],
+    "feet_anchor": {
+     "x": 0.498,
+     "y": 0.9744
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "stand-height to human stand; head-width per pose (sleep: body-length)"
+   },
+   {
+    "path": "human_f/nohat/jump.png",
+    "twin": "human_f",
+    "hat": false,
+    "pose": "jump",
+    "size": [
+     282,
+     365
+    ],
+    "feet_anchor": {
+     "x": 0.5355,
+     "y": 0.9781
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "stand-height to human stand; head-width per pose (sleep: body-length)"
+   },
+   {
+    "path": "human_f/nohat/stretch.png",
+    "twin": "human_f",
+    "hat": false,
+    "pose": "stretch",
+    "size": [
+     239,
+     395
+    ],
+    "feet_anchor": {
+     "x": 0.5,
+     "y": 0.9797
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "stand-height to human stand; head-width per pose (sleep: body-length)"
+   },
+   {
+    "path": "human_f/nohat/eat.png",
+    "twin": "human_f",
+    "hat": false,
+    "pose": "eat",
+    "size": [
+     195,
+     303
+    ],
+    "feet_anchor": {
+     "x": 0.5051,
+     "y": 0.9736
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "stand-height to human stand; head-width per pose (sleep: body-length)"
+   },
+   {
+    "path": "human_f/nohat/sleep.png",
+    "twin": "human_f",
+    "hat": false,
+    "pose": "sleep",
+    "size": [
+     377,
+     182
+    ],
+    "feet_anchor": {
+     "x": 0.6194,
+     "y": 0.956
+    },
+    "source_sheet": "human_f-concept-A",
+    "scale_method": "stand-height to human stand; head-width per pose (sleep: body-length)"
+   }
+  ]
+ },
+ "rev3_anatomy_moods": {
+  "date": "2026-10-24",
+  "note": "Joint-anatomy regenerations (bear wave, stretch, walk_side, jump, dizzy; human wave) and 5 TwinState mood poses (concerned, listening, thinking, sleepy, proud) for bear+human, hat+nohat. source_sheet codex-rev3 = Codex image_gen single nohat figure, cut out, fur-matched, scaled to the nohat stand head (template match; some poses use a head/height compromise noted in scale_method); hat = canonical hat composite (composite-rev3). Edges colour-decontaminated (rev3/defringe.py). Backups of replaced files + pre-rev3 manifest: _replaced/rev3/.",
+  "moods": [
+   "concerned",
+   "listening",
+   "thinking",
+   "sleepy",
+   "proud"
+  ]
+ }
+}

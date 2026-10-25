@@ -1,0 +1,103 @@
+<!doctype html>
+<!-- LifeTwin "agentic screens" (prefix Y), rev 1. Experiment screens use the X Sun tint; Room, Ideas and Still learning use the V lavender ground. -->
+<!-- Numbers: experiment/y_scenarios.json (LifeTwinEngine.assess/compare, personal-cox-v2-20261024T182404Z). Rounding rule: see y_gen.py header. What-if only: recorded answers never change. -->
+<!-- Why? sheet: one version only, see WHY_SHEET in each file ("two made-up versions of you"). -->
+<!-- Flutter: each page is a scroll view with the dock AND back pinned (back: floating 52x52 at left 30, top 97 on plate screens; a fixed #FFFDF8 title bar on header screens, 1.5px #A88B7D bottom border once content scrolls under it); scroll content gets bottom padding = dock height + 16. Flow layout with min-heights only, so 200% text grows instead of clipping. Plate windows have fixed heights; twins sit in fixed boxes, one scale per character (stand = 196px), feet on one baseline. -->
+<!-- Engine levers (TwinRepository.experiment(), PR #47) in order: smoking_status 2 -> 1 (current smokers only); vigorous_recreation_min_week step 15 up to 300; moderate_recreation_min_week step 15 up to 600; sleep_hours step 0.5, offered only under 7 h, designed up to 8 (engine flags above 8 as sleep_above_8, not counted); sedentary_min_day step 30 down to 60. Levers only move the way guidance points. Weight: never (weight_not_a_lever). Per-lever chips read LeverFlag {id, counted, reason, reasonText}. ExperimentResult.status -> artboard: available (Y-1..Y-4, Y-7), current_unavailable (Y-8 missing_inputs, Y-9 unsupported_age under 30 / over 85, Y-10 unsupported_profile), extrapolated ages 30-34 and 80-85 (Y-16 Rough guide, Y-17 Rough guide + tiny), no_change / not_counted / alternative_unavailable / invalid_input (Y-15). -->
+<!-- Field -> plain words: age = "Age"; bmi = "Height and weight"; sleep_hours = "Hours of sleep"; vigorous_recreation_min_week = "Hard exercise each week"; moderate_recreation_min_week = "Moderate exercise each week"; sedentary_min_day = "Time spent sitting each day"; sex_nhanes = "Sex at birth"; smoking_status = "Smoking"; diabetes_diagnosed = "Diabetes"; hypertension_diagnosed = "Being told you have high blood pressure"; general_health = "How you rate your health" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Y Survival curve</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.scr{width:390px;position:relative;overflow:hidden;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#4A2F25;-webkit-font-smoothing:antialiased}
+.g-sun{background:radial-gradient(140% 70% at 50% 18%,#FEF7E2 0%,#FBEDC8 72%)}
+.g-lav{background:radial-gradient(140% 70% at 50% 18%,#F0ECFD 0%,#E6E0FA 72%)}
+.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.pn{position:relative;box-sizing:border-box;border:1.5px solid #A88B7D;border-radius:28px;background:#FFFDF8;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.win{border-radius:30px}
+.pa{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border-radius:24px;overflow:hidden}
+.pa img.plate{position:absolute;display:block;object-fit:cover}
+.key{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(226,179,87,.7);border-radius:24px;pointer-events:none}
+.banner{position:absolute;left:50%;transform:translateX(-50%);height:44px;max-width:240px;box-sizing:border-box;padding:0 20px;display:flex;align-items:center;justify-content:center;gap:6px;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;white-space:nowrap;z-index:3}
+.banner .br{color:#B4532F}
+.btn{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:#4A2F25;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid #8C6B5D;background:#FFFDF8;padding:0;text-align:left;text-decoration:none}
+.btn.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.lip{background:#9FD9C3;box-shadow:inset 0 -3px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-cream{background:#FFFDF8;box-shadow:inset 0 -3px 0 rgba(233,223,208,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.cta{width:100%;min-height:64px;border-radius:32px;font-size:24px}
+.cta2{width:100%;min-height:56px;border-radius:28px;font-size:21px}
+.link{border:0;background:transparent;box-shadow:none;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;font-weight:700;font-size:17px;min-height:48px;min-width:48px;padding:0 4px}
+.back{position:absolute;width:52px;height:52px;border-radius:26px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);z-index:2}
+.tail{position:absolute;width:20px;height:20px;background:#FFFDF8;border:1.5px solid #A88B7D;border-top-color:transparent;border-right-color:transparent;box-sizing:border-box}
+.bub{position:absolute;z-index:2;padding:12px 12px;border-radius:24px;max-width:170px;box-sizing:border-box}
+.bub p{margin:0;font-size:19px;line-height:1.18;position:relative}
+.whatif{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:16px;background:#B9B4F0;border:1.5px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:17px;box-sizing:border-box;white-space:nowrap}
+.today{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:16px;background:#FFFDF8;border:1.5px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:17px;box-sizing:border-box;white-space:nowrap}
+.sheet{margin-top:-14px;padding:8px 16px 12px;z-index:1}
+.card{margin-top:14px;padding:12px 16px 16px}
+.row{position:relative;display:flex;align-items:center;gap:12px;box-sizing:border-box;border:2px solid #8C6B5D;border-radius:22px;background:#FFFDF8;padding:6px 8px 6px 10px;box-shadow:0 3px 10px rgba(74,47,37,.10);width:100%;min-height:64px}
+.ic{width:44px;height:44px;border-radius:22px;flex:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:2px solid #8C6B5D}
+.rt{flex:1;min-width:0}
+.rt b{display:block;font-size:18px;line-height:1.2}
+.rt span{display:block;font-size:17px;line-height:1.3;color:#6B4E42}
+.big{width:64px;height:64px;border-radius:32px;flex:none}
+.sw{width:64px;height:38px;border-radius:19px;flex:none;position:relative;box-sizing:border-box;border:2px solid #7A5B4E;background:#9FD9C3}
+.sw i{position:absolute;right:3px;top:3px;width:28px;height:28px;border-radius:14px;background:#FFFDF8;border:2px solid #7A5B4E;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.tag{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:16px;border:1.5px dashed #8C6B5D;background:#FFFDF8;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
+.val{display:inline-flex;align-items:center;justify-content:center;flex:none;width:92px;min-height:40px;padding:4px 6px;border-radius:18px;background:#E9E6FB;border:1.5px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:17px;line-height:1.1;text-align:center;box-sizing:border-box}
+.val.same{background:#FFFDF8;font-family:'Atkinson Hyperlegible',sans-serif;font-weight:700;font-size:17px;color:#6B4E42}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 14px;border-radius:18px;background:#9FD9C3;border:2px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:19px;white-space:nowrap;box-sizing:border-box}
+.lab{font-size:17px;font-weight:700;margin:0;line-height:1.2}
+.eyebrow{font-size:17px;font-weight:700;margin:0;line-height:1.25;color:#6B4E42}
+.nonum{border:2px dashed #8C6B5D;border-radius:22px;background:#FFFDF8;padding:12px 14px}
+.src{display:inline-flex;align-items:center;gap:6px;min-height:48px;font-size:17px;font-weight:700;color:#4A2F25;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.tbar{position:absolute;top:0;left:0;right:0;height:76px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:12px 16px;background:#FFFDF8;border-bottom:1.5px solid #A88B7D;z-index:6}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pinbar{position:absolute;top:0;left:0;right:0;height:76px;background:#FFFDF8;border-bottom:1.5px solid #A88B7D;z-index:5;opacity:0;transition:opacity .2s}
+.pinback{position:absolute;left:30px;top:97px;width:52px;height:52px;border-radius:26px;z-index:6;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.big.off{background:#FFFDF8;border:2px dashed #A88B7D;box-shadow:none;cursor:default}
+.dock{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;background:#FFFDF8;border-top:1.5px solid #A88B7D;border-radius:28px 28px 0 0;box-shadow:0 -6px 16px rgba(74,47,37,.12),inset 0 1px 0 rgba(255,255,255,.75);padding:8px 16px 14px;z-index:5}
+.full .dock{position:relative}
+p{overflow-wrap:break-word}
+</style>
+</helmet>
+<div class="scr g-sun" style="height: 844px">
+<div class="scroll" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow-y: auto; overflow-x: hidden"><div class="flow" style="padding: 84px 14px 158px">
+
+<!-- Rounding: today's yearly value = round(percent); what-if yearly value = today's value + round(that year's gap), so labels and table match the arrays. The model's yearly values (1-5) joined by straight lines; nothing before year 1 or after year 5. -->
+<section class="pn card">
+<h2 class="fd" style="margin: 0; font-size: 22px; line-height: 1.15">Modeled survival of similar people</h2>
+<p style="margin: 4px 0 0; font-size: 17px; line-height: 1.3; color: #6B4E42">Of 100 people like you, still alive each year</p>
+<div style="display: flex; gap: 18px; align-items: center; font-size: 17px; margin-top: 10px; flex-wrap: wrap"><span style="display: flex; align-items: center; gap: 8px; color: #6B4E42"><svg width="30" height="10" aria-hidden="true"><line x1="1" x2="29" y1="5" y2="5" stroke="#8C6B5D" stroke-width="3" stroke-dasharray="7 6"></line></svg>Today</span><span style="display: flex; align-items: center; gap: 8px; font-weight: 700"><svg width="30" height="10" aria-hidden="true"><line x1="1" x2="29" y1="5" y2="5" stroke="#24806A" stroke-width="3"></line></svg>What-if</span></div>
+<div style="margin-top: 12px; border: 1.5px dashed #8C6B5D; border-radius: 20px; padding: 8px 0 6px">
+<p class="lab" style="margin: 0 14px; display: flex; align-items: center; gap: 8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01" stroke-width="3"/></svg>Zoomed in: 85 to 100</p>
+<svg role="img" aria-label="Zoomed in, 85 to 100. Today ends near 89 at year 5, what-if near 93." width="326" height="184" viewBox="0 0 326 184" style="display: block; font-family: 'Atkinson Hyperlegible', sans-serif"><line x1="46" x2="282" y1="144.0" y2="144.0" stroke="#CDB8AB" stroke-width="1.5"></line><text x="38" y="150.0" text-anchor="end" font-size="17" fill="#6B4E42">85</text><line x1="46" x2="282" y1="102.0" y2="102.0" stroke="#E9DFD0" stroke-width="1.5" stroke-dasharray="4 5"></line><text x="38" y="108.0" text-anchor="end" font-size="17" fill="#6B4E42">90</text><line x1="46" x2="282" y1="60.0" y2="60.0" stroke="#E9DFD0" stroke-width="1.5" stroke-dasharray="4 5"></line><text x="38" y="66.0" text-anchor="end" font-size="17" fill="#6B4E42">95</text><line x1="46" x2="282" y1="18.0" y2="18.0" stroke="#E9DFD0" stroke-width="1.5" stroke-dasharray="4 5"></line><text x="38" y="24.0" text-anchor="end" font-size="17" fill="#6B4E42">100</text><rect x="56" y="137" width="9" height="14" fill="#FFFDF8"></rect><path d="M53 150l6 -12M61 150l6 -12" stroke="#6B4E42" stroke-width="2" stroke-linecap="round"></path><polygon points="46.0,26.40 105.0,34.80 164.0,51.60 223.0,60.00 282.0,76.80 282.0,110.40 223.0,85.20 164.0,68.40 105.0,51.60 46.0,34.80" fill="#9FD9C3" fill-opacity=".35"></polygon><path d="M46.0 34.80 L105.0 51.60 L164.0 68.40 L223.0 85.20 L282.0 110.40" fill="none" stroke="#8C6B5D" stroke-width="3" stroke-dasharray="7 6"></path><path d="M46.0 26.40 L105.0 34.80 L164.0 51.60 L223.0 60.00 L282.0 76.80" fill="none" stroke="#24806A" stroke-width="3"></path><circle cx="46.0" cy="34.80" r="5" fill="#FFFDF8" stroke="#8C6B5D" stroke-width="2.5"></circle><circle cx="46.0" cy="26.40" r="5" fill="#24806A" stroke="#FFFDF8" stroke-width="1.5"></circle><text x="46.0" y="170" text-anchor="middle" font-size="17" fill="#6B4E42">1</text><circle cx="105.0" cy="51.60" r="5" fill="#FFFDF8" stroke="#8C6B5D" stroke-width="2.5"></circle><circle cx="105.0" cy="34.80" r="5" fill="#24806A" stroke="#FFFDF8" stroke-width="1.5"></circle><text x="105.0" y="170" text-anchor="middle" font-size="17" fill="#6B4E42">2</text><circle cx="164.0" cy="68.40" r="5" fill="#FFFDF8" stroke="#8C6B5D" stroke-width="2.5"></circle><circle cx="164.0" cy="51.60" r="5" fill="#24806A" stroke="#FFFDF8" stroke-width="1.5"></circle><text x="164.0" y="170" text-anchor="middle" font-size="17" fill="#6B4E42">3</text><circle cx="223.0" cy="85.20" r="5" fill="#FFFDF8" stroke="#8C6B5D" stroke-width="2.5"></circle><circle cx="223.0" cy="60.00" r="5" fill="#24806A" stroke="#FFFDF8" stroke-width="1.5"></circle><text x="223.0" y="170" text-anchor="middle" font-size="17" fill="#6B4E42">4</text><circle cx="282.0" cy="110.40" r="5" fill="#FFFDF8" stroke="#8C6B5D" stroke-width="2.5"></circle><circle cx="282.0" cy="76.80" r="5" fill="#24806A" stroke="#FFFDF8" stroke-width="1.5"></circle><text x="282.0" y="170" text-anchor="middle" font-size="17" fill="#6B4E42">5</text><text x="292.0" y="82.8" font-size="18" font-weight="700" fill="#24806A">93</text><text x="292.0" y="116.4" font-size="17" fill="#6B4E42">89</text></svg><p style="margin: -6px 0 0; text-align: center; font-size: 17px; color: #6B4E42">Years</p>
+</div>
+<!-- Full scale (0 to 100) chart sits behind this switch; the zoomed chart above is labelled as zoomed. Off by default. --><button class="btn row" role="switch" aria-checked="false" style="margin-top: 10px; min-height: 56px; box-shadow: none; border: 1.5px solid #A88B7D"><span class="ic" style="width: 40px; height: 40px; border-radius: 20px; background: #FFFDF8"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M4 4v16h16"/><path d="M7.5 9.5l3.5 2 3-3 4.5 2.5"/><path d="M7.5 14l3.5 1.5 3-2 4.5 1.5" stroke-dasharray="2.2 2.4"/></svg></span><span class="rt"><b>Show full scale</b><span>0 to 100</span></span><span class="sw" aria-hidden="true" style="background: #FFFDF8; border-color: #8C6B5D"><i style="left: 3px; right: auto"></i></span><span style="width: 2px"></span></button>
+<!-- Full-scale chart (shown when the switch is on): Full scale 0 to 100. Both lines stay near the top: today from about 98 at year 1 to about 89 at year 5; what-if from about 99 to about 93. -->
+</section>
+<!-- "See the numbers" sheet = this table (Year 1-5, Today / What-if, same rounding; years whose gap is under 1 read "less than 1 more"):   About how many in 100      Today  What-if      Year 1  98  98, less than 1 more    Year 2  96  98    Year 3  94  96    Year 4  92  95    Year 5  89  93     -->
+<div style="margin-top: 14px"><button class="btn lip-cream fd cta2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M4 4v16h16"/><path d="M7.5 9.5l3.5 2 3-3 4.5 2.5"/><path d="M7.5 14l3.5 1.5 3-2 4.5 1.5" stroke-dasharray="2.2 2.4"/></svg><span>See the numbers</span></button></div>
+</div></div>
+<div class="tbar"><button class="btn back" style="position: relative" aria-label="Back"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M15 5l-7 7 7 7"/></svg></button><h1 class="fd" style="flex: 1; margin: 0; font-size: 28px; line-height: 1.1">Years 1 to 5</h1><span class="whatif">What-if</span></div>
+<!-- Why? sheet (behind every "Why?"): "This compares people in a US health survey with answers like today's you and like your what-if twin. It shows a link, not proof that a change causes it. Your real answers stay the same. Not a promise, not a date." --><section class="dock" style="min-height: 142px" aria-label="Next step">
+<div style="display: flex; align-items: center; justify-content: space-between; min-height: 48px; gap: 8px"><p class="lab" style="color: #4A2F25">Linked, not proven. <span style="font-weight: 400; color: #6B4E42">What-if only.</span></p><button class="btn link" style="gap: 6px" aria-label="Why? Linked, not proven, what-if only"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01" stroke-width="3"/></svg><span>Why?</span></button></div>
+<div style="margin-top: 8px"><button class="btn lip fd cta"><span>Try other changes</span></button></div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

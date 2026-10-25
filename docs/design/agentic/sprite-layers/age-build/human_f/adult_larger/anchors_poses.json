@@ -1,0 +1,146 @@
+{
+ "wave": {
+  "size": [
+   214,
+   397
+  ],
+  "feet_anchor": {
+   "x": 0.5771,
+   "y": 0.9798
+  },
+  "scale": 0.775,
+  "sheet": "human_f_adult_larger_A"
+ },
+ "walk_side": {
+  "size": [
+   206,
+   400
+  ],
+  "feet_anchor": {
+   "x": 0.5461,
+   "y": 0.98
+  },
+  "scale": 0.775,
+  "sheet": "human_f_adult_larger_A"
+ },
+ "sit": {
+  "size": [
+   229,
+   331
+  ],
+  "feet_anchor": {
+   "x": 0.4803,
+   "y": 0.9758
+  },
+  "scale": 0.775,
+  "sheet": "human_f_adult_larger_A"
+ },
+ "jump": {
+  "size": [
+   261,
+   349
+  ],
+  "feet_anchor": {
+   "x": 0.3621,
+   "y": 0.9771
+  },
+  "scale": 0.775,
+  "sheet": "human_f_adult_larger_A"
+ },
+ "sleep": {
+  "size": [
+   376,
+   193
+  ],
+  "feet_anchor": {
+   "x": 0.7859,
+   "y": 0.9585
+  },
+  "scale": 0.775,
+  "sheet": "human_f_adult_larger_A"
+ },
+ "eat": {
+  "size": [
+   218,
+   317
+  ],
+  "feet_anchor": {
+   "x": 0.4954,
+   "y": 0.9748
+  },
+  "scale": 0.775,
+  "sheet": "human_f_adult_larger_A"
+ },
+ "stretch": {
+  "size": [
+   187,
+   387
+  ],
+  "feet_anchor": {
+   "x": 0.5561,
+   "y": 0.9793
+  },
+  "scale": 0.775,
+  "sheet": "human_f_adult_larger_A"
+ },
+ "concerned": {
+  "size": [
+   166,
+   394
+  ],
+  "feet_anchor": {
+   "x": 0.503,
+   "y": 0.9797
+  },
+  "scale": 0.547,
+  "sheet": "human_f_adult_larger_B"
+ },
+ "listening": {
+  "size": [
+   172,
+   393
+  ],
+  "feet_anchor": {
+   "x": 0.561,
+   "y": 0.9796
+  },
+  "scale": 0.547,
+  "sheet": "human_f_adult_larger_B"
+ },
+ "thinking": {
+  "size": [
+   169,
+   412
+  ],
+  "feet_anchor": {
+   "x": 0.5355,
+   "y": 0.9806
+  },
+  "scale": 0.547,
+  "sheet": "human_f_adult_larger_B"
+ },
+ "sleepy": {
+  "size": [
+   188,
+   413
+  ],
+  "feet_anchor": {
+   "x": 0.4761,
+   "y": 0.9806
+  },
+  "scale": 0.547,
+  "sheet": "human_f_adult_larger_B"
+ },
+ "proud": {
+  "size": [
+   171,
+   413
+  ],
+  "feet_anchor": {
+   "x": 0.5439,
+   "y": 0.9806
+  },
+  "scale": 0.547,
+  "sheet": "human_f_adult_larger_B"
+ }
+}

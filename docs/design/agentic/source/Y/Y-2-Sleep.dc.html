@@ -1,0 +1,114 @@
+<!doctype html>
+<!-- LifeTwin "agentic screens" (prefix Y), rev 1. Experiment screens use the X Sun tint; Room, Ideas and Still learning use the V lavender ground. -->
+<!-- Numbers: experiment/y_scenarios.json (LifeTwinEngine.assess/compare, personal-cox-v2-20261024T182404Z). Rounding rule: see y_gen.py header. What-if only: recorded answers never change. -->
+<!-- Why? sheet: one version only, see WHY_SHEET in each file ("two made-up versions of you"). -->
+<!-- Flutter: each page is a scroll view with the dock AND back pinned (back: floating 52x52 at left 30, top 97 on plate screens; a fixed #FFFDF8 title bar on header screens, 1.5px #A88B7D bottom border once content scrolls under it); scroll content gets bottom padding = dock height + 16. Flow layout with min-heights only, so 200% text grows instead of clipping. Plate windows have fixed heights; twins sit in fixed boxes, one scale per character (stand = 196px), feet on one baseline. -->
+<!-- Engine levers (TwinRepository.experiment(), PR #47) in order: smoking_status 2 -> 1 (current smokers only); vigorous_recreation_min_week step 15 up to 300; moderate_recreation_min_week step 15 up to 600; sleep_hours step 0.5, offered only under 7 h, designed up to 8 (engine flags above 8 as sleep_above_8, not counted); sedentary_min_day step 30 down to 60. Levers only move the way guidance points. Weight: never (weight_not_a_lever). Per-lever chips read LeverFlag {id, counted, reason, reasonText}. ExperimentResult.status -> artboard: available (Y-1..Y-4, Y-7), current_unavailable (Y-8 missing_inputs, Y-9 unsupported_age under 30 / over 85, Y-10 unsupported_profile), extrapolated ages 30-34 and 80-85 (Y-16 Rough guide, Y-17 Rough guide + tiny), no_change / not_counted / alternative_unavailable / invalid_input (Y-15). -->
+<!-- Field -> plain words: age = "Age"; bmi = "Height and weight"; sleep_hours = "Hours of sleep"; vigorous_recreation_min_week = "Hard exercise each week"; moderate_recreation_min_week = "Moderate exercise each week"; sedentary_min_day = "Time spent sitting each day"; sex_nhanes = "Sex at birth"; smoking_status = "Smoking"; diabetes_diagnosed = "Diabetes"; hypertension_diagnosed = "Being told you have high blood pressure"; general_health = "How you rate your health" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Y Sleep lever</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.scr{width:390px;position:relative;overflow:hidden;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#4A2F25;-webkit-font-smoothing:antialiased}
+.g-sun{background:radial-gradient(140% 70% at 50% 18%,#FEF7E2 0%,#FBEDC8 72%)}
+.g-lav{background:radial-gradient(140% 70% at 50% 18%,#F0ECFD 0%,#E6E0FA 72%)}
+.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.pn{position:relative;box-sizing:border-box;border:1.5px solid #A88B7D;border-radius:28px;background:#FFFDF8;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.win{border-radius:30px}
+.pa{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border-radius:24px;overflow:hidden}
+.pa img.plate{position:absolute;display:block;object-fit:cover}
+.key{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(226,179,87,.7);border-radius:24px;pointer-events:none}
+.banner{position:absolute;left:50%;transform:translateX(-50%);height:44px;max-width:240px;box-sizing:border-box;padding:0 20px;display:flex;align-items:center;justify-content:center;gap:6px;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;white-space:nowrap;z-index:3}
+.banner .br{color:#B4532F}
+.btn{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:#4A2F25;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid #8C6B5D;background:#FFFDF8;padding:0;text-align:left;text-decoration:none}
+.btn.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.lip{background:#9FD9C3;box-shadow:inset 0 -3px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-cream{background:#FFFDF8;box-shadow:inset 0 -3px 0 rgba(233,223,208,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.cta{width:100%;min-height:64px;border-radius:32px;font-size:24px}
+.cta2{width:100%;min-height:56px;border-radius:28px;font-size:21px}
+.link{border:0;background:transparent;box-shadow:none;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;font-weight:700;font-size:17px;min-height:48px;min-width:48px;padding:0 4px}
+.back{position:absolute;width:52px;height:52px;border-radius:26px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);z-index:2}
+.tail{position:absolute;width:20px;height:20px;background:#FFFDF8;border:1.5px solid #A88B7D;border-top-color:transparent;border-right-color:transparent;box-sizing:border-box}
+.bub{position:absolute;z-index:2;padding:12px 12px;border-radius:24px;max-width:170px;box-sizing:border-box}
+.bub p{margin:0;font-size:19px;line-height:1.18;position:relative}
+.whatif{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:16px;background:#B9B4F0;border:1.5px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:17px;box-sizing:border-box;white-space:nowrap}
+.today{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:16px;background:#FFFDF8;border:1.5px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:17px;box-sizing:border-box;white-space:nowrap}
+.sheet{margin-top:-14px;padding:8px 16px 12px;z-index:1}
+.card{margin-top:14px;padding:12px 16px 16px}
+.row{position:relative;display:flex;align-items:center;gap:12px;box-sizing:border-box;border:2px solid #8C6B5D;border-radius:22px;background:#FFFDF8;padding:6px 8px 6px 10px;box-shadow:0 3px 10px rgba(74,47,37,.10);width:100%;min-height:64px}
+.ic{width:44px;height:44px;border-radius:22px;flex:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:2px solid #8C6B5D}
+.rt{flex:1;min-width:0}
+.rt b{display:block;font-size:18px;line-height:1.2}
+.rt span{display:block;font-size:17px;line-height:1.3;color:#6B4E42}
+.big{width:64px;height:64px;border-radius:32px;flex:none}
+.sw{width:64px;height:38px;border-radius:19px;flex:none;position:relative;box-sizing:border-box;border:2px solid #7A5B4E;background:#9FD9C3}
+.sw i{position:absolute;right:3px;top:3px;width:28px;height:28px;border-radius:14px;background:#FFFDF8;border:2px solid #7A5B4E;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.tag{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:16px;border:1.5px dashed #8C6B5D;background:#FFFDF8;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
+.val{display:inline-flex;align-items:center;justify-content:center;flex:none;width:92px;min-height:40px;padding:4px 6px;border-radius:18px;background:#E9E6FB;border:1.5px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:17px;line-height:1.1;text-align:center;box-sizing:border-box}
+.val.same{background:#FFFDF8;font-family:'Atkinson Hyperlegible',sans-serif;font-weight:700;font-size:17px;color:#6B4E42}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 14px;border-radius:18px;background:#9FD9C3;border:2px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:19px;white-space:nowrap;box-sizing:border-box}
+.lab{font-size:17px;font-weight:700;margin:0;line-height:1.2}
+.eyebrow{font-size:17px;font-weight:700;margin:0;line-height:1.25;color:#6B4E42}
+.nonum{border:2px dashed #8C6B5D;border-radius:22px;background:#FFFDF8;padding:12px 14px}
+.src{display:inline-flex;align-items:center;gap:6px;min-height:48px;font-size:17px;font-weight:700;color:#4A2F25;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.tbar{position:absolute;top:0;left:0;right:0;height:76px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:12px 16px;background:#FFFDF8;border-bottom:1.5px solid #A88B7D;z-index:6}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pinbar{position:absolute;top:0;left:0;right:0;height:76px;background:#FFFDF8;border-bottom:1.5px solid #A88B7D;z-index:5;opacity:0;transition:opacity .2s}
+.pinback{position:absolute;left:30px;top:97px;width:52px;height:52px;border-radius:26px;z-index:6;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.big.off{background:#FFFDF8;border:2px dashed #A88B7D;box-shadow:none;cursor:default}
+.dock{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;background:#FFFDF8;border-top:1.5px solid #A88B7D;border-radius:28px 28px 0 0;box-shadow:0 -6px 16px rgba(74,47,37,.12),inset 0 1px 0 rgba(255,255,255,.75);padding:8px 16px 14px;z-index:5}
+.full .dock{position:relative}
+p{overflow-wrap:break-word}
+</style>
+</helmet>
+<div class="scr g-sun" style="height: 844px">
+<div class="scroll" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow-y: auto; overflow-x: hidden"><div class="flow" style="padding: 77px 14px 158px">
+<!-- TwinState shortSleep (under 6 h) -> sleepy.png. Per-lever preview, tagged "Just this change". Levers are hypothetical and never save. -->
+<div class="pn win" style="height: 233px"><div class="pa"><img class="plate" src="/_blob/d16f2dd61c0d54c11b27c2e6626acc71" alt="" style="width: 460px; height: 690px; left: -78px; top: -140px"><!-- TwinMood sleepy -> sleepy.png --><div aria-hidden="true" style="position: absolute; left: 32px; top: 24px; width: 240px; height: 210px; background: radial-gradient(closest-side, rgba(255,227,176,.30), rgba(255,227,176,0))"></div><div aria-hidden="true" style="position: absolute; left: 86px; top: 205px; width: 132px; height: 18px; border-radius: 50%; background: rgba(74,47,37,.22); filter: blur(3px)"></div><img src="/_blob/da0e9823dcac66dd137206550b0b5a70" alt="Mochi the bear yawning sleepily" style="position: absolute; left: 85px; top: 21px; width: 136px; height: 198px; display: block"></div><div class="key"></div>
+<div class="banner" style="top: -22px" aria-label="Twin name: Mochi"><span class="br">{</span><span class="nm">Mochi</span><span class="br">}</span></div>
+<span class="whatif" style="position: absolute; right: 16px; top: 30px; z-index: 2">What-if</span><div class="pn bub" style="right: 6px; top: 119px"><span class="tail" style="left: -10px; top: 24px; transform: rotate(45deg)"></span><p class="fd">A little more<br>rest for us?</p></div></div>
+<section class="pn sheet">
+<div style="display: flex; align-items: center; justify-content: space-between; min-height: 40px; gap: 8px; flex-wrap: wrap"><h1 class="fd" style="margin: 0; font-size: 28px; line-height: 1.1">Sleep</h1><span class="tag" style="border-style: solid">Just this change</span></div><!-- Control: stepper (HIG: bounded, fixed steps, value always visible). Lever sleep_hours: offered only because today < 7 h; step 0.5; up to 8 h (+ disables at 8). 64pt buttons. Each value re-runs compare() for this lever alone. -->
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 8px; border: 2px solid #8C6B5D; border-radius: 40px; background: #FFFDF8">
+<button class="btn big lip-cream" aria-label="Half an hour less sleep"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M6 12h12"/></svg></button>
+<div style="text-align: center" aria-live="polite"><p class="fd" style="margin: 0; font-size: 44px; line-height: 1">6½&nbsp;h</p><p style="margin: 2px 0 0; font-size: 17px; color: #6B4E42">a night</p></div>
+<button class="btn big lip" aria-label="Half an hour more sleep"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M6 12h12M12 6v12"/></svg></button>
+</div>
+<div style="display: flex; justify-content: space-between; margin: 8px 6px 0; font-size: 17px; line-height: 1.3">
+<span style="color: #6B4E42">Today 5½&nbsp;h</span><span style="font-weight: 700">+1&nbsp;hour</span></div>
+<!-- At 8 h the + becomes .big.off: #FFFDF8 fill, 2px dashed #A88B7D, #6B4E42 icon, aria-disabled="true", caption "8 h is the top" (drawn on Y-15). -->
+</section>
+<!-- Tiny state. d = 0.5206 -> d1 +0.5 -> "Less than 1 more in 100". (i) beside the headline opens a sheet: "About 5 in 1,000. Too small for a 100-bear picture." No arrays, no second count; the what-if box says "A tiny bit more". -->
+<section class="pn card" aria-label="Just this change">
+<p class="fd" style="margin: 0; font-size: 20px; line-height: 1.2">Just this change</p><p style="margin: 0; font-size: 17px; line-height: 1.3; color: #6B4E42">Modeled difference between profiles</p>
+<div style="display: flex; align-items: center; gap: 4px; margin-top: 6px">
+<h2 class="fd" style="flex: 1; min-width: 0; margin: 0; font-size: 26px; line-height: 1.12; color: #24806A">Less than 1 more in&nbsp;100</h2><button class="btn link" style="padding: 0; flex: none; min-width: 48px" aria-label="Exact figure: about 5 in 1,000"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01" stroke-width="3"/></svg></button></div>
+<p style="margin: 2px 0 0; font-size: 17px; line-height: 1.35; color: #6B4E42">Of 100 people like you, still alive in 5&nbsp;years</p>
+<div style="display: flex; gap: 10px; margin-top: 10px">
+<div style="flex: 1; border: 1.5px solid #A88B7D; border-radius: 18px; padding: 8px 12px"><p class="lab" style="color: #6B4E42">Today</p><p class="fd" style="margin: 2px 0 0; font-size: 22px">About 89 <small style="font-family: 'Atkinson Hyperlegible', sans-serif; font-weight: 400; font-size: 17px">in&nbsp;100</small></p></div>
+<div style="flex: 1; border: 1.5px solid #8C6B5D; border-radius: 18px; padding: 8px 12px; background: #F4F2FD"><p class="lab">What-if</p><p class="fd" style="margin: 2px 0 0; font-size: 22px">A tiny bit more</p></div>
+</div>
+</section>
+</div></div>
+<!-- Scroll bar backdrop: once the scroll offset > 0 the 76px #FFFDF8 bar fades in and the floating back animates into it at top 12, left 16 (Flutter: AnimatedOpacity + AnimatedPositioned). --><div class="pinbar" aria-hidden="true"></div><button class="btn pinback" aria-label="Back to Experiment"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M15 5l-7 7 7 7"/></svg></button>
+<!-- Why? sheet (behind every "Why?"): "This compares people in a US health survey with answers like today's you and like your what-if twin. It shows a link, not proof that a change causes it. Your real answers stay the same. Not a promise, not a date." --><section class="dock" style="min-height: 142px" aria-label="Next step">
+<div style="display: flex; align-items: center; justify-content: space-between; min-height: 48px; gap: 8px"><p class="lab" style="color: #4A2F25">Linked, not proven. <span style="font-weight: 400; color: #6B4E42">What-if only.</span></p><button class="btn link" style="gap: 6px" aria-label="Why? Linked, not proven, what-if only"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01" stroke-width="3"/></svg><span>Why?</span></button></div>
+<div style="margin-top: 8px"><button class="btn lip fd cta" aria-label="Use 6 and a half hours in my what-if. Nothing is saved to your answers."><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Use in my what-if</span></button></div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
