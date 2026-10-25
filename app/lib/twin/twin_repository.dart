@@ -80,7 +80,7 @@ class TwinRepository extends ChangeNotifier {
       clock: clock,
     );
     // Older profiles get their join date now; then plan the coming week's reminders again.
-    await repo._ensureFirstJoined();
+    if (repo.store.hasProfile) await repo._ensureFirstJoined();
     await repo.replanReminders();
     return repo;
   }
@@ -578,7 +578,17 @@ class TwinRepository extends ChangeNotifier {
     final r = reminders;
     if (r == null) return const [];
     try {
-      return await r.reschedule(checkinSettings, localNow: _clock(), history: store.checkins, firstJoined: firstJoined);
+      final now = _clock();
+      final later = DateTime.tryParse(store.remindLater ?? '');
+      // A remind-later that has fired or passed is done; one still ahead survives the replan.
+      if (store.remindLater != null && (later == null || !later.isAfter(now))) await store._setRemindLater(null);
+      return await r.reschedule(
+        checkinSettings,
+        localNow: now,
+        history: store.checkins,
+        firstJoined: firstJoined,
+        remindLaterAt: later,
+      );
     } catch (e) {
       debugPrint('Reminders could not be planned: $e');
       return const [];
@@ -610,6 +620,20 @@ class TwinRepository extends ChangeNotifier {
   String? get weeklyGateLine {
     final joined = firstJoined;
     return joined == null || weeklyAvailable ? null : weeklyOpensLine(joined);
+  }
+
+  /// "Remind me later" on the plan: one extra reminder a couple of hours from now (reminders are on),
+  /// kept out of quiet hours. Remembered in the store so a refresh doesn't wipe it.
+  Future<void> remindLater() async {
+    final r = reminders;
+    if (r == null) return;
+    try {
+      final s = checkinSettings;
+      final at = await r.remindLater(_clock(), hour: s.reminderHour, minute: s.reminderMinute);
+      await store._setRemindLater(at.toIso8601String());
+    } catch (e) {
+      debugPrint('Reminder could not be planned: $e');
+    }
   }
 
   /// Show the one-time "Would you like a gentle reminder each day?" offer: at the end of

@@ -90,6 +90,22 @@ class CheckinReminders {
   /// "Not now": remembered, so the offer isn't repeated.
   CheckinSettings decline(CheckinSettings settings) => settings.copyWith(reminderOffered: true, remindersOn: false);
 
+  static const _remindLaterBody = 'A small step from today’s plan is waiting. No rush.';
+
+  /// One extra reminder about two hours from [localNow], for "Remind me later" on today's plan.
+  /// Quiet hours: if that falls after 20:30 or before 08:00, it goes to [hour]:[minute] the next
+  /// morning (this morning, when it is before 08:00). Returns the time it was scheduled for.
+  Future<DateTime> remindLater(DateTime localNow, {int hour = 9, int minute = 0}) async {
+    var at = localNow.add(const Duration(hours: 2));
+    final mins = at.hour * 60 + at.minute;
+    if (mins > 20 * 60 + 30 || mins < 8 * 60) {
+      final day = mins < 8 * 60 ? at : at.add(const Duration(days: 1));
+      at = DateTime(day.year, day.month, day.day, hour, minute);
+    }
+    await port.scheduleAt(id: 99, localWallTime: at, title: reminderTitle, body: _remindLaterBody);
+    return at;
+  }
+
   /// Turns reminders off and removes the planned ones.
   Future<CheckinSettings> turnOff(CheckinSettings settings) async {
     await port.cancelAll();
@@ -104,9 +120,14 @@ class CheckinReminders {
     required DateTime localNow,
     required List<CheckinEntry> history,
     String? firstJoined,
+    DateTime? remindLaterAt,
   }) async {
     await port.cancelAll();
     if (!settings.remindersOn) return const [];
+    // cancelAll removed a pending remind-later; put it back while it is still ahead.
+    if (remindLaterAt != null && remindLaterAt.isAfter(localNow)) {
+      await port.scheduleAt(id: 99, localWallTime: remindLaterAt, title: reminderTitle, body: _remindLaterBody);
+    }
     final today = isoDay(dayOf(localNow));
     final doneToday = history.any((c) => c.kind != 'weekly' && c.date == today);
     final weeklyDates = [

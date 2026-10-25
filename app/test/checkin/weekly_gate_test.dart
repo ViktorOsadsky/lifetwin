@@ -102,6 +102,67 @@ void main() {
     });
   });
 
+  group('remind me later', () {
+    late FakePort port;
+    late CheckinReminders reminders;
+    setUp(() {
+      port = FakePort();
+      reminders = CheckinReminders(port);
+    });
+    Iterable<DateTime> later() => port.scheduled.where((s) => s.$1 == 99).map((s) => s.$2);
+
+    test('two hours on, in the daytime', () async {
+      final at = await reminders.remindLater(DateTime(2026, 10, 5, 14, 10));
+      expect(at, DateTime(2026, 10, 5, 16, 10));
+      expect(later(), [at]);
+    });
+
+    test('quiet hours: after 20:30 goes to the next morning, before 08:00 to this morning', () async {
+      expect(await reminders.remindLater(DateTime(2026, 10, 5, 19), hour: 10), DateTime(2026, 10, 6, 10));
+      expect(await reminders.remindLater(DateTime(2026, 10, 5, 20, 31)), DateTime(2026, 10, 6, 9)); // 22:31
+      expect(await reminders.remindLater(DateTime(2026, 10, 5, 18, 30)), DateTime(2026, 10, 5, 20, 30)); // edge ok
+      expect(await reminders.remindLater(DateTime(2026, 10, 5, 4), hour: 10), DateTime(2026, 10, 5, 10)); // 06:00
+      expect(await reminders.remindLater(DateTime(2026, 10, 5, 23, 30), hour: 10), DateTime(2026, 10, 6, 10));
+    });
+
+    test('survives a replan while ahead, and is dropped once passed', () async {
+      final base = DateTime(2026, 10, 5, 9);
+      final at = DateTime(2026, 10, 5, 11);
+      await reminders.reschedule(on, localNow: base, history: const [], remindLaterAt: at);
+      expect(later(), [at]);
+      await reminders.reschedule(on, localNow: DateTime(2026, 10, 5, 11, 5), history: const [], remindLaterAt: at);
+      expect(later(), isEmpty);
+    });
+
+    test('the repository keeps it across refresh, clears it after it fires, and Delete my data removes it', () async {
+      var clock = DateTime(2026, 10, 5, 14);
+      final backend = MemoryBackend();
+      final repo = TwinRepository(
+        model: model,
+        store: await TwinStore.open(backend),
+        clock: () => clock,
+        reminders: reminders,
+      );
+      await repo.saveConversationProfile(profile);
+      await repo.saveCheckinSettings(on);
+      await repo.remindLater();
+      expect(repo.store.remindLater, DateTime(2026, 10, 5, 16).toIso8601String());
+      clock = DateTime(2026, 10, 5, 15);
+      await repo.replanReminders(); // app resume
+      expect(later(), [DateTime(2026, 10, 5, 16)]);
+      clock = DateTime(2026, 10, 5, 16, 1);
+      await repo.replanReminders();
+      expect(later(), isEmpty);
+      expect(repo.store.remindLater, isNull);
+
+      clock = DateTime(2026, 10, 5, 14);
+      await repo.remindLater();
+      await repo.deleteMyData();
+      expect(repo.store.remindLater, isNull);
+      expect(backend.text, isNull);
+    });
+  });
+
   group('first_joined', () {
     late DateTime clock;
     setUp(() => clock = DateTime(2026, 10, 1, 9));

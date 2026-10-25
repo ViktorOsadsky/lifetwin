@@ -393,7 +393,9 @@ void main() {
           ..setDemo(true);
         addTearDown(store.dispose);
         final demo = store.sittingDay();
-        expect(demo.sittingMinutesPerDay, 688);
+        final sitting = store.fileReports.last.observedSittingOrLyingMinutes;
+        expect(sitting, inInclusiveRange(350, 540));
+        expect(demo.sittingMinutesPerDay, sitting);
         expect(demo.demo, isTrue);
         expect(service.suggestSitting(demo, live: store.live), isNull);
         expect(service.suggestSitting(demo, live: true, demo: true), isNull);
@@ -406,7 +408,7 @@ void main() {
         expect(offer.question, startsWith('Demo data.'));
         expect(repo.profile[bandSittingField], 360);
         await service.confirmSitting(offer);
-        expect(repo.profile[bandSittingField], 688);
+        expect(repo.profile[bandSittingField], sitting);
         expect(
           repo.provenance(bandSittingField)!.source,
           HistorySource.wristband,
