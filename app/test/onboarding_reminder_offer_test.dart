@@ -13,7 +13,7 @@ import 'support/assessments.dart';
 
 void main() {
   testWidgets('the reminder offer comes once, after the reveal, once', (t) async {
-    final model = await TwinModelService.load();
+    final model = (await t.runAsync(() => TwinModelService.load()))!;
     final port = FakePort();
     final repo = TwinRepository(
       model: model,

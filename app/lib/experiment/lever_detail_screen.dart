@@ -30,7 +30,11 @@ class LeverDetailScreen extends StatefulWidget {
     required this.leverId,
     required this.appearance,
     this.open = defaultOpenUrl,
+    this.presetValue,
   });
+
+  /// An idea's target value to start the control on; null starts where the what-if is.
+  final double? presetValue;
 
   final TwinRepository repository;
 
@@ -47,7 +51,10 @@ class LeverDetailScreen extends StatefulWidget {
 class _LeverDetailScreenState extends State<LeverDetailScreen> {
   // This lever alone, on a fresh copy.
   late final TwinExperiment _probe = widget.repository.experiment()!
-    ..set(widget.leverId, widget.whatIf.lever(widget.leverId).value ?? 0);
+    ..set(
+      widget.leverId,
+      widget.presetValue ?? widget.whatIf.lever(widget.leverId).value ?? 0,
+    );
 
   @override
   void dispose() {
@@ -58,7 +65,10 @@ class _LeverDetailScreenState extends State<LeverDetailScreen> {
   bool get _isSmoking => widget.leverId == LeverId.smoking;
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(listenable: _probe, builder: (context, _) => _build(context));
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: _probe,
+    builder: (context, _) => _build(context),
+  );
 
   Widget _build(BuildContext context) {
     final l = _probe.lever(widget.leverId);
@@ -88,9 +98,21 @@ class _LeverDetailScreenState extends State<LeverDetailScreen> {
         children: [
           ExperimentPlate(
             appearance: widget.appearance,
-            twins: [TwinSlot(state: whatIfTwinState(today, display), x: 0.3, halo: true)],
-            bubble: display.kind == ResultKind.noChange ? copy.bubble : ExperimentCopy.bubbleBig,
-            overlay: const Stack(children: [Positioned(right: 16, top: 30, child: ModePill.whatIf())]),
+            twins: [
+              TwinSlot(
+                state: whatIfTwinState(today, display),
+                x: 0.3,
+                halo: true,
+              ),
+            ],
+            bubble: display.kind == ResultKind.noChange
+                ? copy.bubble
+                : ExperimentCopy.bubbleBig,
+            overlay: const Stack(
+              children: [
+                Positioned(right: 16, top: 30, child: ModePill.whatIf()),
+              ],
+            ),
           ),
           const SizedBox(height: 14),
           Sheet(
@@ -101,7 +123,10 @@ class _LeverDetailScreenState extends State<LeverDetailScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: Semantics(header: true, child: Text(copy.full, style: LtText.display(28))),
+                      child: Semantics(
+                        header: true,
+                        child: Text(copy.full, style: LtText.display(28)),
+                      ),
                     ),
                     _JustThis(),
                   ],
@@ -114,7 +139,8 @@ class _LeverDetailScreenState extends State<LeverDetailScreen> {
                     secondLabel: ExperimentCopy.quit,
                     secondCaption: 'What-if',
                     secondSelected: v == 1,
-                    onChanged: (quit) => _probe.set(widget.leverId, quit ? 1 : 2),
+                    onChanged: (quit) =>
+                        _probe.set(widget.leverId, quit ? 1 : 2),
                     semanticLabel: 'Smoking what-if',
                   )
                 else ...[
@@ -130,7 +156,10 @@ class _LeverDetailScreenState extends State<LeverDetailScreen> {
                             style: LtText.body(color: LtColors.secondary),
                           ),
                         ),
-                        Text(LeverCopy.change(l, v), style: LtText.body(weight: FontWeight.w700)),
+                        Text(
+                          LeverCopy.change(l, v),
+                          style: LtText.body(weight: FontWeight.w700),
+                        ),
                       ],
                     ),
                   ),
@@ -142,7 +171,9 @@ class _LeverDetailScreenState extends State<LeverDetailScreen> {
           ResultCard(
             display: display,
             leverName: (id) => LeverCopy.of(id)?.full ?? 'This change',
-            title: _isSmoking ? 'Quitting alone vs today' : ExperimentCopy.justThisChange,
+            title: _isSmoking
+                ? 'Quitting alone vs today'
+                : ExperimentCopy.justThisChange,
             gainNote: _isSmoking ? 'from quitting alone' : 'from this change',
           ),
           if (_isSmoking) ..._smokingHelp(),
@@ -176,7 +207,9 @@ class _LeverDetailScreenState extends State<LeverDetailScreen> {
   }
 
   List<Widget> _smokingHelp() {
-    final card = widget.repository.wellnessCards.where((c) => c.id == 'smoking').firstOrNull;
+    final card = widget.repository.wellnessCards
+        .where((c) => c.id == 'smoking')
+        .firstOrNull;
     if (card == null && !showQuitline) return const [];
     return [
       const SizedBox(height: 14),
@@ -185,7 +218,10 @@ class _LeverDetailScreenState extends State<LeverDetailScreen> {
         decoration: BoxDecoration(
           color: LtColors.mintWash,
           borderRadius: BorderRadius.circular(LtRadii.panel),
-          border: Border.all(color: LtColors.container, width: LtBorders.container),
+          border: Border.all(
+            color: LtColors.container,
+            width: LtBorders.container,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,7 +255,10 @@ class _JustThis extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 12),
     child: Center(
       widthFactor: 1,
-      child: Text(ExperimentCopy.justThisChange, style: LtText.body(weight: FontWeight.w700)),
+      child: Text(
+        ExperimentCopy.justThisChange,
+        style: LtText.body(weight: FontWeight.w700),
+      ),
     ),
   );
 }

@@ -79,8 +79,9 @@ class LifespanReveal {
   final bool roughGuide;
 }
 
-/// The health score as the repository gives it (`repo.healthScore`): higher is better, 0 is
-/// average, roughly -3 to +3. Never derived, negated, rescaled or banded here.
+/// The health score as the repository gives it (`repo.healthScore`, centred): positive is
+/// healthier than the middle of people your age and sex, 0 is the middle. Never derived,
+/// inverted, rescaled or banded here.
 @immutable
 class WellnessSnapshot {
   const WellnessSnapshot({
@@ -121,18 +122,20 @@ class WellnessSnapshot {
   bool get underAge => status == HealthScoreStatus.underAge;
 }
 
-/// Signed, two decimals, with a true minus sign: "−0.04", "+1.20", "0.00".
+/// The centred health score, signed, two decimals, with a true minus sign: "+0.50", "−0.40",
+/// "0.00". (Placeholder formatting; the design session owns the copy.)
 String formatHealthScore(double score) {
   final text = score.abs().toStringAsFixed(2);
   if (text == '0.00') return text;
   return score < 0 ? '−$text' : '+$text';
 }
 
-/// "Health score plus 0.04. Higher is better. 0 is average." (built from the value).
+/// "Health score plus 0.50. Higher is better. 0 is the middle of people your age." (built
+/// from the value).
 String healthScoreSemantics(double score) {
   final text = score.abs().toStringAsFixed(2);
   final sign = text == '0.00' ? '' : (score < 0 ? 'minus ' : 'plus ');
-  return 'Health score $sign$text. Higher is better. 0 is average.';
+  return 'Health score $sign$text. Higher is better. 0 is the middle of people your age.';
 }
 
 DateTime localDay(DateTime value) =>

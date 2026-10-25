@@ -1,0 +1,89 @@
+{
+  "source_url": "https://www.ssa.gov/OACT/STATS/table4c6.html",
+  "source_title": "Period Life Table, 2023, as used in the 2026 Trustees Report",
+  "retrieved_date": "2026-10-24",
+  "retrieval": "Official SSA HTML parsed by web tool; direct CLI download returned HTTP403. Selected rows extracted programmatically from the official rendered table and independently cross-checked against the displayed age/sex columns.",
+  "table_year": 2023,
+  "trustees_report_year": 2026,
+  "definition": "Mean remaining years at exact age under 2023 period mortality rates; attained-age benchmark is exact age plus remaining years.",
+  "rows": [
+    {
+      "age": 35,
+      "male": {
+        "death_probability": 0.002577,
+        "survivors": 96051,
+        "remaining_years": 43.02
+      },
+      "female": {
+        "death_probability": 0.001209,
+        "survivors": 98013,
+        "remaining_years": 47.34
+      }
+    },
+    {
+      "age": 45,
+      "male": {
+        "death_probability": 0.003931,
+        "survivors": 93112,
+        "remaining_years": 34.21
+      },
+      "female": {
+        "death_probability": 0.002187,
+        "survivors": 96452,
+        "remaining_years": 38.01
+      }
+    },
+    {
+      "age": 55,
+      "male": {
+        "death_probability": 0.007491,
+        "survivors": 88436,
+        "remaining_years": 25.73
+      },
+      "female": {
+        "death_probability": 0.004532,
+        "survivors": 93577,
+        "remaining_years": 29.01
+      }
+    },
+    {
+      "age": 64,
+      "male": {
+        "death_probability": 0.015316,
+        "survivors": 80314,
+        "remaining_years": 18.83
+      },
+      "female": {
+        "death_probability": 0.009514,
+        "survivors": 88238,
+        "remaining_years": 21.46
+      }
+    },
+    {
+      "age": 70,
+      "male": {
+        "death_probability": 0.022903,
+        "survivors": 71916,
+        "remaining_years": 14.66
+      },
+      "female": {
+        "death_probability": 0.014769,
+        "survivors": 82374,
+        "remaining_years": 16.76
+      }
+    },
+    {
+      "age": 80,
+      "male": {
+        "death_probability": 0.055633,
+        "survivors": 50785,
+        "remaining_years": 8.5
+      },
+      "female": {
+        "death_probability": 0.041183,
+        "survivors": 64606,
+        "remaining_years": 9.82
+      }
+    }
+  ]
+}

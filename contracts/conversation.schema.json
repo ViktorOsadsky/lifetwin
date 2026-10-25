@@ -1341,6 +1341,36 @@
           "title": "Effect Note",
           "type": "string"
         },
+        "experiment_lever": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Experiment Lever"
+        },
+        "experiment_target": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Experiment Target"
+        },
         "id": {
           "maxLength": 60,
           "minLength": 1,
@@ -1363,6 +1393,11 @@
           "maxLength": 400,
           "minLength": 1,
           "title": "Message",
+          "type": "string"
+        },
+        "source_domain": {
+          "default": "",
+          "title": "Source Domain",
           "type": "string"
         },
         "source_title": {
@@ -1388,6 +1423,12 @@
           ],
           "title": "Wellness Card",
           "type": "string"
+        },
+        "why_short": {
+          "default": "",
+          "maxLength": 90,
+          "title": "Why Short",
+          "type": "string"
         }
       },
       "required": [
@@ -1401,6 +1442,10 @@
         "source_url",
         "effect",
         "effect_note",
+        "experiment_lever",
+        "experiment_target",
+        "why_short",
+        "source_domain",
         "causal_interpretation"
       ],
       "title": "Recommendation",

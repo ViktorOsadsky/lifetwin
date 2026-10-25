@@ -2,8 +2,15 @@ import 'package:flutter/foundation.dart';
 
 import 'band_file.dart';
 
-/// One minute from the wrist band. Raw samples never leave the band; these minute records live in
-/// memory on the phone only (D1) and are added up there. Every number is a sensor estimate.
+/// Upstream posture classification; no posture is inferred from steps or MVPA.
+enum BandPosture { unknown, sitting, standing, moving, lying, sittingOrLying }
+
+/// Independent wake context. Thigh orientation alone does not establish sleep.
+enum BandWakeState { unknown, awake, asleep }
+
+/// One classified minute from the activity band. Only these minute aggregates
+/// live in phone memory; the transient raw adapter retains no samples.
+/// Every number is a sensor estimate.
 @immutable
 class BandMinute {
   const BandMinute({
@@ -11,6 +18,8 @@ class BandMinute {
     this.steps = 0,
     this.moderate = false,
     this.worn = true,
+    this.posture = BandPosture.unknown,
+    this.wakeState = BandWakeState.unknown,
   });
 
   /// The start of the minute (local time).
@@ -20,6 +29,8 @@ class BandMinute {
   /// Moderate-to-vigorous movement this minute (approximate cut-points; Hildebrand 2014 values, to be verified).
   final bool moderate;
   final bool worn;
+  final BandPosture posture;
+  final BandWakeState wakeState;
 }
 
 /// A day counts at 10 or more hours worn (Troiano 2008 convention).

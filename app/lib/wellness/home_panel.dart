@@ -11,7 +11,7 @@ import 'models.dart';
 import 'widgets.dart';
 
 /// Home's health score card (design K-4), compact: a ring gauge on the higher = better scale with the
-/// signed number inside, the age-group line with a thin percentile bar, the recent trend, and one chip into
+/// signed score inside, the age-group line with a thin percentile bar, the recent trend, and one chip into
 /// the estimate. "What moves it" is the circled i at the top right. The check-in entry is #58's
 /// `CheckInEntry`, mounted by the Room, never a second one here.
 class HomeWellnessPanel extends StatelessWidget {
@@ -73,11 +73,19 @@ class HomeWellnessPanel extends StatelessWidget {
     final title = Row(
       children: [
         Expanded(
-          child: Semantics(
-            header: true,
-            child: WholeWordText('Health score', style: LtText.display(22)),
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 10,
+            children: [
+              Semantics(
+                header: true,
+                child: WholeWordText('Health score', style: LtText.display(22)),
+              ),
+              if (compact && stateLine != null) WholeWordText(stateLine!, style: LtText.body(size: 15)),
+            ],
           ),
         ),
+        if (compact) Flexible(child: chip),
         info,
       ],
     );
@@ -102,6 +110,7 @@ class HomeWellnessPanel extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           PercentileBar(percent: percentile),
+          if (compact && snapshot.history.length >= 2) ScoreSparkline(values: snapshot.history),
         ] else if (score == null)
           WholeWordText(
             snapshot.status == null || snapshot.message == null ? 'Getting to know you' : snapshot.message!,
@@ -118,7 +127,7 @@ class HomeWellnessPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           title,
-          if (!big && score != null)
+          if (!big && !compact && score != null)
             Padding(
               padding: const EdgeInsets.only(right: 8, bottom: 4),
               child: WholeWordText(HomeWellnessPanel.tagline, style: LtText.body(size: 15)),
@@ -145,23 +154,24 @@ class HomeWellnessPanel extends StatelessWidget {
                 ],
               ),
             ),
-          const SizedBox(height: 2),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Row(
-              children: [
-                if (score != null) trend else const Spacer(),
-                const SizedBox(width: 8),
-                Flexible(child: chip),
-              ],
+          if (!compact) const SizedBox(height: 2),
+          if (!compact)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(
+                children: [
+                  if (score != null) trend else const Spacer(),
+                  const SizedBox(width: 8),
+                  Flexible(child: chip),
+                ],
+              ),
             ),
-          ),
           if (snapshot.roughGuide)
             const Padding(
               padding: EdgeInsets.only(right: 8),
               child: Align(alignment: Alignment.centerLeft, child: RoughGuideBadge(caveat: extrapolationCaveat)),
             ),
-          if (stateLine != null)
+          if (!compact && stateLine != null)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: WholeWordText(stateLine!, style: LtText.body(size: 15)),
@@ -213,8 +223,8 @@ class _EstimateChip extends StatelessWidget {
 }
 
 /// A ring gauge on the higher = better scale: the arc runs from "Higher risk" (start, bottom left) to
-/// "Better health" (end, bottom right), the dot sits where the score falls (clamped to -3..+3), and the
-/// signed number is inside. No colour by value.
+/// "Better health" (end, bottom right), the dot sits where the score falls (see [ScoreScale.position]), and the
+/// signed score is inside. No colour by value.
 class ScoreRing extends StatelessWidget {
   const ScoreRing({super.key, required this.score, this.size = 84});
   final double score;
@@ -500,15 +510,18 @@ class _ScoreDisc extends StatelessWidget {
   }
 }
 
-/// "Higher risk ‹ · Average · › Better health": a bar with the marker where the score falls (clamped
-/// to the model's usual -3 to +3), no colour by value.
+/// "Higher risk ‹ · Average · › Better health": a bar with the marker where the score falls (the
+/// centred score, clamped to ±ln 3), no colour by value.
 class ScoreScale extends StatelessWidget {
   const ScoreScale({super.key, required this.score});
   final double score;
 
-  static const range = 3.0;
+  /// The score shown at the far right; its negative is at the far left (ln 3: a hazard a
+  /// third of, or three times, the middle of the group).
+  static final range = math.log(3);
 
-  /// 0 (far left, higher risk) to 1 (far right, better health); 0.5 is average.
+  /// 0 (far left, higher risk) to 1 (far right, better health); 0.5 is the score 0, the
+  /// middle of the age group.
   static double position(double score) =>
       ((score.clamp(-range, range) + range) / (2 * range)).toDouble();
 

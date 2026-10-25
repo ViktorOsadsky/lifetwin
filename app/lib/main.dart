@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatf
 
 import 'band/band_file_session.dart';
 
+import 'checkin/check_in_entry.dart';
 import 'checkin/checkin_reminders.dart';
 import 'checkin/checkin_screen.dart' show ReminderOfferCard;
 import 'checkin/consents.dart' show AiProvider;
@@ -549,6 +550,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           wellness: _wellness?.snapshot ?? const WellnessSnapshot(),
           onHistory: _wellness == null ? null : () => _history(context),
           onQuiz: () => _playQuiz(context),
+          onExperiment: _wellness == null ? null : () => _agentic.experiment(context),
           onDrivers: () => _agentic.drivers(context),
           onBand: _wellness == null ? null : () => _agentic.bandFlow(context),
           onSettings: _wellness == null ? null : () => _settings(context),
@@ -559,7 +561,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               : GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: () => _agentic.todayPlan(context, onTalk: () => _talk(context)),
-                  child: _agentic.todayCard(context, onTalk: () => _talk(context)),
+                  child: _agentic.todayCard(context, onTalk: () => _talk(context), condensed: true, trailing: const CheckInEntry(compact: true)),
                 ),
         ),
       ),
