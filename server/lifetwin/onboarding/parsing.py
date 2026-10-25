@@ -2249,11 +2249,30 @@ HYPERTENSION_NO = (
 )
 
 
+NEVER_DIAGNOSED = (
+    r"\b(?:i've|i have|i) (?:never|not) (?:been |ever been )?(?:diagnosed|told)\b[^.?!]*"
+    r"\b(?:high blood pressure|hypertension)\b"
+)
+HYPERTENSION_MEDICINE = (
+    r"\b(?:pills?|medic\w*|tablets?|meds|lisinopril|amlodipine|losartan|metoprolol|"
+    r"hydrochlorothiazide)\b"
+)
+
+
 def _hypertension(text: str) -> bool | None:
     """ "I take pills for my blood pressure": yes. "It's always been normal": no.
 
     A reading ("140 over 90") is never read as a diagnosis; nor is "a bit high".
     """
+    if (
+        re.search(NEVER_DIAGNOSED, text)
+        and not re.search(r"\d|\b(?:but|though)\b[^.]*\b(?:now|since|recently)\b", text)
+        and not re.search(HYPERTENSION_MEDICINE, text)
+        and not _doubtful(text)
+        and not _other_topic("hypertension_diagnosed", _own_text(text))
+    ):
+        # "They said it was borderline once, but I've never been diagnosed with it": a no.
+        return False
     if (
         _doubtful(text)
         or re.search(HYPERTENSION_UNCLEAR, text)
@@ -2328,7 +2347,10 @@ def _general_health(text: str) -> str | None:
     if _other_topic("general_health", _own_text(text)):
         return None
     plain = _unhedged(re.sub(MAYBE, " ", text))
-    said = re.sub(r"\b(?:i'd|i would) (?:say|call|rate)\b", " ", plain)  # "I'd call it good"
+    # "I'd call it good", "I'd also say very good"
+    said = re.sub(
+        r"\b(?:i'd|i would) (?:also |probably |honestly |definitely )?(?:say|call|rate)\b", " ", plain
+    )
     if re.search(UNCERTAIN, plain) or HYPOTHETICAL.search(said):
         return None
     if re.search(r"\bpretty good|quite good|really good|fairly good\b", plain):
@@ -2756,7 +2778,7 @@ def _validated(values: dict) -> dict:
 
 LABELED = r"\s*([a-z_ ]+?)\s*[:=]\s*(.+)\s*"
 CORRECTION_CUE = r"\b(?:actually|i meant|sorry)\b|\bnot\s+\d"
-SELF_AGE = r"\b(?:i'm|i am)\s+(?:actually\s+|really\s+|now\s+)?\d{2,3}(?![\d.])(?!\s?(?:ft|inch|cm|m|kg|lb|stone|hour|minute)\b)"
+SELF_AGE = r"\b(?:i'm|i am)\s+(?:actually\s+|really\s+|now\s+)?\d{2,3}(?!\d|\.\d)(?!\s?(?:ft|inch|cm|m|kg|lb|stone|hour|minute)\b)"
 SEX_CUE = r"\b(?:female|male|woman|man)\b"
 # Beside another answer, "man" is often an exclamation ("7 hours, oh man").
 SEX_CUE_OTHER = r"\b(?:female|male)\b|\b(?:i'm|i am) an? (?:wo)?man\b|^an? (?:wo)?man$"
@@ -3095,7 +3117,20 @@ def parse_reply(
     several = len(parts) > 1
     values: dict = {}
     clashed: set[str] = set()
+    held: tuple[str, str] | None = None  # an unclear clause for one other question
     for part in parts:
+        if held and re.search(r"\d", _canonical(part)) and not re.fullmatch(LABELED, part, re.I):
+            # "I'm sitting most of the day at work, like 9 hours": the number finishes it.
+            named = _part_fields(part, field, several)
+            if not (named and named != {held[0]}) or len(named) > 1:
+                joined_value = parse_value(
+                    held[0], held[1] + " " + part, today=today, period=period
+                )
+                if joined_value and not (joined_value.keys() & values.keys()):
+                    values.update(joined_value)
+                    held = None
+                    continue
+        held = None
         label = re.fullmatch(LABELED, part, re.I)
         if label:
             target = LABELS.get(label.group(1).lower())
@@ -3123,9 +3158,13 @@ def parse_reply(
         if not parsed and several and _habit_aside(part):
             continue  # "... and I walk my dog every morning": a habit note, not a value
         if not parsed and several and target != field and _ambiguous_aside(part):
+            if target:
+                held = (target, part)
             continue  # an unclear clause for another question: asked later, not a veto
         if not parsed and several and not labeled and not dropped and _chatter(part, field):
             continue  # "I mixed up the digits": an aside beside the answer
+        if not parsed and several and _other_topic_aside(part, field):
+            continue  # "7 hours, and I sit a lot": sitting is asked later
         if not parsed:
             return whole
         # Parts for the same question are pieces of one answer ("two beers on Friday and
@@ -3148,6 +3187,22 @@ def parse_reply(
         # read as one question, would add them up.
         return values
     return values if whole.items() <= values.items() else {}
+
+
+def _other_topic_aside(part: str, field: ProfileField) -> bool:
+    """A clause without a number about another question's topic ("I sit a lot")."""
+    text = _canonical(part)
+    own = TOPICS.get(_topic(field), NOTHING)
+    return (
+        not re.search(r"\d", text)
+        and not re.search(own, text)
+        and any(
+            re.search(cue, text) for topic, cue in TOPICS.items() if topic in NUMERIC_TOPICS
+        )
+    )
+
+
+NUMERIC_TOPICS = {"height_cm", "weight_kg", "sleep_hours", "sedentary_min_day", "exercise_minutes_weekly"}
 
 
 def _ambiguous_aside(part: str) -> bool:
