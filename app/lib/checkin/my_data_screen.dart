@@ -141,7 +141,7 @@ class MyDataScreen extends StatelessWidget {
                           children: [
                             Icon(icon, size: 20, color: LtColors.ink),
                             const SizedBox(width: 6),
-                            Text(t, style: LtText.body()),
+                            Flexible(child: Text(t, style: LtText.body())),
                           ],
                         ),
                     ],

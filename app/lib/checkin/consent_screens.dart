@@ -33,10 +33,12 @@ class SavedOnPhoneNote extends StatelessWidget {
           children: [
             const Icon(Icons.smartphone_rounded, size: 20, color: LtColors.ink),
             const SizedBox(width: 6),
-            Text(
-              savedOnPhone,
-              style: LtText.body(weight: FontWeight.w700)
-                  .copyWith(decoration: TextDecoration.underline, decorationThickness: 2),
+            Flexible(
+              child: Text(
+                savedOnPhone,
+                style: LtText.body(weight: FontWeight.w700)
+                    .copyWith(decoration: TextDecoration.underline, decorationThickness: 2),
+              ),
             ),
             const SizedBox(width: 4),
             const Icon(Icons.info_outline_rounded, size: 18, color: LtColors.ink),
