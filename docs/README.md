@@ -24,3 +24,4 @@ Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent im
 | [design/wellness-ui-handoff.md](design/wellness-ui-handoff.md) | Wellness Home, Q/R/S presentation boundaries, validation and pending engine/art dependencies |
 | [design/painted-card-direction.md](design/painted-card-direction.md) | UI remake direction: painted-card look, bear or human twin, final screens, art assets and pipeline, Flutter notes |
 | [wearable-prototype-plan.md](wearable-prototype-plan.md) | Draft wrist activity-tracker prototype: hardware, metrics, feature list, phases and team decisions |
+| [cal-hacks-submission.md](cal-hacks-submission.md) | Updated Devpost copy, four Figma-track stage drafts, measured model facts and Daniel's final submission placeholders |
