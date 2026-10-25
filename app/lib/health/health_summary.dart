@@ -1,7 +1,18 @@
 import 'health_sample.dart';
 
-/// Profile fields Apple Health can suggest. Names match contracts/profile.schema.json.
-enum HealthField { heightCm, weightKg, exerciseMinutesWeekly, sleepHours, systolicBp, diastolicBp }
+/// Profile fields recognized at the Apple Health confirmation boundary.
+/// Names match contracts/profile.schema.json; unavailable fields stay unanswered.
+enum HealthField {
+  heightCm,
+  weightKg,
+  exerciseMinutesWeekly,
+  sleepHours,
+  systolicBp,
+  diastolicBp,
+  vigorousRecreationMinWeek,
+  moderateRecreationMinWeek,
+  sedentaryMinDay,
+}
 
 extension HealthFieldName on HealthField {
   String get profileKey => switch (this) {
@@ -11,6 +22,9 @@ extension HealthFieldName on HealthField {
     HealthField.sleepHours => 'sleep_hours',
     HealthField.systolicBp => 'systolic_bp',
     HealthField.diastolicBp => 'diastolic_bp',
+    HealthField.vigorousRecreationMinWeek => 'vigorous_recreation_min_week',
+    HealthField.moderateRecreationMinWeek => 'moderate_recreation_min_week',
+    HealthField.sedentaryMinDay => 'sedentary_min_day',
   };
 }
 
@@ -43,6 +57,81 @@ class HealthCandidate {
 
 const sleepTypes = {'SLEEP_ASLEEP', 'SLEEP_LIGHT', 'SLEEP_DEEP', 'SLEEP_REM'};
 
+/// The model asks about recreational activity and awake sitting, rather than
+/// total movement. These fields need their own evidence; no missing value is 0.
+const modelActivityFields = {
+  HealthField.vigorousRecreationMinWeek,
+  HealthField.moderateRecreationMinWeek,
+  HealthField.sedentaryMinDay,
+};
+const modelActivityWindowDays = 28;
+
+enum HealthActivityUnavailableReason {
+  /// Nothing recent was returned. iOS does not distinguish no data from denial.
+  noData,
+
+  /// Exercise totals, workout names and heart rate cannot establish both the
+  /// recreational context and minutes at the model's requested intensity.
+  recreationAndIntensityNotEstablished,
+
+  /// Stand hours count hours with at least one minute standing, not sitting
+  /// duration. Even actual standing duration leaves sleep/non-wear unknown.
+  awakeSittingNotMeasured,
+}
+
+/// On-phone availability details for the import's confirmation/conversation
+/// boundary. This object has no raw samples or network serialization.
+class HealthSummary {
+  HealthSummary({
+    required List<HealthCandidate> candidates,
+    required Map<HealthField, HealthActivityUnavailableReason> unavailableActivity,
+  }) : candidates = List.unmodifiable(candidates),
+       unavailableActivity = Map.unmodifiable(unavailableActivity);
+
+  final List<HealthCandidate> candidates;
+  final Map<HealthField, HealthActivityUnavailableReason> unavailableActivity;
+}
+
+/// Includes the reason each new activity input must remain a conversation
+/// question. The pinned iOS health plugin provides no supported numeric mapping:
+/// workouts lack recreational context/intensity minutes, and sitting is not read.
+/// No synthetic metadata contract or workout-type intensity lookup is assumed.
+HealthSummary summarizeWithAvailability(List<HealthSample> samples, DateTime now) {
+  final recentActivity = samples.where(
+    (s) =>
+        const {
+          'EXERCISE_TIME',
+          'WORKOUT',
+          'HEART_RATE',
+          'ACTIVITY_INTENSITY',
+          'APPLE_STAND_HOUR',
+          'APPLE_STAND_TIME',
+          'STEPS',
+        }.contains(s.type) &&
+        _within(s, now, modelActivityWindowDays) &&
+        !s.start.isAfter(s.end) &&
+        (s.value == null || s.value!.isFinite),
+  );
+  final hasActivity = recentActivity.isNotEmpty;
+  final hasExercise = recentActivity.any(
+    (s) => const {'EXERCISE_TIME', 'WORKOUT', 'HEART_RATE', 'ACTIVITY_INTENSITY'}.contains(s.type),
+  );
+  return HealthSummary(
+    candidates: summarize(samples, now),
+    unavailableActivity: {
+      HealthField.vigorousRecreationMinWeek: hasExercise
+          ? HealthActivityUnavailableReason.recreationAndIntensityNotEstablished
+          : HealthActivityUnavailableReason.noData,
+      HealthField.moderateRecreationMinWeek: hasExercise
+          ? HealthActivityUnavailableReason.recreationAndIntensityNotEstablished
+          : HealthActivityUnavailableReason.noData,
+      HealthField.sedentaryMinDay: hasActivity
+          ? HealthActivityUnavailableReason.awakeSittingNotMeasured
+          : HealthActivityUnavailableReason.noData,
+    },
+  );
+}
+
 /// Turns raw samples into at most one candidate per field.
 ///
 /// Rules (issue #6): exercise = weekly average over the last 28 days; sleep =
@@ -73,6 +162,9 @@ const plausibleRange = <HealthField, (num, num)>{
   HealthField.sleepHours: (2, 14),
   HealthField.systolicBp: (70, 250),
   HealthField.diastolicBp: (40, 150),
+  HealthField.vigorousRecreationMinWeek: (0, 10080),
+  HealthField.moderateRecreationMinWeek: (0, 10080),
+  HealthField.sedentaryMinDay: (0, 1439),
 };
 
 List<HealthCandidate> _summarize(List<HealthSample> samples, DateTime now) {

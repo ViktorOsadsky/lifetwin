@@ -1,6 +1,7 @@
 import 'package:health/health.dart';
 
 import 'health_sample.dart';
+import 'health_summary.dart';
 
 /// Types used to suggest profile answers.
 const profileTypes = [
@@ -70,6 +71,16 @@ class HealthReader {
       for (final p in _health.removeDuplicates([...recent, ...body])) _toSample(p),
     ];
   }
+
+  /// Bounded import suggestions and explicit activity availability, computed on
+  /// the phone. This does not add HealthKit permissions or send any samples.
+  ///
+  /// The pinned plugin's iOS workout reader omits workout metadata. Its workout
+  /// type, energy and distance do not establish recreational intensity minutes;
+  /// HealthKit stand hours do not measure awake sitting. Those model inputs
+  /// therefore remain unavailable, so the conversation can ask the person.
+  Future<HealthSummary> readSummary({required DateTime now}) async =>
+      summarizeWithAvailability(await read(now: now), now);
 }
 
 HealthSample _toSample(HealthDataPoint p) {

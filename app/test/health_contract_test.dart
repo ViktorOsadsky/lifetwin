@@ -53,7 +53,15 @@ void main() {
         HealthSample(type: 'SLEEP_LIGHT', start: DateTime(2026, 10, d, 23), end: DateTime(2026, 10, d + 1, 6)),
     ];
     final values = {for (final c in summarize(samples, now)) c.field.profileKey: c.value};
-    expect(values.keys.toSet(), HealthField.values.map((f) => f.profileKey).toSet());
+    expect(
+      values.keys.toSet(),
+      HealthField.values.where((f) => !modelActivityFields.contains(f)).map((f) => f.profileKey).toSet(),
+    );
+    // Current HealthKit data cannot establish the three recreational/sitting
+    // inputs. Valid schema fields are not evidence that the phone measured them.
+    for (final field in modelActivityFields) {
+      expect(values.containsKey(field.profileKey), isFalse);
+    }
     for (final MapEntry(:key, :value) in values.entries) {
       final r = rule(key);
       if (r['type'] == 'integer') expect(value, isA<int>(), reason: '$key must be a whole number');

@@ -14,6 +14,12 @@ String readBack(HealthCandidate c, {required bool imperial, required DateTime no
     HealthField.sleepHours => 'you sleep about ${spokenDuration(c.value * 60)} on a typical night',
     HealthField.systolicBp => 'the top number of your blood pressure is about ${c.value}',
     HealthField.diastolicBp => 'the bottom number of your blood pressure is about ${c.value}',
+    HealthField.vigorousRecreationMinWeek =>
+      'you do about ${spokenDuration(c.value)} of hard recreational activity a week, on average over the last 4 weeks',
+    HealthField.moderateRecreationMinWeek =>
+      'you do about ${spokenDuration(c.value)} of moderate recreational activity a week, on average over the last 4 weeks',
+    HealthField.sedentaryMinDay =>
+      'you spend about ${spokenDuration(c.value)} sitting while awake a day, on average over the last 4 weeks',
   };
   return "Apple Health says $said.$when Is this accurate?";
 }
