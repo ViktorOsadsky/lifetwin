@@ -76,7 +76,12 @@ class CartesiaWire {
     }
     final text = m['text'];
     if (type == 'transcript' && text is String) {
-      return SttTranscript(text, isFinal: m['is_final'] == true);
+      final confidence = m['confidence'];
+      return SttTranscript(
+        text,
+        isFinal: m['is_final'] == true,
+        confidence: confidence is num ? confidence.toDouble() : null,
+      );
     }
     if (type.contains('flush') || type.contains('finalize') || type == 'done') return const SttFlushed();
     return const SttIgnored();
@@ -119,9 +124,12 @@ sealed class SttEvent {
 }
 
 class SttTranscript extends SttEvent {
-  const SttTranscript(this.text, {required this.isFinal});
+  const SttTranscript(this.text, {required this.isFinal, this.confidence});
   final String text;
   final bool isFinal;
+
+  /// 0 to 1, if the recognizer sends one. Ink's documented transcript has none (2026-10).
+  final double? confidence;
 }
 
 /// Server acknowledged "finalize" (or finished).

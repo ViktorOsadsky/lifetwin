@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'band_ble.dart';
 import 'band_data.dart';
 import 'band_demo_data.dart';
 import 'band_file.dart';
@@ -9,7 +10,10 @@ import 'band_sitting.dart';
 enum BluetoothState { on, off, notAllowed }
 
 class BandDevice {
-  const BandDevice({required this.name, this.strength = 0});
+  const BandDevice({required this.name, this.strength = 0, this.id = ''});
+
+  /// The phone's handle for this band (never shown on screen).
+  final String id;
 
   /// The band's Bluetooth name (firmware, assumed "LifeTwin Band").
   final String name;
@@ -18,9 +22,8 @@ class BandDevice {
   final int strength;
 }
 
-/// The wrist band over Bluetooth. STUB: there is no Bluetooth plugin in the app yet, so no real band
-/// can be found; [StubBandClient] finds nothing unless given devices, and the recorded demo is the only
-/// data. Wording on screen is "Bluetooth", "pair", "band": never "BLE", "GATT", "device ID" or "ESP32".
+/// The activity band over Bluetooth: [BleBandClient] (band_ble.dart) in the app, [StubBandClient] in
+/// tests. Wording on screen is "Bluetooth", "pair", "band": never "BLE", "GATT", "device ID" or "ESP32".
 abstract class BandClient {
   Future<BluetoothState> bluetooth();
 
@@ -28,26 +31,37 @@ abstract class BandClient {
   Future<List<BandDevice>> scan({
     Duration timeout = const Duration(seconds: 20),
   });
+  /// Links to the band; false or a [BandTransferFailure] when it cannot.
   Future<bool> pair(BandDevice device);
+
+  /// The whole days the linked band sends, validated as one delivery by `parseBandFile`. Throws
+  /// [BandTransferFailure] or [BandFileFailure]; empty when it has nothing to send.
+  Future<List<BandDayReport>> fetchDays();
+
+  /// Asks the linked band to save its standing or sitting position (so it can tell them apart);
+  /// false when it cannot.
+  Future<bool> savePosition({required bool standing});
   Future<void> unpair();
 
   /// Minute records, as they arrive (buffered minutes resume from the last unsent one).
   Stream<BandMinute> minuteRecords();
 }
 
-/// No Bluetooth plugin yet.
-const bandBluetoothAvailable = false;
+/// The app pairs over Bluetooth (flutter_blue_plus, band_ble_fbp.dart).
+const bandBluetoothAvailable = true;
 
 class StubBandClient implements BandClient {
   StubBandClient({
     this.state = BluetoothState.on,
     this.devices = const [],
     this.pairs = true,
+    this.days = const [],
   });
 
   BluetoothState state;
   List<BandDevice> devices;
   bool pairs;
+  List<BandDayReport> days;
   int scans = 0;
 
   @override
@@ -63,6 +77,12 @@ class StubBandClient implements BandClient {
 
   @override
   Future<bool> pair(BandDevice device) async => pairs;
+
+  @override
+  Future<List<BandDayReport>> fetchDays() async => days;
+
+  @override
+  Future<bool> savePosition({required bool standing}) async => false;
 
   @override
   Future<void> unpair() async {}
@@ -105,6 +125,8 @@ class BandStore extends ChangeNotifier {
   bool get hasImportedFile => _reports.isNotEmpty;
   String get sourceLabel => demo
       ? 'Recorded demo'
+      : paired
+      ? 'Bluetooth'
       : hasImportedFile
       ? 'Imported band file'
       : 'Bluetooth';
@@ -149,10 +171,13 @@ class BandStore extends ChangeNotifier {
   }
 
   /// Validates the entire delivery before changing state. Same reports are no-ops;
-  /// replacing a date with different data needs an explicit caller decision.
+  /// replacing a date with different data needs an explicit caller decision, except with
+  /// [replaceGrown], where a report that has grown (more recorded minutes, exported no earlier, as
+  /// the band's today does between syncs) replaces the stored one.
   bool importReports(
     List<BandDayReport> reports, {
     bool replaceExisting = false,
+    bool replaceGrown = false,
   }) {
     if (reports.isEmpty) return false;
     final incoming = <String, BandDayReport>{};
@@ -176,8 +201,10 @@ class BandStore extends ChangeNotifier {
       }
       final old = _reports[report.day];
       final liveOverlap = _minutes.any((m) => _day(m.at) == report.day);
-      if (!replaceExisting &&
-          (old != null && old.contentKey != report.contentKey || liveOverlap)) {
+      final changed = old != null &&
+          old.contentKey != report.contentKey &&
+          !(replaceGrown && _grown(old, report));
+      if (!replaceExisting && (changed || liveOverlap)) {
         throw const BandFileFailure(
           'This date already has different data. Choose whether to replace it.',
         );
@@ -210,7 +237,11 @@ class BandStore extends ChangeNotifier {
     return true;
   }
 
-  static String _day(DateTime d) =>
+  static bool _grown(BandDayReport old, BandDayReport now) =>
+      now.recordedMinutes >= old.recordedMinutes &&
+      !now.generatedAt.isBefore(old.generatedAt);
+
+    static String _day(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   BandDay get today => week().days.last;
 
@@ -227,15 +258,47 @@ class BandStore extends ChangeNotifier {
     );
   }
 
+  /// Why the last pairing failed, in plain words; null when it worked or no reason is known.
+  String? pairProblem;
+
+  /// Links to the band and imports the days it sends, as one whole delivery like a file: any failure
+  /// (link, transfer, a day the parser rejects) disconnects and imports nothing. Nothing is saved to
+  /// the profile here; only the person's "Yes" does that.
   Future<bool> pair(BandDevice d) async {
-    if (!await client.pair(d)) return false;
+    pairProblem = null;
+    final wasDemo = _builtInDemo;
+    try {
+      if (!await client.pair(d)) return false;
+      await sync();
+    } on Exception catch (e) {
+      if (wasDemo && !demo) setDemo(true);
+      pairProblem = e is BandFileFailure
+          ? 'The band’s data didn’t check out, so nothing was added. ${e.reason}'
+          : e is BandTransferFailure
+          ? e.reason
+          : 'Mochi couldn’t link to the band. Try again.';
+      await client.unpair();
+      notifyListeners();
+      return false;
+    }
     paired = true;
     bandName = d.name;
     notifyListeners();
     return true;
   }
 
-  /// A minute record arrived.
+  /// Fetches the linked band's days and imports them as one delivery. The band re-sends its newest
+  /// 14 days every time, today included: identical days are no-ops and a grown day replaces the
+  /// stored one; any other difference refuses the whole delivery. Throws like [importReports] and
+  /// [BandClient.fetchDays]; true when something changed.
+  Future<bool> sync() async {
+    final days = await client.fetchDays();
+    if (days.isEmpty) return false;
+    if (_builtInDemo) setDemo(false); // real band days replace the built-in recorded demo
+    return importReports(days, replaceGrown: true);
+  }
+
+    /// A minute record arrived.
   void addMinute(BandMinute m) {
     if (_reports.containsKey(_day(m.at))) {
       return; // A whole-day file already owns this date.

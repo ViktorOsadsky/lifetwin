@@ -115,6 +115,7 @@ class HttpConversationGuide implements ConversationGuide {
       modelInputs: json['model_inputs'] is Map ? Map<String, dynamic>.from(json['model_inputs'] as Map) : null,
       clientAction: json['client_action'] as String?,
       emergency: json['emergency'] == true,
+      offTopic: json['off_topic'] == true,
       recommendations: [
         for (final r in (json['recommendations'] is List ? json['recommendations'] as List : const []))
           if (r is Map) Map<String, dynamic>.from(r),

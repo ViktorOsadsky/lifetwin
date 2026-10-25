@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../ui/theme.dart';
 import '../widgets/whole_word_text.dart';
+import 'mic_modes.dart';
 
 /// What the voice conversation is doing, as the person should see it.
 enum VoiceLook {
@@ -405,19 +406,50 @@ class _Glyph extends StatelessWidget {
 }
 
 /// "Mochi listens only on this screen." (honest copy: no "recording", no retention claims).
+///
+/// With [noiseLink] (only while the microphone is open, on an iPhone) a small "Reduce
+/// background noise" link under it opens the system Mic Mode menu, where Voice Isolation is.
 class ListeningNote extends StatelessWidget {
-  const ListeningNote({super.key});
+  const ListeningNote({super.key, this.noiseLink = false});
+
+  final bool noiseLink;
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      const ExcludeSemantics(child: Icon(Icons.smartphone_rounded, size: 22, color: LtColors.secondary)),
-      const SizedBox(width: 10),
-      Expanded(
-        child: Text('Mochi listens only on this screen.', style: LtText.body(size: 17, color: LtColors.secondary)),
-      ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final note = Row(
+      children: [
+        const ExcludeSemantics(child: Icon(Icons.smartphone_rounded, size: 22, color: LtColors.secondary)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text('Mochi listens only on this screen.', style: LtText.body(size: 17, color: LtColors.secondary)),
+        ),
+      ],
+    );
+    if (!noiseLink || !MicModes.available) return note;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        note,
+        MergeSemantics(
+          child: Semantics(
+            hint: 'Opens the iPhone Mic Mode menu. Choose Voice Isolation.',
+            child: TextButton(
+              onPressed: MicModes.show,
+              style: TextButton.styleFrom(
+                foregroundColor: LtColors.ink,
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+              child: Text(
+                'Reduce background noise',
+                style: LtText.body(size: 17, weight: FontWeight.w600).copyWith(decoration: TextDecoration.underline),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// The words heard. While the microphone is open ([listening]) it has the teal outline, the last

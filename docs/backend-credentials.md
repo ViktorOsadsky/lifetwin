@@ -44,6 +44,12 @@ For the deployed LifeTwin Edge API, build Flutter with `API_BASE_URL` set to the
 HTTPS `/functions/v1/lifetwin-api` function base and `SUPABASE_ANON_KEY` set to
 that project's **public legacy anon JWT**. This key is public app configuration;
 never substitute a provider key or service-role key.
+Plain `flutter run` also supports the optional gitignored public configuration
+asset `app/assets/config/backend.json`, copied from the public-only
+`.env.deploy/flutter.json`. Startup loads it before constructing any API clients.
+An explicit `API_BASE_URL` build define selects build configuration instead;
+without either configuration the local-server default remains `localhost:8000`.
+Never copy a private env file into this asset directory.
 `SUPABASE_GATEWAY_URL` optionally selects the exact function base when several
 API candidates exist; otherwise matching bases come from `API_BASE_URL`.
 

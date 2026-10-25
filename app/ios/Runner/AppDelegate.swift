@@ -1,3 +1,4 @@
+import AVFoundation
 import Flutter
 import UIKit
 
@@ -26,8 +27,26 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DocumentScanner") {
       documentScanner = DocumentScanner.register(with: registrar.messenger())
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "LifeTwinMicModes") {
+      let channel = FlutterMethodChannel(name: "lifetwin/mic_mode", binaryMessenger: registrar.messenger())
+      channel.setMethodCallHandler(MicModes.handle)
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "HealthActivityBridge") {
       healthActivity = HealthActivityBridge.register(with: registrar.messenger())
+    }
+  }
+}
+
+/// The system Mic Mode menu (lib/voice/mic_modes.dart). iOS lists Voice Isolation for apps
+/// whose microphone uses voice processing, as the recorder does (record_ios `echoCancel`).
+enum MicModes {
+  static func handle(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+    switch call.method {
+    case "show":
+      AVCaptureDevice.showSystemUserInterface(.microphoneModes)
+      result(true)
+    default:
+      result(FlutterMethodNotImplemented)
     }
   }
 }

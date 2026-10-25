@@ -202,6 +202,7 @@ void main() {
     ('320 wide', const Size(320, 640), 1.0),
     ('1.6x text', const Size(390, 844), 1.6),
     ('320 wide at 1.6x', const Size(320, 640), 1.6),
+    ('320 wide at 2x', const Size(320, 640), 2.0),
   ]) {
     testWidgets('no overflow at $name, and the 48pt target stays', (t) async {
       final h = t.ensureSemantics();

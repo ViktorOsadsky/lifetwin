@@ -14,6 +14,7 @@ import 'documents/health_documents_screen.dart';
 import 'wellness/coach_client.dart';
 import 'wellness/coach_context.dart';
 import 'wellness/daily_plan_screen.dart';
+import 'wellness/home_panel.dart' show CollapsibleHealthScore;
 import 'wellness/plan_acceptance.dart';
 import 'wellness/today_card.dart';
 import 'checkin/check_in.dart';
@@ -83,8 +84,7 @@ class AgenticRoutes {
        capabilities = capabilities ?? HttpCapabilitiesClient(base: api),
        _bandClientParam = bandClient,
        // ignore: prefer_initializing_formals
-       _bandFilePicker = bandFilePicker,
-       _bandClient = bandClient ?? StubBandClient();
+       _bandFilePicker = bandFilePicker;
 
   final ValueListenable<TwinAppearance> look;
 
@@ -127,7 +127,6 @@ class AgenticRoutes {
   /// Apple Health samples already allowed by the person; null when Health is not connected.
   final Future<List<HealthSample>> Function()? healthSamples;
   final CapabilitiesClient capabilities;
-  final BandClient _bandClient;
   final BandClient? _bandClientParam;
   final BandFilePicker? _bandFilePicker;
 
@@ -138,8 +137,12 @@ class AgenticRoutes {
   /// The AI consents; created once the repository has loaded.
   ConsentStore? consents;
 
-  /// The wristband (recorded demo only until a Bluetooth plugin exists) and what it suggests.
-  late final BandStore band = _bandClientGiven ? BandStore(_bandClient) : BandFileSession.instance.store;
+  /// The activity band and what it suggests: the shared session's store, whose client is the real
+  /// Bluetooth band (band_file_session.dart), unless a test gave a client.
+  late final BandStore band = switch (_bandClientParam) {
+    final client? => BandStore(client),
+    null => BandFileSession.instance.store,
+  };
 
   /// Band files (`lifetwin.band_day.v0`): the shared phone-only import session unless a test gave a client.
   late final BandFileIntake intake = _bandClientGiven
@@ -191,7 +194,7 @@ class AgenticRoutes {
     final r = repo, context = navigatorKey.currentContext;
     if (r == null || context == null || !context.mounted) return;
     final target = reminderTapTarget(payload, weeklyOpen: r.weeklyAvailable);
-    if (target == null || CheckInScope.maybeOf(context) == null) return;
+    if (target == null || CheckInScope.maybeOf(context) == null || checkInOpen) return;
     await openCheckIn(context, kind: target == ReminderCheckin.weekly ? CheckInKind.weekly : CheckInKind.quick);
   }
 
@@ -415,6 +418,7 @@ class AgenticRoutes {
     final r = repo;
     if (r != null) bandService = BandService(repository: r);
     planAcceptance.clear();
+    CollapsibleHealthScore.forget().ignore();
     _provider = null;
     _known = null;
     _hub?.clear();

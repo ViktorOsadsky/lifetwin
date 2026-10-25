@@ -20,6 +20,10 @@ const voiceSessionRestart = Duration(seconds: 50);
 /// screen and the microphone opens, rather than leaving dead air.
 const voiceFirstAudioLimit = Duration(milliseconds: 1500);
 
+/// Said (once per question) when the server marks a heard reply `off_topic`: the words were
+/// most likely someone else (a TV, another person). Nothing was recorded; Mochi listens again.
+const offTopicLine = 'Sorry, I think I heard someone else. Could you say that again?';
+
 /// Voice cannot be used right now (server says off, no token, provider down).
 /// The app falls back to typing.
 class VoiceUnavailableException implements Exception {
@@ -95,6 +99,7 @@ class GuideTurn {
     this.clientAction,
     this.emergency = false,
     this.recommendations = const [],
+    this.offTopic = false,
   });
 
   final Map<String, dynamic> state;
@@ -119,6 +124,10 @@ class GuideTurn {
 
   /// Something urgent was said: pause calmly, show "Call 911" and Continue (which sends `resume`).
   final bool emergency;
+
+  /// The server judged the heard reply to be someone else talking (`off_topic: true`):
+  /// nothing was recorded and the same question is still open. See [offTopicLine].
+  final bool offTopic;
 
   String get phase => (state['phase'] as String?) ?? 'idle';
   bool get isConfirming => phase == 'confirming';

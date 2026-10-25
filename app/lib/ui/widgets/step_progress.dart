@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import '../../widgets/whole_word_text.dart';
@@ -48,6 +49,36 @@ class StepProgress extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// "✓ Question 3 saved": the question just answered, shown as done from the moment the
+/// answer is sent until the next one, so the person sees it was taken before moving on.
+class SavedMark extends StatelessWidget {
+  const SavedMark({super.key, required this.number, this.word = 'saved'});
+
+  final int number;
+
+  /// "saved" (onboarding keeps it now) or "done" (a check-in keeps it once finished).
+  final String word;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      label: 'Question $number $word',
+      child: ExcludeSemantics(
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, size: 28, color: LtColors.ink),
+            const SizedBox(width: 8),
+            Flexible(
+              child: WholeWordText('Question $number $word', style: LtText.body(size: 20, weight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
