@@ -17,6 +17,16 @@ LEVER_ORDER: tuple[str, ...] = (
     "sitting_minus_60_realistic",
 )
 
+# Model input field behind each lever, in ranking order (used for missing_inputs).
+LEVER_FIELD: dict[str, str] = {
+    "quit_smoking": "smoking_status",
+    "vigorous_plus_60": "vigorous_recreation_min_week",
+    "moderate_plus_90": "moderate_recreation_min_week",
+    "short_sleep_plus_1h": "sleep_hours",
+    "sitting_minus_60_realistic": "sedentary_min_day",
+}
+MIN_ADULT_AGE = 18
+
 
 # Effect-size cue. Category cut-offs on the modeled 5-year survival difference, in
 # percentage points (docs/model-sensitivity.json). The numbers stay on the server:

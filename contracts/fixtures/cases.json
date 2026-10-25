@@ -2101,7 +2101,57 @@
     "response_schema": "recommendations.schema.json",
     "response_subset": {
       "status": "not_enough_information",
-      "recommendations": []
+      "recommendations": [],
+      "missing_inputs": [
+        "smoking_status",
+        "vigorous_recreation_min_week",
+        "moderate_recreation_min_week",
+        "sleep_hours",
+        "sedentary_min_day"
+      ]
+    }
+  },
+  {
+    "name": "recommendations-under-age",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 15,
+        "sleep_hours": 6
+      }
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "under_age",
+      "recommendations": [],
+      "missing_inputs": []
+    }
+  },
+  {
+    "name": "recommendations-some-inputs-missing",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 60,
+        "smoking_status": "never",
+        "sleep_hours": 8,
+        "sedentary_min_day": 120
+      }
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "not_enough_information",
+      "recommendations": [],
+      "missing_inputs": [
+        "vigorous_recreation_min_week",
+        "moderate_recreation_min_week"
+      ]
     }
   },
   {

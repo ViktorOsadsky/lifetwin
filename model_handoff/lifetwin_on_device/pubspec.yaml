@@ -1,5 +1,5 @@
 name: lifetwin_on_device
-description: Offline LifeTwin survival and wellness inference for Flutter.
+description: Offline LifeTwin neural hazard and experimental survival projections for Flutter.
 version: 1.0.0
 publish_to: none
 environment:
@@ -13,4 +13,5 @@ dev_dependencies:
 flutter:
   assets:
     - assets/model.json
-    - assets/support_reference.f64.gz
+    - assets/support_reference.f64
+    - assets/neural_model.json
