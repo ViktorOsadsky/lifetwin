@@ -303,11 +303,7 @@ void main() {
     });
 
     for (final (label, step, message) in <(String, Object Function(), String)>[
-      (
-        '422',
-        () => failure(422),
-        'Mochi couldn’t make today’s plan from what’s saved. Please try again later. Your saved plan is still here.',
-      ),
+      ('422', () => failure(422), 'Mochi couldn’t make today’s plan from what’s saved. Please try again later. Your saved plan is still here.'),
       ('429', () => failure(429), 'A lot is happening. Give it a moment, then try again.'),
       ('503', () => failure(503), 'The plan couldn’t connect. Your saved plan is still here.'),
       ('timeout', () => TimeoutException('slow'), 'The plan couldn’t connect. Your saved plan is still here.'),
