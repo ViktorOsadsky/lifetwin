@@ -233,7 +233,6 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
   }
 
   Widget _hats() {
-    final hasCal = _draft.look == TwinLook.calHat;
     return Semantics(
       label: 'Hats',
       container: true,
@@ -244,15 +243,22 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
         children: [
           _Tile(
             label: 'Cal hat',
-            selected: hasCal,
+            selected: _draft.look == TwinLook.calHat,
             tilt: -1,
             art: Image.asset(calHatAsset, width: 52, height: 52, excludeFromSemantics: true),
             onTap: () => setState(() => _draft = _draft.copyWith(look: TwinLook.calHat)),
           ),
           _Tile(
-            label: 'No hat',
-            selected: !hasCal,
+            label: 'Stanford hat',
+            selected: _draft.look == TwinLook.stanfordHat,
             tilt: 1,
+            art: Image.asset(stanfordHatAsset, width: 52, height: 52, excludeFromSemantics: true),
+            onTap: () => setState(() => _draft = _draft.copyWith(look: TwinLook.stanfordHat)),
+          ),
+          _Tile(
+            label: 'No hat',
+            selected: _draft.look == TwinLook.plain,
+            tilt: -1,
             art: const Icon(Icons.do_not_disturb_alt_rounded, size: 40, color: LtColors.ink),
             onTap: () => setState(() => _draft = _draft.copyWith(look: TwinLook.plain)),
           ),
