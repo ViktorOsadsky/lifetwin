@@ -186,6 +186,24 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
                 ? todayFallbackLine
                 : (encourage?['message'] as String? ?? todayFallbackLine))
           : titles.join(' · ');
+      final summary = Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: titles.isEmpty ? 'Today with Mochi · ' : 'Today: ',
+              style: LtText.body(size: 17, weight: FontWeight.w700),
+            ),
+            TextSpan(text: line, style: LtText.body(size: 17)),
+          ],
+        ),
+      );
+      final trailing =
+          widget.trailing ??
+          const SizedBox(
+            width: 48,
+            height: 48,
+            child: Icon(Icons.chevron_right_rounded, color: LtColors.ink),
+          );
       return Semantics(
         container: true,
         label: 'Today with Mochi',
@@ -193,41 +211,24 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
           padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
           child: InkWell(
             onTap: widget.onOpen,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: titles.isEmpty
-                              ? 'Today with Mochi · '
-                              : 'Today: ',
-                          style: LtText.body(size: 17, weight: FontWeight.w700),
-                        ),
-                        TextSpan(text: line, style: LtText.body(size: 17)),
-                      ],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (widget.trailing != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8, right: 6),
-                    child: widget.trailing!,
+            child: MediaQuery.textScalerOf(context).scale(17) >= 25.5
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      summary,
+                      const SizedBox(height: 8),
+                      Align(alignment: Alignment.centerRight, child: trailing),
+                    ],
                   )
-                else
-                  const SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Icon(
-                      Icons.chevron_right_rounded,
-                      color: LtColors.ink,
-                    ),
+                : Row(
+                    children: [
+                      Expanded(child: summary),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8, right: 6),
+                        child: trailing,
+                      ),
+                    ],
                   ),
-              ],
-            ),
           ),
         ),
       );
