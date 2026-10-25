@@ -11,6 +11,11 @@ import 'heard_gate.dart';
 import 'speech.dart';
 import 'voice_log.dart';
 import 'voice_token.dart';
+import 'pcm_player.dart';
+import 'browser_pcm_stub.dart'
+    if (dart.library.js_interop) 'browser_pcm_web.dart' as browser_pcm;
+
+export 'pcm_player.dart' show PcmPlayer;
 
 typedef SocketConnector = WebSocketChannel Function(Uri uri);
 
@@ -23,6 +28,11 @@ const stopFlushLimit = Duration(seconds: 1);
 /// Speech that sends no audio for this long is over (or has failed, if none came at all).
 const ttsSilenceLimit = Duration(seconds: 4);
 
+/// A listening microphone sends a chunk every few tens of ms. One that sends nothing for this
+/// long has stopped by itself: iOS stops the audio engine when headphones are plugged in or
+/// out, and the recorder pauses for a phone call or Siri, with no error either way.
+const sttMicStallLimit = Duration(seconds: 2);
+
 WebSocketChannel _defaultConnect(Uri uri) => WebSocketChannel.connect(uri);
 
 /// Counts microphone starts. The recorder sets its own audio session when it starts, so
@@ -32,18 +42,6 @@ int _micStarts = 0;
 String _newContextId() {
   final r = Random.secure();
   return List.generate(16, (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
-}
-
-/// Streaming PCM16 mono playback.
-abstract class PcmPlayer {
-  Future<void> begin(int sampleRate);
-  Future<void> feed(Uint8List pcm);
-
-  /// Completes when everything fed has been played.
-  Future<void> finish();
-
-  /// Drops queued audio now.
-  Future<void> stop();
 }
 
 /// Whether everything fed has played. Remembers a drain that came before anyone waited,
@@ -151,7 +149,7 @@ class CartesiaSpeechOutput implements SpeechOutput {
     SocketConnector? connect,
     this.readyLimit = socketReadyLimit,
     this.silenceLimit = ttsSilenceLimit,
-  }) : _player = player ?? FlutterPcmSoundPlayer(),
+  }) : _player = player ?? browser_pcm.createBrowserPcmPlayer() ?? FlutterPcmSoundPlayer(),
        _connect = connect ?? _defaultConnect;
 
   final VoiceTokenProvider tokens;
@@ -227,7 +225,11 @@ class CartesiaSpeechOutput implements SpeechOutput {
                 onAudio = null;
                 if (first != null) voiceLog('tts', 'audio', '+${clock.elapsedMilliseconds}ms');
                 first?.call();
-                await _player.feed(pcm);
+                try {
+                  await _player.feed(pcm);
+                } catch (error) {
+                  if (!finished.isCompleted) finished.completeError(error);
+                }
               }
             case TtsDone():
               voiceLog('tts', 'stream_done', '+${clock.elapsedMilliseconds}ms');
@@ -243,7 +245,10 @@ class CartesiaSpeechOutput implements SpeechOutput {
           if (!finished.isCompleted) finished.completeError(VoiceFailure('$e'));
         },
         onDone: () {
-          if (!finished.isCompleted) finished.complete();
+          if (finished.isCompleted) return;
+          // Closed before any audio (a refused token, a dropped connection): a failure, so
+          // it is tried again with a new token rather than "said" in silence.
+          gotAudio ? finished.complete() : finished.completeError(const VoiceFailure('tts: closed before audio'));
         },
       );
       ch.sink.add(CartesiaWire.ttsRequest(token, text, id));
@@ -321,11 +326,15 @@ class CartesiaSpeechInput implements SpeechInput {
     AudioRecorder? recorder,
     SocketConnector? connect,
     this.readyLimit = socketReadyLimit,
+    this.micStallLimit = sttMicStallLimit,
   }) : _recorder = recorder ?? AudioRecorder(),
        _connect = connect ?? _defaultConnect;
 
   final VoiceTokenProvider tokens;
   final Duration readyLimit;
+
+  /// See [sttMicStallLimit].
+  final Duration micStallLimit;
   final AudioRecorder _recorder;
   final SocketConnector _connect;
 
@@ -351,6 +360,19 @@ class CartesiaSpeechInput implements SpeechInput {
 
   /// Bumped by every teardown, so a start that was cancelled while waiting stops there.
   int _gen = 0;
+
+  /// Runs out when the microphone has sent nothing for [micStallLimit] (see there). Armed once
+  /// the socket is open, and again by every chunk.
+  Timer? _stall;
+
+  void _watchMic() {
+    _stall?.cancel();
+    _stall = Timer(micStallLimit, () {
+      _stall = null;
+      voiceLog('stt', 'mic_stalled', 'no audio for ${micStallLimit.inMilliseconds}ms');
+      _drop('mic stalled', newToken: false);
+    });
+  }
 
   void _endFlush() {
     final f = _flushed;
@@ -423,6 +445,7 @@ class CartesiaSpeechInput implements SpeechInput {
       _forceNewToken = false;
       await _open(token, gen);
       voiceLog('stt', 'socket_ready', '+${clock.elapsedMilliseconds}ms');
+      if (gen == _gen && _ready) _watchMic();
     } on VoiceUnavailableException {
       if (gen == _gen) await cancel();
       rethrow;
@@ -436,18 +459,20 @@ class CartesiaSpeechInput implements SpeechInput {
 
   /// The socket closed or failed while listening (not while finishing): stop now and say so.
   /// Before the socket is open, a failure fails [start] instead.
-  void _drop(Object e) {
+  void _drop(Object e, {bool newToken = true}) {
     final cb = _onDropped;
     voiceLog('stt', 'socket_lost', '$e finishing=$_finishing ready=$_ready');
     if (_finishing || !_ready || cb == null) return;
     _onDropped = null;
     _error ??= '$e';
-    _forceNewToken = true;
-    unawaited(cancel());
-    cb(VoiceFailure('stt: $e'));
+    if (newToken) _forceNewToken = true;
+    // The caller is told only once the mic is closed: hands-free restarts the recognizer from
+    // the callback, and a teardown still running would stop that new listen as it starts.
+    unawaited(cancel().whenComplete(() => cb(VoiceFailure('stt: $e'))));
   }
 
   void _onMic(Uint8List data) {
+    if (_stall != null) _watchMic();
     for (final raw in _chunks.add(data)) {
       final c = _gate.audio(raw);
       final ch = _channel;
@@ -526,6 +551,8 @@ class CartesiaSpeechInput implements SpeechInput {
       return '';
     }
     _finishing = true;
+    _stall?.cancel();
+    _stall = null;
     await _recorder.stop();
     await _micSub?.cancel();
     _micSub = null;
@@ -562,6 +589,8 @@ class CartesiaSpeechInput implements SpeechInput {
 
   Future<void> _teardown() async {
     _gen++; // a start still waiting for the token or the mic gives up
+    _stall?.cancel();
+    _stall = null;
     await _micSub?.cancel();
     _micSub = null;
     await _msgSub?.cancel();
