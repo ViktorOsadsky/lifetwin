@@ -583,6 +583,15 @@ class TwinRepository extends ChangeNotifier {
     }
   }
 
+  /// "Remind me later" on the plan: one extra reminder a couple of hours from now (reminders are on).
+  Future<void> remindLater() async {
+    try {
+      await reminders?.remindLater(_clock());
+    } catch (e) {
+      debugPrint('Reminder could not be planned: $e');
+    }
+  }
+
   /// Show the one-time "Would you like a gentle reminder each day?" offer: at the end of
   /// onboarding (a profile is saved) or after the first check-in, until it is answered.
   bool get shouldOfferReminders =>
