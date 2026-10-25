@@ -558,43 +558,17 @@ class ScoreScale extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        LayoutBuilder(
-          builder: (context, box) {
-            const labels = ['‹ Higher risk', 'Average', 'Better health ›'];
-            final style = LtText.body();
-            var measuredStyle = DefaultTextStyle.of(context).style.merge(style);
-            if (MediaQuery.boldTextOf(context)) {
-              measuredStyle = measuredStyle.copyWith(fontWeight: FontWeight.bold);
-            }
-            final scaler = MediaQuery.textScalerOf(context);
-            final direction = Directionality.of(context);
-            final widths = labels.map((label) {
-              final painter = TextPainter(
-                text: TextSpan(text: label, style: measuredStyle),
-                textDirection: direction,
-                textScaler: scaler,
-              )..layout();
-              final width = painter.width;
-              painter.dispose();
-              return width;
-            });
-            // Give each label the full width before it could break inside a
-            // word. Keep the chosen text size; the card grows vertically.
-            if (widths.reduce((a, b) => a + b) + 16 > box.maxWidth) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(labels[0], style: style),
-                  Text(labels[1], style: style, textAlign: TextAlign.center),
-                  Text(labels[2], style: style, textAlign: TextAlign.end),
-                ],
-              );
-            }
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [for (final label in labels) Text(label, style: style)],
-            );
-          },
+        // OverflowBar also supports intrinsic sizing: this scale appears in the
+        // score explanation sheet as well as Home. Keep whole labels together
+        // and stack them before a narrow row can break words into letters.
+        OverflowBar(
+          alignment: MainAxisAlignment.spaceBetween,
+          spacing: 8,
+          overflowAlignment: OverflowBarAlignment.center,
+          children: [
+            for (final label in ['‹ Higher risk', 'Average', 'Better health ›'])
+              IntrinsicWidth(child: Text(label, style: LtText.body())),
+          ],
         ),
       ],
     ),

@@ -186,6 +186,7 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
                 ? todayFallbackLine
                 : (encourage?['message'] as String? ?? todayFallbackLine))
           : titles.join(' · ');
+      final largeText = MediaQuery.textScalerOf(context).scale(17) >= 25.5;
       final summary = Text.rich(
         TextSpan(
           children: [
@@ -196,6 +197,8 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
             TextSpan(text: line, style: LtText.body(size: 17)),
           ],
         ),
+        maxLines: largeText ? null : 2,
+        overflow: largeText ? TextOverflow.clip : TextOverflow.ellipsis,
       );
       final trailing =
           widget.trailing ??
@@ -211,7 +214,7 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
           padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
           child: InkWell(
             onTap: widget.onOpen,
-            child: MediaQuery.textScalerOf(context).scale(17) >= 25.5
+            child: largeText
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [

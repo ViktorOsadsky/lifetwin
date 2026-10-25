@@ -107,6 +107,13 @@ void main() {
   });
 
   for (final scale in [1.0, 1.6, _ax5]) {
+    testWidgets('score directions support intrinsic sheet layout at $scale text', (t) async {
+      await _pump(t, const IntrinsicHeight(child: ScoreScale(score: 0.59)), scale: scale);
+      for (final label in ['‹ Higher risk', 'Average', 'Better health ›']) {
+        _wholeWords(t, find.text(label), scale);
+      }
+      expect(t.takeException(), isNull);
+    });
     for (final width in [375.0, 402.0]) {
       testWidgets('score directions stay whole at $scale text / $width width', (t) async {
         await _pump(t, const ScoreScale(score: 0.59, percentile: 86), scale: scale, width: width);
@@ -121,7 +128,7 @@ void main() {
         expect(t.takeException(), isNull);
       });
 
-      testWidgets('Today keeps its full summary and both actions at $scale text / $width width', (t) async {
+      testWidgets('Today keeps a readable preview and both actions at $scale text / $width width', (t) async {
         final coach = FakeCoach()..responses.add(fourSlots());
         var opened = 0;
         var checked = 0;
@@ -140,7 +147,13 @@ void main() {
         const summary = 'Today: seated marching · add a vegetable to dinner · lights out by 10';
         final summaryFinder = find.text(summary, findRichText: true);
         expect(summaryFinder, findsOneWidget);
-        _wholeWords(t, summaryFinder, scale);
+        if (scale > 1) {
+          _wholeWords(t, summaryFinder, scale);
+        } else {
+          final paragraph = t.renderObject<RenderParagraph>(summaryFinder);
+          expect(paragraph.maxLines, 2, reason: 'normal-size Home keeps a compact preview');
+          expect(paragraph.text.toPlainText(), summary, reason: 'the full plan remains in the accessible text');
+        }
         expect(t.getRect(summaryFinder).overlaps(t.getRect(find.text('Check in'))), isFalse);
         await t.ensureVisible(summaryFinder);
         await t.tap(summaryFinder);
