@@ -107,6 +107,9 @@ class ConversationState(ApiModel):
         "offering",
         "probing",
         "confirming",
+        # "missing": the intake is through, some of the estimate's answers are missing, and
+        # Mochi asked once whether to answer them now ("Yes" asks only those; anything else ends).
+        "missing",
         "ready",
         "cancelled",
     ] = "idle"
@@ -145,6 +148,12 @@ class ConversationState(ApiModel):
     seed: int = Field(default=0, ge=0, le=2**31)
     # The last reply was small talk: one friendly turn, then back to the question.
     small_talk: bool = False
+    # "Answer N more questions": only these fields are asked; every other field counts as
+    # settled (never asked again). Set by the app with the saved profile in
+    # `confirmed_profile`, or by a "yes" in the missing phase. Null: the whole intake.
+    ask_only: list[ProfileField] | None = Field(default=None, max_length=FIELD_COUNT)
+    # The end-of-intake offer of the missing answers was made (it is made once, never again).
+    missing_offered: bool = False
 
     @model_validator(mode="after")
     def consistent_state(self):
@@ -163,9 +172,15 @@ class ConversationState(ApiModel):
                 raise ValueError("Skipped, unknown, estimated and probe lists must be unique")
         if self.phase == "asking" and self.current_field is None:
             raise ValueError("An asking state requires a current field")
-        if self.phase in {"ready", "cancelled", "idle", "remembering", "offering", "probing"} and (
-            self.current_field is not None
-        ):
+        if self.phase in {
+            "ready",
+            "cancelled",
+            "idle",
+            "remembering",
+            "offering",
+            "probing",
+            "missing",
+        } and (self.current_field is not None):
             raise ValueError("This phase cannot have a current field")
         if (self.phase == "probing") != (self.current_probe is not None):
             raise ValueError("Only the probing phase has a current probe")

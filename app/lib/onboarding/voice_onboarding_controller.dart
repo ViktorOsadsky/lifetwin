@@ -41,13 +41,19 @@ const documentNoneNotice = "No answers from your document were added, so I'll ke
 const healthRejectedPrefix = "I couldn't add your Apple Health answers. ";
 
 /// Hands-free: said once after a long quiet; then Mochi just keeps listening.
-const listeningNudge = "Take your time, I'm listening.";
+const listeningNudge = "Take your time. I'm still listening.";
 
 /// Runs the conversation loop. The server decides what happens; this class only
 /// holds the caller-owned state, moves audio in and out, and keeps answers safe
 /// when voice fails.
 class VoiceOnboardingController extends ChangeNotifier {
-  VoiceOnboardingController({required this.guide, required this.input, required this.output, this.handsFree = false});
+  VoiceOnboardingController({
+    required this.guide,
+    required this.input,
+    required this.output,
+    this.handsFree = false,
+    this.startState,
+  });
 
   final ConversationGuide guide;
   final SpeechInput input;
@@ -130,6 +136,13 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   /// Hands-free: the one nudge for this question was said.
   bool _nudged = false;
+  bool _nudging = false;
+
+  /// Read-only, for the voice indicator: the nudge was said for this question.
+  bool get nudged => _nudged;
+
+  /// Read-only, for the voice indicator: the nudge is being spoken now (the microphone is closed).
+  bool get nudgeSpeaking => _nudging;
 
   /// Hands-free: connections lost in a row before anything was heard (restarted out of sight).
   /// A listen that stays up for [_healthyListen] starts the count again, so a recognizer
@@ -221,10 +234,25 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// pressure reading never moves the number past the last question.
   int? get questionNumber {
     final t = turn;
-    if (t == null || t.complete || t.phase == 'probing') return null;
-    final done = _doneFields.where(askedFields.contains).length;
-    return (done + 1).clamp(1, questionCount);
+    if (t == null || t.complete || t.phase == 'probing' || t.phase == 'missing') return null;
+    final asked = _asked;
+    final done = _doneFields.where(asked.contains).length;
+    return (done + 1).clamp(1, asked.length);
   }
+
+  /// The questions this conversation asks: the whole intake, or in "Answer N more questions"
+  /// only the missing ones (`ask_only`).
+  List<String> get _asked {
+    final only = (turn?.state ?? startState)?['ask_only'];
+    return only is List && only.isNotEmpty ? [for (final f in only) '$f'] : askedFields;
+  }
+
+  /// "of N" beside [questionNumber].
+  int get questionTotal => _asked.length;
+
+  /// "Answer N more questions": the conversation starts from this state (the saved profile and
+  /// `ask_only`) instead of a fresh intake. Null: the whole intake.
+  final Map<String, dynamic>? startState;
 
   /// "Go back" reopens the answer before this question; once done, the last one, so an
   /// answer can still be changed or a skipped one added.
@@ -661,7 +689,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     });
   }
 
-  /// Hands-free, after a long quiet: "Take your time, I'm listening." once, then listening again.
+  /// Hands-free, after a long quiet: "Take your time. I'm still listening." once, then listening again.
   Future<void> _nudge() async {
     final gen = _conversationGen;
     _nudged = true;
@@ -672,8 +700,13 @@ class VoiceOnboardingController extends ChangeNotifier {
     } catch (_) {}
     if (!_currentConversation(gen)) return;
     if (phase != VoicePhase.listening || _disposed) return;
-    _set(() => phase = VoicePhase.idle);
-    if (await _speak(listeningNudge, mascotLine: false)) _listenAgain();
+    _set(() {
+      phase = VoicePhase.idle;
+      _nudging = true;
+    });
+    final said = await _speak(listeningNudge, mascotLine: false);
+    _set(() => _nudging = false);
+    if (said) _listenAgain();
   }
 
   /// Every caption (a new partial or final) restarts the end-of-turn wait, once a word is heard.
@@ -789,6 +822,8 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// Empty unless the server is asking (not confirming) one of these fields.
   List<(String, String)> get quickAnswers {
     final t = turn;
+    // The one end-of-intake offer of the missing answers ("Want to answer them now?").
+    if (t != null && !t.complete && t.phase == 'missing') return const [('Yes', 'yes'), ('Not now', 'not now')];
     if (t == null || t.complete || t.phase != 'asking' || correcting) return const [];
     return switch (t.state['current_field']) {
       'sex' => const [('Female', 'female'), ('Male', 'male')],
@@ -889,7 +924,14 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (!_busy && phase == VoicePhase.interpreting) _set(() => phase = VoicePhase.idle);
     }
     _set(() => typing = value);
-    if (!value) _listenAgain(); // back to voice: hands-free listens again
+    if (!value) {
+      // Back to voice: hands-free repeats the question (Mochi always speaks first), then listens.
+      if (continuous && canHearAgain) {
+        unawaited(hearAgain());
+      } else {
+        _listenAgain();
+      }
+    }
   }
 
   /// The answer to "Talk with me?" when asked after starting by typing.
@@ -954,7 +996,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       t = await guide
           .turn(
             action: wire,
-            state: turn?.state,
+            state: turn?.state ?? (action == 'start' ? startState : null),
             text: text,
             fromTranscript: fromTranscript,
             values: values,

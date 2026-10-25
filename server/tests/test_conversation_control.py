@@ -111,6 +111,8 @@ def build_state(start: dict) -> ConversationState:
         confirmed_profile=start.get("confirmed", {}),
         pending_profile=pending,
         skipped_fields=start.get("skipped", []),
+        # A finished intake already had its one offer of the missing answers.
+        missing_offered=start["phase"] == "ready",
     )
 
 

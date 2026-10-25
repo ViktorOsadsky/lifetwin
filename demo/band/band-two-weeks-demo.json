@@ -1,0 +1,3911 @@
+{
+ "schema": "lifetwin.band_days.v0",
+ "days": [
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-11",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-11T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 559,
+    "standing": 239,
+    "walking_light": 117,
+    "walking_moderate": 0,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 0,
+   "steps": 4086,
+   "sit_to_stand_transitions": 15,
+   "longest_sitting_minutes": 84,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 39,
+     "standing_min": 5,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 25
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 40,
+     "standing_min": 11,
+     "walking_min": 9,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 130
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 39,
+     "standing_min": 21,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 30
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 2,
+     "standing_min": 28,
+     "walking_min": 30,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 1094
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 1,
+     "standing_min": 22,
+     "walking_min": 37,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 1963
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 58,
+     "standing_min": 2,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 2
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 55,
+     "standing_min": 5,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 7
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 0,
+     "standing_min": 43,
+     "walking_min": 17,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 323
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 5,
+     "standing_min": 41,
+     "walking_min": 14,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 267
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 27,
+     "standing_min": 30,
+     "walking_min": 3,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 109
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 49,
+     "standing_min": 11,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 20
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 42,
+     "standing_min": 13,
+     "walking_min": 5,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 98
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 54,
+     "standing_min": 5,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 14
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 60,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 58,
+     "standing_min": 2,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 4
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 30,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Rest day: low activity"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-12",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-12T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 444,
+    "standing": 294,
+    "walking_light": 163,
+    "walking_moderate": 14,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 14,
+   "steps": 5228,
+   "sit_to_stand_transitions": 22,
+   "longest_sitting_minutes": 93,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 10,
+     "standing_min": 14,
+     "walking_min": 21,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 308
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 15,
+     "standing_min": 6,
+     "walking_min": 39,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 2718
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 47,
+     "standing_min": 11,
+     "walking_min": 2,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 48
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 4,
+     "standing_min": 21,
+     "walking_min": 35,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 533
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 7,
+     "standing_min": 35,
+     "walking_min": 18,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 334
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 46,
+     "standing_min": 14,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 13
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 39,
+     "standing_min": 21,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 42
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 5,
+     "standing_min": 48,
+     "walking_min": 7,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 186
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 13,
+     "standing_min": 31,
+     "walking_min": 16,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 308
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 2,
+     "standing_min": 46,
+     "walking_min": 12,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 228
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 10,
+     "standing_min": 29,
+     "walking_min": 21,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 406
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 48,
+     "standing_min": 7,
+     "walking_min": 5,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 67
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 51,
+     "standing_min": 8,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 28
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 60,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 57,
+     "standing_min": 3,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 9
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 30,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekday: morning walk"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-13",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-13T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 426,
+    "standing": 260,
+    "walking_light": 206,
+    "walking_moderate": 23,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 23,
+   "steps": 7027,
+   "sit_to_stand_transitions": 18,
+   "longest_sitting_minutes": 89,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 10,
+     "standing_min": 3,
+     "walking_min": 32,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 493
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 15,
+     "standing_min": 1,
+     "walking_min": 44,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 3986
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 48,
+     "standing_min": 12,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 27
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 6,
+     "standing_min": 34,
+     "walking_min": 20,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 315
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 0,
+     "standing_min": 38,
+     "walking_min": 22,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 365
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 45,
+     "standing_min": 11,
+     "walking_min": 4,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 61
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 27,
+     "standing_min": 22,
+     "walking_min": 11,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 174
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 12,
+     "standing_min": 30,
+     "walking_min": 18,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 283
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 4,
+     "standing_min": 24,
+     "walking_min": 32,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 479
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 5,
+     "standing_min": 30,
+     "walking_min": 25,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 462
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 8,
+     "standing_min": 39,
+     "walking_min": 13,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 258
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 45,
+     "standing_min": 9,
+     "walking_min": 6,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 87
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 57,
+     "standing_min": 2,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 11
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 60,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 54,
+     "standing_min": 5,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 26
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 30,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekday: long brisk morning walk"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-14",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-14T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 396,
+    "standing": 331,
+    "walking_light": 181,
+    "walking_moderate": 7,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 7,
+   "steps": 6037,
+   "sit_to_stand_transitions": 15,
+   "longest_sitting_minutes": 104,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 10,
+     "standing_min": 30,
+     "walking_min": 5,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 132
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 15,
+     "standing_min": 15,
+     "walking_min": 30,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 1770
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 39,
+     "standing_min": 21,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 28
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 2,
+     "standing_min": 42,
+     "walking_min": 16,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 301
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 3,
+     "standing_min": 25,
+     "walking_min": 32,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 2078
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 39,
+     "standing_min": 13,
+     "walking_min": 8,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 119
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 28,
+     "standing_min": 26,
+     "walking_min": 6,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 118
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 2,
+     "standing_min": 34,
+     "walking_min": 24,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 397
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 0,
+     "standing_min": 46,
+     "walking_min": 14,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 260
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 0,
+     "standing_min": 42,
+     "walking_min": 18,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 285
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 13,
+     "standing_min": 23,
+     "walking_min": 24,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 367
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 48,
+     "standing_min": 1,
+     "walking_min": 11,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 158
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 54,
+     "standing_min": 6,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 10
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 55,
+     "standing_min": 5,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 9
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 59,
+     "standing_min": 1,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 3
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 29,
+     "standing_min": 1,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 2
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekday: easy walk and shopping"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-15",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-15T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 422,
+    "standing": 315,
+    "walking_light": 160,
+    "walking_moderate": 18,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 18,
+   "steps": 5713,
+   "sit_to_stand_transitions": 19,
+   "longest_sitting_minutes": 90,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 15,
+     "standing_min": 13,
+     "walking_min": 17,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 290
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 0,
+     "standing_min": 21,
+     "walking_min": 39,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 2919
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 45,
+     "standing_min": 4,
+     "walking_min": 11,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 446
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 5,
+     "standing_min": 43,
+     "walking_min": 12,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 214
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 6,
+     "standing_min": 41,
+     "walking_min": 13,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 234
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 42,
+     "standing_min": 15,
+     "walking_min": 3,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 65
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 30,
+     "standing_min": 20,
+     "walking_min": 10,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 191
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 2,
+     "standing_min": 31,
+     "walking_min": 27,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 500
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 12,
+     "standing_min": 35,
+     "walking_min": 13,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 213
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 6,
+     "standing_min": 35,
+     "walking_min": 19,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 333
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 14,
+     "standing_min": 35,
+     "walking_min": 11,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 224
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 47,
+     "standing_min": 12,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 38
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 58,
+     "standing_min": 1,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 17
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 55,
+     "standing_min": 4,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 22
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 55,
+     "standing_min": 5,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 7
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 30,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekday: morning walk"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-16",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-16T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 445,
+    "standing": 315,
+    "walking_light": 146,
+    "walking_moderate": 9,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 9,
+   "steps": 4336,
+   "sit_to_stand_transitions": 18,
+   "longest_sitting_minutes": 96,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 12,
+     "standing_min": 21,
+     "walking_min": 12,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 220
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 19,
+     "standing_min": 12,
+     "walking_min": 29,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 2085
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 42,
+     "standing_min": 13,
+     "walking_min": 5,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 79
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 5,
+     "standing_min": 46,
+     "walking_min": 9,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 195
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 6,
+     "standing_min": 31,
+     "walking_min": 23,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 328
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 43,
+     "standing_min": 14,
+     "walking_min": 3,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 57
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 35,
+     "standing_min": 15,
+     "walking_min": 10,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 166
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 9,
+     "standing_min": 36,
+     "walking_min": 15,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 285
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 0,
+     "standing_min": 48,
+     "walking_min": 12,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 239
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 3,
+     "standing_min": 34,
+     "walking_min": 23,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 410
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 18,
+     "standing_min": 30,
+     "walking_min": 12,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 207
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 50,
+     "standing_min": 9,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 32
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 58,
+     "standing_min": 1,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 25
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 60,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 55,
+     "standing_min": 5,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 8
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 30,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekday: short walk, long sits"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-17",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-17T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 377,
+    "standing": 261,
+    "walking_light": 246,
+    "walking_moderate": 31,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 31,
+   "steps": 8651,
+   "sit_to_stand_transitions": 13,
+   "longest_sitting_minutes": 103,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 10,
+     "standing_min": 19,
+     "walking_min": 16,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 249
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 9,
+     "standing_min": 42,
+     "walking_min": 9,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 170
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 19,
+     "standing_min": 6,
+     "walking_min": 35,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 2534
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 5,
+     "standing_min": 13,
+     "walking_min": 42,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 571
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 3,
+     "standing_min": 30,
+     "walking_min": 27,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 408
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 40,
+     "standing_min": 15,
+     "walking_min": 5,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 98
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 34,
+     "standing_min": 16,
+     "walking_min": 10,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 175
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 0,
+     "standing_min": 17,
+     "walking_min": 43,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 1907
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 0,
+     "standing_min": 13,
+     "walking_min": 47,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 1763
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 3,
+     "standing_min": 36,
+     "walking_min": 21,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 376
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 10,
+     "standing_min": 35,
+     "walking_min": 15,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 254
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 47,
+     "standing_min": 7,
+     "walking_min": 6,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 114
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 57,
+     "standing_min": 2,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 14
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 55,
+     "standing_min": 5,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 7
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 60,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 25,
+     "standing_min": 5,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 11
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekend: walk and gardening"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-18",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-18T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 423,
+    "standing": 273,
+    "walking_light": 195,
+    "walking_moderate": 24,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 24,
+   "steps": 8212,
+   "sit_to_stand_transitions": 17,
+   "longest_sitting_minutes": 98,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 10,
+     "standing_min": 28,
+     "walking_min": 7,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 166
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 19,
+     "standing_min": 21,
+     "walking_min": 20,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 329
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 43,
+     "standing_min": 12,
+     "walking_min": 5,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 107
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 0,
+     "standing_min": 21,
+     "walking_min": 39,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 2366
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 0,
+     "standing_min": 14,
+     "walking_min": 46,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 3567
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 41,
+     "standing_min": 10,
+     "walking_min": 9,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 100
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 35,
+     "standing_min": 25,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 44
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 14,
+     "standing_min": 23,
+     "walking_min": 23,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 348
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 3,
+     "standing_min": 37,
+     "walking_min": 20,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 322
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 2,
+     "standing_min": 36,
+     "walking_min": 22,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 392
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 7,
+     "standing_min": 32,
+     "walking_min": 21,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 344
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 48,
+     "standing_min": 5,
+     "walking_min": 7,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 112
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 54,
+     "standing_min": 6,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 10
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 60,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 57,
+     "standing_min": 3,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 5
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 30,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekend: long walk with a friend"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-19",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-19T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 442,
+    "standing": 272,
+    "walking_light": 181,
+    "walking_moderate": 20,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 20,
+   "steps": 5982,
+   "sit_to_stand_transitions": 24,
+   "longest_sitting_minutes": 94,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 10,
+     "standing_min": 23,
+     "walking_min": 12,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 179
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 15,
+     "standing_min": 6,
+     "walking_min": 39,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 3455
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 42,
+     "standing_min": 12,
+     "walking_min": 6,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 78
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 7,
+     "standing_min": 30,
+     "walking_min": 23,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 355
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 5,
+     "standing_min": 42,
+     "walking_min": 13,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 233
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 41,
+     "standing_min": 10,
+     "walking_min": 9,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 114
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 32,
+     "standing_min": 5,
+     "walking_min": 23,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 351
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 11,
+     "standing_min": 36,
+     "walking_min": 13,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 228
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 8,
+     "standing_min": 34,
+     "walking_min": 18,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 296
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 20,
+     "standing_min": 23,
+     "walking_min": 17,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 248
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 8,
+     "standing_min": 30,
+     "walking_min": 22,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 370
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 44,
+     "standing_min": 10,
+     "walking_min": 6,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 60
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 57,
+     "standing_min": 3,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 3
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 56,
+     "standing_min": 4,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 6
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 56,
+     "standing_min": 4,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 6
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 30,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekday: morning walk"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-20",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-20T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 418,
+    "standing": 308,
+    "walking_light": 172,
+    "walking_moderate": 17,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 17,
+   "steps": 5388,
+   "sit_to_stand_transitions": 14,
+   "longest_sitting_minutes": 82,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 16,
+     "standing_min": 25,
+     "walking_min": 4,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 80
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 0,
+     "standing_min": 19,
+     "walking_min": 41,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 2939
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 45,
+     "standing_min": 15,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 21
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 0,
+     "standing_min": 46,
+     "walking_min": 14,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 283
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 4,
+     "standing_min": 25,
+     "walking_min": 31,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 507
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 43,
+     "standing_min": 11,
+     "walking_min": 6,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 114
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 30,
+     "standing_min": 21,
+     "walking_min": 9,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 172
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 10,
+     "standing_min": 28,
+     "walking_min": 22,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 331
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 4,
+     "standing_min": 44,
+     "walking_min": 12,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 206
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 6,
+     "standing_min": 25,
+     "walking_min": 29,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 400
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 10,
+     "standing_min": 32,
+     "walking_min": 18,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 280
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 46,
+     "standing_min": 12,
+     "walking_min": 2,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 36
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 56,
+     "standing_min": 4,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 8
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 60,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 58,
+     "standing_min": 1,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 11
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 30,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekday: morning walk"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-21",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-21T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 540,
+    "wear_minutes": 540,
+    "valid_day": false,
+    "first_minute": "07:30",
+    "last_minute": "16:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 151,
+    "standing": 188,
+    "walking_light": 192,
+    "walking_moderate": 9,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 0,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 9,
+   "steps": 4630,
+   "sit_to_stand_transitions": 12,
+   "longest_sitting_minutes": 44,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 10,
+     "standing_min": 9,
+     "walking_min": 11,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 179
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 15,
+     "standing_min": 6,
+     "walking_min": 39,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 2139
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 39,
+     "standing_min": 12,
+     "walking_min": 9,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 138
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 0,
+     "standing_min": 26,
+     "walking_min": 34,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 534
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 7,
+     "standing_min": 39,
+     "walking_min": 14,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 254
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 39,
+     "standing_min": 9,
+     "walking_min": 12,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 187
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 29,
+     "standing_min": 18,
+     "walking_min": 13,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 215
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 5,
+     "standing_min": 25,
+     "walking_min": 30,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 415
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 7,
+     "standing_min": 30,
+     "walking_min": 23,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 360
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 0,
+     "standing_min": 14,
+     "walking_min": 16,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 209
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Partial wear: band taken off in the afternoon"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-22",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-22T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 422,
+    "standing": 316,
+    "walking_light": 154,
+    "walking_moderate": 23,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 23,
+   "steps": 5870,
+   "sit_to_stand_transitions": 18,
+   "longest_sitting_minutes": 90,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 16,
+     "standing_min": 19,
+     "walking_min": 10,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 173
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 5,
+     "standing_min": 17,
+     "walking_min": 38,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 3395
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 43,
+     "standing_min": 13,
+     "walking_min": 4,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 83
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 12,
+     "standing_min": 38,
+     "walking_min": 10,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 198
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 7,
+     "standing_min": 39,
+     "walking_min": 14,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 254
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 45,
+     "standing_min": 15,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 19
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 28,
+     "standing_min": 20,
+     "walking_min": 12,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 200
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 3,
+     "standing_min": 33,
+     "walking_min": 24,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 449
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 5,
+     "standing_min": 38,
+     "walking_min": 17,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 285
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 0,
+     "standing_min": 38,
+     "walking_min": 22,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 333
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 6,
+     "standing_min": 34,
+     "walking_min": 20,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 366
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 53,
+     "standing_min": 2,
+     "walking_min": 5,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 80
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 55,
+     "standing_min": 4,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 26
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 60,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 57,
+     "standing_min": 3,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 4
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 27,
+     "standing_min": 3,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 5
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekday: morning walk"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-23",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-23T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 431,
+    "standing": 278,
+    "walking_light": 188,
+    "walking_moderate": 18,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 18,
+   "steps": 6814,
+   "sit_to_stand_transitions": 21,
+   "longest_sitting_minutes": 77,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 25,
+     "standing_min": 18,
+     "walking_min": 2,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 70
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 13,
+     "standing_min": 11,
+     "walking_min": 36,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 2776
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 45,
+     "standing_min": 7,
+     "walking_min": 8,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 121
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 6,
+     "standing_min": 27,
+     "walking_min": 27,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 1178
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 9,
+     "standing_min": 35,
+     "walking_min": 16,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 804
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 40,
+     "standing_min": 19,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 36
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 32,
+     "standing_min": 15,
+     "walking_min": 13,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 208
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 5,
+     "standing_min": 24,
+     "walking_min": 31,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 482
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 3,
+     "standing_min": 27,
+     "walking_min": 30,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 438
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 0,
+     "standing_min": 48,
+     "walking_min": 12,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 222
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 8,
+     "standing_min": 30,
+     "walking_min": 22,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 336
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 48,
+     "standing_min": 7,
+     "walking_min": 5,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 76
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 55,
+     "standing_min": 4,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 20
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 57,
+     "standing_min": 2,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 23
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 55,
+     "standing_min": 4,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 24
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 30,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekday: walk and errands"
+   ],
+   "synthetic_demo": true
+  },
+  {
+   "schema": "lifetwin.band_day.v0",
+   "date": "2026-10-24",
+   "timezone_offset_minutes": 0,
+   "generated_at": "2026-10-24T23:59:00Z",
+   "device": {
+    "mount": "thigh_pocket",
+    "firmware": "synthetic-demo",
+    "record_format": 2
+   },
+   "coverage": {
+    "minutes_recorded": 930,
+    "wear_minutes": 915,
+    "valid_day": true,
+    "first_minute": "07:00",
+    "last_minute": "22:29"
+   },
+   "minutes": {
+    "sitting_or_lying": 359,
+    "standing": 324,
+    "walking_light": 213,
+    "walking_moderate": 19,
+    "running_vigorous": 0,
+    "other_posture": 0,
+    "not_worn": 15,
+    "positions_not_saved": 0
+   },
+   "moderate_vigorous_minutes": 19,
+   "steps": 7201,
+   "sit_to_stand_transitions": 12,
+   "longest_sitting_minutes": 98,
+   "hourly": [
+    {
+     "hour": 0,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 1,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 2,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 3,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 4,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 5,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 6,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 7,
+     "sitting_lying_min": 10,
+     "standing_min": 4,
+     "walking_min": 31,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 15,
+     "steps": 465
+    },
+    {
+     "hour": 8,
+     "sitting_lying_min": 0,
+     "standing_min": 37,
+     "walking_min": 23,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 1388
+    },
+    {
+     "hour": 9,
+     "sitting_lying_min": 29,
+     "standing_min": 12,
+     "walking_min": 19,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 1274
+    },
+    {
+     "hour": 10,
+     "sitting_lying_min": 0,
+     "standing_min": 50,
+     "walking_min": 10,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 233
+    },
+    {
+     "hour": 11,
+     "sitting_lying_min": 11,
+     "standing_min": 32,
+     "walking_min": 17,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 247
+    },
+    {
+     "hour": 12,
+     "sitting_lying_min": 41,
+     "standing_min": 12,
+     "walking_min": 7,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 128
+    },
+    {
+     "hour": 13,
+     "sitting_lying_min": 4,
+     "standing_min": 24,
+     "walking_min": 32,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 455
+    },
+    {
+     "hour": 14,
+     "sitting_lying_min": 0,
+     "standing_min": 27,
+     "walking_min": 33,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 1098
+    },
+    {
+     "hour": 15,
+     "sitting_lying_min": 0,
+     "standing_min": 30,
+     "walking_min": 30,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 1352
+    },
+    {
+     "hour": 16,
+     "sitting_lying_min": 6,
+     "standing_min": 42,
+     "walking_min": 12,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 240
+    },
+    {
+     "hour": 17,
+     "sitting_lying_min": 10,
+     "standing_min": 35,
+     "walking_min": 15,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 249
+    },
+    {
+     "hour": 18,
+     "sitting_lying_min": 46,
+     "standing_min": 12,
+     "walking_min": 2,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 47
+    },
+    {
+     "hour": 19,
+     "sitting_lying_min": 58,
+     "standing_min": 1,
+     "walking_min": 1,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 16
+    },
+    {
+     "hour": 20,
+     "sitting_lying_min": 60,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 21,
+     "sitting_lying_min": 54,
+     "standing_min": 6,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 9
+    },
+    {
+     "hour": 22,
+     "sitting_lying_min": 30,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    },
+    {
+     "hour": 23,
+     "sitting_lying_min": 0,
+     "standing_min": 0,
+     "walking_min": 0,
+     "running_min": 0,
+     "other_min": 0,
+     "not_worn_min": 0,
+     "steps": 0
+    }
+   ],
+   "notes": [
+    "Synthetic demo data, not a hardware recording.",
+    "Weekend: lively gardening day"
+   ],
+   "synthetic_demo": true
+  }
+ ]
+}

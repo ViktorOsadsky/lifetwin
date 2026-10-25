@@ -540,7 +540,7 @@ void main() {
       await pump(t);
       expect(output.spoken, ['How old are you?']);
       expect(input.listening, isTrue);
-      expect(find.text('Listening…'), findsOneWidget);
+      expect(find.text('Listening'), findsOneWidget); // disableAnimations: the still look drops the ellipsis
       expect(find.textContaining('tap when done'), findsNothing);
       expect(find.text('Tap to talk'), findsNothing);
       expect(find.text('Type instead'), findsOneWidget);
@@ -590,7 +590,8 @@ void main() {
     testWidgets('VoiceOver on: nothing opens by itself, one tap target to talk', (t) async {
       await pump(t, voiceOver: true);
       expect(input.starts, 0);
-      expect(find.bySemanticsLabel('Talk or type'), findsOneWidget);
+      expect(find.bySemanticsLabel('Tap to talk to Mochi'), findsOneWidget);
+      expect(find.byType(TalkButton), findsNothing);
       await end(t);
     });
 

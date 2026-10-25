@@ -57,6 +57,14 @@ class TwinAssessment {
   List<String> get strengths => [for (final s in avatar['strengths'] as List? ?? const []) '$s'];
   List<String> get opportunities => [for (final s in avatar['opportunities'] as List? ?? const []) '$s'];
 
+  /// Owner ruling (2026-10-24): 1 or 2 of the 11 inputs are missing, and the number is a ROUGH,
+  /// flagged estimate marginalised over people of the same sex and age in the survey (see
+  /// [TwinModelService.roughMissingMax]). [missingInputs] still lists what is missing.
+  bool get roughMissing => raw['rough_missing'] == true;
+
+  /// [missingInputs].length: the answers the estimate still needs.
+  int get missingCount => missingInputs.length;
+
   /// The age is 18–34 or 80–85, outside the ages the model was checked on; numbers are a
   /// rough guide and carry [extrapolationCaveat].
   bool get extrapolated => raw['extrapolated'] == true;
@@ -89,6 +97,7 @@ class TwinAssessment {
   String? get healthGroupLabel => healthScore == null ? null : (raw['age_group'] as Map?)?['label'] as String?;
 
   HealthScoreStatus get healthScoreStatus => switch (status) {
+    'available' when roughMissing => HealthScoreStatus.roughMissing,
     'available' => extrapolated ? HealthScoreStatus.extrapolated : HealthScoreStatus.available,
     'missing_inputs' => HealthScoreStatus.missingInputs,
     'unsupported_age' => HealthScoreStatus.unsupportedAge,
@@ -147,6 +156,9 @@ class TwinAssessment {
 enum HealthScoreStatus {
   available('available'),
   extrapolated('extrapolated'),
+
+  /// 1 or 2 inputs missing: a rough number, marginalised over similar survey people, flagged.
+  roughMissing('rough_missing'),
   missingInputs('missing_inputs'),
   unsupportedAge('unsupported_age'),
   underAge('under_age'),
@@ -158,7 +170,7 @@ enum HealthScoreStatus {
   /// The name stored in the score history.
   final String wire;
 
-  bool get hasScore => this == available || this == extrapolated;
+  bool get hasScore => this == available || this == extrapolated || this == roughMissing;
 
   static HealthScoreStatus fromWire(Object? v) => values.firstWhere((s) => s.wire == v, orElse: () => invalidInput);
 }
@@ -281,8 +293,143 @@ class TwinModelService {
   TwinAssessment assess(Map<String, dynamic> appProfile, {Map<String, dynamic> window = const {}, DateTime? asOf}) =>
       assessModel(toModelProfile(appProfile), window: window, asOf: asOf);
 
-  /// Assesses an already mapped model profile.
+  /// Assesses an already mapped model profile. With 1 or 2 inputs missing, a rough, flagged
+  /// estimate ([_roughMissing]); with more, none.
   TwinAssessment assessModel(
+    Map<String, dynamic> modelProfile, {
+    Map<String, dynamic> window = const {},
+    DateTime? asOf,
+  }) {
+    final a = _assessModel(modelProfile, window: window, asOf: asOf);
+    return a.status == 'missing_inputs' ? _roughMissing(a, modelProfile, window: window, asOf: asOf) : a;
+  }
+
+  /// Owner ruling (2026-10-24): with at most this many of the 11 inputs missing, a rough estimate.
+  static const roughMissingMax = 2;
+
+  /// The fewest same-sex people of nearby ages a rough estimate averages over (the band widens
+  /// ±5, ±7, ±10 years as the percentile's does; with fewer still, no estimate).
+  static const roughMinPeople = 30;
+
+  /// The 1 or 2 missing inputs are MARGINALISED over the reference people of the person's sex
+  /// and age band ([AgeGroupReference.band]): for each of them only the missing inputs take that
+  /// person's values, and the Cox hazards are averaged (mean of exp(score), then log). Never a
+  /// single typical or healthy value. Age and sex must be known (they choose the band).
+  ///
+  /// Done as one ordinary assessment of the profile filled with a real reference person's
+  /// values (the placeholder), then shifted by
+  /// `Δ = log mean_r exp(Σ_c β_c (x_rc − x_0c))` over the missing inputs' columns c. The score
+  /// is linear in the columns, so this equals the mean of the hazards: the score gets `+Δ`,
+  /// survival `S^exp(Δ)`, and the percentile and centred score are re-ranked. The placeholder
+  /// never shows: `profile_used` stays the person's own answers, `missing_inputs` stays the
+  /// list, and `rough_fill` / `rough_shift` carry what the lifespan needs.
+  TwinAssessment _roughMissing(
+    TwinAssessment partial,
+    Map<String, dynamic> modelProfile, {
+    Map<String, dynamic> window = const {},
+    DateTime? asOf,
+  }) {
+    final ref = _ageGroups, missing = partial.missingInputs;
+    final age = modelProfile['age'], sex = modelProfile['sex_nhanes'];
+    if (ref == null ||
+        !_roughEncoding ||
+        missing.isEmpty ||
+        missing.length > roughMissingMax ||
+        age is! num ||
+        sex is! num ||
+        age < underAge ||
+        age > extrapolatedAgeRange.high ||
+        missing.any((m) => !roughColumns.containsKey(m))) {
+      return partial;
+    }
+    final rows = ref.band(age: age, female: sex == 2, minPeople: roughMinPeople);
+    if (rows == null) return partial;
+    final cols = [for (final m in missing) ...roughColumns[m]!];
+    // Placeholders from a few real reference people, in case one is outside the model's support.
+    for (final r0 in rows.take(5)) {
+      final fill = {for (final m in missing) m: ref.decode(r0, m)};
+      final TwinAssessment f;
+      try {
+        f = _assessModel({...modelProfile, ...fill}, window: window, asOf: asOf);
+      } on FormatException {
+        continue;
+      }
+      final score = f.survival['log_relative_hazard_score'];
+      if (!f.available || score is! num) continue;
+      var sum = 0.0;
+      for (final r in rows) {
+        var d = 0.0;
+        for (final c in cols) {
+          d += _coefficients[c] * (ref.value(r, c) - ref.value(r0, c));
+        }
+        sum += math.exp(d.clamp(-40, 40));
+      }
+      final shift = math.log(sum / rows.length);
+      final moved = score + shift;
+      return TwinAssessment({
+        ...partial.raw,
+        'survival': {..._shifted(f.survival, shift), 'missing_inputs': missing},
+        if (f.extrapolated) 'extrapolated': true,
+        if (f.extrapolated) 'extrapolation_caveat': extrapolationCaveat,
+        'age_group': ref.compare(score: moved, age: age, female: sex == 2).toJson(),
+        'rough_missing': true,
+        'rough_people': rows.length,
+        'rough_fill': fill,
+        'rough_shift': shift,
+      });
+    }
+    return partial;
+  }
+
+  /// An available [survival] with its hazard multiplied by exp([shift]).
+  static Map<String, dynamic> _shifted(Map survival, double shift) {
+    final out = Map<String, dynamic>.from(survival);
+    if (survival['status'] != 'available') return out;
+    final power = math.exp(shift);
+    final fractions = {
+      for (final e in (survival['survival_probabilities'] as Map).entries)
+        '${e.key}': math.pow((e.value as num).toDouble(), power).toDouble(),
+    };
+    return {
+      ...out,
+      'log_relative_hazard_score': (survival['log_relative_hazard_score'] as num) + shift,
+      'survival_probabilities': fractions,
+      'survival_percent_by_year': {for (final e in fractions.entries) e.key: 100 * e.value},
+      'rough_missing': true,
+    };
+  }
+
+  /// The encoded columns of each model input that can be marginalised (the package's
+  /// `encoded_features` order, checked by [_roughEncoding]). Age and sex choose the band.
+  static const roughColumns = <String, List<int>>{
+    'bmi': [1, 2],
+    'sleep_hours': [3, 4],
+    'vigorous_recreation_min_week': [5],
+    'moderate_recreation_min_week': [6],
+    'sedentary_min_day': [7],
+    'smoking_status': [9, 10],
+    'diabetes_diagnosed': [11],
+    'hypertension_diagnosed': [12],
+    'general_health': [13, 14, 15, 16],
+  };
+  static const _roughFeatures = [
+    'age_decade', 'bmi_below23', 'bmi_above35', 'sleep_below7', 'sleep_above8', 'vigorous_log', //
+    'moderate_log', 'sedentary_120', 'female', 'former_smoker', 'current_smoker', 'diabetes', //
+    'hypertension', 'health_2', 'health_3', 'health_4', 'health_5', //
+  ];
+  late final bool _roughEncoding = () {
+    final f = engine.model.spec['encoded_features'] as List;
+    if (f.length != _roughFeatures.length) return false;
+    for (var i = 0; i < f.length; i++) {
+      if (f[i] != _roughFeatures[i]) return false;
+    }
+    return true;
+  }();
+  late final List<double> _coefficients = [
+    for (final c in engine.model.spec['coefficients'] as List) (c as num).toDouble(),
+  ];
+
+  TwinAssessment _assessModel(
     Map<String, dynamic> modelProfile, {
     Map<String, dynamic> window = const {},
     DateTime? asOf,
@@ -328,6 +475,70 @@ class TwinModelService {
   /// [TwinAssessment.healthScore]) and `health_score_delta` = alternative − current: the
   /// experiment's score change (null when either side has no score; 0 under the guard).
   Map<String, dynamic> compare(Map<String, dynamic> request) {
+    final current = Map<String, dynamic>.from(request['current_profile'] as Map);
+    final missing = [
+      for (final k in modelInputs)
+        if (k == 'bmi' ? bmiOf(current) == null : current[k] == null) k,
+    ];
+    if (missing.isEmpty || missing.length > roughMissingMax) return _compareFull(request);
+    return _roughCompare(current, Map<String, dynamic>.from(request['alternative_profile'] as Map), missing);
+  }
+
+  /// [compare] with 1 or 2 inputs missing: both sides get the same placeholder and shift
+  /// ([_roughMissing]), so only the moved levers differ. A missing input cannot be moved: an
+  /// alternative that sets one has no number.
+  Map<String, dynamic> _roughCompare(
+    Map<String, dynamic> current,
+    Map<String, dynamic> alternative,
+    List<String> missing,
+  ) {
+    final a = assessModel(current);
+    final fill = a.raw['rough_fill'], shift = a.raw['rough_shift'];
+    if (!a.roughMissing || fill is! Map || shift is! double || missing.any((m) => alternative[m] != null)) {
+      final none = {
+        'status': 'missing_inputs',
+        'missing_inputs': missing,
+        'message': 'Complete every model input to show annual survival percentages.',
+      };
+      return {
+        'current': a.roughMissing ? a.survival : none,
+        'alternative': none,
+        'modeled_difference_percentage_points': null,
+        'health_score_current': a.healthScore,
+        'health_score_alternative': null,
+        'health_score_delta': null,
+        'warnings': const <String>[],
+        'rough_missing': true,
+      };
+    }
+    final r = _compareFull({
+      'current_profile': {...current, ...fill},
+      'alternative_profile': {...alternative, ...fill},
+    });
+    final cur = {..._shifted(r['current'] as Map, shift), 'missing_inputs': missing};
+    final alt = {..._shifted(r['alternative'] as Map, shift), 'missing_inputs': missing};
+    Map<String, double>? difference;
+    if (cur['status'] == 'available' && alt['status'] == 'available') {
+      final p = cur['survival_probabilities'] as Map, q = alt['survival_probabilities'] as Map;
+      difference = {
+        for (final y in p.keys) '$y': r['weight_guard'] == true ? 0.0 : 100 * ((q[y] as double) - (p[y] as double)),
+      };
+    }
+    final now = _healthScore(cur, current);
+    final then = r['weight_guard'] == true ? now : _healthScore(alt, alternative);
+    return {
+      ...r,
+      'current': cur,
+      'alternative': alt,
+      'modeled_difference_percentage_points': difference,
+      'health_score_current': now,
+      'health_score_alternative': then,
+      'health_score_delta': now == null || then == null ? null : then - now,
+      'rough_missing': true,
+    };
+  }
+
+  Map<String, dynamic> _compareFull(Map<String, dynamic> request) {
     var result = _compare(request);
     final current = request['current_profile'] as Map, alternative = request['alternative_profile'] as Map;
     final difference = result['modeled_difference_percentage_points'];
@@ -524,6 +735,7 @@ class AgeGroupReference {
   AgeGroupReference(Float64List data, this._coef, this._centre)
     : assert(_coef.length == _centre.length && data.length % _coef.length == 0),
       _rows = data.length ~/ _coef.length,
+      _data = data,
       _ages = [],
       _female = [],
       _scores = [] {
@@ -550,6 +762,50 @@ class AgeGroupReference {
   final List<bool> _female;
 
   int get length => _rows;
+  final Float64List _data;
+
+  /// Row [r]'s encoded feature [c].
+  double value(int r, int c) => _data[r * _coef.length + c];
+
+  /// The rows of one sex in the percentile's band around [age] (±5, then ±7, ±10 years; outside
+  /// 35–79 the nearest band inside it), or null when even ±10 has fewer than [minPeople].
+  List<int>? band({required num age, required bool female, required int minPeople}) {
+    final nearest = age < checkedAgeRange.low || age > checkedAgeRange.high;
+    for (final w in widths) {
+      final centre = nearest ? age.clamp(checkedAgeRange.low + w, checkedAgeRange.high - w) : age;
+      final low = math.max(centre - w, checkedAgeRange.low), high = math.min(centre + w, checkedAgeRange.high);
+      final rows = [
+        for (var r = 0; r < _rows; r++)
+          if (_female[r] == female && _ages[r] >= low && _ages[r] <= high) r,
+      ];
+      if (rows.length >= minPeople) return rows;
+    }
+    return null;
+  }
+
+  /// Row [r]'s value of model [input] in the package's units, read back from its encoding so
+  /// that it encodes to the same columns (in the flat parts, BMI 23–35 and sleep 7–8, any value
+  /// does; 29 and 7.5 are used).
+  Object decode(int r, String input) {
+    double v(int c) => value(r, c);
+    return switch (input) {
+      'bmi' => v(1) > 0 ? 23 - 5 * v(1) : (v(2) > 0 ? 35 + 5 * v(2) : 29.0),
+      'sleep_hours' => v(3) > 0 ? 7 - v(3) : (v(4) > 0 ? 8 + v(4) : 7.5),
+      'vigorous_recreation_min_week' => math.max(0.0, math.pow(76, v(5)) - 1.0),
+      'moderate_recreation_min_week' => math.max(0.0, math.pow(151, v(6)) - 1.0),
+      'sedentary_min_day' => (360 + 120 * v(7)).clamp(0.0, 1439.0),
+      'smoking_status' => v(10) == 1 ? 2 : (v(9) == 1 ? 1 : 0),
+      'diabetes_diagnosed' => v(11).round(),
+      'hypertension_diagnosed' => v(12).round(),
+      'general_health' =>
+        [
+              for (var l = 2; l <= 5; l++)
+                if (v(11 + l) == 1) l,
+            ].firstOrNull ??
+            1,
+      _ => throw ArgumentError.value(input, 'input', 'not marginalised'),
+    };
+  }
 
   /// The reference people of one sex with ages in [low, high] (inclusive).
   int count({required bool female, required num low, required num high}) {

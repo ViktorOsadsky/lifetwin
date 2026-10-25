@@ -24,7 +24,9 @@ import 'checkin/notebook_screen.dart';
 import 'experiment/answers.dart';
 import 'health/health_reader.dart';
 import 'health/health_sample.dart';
+import 'onboarding/missing_answers.dart';
 import 'onboarding/voice_onboarding_controller.dart';
+import 'onboarding/voice_onboarding_screen.dart';
 import 'experiment/experiment_screen.dart';
 import 'experiment/ideas_list_screen.dart';
 import 'experiment/recommendations.dart';
@@ -44,9 +46,7 @@ Future<List<HealthSample>> Function() connectedHealthSamples(
   bool Function() connected, {
   DateTime Function()? now,
 }) =>
-    () async => connected()
-    ? reader.read(now: (now ?? DateTime.now)(), days: 3)
-    : const <HealthSample>[];
+    () async => connected() ? reader.read(now: (now ?? DateTime.now)(), days: 3) : const <HealthSample>[];
 
 /// Everything the agentic screens need from the app shell, in one place so `main.dart` stays small:
 /// the scope that lets any screen call `openCheckIn`, the Room's pills, and the routes behind them
@@ -126,9 +126,7 @@ class AgenticRoutes {
   ConsentStore? consents;
 
   /// The wristband (recorded demo only until a Bluetooth plugin exists) and what it suggests.
-  late final BandStore band = _bandClientGiven
-      ? BandStore(_bandClient)
-      : BandFileSession.instance.store;
+  late final BandStore band = _bandClientGiven ? BandStore(_bandClient) : BandFileSession.instance.store;
 
   /// Band files (`lifetwin.band_day.v0`): the shared phone-only import session unless a test gave a client.
   late final BandFileIntake intake = _bandClientGiven
@@ -166,10 +164,8 @@ class AgenticRoutes {
         handsFree: true,
         healthSamples: healthSamples,
         appearance: look,
-        todayPlan: TodayPlanHook(
-          update: _planUpdate,
-          open: (c) => todayPlan(c),
-        ),
+        todayPlan: TodayPlanHook(update: _planUpdate, open: (c) => todayPlan(c)),
+        answerMissing: answerMissing,
         child: child!,
       ),
     );
@@ -181,6 +177,7 @@ class AgenticRoutes {
       repository: repo,
       onExperiment: () => experiment(context),
       onStillLearning: () => stillLearning(context),
+      onAnswerMissing: () => answerMissing(context),
       onWellness: () => wellness(context),
     ),
     if (repo != null) BandPill(store: band, onTap: () => bandFlow(context)),
@@ -190,8 +187,7 @@ class AgenticRoutes {
   Future<bool> importBandFile(BuildContext context) async {
     await intake.importFromFiles();
     final o = intake.outcome;
-    final ok =
-        o != null && o.error == null && !o.cancelled && o.reportCount > 0;
+    final ok = o != null && o.error == null && !o.cancelled && o.reportCount > 0;
     if (context.mounted && o != null && !o.cancelled) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
@@ -278,23 +274,61 @@ class AgenticRoutes {
   void changeWithMochi(BuildContext context, String? field) {
     final r = repo;
     if (r == null) return;
-    final controller = ChangeChatController(
-      client: changeClient,
-      repository: r,
-      field: field,
-    );
+    final controller = ChangeChatController(client: changeClient, repository: r, field: field);
     Navigator.of(context)
         .push<void>(
           MaterialPageRoute<void>(
             fullscreenDialog: true,
-            builder: (c) => ChangeChatScreen(
-              controller: controller,
-              appearance: look.value,
-              onClose: () => Navigator.of(c).pop(),
-            ),
+            builder: (c) =>
+                ChangeChatScreen(controller: controller, appearance: look.value, onClose: () => Navigator.of(c).pop()),
           ),
         )
         .whenComplete(controller.dispose);
+  }
+
+  /// "Answer N more questions" (missing_answers.dart): the one path from every "still needed"
+  /// surface. Mochi's usual voice and typing conversation, started from the saved profile with
+  /// only the missing questions (`ask_only`); an answered one is never asked again. On Continue
+  /// the new answers are saved (the score and the lifespan follow) and the person is back on the
+  /// screen they came from. Closing it, or "I don't know", leaves the action there for later.
+  /// The conversation [answerMissing] opened last (tests answer through it).
+  @visibleForTesting
+  VoiceOnboardingController? lastMissingTalk;
+
+  Future<void> answerMissing(BuildContext context) async {
+    final r = repo;
+    if (r == null) return;
+    final fields = missingQuestions(r.missingInputs, r.profile);
+    if (fields.isEmpty) return;
+    final talk = voice();
+    final c = VoiceOnboardingController(
+      guide: talk.guide,
+      input: talk.input,
+      output: talk.output,
+      handsFree: talk.handsFree,
+      startState: askOnlyState(r.profile, fields, memoryConsent: r.store.memoryConsent),
+    );
+    // Voice was already chosen in the intake: no consent question, straight to the first one.
+    lastMissingTalk = c;
+    c.answerConsent(talk.voiceUsable && !talk.typing, aiHelper: talk.aiHelper).ignore();
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (page) => VoiceOnboardingScreen(
+          controller: c,
+          appearance: look.value,
+          onDone: (confirmed) async {
+            final update = {
+              for (final f in fields)
+                if (confirmed[f] != null) f: confirmed[f],
+            };
+            if (update.isNotEmpty) await r.saveConversationProfile(update);
+            if (page.mounted) Navigator.of(page).pop();
+          },
+        ),
+      ),
+    );
+    // The speech input and output are the intake's own: stopped here, never disposed.
+    await c.pauseVoice();
   }
 
   /// "My data": what is saved on this phone, the memory switch, AI and privacy, and Delete my data.
@@ -338,10 +372,7 @@ class AgenticRoutes {
     if (r == null) return;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (page) => ReminderSettingsScreen(
-          repository: r,
-          onBack: () => Navigator.of(page).pop(),
-        ),
+        builder: (page) => ReminderSettingsScreen(repository: r, onBack: () => Navigator.of(page).pop()),
       ),
     );
   }
@@ -387,8 +418,7 @@ class AgenticRoutes {
   void changeAnswer(BuildContext context) => changeWithMochi(context, null);
 
   /// The weekly check-in, whether or not the schedule says one is due.
-  Future<void> weeklyCheckIn(BuildContext context) =>
-      openCheckIn(context, kind: CheckInKind.weekly);
+  Future<void> weeklyCheckIn(BuildContext context) => openCheckIn(context, kind: CheckInKind.weekly);
 
   /// Asks for the outside-AI consent when this provider has no answer yet (or a new provider has taken
   /// over), and completes with whether Personal suggestions may use it now. Call it before the first plan or
@@ -439,30 +469,24 @@ class AgenticRoutes {
     }
     return TodayUpdate(
       encouragement: line,
-      changes: previous == null
-          ? null
-          : (plan.reusedPrevious ? const [] : plan.changedLines),
+      changes: previous == null ? null : (plan.reusedPrevious ? const [] : plan.changedLines),
     );
   }
 
   /// "Today with Mochi" for Home: mount it where the Today card goes. It asks the outside-AI consent once
   /// before the first plan (the coach may use the same provider), and opens the full plan on a tap.
-  Widget todayCard(
-    BuildContext context, {
-    VoidCallback? onTalk,
-    bool condensed = false,
-    Widget? trailing,
-  }) => TodayWithMochiCard(
-    condensed: condensed,
-    trailing: trailing,
-    client: coach,
-    onPlan: (p) => _lastPlan = p,
-    confirmedContext: () => coachContext(repo!),
-    // No consent ask here: the card shows on Home, which can sit behind onboarding's last screen. The ask
-    // comes from the person's tap (opening the plan, or Ideas).
-    onIdeas: ideasAllowed ? () => ideas(context, origin: 'Today') : null,
-    onOpen: () => todayPlan(context, onTalk: onTalk),
-  );
+  Widget todayCard(BuildContext context, {VoidCallback? onTalk, bool condensed = false, Widget? trailing}) =>
+      TodayWithMochiCard(
+        condensed: condensed,
+        trailing: trailing,
+        client: coach,
+        onPlan: (p) => _lastPlan = p,
+        confirmedContext: () => coachContext(repo!),
+        // No consent ask here: the card shows on Home, which can sit behind onboarding's last screen. The ask
+        // comes from the person's tap (opening the plan, or Ideas).
+        onIdeas: ideasAllowed ? () => ideas(context, origin: 'Today') : null,
+        onOpen: () => todayPlan(context, onTalk: onTalk),
+      );
 
   /// The full daily plan (`DailyPlanScreen`).
   Future<void> todayPlan(BuildContext context, {VoidCallback? onTalk}) async {
@@ -511,16 +535,18 @@ class AgenticRoutes {
           missingInputs: missing,
           worded: p,
           onBack: () => Navigator.of(c).pop(),
-          onAnswerMore: () {
-            Navigator.of(c).pop();
-            changeWithMochi(context, null);
+          // The list was for the missing answers: afterwards it closes onto where it opened from.
+          questionCount: missingQuestions(missing, r.profile).length,
+          onAnswerMore: () async {
+            if (missing.isEmpty) {
+              Navigator.of(c).pop();
+              return changeWithMochi(context, null);
+            }
+            await answerMissing(c);
+            if (c.mounted) Navigator.of(c).pop();
           },
-          onTry: (idea) => experiment(
-            c,
-            presetLever: idea.leverId,
-            presetValue: idea.leverValue,
-            backLabel: 'Back to ideas',
-          ),
+          onTry: (idea) =>
+              experiment(c, presetLever: idea.leverId, presetValue: idea.leverValue, backLabel: 'Back to ideas'),
         ),
       ),
     );
@@ -532,18 +558,12 @@ class AgenticRoutes {
     if (r == null) return;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (c) =>
-            _HealthDocumentsHost(routes: this, repository: r, parent: context),
+        builder: (c) => _HealthDocumentsHost(routes: this, repository: r, parent: context),
       ),
     );
   }
 
-  void experiment(
-    BuildContext context, {
-    String? presetLever,
-    double? presetValue,
-    String backLabel = 'Back to room',
-  }) {
+  void experiment(BuildContext context, {String? presetLever, double? presetValue, String backLabel = 'Back to room'}) {
     final r = repo;
     if (r == null) return;
     Navigator.of(context).push(
@@ -575,9 +595,7 @@ class AgenticRoutes {
         if (c.level == 'strength' || c.level == 'opportunity')
           OutlookDriver(
             label: c.title,
-            direction: c.level == 'strength'
-                ? DriverDirection.higher
-                : DriverDirection.lower,
+            direction: c.level == 'strength' ? DriverDirection.higher : DriverDirection.lower,
             reason: c.message,
           ),
     ];
@@ -587,9 +605,7 @@ class AgenticRoutes {
           drivers: drivers,
           onBack: () => Navigator.of(c).pop(),
           onExperiment: () => experiment(c, backLabel: 'Back to what moves it'),
-          onIdeas: ideasAllowed
-              ? () => ideas(c, origin: 'what moves it')
-              : null,
+          onIdeas: ideasAllowed ? () => ideas(c, origin: 'what moves it') : null,
         ),
       ),
     );
@@ -601,8 +617,7 @@ class AgenticRoutes {
     if (r == null) return;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (c) =>
-            NotebookScreen(repository: r, onBack: () => Navigator.of(c).pop()),
+        builder: (c) => NotebookScreen(repository: r, onBack: () => Navigator.of(c).pop()),
       ),
     );
   }
@@ -627,6 +642,13 @@ class AgenticRoutes {
           onTellMochi: (field) {
             Navigator.of(c).pop();
             changeWithMochi(context, field);
+          },
+          // Back here afterwards; the screen's own list is then out of date, so it closes and
+          // the person lands where they opened it from, with the score.
+          questionCount: missingQuestions(a.missingInputs, r.profile).length,
+          onAnswerMissing: () async {
+            await answerMissing(c);
+            if (c.mounted) Navigator.of(c).pop();
           },
         ),
       ),
@@ -671,12 +693,7 @@ class AgenticRoutes {
 /// to the foreground (the date may have moved on, so a daily window ends on a different day and today's
 /// check-in is due again) it calls `repo.refresh()` and plans the reminders again.
 class ResumeRefresh extends StatefulWidget {
-  const ResumeRefresh({
-    super.key,
-    required this.repository,
-    required this.child,
-    this.now,
-  });
+  const ResumeRefresh({super.key, required this.repository, required this.child, this.now});
   final TwinRepository repository;
   final Widget child;
 
@@ -687,8 +704,7 @@ class ResumeRefresh extends StatefulWidget {
   State<ResumeRefresh> createState() => _ResumeRefreshState();
 }
 
-class _ResumeRefreshState extends State<ResumeRefresh>
-    with WidgetsBindingObserver {
+class _ResumeRefreshState extends State<ResumeRefresh> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -713,11 +729,7 @@ class _ResumeRefreshState extends State<ResumeRefresh>
 }
 
 class _HealthDocumentsHost extends StatefulWidget {
-  const _HealthDocumentsHost({
-    required this.routes,
-    required this.repository,
-    required this.parent,
-  });
+  const _HealthDocumentsHost({required this.routes, required this.repository, required this.parent});
   final AgenticRoutes routes;
   final TwinRepository repository;
   final BuildContext parent;
@@ -741,9 +753,7 @@ class _HealthDocumentsHostState extends State<_HealthDocumentsHost> {
           provider: provider,
           service:
               widget.routes.documentService?.call() ??
-              liveDocumentService(
-                extractor: HttpDocumentExtractor(base: widget.routes._api),
-              ),
+              liveDocumentService(extractor: HttpDocumentExtractor(base: widget.routes._api)),
           onDone: (result) async {
             Navigator.of(c).pop();
             final r = widget.repository;
@@ -767,7 +777,6 @@ class _HealthDocumentsHostState extends State<_HealthDocumentsHost> {
     onBack: () => Navigator.of(context).pop(),
     onUpload: _upload,
     notices: _notices,
-    onTellMochiWeight: () =>
-        widget.routes.changeWithMochi(context, 'weight_kg'),
+    onTellMochiWeight: () => widget.routes.changeWithMochi(context, 'weight_kg'),
   );
 }
