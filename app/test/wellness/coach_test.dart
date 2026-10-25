@@ -157,6 +157,71 @@ void main() {
     },
   );
   testWidgets(
+    'Not for me sends not_done with reason and shows the swapped item',
+    (t) async {
+      final swapped = planJson(revision: 'r2');
+      (swapped['items'] as List).first
+        ..['id'] = 'swim'
+        ..['catalog_id'] = 'swim'
+        ..['title'] = 'An easy swim';
+      final client = FakeCoach()..responses.add(DailyPlan.fromJson(swapped));
+      final handle = t.ensureSemantics();
+      await phone(
+        t,
+        DailyPlanScreen(
+          client: client,
+          confirmedContext: () => {'local_date': '2026-10-24'},
+          initialPlan: DailyPlan.fromJson(planJson()),
+          onBack: () {},
+          onTalk: () {},
+        ),
+      );
+      await reveal(t, find.text('Not for me'));
+      expect(
+        t.getSemantics(find.text('Not for me')).label,
+        contains('Not for me: swap A short walk for something else.'),
+      );
+      await t.tap(find.text('Not for me'));
+      await t.pumpAndSettle();
+      expect(client.requests.single['feedback'], {
+        'revision_id': 'r1',
+        'items': [
+          {'item_id': 'move', 'status': 'not_done', 'reason': 'Not for me'},
+        ],
+      });
+      expect(find.text('An easy swim'), findsOneWidget);
+      expect(find.text('A short walk'), findsNothing);
+      handle.dispose();
+    },
+  );
+  testWidgets('plan actions wrap without overflow at 1.6x text', (t) async {
+    await phone(
+      t,
+      DailyPlanScreen(
+        client: FakeCoach(),
+        confirmedContext: () => {'local_date': '2026-10-24'},
+        initialPlan: DailyPlan.fromJson(planJson()),
+        onBack: () {},
+        onTalk: () {},
+      ),
+      scale: 1.6,
+    );
+    await reveal(t, find.text('Not for me'));
+    for (final label in ['Skip', 'Not done', 'Not for me']) {
+      final r = t.getRect(
+        find
+            .ancestor(
+              of: find.text(label),
+              matching: find.byType(OutlinedButton),
+            )
+            .first,
+      );
+      expect(r.height, greaterThanOrEqualTo(48), reason: label);
+      expect(r.right, lessThanOrEqualTo(320), reason: label);
+    }
+    expect(t.takeException(), isNull);
+  });
+  testWidgets(
     'stale feedback preserves the old plan and refreshes from current inputs',
     (t) async {
       final client = FakeCoach()
