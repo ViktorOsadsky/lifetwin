@@ -14,7 +14,11 @@ import 'checkin_scheduler.dart';
 /// nothing is due it is a quiet "Checked in today". It rebuilds when the repository changes, so finishing a
 /// check-in swaps the button for the quiet state.
 class CheckInEntry extends StatelessWidget {
-  const CheckInEntry({super.key});
+  const CheckInEntry({super.key, this.compact = false});
+
+  /// One small button for a row on Home ("Check in", "Weekly" or "Done ✓"); the weekly one is also on
+  /// long-press and in Settings.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +43,42 @@ class CheckInEntry extends StatelessWidget {
           onLongPress: () => openCheckIn(context, kind: CheckInKind.weekly),
           child: child,
         );
+        if (compact) {
+          final today = isoDay(dayOf(now));
+          final done = repo.store.checkins.any((c) => c.kind != 'weekly' && c.date == today);
+          if (!due.any) {
+            return done
+                ? onDemand(
+                    Semantics(
+                      label: 'Checked in today. See you tomorrow.',
+                      excludeSemantics: true,
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: LtColors.mintWash,
+                          borderRadius: BorderRadius.circular(LtRadii.chip),
+                          border: Border.all(color: LtColors.container, width: LtBorders.container),
+                        ),
+                        child: Text('Done ✓', maxLines: 1, softWrap: false, style: LtText.body(weight: FontWeight.w700)),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink();
+          }
+          final quick = due.quick != null;
+          return onDemand(
+            LipButton(
+              label: quick ? 'Check in' : 'Weekly',
+              height: 48,
+              fontSize: 18,
+              expand: false,
+              semanticLabel: quick ? 'Check in. A 1-minute chat.' : 'Weekly check-in. Ready now.',
+              onTap: () => openCheckIn(context, kind: quick ? CheckInKind.quick : CheckInKind.weekly),
+            ),
+          );
+        }
         if (!due.any) {
           final today = isoDay(dayOf(now));
           final done = repo.store.checkins.any((c) => c.kind != 'weekly' && c.date == today);

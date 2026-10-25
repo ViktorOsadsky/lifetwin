@@ -24,6 +24,8 @@ class TodayWithMochiCard extends StatefulWidget {
     required this.onOpen,
     this.beforeFirstPlan,
     this.onPlan,
+    this.condensed = false,
+    this.trailing,
     this.openUrl = defaultOpenUrl,
   });
 
@@ -35,6 +37,12 @@ class TodayWithMochiCard extends StatefulWidget {
   /// Told each plan the coach gives (the first and every revision).
   final void Function(DailyPlan plan)? onPlan;
   final OpenUrl openUrl;
+
+  /// One line for Home: "Today: brisk walk · protein · …", opening the plan on a tap.
+  final bool condensed;
+
+  /// Condensed only: a control at the right of the row (Home's Check in button).
+  final Widget? trailing;
 
   @override
   State<TodayWithMochiCard> createState() => _TodayWithMochiCardState();
@@ -150,6 +158,49 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
     ];
     final encourage = _first('encourage');
     final showRows = plan != null && !plan.emergency && plan.items.isNotEmpty;
+    if (widget.condensed) {
+      final titles = [
+        for (final kind in ['workout', 'diet', 'habit'])
+          if (showRows && _first(kind)?['title'] is String) (_first(kind)!['title'] as String).toLowerCase(),
+      ];
+      final line = titles.isEmpty
+          ? (_failed || _loading ? todayFallbackLine : (encourage?['message'] as String? ?? todayFallbackLine))
+          : titles.join(' · ');
+      return Semantics(
+        container: true,
+        label: 'Today with Mochi',
+        child: WellnessCard(
+          padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+          child: InkWell(
+            onTap: widget.onOpen,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: titles.isEmpty ? 'Today with Mochi · ' : 'Today: ', style: LtText.body(size: 17, weight: FontWeight.w700)),
+                        TextSpan(text: line, style: LtText.body(size: 17)),
+                      ],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (widget.trailing != null)
+                  Padding(padding: const EdgeInsets.only(left: 8, right: 6), child: widget.trailing!)
+                else
+                  const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(Icons.chevron_right_rounded, color: LtColors.ink),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Semantics(
       container: true,
       label: 'Today with Mochi',
