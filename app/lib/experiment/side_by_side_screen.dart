@@ -6,7 +6,9 @@ import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/widgets/widgets.dart';
 import '../widgets/whole_word_text.dart';
+import '../wellness/today_card.dart' show MoreIdeasLink;
 import 'experiment_copy.dart';
+import 'ideas_hub.dart';
 import 'experiment_page.dart';
 import 'experiment_twins.dart';
 import 'lever_copy.dart';
@@ -25,7 +27,11 @@ class SideBySideScreen extends StatelessWidget {
     required this.whatIf,
     required this.appearance,
     this.open = defaultOpenUrl,
+    this.ideas,
   });
+
+  /// "More ideas like this ›" under the result. Null hides it (under 18).
+  final IdeasAccess? ideas;
 
   final TwinRepository repository;
   final TwinExperiment whatIf;
@@ -113,7 +119,14 @@ class SideBySideScreen extends StatelessWidget {
       onBack: () => Navigator.of(context).pop(),
       backLabel: 'Back to Experiment',
       dock: HonestyDock(
-        action: LipButton(label: ExperimentCopy.tryOther, fontSize: 24, onTap: () => Navigator.of(context).pop()),
+        action: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LipButton(label: ExperimentCopy.tryOther, fontSize: 24, onTap: () => Navigator.of(context).pop()),
+            if (ideas case final access?) _MoreLikeThis(access: access, levers: {for (final l in moved) l.id}),
+          ],
+        ),
       ),
       body: body,
     );
@@ -429,5 +442,28 @@ class _FullScaleSwitch extends StatelessWidget {
         ),
       ),
     ),
+  );
+}
+
+/// "More ideas like this ›": Ideas for you, filtered to the levers in this what-if. Hidden when no idea
+/// today is for one of them (it never promises that an idea will give this result).
+class _MoreLikeThis extends StatelessWidget {
+  const _MoreLikeThis({required this.access, required this.levers});
+  final IdeasAccess access;
+  final Set<String> levers;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: access.hub,
+    builder: (context, _) {
+      final any = access.hub.visibleRecommendations.any((r) => levers.contains(r.leverId));
+      if (!any) return const SizedBox.shrink();
+      return Center(
+        child: MoreIdeasLink(
+          label: 'More ideas like this',
+          onTap: () => access.openList(context, origin: 'result', levers: levers),
+        ),
+      );
+    },
   );
 }

@@ -26,6 +26,8 @@ import 'health/health_reader.dart';
 import 'health/health_sample.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'experiment/experiment_screen.dart';
+import 'experiment/idea_detail_screen.dart';
+import 'experiment/ideas_hub.dart';
 import 'experiment/ideas_list_screen.dart';
 import 'experiment/recommendations.dart';
 import 'experiment/room_pills.dart';
@@ -144,6 +146,8 @@ class AgenticRoutes {
   /// The repository has loaded.
   void attach(TwinRepository r) {
     repo = r;
+    _hub = null;
+    _access = null;
     consents ??= ConsentStore(r);
     bandService ??= BandService(repository: r);
     // The forecast follows what the check-ins and the stored days say.
@@ -170,7 +174,8 @@ class AgenticRoutes {
           update: _planUpdate,
           open: (c) => todayPlan(c),
         ),
-        child: child!,
+        ideas: () => ideasAccess,
+        child: IdeasScope(access: ideasAccess, child: child!),
       ),
     );
   }
@@ -329,6 +334,7 @@ class AgenticRoutes {
     if (r != null) bandService = BandService(repository: r);
     _lastPlan = null;
     _provider = null;
+    _hub?.clear();
     onDeleted?.call();
   }
 
@@ -453,6 +459,7 @@ class AgenticRoutes {
     bool condensed = false,
     Widget? trailing,
   }) => TodayWithMochiCard(
+    ideas: ideasAllowed ? ideasAccess : null,
     condensed: condensed,
     trailing: trailing,
     client: coach,
@@ -488,6 +495,63 @@ class AgenticRoutes {
     );
   }
 
+  IdeasHub? _hub;
+  IdeasAccess? _access;
+
+  /// Today's ideas: the day's cached answer, what is hidden, and the server source. One per app run.
+  IdeasHub get ideasHub => _hub ??= IdeasHub(
+    source: ideasSource?.call(repo!) ?? HttpRecommendations(repo!, base: _api),
+    repo: repo,
+    allowed: () => ideasAllowed,
+  );
+
+  /// What the ways in to Ideas need (null before the phone's data has loaded). Each way in still
+  /// hides itself when the hub has no idea for today or the person is under 18.
+  IdeasAccess? get ideasAccess => repo == null
+      ? null
+      : _access ??= IdeasAccess(
+          hub: ideasHub,
+          openIdea: (c, idea) => ideaDetail(c, idea),
+          openList: (c, {required origin, levers}) => ideas(c, origin: origin, levers: levers),
+        );
+
+  /// The AI that worded the ideas, only when the person already agreed to it (no question is asked).
+  Future<AiProvider?> _wordedProvider() async {
+    try {
+      final p = await provider();
+      final c = consents;
+      return p != null && c != null && c.mayShare(p) ? p : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// One idea in full (from Home, the check-in, onboarding, voice). "Try it with my twin" opens Experiment.
+  Future<void> ideaDetail(BuildContext context, Recommendation idea) async {
+    if (repo == null || !ideasAllowed) return;
+    final worded = await _wordedProvider();
+    if (!context.mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (c) => IdeaDetailScreen(
+          idea: idea,
+          appearance: look.value,
+          backLabel: 'Back',
+          worded: worded,
+          onBack: () => Navigator.of(c).pop(),
+          onTry: idea.leverId == null
+              ? null
+              : () => experiment(
+                  c,
+                  presetLever: idea.leverId,
+                  presetValue: idea.leverValue,
+                  backLabel: 'Back to idea',
+                ),
+        ),
+      ),
+    );
+  }
+
   /// Ideas for you are for people 18 and over; under 18 (or no age) there is no entry point and
   /// the server is never asked.
   bool get ideasAllowed => ((repo?.profile['age'] as num?) ?? 0) >= 18;
@@ -495,7 +559,7 @@ class AgenticRoutes {
   /// "Ideas for you": up to three ideas from `/api/recommendations`. [origin] names where it was
   /// opened from for the back button ("Back to {origin}"). Asks the outside-AI consent first, if it
   /// has not been answered (the person just tapped, so it is not a surprise).
-  Future<void> ideas(BuildContext context, {required String origin}) async {
+  Future<void> ideas(BuildContext context, {required String origin, Set<String>? levers}) async {
     final r = repo;
     if (r == null || !ideasAllowed) return;
     final may = await ensureOutsideAiConsent(context);
@@ -505,7 +569,8 @@ class AgenticRoutes {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (c) => IdeasListScreen(
-          source: ideasSource?.call(r) ?? HttpRecommendations(r, base: _api),
+          hub: ideasHub,
+          onlyLevers: levers,
           appearance: look.value,
           origin: origin,
           missingInputs: missing,
@@ -555,6 +620,7 @@ class AgenticRoutes {
           presetValue: presetValue,
           backLabel: backLabel,
           onIdeas: ideasAllowed ? () => ideas(c, origin: 'Experiment') : null,
+          ideas: ideasAllowed ? ideasAccess : null,
           onBack: () => Navigator.of(c).pop(),
           onTellMochi: (field) {
             Navigator.of(c).pop();

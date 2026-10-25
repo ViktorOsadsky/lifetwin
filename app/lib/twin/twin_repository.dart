@@ -138,6 +138,11 @@ class TwinRepository extends ChangeNotifier {
   /// Persisted; [deleteMyData] clears it.
   bool get lifespanRevealSeen => store.lifespanRevealSeen;
 
+  /// Ideas for you, kept for the day (see [TwinStore.ideasState]); [deleteMyData] clears it.
+  Map<String, dynamic> get ideasState => store.ideasState;
+
+  Future<void> saveIdeasState(Map<String, dynamic> state) => store._saveIdeasState(state);
+
   /// Records that the lifespan reveal was shown.
   Future<void> markLifespanRevealSeen() async {
     if (store.lifespanRevealSeen) return;

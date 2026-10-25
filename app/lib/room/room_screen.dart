@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../checkin/check_in_entry.dart';
+import '../experiment/ideas_hub.dart';
 import '../experiment/room_pills.dart';
 import '../twin/twin_model.dart' show TwinAssessment, extrapolationCaveat;
 import '../forecast/forecast_client.dart';
@@ -48,7 +49,12 @@ class RoomScreen extends StatefulWidget {
     this.onBand,
     this.today,
     this.stateLine,
+    this.ideas,
   });
+
+  /// Today's ideas: tapping Mochi shows a bubble with today's idea (and once a day by itself). Null
+  /// or no featured idea (under 18, nothing cached): tapping Mochi only hops.
+  final IdeasAccess? ideas;
 
   /// Cosmetic look only; never part of the health profile.
   final ValueListenable<TwinAppearance> appearance;
@@ -107,6 +113,35 @@ class _RoomScreenState extends State<RoomScreen> {
   void initState() {
     super.initState();
     _measureSoon();
+    widget.ideas?.hub.addListener(_maybeShowToday);
+    _maybeShowTodaySoon();
+  }
+
+  /// Mochi's bubble with today's idea.
+  bool _ideaBubble = false;
+
+  void _maybeShowTodaySoon() => WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowToday());
+
+  /// Once a day, on the first Home visit with an idea, the bubble shows by itself. Not at large text,
+  /// where tapping Mochi opens the list instead.
+  void _maybeShowToday() {
+    final hub = widget.ideas?.hub;
+    if (!mounted || hub == null || _ideaBubble || !widget.hasProfile) return;
+    if (hub.featured == null || !hub.bubbleDue) return;
+    if (MediaQuery.textScalerOf(context).scale(1) >= 1.5) return;
+    hub.markBubbleShown();
+    setState(() => _ideaBubble = true);
+  }
+
+  /// A tap on Mochi: the bubble with today's idea; at 1.5x text and up, the Ideas list directly.
+  void _twinTapped() {
+    final access = widget.ideas;
+    if (access == null || access.hub.featured == null) return;
+    if (MediaQuery.textScalerOf(context).scale(1) >= 1.5) {
+      access.openList(context, origin: 'room');
+    } else {
+      setState(() => _ideaBubble = true);
+    }
   }
 
   /// After layout, read how tall the top bar and the bottom UI are (their
@@ -182,6 +217,11 @@ class _RoomScreenState extends State<RoomScreen> {
   void didUpdateWidget(RoomScreen old) {
     super.didUpdateWidget(old);
     if (widget.hasProfile && _needTalk) _needTalk = false;
+    if (old.ideas?.hub != widget.ideas?.hub) {
+      old.ideas?.hub.removeListener(_maybeShowToday);
+      widget.ideas?.hub.addListener(_maybeShowToday);
+    }
+    _maybeShowTodaySoon();
   }
 
   @override
@@ -193,6 +233,7 @@ class _RoomScreenState extends State<RoomScreen> {
 
   @override
   void dispose() {
+    widget.ideas?.hub.removeListener(_maybeShowToday);
     _pressLock?.cancel();
     _sim.dispose();
     super.dispose();
@@ -220,10 +261,25 @@ class _RoomScreenState extends State<RoomScreen> {
                       clear: _clear,
                       twinState: state,
                       onActivityTap: _chooseActivity,
+                      onTwinTap: _twinTapped,
                     ),
                   ),
                 ),
               ),
+              if (_ideaBubble && widget.ideas != null)
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: _clear.bottom + 6,
+                  child: _IdeaBubble(
+                    hub: widget.ideas!.hub,
+                    onSee: () {
+                      setState(() => _ideaBubble = false);
+                      widget.ideas!.openList(context, origin: 'room');
+                    },
+                    onClose: () => setState(() => _ideaBubble = false),
+                  ),
+                ),
               SafeArea(
                 // With very large text the top bar and the buttons can be taller than the
                 // screen: then they scroll. Taps between them still reach the room.
@@ -699,4 +755,93 @@ class _ActivityChooser extends StatelessWidget {
       ],
     );
   }
+}
+
+
+/// Mochi's tap bubble: today's idea and "See ideas ›", with a 48 pt close button. It fades in (at once
+/// under Reduce Motion), never moves by itself and stays until it is dismissed.
+class _IdeaBubble extends StatelessWidget {
+  const _IdeaBubble({required this.hub, required this.onSee, required this.onClose});
+  final IdeasHub hub;
+  final VoidCallback onSee;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: hub,
+    builder: (context, _) {
+      final idea = hub.featured;
+      if (idea == null) return const SizedBox.shrink();
+      final reduced = MediaQuery.disableAnimationsOf(context);
+      return TweenAnimationBuilder<double>(
+        tween: Tween(begin: reduced ? 1 : 0, end: 1),
+        duration: reduced ? Duration.zero : const Duration(milliseconds: 240),
+        curve: Curves.easeOut,
+        builder: (context, t, child) =>
+            Opacity(opacity: t, child: Transform.scale(scale: 0.9 + 0.1 * t, alignment: Alignment.bottomCenter, child: child)),
+        child: Semantics(
+          container: true,
+          liveRegion: true,
+          label: 'Today’s idea: ${idea.title}',
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(18, 8, 4, 4),
+            decoration: BoxDecoration(
+              color: LtColors.paper,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: LtColors.container, width: 1.5),
+              boxShadow: LtShadows.soft,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: 'Today’s idea: ', style: LtText.display(19)),
+                            TextSpan(text: idea.title, style: LtText.display(19, weight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                      Semantics(
+                        button: true,
+                        label: 'See ideas',
+                        excludeSemantics: true,
+                        onTap: onSee,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: onSee,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 48),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'See ideas ›',
+                                style: LtText.body(weight: FontWeight.w700).copyWith(
+                                  decoration: TextDecoration.underline,
+                                  decorationThickness: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Close',
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                  onPressed: onClose,
+                  icon: const Icon(Icons.close_rounded, color: LtColors.ink, size: 24),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }

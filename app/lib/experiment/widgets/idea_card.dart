@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../twin/twin_experiment.dart';
 import '../../ui/theme.dart';
+import '../../ui/twin_appearance.dart';
 import '../../ui/widgets/widgets.dart';
 import '../../widgets/whole_word_text.dart';
 import '../lever_copy.dart';
 import '../recommendations.dart';
+import 'idea_scene.dart';
 
 /// The server's fixed wording for an effect level: never edited, never given a number.
 const effectNote = 'Modeled difference for people like you, not a promise';
@@ -141,7 +143,11 @@ class IdeaCard extends StatelessWidget {
     required this.onEffect,
     this.onTry,
     this.top = false,
+    this.appearance,
   });
+
+  /// With a twin look the card shows a small Mochi in the idea's pose instead of the lever icon.
+  final TwinAppearance? appearance;
 
   final Recommendation idea;
   final VoidCallback onOpen;
@@ -191,23 +197,30 @@ class IdeaCard extends StatelessWidget {
                     excludeSemantics: true,
                     child: Row(
                       children: [
-                        Container(
-                          width: iconSize,
-                          height: iconSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFFE3F5EC),
-                            border: Border.all(
-                              color: LtColors.control,
-                              width: 2,
+                        if (appearance != null)
+                          IdeaThumb(
+                            appearance: appearance!,
+                            kind: idea.kind,
+                            size: iconSize,
+                          )
+                        else
+                          Container(
+                            width: iconSize,
+                            height: iconSize,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFFE3F5EC),
+                              border: Border.all(
+                                color: LtColors.control,
+                                width: 2,
+                              ),
+                            ),
+                            child: Icon(
+                              copy?.icon ?? Icons.eco_outlined,
+                              size: iconSize * 0.54,
+                              color: LtColors.ink,
                             ),
                           ),
-                          child: Icon(
-                            copy?.icon ?? Icons.eco_outlined,
-                            size: iconSize * 0.54,
-                            color: LtColors.ink,
-                          ),
-                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: WholeWordText(
@@ -227,6 +240,12 @@ class IdeaCard extends StatelessWidget {
                   if (effectWord(idea.effect) != null) ...[
                     const SizedBox(height: 8),
                     EffectCue(effect: idea.effect, onTap: onEffect),
+                  ] else if (appearance != null) ...[
+                    const SizedBox(height: 8),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: GuidelineChip(),
+                    ),
                   ],
                   const SizedBox(height: 8),
                   WholeWordText(why, style: LtText.body(size: 18)),

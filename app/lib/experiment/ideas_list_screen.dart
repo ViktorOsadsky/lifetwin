@@ -9,21 +9,27 @@ import 'answers.dart';
 import 'experiment_page.dart';
 import 'experiment_twins.dart';
 import 'idea_detail_screen.dart';
+import 'ideas_hub.dart';
 import 'lever_copy.dart';
 import 'recommendations.dart';
 import 'widgets/idea_card.dart';
+import 'widgets/idea_hero.dart';
 import 'widgets/widgets.dart';
 
-/// "Ideas for you" (design set I): up to three ideas from `/api/recommendations`, the most
-/// helpful first. Loads [source] itself, and shows the calm offline / error screen (I-6) when
-/// it fails and the "a few more answers" screen (I-3) when there is nothing to say yet.
+/// "Ideas for you" (design sets I and I2): today's idea as a hero (Mochi in the pose for its kind),
+/// then the other ideas as cards. Loads through an [IdeasHub] (made from [source] when none is given)
+/// and shows the calm offline / error screen (I-6) when it fails and the "a few more answers" screen
+/// (I-3) when there is nothing to say yet.
+///
+/// With `featured` null (a server that does not send it) there is no hero and the list is set I.
 ///
 /// The person's age is the caller's business: under 18 this screen is never built (it would
 /// never call the server), and no entry point to it exists.
 class IdeasListScreen extends StatefulWidget {
   const IdeasListScreen({
     super.key,
-    required this.source,
+    this.source,
+    this.hub,
     required this.appearance,
     required this.origin,
     required this.onBack,
@@ -32,9 +38,13 @@ class IdeasListScreen extends StatefulWidget {
     this.onAnswerMore,
     this.worded,
     this.open = defaultOpenUrl,
-  });
+    this.onlyLevers,
+  }) : assert(source != null || hub != null);
 
-  final RecommendationsSource source;
+  final RecommendationsSource? source;
+
+  /// Today's ideas and what is hidden; without one the screen keeps its own, in memory.
+  final IdeasHub? hub;
   final TwinAppearance appearance;
 
   /// Where this screen was opened from ("room", "Today", "what moves it", "Experiment"):
@@ -56,14 +66,21 @@ class IdeasListScreen extends StatefulWidget {
   final AiProvider? worded;
   final OpenUrl open;
 
+  /// "More ideas like this": only the ideas for these levers (the Experiment's what-if levers),
+  /// shown as a plain list. Null: everything.
+  final Set<String>? onlyLevers;
+
   @override
   State<IdeasListScreen> createState() => _IdeasListScreenState();
 }
 
 class _IdeasListScreenState extends State<IdeasListScreen> {
-  List<Recommendation>? _ideas;
-  RecommendationsFailure? _failure;
-  bool _loading = true;
+  late final IdeasHub _hub = widget.hub ?? IdeasHub(source: widget.source!);
+  int _index = 0;
+
+  /// Past the last card of the deck: "That's all for today".
+  bool _end = false;
+  bool _firstLoad = true;
 
   @override
   void initState() {
@@ -71,34 +88,41 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    if (widget.hub == null) _hub.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _failure = null;
-    });
     try {
-      final ideas = await widget.source.load();
-      if (mounted) setState(() => _ideas = ideas);
-    } on RecommendationsFailure catch (f) {
-      if (mounted) setState(() => _failure = f);
+      await _hub.refresh();
     } catch (_) {
-      if (mounted) {
-        setState(() => _failure = const RecommendationsFailure(null));
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
+      // The hub keeps the failure; the screen shows it (or the cached ideas with a note).
     }
+    if (mounted) setState(() => _firstLoad = false);
   }
 
   String get _backLabel => 'Back to ${widget.origin}';
 
   @override
-  Widget build(BuildContext context) {
-    if (_loading) {
-      return _plate('One moment…', 'Mochi is looking for ideas.', null, null);
-    }
-    if (_failure != null) {
-      final offline = _failure!.statusCode == null;
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: _hub,
+    builder: (context, _) => _build(context),
+  );
+
+  Widget _build(BuildContext context) {
+    final res = _hub.response;
+    if (res == null) {
+      if (_hub.loading || (_firstLoad && !_hub.hasFailure)) {
+        return _plate(
+          'Finding today’s idea…',
+          'Mochi is looking for ideas.',
+          null,
+          null,
+        );
+      }
+      final offline = _hub.failure?.statusCode == null;
       return _plate(
         'Ideas didn’t load.',
         'Your answers are safe.',
@@ -109,13 +133,24 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
           label: 'Try again',
           icon: Icons.refresh_rounded,
           fontSize: 24,
-          onTap: _load,
+          onTap: () {
+            setState(() => _firstLoad = true);
+            _load();
+          },
         ),
       );
     }
-    final ideas = _ideas ?? const <Recommendation>[];
-    if (ideas.isEmpty) return _notYet();
-    return _list(ideas);
+    if (res.recommendations.isEmpty) return _notYet();
+    final only = widget.onlyLevers;
+    final ideas = only == null
+        ? _hub.visibleRecommendations
+        : [
+            for (final r in _hub.visibleRecommendations)
+              if (r.leverId != null && only.contains(r.leverId)) r,
+          ];
+    if (only != null && ideas.isEmpty) return _noneLikeThis();
+    if (_hub.visibleRecommendations.isEmpty) return _allHidden();
+    return _list(ideas, hero: only == null && _hub.deck.isNotEmpty);
   }
 
   Widget _plate(String bubble, String heading, String? body, Widget? action) =>
@@ -252,10 +287,68 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
   IconData _icon(String input) =>
       LeverCopy.of(input)?.icon ?? Icons.help_outline_rounded;
 
-  Widget _list(List<Recommendation> ideas) {
+  /// Nothing left after "Not for me" on every idea.
+  Widget _allHidden() => _plate(
+    'Hidden.',
+    'You’ve hidden today’s ideas.',
+    'Mochi will skip them.',
+    null,
+  );
+
+  /// "More ideas like this" with no idea for those levers.
+  Widget _noneLikeThis() => _plate(
+    'Not today!',
+    'No ideas like this today.',
+    'Ideas for you has the rest.',
+    null,
+  );
+
+  void _another(int deckSize) => setState(() {
+    if (_index + 1 >= deckSize) {
+      _end = true;
+    } else {
+      _index++;
+    }
+  });
+
+  /// "Not for me": hidden for today on this phone, sent as `excluded_ids` next time, and Undo.
+  void _notForMe(Recommendation idea) {
+    _hub.hide(idea.id);
+    setState(() {
+      _end = false;
+      final left = _hub.deck.length;
+      if (_index >= left) _index = 0;
+    });
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 6),
+          content: Text(
+            'Hidden. Mochi will skip it.',
+            style: LtText.body(color: LtColors.paper),
+          ),
+          action: SnackBarAction(
+            label: 'Undo',
+            textColor: LtColors.mint,
+            onPressed: () {
+              _hub.unhide(idea.id);
+              if (mounted) setState(() {});
+            },
+          ),
+        ),
+      );
+  }
+
+  Widget _list(List<Recommendation> ideas, {required bool hero}) {
     final scale = MediaQuery.textScalerOf(context).scale(1);
     final anyEffect = ideas.any((i) => effectWord(i.effect) != null);
     final training = widget.worded?.trainingLine;
+    final deck = hero ? _hub.deck : const <Recommendation>[];
+    if (_index >= deck.length) _index = 0;
+    final more = hero ? _hub.more : ideas;
+    final offline = _hub.hasFailure;
     return ExperimentPage(
       title: 'Ideas for you',
       onBack: widget.onBack,
@@ -263,7 +356,14 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (scale < 1.5) ...[
+          if (offline) ...[
+            WholeWordText(
+              'Check your connection. Showing the last ideas.',
+              style: LtText.body(weight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (!hero && scale < 1.5) ...[
             Row(
               children: [
                 _MochiHead(appearance: widget.appearance),
@@ -301,18 +401,85 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
             const SizedBox(height: 12),
           ],
           // The effect note stays on the first screen, above the first card.
-          if (anyEffect) ...[
+          if (anyEffect || hero) ...[
             WholeWordText(
               '$effectNote.',
               style: LtText.body(color: LtColors.secondary),
             ),
             const SizedBox(height: 8),
           ],
-          for (final (i, idea) in ideas.indexed) ...[
+          if (hero)
+            AnimatedSwitcher(
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? const Duration(milliseconds: 150)
+                  : const Duration(milliseconds: 280),
+              transitionBuilder: (child, anim) => FadeTransition(
+                opacity: anim,
+                child: MediaQuery.disableAnimationsOf(context)
+                    ? child
+                    : SlideTransition(
+                        position: Tween(
+                          begin: const Offset(0.12, 0),
+                          end: Offset.zero,
+                        ).animate(anim),
+                        child: child,
+                      ),
+              ),
+              layoutBuilder: (current, previous) => Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  ...previous.map(
+                    (w) => Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      child: IgnorePointer(child: w),
+                    ),
+                  ),
+                  ?current,
+                ],
+              ),
+              child: _end
+                  ? IdeasEndCard(
+                      key: const ValueKey('end'),
+                      appearance: widget.appearance,
+                      onFirst: () => setState(() {
+                        _end = false;
+                        _index = 0;
+                      }),
+                    )
+                  : IdeaHero(
+                      key: ValueKey('hero-${deck[_index].id}'),
+                      idea: deck[_index],
+                      appearance: widget.appearance,
+                      position: _index + 1,
+                      total: deck.length,
+                      onOpen: () => _openDetail(deck[_index]),
+                      onEffect: () =>
+                          showEffectSheet(context, deck[_index].effect!),
+                      onTry: deck[_index].leverId == null
+                          ? null
+                          : () => widget.onTry(deck[_index]),
+                      onAnother: deck.length > 1
+                          ? () => _another(deck.length)
+                          : null,
+                      onNotForMe: () => _notForMe(deck[_index]),
+                    ),
+            ),
+          if (hero && more.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Semantics(
+              header: true,
+              child: WholeWordText('More ideas', style: LtText.display(24)),
+            ),
+            const SizedBox(height: 10),
+          ],
+          for (final (i, idea) in more.indexed) ...[
             if (i > 0) const SizedBox(height: 14),
             IdeaCard(
               idea: idea,
-              top: i == 0,
+              appearance: hero ? widget.appearance : null,
+              top: !hero && i == 0,
               onOpen: () => _openDetail(idea),
               onEffect: () => showEffectSheet(context, idea.effect!),
               onTry: idea.leverId == null ? null : () => widget.onTry(idea),

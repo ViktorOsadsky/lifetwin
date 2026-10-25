@@ -586,6 +586,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onBand: _wellness == null ? null : () => _agentic.bandFlow(context),
           onSettings: _wellness == null ? null : () => _settings(context),
           stateLine: _stillLearning(),
+          ideas: _agentic.ideasAccess,
           // The whole card opens the plan; its own buttons (Why?, thumbs) win the tap.
           today: _wellness == null || (_profile?['age'] as num? ?? 0) < 18
               ? null

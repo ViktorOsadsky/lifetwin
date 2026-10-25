@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../experiment/ideas_hub.dart' show IdeasScope;
+import '../experiment/widgets/idea_scene.dart' show IdeasLinkRow;
 import '../twin/twin_model.dart' show extrapolationCaveat;
 import '../widgets/whole_word_text.dart';
 
@@ -471,6 +473,23 @@ Future<void> showHealthScoreSheet(BuildContext context, WellnessSnapshot snapsho
                 WholeWordText(healthScoreSheetNote, style: LtText.body()),
                 const SizedBox(height: 10),
                 WholeWordText(healthScoreSheetLinked, style: LtText.body(weight: FontWeight.w700)),
+                // A way into Ideas for you: only with today's ideas on hand (never under 18).
+                if (IdeasScope.maybeOf(context) case final access?)
+                  ListenableBuilder(
+                    listenable: access.hub,
+                    builder: (sheet, _) => (access.hub.response?.recommendations.isEmpty ?? true)
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: IdeasLinkRow(
+                              label: 'Ideas linked to a healthier score',
+                              onTap: () {
+                                Navigator.of(sheet).pop();
+                                access.openList(context, origin: 'score');
+                              },
+                            ),
+                          ),
+                  ),
                 const SizedBox(height: 16),
                 LipButton(
                   label: 'Got it',

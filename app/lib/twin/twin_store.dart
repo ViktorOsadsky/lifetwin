@@ -130,6 +130,10 @@ class TwinStore extends ChangeNotifier {
   bool get memoryConsent => _doc['memory_consent'] == true;
   bool get lifespanRevealSeen => _doc['lifespan_reveal_seen'] == true;
 
+  /// Ideas for you, kept for the day on the phone: the last good answer (`date`, `response`), the ideas
+  /// hidden today (`hidden_date`, `hidden_ids`) and the day Mochi's bubble last showed (`bubble_date`).
+  Map<String, dynamic> get ideasState => Map<String, dynamic>.from(_doc['ideas'] as Map? ?? const {});
+
   /// The person's yes to outside-AI wording, and the provider it was given for
   /// (`{provider, on}`); off when absent.
   bool get outsideAiConsent => (_doc['outside_ai_consent'] as Map?)?['on'] == true;
@@ -179,6 +183,8 @@ class TwinStore extends ChangeNotifier {
   ]);
 
   Future<void> _saveTwin(Map<String, dynamic> look) => _save('twin', look);
+
+  Future<void> _saveIdeasState(Map<String, dynamic> state) => _save('ideas', state);
 
   Future<void> _setLifespanRevealSeen() => _save('lifespan_reveal_seen', true);
 

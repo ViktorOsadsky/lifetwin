@@ -8,6 +8,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../checkin/consent_screens.dart' show TrainingLine;
 import '../checkin/consents.dart' show AiProvider;
 import '../checkin/emergency_card.dart';
+import '../experiment/ideas_hub.dart';
+import '../experiment/recommendations.dart';
+import '../experiment/widgets/ideas_turn_cards.dart';
 import '../forecast/profile_labels.dart';
 import '../health/readback.dart' show usesImperial;
 import '../ui/swoosh_route.dart';
@@ -884,6 +887,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           ),
         ],
         if (quick) ...[const SizedBox(height: 14), KeyedSubtree(key: _quickKey, child: _pad(_quickAnswers(busy)))],
+        ?_ideasCard(),
         const SizedBox(height: 8),
       ],
       controls: [
@@ -916,6 +920,39 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       ],
     );
   }
+
+  /// Ideas for you: "what should I do?" (`open_ideas`) shows today's idea; the finished intake closes with
+  /// Mochi's first ideas (adults only).
+  Widget? _ideasCard() {
+    final access = IdeasScope.maybeOf(context);
+    final turn = c.turn;
+    if (access == null || turn == null || c.emergency) return null;
+    if (c.phase == VoicePhase.done) {
+      final adult = ((c.confirmedProfile['age'] as num?) ?? 0) >= 18;
+      final ideas = _tryIdeas(turn.recommendations);
+      if (!adult || ideas.isEmpty) return null;
+      return Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: _pad(IdeasClosingCard(access: access, appearance: widget.appearance, ideas: ideas)),
+      );
+    }
+    if (turn.clientAction != 'open_ideas') return null;
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: _pad(IdeasOpenCard(access: access, appearance: widget.appearance)),
+    );
+  }
+
+  static List<Recommendation> _tryIdeas(List<Map<String, dynamic>> raw) => [
+    for (final r in raw)
+      ?(() {
+        try {
+          return Recommendation.fromJson(r);
+        } on FormatException {
+          return null;
+        }
+      })(),
+  ];
 
   Widget _speaking() => Wrap(
     crossAxisAlignment: WrapCrossAlignment.center,

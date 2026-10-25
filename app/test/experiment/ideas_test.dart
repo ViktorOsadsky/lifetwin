@@ -444,7 +444,7 @@ void main() {
         );
         await t.tap(find.text('go'));
         await t.pumpAndSettle();
-        expect(find.text('See ideas'), findsNothing);
+        expect(find.text('Ideas linked to a healthier score'), findsNothing);
         await a.ideas(t.element(find.byType(Scaffold)), origin: 'room');
         await t.pumpAndSettle();
         expect(find.byType(IdeasListScreen), findsNothing);
@@ -453,7 +453,7 @@ void main() {
     );
 
     testWidgets(
-      '18 and over: See ideas in the drivers sheet opens the list, Back to what moves it',
+      '18 and over: the drivers screen's ideas row opens the list, Back to what moves it',
       (t) async {
         final src = FakeSource([pace, sleep]);
         final a = await routes(older, source: src);
@@ -468,9 +468,9 @@ void main() {
         );
         await t.tap(find.text('go'));
         await t.pumpAndSettle();
-        await t.scrollUntilVisible(find.text('See ideas'), 200);
+        await t.scrollUntilVisible(find.text('Ideas linked to a healthier score'), 200);
         await t.pump();
-        await t.tap(find.text('See ideas'));
+        await t.tap(find.text('Ideas linked to a healthier score'));
         await t.pumpAndSettle();
         expect(find.byType(IdeasListScreen), findsOneWidget);
         expect(find.byType(IdeaCard), findsNWidgets(2));
