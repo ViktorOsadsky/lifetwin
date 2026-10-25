@@ -6,14 +6,18 @@ import pytest
 import lifetwin.onboarding  # noqa: F401  (import first: avoids a pre-existing import cycle)
 from lifetwin.core.models import HealthProfile
 from lifetwin.recommendations import levers
+from lifetwin.recommendations.ideas import IDEAS
 from lifetwin.recommendations.levers import EFFECT_NOTE, category_for_pp, effect_category
 from lifetwin.recommendations.service import suggest
+
+# Coping tricks carry no effect cue; set them aside so each lever shows its habit change.
+COPING = [idea.id for idea in IDEAS if idea.coping]
 
 SENSITIVITY = Path(__file__).resolve().parents[2] / "docs" / "model-sensitivity.json"
 
 
 def recs(**profile):
-    return {r.lever: r for r in suggest(HealthProfile(**profile), [])}
+    return {r.lever: r for r in suggest(HealthProfile(**profile), [], excluded_ids=COPING)}
 
 
 def test_smoker_65_to_79_gets_big_for_quitting():

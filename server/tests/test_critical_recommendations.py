@@ -136,8 +136,12 @@ def check_product_rules(profile):
             assert rec.experiment_lever is None and rec.experiment_target is None
         else:
             in_range = prof.age is None or 18 <= prof.age <= 85
-            assert (rec.effect in CATEGORIES) == in_range
-            assert rec.effect == effect_category(rec.lever, prof.age, prof.sex)
+            # Only the habit change itself carries the cue; a coping trick has none.
+            coping = BY_ID[rec.id].coping
+            assert (rec.effect in CATEGORIES) == (in_range and not coping)
+            assert rec.effect == (
+                None if coping else effect_category(rec.lever, prof.age, prof.sex)
+            )
     # Sleep only for people under 7 hours, never at 7 or more or when unknown.
     sleep = prof.sleep_hours
     if "short_sleep_plus_1h" in levers:
