@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatf
 import 'band/band_file_session.dart';
 
 import 'checkin/checkin_reminders.dart';
+import 'checkin/checkin_screen.dart' show ReminderOfferCard;
 import 'checkin/consents.dart' show AiProvider;
 import 'customize/customize_screen.dart';
 import 'demo/demo_seed.dart';
@@ -266,9 +267,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
 
   /// Keeps the finished conversation on the phone: memory consent, habit notes (only
   /// with consent) and the confirmed answers, each Apple Health value labelled as such.
-  Future<void> _keepConversation() async {
+  Future<TwinRepository?> _keepConversation() async {
     final state = _controller.state;
-    if (state == null) return;
+    if (state == null) return null;
     final confirmed = (state['confirmed_profile'] as Map?) ?? const {};
     final sources = {
       for (final e in _healthValues.entries)
@@ -281,8 +282,30 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       await repo.saveOnboarding(state, modelInputs: _controller.modelInputs, sources: sources);
       _saved = true;
       _syncOutlook();
-    } catch (_) {}
+      return repo;
+    } catch (e) {
+      debugPrint('Could not keep the conversation: $e');
+      return null;
+    }
   }
+
+  Future<void> _offerReminders(BuildContext context, TwinRepository repo) => showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialog) => Dialog(
+      backgroundColor: Colors.transparent,
+      child: ReminderOfferCard(
+        onNotNow: () async {
+          await repo.declineReminders();
+          if (dialog.mounted) Navigator.of(dialog).pop();
+        },
+        onYes: () async {
+          await repo.acceptReminders();
+          if (dialog.mounted) Navigator.of(dialog).pop();
+        },
+      ),
+    ),
+  );
 
   @override
   void dispose() {
@@ -298,9 +321,18 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     super.dispose();
   }
 
+  /// Set once onboarding is saved and the reminder offer is still due; shown on the first return to the Room.
+  (BuildContext, TwinRepository)? _reminderOffer;
+
   void _toRoom(BuildContext context) {
     Navigator.of(context).popUntil((r) => r.isFirst);
     _syncOutlook();
+    final offer = _reminderOffer;
+    if (offer == null) return;
+    _reminderOffer = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && offer.$1.mounted && offer.$2.shouldOfferReminders) _offerReminders(offer.$1, offer.$2);
+    });
   }
 
   /// The conversation, swooshing up from the Room.
@@ -314,7 +346,13 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       onUploadDocument: () => _documents(talkContext),
       onDone: (profile) {
         // The reveal waits for the save, so it sees the new answers.
-        _ceremony(talkContext, fromTalk: true, saved: _keepConversation());
+        final saved = _keepConversation();
+        _ceremony(talkContext, fromTalk: true, saved: saved);
+        // Then the one-time reminder offer: after the reveal, when the person is back on the Room.
+        // Not offered again after the first check-in once it has been answered.
+        saved.then((repo) {
+          if (repo != null && repo.shouldOfferReminders) _reminderOffer = (context, repo);
+        }).ignore();
       },
     ),
   );

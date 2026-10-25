@@ -289,6 +289,9 @@ class VoiceOnboardingController extends ChangeNotifier {
   // ---- talking -----------------------------------------------------------
 
   /// Opens the microphone. Pressing Talk while the mascot speaks stops the mascot first.
+  /// The microphone is still opening (permission or connecting): a release now is not "send".
+  bool get micStarting => _starting != null;
+
   Future<void> startTalk() {
     // Ignore a second press while we are already starting, listening or waiting.
     if (_starting != null) return _starting!;

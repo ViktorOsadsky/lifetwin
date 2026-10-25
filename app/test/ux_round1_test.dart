@@ -345,7 +345,7 @@ void main() {
       expect(r.c.phase, VoicePhase.idle);
       expect(find.text('Speaking…'), findsNothing);
       expect(find.text('Hear it again'), findsOneWidget);
-      expect(talkLabel(t), 'Tap to talk');
+      expect(talkLabel(t), 'Talk or type');
     });
   });
 
@@ -493,7 +493,7 @@ void main() {
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await t.pumpAndSettle();
-      expect(find.text('Tap to talk'), findsOneWidget);
+      expect(find.text('Talk or type'), findsOneWidget);
       await tapTalk(t);
       expect(r.c.phase, VoicePhase.listening);
       await r.c.cancelTalk(); // stops the listening clock before the test ends
@@ -541,7 +541,7 @@ void main() {
       final r = Rig();
       await r.pump(t);
       await r.start(t, voice: true);
-      expect(talkLabel(t), 'Tap to talk');
+      expect(talkLabel(t), 'Talk or type');
       expect(semanticsValue(t), 'Not listening');
       expect(find.byType(RecordingDot), findsNothing);
 
