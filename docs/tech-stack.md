@@ -64,7 +64,7 @@ retrieval; no durable health-data storage is introduced.
 | Layer | Proposed default | Purpose and boundary |
 | --- | --- | --- |
 | Backend deploy | **Supabase Edge Functions**, TypeScript/Deno | Hosted stateless API with backend-only Vault credentials and shared provider budgets. The Docker/FastAPI implementation remains a local reference. Server prediction is deferred on Edge; Flutter retains its existing model. [Deployment guide](../supabase/functions/lifetwin-api/README.md). |
-| App delivery | **Local iPhone/simulator first**, TestFlight later if needed | Follow [ios-testing.md](ios-testing.md). Backend gets a deployed URL. Whether a public Flutter web demo is required remains open in [prd-reconciliation.md](prd-reconciliation.md). |
+| App delivery | **iPhone/simulator and public Flutter web demo on Vercel**, TestFlight later if needed | Owner selected Vercel through MCP Bridge on October 25. The compiled release is live at [lifetwin-tau.vercel.app](https://lifetwin-tau.vercel.app); Supabase permits that exact HTTPS origin. Web PDF input, PCM voice playback, Apple Health, persistent protected storage and scheduled reminders remain incomplete. See the [deployment handoff](handoffs/flutter-web-investigation.md) and [iOS testing guide](ios-testing.md). |
 | Flutter checks | **`dart format`, `flutter analyze`, `flutter test`, `integration_test`** | Meaningful conversation/game-state tests, API parsing and actual rendered device review. Test the Lottie export on device before asset production. |
 | Python checks | **pytest, HTTPX test client, Ruff**, contract checker | Validation/error paths, deterministic model adapter, scan budget/directions, grounded output and extraction fixtures. |
 | CI and source control | **GitHub Actions + PR merges** | Run applicable Flutter/Python/contracts checks when implementations exist; keep provider-backed tests opt-in. GitGuardian currently checks this docs PR but does not replace app tests. |
@@ -77,7 +77,7 @@ Expected backend configuration: `OPENAI_API_KEY`, `OPENAI_MODEL`, `TAVILY_API_KE
 - Validate the existing Cartesia voice path on device, including interruption, fallback and older-adult usability; preserve shared confirmation semantics.
 - Exact LLM model ID based on actual account access and a short evaluation; provider proposal is OpenAI, not an established integration.
 - Choose and integrate the serving boundary deliberately: current server DeepSurv and on-device Cox have distinct versions, feature sets and population/support rules; no UI promise may exceed the selected model.
-- Public app URL versus phone-only demo, and owners/access/budget for proposed external services.
+- Define browser feature parity beyond the deployed Vercel demo: PDF input, voice playback, native-only imports, storage and reminders; keep existing owners and explicit unavailable states.
 
 Everything else above is a default agents can implement against. Revise the relevant schema/docs in a PR when evidence warrants a change; do not introduce competing packages for the same responsibility without a reason.
 
