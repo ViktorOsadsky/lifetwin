@@ -34,19 +34,35 @@ abstract final class HistoryKind {
 /// changed its inputs. Appended on the phone, never edited. [score] is null when the model
 /// gave no number ([status] says why).
 class HealthScorePoint {
-  const HealthScorePoint({required this.at, required this.score, required this.status, required this.modelVersion});
+  const HealthScorePoint({
+    required this.at,
+    required this.score,
+    required this.status,
+    required this.modelVersion,
+    this.ageGroupPercentile,
+    this.ageGroupSize,
+    this.ageGroupBand,
+  });
 
   factory HealthScorePoint.fromJson(Map<String, dynamic> j) => HealthScorePoint(
     at: DateTime.tryParse('${j['at']}') ?? DateTime.fromMillisecondsSinceEpoch(0),
     score: (j['score'] as num?)?.toDouble(),
     status: HealthScoreStatus.fromWire(j['status']),
     modelVersion: '${j['model_version'] ?? ''}',
+    ageGroupPercentile: (j['age_group_percentile'] as num?)?.toDouble(),
+    ageGroupSize: j['age_group_size'] as int?,
+    ageGroupBand: j['age_group_band'] as String?,
   );
 
   final DateTime at;
   final double? score;
   final HealthScoreStatus status;
   final String modelVersion;
+
+  /// The age-group statistic at that time (null with no score).
+  final double? ageGroupPercentile;
+  final int? ageGroupSize;
+  final String? ageGroupBand;
 
   /// The local date, YYYY-MM-DD.
   String get date => isoDate(at);
@@ -57,6 +73,9 @@ class HealthScorePoint {
     'score': score,
     'status': status.wire,
     'model_version': modelVersion,
+    if (ageGroupPercentile != null) 'age_group_percentile': ageGroupPercentile,
+    if (ageGroupSize != null) 'age_group_size': ageGroupSize,
+    if (ageGroupBand != null) 'age_group_band': ageGroupBand,
   };
 }
 

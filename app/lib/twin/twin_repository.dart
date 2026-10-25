@@ -98,6 +98,14 @@ class TwinRepository extends ChangeNotifier {
   /// unless the model gave a number; see [healthScoreStatus].
   double? get healthScore => _current?.healthScore;
 
+  /// Healthier than this share (0–100) of people like you in the survey (same sex, nearby
+  /// ages); see [TwinAssessment.ageGroupPercentile]. Null when there is no score.
+  double? get ageGroupPercentile => _current?.ageGroupPercentile;
+  int? get ageGroupSize => _current?.ageGroupSize;
+  String? get ageGroupBand => _current?.ageGroupBand;
+  int? get ageGroupWidth => _current?.ageGroupWidth;
+  bool? get ageGroupNearestBand => _current?.ageGroupNearestBand;
+
   /// Why [healthScore] has or lacks a number; null before a profile.
   HealthScoreStatus? get healthScoreStatus => _current?.healthScoreStatus;
 
@@ -618,6 +626,9 @@ class TwinRepository extends ChangeNotifier {
       at: _clock(),
       score: a.healthScore,
       status: a.healthScoreStatus,
+      ageGroupPercentile: a.ageGroupPercentile,
+      ageGroupSize: a.ageGroupSize,
+      ageGroupBand: a.ageGroupBand,
       modelVersion: a.modelVersion.isEmpty ? model.modelVersion : a.modelVersion,
     ),
   );

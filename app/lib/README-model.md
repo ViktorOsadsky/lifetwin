@@ -20,11 +20,11 @@ This folder (`lib/twin/`) is the data and logic layer behind the forecast, "expe
 - Never show a death date, an age at death or years gained.
 - Nothing is filled in. A missing answer is never replaced by a typical or healthy value. The "We assumed" section is gone.
 
-## Ages 30–34 and 80–85 (extrapolated)
+## Ages 18–34 and 80–85 (extrapolated)
 
-Owner ruling: "it is okay to extrapolate a bit below and above the age ranges". The package itself supports only ages 35–79, and its files are not edited. `TwinModelService` (`twin_model.dart`) wraps it for these two bands:
+Owner ruling: "it is okay to extrapolate a bit below and above the age ranges"; a later ruling took the low end down to 18. The package itself supports only ages 35–79, and its files are not edited. `TwinModelService` (`twin_model.dart`) wraps it for these two bands (18–34 and 80–85):
 
-1. **Run the package at the nearest checked age.** For an age of 30–34 the package runs at 35; for 80–85 it runs at 79. So every other check still applies unchanged: missing inputs, entry ranges, the 1st–99th percentile support, and the nearest-neighbour support.
+1. **Run the package at the nearest checked age.** For an age of 18–34 the package runs at 35; for 80–85 it runs at 79. So every other check still applies unchanged: missing inputs, entry ranges, the 1st–99th percentile support, and the nearest-neighbour support.
 2. **Move only the age term to the real age**, using the model's own coefficient: `score += coefficient[age_decade] × (age − anchor) / 10`, then `S(t) = baseline(t)^exp(score)`.
 3. **The age is never clamped.** An 84-year-old gets lower survival than the same profile at 79. A test checks the formula against the package inside 35–79.
 
@@ -34,7 +34,7 @@ What the UI sees for these ages:
 - Show `extrapolationCaveat` with any number: "Your age is outside the ages this model was checked on (35–79), so treat this as a rough guide." The forecast screen and Why? already do.
 - `profile_used.age` is the person's real age.
 
-Under 30 or over 85 there is no number: `unsupported_age` with "Annual estimates support ages 30–85 only." The wellness cards don't change, because the package's guidance only changes at ages 18, 61 and 65, which neither anchor crosses.
+The age term is linear: the package encodes `age_decade = (age − 55) / 10` (checked in a test), so the move is exact for any age. Over 85 there is no number: `unsupported_age` with "Annual estimates support ages 18–85 only." Under 18 there is no number either: `under_age` with "LifeTwin estimates are for adults, ages 18 and over." (the app is 18+ for medical features). `Forecast`, `ExperimentResult` and the health score all go through `TwinModelService`, so they agree; the package's own `assess()`/`compare()` still say 35–79. The wellness cards don't change, because the package's guidance only changes at ages 18, 61 and 65, which neither anchor crosses.
 
 ## Health score
 
@@ -43,11 +43,21 @@ The app's health score is the model owner's own number: `log_relative_hazard_sco
 | API | Meaning |
 |---|---|
 | `TwinAssessment.healthScore` / `TwinRepository.healthScore` | `double?`; null unless the model gave a number. Never filled with defaults |
-| `healthScoreStatus` (`HealthScoreStatus?`) | `available`, `extrapolated`, `missingInputs`, `unsupportedAge`, `unsupportedProfile` (and the app's own `invalidInput`); null on the repository before a profile |
+| `healthScoreStatus` (`HealthScoreStatus?`) | `available`, `extrapolated`, `missingInputs`, `unsupportedAge`, `unsupportedProfile`, `underAge` (under 18) and the app's own `invalidInput`; null on the repository before a profile |
 | `healthScoreMessage` | The model's message when there is no number |
 | `healthScoreHistory({from, to})` | `List<HealthScorePoint>` oldest first: `(at, date, score, status, modelVersion)` |
 
-Availability: same as the forecast. Ages 35–79 are `available`; 30–34 and 80–85 are `extrapolated` and carry the same extrapolated score the forecast uses (the age term moved to the real age, see above), so show `extrapolationCaveat`. Missing inputs, ages under 30 or over 85, and unsupported profiles give null with the matching status.
+Availability: same as the forecast. Ages 35–79 are `available`; 18–34 and 80–85 are `extrapolated` and carry the same extrapolated score the forecast uses (the age term moved to the real age, see above), so show `extrapolationCaveat`. Missing inputs, ages under 18 (`underAge`) or over 85, and unsupported profiles give null with the matching status.
+
+### Age-group percentile ("people like you in the survey")
+
+Added beside the score; the score itself is unchanged. `ageGroupPercentile` (0–100) is the share of the package's reference people of the same sex and age band whose score is **higher (worse)** than the person's, so 70 means "healthier than 70 of 100 people like you in the survey", per the model. Also `ageGroupSize` (people compared), `ageGroupBand` (e.g. `40–50`), `ageGroupWidth` (half-width, 5, 7 or 10) and `ageGroupNearestBand` (true for ages outside 35–79). All are on `TwinAssessment` and `TwinRepository`; all are null when there is no score.
+
+- **Reference:** `assets/support_reference.f64.gz`, 2000 survey participants × 17 encoded features in the order of `encoded_features`, ages 35–79, unweighted NHANES training participants. It is not a national population, so the copy should say "people like you in the survey", never "people your age" without that.
+- **Scoring:** each reference row and the person use Σ(x − centre) × coefficient **without the `age_decade` and `female` terms**, which removes leftover age differences inside the band. The person's value is the displayed score minus those two terms (their real age, also when extrapolated).
+- **Band:** age ±5, same sex; fewer than 50 people widens to ±7, then ±10 (the width is reported). Outside 35–79 the nearest band inside it is used (35–45 below, ±w inside 35–79 above) and `ageGroupNearestBand` is true.
+- **Sizes seen** at ±5 for ages 20, 35, 45, 55, 65, 75, 79, 85 (men / women): 281/290, 169/148, 259/295, 235/268, 263/259, 175/151, 90/77, 194/167. No band needed widening.
+- Each `HealthScorePoint` also carries `ageGroupPercentile`, `ageGroupSize` and `ageGroupBand`.
 
 History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it.
 
@@ -282,7 +292,7 @@ Levers only move the way guidance points. Less exercise, more sitting, and weigh
 - `missingInputs`, `supportIssues`
 - `interpretation`
 - `causalInterpretation`: always false
-- `extrapolated` / `caveat`: age 30–34 or 80–85; show the caveat with any number
+- `extrapolated` / `caveat`: age 18–34 or 80–85; show the caveat with any number
 - `title`
 
 **Rules:**

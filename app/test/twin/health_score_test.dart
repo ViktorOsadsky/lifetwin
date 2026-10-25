@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/twin/twin_model.dart';
@@ -37,8 +38,8 @@ void main() {
     expect(a.message, isNotEmpty);
   });
 
-  test('under 30 and over 85 are unsupported_age', () {
-    for (final age in [29, 86]) {
+  test('over 85 is unsupported_age', () {
+    for (final age in [86]) {
       final a = model.assessModel({...g(0), 'age': age});
       expect(a.healthScore, isNull);
       expect(a.healthScoreStatus, HealthScoreStatus.unsupportedAge);
@@ -64,6 +65,160 @@ void main() {
     final older = model.assessModel({...g(0), 'age': 34}).healthScore!;
     expect(older, lessThan(anchor)); // a year younger: lower modelled risk
     expect(model.assessModel({...g(0), 'age': 79}).healthScoreStatus, HealthScoreStatus.available);
+  });
+
+  test('under 18 is under_age with no number; 18-29 are extrapolated', () {
+    final young = model.assessModel({...g(0), 'age': 17});
+    expect(young.healthScore, isNull);
+    expect(young.healthScoreStatus, HealthScoreStatus.underAge);
+    expect(young.message, underAgeMessage);
+    expect(young.ageGroupPercentile, isNull);
+    for (final age in [18, 22, 29]) {
+      final a = model.assessModel({...g(0), 'age': age});
+      expect(a.healthScoreStatus, HealthScoreStatus.extrapolated, reason: 'age $age');
+      expect(a.healthScore, isNotNull);
+    }
+  });
+
+  test('the extrapolated score is the 35-year-old score plus the model\'s linear age term', () {
+    final coef = ((model.engine.model.spec['coefficients'] as List).first as num).toDouble();
+    final at35 = model.assessModel({...g(0), 'age': 35}).healthScore!;
+    expect(model.assessModel({...g(0), 'age': 18}).healthScore, closeTo(at35 + coef * (18 - 35) / 10, 1e-12));
+    // age_decade = (age - 55) / 10 is what the package encodes inside 35-79
+    expect(model.assessModel({...g(0), 'age': 45}).healthScore! - at35, closeTo(coef * 1.0, 1e-12));
+  });
+
+  group('age-group percentile', () {
+    final spec = <String, dynamic>{};
+    late List<double> coef, centre;
+    setUpAll(() {
+      spec.addAll(model.engine.model.spec);
+      coef = [for (final c in spec['coefficients'] as List) (c as num).toDouble()];
+      centre = [for (final c in spec['feature_center'] as List) (c as num).toDouble()];
+    });
+
+    /// Rows sit at the centre except the sedentary feature (column 7) = [sed]; age and sex per row.
+    AgeGroupReference reference(List<({double age, bool female, double sed})> rows) {
+      final data = Float64List(rows.length * 17);
+      for (var r = 0; r < rows.length; r++) {
+        for (var i = 0; i < 17; i++) {
+          data[r * 17 + i] = centre[i];
+        }
+        data[r * 17] = (rows[r].age - 55) / 10;
+        data[r * 17 + 8] = rows[r].female ? 1 : 0;
+        data[r * 17 + 7] = rows[r].sed;
+      }
+      return AgeGroupReference(data, coef, centre);
+    }
+
+    /// The model score of a person with sedentary feature [sed] (all else at the centre).
+    double scoreOf(double sed, num age, bool female) =>
+        (sed - centre[7]) * coef[7] +
+        ((age - 55) / 10 - centre[0]) * coef[0] +
+        ((female ? 1 : 0) - centre[8]) * coef[8];
+
+    final rows = [
+      for (var k = 0; k < 60; k++) (age: 45.0, female: false, sed: k / 10), // the band: 60 men aged 45
+      for (var k = 0; k < 40; k++) (age: 45.0, female: true, sed: k / 10 - 9), // women: never compared with men
+      for (var k = 0; k < 40; k++) (age: 70.0, female: false, sed: k / 10 - 9), // men aged 70: outside 40-50
+    ];
+    late AgeGroupReference ref;
+    setUp(() => ref = reference(rows));
+
+    test('hand-computed band: 29 of the 60 men aged 40-50 score higher', () {
+      // The person's sedentary feature is 3.05; rows k = 31..59 (3.1 .. 5.9) are higher (worse).
+      final r = ref.compare(score: scoreOf(3.05, 45, false), age: 45, female: false);
+      expect(r.size, 60);
+      expect(r.percentile, closeTo(100 * 29 / 60, 1e-9));
+      expect((r.bandLow, r.bandHigh, r.width, r.nearestBand), (40, 50, 5, false));
+    });
+
+    test('only the same sex is compared', () {
+      expect(ref.count(female: false, low: 40, high: 50), 60);
+      expect(ref.count(female: true, low: 40, high: 50), 40);
+      final f = ref.compare(score: scoreOf(-7.05, 45, true), age: 45, female: true);
+      expect(f.size, 40);
+      expect(f.percentile, closeTo(100 * 20 / 40, 1e-9)); // women k = 20..39 are higher than -7.05
+    });
+
+    test('edges: nobody worse is 100, nobody better is 0; monotonic in between', () {
+      expect(ref.compare(score: scoreOf(-5, 45, false), age: 45, female: false).percentile, 100);
+      expect(ref.compare(score: scoreOf(99, 45, false), age: 45, female: false).percentile, 0);
+      var last = 101.0;
+      for (final sed in [-1.0, 0.0, 1.0, 2.5, 4.0, 6.0]) {
+        final p = ref.compare(score: scoreOf(sed, 45, false), age: 45, female: false).percentile;
+        expect(p, lessThanOrEqualTo(last));
+        last = p;
+      }
+    });
+
+    test('once age is excluded, the person\'s age inside the band does not matter', () {
+      final a = ref.compare(score: scoreOf(3.05, 41, false), age: 41, female: false);
+      final b = ref.compare(score: scoreOf(3.05, 49, false), age: 49, female: false);
+      expect(scoreOf(3.05, 41, false), isNot(scoreOf(3.05, 49, false)));
+      expect(a.percentile, b.percentile);
+      expect(a.size, b.size);
+    });
+
+    test('fewer than 50 people widens the band to 7, then 10, and reports the width', () {
+      final few = reference([
+        for (var k = 0; k < 20; k++) (age: 45.0, female: false, sed: k / 10),
+        for (var k = 0; k < 20; k++) (age: 51.5, female: false, sed: k / 10), // only inside +-7
+        for (var k = 0; k < 20; k++) (age: 54.0, female: false, sed: k / 10), // only inside +-10
+      ]);
+      final r5 = few.compare(score: scoreOf(1, 45, false), age: 45, female: false);
+      expect(r5.width, 10); // 20 at +-5, 40 at +-7, 60 at +-10
+      expect(r5.size, 60);
+      expect((r5.bandLow, r5.bandHigh), (35, 55));
+      final r7 = reference([
+        for (var k = 0; k < 20; k++) (age: 45.0, female: false, sed: k / 10),
+        for (var k = 0; k < 40; k++) (age: 51.5, female: false, sed: k / 10),
+      ]).compare(score: scoreOf(1, 45, false), age: 45, female: false);
+      expect((r7.width, r7.size), (7, 60));
+    });
+
+    test('outside 35-79 the nearest band inside it is used and marked', () {
+      final young = ref.compare(score: scoreOf(3.05, 20, false), age: 20, female: false);
+      expect(young.nearestBand, isTrue);
+      expect((young.bandLow, young.bandHigh), (35, 45));
+      final old = ref.compare(score: scoreOf(3.05, 83, false), age: 83, female: false);
+      expect(old.nearestBand, isTrue);
+      // Too few people near 79 in this set, so it widens to +-10, still inside 35-79.
+      expect((old.bandLow, old.bandHigh, old.width), (59, 79, 10));
+      expect(ref.compare(score: 0, age: 79, female: false).nearestBand, isFalse);
+    });
+
+    test('with the real reference: better profile, higher percentile; marked and null correctly', () {
+      final good = model.assessModel({...g(0), 'sedentary_min_day': 120, 'vigorous_recreation_min_week': 300});
+      final base = model.assessModel(g(0));
+      final bad = model.assessModel({...g(0), 'smoking_status': 2, 'diabetes_diagnosed': 1, 'general_health': 5});
+      expect(good.ageGroupPercentile!, greaterThan(base.ageGroupPercentile!));
+      expect(base.ageGroupPercentile!, greaterThan(bad.ageGroupPercentile!));
+      expect(base.ageGroupPercentile, inInclusiveRange(0, 100));
+      expect(base.ageGroupBand, '40–50');
+      expect(base.ageGroupSize, greaterThanOrEqualTo(50));
+      expect(base.ageGroupNearestBand, isFalse);
+      // The score itself is untouched.
+      expect(base.healthScore, model.engine.model.predict(g(0))['log_relative_hazard_score']);
+      final young = model.assessModel({...g(0), 'age': 25});
+      expect(young.ageGroupNearestBand, isTrue);
+      expect(young.ageGroupBand, '35–45');
+      expect(model.assessModel({...g(0), 'age': 17}).ageGroupPercentile, isNull);
+      expect(model.assessModel({...g(0)}..remove('bmi')).ageGroupPercentile, isNull);
+      expect(model.assessModel({...g(0), 'age': 90}).ageGroupSize, isNull);
+    });
+
+    test('band sizes per sex and decade (reported)', () {
+      final out = <String>[];
+      for (final female in [false, true]) {
+        for (final age in [20, 35, 45, 55, 65, 75, 79, 85]) {
+          final a = model.assessModel({...g(0), 'age': age, 'sex_nhanes': female ? 2 : 1});
+          out.add('${female ? 'F' : 'M'}$age:${a.ageGroupSize}(±${a.ageGroupWidth})');
+        }
+      }
+      // ignore: avoid_print
+      print(out.join(' '));
+    });
   });
 
   group('repository', () {
@@ -92,6 +247,9 @@ void main() {
       expect(first.single.score, repo.healthScore);
       expect(first.single.status, HealthScoreStatus.available);
       expect(first.single.modelVersion, model.modelVersion);
+      expect(first.single.ageGroupPercentile, repo.ageGroupPercentile);
+      expect(first.single.ageGroupPercentile, isNotNull);
+      expect(first.single.ageGroupSize, repo.ageGroupSize);
       expect(first.single.date, '2026-10-26');
 
       // A daily check-in is history only: it feeds nothing.
@@ -123,7 +281,7 @@ void main() {
 
     test('an import records a point, an unsupported age records its status with no number', () async {
       final repo = await repoOn(MemoryBackend());
-      await repo.saveConversationProfile({...fullProfile, 'age': 29});
+      await repo.saveConversationProfile({...fullProfile, 'age': 86});
       expect(repo.healthScoreHistory().single.score, isNull);
       expect(repo.healthScoreHistory().single.status, HealthScoreStatus.unsupportedAge);
       await repo.recordHealthImport({'sleep_hours': 7});

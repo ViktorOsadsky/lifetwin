@@ -1,6 +1,8 @@
+import 'dart:io' show gzip;
 import 'dart:math' as math;
+import 'dart:typed_data';
 
-import 'package:flutter/services.dart' show AssetBundle;
+import 'package:flutter/services.dart' show AssetBundle, rootBundle;
 import 'package:lifetwin_on_device/lifetwin_on_device.dart';
 
 import 'profile_mapping.dart';
@@ -24,7 +26,7 @@ class TwinAssessment {
   /// The model input the package refused, by its package name, when it could be told.
   final String? invalidInput;
 
-  /// `available`, `missing_inputs`, `unsupported_age`, `unsupported_profile`, or the
+  /// `available`, `missing_inputs`, `unsupported_age`, `under_age`, `unsupported_profile`, or the
   /// app's own `invalid_input`.
   String get status => survival['status'] as String? ?? 'invalid_input';
   bool get available => status == 'available';
@@ -55,12 +57,12 @@ class TwinAssessment {
   List<String> get strengths => [for (final s in avatar['strengths'] as List? ?? const []) '$s'];
   List<String> get opportunities => [for (final s in avatar['opportunities'] as List? ?? const []) '$s'];
 
-  /// The age is 30–34 or 80–85, outside the ages the model was checked on; numbers are a
+  /// The age is 18–34 or 80–85, outside the ages the model was checked on; numbers are a
   /// rough guide and carry [extrapolationCaveat].
   bool get extrapolated => raw['extrapolated'] == true;
 
   /// The model owner's own number, `log_relative_hazard_score`, exactly as the model
-  /// gives it (for ages 30–34 and 80–85, the same extrapolated score the forecast uses).
+  /// gives it (for ages 18–34 and 80–85, the same extrapolated score the forecast uses).
   /// Lower is lower modelled risk, 0 is the average survey participant, and it includes
   /// the age and sex terms. Null unless the model gave a number; never filled in.
   double? get healthScore {
@@ -72,9 +74,32 @@ class TwinAssessment {
     'available' => extrapolated ? HealthScoreStatus.extrapolated : HealthScoreStatus.available,
     'missing_inputs' => HealthScoreStatus.missingInputs,
     'unsupported_age' => HealthScoreStatus.unsupportedAge,
+    'under_age' => HealthScoreStatus.underAge,
     'unsupported_profile' => HealthScoreStatus.unsupportedProfile,
     _ => HealthScoreStatus.invalidInput,
   };
+
+  /// How healthy the person is relative to people like them in the survey: the share
+  /// (0–100) of the package's reference people of the same sex and age band whose score is
+  /// HIGHER (worse), both scored without the age and sex terms. 70 means "healthier than 70
+  /// of 100 people like you in the survey". The reference is unweighted survey
+  /// participants, not a national population. Null when there is no [healthScore].
+  double? get ageGroupPercentile => (raw['age_group'] as Map?)?['percentile'] as double?;
+
+  /// The number of reference people compared.
+  int? get ageGroupSize => (raw['age_group'] as Map?)?['size'] as int?;
+
+  /// The reference ages compared, e.g. `40–50`.
+  String? get ageGroupBand {
+    final g = raw['age_group'] as Map?;
+    return g == null ? null : '${g['band_low']}–${g['band_high']}';
+  }
+
+  /// The half-width used: 5, widened to 7 then 10 when fewer than 50 people fit.
+  int? get ageGroupWidth => (raw['age_group'] as Map?)?['width'] as int?;
+
+  /// True when the age is outside 35–79 and the nearest band inside it was used.
+  bool? get ageGroupNearestBand => (raw['age_group'] as Map?)?['nearest_band'] as bool?;
 
   /// `steady`, `explore_changes` or `needs_input`.
   String get wellnessState => avatar['wellness_state'] as String? ?? 'needs_input';
@@ -99,13 +124,14 @@ class TwinAssessment {
 }
 
 /// Why the health score has, or lacks, a number. `extrapolated` has a number (age 30–34
-/// or 80–85, a rough guide); the others have none. `invalidInput` is the app's own status
+/// or 80–85, a rough guide); the others have none. `underAge` is under 18. `invalidInput` is the app's own status
 /// for a value the package refused.
 enum HealthScoreStatus {
   available('available'),
   extrapolated('extrapolated'),
   missingInputs('missing_inputs'),
   unsupportedAge('unsupported_age'),
+  underAge('under_age'),
   unsupportedProfile('unsupported_profile'),
   invalidInput('invalid_input');
 
@@ -116,8 +142,7 @@ enum HealthScoreStatus {
 
   bool get hasScore => this == available || this == extrapolated;
 
-  static HealthScoreStatus fromWire(Object? v) =>
-      values.firstWhere((s) => s.wire == v, orElse: () => invalidInput);
+  static HealthScoreStatus fromWire(Object? v) => values.firstWhere((s) => s.wire == v, orElse: () => invalidInput);
 }
 
 /// A public-health guidance card from the package, shown beside the twin with its
@@ -150,14 +175,16 @@ class WellnessCard {
 }
 
 /// Owner ruling: "it is okay to extrapolate a bit below and above the age ranges".
-const extrapolatedAgeRange = (low: 30, high: 85);
+const extrapolatedAgeRange = (low: 18, high: 85);
 const checkedAgeRange = (low: 35, high: 79);
 const extrapolationCaveat =
     'Your age is outside the ages this model was checked on (35–79), so treat this as a rough guide.';
-const unsupportedAgeMessage = 'Annual estimates support ages 30–85 only.';
+const unsupportedAgeMessage = 'Annual estimates support ages 18–85 only.';
+const underAgeMessage = 'LifeTwin estimates are for adults, ages 18 and over.';
+const underAge = 18;
 
 /// The checked age the package is run at for an extrapolated [age]; null when [age] needs
-/// no extrapolation (inside 35–79, outside 30–85, or not a number).
+/// no extrapolation (inside 35–79, outside 18–85, or not a number).
 num? anchorAge(Object? age) {
   if (age is! num) return null;
   if (age >= extrapolatedAgeRange.low && age < checkedAgeRange.low) return checkedAgeRange.low;
@@ -167,7 +194,7 @@ num? anchorAge(Object? age) {
 
 /// The model, loaded once at startup, and the one place the app calls it.
 ///
-/// Ages 30–34 and 80–85 (owner ruling) go through a narrow wrapper around the copied
+/// Ages 18–34 and 80–85 (owner ruling) go through a narrow wrapper around the copied
 /// package, which itself accepts only 35–79. The package runs at the nearest checked age
 /// (35 or 79), so every other check (missing inputs, entry ranges, the 1st–99th percentile
 /// support and the nearest-neighbour support) still applies unchanged. Then only the age
@@ -175,8 +202,15 @@ num? anchorAge(Object? age) {
 /// `score += coefficient[age_decade] * (age - anchor) / 10`, `S(t) = baseline(t)^exp(score)`.
 /// The age is not clamped, so an 84-year-old is not shown a 79-year-old's survival.
 class TwinModelService {
-  TwinModelService(this.engine)
-    : _ageCoefficient = ((engine.model.spec['coefficients'] as List).first as num).toDouble(),
+  TwinModelService(this.engine, {Float64List? reference})
+    : _ageGroups = reference == null
+          ? null
+          : AgeGroupReference(
+              reference,
+              [for (final c in engine.model.spec['coefficients'] as List) (c as num).toDouble()],
+              [for (final c in engine.model.spec['feature_center'] as List) (c as num).toDouble()],
+            ),
+      _ageCoefficient = ((engine.model.spec['coefficients'] as List).first as num).toDouble(),
       _baseline = [for (final b in engine.model.spec['baseline_survival'] as List) (b as num).toDouble()],
       _horizons = [for (final h in engine.model.spec['horizons_years'] as List) '$h'] {
     if ((engine.model.spec['encoded_features'] as List).first != 'age_decade') {
@@ -185,12 +219,23 @@ class TwinModelService {
   }
 
   final LifeTwinEngine engine;
+  final AgeGroupReference? _ageGroups;
   final double _ageCoefficient;
   final List<double> _baseline;
   final List<String> _horizons;
 
-  static Future<TwinModelService> load({AssetBundle? bundle}) async =>
-      TwinModelService(LifeTwinEngine(await loadLifeTwinModel(bundle: bundle)));
+  static Future<TwinModelService> load({AssetBundle? bundle}) async {
+    final assets = bundle ?? rootBundle;
+    final engine = LifeTwinEngine(await loadLifeTwinModel(bundle: bundle));
+    final data = await assets.load('packages/lifetwin_on_device/assets/support_reference.f64.gz');
+    final bytes = Uint8List.fromList(gzip.decode(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)));
+    final reference = Float64List(bytes.lengthInBytes ~/ 8);
+    final view = ByteData.sublistView(bytes);
+    for (var i = 0; i < reference.length; i++) {
+      reference[i] = view.getFloat64(i * 8, Endian.little);
+    }
+    return TwinModelService(engine, reference: reference);
+  }
 
   String get modelVersion => engine.model.spec['model_version'] as String;
 
@@ -214,14 +259,19 @@ class TwinModelService {
     if (asOf != null) request['as_of_date'] = isoDate(asOf);
     try {
       final raw = engine.assess(request);
-      if (anchor == null) return TwinAssessment({...raw, 'survival': _ageMessage(raw['survival'] as Map)});
+      if (anchor == null) {
+        final survival = _ageMessage(raw['survival'] as Map, age);
+        return TwinAssessment({...raw, 'survival': survival, ..._ageGroup(survival, modelProfile)});
+      }
       // The guidance cards change only at ages 18, 61 and 65, which no anchor crosses.
+      final survival = _moveAge(raw['survival'] as Map, from: anchor, to: age as num);
       return TwinAssessment({
         ...raw,
         'profile_used': {...raw['profile_used'] as Map<String, dynamic>, 'age': age},
-        'survival': _moveAge(raw['survival'] as Map, from: anchor, to: age as num),
+        'survival': survival,
         'extrapolated': true,
         'extrapolation_caveat': extrapolationCaveat,
+        ..._ageGroup(survival, modelProfile),
       });
     } on FormatException catch (e) {
       return invalidAssessment(e);
@@ -239,13 +289,17 @@ class TwinModelService {
       'alternative_profile': b == null ? alternative : {...alternative, 'age': b},
     });
     if (a == null && b == null) {
-      return {...c, 'current': _ageMessage(c['current'] as Map), 'alternative': _ageMessage(c['alternative'] as Map)};
+      return {
+        ...c,
+        'current': _ageMessage(c['current'] as Map, current['age']),
+        'alternative': _ageMessage(c['alternative'] as Map, alternative['age']),
+      };
     }
     final first = a == null
-        ? _ageMessage(c['current'] as Map)
+        ? _ageMessage(c['current'] as Map, current['age'])
         : _moveAge(c['current'] as Map, from: a, to: current['age'] as num);
     final second = b == null
-        ? _ageMessage(c['alternative'] as Map)
+        ? _ageMessage(c['alternative'] as Map, alternative['age'])
         : _moveAge(c['alternative'] as Map, from: b, to: alternative['age'] as num);
     Map<String, double>? difference;
     if (first['status'] == 'available' && second['status'] == 'available') {
@@ -267,11 +321,27 @@ class TwinModelService {
     };
   }
 
-  /// The app supports 30–85, so its own message replaces the package's "35–79 only".
-  Map<String, dynamic> _ageMessage(Map survival) => {
-    ...Map<String, dynamic>.from(survival),
-    if (survival['status'] == 'unsupported_age') 'message': unsupportedAgeMessage,
-  };
+  /// The app supports 18–85, so its own message replaces the package's "35–79 only"; under
+  /// 18 the status is `under_age`.
+  Map<String, dynamic> _ageMessage(Map survival, Object? age) {
+    final out = Map<String, dynamic>.from(survival);
+    if (survival['status'] == 'unsupported_age') {
+      final under = age is num && age < underAge;
+      out['status'] = under ? 'under_age' : 'unsupported_age';
+      out['message'] = under ? underAgeMessage : unsupportedAgeMessage;
+    }
+    return out;
+  }
+
+  /// `{'age_group': …}` for an available [survival], else nothing.
+  Map<String, dynamic> _ageGroup(Map survival, Map<String, dynamic> modelProfile) {
+    final score = survival['log_relative_hazard_score'];
+    final age = modelProfile['age'], sex = modelProfile['sex_nhanes'];
+    if (survival['status'] != 'available' || score is! num || age is! num || sex is! num || _ageGroups == null) {
+      return const {};
+    }
+    return {'age_group': _ageGroups.compare(score: score.toDouble(), age: age, female: sex == 2).toJson()};
+  }
 
   /// The package's survival at the anchor age, moved to the real age along the age term.
   Map<String, dynamic> _moveAge(Map survival, {required num from, required num to}) {
@@ -293,6 +363,114 @@ class TwinModelService {
       'survival_probabilities': fractions,
       'survival_percent_by_year': {for (final e in fractions.entries) e.key: 100 * e.value},
     };
+  }
+}
+
+/// The people compared for the age-group statistic.
+class AgeGroup {
+  const AgeGroup({
+    required this.percentile,
+    required this.size,
+    required this.bandLow,
+    required this.bandHigh,
+    required this.width,
+    required this.nearestBand,
+  });
+
+  /// 0–100: the share of the band whose score is higher (worse) than the person's.
+  final double percentile;
+  final int size;
+  final num bandLow;
+  final num bandHigh;
+
+  /// Half-width of the band in years: 5, 7 or 10.
+  final int width;
+  final bool nearestBand;
+
+  Map<String, dynamic> toJson() => {
+    'percentile': percentile,
+    'size': size,
+    'band_low': bandLow,
+    'band_high': bandHigh,
+    'width': width,
+    'nearest_band': nearestBand,
+  };
+}
+
+/// The package's reference set (`support_reference.f64.gz`: rows of the encoded features),
+/// scored without the age_decade and female terms, for "relative to people like you in the
+/// survey". The rows are unweighted survey participants, not a national population.
+class AgeGroupReference {
+  AgeGroupReference(Float64List data, this._coef, this._centre)
+    : assert(_coef.length == _centre.length && data.length % _coef.length == 0),
+      _rows = data.length ~/ _coef.length,
+      _ages = [],
+      _female = [],
+      _scores = [] {
+    final n = _coef.length;
+    for (var r = 0; r < _rows; r++) {
+      var s = 0.0;
+      for (var i = 0; i < n; i++) {
+        if (i == _ageColumn || i == _femaleColumn) continue;
+        s += (data[r * n + i] - _centre[i]) * _coef[i];
+      }
+      _ages.add(data[r * n + _ageColumn] * 10 + 55);
+      _female.add(data[r * n + _femaleColumn] == 1);
+      _scores.add(s);
+    }
+  }
+
+  static const _ageColumn = 0, _femaleColumn = 8;
+  static const minPeople = 50;
+  static const widths = [5, 7, 10];
+
+  final List<double> _coef, _centre;
+  final int _rows;
+  final List<double> _ages, _scores;
+  final List<bool> _female;
+
+  int get length => _rows;
+
+  /// The reference people of one sex with ages in [low, high] (inclusive).
+  int count({required bool female, required num low, required num high}) {
+    var n = 0;
+    for (var r = 0; r < _rows; r++) {
+      if (_female[r] == female && _ages[r] >= low && _ages[r] <= high) n++;
+    }
+    return n;
+  }
+
+  /// The statistic for a person with model [score] (which includes the age and sex terms)
+  /// at [age]. Band: age ±5 years, same sex; ±7 then ±10 when fewer than 50 people. Outside
+  /// 35–79 the nearest ±w band inside 35–79 is used.
+  AgeGroup compare({required double score, required num age, required bool female}) {
+    final own =
+        score -
+        ((age - 55) / 10 - _centre[_ageColumn]) * _coef[_ageColumn] -
+        ((female ? 1 : 0) - _centre[_femaleColumn]) * _coef[_femaleColumn];
+    final nearest = age < checkedAgeRange.low || age > checkedAgeRange.high;
+    late num low, high;
+    var width = widths.last, size = 0;
+    for (final w in widths) {
+      final centre = nearest ? age.clamp(checkedAgeRange.low + w, checkedAgeRange.high - w) : age;
+      low = math.max(centre - w, checkedAgeRange.low);
+      high = math.min(centre + w, checkedAgeRange.high);
+      width = w;
+      size = count(female: female, low: low, high: high);
+      if (size >= minPeople) break;
+    }
+    var worse = 0;
+    for (var r = 0; r < _rows; r++) {
+      if (_female[r] == female && _ages[r] >= low && _ages[r] <= high && _scores[r] > own) worse++;
+    }
+    return AgeGroup(
+      percentile: size == 0 ? 0 : 100 * worse / size,
+      size: size,
+      bandLow: low,
+      bandHigh: high,
+      width: width,
+      nearestBand: nearest,
+    );
   }
 }
 
