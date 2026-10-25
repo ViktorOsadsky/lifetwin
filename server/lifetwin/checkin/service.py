@@ -536,7 +536,6 @@ class CheckinService:
         before, after = request.state, response.state
         if (
             request.action == "reply"
-            and before.kind != "weekly"
             and not before.care_line_shown
             and not response.emergency
             and SAFETY_PHRASE not in response.message
@@ -595,7 +594,8 @@ class CheckinService:
                         if name not in state.skipped_fields:
                             state.skipped_fields.append(name)
                 state.probe_topic = None
-                self._advance(state)
+                if not (state.kind == "weekly" and state.pending.model_dump(exclude_none=True)):
+                    self._advance(state)  # weekly: the mood answer still needs its yes
                 return respond("Okay, we'll stop here for today. " + self._prompt(state))
 
         if action == "cancel":

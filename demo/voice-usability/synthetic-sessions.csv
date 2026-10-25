@@ -1,0 +1,36 @@
+synthetic_demo,participant_id,task_id,task,completion,simulated_seconds,simulated_stt_errors,simulated_incorrect_values_offered,simulated_wrong_values_saved_without_confirmation,scripted_observation
+true,DEMO-01,onboard,Start by voice and answer the questions,alone,25,0,0,0,Script: use invented answers only.
+true,DEMO-01,loose_answers,"Answer loosely, including unknown cholesterol",alone,29,0,0,0,Script: about 5 foot 8; walk the dog most mornings; unknown cholesterol.
+true,DEMO-01,correct_value,Correct an offered height,alone,33,0,0,0,Script: change 5 foot 6 to 5 foot 8; require a new read-back before saving.
+true,DEMO-01,interrupt,Interrupt Mochi mid-sentence,alone,37,0,0,0,Script: press stop while Mochi is speaking.
+true,DEMO-01,repeat,Request Hear it again,alone,41,0,0,0,Script: request a repeat of the current question.
+true,DEMO-01,switch_modes,"Switch to typing, then return to voice",alone,45,0,0,0,Script: verify previously confirmed answers survive both switches.
+true,DEMO-01,deny_mic,Deny microphone and finish by typing,alone,49,0,0,0,Script: decline microphone permission and use typing.
+true,DEMO-02,onboard,Start by voice and answer the questions,alone,31,0,0,0,Script: use invented answers only.
+true,DEMO-02,loose_answers,"Answer loosely, including unknown cholesterol",alone,35,0,0,0,Script: about 5 foot 8; walk the dog most mornings; unknown cholesterol.
+true,DEMO-02,correct_value,Correct an offered height,alone,39,0,0,0,Script: change 5 foot 6 to 5 foot 8; require a new read-back before saving.
+true,DEMO-02,interrupt,Interrupt Mochi mid-sentence,alone,43,0,0,0,Script: press stop while Mochi is speaking.
+true,DEMO-02,repeat,Request Hear it again,with_hint,77,0,0,0,Script: request a repeat of the current question.
+true,DEMO-02,switch_modes,"Switch to typing, then return to voice",alone,51,0,0,0,Script: verify previously confirmed answers survive both switches.
+true,DEMO-02,deny_mic,Deny microphone and finish by typing,alone,55,0,0,0,Script: decline microphone permission and use typing.
+true,DEMO-03,onboard,Start by voice and answer the questions,alone,37,0,0,0,Script: use invented answers only.
+true,DEMO-03,loose_answers,"Answer loosely, including unknown cholesterol",with_hint,71,2,1,0,Script: about 5 foot 8; walk the dog most mornings; unknown cholesterol.
+true,DEMO-03,correct_value,Correct an offered height,alone,45,0,0,0,Script: change 5 foot 6 to 5 foot 8; require a new read-back before saving.
+true,DEMO-03,interrupt,Interrupt Mochi mid-sentence,failed,79,0,0,0,Script: press stop while Mochi is speaking. Simulated failure for demo triage; not an observed defect.
+true,DEMO-03,repeat,Request Hear it again,alone,53,0,0,0,Script: request a repeat of the current question.
+true,DEMO-03,switch_modes,"Switch to typing, then return to voice",alone,57,0,0,0,Script: verify previously confirmed answers survive both switches.
+true,DEMO-03,deny_mic,Deny microphone and finish by typing,alone,61,0,0,0,Script: decline microphone permission and use typing.
+true,DEMO-04,onboard,Start by voice and answer the questions,alone,43,0,0,0,Script: use invented answers only.
+true,DEMO-04,loose_answers,"Answer loosely, including unknown cholesterol",alone,47,0,0,0,Script: about 5 foot 8; walk the dog most mornings; unknown cholesterol.
+true,DEMO-04,correct_value,Correct an offered height,alone,51,0,0,0,Script: change 5 foot 6 to 5 foot 8; require a new read-back before saving.
+true,DEMO-04,interrupt,Interrupt Mochi mid-sentence,alone,55,0,0,0,Script: press stop while Mochi is speaking.
+true,DEMO-04,repeat,Request Hear it again,alone,59,0,0,0,Script: request a repeat of the current question.
+true,DEMO-04,switch_modes,"Switch to typing, then return to voice",alone,63,0,0,0,Script: verify previously confirmed answers survive both switches.
+true,DEMO-04,deny_mic,Deny microphone and finish by typing,alone,67,0,0,0,Script: decline microphone permission and use typing.
+true,DEMO-05,onboard,Start by voice and answer the questions,alone,49,0,0,0,Script: use invented answers only.
+true,DEMO-05,loose_answers,"Answer loosely, including unknown cholesterol",with_hint,83,2,1,0,Script: about 5 foot 8; walk the dog most mornings; unknown cholesterol.
+true,DEMO-05,correct_value,Correct an offered height,alone,57,0,0,0,Script: change 5 foot 6 to 5 foot 8; require a new read-back before saving.
+true,DEMO-05,interrupt,Interrupt Mochi mid-sentence,alone,61,0,0,0,Script: press stop while Mochi is speaking.
+true,DEMO-05,repeat,Request Hear it again,alone,65,0,0,0,Script: request a repeat of the current question.
+true,DEMO-05,switch_modes,"Switch to typing, then return to voice",failed,99,0,0,0,Script: verify previously confirmed answers survive both switches. Simulated failure for demo triage; not an observed defect.
+true,DEMO-05,deny_mic,Deny microphone and finish by typing,alone,73,0,0,0,Script: decline microphone permission and use typing.

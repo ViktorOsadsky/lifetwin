@@ -640,19 +640,12 @@ void main() {
   });
 
   group('8. controls', () {
-    testWidgets('the AI helper chip and Settings switch stay in step; Apple Health only on the first question', (
-      t,
-    ) async {
+    testWidgets('the AI helper chip and Settings switch stay in step', (t) async {
       final r = Rig(guide: StepGuide());
       await r.pump(t);
       await r.start(t, voice: false);
       expect(find.text('AI helper: Off'), findsOneWidget);
-      expect(find.text('Use my Apple Health'), findsOneWidget);
-      // A full-width button right under Send, above "Talk instead".
-      final health = t.getRect(button('Use my Apple Health'));
-      expect(health.height, greaterThanOrEqualTo(56));
-      expect(health.top, greaterThanOrEqualTo(t.getRect(button('Send')).bottom));
-      expect(health.bottom, lessThanOrEqualTo(t.getRect(button('Talk instead')).top));
+      expect(find.text('Use my Apple Health'), findsNothing, reason: 'the opening is decluttered');
       expect(find.widgetWithText(LinkButton, 'Talk instead'), findsOneWidget);
 
       await tapText(t, 'Settings');
@@ -673,25 +666,12 @@ void main() {
     });
 
     for (final scale in [1.0, 3.1]) {
-      testWidgets('scale $scale: "Use my Apple Health" sits under Tap to talk, above Type instead, and opens', (
-        t,
-      ) async {
+      testWidgets('scale $scale: the opening has no Apple Health button and does not overflow', (t) async {
         final r = Rig();
         await r.pump(t, scale: scale);
         await r.start(t, voice: true);
         expect(t.takeException(), isNull);
-        final health = button('Use my Apple Health');
-        await t.ensureVisible(health);
-        await t.pumpAndSettle();
-        expect(t.getSize(health).height, greaterThanOrEqualTo(56));
-        expect(t.getRect(health).top, greaterThanOrEqualTo(t.getRect(find.byType(TalkButton)).bottom));
-        await t.ensureVisible(button('Type instead'));
-        await t.pumpAndSettle();
-        expect(t.getRect(button('Type instead')).top, greaterThanOrEqualTo(t.getRect(health).bottom));
-        await t.ensureVisible(health);
-        await t.pumpAndSettle();
-        await t.tap(health);
-        expect(r.healthOpened, 1);
+        expect(find.text('Use my Apple Health'), findsNothing);
       });
     }
 

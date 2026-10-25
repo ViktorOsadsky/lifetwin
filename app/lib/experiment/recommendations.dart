@@ -2,9 +2,6 @@ import '../twin/twin_experiment.dart';
 import '../twin/twin_model.dart';
 import '../twin/twin_repository.dart';
 
-/// Ideas for you (Y-11, Y-14) are built but switched off until `POST /api/recommendations`
-/// lands. Flip this when it does, and replace [StubRecommendations] with a client.
-const recommendationsEnabled = false;
 
 /// One idea. ASSUMED shape of a `/api/recommendations` item (brief-agentic-v1; the schema has
 /// not landed): `{id, title, habit_note_quote|null, tip, wellness_card_id, source_label,

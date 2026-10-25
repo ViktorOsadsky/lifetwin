@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatf
 import 'band/band_file_session.dart';
 
 import 'checkin/checkin_reminders.dart';
+import 'checkin/consents.dart' show AiProvider;
 import 'customize/customize_screen.dart';
+import 'demo/demo_seed.dart';
 import 'agentic_routes.dart';
 import 'documents/document_screen.dart';
 import 'documents/document_extract.dart';
@@ -76,11 +78,37 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   late final VoiceOnboardingController _controller = widget.controller ?? _live(_api);
   // Loaded once, at startup.
   late final Future<TwinRepository> _twin =
-      widget.twin ?? TwinRepository.open(reminders: CheckinReminders(LocalNotificationPort()));
+      widget.twin ?? openTwin(reminders: CheckinReminders(LocalNotificationPort()));
   late final ForecastClient _forecast =
       widget.forecastClient ?? OnDeviceForecastClient(_twin, modelInputs: () => _controller.modelInputs);
 
-  late final AgenticRoutes _agentic = widget.agentic ?? AgenticRoutes(look: _look, api: _api, voice: () => _controller);
+  late final AgenticRoutes _agentic =
+      widget.agentic ??
+      AgenticRoutes(
+        look: _look,
+        api: _api,
+        voice: () => _controller,
+        onDeleted: _afterDelete,
+        healthSamples: connectedHealthSamples(
+          widget.healthReader ?? HealthReader(),
+          () =>
+              _healthKeys.isNotEmpty ||
+              (_agentic.repo?.history().any((e) => e.source == HistorySource.appleHealth) ?? false),
+        ),
+      );
+
+  /// The outside AI provider (for the training line on the AI-helper question), once known.
+  AiProvider? _aiProvider;
+
+  /// "Delete my data" wiped the phone: forget what this session held in memory too.
+  void _afterDelete() => setState(() {
+    _stored = null;
+    _healthKeys.clear();
+    _healthValues.clear();
+    _documentValues.clear();
+    _outlook.value = null;
+    _controller.resetConversation();
+  });
 
   /// The profile saved on the phone by an earlier session, once the store is open.
   Map<String, dynamic>? _stored;
@@ -122,6 +150,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       BandFileSession.instance.start().ignore();
     }
+    _agentic.provider().then((p) => _aiProvider = p, onError: (Object _) {});
     _twin.then((repo) {
       if (!mounted) return;
       final look = repo.store.twin;
@@ -178,7 +207,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     (talkContext) => VoiceOnboardingScreen(
       controller: _controller,
       appearance: _look.value,
+      aiProvider: _aiProvider,
       onUseHealth: () => _health(talkContext),
+      onUploadDocument: () => _documents(talkContext),
       onDone: (profile) {
         _keepConversation();
         _ceremony(talkContext, fromTalk: true);

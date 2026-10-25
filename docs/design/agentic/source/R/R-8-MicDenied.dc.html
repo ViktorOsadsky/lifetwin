@@ -83,6 +83,7 @@ body{margin:0}
 .rg{display:inline-flex;align-items:center;gap:6px;min-height:48px;height:48px;padding:0 16px;border-radius:24px;border:2px solid #8C6B5D;background:#FFF6DD;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
 p{overflow-wrap:break-word}
 h1,h2{margin:0}
+.dir{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 12px 0 8px;border-radius:18px;border:1.5px solid #A88B7D;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box;flex:none}
 .medal{flex:none;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#9FD9C3;border:2px solid #7A5B4E;outline:1px solid rgba(226,179,87,.8);outline-offset:-8px;box-shadow:inset 0 -4px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);color:#4A2F25}
 .medal b{font-family:Fredoka,system-ui,sans-serif;font-weight:600;line-height:1;letter-spacing:-.01em}
 .medal span{font-weight:700;line-height:1.1}
@@ -106,7 +107,8 @@ h1,h2{margin:0}
 .wk .d.on{background:#9FD9C3;border-color:#7A5B4E}
 .wk .d.today{box-shadow:0 0 0 3px #FFFDF8,0 0 0 5px #4A2F25}
 .wk .d.fut{border-style:dashed;color:#6B4E42}
-.vh{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.spk{position:absolute;width:16px;height:16px;pointer-events:none}
+.vh{position:absolute!important;left:0;right:0;top:0;height:1px;margin:0;padding:0;overflow:hidden;clip-path:inset(50%);white-space:normal;border:0}
 .lg p,.lg span,.lg b,.lg h1,.lg h2,.lg li,.lg a,.lg button{overflow-wrap:normal;word-break:normal;hyphens:manual}
 .lg .lab,.lg .sub{font-size:27px}
 .lg .bub p{font-size:32px}
@@ -122,7 +124,7 @@ h1,h2{margin:0}
 </helmet>
 <div class="scr g-mint" style="width: 390px; height: 844px">
 <div class="scroll" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow-y: auto; overflow-x: hidden"><div class="flow" style="padding: 77px 14px 172px; display: flex; flex-direction: column">
-<div class="pn win" style="height: 260px"><div class="pa"><img class="plate" src="asset://gen/calm-room-empty.jpg" alt="" style="width: 460px; height: 690px; left: -118px; top: -126px"><div aria-hidden="true" style="position: absolute; left: -8px; top: 50px; width: 240px; height: 210px; background: radial-gradient(closest-side, rgba(255,227,176,.30), rgba(255,227,176,0))"></div><div aria-hidden="true" style="position: absolute; left: 42px; top: 231px; width: 140px; height: 18px; border-radius: 50%; background: rgba(74,47,37,.22); filter: blur(3px)"></div><!-- Mood pose: concerned (sprites/v2/bear/hat/concerned.png) --><div style="position: absolute; left: 12px; top: 40px; width: 200px; height: 200px; display: flex; align-items: flex-end; justify-content: center"><img src="asset://sprites/v2/bear/hat/concerned.png" alt="Mochi the bear, gently concerned" style="width: 131px; height: 201px; display: block; position: relative; left: -2px; top: 5px"></div></div><div class="key"></div>
+<div class="pn win" style="height: 260px"><div class="pa"><img class="plate" src="/_blob/d16f2dd61c0d54c11b27c2e6626acc71" alt="" style="width: 460px; height: 690px; left: -118px; top: -126px"><div aria-hidden="true" style="position: absolute; left: -8px; top: 50px; width: 240px; height: 210px; background: radial-gradient(closest-side, rgba(255,227,176,.30), rgba(255,227,176,0))"></div><div aria-hidden="true" style="position: absolute; left: 42px; top: 231px; width: 140px; height: 18px; border-radius: 50%; background: rgba(74,47,37,.22); filter: blur(3px)"></div><!-- Mood pose: concerned (sprites/v2/bear/hat/concerned.png) --><div style="position: absolute; left: 12px; top: 40px; width: 200px; height: 200px; display: flex; align-items: flex-end; justify-content: center"><img src="/_blob/bd33119c93574a038202f35e62125149" alt="Mochi the bear, gently concerned" style="width: 131px; height: 201px; display: block; position: relative; left: -2px; top: 5px"></div></div><div class="key"></div>
 <div class="banner" style="top: -22px" aria-label="Twin name: Mochi"><span class="br">{</span><span>Mochi</span><span class="br">}</span></div>
 <div class="pn bub" style="right: 8px; top: 40px"><span class="tail" style="left: -10px; top: 26px; transform: rotate(45deg)"></span><p class="fd">I can&#8217;t hear you yet.</p></div>
 </div>
