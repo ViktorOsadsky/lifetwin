@@ -28,22 +28,91 @@ enum TwinLook {
 
 /// Poses. Both twins have every pose, with and without the Cal hat.
 enum TwinPose {
-  stand('stand', 0.9646, 0.9639, Size(121, 180), Size(97, 180)),
-  wave('wave', 0.9641, 0.9661, Size(132, 180), Size(111, 180)),
-  walkSide('walk_side', 0.9648, 0.9652, Size(122, 180), Size(96, 180)), // faces right; flip to walk left
-  walkFront('walk_front', 0.9656, 0.9644, Size(119, 180), Size(96, 180)),
-  walkBack('walk_back', 0.9641, 0.965, Size(128, 180), Size(92, 180)),
-  sit('sit', 0.9648, 0.9653, Size(149, 180), Size(131, 180)),
-  jump('jump', 0.9661, 0.9648, Size(138, 180), Size(132, 180)),
-  think('think', 0.9644, 0.9639, Size(119, 180), Size(105, 180)),
-  stretch('stretch', 0.9664, 0.9657, Size(151, 180), Size(108, 180)),
-  sleep('sleep', 0.9641, 0.9668, Size(180, 118), Size(180, 101)),
-  eat('eat', 0.9644, 0.9649, Size(134, 180), Size(113, 180)),
-  holdBall('hold_ball', 0.964, 0.964, Size(137, 180), Size(114, 180)),
-  shrug('shrug', 0.9637, 0.9649, Size(156, 180), Size(107, 180)), // fortune still learning / unsupported
-  dizzy('dizzy', 0.9663, 0.9656, Size(144, 180), Size(113, 180)); // game-health reaction only, never medical
+  stand('stand', 0.9646, 0.9705, Size(121, 180), Size(95, 180), Size(228, 339), Size(214, 407)),
+  wave('wave', 0.965, 0.9712, Size(139, 180), Size(107, 180), Size(264, 343), Size(248, 417)),
+  walkSide(
+    'walk_side',
+    0.9646,
+    0.9699,
+    Size(129, 180),
+    Size(95, 180),
+    Size(243, 339),
+    Size(211, 399),
+  ), // faces right; flip to walk left
+  walkFront('walk_front', 0.9656, 0.9709, Size(117, 180), Size(93, 180), Size(226, 349), Size(214, 412)),
+  walkBack('walk_back', 0.9641, 0.9715, Size(128, 180), Size(90, 180), Size(238, 334), Size(211, 421)),
+  sit('sit', 0.9618, 0.965, Size(150, 180), Size(132, 180), Size(261, 314), Size(252, 343)),
+  jump('jump', 0.9648, 0.9694, Size(146, 180), Size(132, 180), Size(276, 341), Size(287, 392)),
+  think('think', 0.9644, 0.9687, Size(119, 180), Size(103, 180), Size(223, 337), Size(220, 384)),
+  stretch('stretch', 0.9656, 0.9702, Size(144, 180), Size(108, 180), Size(279, 349), Size(242, 403)),
+  sleep('sleep', 0.9329, 0.9459, Size(180, 120), Size(180, 104), Size(268, 179), Size(385, 222)),
+  eat('eat', 0.9614, 0.9646, Size(134, 180), Size(114, 180), Size(232, 311), Size(214, 339)),
+  holdBall('hold_ball', 0.961, 0.9636, Size(137, 180), Size(115, 180), Size(235, 308), Size(211, 330)),
+  shrug(
+    'shrug',
+    0.9637,
+    0.9694,
+    Size(156, 180),
+    Size(107, 180),
+    Size(287, 331),
+    Size(233, 393),
+  ), // fortune still learning / unsupported
+  dizzy(
+    'dizzy',
+    0.9638,
+    0.9682,
+    Size(137, 180),
+    Size(112, 180),
+    Size(253, 332),
+    Size(235, 377),
+  ), // game-health reaction only, never medical
+  concerned(
+    'concerned',
+    0.9655,
+    0.9713,
+    Size(118, 180),
+    Size(93, 180),
+    Size(229, 348),
+    Size(216, 418),
+  ), // emergency: calm, attentive
+  sleepy('sleepy', 0.965, 0.9724, Size(124, 180), Size(101, 180), Size(237, 343), Size(244, 435)), // short sleep
+  proud(
+    'proud',
+    0.9641,
+    0.9702,
+    Size(120, 180),
+    Size(96, 180),
+    Size(223, 334),
+    Size(214, 403),
+  ), // cheerful, no specific event
+  thinking(
+    'thinking',
+    0.9659,
+    0.972,
+    Size(110, 180),
+    Size(88, 180),
+    Size(215, 352),
+    Size(210, 429),
+  ), // curious: the model sees something to explore
+  listening(
+    'listening',
+    0.9661,
+    0.9722,
+    Size(121, 180),
+    Size(90, 180),
+    Size(238, 354),
+    Size(216, 433),
+  ); // conversation probes only
 
-  const TwinPose(this.slug, this.bearFeet, this.humanFeet, this.bearSize1x, this.humanSize1x);
+  const TwinPose(
+    this.slug,
+    this.bearFeet,
+    this.humanFeet,
+    this.bearSize1x,
+    this.humanSize1x,
+    this.bearNative,
+    this.humanNative,
+  );
   final String slug;
 
   /// Feet baselines (`anchor.y` in `assets/twin/manifest.json`), shared by
@@ -54,6 +123,12 @@ enum TwinPose {
   /// 1x sprite size (`size1x` in the manifest), shared by hat and no-hat.
   final Size bearSize1x;
   final Size humanSize1x;
+
+  /// The 2.0x file's pixel size: the art at one scale for every pose of a twin (`manifest_v2.json`
+  /// size plus 4 px padding on each side). The 1x file is the same art shrunk to a 180 px long side,
+  /// so only these sizes keep the poses in proportion (see `TwinStateSprite`).
+  final Size bearNative;
+  final Size humanNative;
 }
 
 /// True when [pose] has its own art for this twin. Every twin now has every
@@ -92,8 +167,7 @@ double twinFeetAnchor(TwinType type, TwinLook look, [TwinPose pose = TwinPose.st
 
 /// Centre of the ball in a [TwinPose.holdBall] sprite, as fractions of the
 /// square sprite box (the art is bottom-centred in it), for the glow.
-Offset twinBallCenter(TwinType type) =>
-    type == TwinType.bear ? const Offset(0.509, 0.606) : const Offset(0.499, 0.672);
+Offset twinBallCenter(TwinType type) => type == TwinType.bear ? const Offset(0.509, 0.606) : const Offset(0.499, 0.672);
 
 /// Radius of that ball, as a fraction of the square sprite box.
 double twinBallRadius(TwinType type) => type == TwinType.bear ? 0.105 : 0.084;
@@ -110,8 +184,7 @@ String twinDescription(TwinType type, TwinLook look) =>
 /// files are the standing sprites, kept at their old paths.
 final Map<String, Size> twinSpriteSize1x = {
   for (final t in TwinType.values) ...{
-    for (final look in TwinLook.values)
-      'assets/twin/${t.name}/base/${look.slug}.png': _size(t, TwinPose.stand),
+    for (final look in TwinLook.values) 'assets/twin/${t.name}/base/${look.slug}.png': _size(t, TwinPose.stand),
     for (final p in TwinPose.values) ...{
       'assets/twin/${t.name}/pose/${p.slug}.png': _size(t, p),
       'assets/twin/${t.name}/pose_nohat/${p.slug}.png': _size(t, p),
@@ -121,3 +194,49 @@ final Map<String, Size> twinSpriteSize1x = {
 };
 
 Size _size(TwinType t, TwinPose p) => t == TwinType.bear ? p.bearSize1x : p.humanSize1x;
+
+/// Where the feet are across each sprite (`anchor.x` in `assets/twin/manifest.json`), keyed
+/// `type/pose`. Shared by the hat and no-hat sprite of a pose.
+const Map<String, double> _feetX = {
+  'bear/concerned': 0.5152,
+  'bear/dizzy': 0.4941,
+  'bear/eat': 0.4957,
+  'bear/hold_ball': 0.5043,
+  'bear/jump': 0.6558,
+  'bear/listening': 0.4895,
+  'bear/proud': 0.5,
+  'bear/shrug': 0.4948,
+  'bear/sit': 0.4981,
+  'bear/sleep': 0.5522,
+  'bear/sleepy': 0.4936,
+  'bear/stand': 0.511,
+  'bear/stretch': 0.4983,
+  'bear/think': 0.5247,
+  'bear/thinking': 0.5302,
+  'bear/walk_back': 0.5021,
+  'bear/walk_front': 0.4159,
+  'bear/walk_side': 0.498,
+  'bear/wave': 0.5682,
+  'human/concerned': 0.514,
+  'human/dizzy': 0.5213,
+  'human/eat': 0.5,
+  'human/hold_ball': 0.5048,
+  'human/jump': 0.5227,
+  'human/listening': 0.5231,
+  'human/proud': 0.4953,
+  'human/shrug': 0.4979,
+  'human/sit': 0.4981,
+  'human/sleep': 0.6221,
+  'human/sleepy': 0.4631,
+  'human/stand': 0.4836,
+  'human/stretch': 0.4958,
+  'human/think': 0.475,
+  'human/thinking': 0.531,
+  'human/walk_back': 0.6066,
+  'human/walk_front': 0.5421,
+  'human/walk_side': 0.5308,
+  'human/wave': 0.5202,
+};
+
+/// The feet's x position as a fraction of the sprite's width.
+double twinFeetX(TwinType type, TwinPose pose) => _feetX['${type.name}/${pose.slug}'] ?? 0.5;

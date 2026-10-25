@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     llm_api_key: SecretStr = SecretStr("")
     # Reasoning models (e.g. Muse) spend the token budget thinking unless effort is limited.
     llm_reasoning_effort: Literal["", "minimal", "low", "medium", "high"] = "minimal"
+    # Coach rewording (Muse, with consent): calls per client per day, and its time budget.
+    coach_llm_daily_cap: int = Field(default=30, ge=0, le=10000)
+    coach_llm_timeout_seconds: float = Field(default=10, gt=0, le=20)
     # Outside-AI wording for Mochi's lines and suggestions, used only with the person's
     # consent for this provider. "muse" reuses the LLM_* key and model; "claude" is a
     # placeholder until it is switched on.
@@ -49,6 +52,13 @@ class Settings(BaseSettings):
     max_body_bytes: int = Field(
         default=32768, ge=128, le=1048576, validation_alias="API_MAX_BODY_BYTES"
     )
+    # Recognised text of up to 10 document pages (POST /api/documents/extract only).
+    max_document_body_bytes: int = Field(
+        default=393216, ge=1024, le=1048576, validation_alias="API_MAX_DOCUMENT_BODY_BYTES"
+    )
+    # Muse may read identifier-stripped document text only when this is on AND the person
+    # agreed. Off by default pending the owner's ruling (docs/document-upload.md).
+    document_muse_enabled: bool = True
     rate_limit_per_minute: int = Field(
         default=60, ge=1, le=10000, validation_alias="API_RATE_LIMIT_PER_MINUTE"
     )

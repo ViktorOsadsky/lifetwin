@@ -94,6 +94,11 @@ class RequestBudgetMiddleware:
             async with asyncio.timeout(self.settings.request_timeout_seconds):
                 # Buffer a bounded JSON body so chunked requests cannot bypass the limit.
                 body = bytearray()
+                limit = (
+                    self.settings.max_document_body_bytes
+                    if scope["path"] == "/api/documents/extract"
+                    else self.settings.max_body_bytes
+                )
                 while True:
                     incoming = await receive()
                     if incoming["type"] == "http.disconnect":
@@ -101,7 +106,7 @@ class RequestBudgetMiddleware:
                     if incoming["type"] != "http.request":
                         continue
                     chunk = incoming.get("body", b"")
-                    if len(body) + len(chunk) > self.settings.max_body_bytes:
+                    if len(body) + len(chunk) > limit:
                         await error(
                             413,
                             "body_too_large",

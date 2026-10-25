@@ -3,6 +3,8 @@
 /// appended as it happens and never edited. Read it with `TwinRepository.history()`.
 library;
 
+import 'twin_model.dart' show HealthScoreStatus, isoDate;
+
 /// Entry kinds.
 abstract final class HistoryKind {
   static const quick = 'quick';
@@ -15,17 +17,66 @@ abstract final class HistoryKind {
   /// Wristband estimates confirmed after a read-back.
   static const wristbandImport = 'wristband_import';
 
-  /// Reserved for document-upload confirmations (not built yet).
+  /// Values the person confirmed one by one from an uploaded document.
   static const document = 'document';
 
   /// A confirmed correction to a past day's answer, linked to the entry it corrects.
   static const correction = 'correction';
 
-  /// A confirmed blood pressure reading (later also A1c or LDL from a document): dated
-  /// information for the person and the coach, never a model input.
+  /// A confirmed blood pressure, A1c or LDL reading: dated information for the person
+  /// and the coach, never a model input.
   static const reading = 'reading';
 
   static const checkins = {quick, daily, weekly};
+}
+
+/// One point of the health score's trend: the score the model gave after an event that
+/// changed its inputs. Appended on the phone, never edited. [score] is null when the model
+/// gave no number ([status] says why).
+class HealthScorePoint {
+  const HealthScorePoint({
+    required this.at,
+    required this.score,
+    required this.status,
+    required this.modelVersion,
+    this.ageGroupPercentile,
+    this.ageGroupSize,
+    this.ageGroupBand,
+  });
+
+  factory HealthScorePoint.fromJson(Map<String, dynamic> j) => HealthScorePoint(
+    at: DateTime.tryParse('${j['at']}') ?? DateTime.fromMillisecondsSinceEpoch(0),
+    score: (j['score'] as num?)?.toDouble(),
+    status: HealthScoreStatus.fromWire(j['status']),
+    modelVersion: '${j['model_version'] ?? ''}',
+    ageGroupPercentile: (j['age_group_percentile'] as num?)?.toDouble(),
+    ageGroupSize: j['age_group_size'] as int?,
+    ageGroupBand: j['age_group_band'] as String?,
+  );
+
+  final DateTime at;
+  final double? score;
+  final HealthScoreStatus status;
+  final String modelVersion;
+
+  /// The age-group statistic at that time (null with no score).
+  final double? ageGroupPercentile;
+  final int? ageGroupSize;
+  final String? ageGroupBand;
+
+  /// The local date, YYYY-MM-DD.
+  String get date => isoDate(at);
+
+  Map<String, dynamic> toJson() => {
+    'at': at.toIso8601String(),
+    'date': date,
+    'score': score,
+    'status': status.wire,
+    'model_version': modelVersion,
+    if (ageGroupPercentile != null) 'age_group_percentile': ageGroupPercentile,
+    if (ageGroupSize != null) 'age_group_size': ageGroupSize,
+    if (ageGroupBand != null) 'age_group_band': ageGroupBand,
+  };
 }
 
 /// Where a confirmed value came from (per value: profile metadata and history items).
@@ -98,6 +149,8 @@ const _profileWords = <String, (String, String)>{
   'diabetes': ('diabetes', ''),
   'systolic_bp': ('blood pressure, top number', 'mmHg'),
   'diastolic_bp': ('blood pressure, bottom number', 'mmHg'),
+  'hba1c': ('A1c', '%'),
+  'ldl_cholesterol': ('LDL cholesterol', 'mg/dL'),
   'general_health': ('how you rate your health', ''),
   'hypertension_diagnosed': ('told you have high blood pressure', ''),
   'sedentary_min_day': ('time sitting', 'minutes a day'),
@@ -281,6 +334,11 @@ class HistoryEntry {
       '${at.year.toString().padLeft(4, '0')}-${at.month.toString().padLeft(2, '0')}-${at.day.toString().padLeft(2, '0')}';
   String get time => '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}';
   String get sourceLabel => HistorySource.label(source);
+
+  /// A reading from a document that carried no date: [at] is when it was confirmed, so the
+  /// UI says "date not on the document".
+  bool get dateNotOnDocument =>
+      kind == HistoryKind.reading && source == HistorySource.document && items.every((i) => i.date == null);
 
   HistoryEntry withStatus({String? fedForecast, String? correctedBy}) => HistoryEntry(
     id: id,

@@ -1,0 +1,131 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "hearing_aids",
+ "category": "aid",
+ "label": "Hearing aids",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "aid_back_l",
+   "slot": "aid_back_l",
+   "bone": "head",
+   "z": 49,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 120,
+    "y": 99,
+    "w": 40,
+    "h": 59
+   },
+   "vector": "aid_back_l.svg",
+   "painted": "aid_back_l.p.png"
+  },
+  {
+   "name": "aid_tube_l",
+   "slot": "aid_tube_l",
+   "bone": "head",
+   "z": 55,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 132,
+    "y": 76,
+    "w": 64,
+    "h": 62
+   },
+   "vector": "aid_tube_l.svg",
+   "painted": "aid_tube_l.p.png"
+  },
+  {
+   "name": "aid_back_r",
+   "slot": "aid_back_r",
+   "bone": "head",
+   "z": 49,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 478,
+    "y": 94,
+    "w": 40,
+    "h": 59
+   },
+   "vector": "aid_back_r.svg",
+   "painted": "aid_back_r.p.png"
+  },
+  {
+   "name": "aid_tube_r",
+   "slot": "aid_tube_r",
+   "bone": "head",
+   "z": 55,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 442,
+    "y": 71,
+    "w": 64,
+    "h": 62
+   },
+   "vector": "aid_tube_r.svg",
+   "painted": "aid_tube_r.p.png"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "default",
+ "colourable": {
+  "case": {
+   "key": "#d8cbb9",
+   "tones": {
+    "hi": "#eaddca",
+    "lt": "#e1d3c0",
+    "base": "#d8cbb9",
+    "sh": "#a89b99",
+    "dk": "#7e7377",
+    "ink": "#5e514d"
+   }
+  }
+ },
+ "material": "satin_plastic",
+ "notes": [
+  "Pearl case behind each ear with a clear tube and soft dome; head bone (the v3 rig paints the ears into the head).",
+  "A crowned hat covers the tube where it crosses the ear; README asks for an ear-accessory pass above hat_front."
+ ],
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side",
+   "back"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head"
+ }
+}

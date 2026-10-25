@@ -1,0 +1,122 @@
+<!doctype html>
+<!-- LifeTwin agentic screens (prefix Z), v1. Tokens and components match V and X. Twin sprites: sprites/v2, one scale per character (stand pose = 196px), feet on one baseline. -->
+<!-- Flutter: the page is a scroll view with the dock AND back/close pinned (never inside the scroll view); scroll content gets bottom padding = dock height + 16. Sections are flow layout with min-heights, never fixed heights, so 200% text grows. Only the plate window has a fixed height; the twin sits in a fixed 200px box. -->
+<!-- Local data (assumed store): profile answers, imported Apple Health values, check-ins, habit notes, twin look and reminders, all on the phone. Memory toggle = memory_consent; Mochi's notebook row shows only when it is on, and turning it off asks whether to clear the notebook. Notebook notes are read-only (change through Mochi, Z-10). Delete removes all of it and cancels scheduled reminders. Apple Health data is untouched; access is revoked by the person in iPhone Settings (HIG HealthKit). -->
+<!-- "Mochi remembers" is a whole-row switch (SwitchListTile + MergeSemantics). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Z My data</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.scr{width:390px;position:relative;overflow:hidden;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#4A2F25;-webkit-font-smoothing:antialiased}
+.g-mint{background:radial-gradient(140% 70% at 50% 18%,#E3F5EC 0%,#D3EEE2 72%)}
+.g-lav{background:radial-gradient(140% 70% at 50% 18%,#F0ECFD 0%,#E6E0FA 72%)}
+.g-paper{background:radial-gradient(140% 70% at 50% 18%,#FFFBF3 0%,#F6EEE2 72%)}
+.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.pn{position:relative;box-sizing:border-box;border:1.5px solid #A88B7D;border-radius:28px;background:#FFFDF8;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.win{border-radius:30px}
+.pa{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border-radius:24px;overflow:hidden;background:#E9E2F8}
+.pa img.plate{position:absolute;display:block;object-fit:cover}
+.key{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(226,179,87,.7);border-radius:24px;pointer-events:none}
+.banner{position:absolute;left:50%;transform:translateX(-50%);height:44px;max-width:240px;box-sizing:border-box;padding:0 20px;display:flex;align-items:center;justify-content:center;gap:6px;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;white-space:nowrap;z-index:3}
+.banner .br{color:#B4532F}
+.btn{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:#4A2F25;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid #8C6B5D;background:#FFFDF8;padding:0;text-align:left;text-decoration:none}
+.btn.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.lip{background:#9FD9C3;box-shadow:inset 0 -3px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-cream{background:#FFFDF8;box-shadow:inset 0 -3px 0 rgba(233,223,208,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-ink{background:#4A2F25;color:#FFFDF8;border-color:#2E1C15;box-shadow:inset 0 -3px 0 rgba(0,0,0,.35),0 6px 16px rgba(74,47,37,.18)}
+.lip-teal{background:#17594A;color:#FFFDF8;border-color:#0F3F33;box-shadow:inset 0 -4px 0 rgba(10,60,48,.45),0 8px 18px rgba(36,128,106,.28)}
+.cta{width:100%;min-height:64px;border-radius:32px;font-size:24px}
+.cta2{width:100%;min-height:56px;border-radius:28px;font-size:20px}
+.link{border:0;background:transparent;box-shadow:none;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;font-weight:700;font-size:17px;min-height:48px;min-width:48px;padding:0 6px}
+.back{position:absolute;width:52px;height:52px;border-radius:26px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);z-index:2}
+.tail{position:absolute;width:20px;height:20px;background:#FFFDF8;border:1.5px solid #A88B7D;border-top-color:transparent;border-right-color:transparent;box-sizing:border-box}
+.bub{position:absolute;z-index:2;padding:12px 16px;border-radius:24px;max-width:180px;white-space:normal}
+.bub p{margin:0;font-size:20px;line-height:1.18;position:relative}
+.sheet{margin-top:-14px;padding:16px 16px 18px;z-index:1}
+.card{margin-top:14px;padding:14px 14px 16px}
+.lab{font-size:17px;font-weight:700;margin:0;line-height:1.2}
+.sub{font-size:17px;line-height:1.3;color:#6B4E42;margin:0}
+.dots{display:flex;gap:8px;justify-content:center;align-items:center}
+.dot{width:12px;height:12px;border-radius:6px;border:2px solid #8C6B5D;box-sizing:border-box;background:#FFFDF8}
+.dot.done{background:#4A2F25;border-color:#4A2F25}
+.dot.now{width:30px;background:#9FD9C3;border-color:#7A5B4E}
+.ic{width:44px;height:44px;border-radius:22px;flex:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:2px solid #8C6B5D}
+.say{align-self:flex-end;max-width:286px;position:relative;box-sizing:border-box;background:#E3F5EC;border:1.5px solid #A88B7D;border-radius:22px 22px 6px 22px;padding:10px 16px;font-size:18px;line-height:1.3}
+.say small{display:block;font-size:17px;color:#6B4E42;margin-bottom:2px}
+.msay{align-self:flex-start;max-width:286px;box-sizing:border-box;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px 22px 22px 6px;padding:10px 16px;font-size:18px;line-height:1.3}
+.msay.now{border:2px solid #7A5B4E;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.fchip{display:flex;align-items:center;gap:12px;box-sizing:border-box;width:100%;min-height:60px;border:1.5px solid #A88B7D;border-radius:20px;background:#FBF7F0;padding:6px 14px 6px 10px;text-align:left}
+.fchip .t{flex:1;min-width:0}
+.fchip .t span{display:block;font-size:17px;line-height:1.2;color:#6B4E42}
+.fchip .t b{display:block;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;line-height:1.15;color:#4A2F25}
+.fchip .ed{width:48px;height:48px;border-radius:24px;flex:none;display:flex;align-items:center;justify-content:center;border:2px solid #8C6B5D;box-sizing:border-box;background:#FFFDF8}
+.fchip.unk{border-style:dashed;border-color:#8C6B5D;background:#FBF7F0;box-shadow:none}
+.src{display:inline-flex;align-items:center;gap:4px}
+.ans{min-height:52px;border-radius:26px;padding:0 18px;font-size:18px;font-weight:700;box-shadow:0 3px 10px rgba(74,47,37,.10);white-space:nowrap}
+.ans.on{background:#9FD9C3;border-color:#7A5B4E;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.ans.unk{border-style:dashed;box-shadow:none;background:#FBF7F0}
+.wrap{display:flex;flex-wrap:wrap;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 14px;border-radius:18px;background:#9FD9C3;border:2px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:19px;white-space:nowrap;box-sizing:border-box}
+.tag{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:16px;border:1.5px solid #A88B7D;background:#FFFDF8;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
+.tag.dash{border-style:dashed}
+.sw{width:64px;height:38px;border-radius:19px;flex:none;position:relative;box-sizing:border-box;border:2px solid #7A5B4E;background:#9FD9C3}
+.sw i{position:absolute;right:3px;top:3px;width:28px;height:28px;border-radius:14px;background:#FFFDF8;border:2px solid #7A5B4E;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.row{position:relative;display:flex;align-items:center;gap:12px;box-sizing:border-box;border:2px solid #8C6B5D;border-radius:22px;background:#FFFDF8;padding:8px 10px 8px 12px;box-shadow:0 3px 10px rgba(74,47,37,.10);width:100%;min-height:64px;text-align:left}
+.row .rt{flex:1;min-width:0}
+.row .rt b{display:block;font-size:18px;line-height:1.2}
+.row .rt span{display:block;font-size:17px;line-height:1.25;color:#6B4E42}
+.dock{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;background:#FFFDF8;border-top:1.5px solid #A88B7D;border-radius:28px 28px 0 0;box-shadow:0 -6px 16px rgba(74,47,37,.12),inset 0 1px 0 rgba(255,255,255,.75);padding:10px 16px 18px;z-index:5}
+.full .dock{position:relative;margin-top:16px}
+.bar{position:absolute;left:14px;right:14px;bottom:30px;z-index:5}
+.full .bar{position:relative;left:auto;right:auto;bottom:auto;margin:16px 14px 30px}
+.phdr{position:absolute;left:0;right:0;top:0;height:120px;box-sizing:border-box;background:#FFFBF3;border-bottom:1.5px solid #E9DFD0;z-index:6;display:flex;align-items:flex-end;gap:12px;padding:0 16px 12px}
+.pin{position:absolute;width:52px;height:52px;border-radius:26px;z-index:4}
+.rg{display:inline-flex;align-items:center;gap:6px;min-height:48px;height:48px;padding:0 16px;border-radius:24px;border:2px solid #8C6B5D;background:#FFF6DD;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
+p{overflow-wrap:break-word}
+h1,h2{margin:0}
+</style>
+</helmet>
+<div class="scr g-paper" style="height: 844px">
+<div class="scroll" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow-y: auto; overflow-x: hidden"><div class="flow" style="padding: 136px 14px 16px; display: flex; flex-direction: column">
+<section class="pn card" style="margin-top: 0">
+<div style="display: flex; align-items: center; gap: 12px"><span class="ic" style="width: 52px; height: 52px; border-radius: 26px; background: #E3F5EC"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><rect x="6.5" y="2.5" width="11" height="19" rx="2.8"/><path d="M10.5 5h3"/></svg></span><div><h2 class="fd" style="font-size: 24px; line-height: 1.15">Saved on this phone</h2><div style="margin-top: 2px"><button class="btn link" style="gap: 6px; padding: 0" aria-label="Saved on this phone. More about the server."><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><rect x="6.5" y="2.5" width="11" height="19" rx="2.8"/><path d="M10.5 5h3"/></svg><span>About the server</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01" stroke-width="3"/></svg></button><!-- Tap sheet: "LifeTwin's server reads your answers to understand them, but doesn't keep them." --></div></div></div>
+<ul style="list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px"><li style="display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 17px; line-height: 1.2"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M5.5 3.5h9l4 4v13h-13z"/><path d="M14.5 3.5v4h4"/><path d="M8.5 12h7M8.5 15.5h5"/></svg>Answers and notes</li><li style="display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 17px; line-height: 1.2"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14.5h.01M12 14.5h.01M16 14.5h.01" stroke-width="3"/></svg>Check-ins and logs</li><li style="display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 17px; line-height: 1.2"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M8.5 3.5L3 6.5l2 5 3-1.2V20.5h8V10.3l3 1.2 2-5-5.5-3c-.6 1.6-2.2 2.7-4 2.7s-3.4-1.1-4-2.7z"/></svg>Mochi&#8217;s look</li><li style="display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 17px; line-height: 1.2"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>Reminders</li></ul>
+</section>
+
+<section class="pn card" style="margin-top: 12px">
+<button class="btn row" role="switch" aria-checked="true" style="box-shadow: none; border: 0; padding: 0; min-height: 56px"><span class="ic" style="width: 44px; height: 44px; border-radius: 22px; background: #FFF4EF"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M5.5 3.5h9l4 4v13h-13z"/><path d="M14.5 3.5v4h4"/><path d="M8.5 12h7M8.5 15.5h5"/></svg></span>
+<span class="rt"><b>Mochi remembers</b></span><span class="sw" aria-hidden="true"><i><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i></span></button>
+<a class="btn row" href="R-4-Notebook.dc.html" style="box-shadow: none; border: 0; border-top: 1.5px solid #E9DFD0; border-radius: 0; padding: 8px 0 0; margin-top: 8px; min-height: 56px"><span class="ic" style="width: 44px; height: 44px; border-radius: 22px; background: #FFFDF8"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M5.5 3.5h9l4 4v13h-13z"/><path d="M14.5 3.5v4h4"/><path d="M8.5 12h7M8.5 15.5h5"/></svg></span>
+<span class="rt"><b>Mochi&#8217;s notebook</b><span>3 notes &#183; read only</span></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M9 5l7 7-7 7"/></svg></a></section>
+
+<section class="pn card" style="margin-top: 12px">
+<a class="btn row" href="Z-25-AISettings.dc.html" style="box-shadow: none; border: 0; padding: 0; min-height: 56px"><span class="ic" style="width: 44px; height: 44px; border-radius: 22px; background: #EEECFB"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 16.5v4M17 18.5h4"/></svg></span>
+<span class="rt"><b>AI and privacy</b><span>What may be sent</span></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M9 5l7 7-7 7"/></svg></a></section>
+
+<section class="pn card" style="margin-top: 12px">
+<button class="btn row" style="box-shadow: none; border: 0; padding: 0; min-height: 56px"><span class="ic" style="width: 44px; height: 44px; border-radius: 22px; background: #FFF4EF"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg></span>
+<span class="rt"><b>Apple Health access</b><span>Change in iPhone Settings</span></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M9 5l7 7-7 7"/></svg></button></section>
+
+<section class="pn card" style="margin-top: 12px">
+<button class="btn row" style="box-shadow: none; border: 0; padding: 0; min-height: 56px"><span class="ic" style="width: 44px; height: 44px; border-radius: 22px; background: #FFFDF8"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M4.5 6.5h15"/><path d="M9.5 6.5V4h5v2.5"/><path d="M6.5 6.5l1 14h9l1-14"/><path d="M10.2 10.5v6.5M13.8 10.5v6.5"/></svg></span>
+<span class="rt"><b>Delete my data</b></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M9 5l7 7-7 7"/></svg></button></section>
+
+</div></div>
+<header class="phdr"><button class="btn lip-cream" style="width: 52px; height: 52px; border-radius: 26px; flex: none" aria-label="Back to settings"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M15 5l-7 7 7 7"/></svg></button><h1 class="fd" style="font-size: 28px; line-height: 1.1; padding-bottom: 8px">My data</h1></header>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

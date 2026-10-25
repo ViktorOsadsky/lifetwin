@@ -1,0 +1,82 @@
+Brief for writing coach golden scenarios and red-team cases (input to a test writer).
+
+Endpoint: POST /api/coach/plan. Request model: server/lifetwin/coach/models.py
+(CoachPlanRequest). Response model: CoachPlanResponse in the same file.
+
+All spoken text = response.lines + response.reply + every item's title, message and why
++ every change's explanation.
+
+== coach_golden.json ==
+A JSON list. Each scenario:
+{
+  "id": "short-kebab-id",
+  "spec": "the sentence from the spec this checks",
+  "request": { ...CoachPlanRequest JSON; local_date is required... },
+  "provider": null | {"reply": "echo"},   # optional fake Muse; "echo" returns the drafts unchanged
+  "expect": { ...properties below... }
+}
+or, for a multi-day loop:
+{
+  "id": "...", "spec": "...",
+  "days": [
+    {"request": {...}, "feedback": [ItemFeedback...] | null, "expect": {...}},
+    ...
+  ]
+}
+In "days", the harness sends day 1's request as given. For each later day it copies
+that day's "request", then sets previous_plan from the previous response
+(revision_id, based_on, local_date, items[id, kind, catalog_id, minutes, time_of_day,
+callback_note_id]), latest_revision_id = previous revision_id, and feedback =
+{"revision_id": previous revision_id, "items": that day's "feedback"}.
+A day may set "stale": true: the harness then sends the feedback against the
+revision BEFORE the previous one (it must be refused).
+
+Expect properties (all optional; every listed one must hold):
+  "http_status": 200 (default) | 409 | 422
+  "status": "ok" | "emergency"
+  "emergency": bool
+  "item_count": [min, max]
+  "has_kinds": ["workout", "diet", "habit", "encourage"]   # each must appear
+  "lacks_kinds": [...]                                     # none may appear
+  "workout": {                     # the item with kind "workout" (must exist)
+      "max_minutes": int, "min_minutes": int,
+      "intensity_in": ["light","moderate","vigorous"],
+      "position_in": ["seated","supported_standing","standing","water"],
+      "counts_as_in": ["moderate","vigorous","none"],
+      "minutes_greater_than_previous": true,   # multi-day: step up vs previous day
+      "minutes_not_greater_than_previous": true,
+      "catalog_changed": true | false          # multi-day: vs previous day's workout
+  }
+  "diet": {"catalog_changed": bool}
+  "text_has": ["regex", ...]       # each regex (case-insensitive) matches the spoken text
+  "text_lacks": ["regex", ...]     # no regex matches the spoken text
+  "reply_has": ["regex", ...]      # each matches response.reply (reply must be set)
+  "reply_is_null": true
+  "callback": true | false         # whether any item has callback_note_id
+  "callback_note_id": "id"
+  "changes": {"move": ["swapped","seated"], ...}   # item's change kind must be one of these
+  "mood_in": ["happy","proud","cozy","waiting","concerned","celebrate"]
+  "movement_paused": bool
+  "alert": null | "bp_crisis"
+  "memory_instruction": null | {"action": "forget"|"forget_all", "note_ids_include": [...]}
+  "provider_calls": int            # how many times the fake provider was called
+  "phrased_by": "templates" | "muse"
+  "trace_complete": true           # every item has a trace step with facts, rule,
+                                   # evidence equal to its source_url, and action
+  "no_numbers_except_minutes": true  # spoken digits only appear as item minutes or counts of days/weeks
+
+== coach_redteam.json ==
+A JSON list. The fake Muse provider receives the drafts of the plan's item messages
+and returns {"lines": [...]}, one per item. Each case says how it corrupts that reply:
+{
+  "id": "...", "category": "supplement dose" | "weight loss" | ...,
+  "request": {...CoachPlanRequest JSON; outside_ai_consent {"muse": true} is added...},
+  "mode": "replace_line" | "append" | "prefix" | "raw" | "raise",
+  "text": "the unsafe text"          # replace_line/append/prefix
+  "target": "first" | "all",         # which line(s) to corrupt (default "first")
+  "raw": <any JSON value or a string> # mode raw: the whole provider reply
+  "expect": "templates" | "muse"     # "muse" only for safe controls
+}
+"append" puts text after the draft line, "prefix" before it, "replace_line" replaces it.
+Unsafe cases expect "templates": every item message must equal the consent-off
+template, and none of the unsafe text may reach the spoken text.

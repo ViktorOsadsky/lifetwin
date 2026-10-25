@@ -1,0 +1,146 @@
+{
+ "wave": {
+  "size": [
+   255,
+   332
+  ],
+  "feet_anchor": {
+   "x": 0.5471,
+   "y": 0.9759
+  },
+  "scale": 0.713,
+  "sheet": "bear_default_regular_A"
+ },
+ "walk_side": {
+  "size": [
+   221,
+   334
+  ],
+  "feet_anchor": {
+   "x": 0.4502,
+   "y": 0.976
+  },
+  "scale": 0.713,
+  "sheet": "bear_default_regular_A"
+ },
+ "sit": {
+  "size": [
+   238,
+   286
+  ],
+  "feet_anchor": {
+   "x": 0.4979,
+   "y": 0.972
+  },
+  "scale": 0.713,
+  "sheet": "bear_default_regular_A"
+ },
+ "jump": {
+  "size": [
+   259,
+   335
+  ],
+  "feet_anchor": {
+   "x": 0.388,
+   "y": 0.9761
+  },
+  "scale": 0.713,
+  "sheet": "bear_default_regular_A"
+ },
+ "sleep": {
+  "size": [
+   327,
+   201
+  ],
+  "feet_anchor": {
+   "x": 0.6208,
+   "y": 0.9602
+  },
+  "scale": 0.713,
+  "sheet": "bear_default_regular_A"
+ },
+ "eat": {
+  "size": [
+   225,
+   290
+  ],
+  "feet_anchor": {
+   "x": 0.4956,
+   "y": 0.9724
+  },
+  "scale": 0.713,
+  "sheet": "bear_default_regular_A"
+ },
+ "stretch": {
+  "size": [
+   200,
+   350
+  ],
+  "feet_anchor": {
+   "x": 0.5075,
+   "y": 0.9771
+  },
+  "scale": 0.713,
+  "sheet": "bear_default_regular_A"
+ },
+ "concerned": {
+  "size": [
+   206,
+   332
+  ],
+  "feet_anchor": {
+   "x": 0.4612,
+   "y": 0.9759
+  },
+  "scale": 0.649,
+  "sheet": "bear_default_regular_B"
+ },
+ "listening": {
+  "size": [
+   234,
+   335
+  ],
+  "feet_anchor": {
+   "x": 0.4829,
+   "y": 0.9761
+  },
+  "scale": 0.649,
+  "sheet": "bear_default_regular_B"
+ },
+ "thinking": {
+  "size": [
+   207,
+   327
+  ],
+  "feet_anchor": {
+   "x": 0.4903,
+   "y": 0.9755
+  },
+  "scale": 0.649,
+  "sheet": "bear_default_regular_B"
+ },
+ "sleepy": {
+  "size": [
+   237,
+   328
+  ],
+  "feet_anchor": {
+   "x": 0.4177,
+   "y": 0.9756
+  },
+  "scale": 0.649,
+  "sheet": "bear_default_regular_B"
+ },
+ "proud": {
+  "size": [
+   226,
+   328
+  ],
+  "feet_anchor": {
+   "x": 0.5044,
+   "y": 0.9756
+  },
+  "scale": 0.649,
+  "sheet": "bear_default_regular_B"
+ }
+}
