@@ -1,0 +1,12 @@
+Running Xcode build...
+Xcode build done.                                           10.9s
+flutter: 00:00 +0: QA107 approved merged engine: synthetic repository and canonical capture
+flutter: Refused profile fields: [age]
+flutter: Refused profile fields: [age]
+flutter: Refused profile fields: [age]
+flutter: Refused profile fields: [age]
+flutter: Refused profile fields: [age]
+flutter: 00:00 +1: (tearDownAll)
+flutter: 00:00 +2: All tests passed!
+All tests passed.
+Synthetic QA107 capture: /private/tmp/lifetwin-qa107-engine-capture.json

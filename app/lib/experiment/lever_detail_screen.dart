@@ -175,6 +175,8 @@ class _LeverDetailScreenState extends State<LeverDetailScreen> {
                 ? 'Quitting alone vs today'
                 : ExperimentCopy.justThisChange,
             gainNote: _isSmoking ? 'from quitting alone' : 'from this change',
+            currentScore: _probe.result.currentScore,
+            scoreDelta: _probe.result.scoreDelta,
           ),
           if (_isSmoking) ..._smokingHelp(),
           if (!_isSmoking && l.id == LeverId.sleepHours && v >= l.max)

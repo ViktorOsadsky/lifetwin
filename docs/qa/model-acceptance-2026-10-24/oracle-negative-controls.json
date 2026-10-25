@@ -1,0 +1,23 @@
+{
+  "source_head": "9ace866404bb8df89de673dd299041e25791ccad",
+  "controls": [
+    {
+      "control": "stale_reference_one",
+      "oracle": "dart",
+      "expected_rejection": true,
+      "exit": 255
+    },
+    {
+      "control": "wrong_blended_summary",
+      "oracle": "python",
+      "expected_rejection": true,
+      "exit": 1
+    },
+    {
+      "control": "host_as_device",
+      "oracle": "dart",
+      "expected_rejection": true,
+      "exit": 255
+    }
+  ]
+}

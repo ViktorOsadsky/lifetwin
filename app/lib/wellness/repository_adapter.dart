@@ -17,6 +17,7 @@ class RepositoryWellness extends ChangeNotifier {
     healthScore: repository.healthScore,
     status: repository.healthScoreStatus,
     ageGroupPercentile: repository.ageGroupPercentile,
+    groupLabel: repository.healthGroupLabel,
     message: repository.healthScoreMessage,
     lifespan: _lifespan(repository.lifespanEstimate),
     lifespanRevealSeen: repository.lifespanRevealSeen,
@@ -35,6 +36,9 @@ class RepositoryWellness extends ChangeNotifier {
           expectedYear: e.expectedYear,
           caveat: e.caveat,
           roughGuide: e.status == LifespanStatus.extrapolated,
+          p25OpenEnded: e.p25OpenEnded,
+          openEnded: e.openEnded,
+          p75OpenEnded: e.p75OpenEnded,
         );
 
   static int _round(double x) => x.round();
