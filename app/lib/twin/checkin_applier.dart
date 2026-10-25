@@ -34,6 +34,14 @@ final Map<String, bool Function(Object)> profileSchema = {
   'moderate_recreation_min_week': (v) => _number(v, 0, 10080),
 };
 
+/// Lab readings from a document and what each accepts (plausible ranges, never clamped).
+/// Deliberately NOT part of [profileSchema]: these are history only, never profile or
+/// model inputs.
+final Map<String, bool Function(Object)> readingSchema = {
+  'hba1c': (v) => _number(v, 3, 20), // percent
+  'ldl_cholesterol': (v) => _number(v, 20, 400), // mg/dL
+};
+
 /// One day's `daily_logs` values and what each accepts (the server's DailyLogPart ranges).
 final Map<String, bool Function(Object)> dayLogSchema = {
   'sleep_hours': (v) => _number(v, 0, 24),
