@@ -790,7 +790,7 @@ class ConversationService:
             source = (
                 "your document"
                 if document
-                else "your wristband"
+                else "your activity band"
                 if request.import_source == "wristband"
                 else "Apple Health"
             )
