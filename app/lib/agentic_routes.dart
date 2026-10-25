@@ -73,6 +73,7 @@ class AgenticRoutes {
     BandClient? bandClient,
     BandFilePicker? bandFilePicker,
     this.onDeleted,
+    this.openSettings = openAppSettings,
     // ignore: prefer_initializing_formals
   }) : _guide = guide,
        _api = api,
@@ -86,6 +87,9 @@ class AgenticRoutes {
        _bandClient = bandClient ?? StubBandClient();
 
   final ValueListenable<TwinAppearance> look;
+
+  /// Opens this app's page in iPhone Settings (Apple Health access lives there); tests pass a fake.
+  final Future<void> Function() openSettings;
 
   /// The onboarding conversation, for its speech input and output and the person's choice of voice.
   final VoiceOnboardingController Function() voice;
@@ -384,6 +388,7 @@ class AgenticRoutes {
           onBack: () => Navigator.of(page).pop(),
           onAiPrivacy: () => aiPrivacy(page),
           onWeeklyCheckIn: () => weeklyCheckIn(page),
+          onHealthSettings: () => openSettings(),
           onReminders: () => reminders(page),
           onNotebook: () => notebook(page),
           onDeleted: () {

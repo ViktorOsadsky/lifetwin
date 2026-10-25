@@ -41,6 +41,7 @@ void main() {
 
   late AgenticRoutes routes;
   late BuildContext room;
+  var settingsOpened = 0;
 
   Future<void> pump(WidgetTester t, {Size size = const Size(390, 844), double scale = 1}) async {
     t.view.physicalSize = size;
@@ -65,6 +66,7 @@ void main() {
       voice: () => voice,
       guide: ContractGuide(),
       changeClient: FakeChangeClient(),
+      openSettings: () async => settingsOpened++,
     )..attach(repo);
     await t.pumpWidget(
       MaterialApp(
@@ -122,7 +124,18 @@ void main() {
   };
 
   for (final e in deep.entries) {
-    testWidgets('${e.key}: Home is there, named, 48pt, and lands on the Room', (t) async {
+    testWidgets('My data: Apple Health access opens the app settings page', (t) async {
+    settingsOpened = 0;
+    await pump(t);
+    await mid(t);
+    expect(t.widget<MyDataScreen>(find.byType(MyDataScreen)).onHealthSettings, isNotNull);
+    await t.scrollUntilVisible(find.text('Apple Health access'), 200);
+    await t.tap(find.text('Apple Health access'));
+    await t.pump();
+    expect(settingsOpened, 1);
+  });
+
+  testWidgets('${e.key}: Home is there, named, 48pt, and lands on the Room', (t) async {
       final h = t.ensureSemantics();
       await pump(t);
       e.value(await mid(t));

@@ -27,10 +27,6 @@ class CustomizeScreen extends StatefulWidget {
 
 enum _Tab {
   hats('Hats', Icons.face_retouching_natural),
-  tops('Tops', Icons.checkroom_rounded),
-  glasses('Glasses', Icons.visibility_outlined),
-  fur('Fur', Icons.pets_rounded),
-  aids('Aids', Icons.accessibility_new_rounded),
   room('Room', Icons.chair_outlined);
 
   const _Tab(this.label, this.icon);
@@ -91,7 +87,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
               const SizedBox(height: 12),
               _tabs(),
               const SizedBox(height: 12),
-              if (_tab == _Tab.hats) _hats() else if (_tab == _Tab.room) _rooms() else _comingSoon(),
+              if (_tab == _Tab.hats) _hats() else _rooms(),
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -239,31 +235,10 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
             art: const Icon(Icons.do_not_disturb_alt_rounded, size: 40, color: LtColors.ink),
             onTap: () => setState(() => _draft = _draft.copyWith(look: TwinLook.plain)),
           ),
-          // Drawn in the design; no sprite art exists for these yet.
-          for (final (label, icon) in const [
-            ('Beanie', Icons.ac_unit_rounded),
-            ('Sun hat', Icons.wb_sunny_outlined),
-            ('Cap', Icons.sports_baseball_outlined),
-            ('Visor', Icons.light_mode_outlined),
-          ])
-            _Tile(
-              label: label,
-              selected: false,
-              tilt: 0,
-              art: Icon(icon, size: 36, color: LtColors.control),
-              onTap: null,
-            ),
         ],
       ),
     );
   }
-
-  Widget _comingSoon() => Container(
-    constraints: const BoxConstraints(minHeight: 96),
-    alignment: Alignment.center,
-    padding: const EdgeInsets.all(16),
-    child: WholeWordText('${_tab.label} are coming soon.', textAlign: TextAlign.center, style: LtText.body(size: 18)),
-  );
 
   Widget _rooms() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
