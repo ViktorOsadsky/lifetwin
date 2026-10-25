@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show CustomSemanticsAction;
@@ -136,80 +135,24 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     if (!_justChanged) widget.onUseHealth?.call();
   }
 
-  // ---- "Fill this in faster" -----------------------------------------------
+  // ---- the one import control ---------------------------------------------------
 
-  /// The pill is dismissed for the rest of the conversation.
-  bool _pillDismissed = false;
+  /// "Not now" in the sheet shrinks the control to an icon, in the same spot, for the rest of the talk.
+  bool _importCollapsed = false;
 
-  /// After two answers, or when Mochi offers Apple Health. Gone once something was imported or dismissed.
-  bool get _pillWanted =>
-      !_pillDismissed &&
-      !_offerVisible &&
+  /// Visible from the first question on, until the conversation is done. One control, no timers.
+  bool get _importWanted =>
       c.phase != VoicePhase.done &&
+      c.phase != VoicePhase.consent &&
       c.turn != null &&
       !c.emergency &&
-      (c.questionNumber ?? 0) >= 3 &&
-      c.lastImport == null &&
       (widget.onUseHealth != null || widget.onUploadDocument != null);
-
-  // ---- the offer in the conversation ------------------------------------------
-
-  /// The inline "Want to save time?" offer was answered (a button, or an import by the pill). It is shown
-  /// once; after that the pill is the shortcut.
-  bool _offerAnswered = false;
-
-  /// Shown when the server offers Apple Health, or on the client by question 3 if it has not. Never at
-  /// the same moment as the pill.
-  bool get _offerVisible =>
-      !_offerAnswered &&
-      c.lastImport == null &&
-      c.phase != VoicePhase.done &&
-      c.phase != VoicePhase.listening &&
-      c.turn != null &&
-      !c.emergency &&
-      !c.confirming &&
-      (widget.onUseHealth != null || widget.onUploadDocument != null) &&
-      (c.healthOffer || (c.questionNumber ?? 0) >= 3);
-
-  void _answerOffer(VoidCallback? then) {
-    setState(() => _offerAnswered = true);
-    then?.call();
-  }
-
-  List<Widget> _inlineOffer() => [
-    WholeWordText(
-      'Want to save time? I can fill some of this from Apple Health or a health document.',
-      style: LtText.body(weight: FontWeight.w700),
-    ),
-    const SizedBox(height: 12),
-    if (widget.onUseHealth != null) ...[
-      LipButton(
-        label: 'Use Apple Health',
-        icon: Icons.favorite_border_rounded,
-        kind: LipKind.secondary,
-        height: 64,
-        onTap: () => _answerOffer(_useHealth),
-      ),
-      const SizedBox(height: 10),
-    ],
-    if (widget.onUploadDocument != null) ...[
-      LipButton(
-        label: 'Upload a document',
-        icon: Icons.description_outlined,
-        kind: LipKind.secondary,
-        height: 64,
-        onTap: () => _answerOffer(widget.onUploadDocument),
-      ),
-      const SizedBox(height: 10),
-    ],
-    LinkButton(label: 'Keep talking', onTap: () => _answerOffer(null)),
-    const SizedBox(height: 14),
-  ];
 
   void _fasterSheet() {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       backgroundColor: LtColors.paper,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(LtRadii.panel))),
       builder: (sheet) => SafeArea(
@@ -219,7 +162,10 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Semantics(header: true, child: WholeWordText('Fill this in faster', style: LtText.display(28))),
+              Semantics(
+                header: true,
+                child: WholeWordText('Fill from Apple Health or a document', style: LtText.display(28)),
+              ),
               const SizedBox(height: 8),
               WholeWordText('Mochi asks fewer questions when you add health data.', style: LtText.body()),
               const SizedBox(height: 16),
@@ -248,7 +194,14 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
                 ),
               ],
               const SizedBox(height: 12),
-              LipButton(label: 'Not now', height: 48, onTap: () => Navigator.of(sheet).pop()),
+              LipButton(
+                label: 'Not now',
+                height: 48,
+                onTap: () {
+                  Navigator.of(sheet).pop();
+                  setState(() => _importCollapsed = true);
+                },
+              ),
             ],
           ),
         ),
@@ -267,9 +220,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     _shownImport = i;
     _noteTimer?.cancel();
     setState(
-      () => _importNote =
-          'Added ${i.count} ${i.count == 1 ? 'thing' : 'things'} from '
-          '${i.source == 'document' ? 'your document' : 'Apple Health'}',
+      () => _importNote = 'Added from ${i.source == 'document' ? 'your document' : 'Apple Health'} ✓',
     );
     _noteTimer = Timer(Duration(seconds: largeText(context) ? 8 : 6), () {
       if (mounted) setState(() => _importNote = null);
@@ -806,6 +757,15 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           const SizedBox(height: 8),
           _pad(Text('Try saying: “I’m 62.”', style: LtText.body(color: LtColors.secondary))),
         ],
+        if (c.healthOffer && _importWanted && !keyboard) ...[
+          const SizedBox(height: 8),
+          _pad(
+            Text(
+              'Tap the button below to fill from Apple Health or a document.',
+              style: LtText.body(color: LtColors.secondary),
+            ),
+          ),
+        ],
         if (voiceLine != null) ...[
           const SizedBox(height: 4),
           _pad(Align(alignment: Alignment.centerLeft, child: voiceLine)),
@@ -829,23 +789,29 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         const SizedBox(height: 8),
       ],
       controls: [
-        // A reserved slot at the top of the controls (always in view), so the pill appearing or going never
-        // moves anything.
-        if (!keyboard && c.phase != VoicePhase.done && (_pillWanted || _importNote != null))
+        // The one import control, in a fixed slot at the top of the controls (always in view).
+        if (!keyboard && _importWanted)
           SizedBox(
-            height: 84,
+            height: 56,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: _importNote != null
-                  ? Semantics(
-                      liveRegion: true,
-                      child: Text(_importNote!, style: LtText.body(color: LtColors.secondary)),
-                    )
-                  : FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: FasterPill(onTap: _fasterSheet, onDismiss: () => setState(() => _pillDismissed = true)),
+              child: Row(
+                children: [
+                  Flexible(
+                    child: ImportControl(collapsed: _importCollapsed || _importNote != null || largeText(context), onTap: _fasterSheet),
+                  ),
+                  if (_importNote != null)
+                    Expanded(
+                      child: Semantics(
+                        liveRegion: true,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Text(_importNote!, style: LtText.body(color: LtColors.secondary)),
+                        ),
+                      ),
                     ),
+                ],
+              ),
             ),
           ),
         ..._controls(keyboard),
@@ -926,7 +892,6 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     }
     final quick = !c.typing && c.quickAnswers.isNotEmpty;
     return [
-      if (_offerVisible && (!keyboard || c.healthOffer)) ..._inlineOffer(),
       // The offer after an answer the server could not read, first so it is seen.
       if (c.helperWouldHelp && !busy) ...[
         LipButton(
@@ -940,12 +905,6 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       if (quick) ...[_quickAnswers(busy), const SizedBox(height: 8)],
       // With quick answers on screen they are the big choices; Talk is the smaller one.
       if (quick) TalkButton(controller: c, compact: true) else ..._answerControls(busy, keyboard),
-      // On the first question, and when Mochi offers it (or the person just said yes):
-      // Apple Health, right under Talk (or Send). Shown with the keyboard too at the offer.
-      if (widget.onUseHealth != null && c.phase != VoicePhase.listening && c.healthOffer && !_offerVisible) ...[
-        const SizedBox(height: 12),
-        _healthButton(),
-      ],
       if (!keyboard) _switchMode(),
       LinkButton(label: 'Skip this question', onTap: busy ? null : _skip),
       if (!keyboard) ..._chips(),
@@ -1463,57 +1422,29 @@ class _NoticeBox extends StatelessWidget {
   }
 }
 
-/// "Fill this in faster": one 420 ms wiggle (±3°) and a haptic when it first appears, no wiggle under Reduce
-/// Motion (the haptic only), and it never times out. The × dismisses it for the rest of the conversation.
-class FasterPill extends StatefulWidget {
-  const FasterPill({super.key, required this.onTap, required this.onDismiss});
+/// The one import control: a compact pill ("Fill from Apple Health or a document"), or after "Not now" a
+/// small icon in the same spot. Both are 48 pt targets and always reachable.
+class ImportControl extends StatelessWidget {
+  const ImportControl({super.key, required this.collapsed, required this.onTap});
+  final bool collapsed;
   final VoidCallback onTap;
-  final VoidCallback onDismiss;
+
+  static const label = 'Fill from Apple Health or a document';
 
   @override
-  State<FasterPill> createState() => _FasterPillState();
-}
-
-class _FasterPillState extends State<FasterPill> with SingleTickerProviderStateMixin {
-  late final AnimationController _wiggle = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 420),
-  );
-
-  @override
-  void initState() {
-    super.initState();
-    HapticFeedback.lightImpact();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !MediaQuery.disableAnimationsOf(context)) _wiggle.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _wiggle.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      AnimatedBuilder(
-        animation: _wiggle,
-        builder: (context, child) =>
-            Transform.rotate(angle: math.sin(_wiggle.value * 2 * math.pi) * 3 * math.pi / 180, child: child),
-        child: Semantics(
-          button: true,
-          label: 'Fill this in faster. Shortcut available.',
-          excludeSemantics: true,
-          onTap: widget.onTap,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: widget.onTap,
-            child: Container(
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: label,
+    excludeSemantics: true,
+    onTap: onTap,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: collapsed
+          ? const SizedBox(width: 48, height: 48, child: Icon(Icons.bolt_rounded, size: 26, color: LtColors.ink))
+          : Container(
               constraints: const BoxConstraints(minHeight: 48),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
                 color: LtColors.paper,
                 borderRadius: BorderRadius.circular(LtRadii.chip),
@@ -1524,24 +1455,15 @@ class _FasterPillState extends State<FasterPill> with SingleTickerProviderStateM
                 children: [
                   const Icon(Icons.bolt_rounded, size: 22, color: LtColors.ink),
                   const SizedBox(width: 6),
-                  Text('Fill this in faster', style: LtText.body(weight: FontWeight.w700)),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(label, maxLines: 1, style: LtText.body(size: 16, weight: FontWeight.w700)),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-      Semantics(
-        button: true,
-        label: 'Dismiss Fill this in faster',
-        excludeSemantics: true,
-        onTap: widget.onDismiss,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onDismiss,
-          child: const SizedBox(width: 48, height: 48, child: Icon(Icons.close_rounded, size: 22, color: LtColors.ink)),
-        ),
-      ),
-    ],
+    ),
   );
 }

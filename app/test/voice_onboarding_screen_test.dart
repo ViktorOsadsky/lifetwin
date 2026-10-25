@@ -75,76 +75,15 @@ class ThirdQuestionGuide extends FakeConversationGuide {
 }
 
 void main() {
-  testWidgets('Fill this in faster: appears from the third question, opens the sheet, dismisses, and notes an import', (
-    t,
-  ) async {
-    t.view.physicalSize = const Size(390, 844);
-    t.view.devicePixelRatio = 1;
-    addTearDown(t.view.reset);
-    final c = VoiceOnboardingController(
-      guide: ThirdQuestionGuide(),
-      input: FakeSpeechInput(),
-      output: FakeSpeechOutput(),
-    );
-    var health = 0, docs = 0;
-    await t.pumpWidget(
-      MaterialApp(
-        home: VoiceOnboardingScreen(
-          controller: c,
-          onDone: (_) {},
-          onUseHealth: () => health++,
-          onUploadDocument: () => docs++,
-        ),
-      ),
-    );
-    await choose(t, "No, I'll type");
-    await t.tap(find.text('Keep talking')); // the inline offer, answered; the pill is the later shortcut
-    await t.pumpAndSettle();
-    expect(find.text('Fill this in faster'), findsOneWidget);
-    await t.tap(find.text('Fill this in faster'));
-    await t.pumpAndSettle();
-    expect(find.textContaining('fewer questions', findRichText: true), findsOneWidget);
-    await t.tap(find.text('Upload a document'));
-    await t.pumpAndSettle();
-    expect(docs, 1);
-    // After an import the pill gives way to a quiet note.
-    await c.importHealth({'height_cm': 170});
-    await t.pump();
-    expect(find.text('Added 1 thing from Apple Health'), findsOneWidget);
-    await t.pump(const Duration(seconds: 7));
-    expect(find.text('Added 1 thing from Apple Health'), findsNothing);
-    expect(find.text('Fill this in faster'), findsNothing, reason: 'already imported');
-  });
+  group('the one import control: Fill from Apple Health or a document', () {
+    const label = 'Fill from Apple Health or a document';
 
-  testWidgets('Fill this in faster: the × hides it for the rest of the conversation', (t) async {
-    t.view.physicalSize = const Size(390, 844);
-    t.view.devicePixelRatio = 1;
-    addTearDown(t.view.reset);
-    final c = VoiceOnboardingController(
-      guide: ThirdQuestionGuide(),
-      input: FakeSpeechInput(),
-      output: FakeSpeechOutput(),
-    );
-    await t.pumpWidget(
-      MaterialApp(
-        home: VoiceOnboardingScreen(controller: c, onDone: (_) {}, onUseHealth: () {}),
-      ),
-    );
-    await choose(t, "No, I'll type");
-    await t.tap(find.text('Keep talking'));
-    await t.pumpAndSettle();
-    await t.tap(find.byIcon(Icons.close_rounded));
-    await t.pump();
-    expect(find.text('Fill this in faster'), findsNothing);
-  });
-
-  group('the inline offer to fill this in from Apple Health or a document', () {
     Future<(VoiceOnboardingController, List<String>)> open(WidgetTester t) async {
       t.view.physicalSize = const Size(390, 844);
       t.view.devicePixelRatio = 1;
       addTearDown(t.view.reset);
       final c = VoiceOnboardingController(
-        guide: ThirdQuestionGuide(),
+        guide: FakeConversationGuide(),
         input: FakeSpeechInput(),
         output: FakeSpeechOutput(),
       );
@@ -163,43 +102,62 @@ void main() {
       return (c, opened);
     }
 
-    const ask = 'Want to save time? I can fill some of this from Apple Health or a health document.';
-
-    testWidgets('appears once by question 3, without the pill beside it; Keep talking brings the pill', (t) async {
-      await open(t);
-      expect(find.text(ask), findsOneWidget);
-      expect(find.text('Use Apple Health'), findsOneWidget);
-      expect(find.text('Upload a document'), findsOneWidget);
-      expect(find.text('Fill this in faster'), findsNothing, reason: 'never both at once');
-      await t.tap(find.text('Keep talking'));
-      await t.pumpAndSettle();
-      expect(find.text(ask), findsNothing, reason: 'offered once');
-      expect(find.text('Fill this in faster'), findsOneWidget);
+    testWidgets('is visible at question 1, 48 pt tall, with no second import control beside it', (t) async {
+      final (c, _) = await open(t);
+      expect(c.questionNumber, 1);
+      expect(find.text(label), findsOneWidget);
+      expect(t.getSize(find.byType(ImportControl)).height, greaterThanOrEqualTo(48));
+      expect(find.text('Use Apple Health'), findsNothing, reason: 'no inline buttons, only the sheet has them');
+      expect(find.text('Upload a document'), findsNothing);
+      expect(find.text('Fill this in faster'), findsNothing);
+      expect(find.byType(ImportControl), findsOneWidget);
     });
 
-    testWidgets('Use Apple Health opens the Health import, once', (t) async {
-      final (_, opened) = await open(t);
+    testWidgets('opens the sheet; Use Apple Health and Upload a document route to their imports', (t) async {
+      var (c, opened) = await open(t);
+      await t.tap(find.text(label));
+      await t.pumpAndSettle();
+      expect(find.text('Use Apple Health'), findsOneWidget);
+      expect(find.text('Upload a document'), findsOneWidget);
       await t.pump(const Duration(milliseconds: 700)); // a fresh question ignores a tap at first
       await t.tap(find.text('Use Apple Health'));
       await t.pumpAndSettle();
       expect(opened, ['health']);
-      expect(find.text(ask), findsNothing);
-    });
-
-    testWidgets('Upload a document opens the document upload, once', (t) async {
-      final (_, opened) = await open(t);
+      await t.tap(find.bySemanticsLabel(label));
+      await t.pumpAndSettle();
       await t.tap(find.text('Upload a document'));
       await t.pumpAndSettle();
-      expect(opened, ['document']);
-      expect(find.text(ask), findsNothing);
+      expect(opened, ['health', 'document']);
     });
 
-    testWidgets('not offered before question 3, and not after an import', (t) async {
-      final r = Rig();
-      await r.pump(t);
-      await choose(t, "No, I'll type");
-      expect(r.c.questionNumber, 1);
-      expect(find.text('Want to save time?', findRichText: true, skipOffstage: false), findsNothing);
+    testWidgets('Not now collapses it to an icon in the same spot, still reachable', (t) async {
+      final h = t.ensureSemantics();
+      await open(t);
+      final before = t.getTopLeft(find.byType(ImportControl));
+      await t.tap(find.text(label));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Not now'));
+      await t.pumpAndSettle();
+      expect(find.text(label), findsNothing, reason: 'the words are gone');
+      expect(find.byType(ImportControl), findsOneWidget);
+      expect(t.getTopLeft(find.byType(ImportControl)), before, reason: 'same spot');
+      expect(t.getSize(find.byType(ImportControl)).height, greaterThanOrEqualTo(48));
+      expect(find.bySemanticsLabel(label), findsOneWidget);
+      await t.tap(find.byType(ImportControl));
+      await t.pumpAndSettle();
+      expect(find.text('Use Apple Health'), findsOneWidget, reason: 'still opens the sheet');
+      h.dispose();
+    });
+
+    testWidgets('after an import it says where from, and stays reachable', (t) async {
+      final (c, _) = await open(t);
+      await c.importHealth({'height_cm': 170});
+      await t.pump();
+      expect(find.text('Added from Apple Health ✓'), findsOneWidget);
+      expect(find.byType(ImportControl), findsOneWidget);
+      await t.pump(const Duration(seconds: 7));
+      expect(find.text('Added from Apple Health ✓'), findsNothing);
+      expect(find.byType(ImportControl), findsOneWidget);
     });
   });
 
