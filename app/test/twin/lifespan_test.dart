@@ -245,13 +245,6 @@ void main() {
     expect(math.exp(lifespanLogHazardRatio(p)), greaterThan(0));
   });
 
-  final readme = Map<String, dynamic>.from(
-    (golden['profiles'] as List).cast<Map<String, dynamic>>().firstWhere(
-          (p) => p['name'] == 'male_45_readme',
-        )['profile']
-        as Map,
-  );
-
   test('after the band adjustment, 5-year survival matches the Cox model within 0.5 points per band', () {
     final model = jsonDecode(
       File('packages/lifetwin_on_device/assets/model.json').readAsStringSync(),
@@ -306,56 +299,10 @@ void main() {
     }
   });
 
-  test('a healthier profile gives a higher expected age', () {
-    final worse = {
-      ...readme,
-      'smoking_status': 2,
-      'diabetes_diagnosed': 1,
-      'general_health': 4,
-    };
-    final healthy = LifespanEstimate.forProfile(readme, currentYear: 2026)!;
-    final unhealthy = LifespanEstimate.forProfile(worse, currentYear: 2026)!;
-    expect(healthy.expectedAge, greaterThan(unhealthy.expectedAge));
-    expect(healthy.expectedYear, greaterThan(unhealthy.expectedYear));
-  });
+  // The LifespanEstimate (the reveal) now comes from the yearly Cox projection; its tests
+  // are in projection_lifespan_test.dart. The life-table calculation above is kept.
 
-  test('under 18 (or over 85) has no estimate', () {
-    expect(
-      LifespanEstimate.forProfile({...readme, 'age': 17}, currentYear: 2026),
-      isNull,
-    );
-    expect(
-      LifespanEstimate.forProfile({...readme, 'age': 86}, currentYear: 2026),
-      isNull,
-    );
-    expect(
-      LifespanEstimate.forProfile({...readme, 'bmi': null}, currentYear: 2026),
-      isNull,
-    );
-    expect(
-      LifespanEstimate.forProfile({...readme, 'age': 18}, currentYear: 2026),
-      isNotNull,
-    );
-  });
-
-  test('extrapolated ages are marked and use the nearest band', () {
-    for (final (age, status) in [
-      (18, LifespanStatus.extrapolated),
-      (34, LifespanStatus.extrapolated),
-      (35, LifespanStatus.available),
-      (79, LifespanStatus.available),
-      (80, LifespanStatus.extrapolated),
-      (85, LifespanStatus.extrapolated),
-    ]) {
-      final e = LifespanEstimate.forProfile({
-        ...readme,
-        'age': age,
-      }, currentYear: 2026)!;
-      expect(e.status, status, reason: 'age $age');
-      expect(e.extrapolated, status == LifespanStatus.extrapolated);
-      expect(e.caveat, contains('Proof of concept'));
-      expect(e.caveat.contains('even rougher'), e.extrapolated);
-    }
+  test('the band factor outside 35–79 is the nearest band\'s', () {
     expect(
       bandLogAdjustment(LifespanSex.male, 18),
       bandLogAdjustmentMale.first,
@@ -369,17 +316,5 @@ void main() {
       bandLogAdjustment(LifespanSex.female, 85),
       bandLogAdjustmentFemale.last,
     );
-  });
-
-  test('expectedYear is the current year plus the rounded remaining years', () {
-    final e = LifespanEstimate.forProfile(readme, currentYear: 2026)!;
-    expect(e.expectedYear, 2026 + (e.expectedAge - 45 + 0.5).floor());
-    expect(
-      LifespanEstimate.forProfile(readme, currentYear: 2030)!.expectedYear,
-      e.expectedYear + 4,
-    );
-    expect(e.p25Age, lessThan(e.expectedAge + 5));
-    expect(e.p25Age, lessThan(e.p75Age));
-    expect(e.headline, isNot(contains('die')));
   });
 }

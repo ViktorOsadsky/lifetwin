@@ -129,21 +129,30 @@ void main() {
         final first = repo.model.assessModel(toModelProfile(rosaProfile));
         expect(first.available, isTrue);
         expect(first.percentByYear[5]!, closeTo(96.92, 0.01));
-        expect(first.healthScore!, closeTo(0.0375, 0.005)); // higher = better
+        // The health index (higher = better, 1.0 = the middle of women 59–69 in the survey).
+        expect(first.healthScore!, closeTo(1.6526, 0.0005));
+        expect(first.ageGroupPercentile!, closeTo(78.57, 0.01));
+        expect(first.healthGroupLabel, 'women 59–69');
         expect(first.rawLogRelativeHazard!, closeTo(-0.0375, 0.005));
         final seeded = repo.healthScoreHistory().first;
-        expect(seeded.score!, closeTo(0.0375, 0.005));
+        expect(seeded.score!, closeTo(1.6526, 0.0005));
       },
     );
 
-    test('Rosa gets a rough lifespan estimate (proof of concept)', () {
-      final e = repo.lifespanEstimate!;
+    test('Rosa\'s lifespan: the yearly projection (proof of concept)', () {
+      // Her onboarding snapshot crosses 50% at 98.9 (75% at 87.4, 25% at 108.9): 2061.
+      final first = repo.model.assessModel(toModelProfile(rosaProfile));
+      final e = LifespanEstimate.forProfile(first.profileUsed, currentYear: 2026, lab: repo.model.projection)!;
       expect(e.status, LifespanStatus.available);
-      expect(e.expectedAge, closeTo(88.7, 0.05)); // age 64 in the seed
-      expect(e.p25Age, closeTo(83.3, 0.05));
-      expect(e.p75Age, closeTo(95.0, 0.05));
-      expect(e.headline, contains('about 89'));
-      expect(e.expectedYear, 2051); // 2026 + round(88.7 - 64)
+      expect(e.expectedAge, closeTo(98.93, 0.005));
+      expect(e.p25Age, closeTo(87.39, 0.005));
+      expect(e.p75Age, closeTo(108.89, 0.005));
+      expect(e.headline, contains('about 99'));
+      expect(e.expectedYear, 2061); // 2026 + round(98.93 - 64)
+      // After the seeded weeks her curve is still above 25% (25.5%) at 110, the lab's last
+      // age, so there is no 75th-percentile age: no estimate rather than an invented one.
+      expect(repo.healthScore, isNotNull);
+      expect(repo.lifespanEstimate, isNull);
     });
 
     test('the weekly check-in is the one that fed the forecast', () {

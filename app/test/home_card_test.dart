@@ -15,7 +15,7 @@ import 'support/settings_hub.dart';
 const _lifespan = LifespanReveal(expectedAge: 87, p25Age: 80, p75Age: 93, expectedYear: 2051);
 
 WellnessSnapshot _snap({bool seen = false, List<double> history = const []}) => WellnessSnapshot(
-  healthScore: 0.42,
+  healthScore: 1.42,
   status: HealthScoreStatus.available,
   ageGroupPercentile: 72,
   lifespan: _lifespan,
@@ -69,9 +69,9 @@ void main() {
 
   for (final (width, scale) in [(390.0, 1.0), (320.0, 1.0), (390.0, 1.6), (320.0, 1.6)]) {
     testWidgets('the card fits at $width wide, ${scale}x text, with no overflow', (t) async {
-      await pumpCard(t, _snap(seen: true, history: [0.1, 0.2, 0.15, 0.3, 0.42]), width: width, scale: scale);
+      await pumpCard(t, _snap(seen: true, history: [1.1, 1.2, 1.15, 1.3, 1.42]), width: width, scale: scale);
       expect(t.takeException(), isNull);
-      expect(find.text('+0.42'), findsOneWidget);
+      expect(find.text('1.42'), findsOneWidget);
       expect(find.byType(ScoreSparkline), findsOneWidget);
       expect(find.byTooltip('What moves your score'), findsOneWidget);
       final info = t.getSize(find.byTooltip('What moves your score'));
@@ -80,7 +80,7 @@ void main() {
   }
 
   testWidgets('the card is short: well under 260 px at 390 wide', (t) async {
-    await pumpCard(t, _snap(seen: true, history: [0.1, 0.42]));
+    await pumpCard(t, _snap(seen: true, history: [1.1, 1.42]));
     expect(t.getSize(find.byType(HomeWellnessPanel)).height, lessThan(260));
   });
 
@@ -92,7 +92,7 @@ void main() {
   });
 
   testWidgets('no sparkline under two points; no "See your estimate" button', (t) async {
-    await pumpCard(t, _snap(history: [0.3]));
+    await pumpCard(t, _snap(history: [1.3]));
     expect(find.byType(ScoreSparkline), findsNothing);
     expect(find.text('See your estimate'), findsNothing);
   });

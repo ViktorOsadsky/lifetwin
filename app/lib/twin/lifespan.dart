@@ -1,7 +1,12 @@
 // Expected lifespan: a rough, proof-of-concept estimate for the one-time lifespan reveal
-// (owner override 2026-10-24; TwinRepository.lifespanEstimate). See docs/lifespan-estimate.md.
+// (owner override 2026-10-24; TwinRepository.lifespanEstimate).
 //
-// Method: relative-risk-adjusted period life table.
+// The reveal ([LifespanEstimate]) now uses the model owner's yearly Cox projection
+// (model_handoff/SURVIVAL_PROJECTION_HANDOFF.md, commit 9ac602e); see [LifespanEstimate].
+//
+// The life-table calculation below ([estimateLifespan], [LifespanCurve]) is no longer read
+// by the app. It is kept, with its server parity test, for comparison
+// (docs/lifespan-estimate.md). Its method: relative-risk-adjusted period life table.
 //   * Population: CDC/NCHS United States Life Tables, 2024, by sex ([lifeTableSource]).
 //     Deaths are uniform within each year of age (the table's own a = 0.5); above 100 the
 //     hazard is constant at 1 / e(100). With HR = 1 this reproduces the table exactly.
@@ -27,6 +32,8 @@
 // or the app's 18–85 age extension). This file does not repeat the model's support check.
 
 import 'dart:math' as math;
+
+import 'package:lifetwin_on_device/lifetwin_on_device.dart' show LifeTwinProjectionLab;
 
 import 'lifespan_data.dart';
 import 'twin_model.dart' show checkedAgeRange, extrapolatedAgeRange;
@@ -114,22 +121,40 @@ const lifespanRoughEstimateNote =
 
 /// Shown with every [LifespanEstimate] (owner ruling: a proof of concept).
 const lifespanCaveat =
-    'Proof of concept: a rough estimate, not a prediction for you. It extends the '
-    "survey model's 5-year risk with the 2024 US life table, so it can never be truly "
-    'accurate. LifeTwin then focuses on your relative health score.';
+    'Proof of concept: a rough estimate, not a prediction for you. It repeats the survey '
+    "model's one-year risk at each later age with your answers held fixed, so it can never "
+    'be truly accurate. LifeTwin then focuses on your relative health score.';
+
+/// Added to [lifespanCaveat] when the middle of the curve lies past age 79.
+const lifespanBeyondCheckedAgesCaveat =
+    'The model was only checked up to age 79, so the ages past that are even rougher.';
+
+/// Kept for the status; the projection gives no estimate outside 35–79 (see [LifespanEstimate]).
 const lifespanExtrapolationCaveat =
     'Your age is outside the ages the model was checked on (35–79), so this is even rougher.';
 
 enum LifespanStatus {
-  /// Ages 35–79, where the model and the band calibration were checked.
+  /// The person's age is 35–79, where the model was checked.
   available,
 
-  /// Ages 18–34 or 80–85: the reference and band factor are the nearest band's.
+  /// The person's age is outside 35–79. The projection lab refuses those ages, so
+  /// [LifespanEstimate.forProfile] never produces this today; kept for the reveal's flag.
   extrapolated,
 }
 
-/// What the app shows once (the lifespan reveal): an expected age and YEAR with the
-/// 25th–75th percentile range. No day or date.
+/// One point of the yearly curve: cumulative survival (0–100) at a whole [age].
+typedef LifespanPoint = ({int age, double survivalPercent, bool extrapolated});
+
+/// What the app shows once (the lifespan reveal): an age and YEAR with a range. No day or
+/// date.
+///
+/// Method (model_handoff/SURVIVAL_PROJECTION_HANDOFF.md, commit 9ac602e): the yearly curve
+/// of `LifeTwinProjectionLab.assess(profile, includeExtrapolation: true)['annual']`, i.e.
+/// `∏ S(1 | age = a + k, other inputs fixed)` from the Cox model, continued past 79 to 110.
+/// [expectedAge] is where it crosses 50% (the lab's `median_crossing_age`), [p25Age] and
+/// [p75Age] where it crosses 75% and 25%, each by linear interpolation between whole ages
+/// (the lab's own rule). The handoff calls the 50% crossing a projected median threshold,
+/// not life expectancy.
 class LifespanEstimate {
   const LifespanEstimate({
     required this.expectedAge,
@@ -138,47 +163,73 @@ class LifespanEstimate {
     required this.expectedYear,
     required this.status,
     required this.caveat,
-    required this.curve,
+    required this.medianCrossingExtrapolated,
+    required this.annualCurve,
   });
 
   /// From a model profile (package codes; the profile the model accepted) in [currentYear].
-  /// Null under 18, above 85, or for an incomplete profile.
+  /// Null (unavailable) when the lab gives no curve: an incomplete or unsupported profile,
+  /// an age outside 35–79 or not in whole years, or a curve that does not cross 25% by 110.
   static LifespanEstimate? forProfile(
     Map<String, dynamic> profile, {
     required int currentYear,
+    required LifeTwinProjectionLab? lab,
   }) {
     final age = profile['age'];
-    if (age is! num ||
-        age < lifespanProfileAges.low ||
-        age > lifespanProfileAges.high) {
-      return null;
-    }
-    final LifespanCurve curve;
+    if (lab == null || age is! num) return null;
+    final Map<String, dynamic> result;
     try {
-      curve = estimateLifespanForProfile(profile);
+      result = lab.assess(profile, includeExtrapolation: true);
     } on FormatException {
       return null;
     }
-    final extrapolated = age < _checkedAges.low || age > _checkedAges.high;
+    final annual = result['annual'];
+    if (result['status'] != 'available' || annual is! Map) return null;
+    final points = <LifespanPoint>[
+      for (final p in annual['points'] as List)
+        (
+          age: (p as Map)['age'] as int,
+          survivalPercent: (p['survival_percent'] as num).toDouble(),
+          extrapolated: p['extrapolated'] == true,
+        ),
+    ];
+    final median = annual['median_crossing_age'];
+    final p25 = crossingAge(points, 75), p75 = crossingAge(points, 25);
+    if (median is! num || p25 == null || p75 == null) return null;
+    final extrapolatedAge = age < _checkedAges.low || age > _checkedAges.high;
+    final beyond = annual['median_crossing_extrapolated'] == true;
     return LifespanEstimate(
-      expectedAge: curve.expectedAgeAtDeath,
-      p25Age: curve.age25thPercentile,
-      p75Age: curve.age75thPercentile,
-      expectedYear: curve.expectedYear(currentYear),
-      status: extrapolated
-          ? LifespanStatus.extrapolated
-          : LifespanStatus.available,
-      caveat: extrapolated
-          ? '$lifespanCaveat $lifespanExtrapolationCaveat'
-          : lifespanCaveat,
-      curve: curve,
+      expectedAge: median.toDouble(),
+      p25Age: p25,
+      p75Age: p75,
+      expectedYear: currentYear + _roundHalfUp((median - age).toDouble()),
+      status: extrapolatedAge ? LifespanStatus.extrapolated : LifespanStatus.available,
+      caveat: [
+        lifespanCaveat,
+        if (extrapolatedAge) lifespanExtrapolationCaveat,
+        if (beyond) lifespanBeyondCheckedAgesCaveat,
+      ].join(' '),
+      medianCrossingExtrapolated: beyond,
+      annualCurve: points,
     );
   }
 
-  /// Expected age at death (unrounded; show it rounded, see [headline]).
+  /// The age where [points] first fall to [percent] or below, interpolated linearly
+  /// between whole ages exactly as `LifeTwinProjectionLab` does for 50%; null if never.
+  static double? crossingAge(List<LifespanPoint> points, double percent) {
+    for (var i = 1; i < points.length; i++) {
+      final before = points[i - 1].survivalPercent, after = points[i].survivalPercent;
+      if (before > percent && after <= percent) {
+        return points[i].age - 1 + (before - percent) / (before - after);
+      }
+    }
+    return null;
+  }
+
+  /// Age where the yearly curve crosses 50% (unrounded; show it rounded, see [headline]).
   final double expectedAge;
 
-  /// Age by which 25% / 75% of people like this have died.
+  /// Ages where the curve crosses 75% and 25%.
   final double p25Age;
   final double p75Age;
 
@@ -189,13 +240,19 @@ class LifespanEstimate {
   /// "Proof of concept / rough estimate" text; show it with the number.
   final String caveat;
 
-  /// The full calculation, for a "How?" view.
-  final LifespanCurve curve;
+  /// The 50% crossing is past age 79, in the extrapolated part of the curve.
+  final bool medianCrossingExtrapolated;
+
+  /// The yearly curve from the current age to 110, for a "How?" view.
+  final List<LifespanPoint> annualCurve;
 
   bool get extrapolated => status == LifespanStatus.extrapolated;
 
   /// "You're likely to live to about 85. Most people like you live to between 79 and 92."
-  String get headline => curve.headline;
+  /// Never deterministic wording, and never a day or date.
+  String get headline =>
+      "You're likely to live to about ${_roundHalfUp(expectedAge)}. "
+      'Most people like you live to between ${_roundHalfUp(p25Age)} and ${_roundHalfUp(p75Age)}.';
 }
 
 int _roundHalfUp(double x) => (x + 0.5).floor();
