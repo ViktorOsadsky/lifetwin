@@ -6,7 +6,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>K-1b Reveal, lifespan layout</title>
+<title>K-1b Reveal, lifespan (proof of concept)</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -82,6 +82,7 @@ body{margin:0}
 .rg{display:inline-flex;align-items:center;gap:6px;min-height:48px;height:48px;padding:0 16px;border-radius:24px;border:2px solid #8C6B5D;background:#FFF6DD;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
 p{overflow-wrap:break-word}
 h1,h2{margin:0}
+.dir{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 12px 0 8px;border-radius:18px;border:1.5px solid #A88B7D;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box;flex:none}
 .medal{flex:none;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#9FD9C3;border:2px solid #7A5B4E;outline:1px solid rgba(226,179,87,.8);outline-offset:-8px;box-shadow:inset 0 -4px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);color:#4A2F25}
 .medal b{font-family:Fredoka,system-ui,sans-serif;font-weight:600;line-height:1;letter-spacing:-.01em}
 .medal span{font-weight:700;line-height:1.1}
@@ -105,6 +106,8 @@ h1,h2{margin:0}
 .wk .d.on{background:#9FD9C3;border-color:#7A5B4E}
 .wk .d.today{box-shadow:0 0 0 3px #FFFDF8,0 0 0 5px #4A2F25}
 .wk .d.fut{border-style:dashed;color:#6B4E42}
+.spk{position:absolute;width:16px;height:16px;pointer-events:none}
+.vh{position:absolute!important;left:0;right:0;top:0;height:1px;margin:0;padding:0;overflow:hidden;clip-path:inset(50%);white-space:normal;border:0}
 .lg p,.lg span,.lg b,.lg h1,.lg h2,.lg li,.lg a,.lg button{overflow-wrap:normal;word-break:normal;hyphens:manual}
 .lg .lab,.lg .sub{font-size:27px}
 .lg .bub p{font-size:32px}
@@ -143,9 +146,9 @@ h1,h2{margin:0}
 .sb figcaption{font-size:14px;line-height:1.25}
 </style>
 </helmet>
-<div class="nb" style="width: 390px"><div class="ttag"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF6DD" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01" stroke-width="3"/></svg>Awaiting Viktor&#8217;s method, not for build</div><h2>K-1b Reveal, lifespan layout</h2><ul><li>Draft method (Viktor): CDC life table adjusted by the Cox relative risk &#8594; expected age (&#8220;about X&#8221;) and a 25th&#8211;75th percentile range (&#8220;Most likely X&#8211;Y&#8221;).</li><li>X and Y are literal placeholders. Never put a real-looking age here until the owner rules.</li><li>&#8220;Estimate, not a promise&#8221; sits behind (i) and in What this means.</li><li>Source line &#8220;From US life tables and answers like yours&#8221; is draft copy.</li><li>Score card sits above it (owner ruling: score next to every outlook).</li><li>Conflicts with AGENTS.md / the model card (no life expectancy). Tier-1 ruling pending. K-1 stays the fallback.</li></ul></div>
+<div class="nb" style="width: 390px"><h2>K-1b Reveal, lifespan (proof of concept)</h2><ul><li>Owner ruling: the lifespan reveal is back as a proof of concept, shown ONCE at the end of onboarding (<code>lifespanRevealSeen</code>); then the score is the hero.</li><li><span class="ph-tag">SAMPLE</span>Around 2051, about age 89, most likely 84&#8211;93 (Rosa, 64). A year and an age, never a day.</li><li>Engine: <code>repo.lifespanEstimate {expectedAge, p25Age, p75Age, expectedYear, status, caveat}</code>. Ages 18&#8211;85; Rough guide badge outside 35&#8211;79.</li><li>&#8220;Rough estimate, not a promise&#8221; sits behind (i). Source line &#8220;From US life tables and answers like yours&#8221;.</li><li>Score card sits above it and is stronger. K-6 shows the same estimate afterwards. K-1 (5-year) is the fallback when status is not available.</li></ul></div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":496}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":518}}'>
 class Component extends DCLogic {
 renderVals() { return {}; }
 }
