@@ -40,30 +40,46 @@ class FakeRecorder implements AudioRecorder {
   int starts = 0;
   int cancels = 0;
 
-  @override
-  Future<bool> hasPermission({bool request = true}) async => true;
+  /// How long each call to the platform takes (a real phone answers in a few ms, in order).
+  Duration latency = Duration.zero;
+  Future<void> _lag() => latency == Duration.zero ? Future.value() : Future.delayed(latency);
 
   @override
-  Future<Stream<Uint8List>> startStream(RecordConfig config) async {
-    starts++;
-    recording = true;
-    return mic.stream;
+  Future<bool> hasPermission({bool request = true}) async {
+    await _lag();
+    return true;
   }
 
   @override
+  Future<Stream<Uint8List>> startStream(RecordConfig config) async {
+    await _lag();
+    starts++;
+    recording = true;
+    lastConfig = config;
+    return mic.stream;
+  }
+
+  RecordConfig? lastConfig;
+
+  @override
   Future<String?> stop() async {
+    await _lag();
     recording = false;
     return null;
   }
 
   @override
   Future<void> cancel() async {
+    await _lag();
     cancels++;
     recording = false;
   }
 
   @override
-  Future<bool> isRecording() async => recording;
+  Future<bool> isRecording() async {
+    await _lag();
+    return recording;
+  }
 
   @override
   Future<void> dispose() async {}

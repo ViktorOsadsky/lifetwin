@@ -143,6 +143,10 @@ class CheckinController extends ChangeNotifier {
   /// The turn whose line Mochi last said to the end. Its audio is what a replay plays, so a
   /// line that came while typing or out of sight is said fresh, never an older one replayed.
   CheckinTurn? _saidTurn;
+
+  /// The turn whose line is the speaker's last audio (null: a notice or the nudge was said
+  /// since). Only then does "Hear it again" replay from memory.
+  CheckinTurn? _audioTurn;
   String mascotLine = '';
   String caption = '';
 
@@ -180,6 +184,10 @@ class CheckinController extends ChangeNotifier {
   Timer? _listenClock;
   int _listenedSeconds = 0;
   int _silentSeconds = 0;
+
+  /// Hands-free: seconds since the first word of this listen. The [listenLimit] cap counts
+  /// from there, so time spent thinking never cuts an answer short.
+  int _talkSeconds = 0;
   int _speechGen = 0;
 
   bool _nudged = false;
@@ -215,6 +223,7 @@ class CheckinController extends ChangeNotifier {
   bool _firstLine = true;
   Stopwatch? _openedAt;
   static const firstAudioLimit = voiceFirstAudioLimit;
+  static const laterAudioLimit = voiceLaterAudioLimit;
   static const nudgeAfter = voiceNudgeAfter;
   static const sessionRestart = voiceSessionRestart;
 
@@ -443,6 +452,7 @@ class CheckinController extends ChangeNotifier {
     if (phase != CheckinPhase.listening && _starting == null) return;
     if (caption.trim().isNotEmpty) return stopTalk();
     await cancelTalk();
+    if (!_micOff) _listenAgain(); // turned on again while the mic was still opening
   }
 
   /// "Turn on mic": hands-free listens again by itself.
@@ -559,10 +569,12 @@ class CheckinController extends ChangeNotifier {
     _listenClock?.cancel();
     _listenedSeconds = 0;
     _silentSeconds = 0;
+    _talkSeconds = 0;
     _listenClock = Timer.periodic(const Duration(seconds: 1), (_) {
       if (phase != CheckinPhase.listening) return _stopListenClock();
       _listenedSeconds++;
       _silentSeconds++;
+      if (caption.trim().isNotEmpty) _talkSeconds++;
       if (_listenedSeconds >= _healthyListen) _drops = 0;
       if (continuous && caption.trim().isEmpty) {
         if (!_nudged && _silentSeconds >= nudgeAfter.inSeconds) {
@@ -576,7 +588,7 @@ class CheckinController extends ChangeNotifier {
         return;
       }
       if (continuous) {
-        if (_listenedSeconds >= listenLimit.inSeconds) {
+        if (_talkSeconds >= listenLimit.inSeconds) {
           _stopListenClock();
           _hf('mic_close', 'listen_limit');
           unawaited(stopTalk());
@@ -825,7 +837,7 @@ class CheckinController extends ChangeNotifier {
     if (!canHearAgain) return;
     if (phase == CheckinPhase.listening) await cancelTalk();
     // The speaker's last audio is replayed only when it is this very question.
-    if (await _speak(mascotLine, replay: output.canReplay && identical(_saidTurn, turn))) _listenAgain();
+    if (await _speak(mascotLine, replay: output.canReplay && identical(_audioTurn, turn))) _listenAgain();
   }
 
   // ---- reminders -----------------------------------------------------------
@@ -941,6 +953,8 @@ class CheckinController extends ChangeNotifier {
         notice = e is GuideTooBusy ? e.message : noNetworkNotice;
         _retry = () => _send(request, answering: answering);
       });
+      // Said out loud too (as in onboarding): hands-free must never just go quiet.
+      if (!typing && voiceUsable && !screenReader && !_paused && !_disposed) await _speak(notice!);
       return;
     }
     _hf('turn', 'field=${t.currentField} phase=${t.phase} complete=${t.complete}${t.offTopic ? ' off_topic' : ''}');
@@ -1070,8 +1084,12 @@ class CheckinController extends ChangeNotifier {
     }
   }
 
-  CheckinPhase get _restingPhase =>
-      (turn?.complete ?? false) || turn?.phase == 'cancelled' ? CheckinPhase.done : CheckinPhase.idle;
+  /// Between lines. With no turn yet (a start that failed, its notice said) it is not started.
+  CheckinPhase get _restingPhase {
+    final t = turn;
+    if (t == null) return CheckinPhase.notStarted;
+    return t.complete || t.phase == 'cancelled' ? CheckinPhase.done : CheckinPhase.idle;
+  }
 
   /// True when the line ran to its end (or, the first line, gave up waiting for audio)
   /// and nothing else took over meanwhile: hands-free may listen next.
@@ -1079,11 +1097,16 @@ class CheckinController extends ChangeNotifier {
     final gen = ++_speechGen;
     // The speaker's last audio becomes this line: a replay is right only once it was said to
     // the end, and only for this turn (the nudge is not a turn's line).
-    final saying = line == mascotLine ? turn : null;
-    _saidTurn = null;
+    final isLine = line == mascotLine;
+    final saying = isLine ? turn : null;
+    // A notice or the nudge leaves the question it follows "said" (it is not read again on
+    // coming back), but it is the speaker's last audio now.
+    if (isLine) _saidTurn = null;
+    _audioTurn = null;
     _hf('tts_start', '${first ? 'first' : 'line'}${replay ? ' replay' : ''}');
     _set(() => phase = CheckinPhase.speaking);
-    // The first line: no audio within [firstAudioLimit] leaves its words on screen and listens.
+    // Hands-free: no audio within [firstAudioLimit] (the first line) or [laterAudioLimit] leaves
+    // its words on screen and listens. Not a replay, which reports no audio start.
     final late = Completer<void>();
     var heard = false;
     Timer? wait;
@@ -1096,10 +1119,14 @@ class CheckinController extends ChangeNotifier {
       _hf('first_audio', at == null ? '' : 'opened+${at.elapsedMilliseconds}ms');
     }
 
-    if (first && continuous) {
-      wait = Timer(firstAudioLimit, () {
+    if (continuous && !replay) {
+      final limit = first ? firstAudioLimit : laterAudioLimit;
+      wait = Timer(limit, () {
         if (heard || gen != _speechGen || _disposed) return;
-        _hf('error', 'no audio ${firstAudioLimit.inMilliseconds} ms after the first line came; listening instead');
+        _hf(
+          'error',
+          'no audio ${limit.inMilliseconds} ms after the ${first ? 'first ' : ''}line came; listening instead',
+        );
         _openedAt = null;
         late.complete();
       });
@@ -1109,13 +1136,13 @@ class CheckinController extends ChangeNotifier {
       await Future.any([speech, late.future]).timeout(_speakLimit);
       if (late.isCompleted) {
         await _stopOutput();
-        _hf('tts_end', 'gave_up_first');
-        if (gen == _speechGen) _saidTurn = saying; // on screen, and not said again
+        _hf('tts_end', first ? 'gave_up_first' : 'gave_up');
+        if (gen == _speechGen && isLine) _saidTurn = saying; // on screen, and not said again
         if (gen == _speechGen && phase == CheckinPhase.speaking) _set(() => phase = _restingPhase);
         return gen == _speechGen;
       }
       _hf('tts_end', gen == _speechGen ? 'done' : 'stopped');
-      if (gen == _speechGen) _saidTurn = saying;
+      if (gen == _speechGen && isLine) _saidTurn = _audioTurn = saying;
     } on VoiceUnavailableException {
       _hf('tts_end', 'error voice_unavailable');
       if (gen == _speechGen) {
