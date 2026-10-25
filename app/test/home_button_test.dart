@@ -46,8 +46,11 @@ void main() {
     t.view.physicalSize = size;
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()));
+    // Joined 8 days ago, so the weekly check-in's 7-day gate is open (the gate itself is untouched).
+    var clock = DateTime.now().subtract(const Duration(days: 8));
+    final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => clock);
     await repo.saveConversationProfile(profile);
+    clock = DateTime.now();
     final look = ValueNotifier(const TwinAppearance(name: 'Mochi'));
     addTearDown(look.dispose);
     final voice = VoiceOnboardingController(
@@ -155,7 +158,7 @@ void main() {
     expect(find.byType(HomeButton), findsNothing);
   });
 
-  testWidgets('Home is absent on the onboarding conversation, which opens one level down', (t) async {
+  testWidgets('Home is absent on a conversation opened from the Room, one level down', (t) async {
     await pump(t);
     routes.weeklyCheckIn(room);
     await settle(t);
