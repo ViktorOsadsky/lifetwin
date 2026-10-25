@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../widgets/whole_word_text.dart';
@@ -649,54 +651,70 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> with WidgetsBindingOb
     if (!_canChoose || _choiceOpen) return;
     _choiceOpen = true;
     String? reason;
+    var sent = false; // a second tap must not pop the plan screen under the sheet
     final choice = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (c) => StatefulBuilder(
-        builder: (c, update) => SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            24,
-            24,
-            24,
-            24 + MediaQuery.viewInsetsOf(c).bottom,
-          ),
-          child: Column(
+        builder: (c, update) {
+          // The sheet is not resized for the keyboard or the home indicator, so it pads for both itself:
+          // the reasons scroll, and "Tell Mochi" stays pinned above whichever is taller.
+          final bottom = math.max(MediaQuery.viewInsetsOf(c).bottom, MediaQuery.paddingOf(c).bottom);
+          return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              WholeWordText(
-                'Anything you’d like Mochi to know?',
-                style: LtText.display(24),
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final value in ['Too tired', 'Knee hurt', 'No time'])
-                    ChoiceChip(
-                      label: WholeWordText(value),
-                      selected: reason == value,
-                      onSelected: (_) => update(() => reason = value),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                maxLength: 300,
-                decoration: const InputDecoration(
-                  labelText: 'Say why (optional)',
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      WholeWordText(
+                        'Anything you’d like Mochi to know?',
+                        style: LtText.display(24),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final value in ['Too tired', 'Knee hurt', 'No time'])
+                            ChoiceChip(
+                              label: WholeWordText(value),
+                              selected: reason == value,
+                              onSelected: (_) => update(() => reason = value),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        maxLength: 300,
+                        decoration: const InputDecoration(
+                          labelText: 'Say why (optional)',
+                        ),
+                        onChanged: (value) => reason = value.trim(),
+                      ),
+                    ],
+                  ),
                 ),
-                onChanged: (value) => reason = value.trim(),
               ),
-              LipButton(
-                label: 'Tell Mochi',
-                onTap: () => Navigator.pop(c, reason ?? ''),
+              Padding(
+                padding: EdgeInsets.fromLTRB(24, 8, 24, 16 + bottom),
+                child: LipButton(
+                  label: 'Tell Mochi',
+                  onTap: () {
+                    if (sent) return;
+                    sent = true;
+                    Navigator.pop(c, reason ?? '');
+                  },
+                ),
               ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
     _choiceOpen = false;

@@ -67,6 +67,18 @@ class Settings(BaseSettings):
     # Muse may read identifier-stripped document text only when this is on AND the person
     # agreed. Off by default pending the owner's ruling (docs/document-upload.md).
     document_muse_enabled: bool = True
+    # Who reads a whole PDF the person chose (POST /api/documents/read), with their yes for
+    # this document. "claude" uses ANTHROPIC_API_KEY and CLAUDE_MODEL; "muse" and "local"
+    # leave PDFs to the phone ("local" also turns off the outside-AI help for recognised
+    # text). Unset (or blank): "claude" when ANTHROPIC_API_KEY is present, else the earlier
+    # behaviour ("muse" when Muse may read document text, else "local").
+    document_provider: Literal["local", "muse", "claude"] | None = None
+    # Claude reading a PDF: its time budget (the request deadline grows to fit it).
+    document_read_timeout_seconds: float = Field(default=25, gt=0, le=30)
+    # A 10 MB PDF as base64 in JSON (POST /api/documents/read only).
+    max_pdf_body_bytes: int = Field(
+        default=14_000_000, ge=1024, le=16_000_000, validation_alias="API_MAX_PDF_BODY_BYTES"
+    )
     rate_limit_per_minute: int = Field(
         default=60, ge=1, le=10000, validation_alias="API_RATE_LIMIT_PER_MINUTE"
     )
@@ -75,7 +87,7 @@ class Settings(BaseSettings):
     )
     cors_origins: str = ""
 
-    @field_validator("llm_provider", "personalize_provider", mode="before")
+    @field_validator("llm_provider", "personalize_provider", "document_provider", mode="before")
     @classmethod
     def blank_provider_is_unset(cls, value):
         return None if isinstance(value, str) and not value.strip() else value
@@ -89,6 +101,10 @@ class Settings(BaseSettings):
             self.llm_provider = "anthropic" if claude else "openai"
         if self.personalize_provider is None:
             self.personalize_provider = "claude" if claude else "muse"
+        if self.document_provider is None:
+            # Owner ruling (2026-10-25): PDFs go to Claude, with consent, when it is set up.
+            muse = self.document_muse_enabled and self.llm_provider == "chat_completions"
+            self.document_provider = "claude" if claude else "muse" if muse else "local"
         return self
 
     @field_validator("cors_origins")

@@ -47,17 +47,35 @@ class DocumentReading {
 /// The recognised text is held in memory only: until the server answers, or, when Muse
 /// could help, until the person answers that question. Then it is dropped.
 class DocumentUploadService {
-  DocumentUploadService({required this.ocr, required this.extractor});
+  DocumentUploadService({required this.ocr, required this.extractor, this.pdfPicker, this.pdfReader});
 
   final DocumentOcr ocr;
   final DocumentExtractor extractor;
 
+  /// Both set: a PDF may go, whole, to the documents provider the server names, after the
+  /// person's yes for that document. Otherwise PDFs are read on this phone as before.
+  final PdfPicker? pdfPicker;
+  final PdfDocumentReader? pdfReader;
+
   List<String>? _text;
   bool _truncated = false;
   int _generation = 0;
+  PickedPdf? _pdf;
 
   /// True while text waits for the Muse question.
   bool get holdingText => _text != null;
+
+  /// True while a picked PDF waits for the "send it?" question.
+  bool get holdingPdf => _pdf != null;
+
+  static DocumentReadStatus _failure(String code) => switch (code) {
+    'cancelled' => DocumentReadStatus.cancelled,
+    'camera_unavailable' => DocumentReadStatus.cameraUnavailable,
+    'too_large' => DocumentReadStatus.tooLarge,
+    'password_protected' => DocumentReadStatus.passwordProtected,
+    'unsupported_type' => DocumentReadStatus.unsupported,
+    _ => DocumentReadStatus.unreadable,
+  };
 
   Future<DocumentReading> read(DocumentSource source) async {
     discard();
@@ -66,14 +84,72 @@ class DocumentUploadService {
     try {
       doc = await ocr.scan(source);
     } on DocumentReadFailure catch (e) {
-      return DocumentReading(switch (e.code) {
-        'cancelled' => DocumentReadStatus.cancelled,
-        'camera_unavailable' => DocumentReadStatus.cameraUnavailable,
-        'too_large' => DocumentReadStatus.tooLarge,
-        'password_protected' => DocumentReadStatus.passwordProtected,
-        'unsupported_type' => DocumentReadStatus.unsupported,
-        _ => DocumentReadStatus.unreadable,
-      });
+      return DocumentReading(_failure(e.code));
+    }
+    if (generation != _generation) return const DocumentReading(DocumentReadStatus.cancelled);
+    return readText(doc);
+  }
+
+  /// The provider that may read whole PDFs, from `/api/capabilities`; null: the phone reads them.
+  Future<PdfReaderInfo?> pdfProvider() async {
+    final reader = pdfReader;
+    if (pdfPicker == null || reader == null) return null;
+    try {
+      return await reader.info();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Picks a PDF and holds it in memory for the question. Null: ask now. Otherwise the reading
+  /// (cancelled, locked...), or the phone's own reading when the PDF is over [info]'s limits.
+  Future<DocumentReading?> pickPdf(PdfReaderInfo info) async {
+    discard();
+    final generation = _generation;
+    final PickedPdf picked;
+    try {
+      picked = await pdfPicker!.pickPdf();
+    } on DocumentReadFailure catch (e) {
+      return DocumentReading(_failure(e.code));
+    }
+    if (generation != _generation) return const DocumentReading(DocumentReadStatus.cancelled);
+    _pdf = picked;
+    if (picked.bytes.length > info.maxBytes || picked.pageCount > info.maxPages) return readPdfOnPhone();
+    return null;
+  }
+
+  /// The person said yes for [provider] (its id from `/api/capabilities`): send the whole PDF,
+  /// base64, with consent for that provider only. Not read there: read it on the phone instead.
+  Future<DocumentReading> sendPdf(String provider) async {
+    final pdf = _pdf;
+    final reader = pdfReader;
+    if (pdf == null || reader == null) return const DocumentReading(DocumentReadStatus.unreadable);
+    final generation = _generation;
+    DocumentExtraction? r;
+    try {
+      r = await reader.readPdf(pdf.bytes, outsideAiConsent: {provider: true});
+    } catch (_) {
+      r = null;
+    }
+    if (generation != _generation) return const DocumentReading(DocumentReadStatus.cancelled);
+    if (r == null || r.providerStatus == 'consent_required' || r.providerStatus == 'unavailable') {
+      return readPdfOnPhone();
+    }
+    discard();
+    return _reading(r, truncated: false, museCouldHelp: false);
+  }
+
+  /// No (or the server could not read it): the existing on-device path for the same PDF.
+  Future<DocumentReading> readPdfOnPhone() async {
+    final pdf = _pdf;
+    if (pdf == null) return const DocumentReading(DocumentReadStatus.unreadable);
+    _pdf = null;
+    final generation = _generation;
+    final RecognisedDocument doc;
+    try {
+      doc = await ocr.recognize(pdf.bytes, pdf: true);
+    } on DocumentReadFailure catch (e) {
+      return DocumentReading(_failure(e.code));
     }
     if (generation != _generation) return const DocumentReading(DocumentReadStatus.cancelled);
     return readText(doc);
@@ -96,11 +172,12 @@ class DocumentUploadService {
     return _extract({provider: true});
   }
 
-  /// Drops the recognised text.
+  /// Drops the recognised text and any picked PDF.
   void discard() {
     _generation++;
     _text = null;
     _truncated = false;
+    _pdf = null;
   }
 
   Future<DocumentReading> _extract(Map<String, bool> outsideAiConsent) async {
@@ -123,6 +200,10 @@ class DocumentUploadService {
     if (generation != _generation) return const DocumentReading(DocumentReadStatus.cancelled);
     final museCouldHelp = outsideAiConsent.isEmpty && r.providerStatus == 'consent_required';
     if (!museCouldHelp) discard();
+    return _reading(r, truncated: truncated, museCouldHelp: museCouldHelp);
+  }
+
+  static DocumentReading _reading(DocumentExtraction r, {required bool truncated, required bool museCouldHelp}) {
     final status = r.notices.contains('multiple_patients')
         ? DocumentReadStatus.multiplePatients
         : r.notices.contains('language_not_supported')
