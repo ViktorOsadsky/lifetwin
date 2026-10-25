@@ -1,6 +1,6 @@
 // The connected DEMO flow, end to end, with real widgets and the live server, starting from
 // the demo seed (Rosa, 64, about two weeks of history; lib/demo/demo_seed.dart), at 390 x 844:
-//   1. Home shows only Mochi, the compact score card (ring with a signed number, Higher risk /
+//   1. Home shows only Mochi, the compact score card (a signed number, the percentile line, Higher risk /
 //      Better health, "Healthier than X of 100", sparkline, the info icon to the drivers, the
 //      "Your estimate" / "Around {year}" chip), ONE Check in, the "Today with Mochi" card, the
 //      activity pill and the History, Settings and Add band icons; nothing scrolls.
@@ -362,7 +362,8 @@ void main() {
             await log('  home: $text');
 
             final mochi = find.byKey(const ValueKey('room-twin'));
-            final ring = find.byType(ScoreRing);
+            final percentileLine = find.descendant(
+                of: find.byType(HomeWellnessPanel), matching: find.textContaining('Healthier than', findRichText: true));
             final panelTexts = inside<HomeWellnessPanel>(find.byType(RichText))
                 .evaluate()
                 .map((e) => (e.widget as RichText).text.toPlainText().trim())
@@ -409,7 +410,7 @@ void main() {
             ];
             final parts = {
               'mochi': shows(mochi),
-              'ring': shows(ring),
+              'percentileLine': shows(percentileLine),
               'signed($signed)': signed.isNotEmpty,
               'higherIsBetter': higherBetter,
               'riskBetterLabels': labels,
@@ -443,7 +444,7 @@ void main() {
             final view = Offset.zero & screen;
             final targets = <String, Finder>{
               'mochi': mochi,
-              'ring': ring,
+              'percentileLine': percentileLine,
               'sparkline': spark,
               'info': info,
               'chip': chip,
