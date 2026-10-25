@@ -126,8 +126,8 @@ void main() {
       ),
     );
     await t.pumpAndSettle();
-    await t.ensureVisible(find.text('See your estimate'));
-    await t.tap(find.text('See your estimate'));
+    await t.ensureVisible(find.text('Around ${next.lifespanEstimate!.expectedYear}'));
+    await t.tap(find.text('Around ${next.lifespanEstimate!.expectedYear}'));
     await t.pumpAndSettle();
     await t.tap(find.text('Ask the ball'));
     await t.pumpAndSettle();

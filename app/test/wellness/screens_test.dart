@@ -58,8 +58,8 @@ void main() {
     expect(find.text('Getting to know you'), findsOneWidget);
     expect(find.text('Check in'), findsNothing);
     expect(find.textContaining('days this week'), findsNothing);
-    await reveal(t, find.text('See your estimate'));
-    await t.tap(find.text('See your estimate'));
+    await reveal(t, find.text('Your estimate'));
+    await t.tap(find.text('Your estimate'));
     expect(estimates, 1);
     expect(t.takeException(), isNull);
   });

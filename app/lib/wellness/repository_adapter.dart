@@ -20,6 +20,10 @@ class RepositoryWellness extends ChangeNotifier {
     message: repository.healthScoreMessage,
     lifespan: _lifespan(repository.lifespanEstimate),
     lifespanRevealSeen: repository.lifespanRevealSeen,
+    history: [
+      for (final p in repository.healthScoreHistory().reversed.take(14).toList().reversed)
+        if (p.score != null) p.score!,
+    ],
   );
 
   static LifespanReveal? _lifespan(LifespanEstimate? e) => e == null

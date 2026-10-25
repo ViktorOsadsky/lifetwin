@@ -215,6 +215,14 @@ class _RoomSceneState extends State<RoomScene> {
                     semanticLabel: 'A cozy room with a bed, a table, a yoga mat and a shelf with a crystal ball',
                   )),
                 ),
+                // A flat rug on the bare right-hand floor, so the room feels balanced. Painted under the
+                // twin; the bundled room art, its lighting and the sim are untouched.
+                Positioned.fill(
+                  key: const ValueKey('room-rug'),
+                  child: IgnorePointer(
+                    child: ExcludeSemantics(child: _roomLight(CustomPaint(painter: _RugPainter()))),
+                  ),
+                ),
                 if (sim.ballTaken) _layer(layout.shelfEmpty),
                 ..._bowl(layout),
                 ..._twin(layout),
@@ -552,4 +560,36 @@ class _FxPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_FxPainter old) => true;
+}
+
+/// An oval striped rug (the colours of the round rug already in the room) lying on the right-hand floor,
+/// with a small flat cushion on it. Flat shapes only: nothing for the twin to bump into.
+class _RugPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.translate(size.width * 0.83, size.height * 0.485);
+    canvas.rotate(-0.12);
+    canvas.scale(0.88);
+    Rect oval(double rx, double ry) => Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2);
+    final fills = [
+      (oval(64, 28), const Color(0xFFA9A8D6)),
+      (oval(55, 23), const Color(0xFFF2E3C2)),
+      (oval(40, 16), const Color(0xFFA9A8D6)),
+      (oval(32, 12), const Color(0xFFF2E3C2)),
+    ];
+    // A soft contact shadow, then the bands.
+    canvas.drawOval(oval(66, 30).shift(const Offset(0, 3)), Paint()..color = const Color(0x22000000));
+    for (final (r, c) in fills) {
+      canvas.drawOval(r, Paint()..color = c);
+    }
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(-8, 2), width: 28, height: 13),
+      Paint()..color = const Color(0xFFF2B98F),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_RugPainter old) => false;
 }
