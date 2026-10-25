@@ -131,6 +131,8 @@ class ConversationState(ApiModel):
     steer_field: ProfileField | None = None
     steer_lead: Annotated[str, Field(min_length=1, max_length=200)] | None = None
     health_offered: bool = False
+    # The Apple Health offer was repeated once after an unclear reply; never twice.
+    health_reasked: bool = False
     current_probe: ProbeId | None = None
     probes_asked: list[ProbeId] = Field(default_factory=list, max_length=7)
     habit_notes: list[HabitNote] = Field(default_factory=list, max_length=10)
