@@ -140,9 +140,9 @@ class VoiceOnboardingController extends ChangeNotifier {
   Map<String, dynamic> get confirmedProfile =>
       Map<String, dynamic>.from((turn?.state['confirmed_profile'] as Map?) ?? const {});
 
-  /// Mochi is offering Apple Health (after age, sex and smoking), or the person said yes
-  /// and the server asked the app to open the import: show the Apple Health button.
-  bool get healthOffer => turn?.clientAction == 'open_health_import' || turn?.phase == 'offering';
+  /// Mochi is offering Apple Health (after age, sex and smoking; the phase stays `offering`
+  /// after a yes). Once the person just answers, the server moves on and the hint goes.
+  bool get healthOffer => turn?.phase == 'offering';
 
   /// The latest turn's `model_inputs` (see GuideTurn.modelInputs).
   Map<String, dynamic>? get modelInputs => turn?.modelInputs;

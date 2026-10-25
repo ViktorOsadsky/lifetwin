@@ -50,6 +50,7 @@
    "steer_field": null,
    "steer_lead": null,
    "health_offered": true,
+   "health_reasked": false,
    "current_probe": null,
    "probes_asked": [
     "sleep_pattern"
@@ -290,6 +291,7 @@
    "steer_field": null,
    "steer_lead": null,
    "health_offered": true,
+   "health_reasked": false,
    "current_probe": null,
    "probes_asked": [],
    "habit_notes": [],
