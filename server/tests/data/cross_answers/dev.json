@@ -1,0 +1,4035 @@
+{
+ "about": "Cross-question answers: replies that answer other questions than the one asked. Synthetic people only. Split dev/held-out (stratified by category) before any result was looked at; tune on dev only. Scored by tests/cross_answer_eval.py. Units: cm, kg, minutes. expect: values that must be recorded (a list means any of them); allow: may be recorded; must_not: fields that must not be recorded; unknown: fields recorded as \"I don't know\"; skip: answered early, so never asked; next: the question open at the end (null: not checked); confirm: a read-back is expected; conflict: a confirmed answer contradicted, which must be surfaced and never silently overwritten.",
+ "split": "dev",
+ "cases": [
+  {
+   "category": "asr_noise",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "weight_kg",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How much do you weigh? For example, 160 pounds."
+   ],
+   "turns": [
+    "one sixty pounds"
+   ],
+   "expect": {
+    "weight_kg": 72.57
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sleep_hours",
+   "confirm": true,
+   "id": "asr_noise-03",
+   "split": "dev"
+  },
+  {
+   "category": "asr_noise",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "age",
+    "confirmed": {},
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: How old are you?"
+   ],
+   "turns": [
+    "born in nineteen fifty eight"
+   ],
+   "expect": {
+    "age": [
+     67,
+     68
+    ]
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": null,
+   "confirm": true,
+   "id": "asr_noise-04",
+   "split": "dev"
+  },
+  {
+   "category": "asr_noise",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "smoking_status",
+    "confirmed": {
+     "age": 68,
+     "sex": "female"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: Do you smoke now, did you smoke before, or have you never smoked?"
+   ],
+   "turns": [
+    "I never smoke"
+   ],
+   "expect": {
+    "smoking_status": "never"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "offering",
+   "confirm": true,
+   "note": "ASR for 'never smoked'",
+   "id": "asr_noise-08",
+   "split": "dev"
+  },
+  {
+   "category": "asr_noise",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sex",
+    "confirmed": {
+     "age": 64
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: What sex were you at birth: female or male?"
+   ],
+   "turns": [
+    "mail"
+   ],
+   "expect": {
+    "sex": "male"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "smoking_status",
+   "confirm": true,
+   "note": "ASR for 'male'",
+   "id": "asr_noise-09",
+   "split": "dev"
+  },
+  {
+   "category": "asr_noise",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "weight_kg",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How much do you weigh? For example, 160 pounds."
+   ],
+   "turns": [
+    "a hundred and forty five pounds"
+   ],
+   "expect": {
+    "weight_kg": 65.77
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sleep_hours",
+   "confirm": true,
+   "id": "asr_noise-10",
+   "split": "dev"
+  },
+  {
+   "category": "asr_noise",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: About how many hours a day do you spend sitting? TV and driving count."
+   ],
+   "turns": [
+    "probably like uh six hours sitting yeah"
+   ],
+   "expect": {
+    "sedentary_min_day": 360
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "moderate_recreation_min_week",
+   "confirm": true,
+   "id": "asr_noise-12",
+   "split": "dev"
+  },
+  {
+   "category": "asr_noise",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "age",
+    "confirmed": {},
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: How old are you?"
+   ],
+   "turns": [
+    "sixty-eight and I'm uh a man"
+   ],
+   "expect": {
+    "age": 68,
+    "sex": "male"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "smoking_status",
+   "confirm": true,
+   "id": "asr_noise-13",
+   "split": "dev"
+  },
+  {
+   "category": "asr_noise",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "diabetes",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: Has a doctor ever told you that you have diabetes?"
+   ],
+   "turns": [
+    "no, no diabetes, uh, nope"
+   ],
+   "expect": {
+    "diabetes": false
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sedentary_min_day",
+   "confirm": true,
+   "id": "asr_noise-15",
+   "split": "dev"
+  },
+  {
+   "category": "chatter_embedded",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "height_cm",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How tall are you? For example, 5 feet 10 inches."
+   ],
+   "turns": [
+    "Ha, my kids are all taller than me, I'm only 5'1"
+   ],
+   "expect": {
+    "height_cm": 154.94
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "weight_kg",
+   "confirm": true,
+   "id": "chatter_embedded-03",
+   "split": "dev"
+  },
+  {
+   "category": "chatter_embedded",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "smoking_status",
+    "confirmed": {
+     "age": 68,
+     "sex": "female"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: Do you smoke now, did you smoke before, or have you never smoked?"
+   ],
+   "turns": [
+    "My dad smoked like a chimney, so I never touched them"
+   ],
+   "expect": {
+    "smoking_status": "never"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "offering",
+   "confirm": true,
+   "id": "chatter_embedded-05",
+   "split": "dev"
+  },
+  {
+   "category": "chatter_embedded",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: About how many hours a day do you spend sitting? TV and driving count."
+   ],
+   "turns": [
+    "I watch a lot of TV with my husband in the evenings, all told maybe 7 hours sitting"
+   ],
+   "expect": {
+    "sedentary_min_day": 420
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "moderate_recreation_min_week",
+   "confirm": true,
+   "id": "chatter_embedded-06",
+   "split": "dev"
+  },
+  {
+   "category": "chatter_embedded",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sex",
+    "confirmed": {
+     "age": 71
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: What sex were you at birth: female or male?"
+   ],
+   "turns": [
+    "Is this the part where you ask about me? Female."
+   ],
+   "expect": {
+    "sex": "female"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "smoking_status",
+   "confirm": true,
+   "id": "chatter_embedded-08",
+   "split": "dev"
+  },
+  {
+   "category": "chatter_embedded",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "moderate_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: In a usual week, how many minutes of lighter activity do you do, like brisk walking or gardening?"
+   ],
+   "turns": [
+    "My doctor keeps nagging me, but I do walk to the store, maybe an hour a week"
+   ],
+   "expect": {
+    "moderate_recreation_min_week": 60
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "chatter_embedded-10",
+   "split": "dev"
+  },
+  {
+   "category": "chatter_embedded",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "diabetes",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: Has a doctor ever told you that you have diabetes?"
+   ],
+   "turns": [
+    "Oh boy, my mother had it, but no, I don't"
+   ],
+   "expect": {
+    "diabetes": false
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sedentary_min_day",
+   "confirm": true,
+   "id": "chatter_embedded-12",
+   "split": "dev"
+  },
+  {
+   "category": "chatter_embedded",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "you know how it is with work and the grandkids, I'm lucky to get 6 hours"
+   ],
+   "expect": {
+    "sleep_hours": 6
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "general_health",
+   "confirm": true,
+   "id": "chatter_embedded-13",
+   "split": "dev"
+  },
+  {
+   "category": "checkin",
+   "flow": "daily",
+   "start": {
+    "kind": "daily",
+    "field": "exercise_minutes_today",
+    "confirmed": {},
+    "pending": {
+     "sleep_hours_last_night": 7
+    },
+    "local_date": "2026-10-21"
+   },
+   "history": [
+    "Mochi: (daily check-in question: exercise_minutes_today)"
+   ],
+   "turns": [
+    "walked for 45 minutes and I feel okay"
+   ],
+   "expect": {
+    "sleep_hours_last_night": 7,
+    "exercise_minutes_today": 45,
+    "wellbeing": "okay"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "confirming",
+   "confirm": true,
+   "id": "checkin-03",
+   "split": "dev"
+  },
+  {
+   "category": "checkin",
+   "flow": "daily",
+   "start": {
+    "kind": "daily",
+    "field": "sleep_hours_last_night",
+    "confirmed": {},
+    "pending": {},
+    "local_date": "2026-10-21"
+   },
+   "history": [
+    "Mochi: (daily check-in question: sleep_hours_last_night)"
+   ],
+   "turns": [
+    "my granddaughter turned 5 today! slept about 6 hours"
+   ],
+   "expect": {
+    "sleep_hours_last_night": 6
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "exercise_minutes_today",
+   "confirm": true,
+   "id": "checkin-06",
+   "split": "dev"
+  },
+  {
+   "category": "checkin",
+   "flow": "weekly",
+   "start": {
+    "kind": "weekly",
+    "field": "weight_kg",
+    "confirmed": {
+     "sleep_hours": 7,
+     "vigorous_recreation_min_week": 0,
+     "moderate_recreation_min_week": 120,
+     "sedentary_min_day": 360,
+     "alcohol_drinks_weekly": 2,
+     "smoking_status": "never"
+    },
+    "pending": {},
+    "local_date": "2026-10-21"
+   },
+   "history": [
+    "Mochi: (weekly check-in question: weight_kg)"
+   ],
+   "turns": [
+    "165 pounds, and my blood pressure was 128 over 82"
+   ],
+   "expect": {
+    "weight_kg": 74.84,
+    "systolic_bp": 128,
+    "diastolic_bp": 82
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "wellbeing",
+   "confirm": true,
+   "id": "checkin-10",
+   "split": "dev"
+  },
+  {
+   "category": "checkin",
+   "flow": "weekly",
+   "start": {
+    "kind": "weekly",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "sleep_hours": 7,
+     "vigorous_recreation_min_week": 0,
+     "moderate_recreation_min_week": 120
+    },
+    "pending": {},
+    "local_date": "2026-10-21"
+   },
+   "history": [
+    "Mochi: (weekly check-in question: sedentary_min_day)"
+   ],
+   "turns": [
+    "6 hours a day, and maybe 3 beers this week"
+   ],
+   "expect": {
+    "sedentary_min_day": 360,
+    "alcohol_drinks_weekly": 3
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "smoking_status",
+   "confirm": true,
+   "id": "checkin-11",
+   "split": "dev"
+  },
+  {
+   "category": "checkin",
+   "flow": "quick",
+   "start": {
+    "kind": "quick",
+    "field": "sleep_hours_last_night",
+    "confirmed": {},
+    "pending": {},
+    "local_date": "2026-10-21",
+    "topics": [
+     "sleep",
+     "activity",
+     "sitting"
+    ]
+   },
+   "history": [
+    "Mochi: (quick check-in question: sleep_hours_last_night)"
+   ],
+   "turns": [
+    "slept 7 hours, and yesterday I jogged for 20 minutes"
+   ],
+   "expect": {
+    "sleep_hours_last_night": 7,
+    "vigorous_recreation_min": 20
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "moderate_recreation_min",
+   "confirm": true,
+   "id": "checkin-12",
+   "split": "dev"
+  },
+  {
+   "category": "checkin",
+   "flow": "quick",
+   "start": {
+    "kind": "quick",
+    "field": "vigorous_recreation_min",
+    "confirmed": {},
+    "pending": {
+     "sleep_hours_last_night": 7
+    },
+    "local_date": "2026-10-21",
+    "topics": [
+     "sleep",
+     "activity",
+     "sitting"
+    ]
+   },
+   "history": [
+    "Mochi: (quick check-in question: vigorous_recreation_min)"
+   ],
+   "turns": [
+    "nothing hard, but I walked 40 minutes"
+   ],
+   "expect": {
+    "sleep_hours_last_night": 7,
+    "vigorous_recreation_min": 0,
+    "moderate_recreation_min": 40
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sedentary_min_day",
+   "confirm": true,
+   "id": "checkin-13",
+   "split": "dev"
+  },
+  {
+   "category": "checkin",
+   "flow": "quick",
+   "start": {
+    "kind": "quick",
+    "field": "sedentary_min_day",
+    "confirmed": {},
+    "pending": {
+     "sleep_hours_last_night": 7,
+     "vigorous_recreation_min": 0,
+     "moderate_recreation_min": 30
+    },
+    "local_date": "2026-10-21",
+    "topics": [
+     "sleep",
+     "activity",
+     "sitting"
+    ]
+   },
+   "history": [
+    "Mochi: (quick check-in question: sedentary_min_day)"
+   ],
+   "turns": [
+    "I sat about 5 hours, feeling good"
+   ],
+   "expect": {
+    "sleep_hours_last_night": 7,
+    "vigorous_recreation_min": 0,
+    "moderate_recreation_min": 30,
+    "sedentary_min_day": 300
+   },
+   "allow": {},
+   "must_not": [
+    "wellbeing"
+   ],
+   "unknown": [],
+   "skip": [],
+   "next": "confirming",
+   "confirm": true,
+   "id": "checkin-14",
+   "split": "dev"
+  },
+  {
+   "category": "checkin",
+   "flow": "daily",
+   "start": {
+    "kind": "daily",
+    "field": "sleep_hours_last_night",
+    "confirmed": {},
+    "pending": {},
+    "local_date": "2026-10-21"
+   },
+   "history": [
+    "Mochi: (daily check-in question: sleep_hours_last_night)"
+   ],
+   "turns": [
+    "I don't know how long I slept, but I walked 20 minutes"
+   ],
+   "expect": {
+    "exercise_minutes_today": 20
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [
+    "sleep_hours_last_night"
+   ],
+   "skip": [],
+   "next": "wellbeing",
+   "confirm": true,
+   "id": "checkin-15",
+   "split": "dev"
+  },
+  {
+   "category": "checkin",
+   "flow": "weekly",
+   "start": {
+    "kind": "weekly",
+    "field": "sleep_hours",
+    "confirmed": {},
+    "pending": {},
+    "local_date": "2026-10-21"
+   },
+   "history": [
+    "Mochi: (weekly check-in question: sleep_hours)"
+   ],
+   "turns": [
+    "I'm feeling down this week, slept maybe 5 hours"
+   ],
+   "expect": {
+    "sleep_hours": 5,
+    "wellbeing": "not_great"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "checkin-16",
+   "split": "dev"
+  },
+  {
+   "category": "checkin",
+   "flow": "weekly",
+   "start": {
+    "kind": "weekly",
+    "field": "smoking_status",
+    "confirmed": {
+     "sleep_hours": 7,
+     "vigorous_recreation_min_week": 0,
+     "moderate_recreation_min_week": 120,
+     "sedentary_min_day": 360,
+     "alcohol_drinks_weekly": 0
+    },
+    "pending": {},
+    "local_date": "2026-10-21"
+   },
+   "history": [
+    "Mochi: (weekly check-in question: smoking_status)"
+   ],
+   "turns": [
+    "still smoking, about 5 a day, and I weigh 180"
+   ],
+   "expect": {
+    "smoking_status": "current",
+    "weight_kg": 81.65
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "systolic_bp",
+   "confirm": true,
+   "id": "checkin-18",
+   "split": "dev"
+  },
+  {
+   "category": "conflict",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "weight_kg",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How much do you weigh? For example, 160 pounds."
+   ],
+   "turns": [
+    "about 150 pounds, and I smoke half a pack a day"
+   ],
+   "expect": {
+    "weight_kg": 68.04
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sleep_hours",
+   "confirm": true,
+   "conflict": {
+    "field": "smoking_status",
+    "old": "never",
+    "new": "current",
+    "mention": "\\bsmok"
+   },
+   "id": "conflict-03",
+   "split": "dev"
+  },
+  {
+   "category": "conflict",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: About how many hours a day do you spend sitting? TV and driving count."
+   ],
+   "turns": [
+    "I sit 6 hours and I sleep about 5 hours a night"
+   ],
+   "expect": {
+    "sedentary_min_day": 360
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "moderate_recreation_min_week",
+   "confirm": true,
+   "conflict": {
+    "field": "sleep_hours",
+    "old": 7,
+    "new": 5,
+    "mention": "\\b(?:5|five) hours\\b"
+   },
+   "id": "conflict-04",
+   "split": "dev"
+  },
+  {
+   "category": "conflict",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "general_health",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How would you rate your health: excellent, very good, good, fair or poor?"
+   ],
+   "turns": [
+    "Fair. I weigh 190 pounds"
+   ],
+   "expect": {
+    "general_health": "fair"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "hypertension_diagnosed",
+   "confirm": true,
+   "conflict": {
+    "field": "weight_kg",
+    "old": 68.04,
+    "new": 86.18,
+    "mention": "\\b190\\b"
+   },
+   "id": "conflict-05",
+   "split": "dev"
+  },
+  {
+   "category": "conflict",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "vigorous_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360,
+     "moderate_recreation_min_week": 150
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: And harder exercise that makes you breathe hard, like jogging or tennis? How many minutes a week?"
+   ],
+   "turns": [
+    "I don't do anything hard. I walk maybe an hour a week"
+   ],
+   "expect": {
+    "vigorous_recreation_min_week": 0
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "ready",
+   "confirm": true,
+   "conflict": {
+    "field": "moderate_recreation_min_week",
+    "old": 150,
+    "new": 60,
+    "mention": "\\b(?:60|an hour|1 hour|one hour)\\b"
+   },
+   "id": "conflict-07",
+   "split": "dev"
+  },
+  {
+   "category": "conflict",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 72,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "I'm 74"
+   ],
+   "expect": {},
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sleep_hours",
+   "confirm": true,
+   "conflict": {
+    "field": "age",
+    "old": 72,
+    "new": 74,
+    "mention": "\\b74\\b"
+   },
+   "id": "conflict-08",
+   "split": "dev"
+  },
+  {
+   "category": "conflict",
+   "flow": "onboarding",
+   "start": {
+    "phase": "ready",
+    "field": null,
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360,
+     "moderate_recreation_min_week": 150,
+     "vigorous_recreation_min_week": 0
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: All done, thank you! Anything else?"
+   ],
+   "turns": [
+    "I sleep 9 hours actually"
+   ],
+   "expect": {},
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "ready",
+   "confirm": true,
+   "conflict": {
+    "field": "sleep_hours",
+    "old": 7,
+    "new": 9,
+    "mention": "\\b(?:9|nine)\\b"
+   },
+   "id": "conflict-10",
+   "split": "dev"
+  },
+  {
+   "category": "correction",
+   "flow": "onboarding",
+   "start": {
+    "phase": "confirming",
+    "field": "age",
+    "confirmed": {},
+    "pending": {
+     "age": 72
+    },
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: How old are you?",
+    "Person: (answered)",
+    "Mochi: (reads it back) Is that right?"
+   ],
+   "turns": [
+    "actually I'm 70, not 72"
+   ],
+   "expect": {
+    "age": 70
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sex",
+   "confirm": true,
+   "id": "correction-01",
+   "split": "dev"
+  },
+  {
+   "category": "correction",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 72.57
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "sorry, my weight is 150, not 160. I sleep 7 hours"
+   ],
+   "expect": {
+    "weight_kg": 68.04,
+    "sleep_hours": 7
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "general_health",
+   "confirm": true,
+   "id": "correction-04",
+   "split": "dev"
+  },
+  {
+   "category": "correction",
+   "flow": "onboarding",
+   "start": {
+    "phase": "confirming",
+    "field": "weight_kg",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56
+    },
+    "pending": {
+     "weight_kg": 81.65
+    },
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How much do you weigh? For example, 160 pounds.",
+    "Person: (answered)",
+    "Mochi: (reads it back) Is that right?"
+   ],
+   "turns": [
+    "no, 185"
+   ],
+   "expect": {
+    "weight_kg": 83.91
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sleep_hours",
+   "confirm": true,
+   "id": "correction-05",
+   "split": "dev"
+  },
+  {
+   "category": "correction",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "smoking_status",
+    "confirmed": {
+     "age": 65,
+     "sex": "male"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: Do you smoke now, did you smoke before, or have you never smoked?"
+   ],
+   "turns": [
+    "I meant I'm 56, I mixed up the digits. Never smoked."
+   ],
+   "expect": {
+    "age": 56,
+    "smoking_status": "never"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "offering",
+   "confirm": true,
+   "id": "correction-07",
+   "split": "dev"
+  },
+  {
+   "category": "correction",
+   "flow": "onboarding",
+   "start": {
+    "phase": "confirming",
+    "field": "age",
+    "confirmed": {},
+    "pending": {
+     "age": 64,
+     "sex": "female"
+    },
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: How old are you?",
+    "Person: (answered)",
+    "Mochi: (reads it back) Is that right?"
+   ],
+   "turns": [
+    "the age is wrong, I'm 46"
+   ],
+   "expect": {
+    "age": 46,
+    "sex": "female"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "smoking_status",
+   "confirm": true,
+   "id": "correction-08",
+   "split": "dev"
+  },
+  {
+   "category": "correction",
+   "flow": "onboarding",
+   "start": {
+    "phase": "confirming",
+    "field": "height_cm",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never"
+    },
+    "pending": {
+     "height_cm": 177.8
+    },
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How tall are you? For example, 5 feet 10 inches.",
+    "Person: (answered)",
+    "Mochi: (reads it back) Is that right?"
+   ],
+   "turns": [
+    "no, five eleven"
+   ],
+   "expect": {
+    "height_cm": 180.34
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "weight_kg",
+   "confirm": true,
+   "id": "correction-11",
+   "split": "dev"
+  },
+  {
+   "category": "correction",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "weight_kg",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 172.72
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How much do you weigh? For example, 160 pounds."
+   ],
+   "turns": [
+    "actually I'm 5'9, not 5'8. And 175 pounds"
+   ],
+   "expect": {
+    "height_cm": 175.26,
+    "weight_kg": 79.38
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sleep_hours",
+   "confirm": true,
+   "id": "correction-12",
+   "split": "dev"
+  },
+  {
+   "category": "dont_know_mixed",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "hypertension_diagnosed",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: Has a doctor ever told you that you have high blood pressure?"
+   ],
+   "turns": [
+    "I don't know about blood pressure, but I don't have diabetes"
+   ],
+   "expect": {
+    "diabetes": false
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [
+    "hypertension_diagnosed"
+   ],
+   "skip": [],
+   "next": null,
+   "confirm": true,
+   "id": "dont_know_mixed-05",
+   "split": "dev"
+  },
+  {
+   "category": "dont_know_mixed",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "diabetes",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: Has a doctor ever told you that you have diabetes?"
+   ],
+   "turns": [
+    "no clue about diabetes, but I sit around 8 hours a day"
+   ],
+   "expect": {
+    "sedentary_min_day": 480
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [
+    "diabetes"
+   ],
+   "skip": [],
+   "next": "moderate_recreation_min_week",
+   "confirm": true,
+   "id": "dont_know_mixed-06",
+   "split": "dev"
+  },
+  {
+   "category": "dont_know_mixed",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: About how many hours a day do you spend sitting? TV and driving count."
+   ],
+   "turns": [
+    "I have no idea how long I sit, but I walk about 30 minutes a day"
+   ],
+   "expect": {
+    "moderate_recreation_min_week": 210
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": null,
+   "confirm": true,
+   "id": "dont_know_mixed-07",
+   "split": "dev"
+  },
+  {
+   "category": "dont_know_mixed",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "height_cm",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How tall are you? For example, 5 feet 10 inches."
+   ],
+   "turns": [
+    "I don't know how tall I am exactly, but I weigh 150 pounds"
+   ],
+   "expect": {
+    "weight_kg": 68.04
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [
+    "height_cm"
+   ],
+   "skip": [],
+   "next": "sleep_hours",
+   "confirm": true,
+   "id": "dont_know_mixed-08",
+   "split": "dev"
+  },
+  {
+   "category": "dont_know_mixed",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "hmm, hard to say, but I'd call my health very good"
+   ],
+   "expect": {
+    "general_health": "very_good"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": null,
+   "confirm": true,
+   "id": "dont_know_mixed-09",
+   "split": "dev"
+  },
+  {
+   "category": "dont_know_mixed",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "smoking_status",
+    "confirmed": {
+     "age": 63,
+     "sex": "male"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: Do you smoke now, did you smoke before, or have you never smoked?"
+   ],
+   "turns": [
+    "never smoked. I don't know my height or weight."
+   ],
+   "expect": {
+    "smoking_status": "never"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [
+    "height_cm",
+    "weight_kg"
+   ],
+   "skip": [],
+   "next": "offering",
+   "confirm": true,
+   "id": "dont_know_mixed-10",
+   "split": "dev"
+  },
+  {
+   "category": "dont_know_mixed",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "height_cm",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How tall are you? For example, 5 feet 10 inches."
+   ],
+   "turns": [
+    "dunno, maybe 5'5? and like 145 pounds"
+   ],
+   "expect": {
+    "weight_kg": 65.77
+   },
+   "allow": {
+    "height_cm": 165.1
+   },
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": null,
+   "confirm": true,
+   "id": "dont_know_mixed-12",
+   "split": "dev"
+  },
+  {
+   "category": "later_answer_skip",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "age",
+    "confirmed": {},
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: How old are you?"
+   ],
+   "turns": [
+    "I'm 70 and I sleep 8 hours"
+   ],
+   "expect": {
+    "age": 70,
+    "sleep_hours": 8
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [
+    "sleep_hours"
+   ],
+   "next": "sex",
+   "confirm": true,
+   "id": "later_answer_skip-01",
+   "split": "dev"
+  },
+  {
+   "category": "later_answer_skip",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "height_cm",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How tall are you? For example, 5 feet 10 inches."
+   ],
+   "turns": [
+    "5'3, and I don't have diabetes"
+   ],
+   "expect": {
+    "height_cm": 160.02,
+    "diabetes": false
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [
+    "diabetes"
+   ],
+   "next": "weight_kg",
+   "confirm": true,
+   "id": "later_answer_skip-03",
+   "split": "dev"
+  },
+  {
+   "category": "later_answer_skip",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "7 hours. I run about 90 minutes a week"
+   ],
+   "expect": {
+    "sleep_hours": 7,
+    "vigorous_recreation_min_week": 90
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [
+    "vigorous_recreation_min_week"
+   ],
+   "next": "general_health",
+   "confirm": true,
+   "id": "later_answer_skip-06",
+   "split": "dev"
+  },
+  {
+   "category": "later_answer_skip",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "general_health",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How would you rate your health: excellent, very good, good, fair or poor?"
+   ],
+   "turns": [
+    "good. and I'm on metformin for my diabetes"
+   ],
+   "expect": {
+    "general_health": "good",
+    "diabetes": true
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [
+    "diabetes"
+   ],
+   "next": "hypertension_diagnosed",
+   "confirm": true,
+   "id": "later_answer_skip-08",
+   "split": "dev"
+  },
+  {
+   "category": "later_answer_skip",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "height_cm",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How tall are you? For example, 5 feet 10 inches."
+   ],
+   "turns": [
+    "5'11. I sleep about 6 and a half hours"
+   ],
+   "expect": {
+    "height_cm": 180.34,
+    "sleep_hours": 6.5
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [
+    "sleep_hours"
+   ],
+   "next": "weight_kg",
+   "confirm": true,
+   "id": "later_answer_skip-09",
+   "split": "dev"
+  },
+  {
+   "category": "later_answer_skip",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "hypertension_diagnosed",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: Has a doctor ever told you that you have high blood pressure?"
+   ],
+   "turns": [
+    "No. I walk about 45 minutes a day"
+   ],
+   "expect": {
+    "hypertension_diagnosed": false,
+    "moderate_recreation_min_week": 315
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [
+    "moderate_recreation_min_week"
+   ],
+   "next": "diabetes",
+   "confirm": true,
+   "id": "later_answer_skip-10",
+   "split": "dev"
+  },
+  {
+   "category": "later_answer_skip",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sex",
+    "confirmed": {
+     "age": 77
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: What sex were you at birth: female or male?"
+   ],
+   "turns": [
+    "female, 5 foot 1"
+   ],
+   "expect": {
+    "sex": "female",
+    "height_cm": 154.94
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [
+    "height_cm"
+   ],
+   "next": "smoking_status",
+   "confirm": true,
+   "id": "later_answer_skip-13",
+   "split": "dev"
+  },
+  {
+   "category": "multi_field",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "age",
+    "confirmed": {},
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: How old are you?"
+   ],
+   "turns": [
+    "I'm 67, a man, and I've never smoked"
+   ],
+   "expect": {
+    "age": 67,
+    "sex": "male",
+    "smoking_status": "never"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "offering",
+   "confirm": true,
+   "id": "multi_field-01",
+   "split": "dev"
+  },
+  {
+   "category": "multi_field",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sex",
+    "confirmed": {
+     "age": 68
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: What sex were you at birth: female or male?"
+   ],
+   "turns": [
+    "Female. I'm 5'2 and 130 pounds"
+   ],
+   "expect": {
+    "sex": "female",
+    "height_cm": 157.48,
+    "weight_kg": 58.97
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "smoking_status",
+   "confirm": true,
+   "id": "multi_field-05",
+   "split": "dev"
+  },
+  {
+   "category": "multi_field",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "weight_kg",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How much do you weigh? For example, 160 pounds."
+   ],
+   "turns": [
+    "I'm 180 pounds, I sleep about 6 hours, and my health is fair"
+   ],
+   "expect": {
+    "weight_kg": 81.65,
+    "sleep_hours": 6,
+    "general_health": "fair"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "hypertension_diagnosed",
+   "confirm": true,
+   "id": "multi_field-09",
+   "split": "dev"
+  },
+  {
+   "category": "multi_field",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "age",
+    "confirmed": {},
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: How old are you?"
+   ],
+   "turns": [
+    "I'm 58, male, five ten, 200 pounds"
+   ],
+   "expect": {
+    "age": 58,
+    "sex": "male",
+    "height_cm": 177.8,
+    "weight_kg": 90.72
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "smoking_status",
+   "confirm": true,
+   "id": "multi_field-10",
+   "split": "dev"
+  },
+  {
+   "category": "multi_field",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "diabetes",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: Has a doctor ever told you that you have diabetes?"
+   ],
+   "turns": [
+    "No diabetes. I'm sitting most of the day at work, like 9 hours"
+   ],
+   "expect": {
+    "diabetes": false,
+    "sedentary_min_day": 540
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "moderate_recreation_min_week",
+   "confirm": true,
+   "id": "multi_field-12",
+   "split": "dev"
+  },
+  {
+   "category": "multi_field",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "smoking_status",
+    "confirmed": {
+     "age": 68,
+     "sex": "female"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: Do you smoke now, did you smoke before, or have you never smoked?"
+   ],
+   "turns": [
+    "Never smoked. I'm 165 centimeters and 62 kilos"
+   ],
+   "expect": {
+    "smoking_status": "never",
+    "height_cm": 165,
+    "weight_kg": 62
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "offering",
+   "confirm": true,
+   "id": "multi_field-13",
+   "split": "dev"
+  },
+  {
+   "category": "multi_field",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "seven hours, I'm in very good health, no high blood pressure, no diabetes, and I sit about 4 hours a day"
+   ],
+   "expect": {
+    "sleep_hours": 7,
+    "general_health": "very_good",
+    "hypertension_diagnosed": false,
+    "diabetes": false,
+    "sedentary_min_day": 240
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "moderate_recreation_min_week",
+   "confirm": true,
+   "id": "multi_field-14",
+   "split": "dev"
+  },
+  {
+   "category": "multi_field",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: About how many hours a day do you spend sitting? TV and driving count."
+   ],
+   "turns": [
+    "about 6 hours sitting, and I swim laps hard twice a week for 45 minutes"
+   ],
+   "expect": {
+    "sedentary_min_day": 360,
+    "vigorous_recreation_min_week": 90
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "moderate_recreation_min_week",
+   "confirm": true,
+   "id": "multi_field-16",
+   "split": "dev"
+  },
+  {
+   "category": "negation_former",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "smoking_status",
+    "confirmed": {
+     "age": 68,
+     "sex": "female"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: Do you smoke now, did you smoke before, or have you never smoked?"
+   ],
+   "turns": [
+    "quit 10 years ago"
+   ],
+   "expect": {
+    "smoking_status": "former"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "offering",
+   "confirm": true,
+   "id": "negation_former-02",
+   "split": "dev"
+  },
+  {
+   "category": "negation_former",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "moderate_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: In a usual week, how many minutes of lighter activity do you do, like brisk walking or gardening?"
+   ],
+   "turns": [
+    "never really exercised, I just sit around"
+   ],
+   "expect": {},
+   "allow": {
+    "moderate_recreation_min_week": 0
+   },
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": null,
+   "confirm": false,
+   "id": "negation_former-03",
+   "split": "dev"
+  },
+  {
+   "category": "negation_former",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "weight_kg",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How much do you weigh? For example, 160 pounds."
+   ],
+   "turns": [
+    "I used to be 200 pounds, now I'm about 170"
+   ],
+   "expect": {
+    "weight_kg": 77.11
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sleep_hours",
+   "confirm": true,
+   "id": "negation_former-10",
+   "split": "dev"
+  },
+  {
+   "category": "negation_former",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "I used to sleep 8 hours, these days it's more like 6"
+   ],
+   "expect": {
+    "sleep_hours": 6
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "general_health",
+   "confirm": true,
+   "id": "negation_former-11",
+   "split": "dev"
+  },
+  {
+   "category": "negation_former",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "smoking_status",
+    "confirmed": {
+     "age": 68,
+     "sex": "female"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: Do you smoke now, did you smoke before, or have you never smoked?"
+   ],
+   "turns": [
+    "I smoked for 30 years, stopped when I turned 60"
+   ],
+   "expect": {
+    "smoking_status": "former"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "offering",
+   "confirm": true,
+   "id": "negation_former-12",
+   "split": "dev"
+  },
+  {
+   "category": "negation_former",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "hypertension_diagnosed",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: Has a doctor ever told you that you have high blood pressure?"
+   ],
+   "turns": [
+    "they said it was borderline once, but I've never been diagnosed with high blood pressure"
+   ],
+   "expect": {
+    "hypertension_diagnosed": false
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "diabetes",
+   "confirm": true,
+   "id": "negation_former-13",
+   "split": "dev"
+  },
+  {
+   "category": "negation_former",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sex",
+    "confirmed": {
+     "age": 59
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: What sex were you at birth: female or male?"
+   ],
+   "turns": [
+    "female, and no, I've never been a smoker"
+   ],
+   "expect": {
+    "sex": "female",
+    "smoking_status": "never"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "offering",
+   "confirm": true,
+   "id": "negation_former-14",
+   "split": "dev"
+  },
+  {
+   "category": "non_question_phase",
+   "flow": "onboarding",
+   "start": {
+    "phase": "remembering",
+    "field": null,
+    "confirmed": {},
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: Can I remember the little things you tell me, like your walks?"
+   ],
+   "turns": [
+    "Of course. Also I'm a former smoker"
+   ],
+   "expect": {
+    "smoking_status": "former"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "age",
+   "confirm": true,
+   "memory_consent": true,
+   "id": "non_question_phase-04",
+   "split": "dev"
+  },
+  {
+   "category": "non_question_phase",
+   "flow": "onboarding",
+   "start": {
+    "phase": "offering",
+    "field": null,
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: Would you like to bring in your height, weight and sleep from Apple Health?"
+   ],
+   "turns": [
+    "No, I don't have a watch. I'm five foot eight, 170 pounds"
+   ],
+   "expect": {
+    "height_cm": 172.72,
+    "weight_kg": 77.11
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sleep_hours",
+   "confirm": true,
+   "id": "non_question_phase-05",
+   "split": "dev"
+  },
+  {
+   "category": "non_question_phase",
+   "flow": "onboarding",
+   "start": {
+    "phase": "confirming",
+    "field": "age",
+    "confirmed": {},
+    "pending": {
+     "age": 72
+    },
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: How old are you?",
+    "Person: (answered)",
+    "Mochi: (reads it back) Is that right?"
+   ],
+   "turns": [
+    "yes, and I sleep 7 hours"
+   ],
+   "expect": {
+    "age": 72,
+    "sleep_hours": 7
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sex",
+   "confirm": true,
+   "id": "non_question_phase-08",
+   "split": "dev"
+  },
+  {
+   "category": "non_question_phase",
+   "flow": "onboarding",
+   "start": {
+    "phase": "confirming",
+    "field": "sex",
+    "confirmed": {
+     "age": 68
+    },
+    "pending": {
+     "sex": "female"
+    },
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: What sex were you at birth: female or male?",
+    "Person: (answered)",
+    "Mochi: (reads it back) Is that right?"
+   ],
+   "turns": [
+    "correct, and I never smoked"
+   ],
+   "expect": {
+    "sex": "female",
+    "smoking_status": "never"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "offering",
+   "confirm": true,
+   "id": "non_question_phase-11",
+   "split": "dev"
+  },
+  {
+   "category": "non_question_phase",
+   "flow": "onboarding",
+   "start": {
+    "phase": "probing",
+    "field": null,
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "moderate_recreation_min_week": 150
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": true,
+    "health_offered": true,
+    "probe": "activity"
+   },
+   "history": [
+    "Mochi: (habit follow-up activity)"
+   ],
+   "turns": [
+    "I walk with my sister, and I sit maybe 7 hours a day"
+   ],
+   "expect": {
+    "sedentary_min_day": 420
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "non_question_phase-13",
+   "split": "dev"
+  },
+  {
+   "category": "non_question_phase",
+   "flow": "onboarding",
+   "start": {
+    "phase": "probing",
+    "field": null,
+    "confirmed": {
+     "age": 61,
+     "sex": "male",
+     "smoking_status": "current"
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": true,
+    "health_offered": true,
+    "probe": "smoking_history"
+   },
+   "history": [
+    "Mochi: (habit follow-up smoking_history)"
+   ],
+   "turns": [
+    "about 20 years. I'm 5'7 by the way"
+   ],
+   "expect": {
+    "height_cm": 170.18
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "weight_kg",
+   "confirm": true,
+   "id": "non_question_phase-14",
+   "split": "dev"
+  },
+  {
+   "category": "non_question_phase",
+   "flow": "onboarding",
+   "start": {
+    "phase": "ready",
+    "field": null,
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360,
+     "moderate_recreation_min_week": 150,
+     "vigorous_recreation_min_week": 0
+    },
+    "pending": {},
+    "unknown": [
+     "weight_kg"
+    ],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: All done, thank you! Anything else?"
+   ],
+   "turns": [
+    "oh I forgot, I actually do know my weight, it's 160 pounds"
+   ],
+   "expect": {
+    "weight_kg": 72.57
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "ready",
+   "confirm": true,
+   "id": "non_question_phase-15",
+   "split": "dev"
+  },
+  {
+   "category": "non_question_phase",
+   "flow": "onboarding",
+   "start": {
+    "phase": "ready",
+    "field": null,
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360,
+     "moderate_recreation_min_week": 150,
+     "vigorous_recreation_min_week": 0
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: All done, thank you! Anything else?"
+   ],
+   "turns": [
+    "thank you, bye"
+   ],
+   "expect": {},
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "ready",
+   "confirm": false,
+   "id": "non_question_phase-16",
+   "split": "dev"
+  },
+  {
+   "category": "non_question_phase",
+   "flow": "onboarding",
+   "start": {
+    "phase": "ready",
+    "field": null,
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360,
+     "moderate_recreation_min_week": 150,
+     "vigorous_recreation_min_week": 0
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [
+     "general_health"
+    ],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: All done, thank you! Anything else?"
+   ],
+   "turns": [
+    "thanks! I'd also say my health is very good"
+   ],
+   "expect": {
+    "general_health": "very_good"
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "ready",
+   "confirm": true,
+   "id": "non_question_phase-17",
+   "split": "dev"
+  },
+  {
+   "category": "stray_number",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "age",
+    "confirmed": {},
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: How old are you?"
+   ],
+   "turns": [
+    "I have 2 kids, I'm 45"
+   ],
+   "expect": {
+    "age": 45
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sex",
+   "confirm": true,
+   "id": "stray_number-02",
+   "split": "dev"
+  },
+  {
+   "category": "stray_number",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "weight_kg",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How much do you weigh? For example, 160 pounds."
+   ],
+   "turns": [
+    "I lost 10 pounds last year, now I'm 155"
+   ],
+   "expect": {
+    "weight_kg": 70.31
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sleep_hours",
+   "confirm": true,
+   "id": "stray_number-04",
+   "split": "dev"
+  },
+  {
+   "category": "stray_number",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "age",
+    "confirmed": {},
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: How old are you?"
+   ],
+   "turns": [
+    "I've lived on Maple Street for 30 years and I'm 71"
+   ],
+   "expect": {
+    "age": 71
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sex",
+   "confirm": true,
+   "id": "stray_number-06",
+   "split": "dev"
+  },
+  {
+   "category": "stray_number",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: About how many hours a day do you spend sitting? TV and driving count."
+   ],
+   "turns": [
+    "I work 8 hour shifts but I'm on my feet, I sit maybe 2 hours"
+   ],
+   "expect": {
+    "sedentary_min_day": 120
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "moderate_recreation_min_week",
+   "confirm": true,
+   "id": "stray_number-07",
+   "split": "dev"
+  },
+  {
+   "category": "stray_number",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "moderate_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: In a usual week, how many minutes of lighter activity do you do, like brisk walking or gardening?"
+   ],
+   "turns": [
+    "I have 2 dogs and walk them 30 minutes every day"
+   ],
+   "expect": {
+    "moderate_recreation_min_week": 210
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "stray_number-08",
+   "split": "dev"
+  },
+  {
+   "category": "stray_number",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "age",
+    "confirmed": {},
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: How old are you?"
+   ],
+   "turns": [
+    "I retired at 62 and I'm 70 now"
+   ],
+   "expect": {
+    "age": 70
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sex",
+   "confirm": true,
+   "id": "stray_number-09",
+   "split": "dev"
+  },
+  {
+   "category": "stray_number",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "I go to bed at 10 and get up at 6"
+   ],
+   "expect": {
+    "sleep_hours": 8
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "general_health",
+   "confirm": true,
+   "id": "stray_number-10",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "moderate_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: In a usual week, how many minutes of lighter activity do you do, like brisk walking or gardening?"
+   ],
+   "turns": [
+    "about 3 hours"
+   ],
+   "expect": {
+    "moderate_recreation_min_week": 180
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "unit_conversion-01",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "moderate_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: In a usual week, how many minutes of lighter activity do you do, like brisk walking or gardening?"
+   ],
+   "turns": [
+    "an hour and fifteen minutes"
+   ],
+   "expect": {
+    "moderate_recreation_min_week": 75
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "unit_conversion-05",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "moderate_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: In a usual week, how many minutes of lighter activity do you do, like brisk walking or gardening?"
+   ],
+   "turns": [
+    "between 2 and 3 hours"
+   ],
+   "expect": {
+    "moderate_recreation_min_week": 150
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "unit_conversion-06",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "moderate_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: In a usual week, how many minutes of lighter activity do you do, like brisk walking or gardening?"
+   ],
+   "turns": [
+    "3-4 hours"
+   ],
+   "expect": {
+    "moderate_recreation_min_week": 210
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "unit_conversion-07",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "moderate_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: In a usual week, how many minutes of lighter activity do you do, like brisk walking or gardening?"
+   ],
+   "turns": [
+    "maybe 90 minutes"
+   ],
+   "expect": {
+    "moderate_recreation_min_week": 90
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "unit_conversion-08",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "moderate_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: In a usual week, how many minutes of lighter activity do you do, like brisk walking or gardening?"
+   ],
+   "turns": [
+    "an hour and a half a week"
+   ],
+   "expect": {
+    "moderate_recreation_min_week": 90
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "unit_conversion-09",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "moderate_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: In a usual week, how many minutes of lighter activity do you do, like brisk walking or gardening?"
+   ],
+   "turns": [
+    "half an hour"
+   ],
+   "expect": {
+    "moderate_recreation_min_week": 30
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "unit_conversion-10",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "vigorous_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360,
+     "moderate_recreation_min_week": 150
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: And harder exercise that makes you breathe hard, like jogging or tennis? How many minutes a week?"
+   ],
+   "turns": [
+    "1 hour"
+   ],
+   "expect": {
+    "vigorous_recreation_min_week": 60
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "ready",
+   "confirm": true,
+   "id": "unit_conversion-11",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "vigorous_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360,
+     "moderate_recreation_min_week": 150
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: And harder exercise that makes you breathe hard, like jogging or tennis? How many minutes a week?"
+   ],
+   "turns": [
+    "about two hours"
+   ],
+   "expect": {
+    "vigorous_recreation_min_week": 120
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "ready",
+   "confirm": true,
+   "id": "unit_conversion-12",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "vigorous_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360,
+     "moderate_recreation_min_week": 150
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: And harder exercise that makes you breathe hard, like jogging or tennis? How many minutes a week?"
+   ],
+   "turns": [
+    "an hour and a half"
+   ],
+   "expect": {
+    "vigorous_recreation_min_week": 90
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "ready",
+   "confirm": true,
+   "id": "unit_conversion-14",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: About how many hours a day do you spend sitting? TV and driving count."
+   ],
+   "turns": [
+    "half the day"
+   ],
+   "expect": {},
+   "allow": {},
+   "must_not": [
+    "sedentary_min_day"
+   ],
+   "unknown": [],
+   "skip": [],
+   "next": "sedentary_min_day",
+   "confirm": false,
+   "id": "unit_conversion-17",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: About how many hours a day do you spend sitting? TV and driving count."
+   ],
+   "turns": [
+    "about 8 hours"
+   ],
+   "expect": {
+    "sedentary_min_day": 480
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "moderate_recreation_min_week",
+   "confirm": true,
+   "id": "unit_conversion-20",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: About how many hours a day do you spend sitting? TV and driving count."
+   ],
+   "turns": [
+    "between 5 and 6 hours"
+   ],
+   "expect": {
+    "sedentary_min_day": 330
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "moderate_recreation_min_week",
+   "confirm": true,
+   "id": "unit_conversion-22",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "seven and a half hours"
+   ],
+   "expect": {
+    "sleep_hours": 7.5
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "general_health",
+   "confirm": true,
+   "id": "unit_conversion-29",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "between 6 and 7"
+   ],
+   "expect": {
+    "sleep_hours": 6.5
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "general_health",
+   "confirm": true,
+   "id": "unit_conversion-30",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "six hours and fifteen minutes"
+   ],
+   "expect": {
+    "sleep_hours": 6.25
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "general_health",
+   "confirm": true,
+   "id": "unit_conversion-32",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "a good 8 hours"
+   ],
+   "expect": {
+    "sleep_hours": 8
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "general_health",
+   "confirm": true,
+   "id": "unit_conversion-33",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: About how many hours a day do you spend sitting? TV and driving count."
+   ],
+   "turns": [
+    "5 hours sitting, and I walk two and a half hours a week"
+   ],
+   "expect": {
+    "sedentary_min_day": 300,
+    "moderate_recreation_min_week": 150
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [
+    "moderate_recreation_min_week"
+   ],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "unit_conversion-36",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "sleep_hours",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: How many hours do you sleep on a usual night?"
+   ],
+   "turns": [
+    "I sleep 7 hours and I sit a lot"
+   ],
+   "expect": {
+    "sleep_hours": 7
+   },
+   "allow": {},
+   "must_not": [
+    "sedentary_min_day"
+   ],
+   "unknown": [],
+   "skip": [],
+   "next": "general_health",
+   "confirm": true,
+   "id": "unit_conversion-38",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "vigorous_recreation_min_week",
+    "confirmed": {
+     "age": 68,
+     "sex": "female",
+     "smoking_status": "never",
+     "height_cm": 162.56,
+     "weight_kg": 68.04,
+     "sleep_hours": 7,
+     "general_health": "good",
+     "hypertension_diagnosed": false,
+     "diabetes": false,
+     "sedentary_min_day": 360,
+     "moderate_recreation_min_week": 150
+    },
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": true
+   },
+   "history": [
+    "Mochi: And harder exercise that makes you breathe hard, like jogging or tennis? How many minutes a week?"
+   ],
+   "turns": [
+    "I run 1 hour"
+   ],
+   "expect": {
+    "vigorous_recreation_min_week": 60
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "ready",
+   "confirm": true,
+   "id": "unit_conversion-39",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "weekly",
+   "start": {
+    "kind": "weekly",
+    "field": "moderate_recreation_min_week",
+    "confirmed": {
+     "sleep_hours": 7,
+     "vigorous_recreation_min_week": 0
+    },
+    "pending": {},
+    "local_date": "2026-10-21"
+   },
+   "history": [
+    "Mochi: (weekly check-in question: moderate_recreation_min_week)"
+   ],
+   "turns": [
+    "about 3 hours"
+   ],
+   "expect": {
+    "moderate_recreation_min_week": 180
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "sedentary_min_day",
+   "confirm": true,
+   "id": "unit_conversion-41",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "weekly",
+   "start": {
+    "kind": "weekly",
+    "field": "sedentary_min_day",
+    "confirmed": {
+     "sleep_hours": 7,
+     "vigorous_recreation_min_week": 0,
+     "moderate_recreation_min_week": 120
+    },
+    "pending": {},
+    "local_date": "2026-10-21"
+   },
+   "history": [
+    "Mochi: (weekly check-in question: sedentary_min_day)"
+   ],
+   "turns": [
+    "six or seven hours"
+   ],
+   "expect": {
+    "sedentary_min_day": 390
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "alcohol_drinks_weekly",
+   "confirm": true,
+   "id": "unit_conversion-42",
+   "split": "dev"
+  },
+  {
+   "category": "unit_conversion",
+   "flow": "weekly",
+   "start": {
+    "kind": "weekly",
+    "field": "sleep_hours",
+    "confirmed": {},
+    "pending": {},
+    "local_date": "2026-10-21"
+   },
+   "history": [
+    "Mochi: (weekly check-in question: sleep_hours)"
+   ],
+   "turns": [
+    "420 minutes"
+   ],
+   "expect": {
+    "sleep_hours": 7
+   },
+   "allow": {},
+   "must_not": [],
+   "unknown": [],
+   "skip": [],
+   "next": "vigorous_recreation_min_week",
+   "confirm": true,
+   "id": "unit_conversion-44",
+   "split": "dev"
+  }
+ ]
+}
