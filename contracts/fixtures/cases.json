@@ -1469,5 +1469,300 @@
       "status": "error",
       "code": "invalid_request"
     }
+  },
+  {
+    "name": "habits-propose-own-words",
+    "method": "POST",
+    "path": "/api/habits/propose",
+    "request_schema": "habits.propose.request.schema.json",
+    "request": {
+      "age": 26,
+      "local_date": "2026-10-24",
+      "own_words": [
+        "I'm wiped out by 3pm"
+      ],
+      "memory_consent": true
+    },
+    "status": 200,
+    "response_schema": "habits.propose.schema.json",
+    "response_subset": {
+      "status": "proposed",
+      "proposal": {
+        "catalog_id": "walk_after_lunch",
+        "source": "said",
+        "status": "proposed",
+        "why_words": "I'm wiped out by 3pm"
+      },
+      "supports": "This supports your Move.",
+      "emergency": false
+    }
+  },
+  {
+    "name": "habits-propose-under-18",
+    "method": "POST",
+    "path": "/api/habits/propose",
+    "request_schema": "habits.propose.request.schema.json",
+    "request": {
+      "age": 16,
+      "local_date": "2026-10-24"
+    },
+    "status": 200,
+    "response_schema": "habits.propose.schema.json",
+    "response_subset": {
+      "status": "age_not_supported",
+      "proposal": null
+    }
+  },
+  {
+    "name": "habits-propose-eating-care",
+    "method": "POST",
+    "path": "/api/habits/propose",
+    "request_schema": "habits.propose.request.schema.json",
+    "request": {
+      "age": 30,
+      "local_date": "2026-10-24",
+      "own_words": [
+        "I want to skip meals"
+      ],
+      "memory_consent": true
+    },
+    "status": 200,
+    "response_schema": "habits.propose.schema.json",
+    "response_subset": {
+      "status": "safety",
+      "safety": "eating_care",
+      "proposal": null
+    }
+  },
+  {
+    "name": "habits-propose-three-active",
+    "method": "POST",
+    "path": "/api/habits/propose",
+    "request_schema": "habits.propose.request.schema.json",
+    "request_schema_valid": true,
+    "request": {
+      "age": 40,
+      "local_date": "2026-10-24",
+      "habits": [
+        {
+          "id": "a-0",
+          "catalog_id": "walk_after_lunch",
+          "pillar": "move",
+          "anchor": "After lunch",
+          "tiny_action": "walk for 2 minutes outside",
+          "source": "said",
+          "status": "active",
+          "started_on": "2026-10-20"
+        },
+        {
+          "id": "a-1",
+          "catalog_id": "walk_after_lunch",
+          "pillar": "move",
+          "anchor": "After lunch",
+          "tiny_action": "walk for 2 minutes outside",
+          "source": "said",
+          "status": "active",
+          "started_on": "2026-10-20"
+        },
+        {
+          "id": "a-2",
+          "catalog_id": "walk_after_lunch",
+          "pillar": "move",
+          "anchor": "After lunch",
+          "tiny_action": "walk for 2 minutes outside",
+          "source": "said",
+          "status": "active",
+          "started_on": "2026-10-20"
+        }
+      ]
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "habits-accept",
+    "method": "POST",
+    "path": "/api/habits/update",
+    "request_schema": "habits.update.request.schema.json",
+    "request": {
+      "age": 40,
+      "local_date": "2026-10-24",
+      "action": "accept",
+      "habit_id": "p-1",
+      "habits": [
+        {
+          "id": "p-1",
+          "catalog_id": "walk_after_lunch",
+          "pillar": "move",
+          "anchor": "After lunch",
+          "tiny_action": "walk for 2 minutes outside",
+          "source": "said",
+          "status": "proposed",
+          "started_on": null
+        }
+      ]
+    },
+    "status": 200,
+    "response_schema": "habits.update.schema.json",
+    "response_subset": {
+      "status": "active",
+      "habit": {
+        "id": "p-1",
+        "status": "active",
+        "started_on": "2026-10-24"
+      }
+    }
+  },
+  {
+    "name": "habits-edit-supplement-refused",
+    "method": "POST",
+    "path": "/api/habits/update",
+    "request_schema": "habits.update.request.schema.json",
+    "request": {
+      "age": 40,
+      "local_date": "2026-10-24",
+      "action": "edit",
+      "habit_id": "walk_after_lunch-20261020",
+      "habits": [
+        {
+          "id": "walk_after_lunch-20261020",
+          "catalog_id": "walk_after_lunch",
+          "pillar": "move",
+          "anchor": "After lunch",
+          "tiny_action": "walk for 2 minutes outside",
+          "source": "said",
+          "status": "active",
+          "started_on": "2026-10-20"
+        }
+      ],
+      "tiny_action": "drink an energy drink"
+    },
+    "status": 200,
+    "response_schema": "habits.update.schema.json",
+    "response_subset": {
+      "status": "safety",
+      "safety": "supplement",
+      "habit": {
+        "tiny_action": "walk for 2 minutes outside"
+      }
+    }
+  },
+  {
+    "name": "habits-question-sort-of",
+    "method": "POST",
+    "path": "/api/habits/question",
+    "request_schema": "habits.question.request.schema.json",
+    "request": {
+      "age": 40,
+      "local_date": "2026-10-24",
+      "action": "reply",
+      "habit_id": "walk_after_lunch-20261020",
+      "habits": [
+        {
+          "id": "walk_after_lunch-20261020",
+          "catalog_id": "walk_after_lunch",
+          "pillar": "move",
+          "anchor": "After lunch",
+          "tiny_action": "walk for 2 minutes outside",
+          "source": "said",
+          "status": "active",
+          "started_on": "2026-10-20"
+        }
+      ],
+      "text": "sort of"
+    },
+    "status": 200,
+    "response_schema": "habits.question.schema.json",
+    "response_subset": {
+      "status": "answered",
+      "result": "partly"
+    }
+  },
+  {
+    "name": "habits-question-skip-unknown",
+    "method": "POST",
+    "path": "/api/habits/question",
+    "request_schema": "habits.question.request.schema.json",
+    "request": {
+      "age": 40,
+      "local_date": "2026-10-24",
+      "action": "skip",
+      "habit_id": "walk_after_lunch-20261020",
+      "habits": [
+        {
+          "id": "walk_after_lunch-20261020",
+          "catalog_id": "walk_after_lunch",
+          "pillar": "move",
+          "anchor": "After lunch",
+          "tiny_action": "walk for 2 minutes outside",
+          "source": "said",
+          "status": "active",
+          "started_on": "2026-10-20"
+        }
+      ]
+    },
+    "status": 200,
+    "response_schema": "habits.question.schema.json",
+    "response_subset": {
+      "status": "skipped",
+      "result": null
+    }
+  },
+  {
+    "name": "habits-week-good-week",
+    "method": "POST",
+    "path": "/api/habits/week",
+    "request_schema": "habits.week.request.schema.json",
+    "request": {
+      "age": 40,
+      "local_date": "2026-10-25",
+      "habit": {
+        "id": "walk_after_lunch-20261020",
+        "catalog_id": "walk_after_lunch",
+        "pillar": "move",
+        "anchor": "After lunch",
+        "tiny_action": "walk for 2 minutes outside",
+        "source": "said",
+        "status": "active",
+        "started_on": "2026-10-20"
+      },
+      "results": {
+        "2026-10-20": "done",
+        "2026-10-21": "partly",
+        "2026-10-23": "done",
+        "2026-10-25": "done",
+        "2026-10-22": "not_today"
+      }
+    },
+    "status": 200,
+    "response_schema": "habits.week.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "week_start": "2026-10-19",
+      "habit_days_this_week": 4,
+      "good_week_this_week": true,
+      "good_weeks_total": 1,
+      "mood": "celebrate"
+    }
+  },
+  {
+    "name": "habits-update-unknown-habit",
+    "method": "POST",
+    "path": "/api/habits/update",
+    "request_schema": "habits.update.request.schema.json",
+    "request": {
+      "age": 40,
+      "local_date": "2026-10-24",
+      "action": "dismiss",
+      "habit_id": "nope"
+    },
+    "status": 404,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "code": "habit_not_found"
+    }
   }
 ]

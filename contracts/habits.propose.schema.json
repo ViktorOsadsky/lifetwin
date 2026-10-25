@@ -1,0 +1,285 @@
+{
+  "$defs": {
+    "HabitRecord": {
+      "additionalProperties": false,
+      "description": "One habit as the phone stores it (the design's ``Habit``).",
+      "properties": {
+        "anchor": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Anchor",
+          "type": "string"
+        },
+        "catalog_id": {
+          "enum": [
+            "morning_daylight",
+            "steady_bedtime",
+            "walk_after_lunch",
+            "brisk_walk",
+            "stand_on_calls",
+            "three_breaths",
+            "text_a_friend",
+            "water_with_meals",
+            "quit_help"
+          ],
+          "title": "Catalog Id",
+          "type": "string"
+        },
+        "dismissed_until": {
+          "anyOf": [
+            {
+              "maxLength": 10,
+              "minLength": 10,
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dismissed Until"
+        },
+        "id": {
+          "pattern": "^[a-z0-9_-]{1,48}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "lever": {
+          "anyOf": [
+            {
+              "enum": [
+                "quit_smoking",
+                "vigorous_activity",
+                "moderate_activity",
+                "sleep",
+                "sitting"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lever"
+        },
+        "pillar": {
+          "enum": [
+            "move",
+            "sleep",
+            "sit_less",
+            "unwind",
+            "smoke_free",
+            "connect",
+            "nourish"
+          ],
+          "title": "Pillar",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "said",
+            "model_lever",
+            "guideline"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "started_on": {
+          "anyOf": [
+            {
+              "maxLength": 10,
+              "minLength": 10,
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Started On"
+        },
+        "status": {
+          "enum": [
+            "proposed",
+            "active",
+            "dismissed",
+            "graduated"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "tiny_action": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Tiny Action",
+          "type": "string"
+        },
+        "why_words": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Why Words"
+        }
+      },
+      "required": [
+        "id",
+        "catalog_id",
+        "pillar",
+        "anchor",
+        "tiny_action",
+        "why_words",
+        "lever",
+        "source",
+        "status",
+        "started_on",
+        "dismissed_until"
+      ],
+      "title": "HabitRecord",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "emergency": {
+      "default": false,
+      "title": "Emergency",
+      "type": "boolean"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "message": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "mood": {
+      "enum": [
+        "happy",
+        "proud",
+        "celebrate",
+        "cozy",
+        "concerned"
+      ],
+      "title": "Mood",
+      "type": "string"
+    },
+    "proposal": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HabitRecord"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "safety": {
+      "anyOf": [
+        {
+          "enum": [
+            "emergency",
+            "eating_care",
+            "supplement",
+            "medical",
+            "alcohol"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Safety"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Title"
+    },
+    "source_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Url"
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "pending",
+        "at_limit",
+        "nothing_new",
+        "age_not_supported",
+        "safety"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "supports": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Supports"
+    }
+  },
+  "required": [
+    "schema_version",
+    "message",
+    "mood",
+    "emergency",
+    "safety",
+    "limitations",
+    "status",
+    "proposal",
+    "supports",
+    "source_title",
+    "source_url"
+  ],
+  "title": "HabitProposeResponse",
+  "type": "object"
+}

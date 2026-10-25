@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "emergency": {
+      "default": false,
+      "title": "Emergency",
+      "type": "boolean"
+    },
+    "habit_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Habit Id"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "message": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "mood": {
+      "enum": [
+        "happy",
+        "proud",
+        "celebrate",
+        "cozy",
+        "concerned"
+      ],
+      "title": "Mood",
+      "type": "string"
+    },
+    "question": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Question"
+    },
+    "result": {
+      "anyOf": [
+        {
+          "enum": [
+            "done",
+            "partly",
+            "not_today"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Result"
+    },
+    "safety": {
+      "anyOf": [
+        {
+          "enum": [
+            "emergency",
+            "eating_care",
+            "supplement",
+            "medical",
+            "alcohol"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Safety"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "asking",
+        "answered",
+        "not_understood",
+        "skipped",
+        "no_active_habit",
+        "age_not_supported",
+        "safety"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "message",
+    "mood",
+    "emergency",
+    "safety",
+    "limitations",
+    "status",
+    "habit_id",
+    "question",
+    "result"
+  ],
+  "title": "HabitQuestionResponse",
+  "type": "object"
+}

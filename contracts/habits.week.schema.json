@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "days_for_good_week": {
+      "const": 4,
+      "default": 4,
+      "title": "Days For Good Week",
+      "type": "integer"
+    },
+    "emergency": {
+      "default": false,
+      "title": "Emergency",
+      "type": "boolean"
+    },
+    "good_week_this_week": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Good Week This Week"
+    },
+    "good_weeks_total": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Good Weeks Total"
+    },
+    "habit_days_this_week": {
+      "anyOf": [
+        {
+          "maximum": 7,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Habit Days This Week"
+    },
+    "habit_id": {
+      "title": "Habit Id",
+      "type": "string"
+    },
+    "ignored_future_days": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Ignored Future Days",
+      "type": "integer"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "message": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "mood": {
+      "enum": [
+        "happy",
+        "proud",
+        "celebrate",
+        "cozy",
+        "concerned"
+      ],
+      "title": "Mood",
+      "type": "string"
+    },
+    "safety": {
+      "anyOf": [
+        {
+          "enum": [
+            "emergency",
+            "eating_care",
+            "supplement",
+            "medical",
+            "alcohol"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Safety"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "ok",
+        "age_not_supported"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "week_start": {
+      "anyOf": [
+        {
+          "maxLength": 10,
+          "minLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Week Start"
+    }
+  },
+  "required": [
+    "schema_version",
+    "message",
+    "mood",
+    "emergency",
+    "safety",
+    "limitations",
+    "status",
+    "habit_id",
+    "week_start",
+    "habit_days_this_week",
+    "good_week_this_week",
+    "good_weeks_total",
+    "days_for_good_week",
+    "ignored_future_days"
+  ],
+  "title": "HabitWeekResponse",
+  "type": "object"
+}

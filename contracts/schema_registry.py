@@ -14,6 +14,16 @@ from lifetwin.core.models import (
     HealthProfile,
     SensitivityRequest,
 )
+from lifetwin.habits.models import (
+    HabitProposeRequest,
+    HabitProposeResponse,
+    HabitQuestionRequest,
+    HabitQuestionResponse,
+    HabitUpdateRequest,
+    HabitUpdateResponse,
+    HabitWeekRequest,
+    HabitWeekResponse,
+)
 from lifetwin.onboarding.models import TurnRequest, TurnResponse
 from lifetwin.prediction.models import PredictionResponse
 from lifetwin.quiz.models import QuizBankResponse, QuizQuestion
@@ -45,4 +55,12 @@ SCHEMAS = {
     "quiz.question.schema.json": (QuizQuestion, RESPONSE),
     "voice.token.request.schema.json": (VoiceTokenRequest, REQUEST),
     "voice.token.schema.json": (VoiceTokenResponse, RESPONSE),
+    "habits.propose.request.schema.json": (HabitProposeRequest, REQUEST),
+    "habits.propose.schema.json": (HabitProposeResponse, RESPONSE),
+    "habits.update.request.schema.json": (HabitUpdateRequest, REQUEST),
+    "habits.update.schema.json": (HabitUpdateResponse, RESPONSE),
+    "habits.question.request.schema.json": (HabitQuestionRequest, REQUEST),
+    "habits.question.schema.json": (HabitQuestionResponse, RESPONSE),
+    "habits.week.request.schema.json": (HabitWeekRequest, REQUEST),
+    "habits.week.schema.json": (HabitWeekResponse, RESPONSE),
 }

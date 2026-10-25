@@ -1,0 +1,216 @@
+{
+  "$defs": {
+    "HabitRecord": {
+      "additionalProperties": false,
+      "description": "One habit as the phone stores it (the design's ``Habit``).",
+      "properties": {
+        "anchor": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Anchor",
+          "type": "string"
+        },
+        "catalog_id": {
+          "enum": [
+            "morning_daylight",
+            "steady_bedtime",
+            "walk_after_lunch",
+            "brisk_walk",
+            "stand_on_calls",
+            "three_breaths",
+            "text_a_friend",
+            "water_with_meals",
+            "quit_help"
+          ],
+          "title": "Catalog Id",
+          "type": "string"
+        },
+        "dismissed_until": {
+          "anyOf": [
+            {
+              "maxLength": 10,
+              "minLength": 10,
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dismissed Until"
+        },
+        "id": {
+          "pattern": "^[a-z0-9_-]{1,48}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "lever": {
+          "anyOf": [
+            {
+              "enum": [
+                "quit_smoking",
+                "vigorous_activity",
+                "moderate_activity",
+                "sleep",
+                "sitting"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lever"
+        },
+        "pillar": {
+          "enum": [
+            "move",
+            "sleep",
+            "sit_less",
+            "unwind",
+            "smoke_free",
+            "connect",
+            "nourish"
+          ],
+          "title": "Pillar",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "said",
+            "model_lever",
+            "guideline"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "started_on": {
+          "anyOf": [
+            {
+              "maxLength": 10,
+              "minLength": 10,
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Started On"
+        },
+        "status": {
+          "enum": [
+            "proposed",
+            "active",
+            "dismissed",
+            "graduated"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "tiny_action": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Tiny Action",
+          "type": "string"
+        },
+        "why_words": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Why Words"
+        }
+      },
+      "required": [
+        "id",
+        "catalog_id",
+        "pillar",
+        "anchor",
+        "tiny_action",
+        "source",
+        "status"
+      ],
+      "title": "HabitRecord",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "enum": [
+        "ask",
+        "reply",
+        "skip"
+      ],
+      "title": "Action",
+      "type": "string"
+    },
+    "age": {
+      "maximum": 120,
+      "minimum": 0,
+      "title": "Age",
+      "type": "integer"
+    },
+    "habit_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z0-9_-]{1,48}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Habit Id"
+    },
+    "habits": {
+      "items": {
+        "$ref": "#/$defs/HabitRecord"
+      },
+      "maxItems": 20,
+      "title": "Habits",
+      "type": "array"
+    },
+    "local_date": {
+      "maxLength": 10,
+      "minLength": 10,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "title": "Local Date",
+      "type": "string"
+    },
+    "text": {
+      "anyOf": [
+        {
+          "maxLength": 500,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Text"
+    }
+  },
+  "required": [
+    "age",
+    "local_date",
+    "action"
+  ],
+  "title": "HabitQuestionRequest",
+  "type": "object"
+}
