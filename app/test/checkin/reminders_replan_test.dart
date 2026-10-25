@@ -120,7 +120,7 @@ void main() {
     expect(await broken.replanReminders(), isEmpty);
   });
 
-  testWidgets('BUG: resume plans the week once: ResumeRefresh and repo.refresh() both replan, doubling every reminder', skip: true, (t) async {
+  testWidgets('resume plans the week once, not twice', (t) async {
     final repo = await repoOn();
     now = DateTime(2026, 10, 29, 8);
     await resume(t, repo);

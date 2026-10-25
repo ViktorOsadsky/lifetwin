@@ -579,13 +579,8 @@ class _ResumeRefreshState extends State<ResumeRefresh> with WidgetsBindingObserv
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    final repo = widget.repository;
-    repo.refresh();
-    final reminders = repo.reminders;
-    final settings = repo.checkinSettings;
-    if (reminders != null && settings.remindersOn) {
-      reminders.reschedule(settings, localNow: (widget.now ?? DateTime.now)(), history: repo.store.checkins).ignore();
-    }
+    // refresh() also plans the reminders again, so they are planned once per resume.
+    widget.repository.refresh();
   }
 
   @override
