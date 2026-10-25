@@ -8,8 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/agentic_routes.dart';
 import 'package:lifesim/band/band_file_session.dart';
 import 'package:lifesim/checkin/my_data_screen.dart' show MyDataScreen;
-import 'package:lifesim/experiment/experiment_screen.dart'
-    show ExperimentScreen;
 import 'package:lifesim/quiz/quiz_screen.dart';
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/twin/twin_repository.dart';
