@@ -16,6 +16,8 @@ Earlier answers are explicitly prepared. This take demonstrates intake completio
 
 **Home number gate:** #133 asks for **1.65**, but no source sets that score. Use the actual model result after the confirmed re-intake, including any effective weekly inputs. Do not change the profile, overlay a fake number or replace a calculation to match a mockup. Record the verified displayed number in the rehearsal record below; the narration works with any supported result. The proposed 1.0 wording means the median of the same-sex, nearby-age survey reference, not a national average or survival probability.
 
+A separate synthetic host preview of the real repository at held engine `787e71a` produced **1.8098959403201171 → 1.81**, reference label **women 59–69**, for seeded Rosa after history. Re-entering the same prepared answers preserved the exact score and effective profile. That single host test passed; it is not a rendered simulator result or confirmation of an approved build. Recheck the actual displayed value after the engine lands.
+
 ## Shot list — 2:58 planned, 0:02 spare
 
 Keep one uninterrupted screen capture after the preparation above. Read only the quoted narration; production notes are not spoken. Frame the full phone so disclaimers remain legible. A visible “Synthetic demo persona / recorded band data” caption may identify the setup; it must not cover UI values or warnings.
@@ -66,12 +68,12 @@ If the outside internet/Muse/Cartesia fails while the local server is healthy, c
 
 Before → review → revision: the older [demo script](../demo-script.md) budgets 3–4 minutes and gives stale signed-score examples. Source review found seeded Home, a separate full intake controller, a one-time reveal and an incomplete document fixture. This version uses a disclosed prepared re-intake on the same repository, an actual-result score gate and an explicit 2:58 budget. No existing UI, seed, prediction or provider contract changed.
 
-Checks actually run: local route/label/state review at main `d055e26`; #127 merged status and #126 held source/body inspected; all twelve synthetic typed answers checked with `parse_reply`; Markdown targets and `git diff --check`. These are source/parser checks, not rendered UI or device acceptance. No simulator run, provider call, cold-start stopwatch or measured read-aloud rehearsal has been claimed.
+Checks actually run: local route/label/state review at main `d055e26`; #127 merged status and #126 held source/body inspected; all twelve synthetic typed answers checked with `parse_reply`; the separate pinned-engine repository host preview above passed one test; Markdown targets and `git diff --check`. These are source/parser/host checks, not rendered UI or device acceptance. No simulator run, provider call, cold-start stopwatch or measured read-aloud rehearsal has been claimed.
 
 | Required evidence after the gate | Actual result |
 |---|---|
 | Approved merged #126 commit and merged #127 verified against recording build | **PENDING — #126 owner hold** |
-| Synthetic Rosa Home displayed score after the prepared re-intake; explain any difference from requested 1.65 | **PENDING — accepted-build verification** |
+| Synthetic Rosa Home displayed score after the prepared re-intake; explain any difference from requested 1.65 | Host preview **1.81** at held `787e71a`; **PENDING — accepted-build simulator display** |
 | Intake → reveal → Home continuity; no hidden reset/profile swap | **PENDING — simulator dry run** |
 | Exact total and per-beat elapsed times, including waits, consent and confirmation | **PENDING — simulator dry run; target ≤3:00** |
 | Leg-band Demo label, suggestion eligibility and read-back visible; no synthetic save | **PENDING — simulator dry run** |
@@ -79,4 +81,4 @@ Checks actually run: local route/label/state review at main `d055e26`; #127 merg
 | #124 provider-copy regression rechecked before any provider-backed recording; template path verified for this take | **PENDING — rehearsal; known issue open** |
 | Readability, cold load, reduced motion, screen recording/reconnect and one fresh repeat | **PENDING — Daniel's recording-build rehearsal** |
 
-PR/merge state: documentation branch only; not published or merged by this author. Next dependency: respect #126's hold, then reconcile against the approved merged code and run/timestamp this exact prepared route on the simulator. Record actual score and total here, revise the budget if needed, and obtain Daniel's final recording acceptance. This document intentionally leaves #133's measured dry-run requirement unfinished until that gate clears.
+Delivery and current PR/merge state: [documentation PR #135](https://github.com/ViktorOsadsky/lifetwin/pull/135); [task #133](https://github.com/ViktorOsadsky/lifetwin/issues/133) tracks the outstanding rehearsal. Next dependency: respect #126's hold, then reconcile against the approved merged code and run/timestamp this exact prepared route on the simulator. Record actual score and total here, revise the budget if needed, and obtain Daniel's final recording acceptance. This document intentionally leaves #133's measured dry-run requirement unfinished until that gate clears.
