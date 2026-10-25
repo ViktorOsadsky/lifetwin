@@ -5,6 +5,10 @@ import 'band/band_screens.dart';
 import 'band/band_service.dart';
 import 'band/band_store.dart';
 import 'checkin/change_chat.dart';
+import 'documents/document_extract.dart';
+import 'documents/document_screen.dart';
+import 'documents/document_upload.dart';
+import 'documents/health_documents_screen.dart';
 import 'wellness/coach_client.dart';
 import 'wellness/coach_context.dart';
 import 'wellness/daily_plan_screen.dart';
@@ -51,6 +55,7 @@ class AgenticRoutes {
     CheckinGuide? guide,
     ChangeClient? changeClient,
     this.healthSamples,
+    this.documentService,
     CoachClient? coach,
     CapabilitiesClient? capabilities,
     BandClient? bandClient,
@@ -70,6 +75,9 @@ class AgenticRoutes {
   final VoiceOnboardingController Function() voice;
   final CheckinGuide? _guide;
   final ApiBase _api;
+
+  /// Reads a document for the Health documents page; the live OCR and server when null.
+  final DocumentUploadService Function()? documentService;
 
   /// Today's plan (`POST /api/coach/plan`); tests pass a fake.
   late final CoachClient coach = _coach ?? HttpCoachClient(base: _api);
@@ -354,6 +362,17 @@ class AgenticRoutes {
     );
   }
 
+  /// "Health documents": past uploads, readings, and the upload flow. Opened from Settings.
+  void healthDocuments(BuildContext context) {
+    final r = repo;
+    if (r == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (c) => _HealthDocumentsHost(routes: this, repository: r, parent: context),
+      ),
+    );
+  }
+
   void experiment(BuildContext context) {
     final r = repo;
     if (r == null) return;
@@ -499,4 +518,45 @@ class _ResumeRefreshState extends State<ResumeRefresh> with WidgetsBindingObserv
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+class _HealthDocumentsHost extends StatefulWidget {
+  const _HealthDocumentsHost({required this.routes, required this.repository, required this.parent});
+  final AgenticRoutes routes;
+  final TwinRepository repository;
+  final BuildContext parent;
+
+  @override
+  State<_HealthDocumentsHost> createState() => _HealthDocumentsHostState();
+}
+
+class _HealthDocumentsHostState extends State<_HealthDocumentsHost> {
+  List<String> _notices = const [];
+
+  void _upload() => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (c) => DocumentUploadScreen(
+        service:
+            widget.routes.documentService?.call() ??
+            liveDocumentService(extractor: HttpDocumentExtractor(base: widget.routes._api)),
+        onDone: (result) async {
+          Navigator.of(c).pop();
+          final r = widget.repository;
+          final values = result.profileValues;
+          if (values.isNotEmpty) await r.recordImport(values, source: HistorySource.document);
+          if (result.notes.isNotEmpty) await r.recordDocumentReadings(result.notes);
+          if (mounted) setState(() => _notices = result.notices);
+        },
+      ),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) => HealthDocumentsScreen(
+    repository: widget.repository,
+    onBack: () => Navigator.of(context).pop(),
+    onUpload: _upload,
+    notices: _notices,
+    onTellMochiWeight: () => widget.routes.changeWithMochi(context, 'weight_kg'),
+  );
 }

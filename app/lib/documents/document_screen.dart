@@ -82,7 +82,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
       } else if (r.candidates.isEmpty) {
         _step = _Step.failed;
       } else {
-        _confirm = DocumentConfirmation(r.candidates);
+        _confirm = DocumentConfirmation(r.candidates, notices: r.notices);
         _step = _Step.aboutYou;
       }
     });
