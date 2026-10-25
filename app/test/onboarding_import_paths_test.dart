@@ -45,7 +45,7 @@ class Rig {
 }
 
 void main() {
-  testWidgets('BUG: the consent screen (the first onboarding screen) already offers the import', skip: true, (t) async {
+  testWidgets('the consent screen (the first onboarding screen) already offers the import', (t) async {
     final r = Rig();
     await r.pump(t);
     expect(find.text("No, I'll type"), findsOneWidget, reason: 'this is the consent screen');
@@ -89,13 +89,49 @@ void main() {
     h.dispose();
   });
 
-  testWidgets('BUG: still reachable while the keyboard is open (the person is typing an answer)', skip: true, (t) async {
+  testWidgets('still reachable while the keyboard is open (the person is typing an answer)', (t) async {
     final r = Rig();
     await r.pump(t);
     await choose(t, "No, I'll type");
     await r.pump(t, keyboard: 300);
     await t.pump();
     expect(find.byType(ImportControl), findsOneWidget);
+    final chip = t.getRect(find.byType(ImportControl));
+    expect(chip.height >= 48, isTrue, reason: '$chip');
+    expect(chip.bottom <= 844 - 300, isTrue, reason: 'above the keyboard: $chip');
+    expect(chip.overlaps(t.getRect(find.byType(TextField))), isFalse);
+    expect(chip.overlaps(t.getRect(find.byKey(const ValueKey('send')))), isFalse);
+  });
+
+  testWidgets('keyboard chip at 1.6x text uses the shorter words and keeps the full spoken label', (t) async {
+    final h = t.ensureSemantics();
+    final r = Rig(scale: 1.6);
+    await r.pump(t);
+    await choose(t, "No, I'll type");
+    await r.pump(t, keyboard: 300);
+    await t.pump();
+    expect(find.text('Fill from Health or document'), findsOneWidget);
+    expect(find.bySemanticsLabel(label), findsOneWidget);
+    expect(t.getSize(find.byType(ImportControl)).height >= 48, isTrue);
+    h.dispose();
+  });
+
+  testWidgets('tapped on the consent screen: no import until both consents are answered, then it opens', (t) async {
+    final r = Rig();
+    await r.pump(t);
+    await t.tap(find.byType(ImportControl));
+    await t.pumpAndSettle();
+    expect(find.text('Use Apple Health'), findsNothing, reason: 'never skips a consent');
+    expect(find.text("No, I'll type"), findsOneWidget);
+    await t.tap(find.text("No, I'll type"));
+    await t.pumpAndSettle();
+    expect(find.text('Use Apple Health'), findsNothing, reason: 'the AI-helper question is still open');
+    expect(find.byType(ImportControl), findsOneWidget, reason: 'also offered on the second consent');
+    await t.pump(const Duration(milliseconds: 700));
+    await t.tap(find.text('Not now'));
+    await t.pumpAndSettle();
+    expect(find.text('Use Apple Health'), findsOneWidget, reason: 'straight to the import sheet');
+    expect(r.health, 0);
   });
 
   testWidgets('Apple Health offered, answered "no thanks": onboarding completes without any import', (t) async {
