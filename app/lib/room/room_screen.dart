@@ -358,7 +358,13 @@ class _RoomScreenState extends State<RoomScreen> {
                                         ),
                                         const SizedBox(height: 8),
                                       ],
-                                      _Dock(frame: f, onTalk: widget.onTalk, onCustomize: widget.onCustomize),
+                                      _Dock(
+                                        frame: f,
+                                        onTalk: widget.onTalk,
+                                        onCustomize: widget.onCustomize,
+                                        // Same way in as Mochi's bubble; like it, nothing until the phone's data has loaded.
+                                        onIdeas: () => widget.ideas?.openList(context, origin: 'room'),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -586,22 +592,23 @@ class _OneLine extends StatelessWidget {
 /// Exercise · Eat · Sleep: compact toggles above the dock. Each gets the
 /// width its label needs, and the spare width is shared out evenly.
 class _Dock extends StatelessWidget {
-  const _Dock({required this.frame, required this.onTalk, required this.onCustomize});
+  const _Dock({required this.frame, required this.onTalk, required this.onCustomize, required this.onIdeas});
   final SwooshRoomFrame frame;
   final VoidCallback onTalk;
   final VoidCallback onCustomize;
+  final VoidCallback onIdeas;
   @override
   Widget build(BuildContext context) {
     // Talk keeps the width it needs (padding, icon, gap, label, borders);
-    // Customize takes the rest, so its label stays on one line.
+    // Customize and Ideas share the rest equally, so Talk sits in the exact centre.
     final talkW = 40 + 32 + 10 + _labelWidth(context, 'Talk', LtText.display(26)) + LtBorders.control * 2 + 4;
     return Sheet(
       padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
       child: LayoutBuilder(
         builder: (context, box) {
-          // Never squeeze Customize under the 15 px floor: Talk gives way first.
+          // Never squeeze the side labels under the 15 px floor: Talk gives way first.
           final body = LtText.body(weight: FontWeight.w700);
-          final side = _labelWidth(context, 'Customize', body);
+          final side = math.max(_labelWidth(context, 'Customize', body), _labelWidth(context, 'Ideas', body));
           final talk = math.max(120.0, math.min(talkW, box.maxWidth - side * _labelFloor(context)));
           return Row(
             children: [
@@ -638,6 +645,17 @@ class _Dock extends StatelessWidget {
                   ),
                 ),
               ),
+              Expanded(
+                child: _DockItem(
+                  label: 'Ideas',
+                  hint: 'Ideas for you',
+                  icon: Icons.lightbulb_outline_rounded,
+                  face: LtColors.mint,
+                  lip: LtColors.mintLip,
+                  iconColor: LtColors.ink,
+                  onTap: onIdeas,
+                ),
+              ),
             ],
           );
         },
@@ -654,9 +672,11 @@ class _DockItem extends StatelessWidget {
     required this.lip,
     required this.iconColor,
     required this.onTap,
+    this.hint,
   });
 
   final String label;
+  final String? hint;
   final IconData icon;
   final Color face;
   final Color lip;
@@ -668,6 +688,7 @@ class _DockItem extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
+      hint: hint,
       excludeSemantics: true,
       onTap: onTap,
       child: GestureDetector(
