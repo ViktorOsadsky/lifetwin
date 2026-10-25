@@ -39,9 +39,9 @@ The skill pack contains prior research about other product ideas. Reuse relevant
 
 ## Current wellness UI assignments
 
-Issues [#54–57](https://github.com/ViktorOsadsky/lifetwin/issues/54) refine the October 23 vision toward wellness-first Home, quiz/Customize (approved Q), Settings/History/errors (R), and upload/plan/directional drivers (S). FlareYun's UI branch uses the existing painted-card artwork and tokens. The [implementation handoff](docs/design/wellness-ui-handoff.md) distinguishes connected features from presentation seams and pending engine work. Keep existing team-plan owners; this does not assign their dependencies to a new track.
+Issues [#54–57](https://github.com/ViktorOsadsky/lifetwin/issues/54) refine the October 23 vision toward wellness-first Home, quiz/Customize (approved Q), Settings/History/errors (R), and upload/plan/directional drivers (S). FlareYun's partial UI branch uses the existing painted-card artwork and tokens. At the user’s October 24 handback, UI implementation stopped and issues #54–57 returned to Daniel Qi (`d-q222`); retain draft PR #60 as the handoff. The [implementation handoff](docs/design/wellness-ui-handoff.md) distinguishes connected features from presentation seams and pending engine work. Keep existing team-plan owners; this does not assign their dependencies to a new track.
 
-Check-in, conversation, consent, wristband and Experiment screens remain on [PR #58](https://github.com/ViktorOsadsky/lifetwin/pull/58). Settings links to those owners. Do not derive a score from quiz health, subjective mood, survival probability or band counts. Driver UI shows supported directions, without point values or causal claims ([#56](https://github.com/ViktorOsadsky/lifetwin/issues/56)).
+Check-in, conversation, consent, wristband and Experiment screens merged through [PR #58](https://github.com/ViktorOsadsky/lifetwin/pull/58), which is not yet incorporated in draft #60. Settings links to those owners. Do not derive a score from quiz health, subjective mood, survival probability or band counts. Driver UI shows supported directions, without point values or causal claims ([#56](https://github.com/ViktorOsadsky/lifetwin/issues/56)).
 
 ## Product loop
 

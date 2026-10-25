@@ -1,8 +1,25 @@
 # Wellness UI implementation handoff
 
+## Returned to Daniel — October 24, 2026 (Pacific)
+
+The user asked FlareYun to stop UI implementation, return issues #54–57 to **Daniel Qi (`d-q222`)**, and wait for Daniel's next assignment. UI work and both newly dispatched sub-agents are stopped. The shared checkout was clean before these handback documentation edits; no partial sub-agent changes were present.
+
+Keep [PR #60](https://github.com/ViktorOsadsky/lifetwin/pull/60) **draft and unmerged** as the reviewable handoff. Work is on `codex/c-wellness-screens`; no direct push to `main` or merge is part of this handback. Last implementation commit: `36fef3b` (analyzer-only guard braces after `6a324cd`). The final documentation commit on this branch records the handback. GitHub currently reports #60 as conflicting with `main`; its only reported current-head check was GitGuardian (passed). Local checks below are not a claim that the PR’s full pinned-SDK CI has passed.
+
+| Returned issue | Available on this branch | Remaining for Daniel |
+| --- | --- | --- |
+| [#54 Home](https://github.com/ViktorOsadsky/lifetwin/issues/54) | Unknown score placeholder, actual seven-day repository history, quiet estimate and History navigation | Match the newly exported K designs; mount #58's existing due check-in entry; connect its twin state; verify narrow/large-text and under-18 behavior |
+| [#55 Quiz/Customize](https://github.com/ViktorOsadsky/lifetwin/issues/55) | Bundled reviewed quiz, explicit answer/recovery flow, session game health, Bear/Human/Cal hat, saved room lighting | Q wardrobe slot/body/pose mapping, fur palettes and helpers, name/build links through Mochi; keep quiz health out of medical data |
+| [#56 Upload/plan/drivers](https://github.com/ViktorOsadsky/lifetwin/issues/56) | Live #51 document engine in painted UI, conflict/cancel protection, live #53 coach with confirmed context and current-visit feedback; directions-only driver presenter | Persist informational readings and plan/feedback via coordinated repository APIs; connect real driver data and #58's Experiment; complete S fidelity and device checks |
+| [#57 Settings/History/errors](https://github.com/ViktorOsadsky/lifetwin/issues/57) | Live read-only History/provenance/corrections, Settings navigation surface, error presenters | Route Settings to #58's existing memory/provider consent, reminders, My data, band and conversation flows; apply failures in their real owner routes |
+
+Start with the checked-in [approved design handoff](agentic/agentic-handoff.md), then the integration table and validation below. #47/#59 (model/store), #51 (documents), #53 (coach), and #61 (design export) are already incorporated. #58 merged during this handback (last inspected head `ccdbbad`). It is **not incorporated** in this branch. Daniel should reconcile #60 with the now-merged owner routes, preserving their behavior rather than rebuilding them.
+
+No further UI changes should be made by this agent until Daniel assigns new work. No issues are closed by this handback.
+
 ## Scope and authority
 
-This branch implements the FlareYun presentation lane for [Home #54](https://github.com/ViktorOsadsky/lifetwin/issues/54), [quiz/Customize #55](https://github.com/ViktorOsadsky/lifetwin/issues/55), [upload/plan/drivers #56](https://github.com/ViktorOsadsky/lifetwin/issues/56) and [Settings/History/errors #57](https://github.com/ViktorOsadsky/lifetwin/issues/57). These assignments supersede longevity as the returning Home hero; they do not authorize a new health-score formula.
+This branch preserves FlareYun’s partial presentation implementation for [Home #54](https://github.com/ViktorOsadsky/lifetwin/issues/54), [quiz/Customize #55](https://github.com/ViktorOsadsky/lifetwin/issues/55), [upload/plan/drivers #56](https://github.com/ViktorOsadsky/lifetwin/issues/56) and [Settings/History/errors #57](https://github.com/ViktorOsadsky/lifetwin/issues/57). These assignments supersede longevity as the returning Home hero; they do not authorize a new health-score formula.
 
 The authenticated [LifeTwin Bear Design canvas](https://claude.ai/artifact/Smu6yoUWwhtuJCvdJsqVne#page-1bbb4611d096) was inspected: Q (17 artboards), R (26) and S (25). The later GitHub export in [agentic/agentic-handoff.md](agentic/agentic-handoff.md), merged in #61, now includes approved K, Q, R and S screenshots and HTML; use those checked-in sources for further work. Home initially followed #54 while K was empty on the canvas. Existing sprites, scene plates, fonts and painted-card tokens are reused. Design sample measurements, probabilities and plan examples are not personal data or runtime defaults.
 
@@ -32,14 +49,14 @@ The plan UI supports Yes/Change/Skip, Yes to all, Done/Not done with optional re
 
 ## Outstanding work — do not close all four issues yet
 
-1. [On-device store #47](https://github.com/ViktorOsadsky/lifetwin/pull/47) and [twin integration #59](https://github.com/ViktorOsadsky/lifetwin/pull/59) merged and are incorporated here. The Home/History read adapter is connected. Finish the check-in entry and Settings routes when [agentic UI #58](https://github.com/ViktorOsadsky/lifetwin/pull/58) reconciles its interim scheduler/consent stores with #59. Preserve its Room state, Experiment, conversation and consent flows when resolving shared files.
+1. [On-device store #47](https://github.com/ViktorOsadsky/lifetwin/pull/47) and [twin integration #59](https://github.com/ViktorOsadsky/lifetwin/pull/59) merged and are incorporated here. The Home/History read adapter is connected. Integrate the check-in entry and Settings routes from the now-merged [agentic UI #58](https://github.com/ViktorOsadsky/lifetwin/pull/58). It merged during the handback and is not incorporated in this branch. Preserve its Room state, Experiment, conversation and consent flows when resolving shared files.
 2. #51 and #53 have merged and their live routes are connected. Coordinate an API for informational document readings and durable plan/feedback storage with the repository owner before writing either. The current UI does not create a parallel store.
 3. Complete Q's additional outfit/glasses/fur/helper art and pose mappings. The new GitHub #61 export provides [cosmetic layers and their slot contract](agentic/sprite-layers/cosmetics/README.md). It arrived after the original asset search. Wire those layers rather than requesting another upload. The exported set is a draft: its README references a separate `rig.json` and sliced body parts that are not included, and non-front accessory views are incomplete. Whole-pose v2 sprites do not carry clothing slots. Correct body/arm compositing and palette mapping remain implementation work; do not paste front-view layers onto turned heads. Room lighting is not a claim that the full wardrobe is complete. Name/build changes must use the other lane's Mochi entry point, not direct edits.
 4. Validate on an iOS simulator/device: OCR/pickers, protected storage, notification permissions, external source/phone links, VoiceOver and large Dynamic Type. Flutter widget renders do not establish native device behavior.
 
 ## Handoff record
 
-Branch / PR / merge status: `codex/c-wellness-screens`; [draft PR #60](https://github.com/ViktorOsadsky/lifetwin/pull/60), not merged.
+Branch / PR / merge status: UI work stopped and returned to Daniel; `codex/c-wellness-screens`; [draft PR #60](https://github.com/ViktorOsadsky/lifetwin/pull/60), not merged.
 
 Changed files: `app/lib/wellness/`, `app/lib/quiz/`, bundled reviewed quiz content, Room/Home/Customize integration, relevant widget tests, and the master/team-plan documentation.
 
@@ -54,8 +71,8 @@ Checks run and results:
 - Local SDK is Flutter 3.47.0 / Dart 3.13.0; the repo requires Dart ^3.13.7 and CI pins Flutter 3.47.8. Only the temporary copy’s SDK constraint was lowered to run local checks. The repository constraint is unchanged. Its schema and day-log model tests use the original repository contract/model paths in that temporary copy. CI remains the check on the pinned SDK.
 - No backend behavior changed; no live provider, iOS OCR, physical device, notification or VoiceOver checks were run.
 
-Real, fixture, or unavailable integrations: real bundled quiz/assets; actual Room navigation and cosmetic lighting. Home and History use the real phone repository and refresh on repository notifications. Upload and the stateless coach now use their real engines; live provider and native OCR behavior remain unverified. Settings and due check-in still await #58 integration.
+Real, fixture, or unavailable integrations: real bundled quiz/assets; actual Room navigation and cosmetic lighting. Home and History use the real phone repository and refresh on repository notifications. Upload and the stateless coach now use their real engines; live provider and native OCR behavior remain unverified. Settings and due check-in still await integration with the now-merged #58.
 
 Known limits / blockers: #58 entry-point reconciliation, coordinated reading/plan persistence APIs, wardrobe rig/pose mapping and native validation as listed above.
 
-Next dependent task: integrate the remaining owner routes, then verify the full Home → check-in → history → plan revision loop before closing #54–57.
+Next owner: Daniel (`d-q222`). This agent is waiting for a new assignment. Daniel can integrate the remaining owner routes and verify the full Home → check-in → history → plan revision loop before closing #54–57.
