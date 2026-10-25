@@ -26,6 +26,12 @@ All category counts must sum to recorded minutes. Recorded minutes must equal we
 
 The app also accepts a **local wrapper**, `{"schema":"lifetwin.band_days.v0","days":[...]}`, holding 1–14 complete daily reports. This is not a claim that firmware emits bundles. Duplicate dates in a delivery are rejected even when offsets differ. Different recorded dates around midnight/travel remain separate. The v0 daily format cannot disambiguate repeated daylight-saving hours or recover minute order; do not fabricate that detail.
 
+## Leg placement and threshold audit
+
+The supplied band is **leg-worn**, with `device.mount: thigh_pocket`. The parser reads the firmware's already-classified `walking_light`, `walking_moderate` and `running_vigorous` totals; it does not classify acceleration, compute cadence, apply wrist cut-points or convert steps into intensity. The summaries add those observed categories without reclassifying them. Their validity on this leg-worn hardware still needs calibration; accepting a consistent file does not establish accuracy.
+
+The parser's limits (minute counts within a day/hour, step counters, file size and metadata bounds) are engineering validation bounds, not wrist/leg intensity thresholds. The 600-worn-minute day and four-day week are inherited prototype sufficiency rules, not placement calibration. The legacy `BandMinute.moderate` comment mentions unverified cut-points, but that path accepts an already-classified boolean; the daily-file path does not use those cut-points. BLE classification remains deferred. Stored provenance stays `wristband` for contract compatibility; user-facing copy is **activity band**.
+
 ## Unknown time and model boundary
 
 `positions_not_saved` is unknown posture, not sitting, zero activity, or non-wear. Hourly bins do not locate those unknown minutes. Keep them unknown and do not manufacture minute records. `sitting_or_lying` includes lying down according to the supplied export notes; it is not a validated measure of awake NHANES sitting. Provisional walking-intensity classifications do not identify recreation versus work/transport.
@@ -36,7 +42,7 @@ Existing `BandDay.moderateMinutes`/`BandWeek` retain their legacy **combined MVP
 
 Weekly suggestions are also withheld when any otherwise valid day used by the week contains `positions_not_saved`: known wear does not establish zero movement during unclassified time. `BandWeek.hasUnknownActivityCoverage` exposes that reason to the UI owner; observed daily counts and wear status remain available. This conservative guard does not calibrate the sensor or resolve recreational context.
 
-One real day cannot establish a measured week. User-authorized extrapolation must add `synthetic_demo: true` and use a separate demo store. Synthetic and measured report imports cannot mix, and recorded-demo stores never qualify as live data or save a band suggestion.
+One real day cannot establish a measured week. User-authorized extrapolation must add `synthetic_demo: true` and use a separate demo store. Synthetic and measured report imports cannot mix, and imported synthetic reports never qualify as live data or a band suggestion. The design-owned built-in recorded-minute demo is a separate path: current `BandStore.demoOnly` permits a visibly labelled, explicitly confirmed demo suggestion only when there is no live connection or imported file. That does not promote an imported extrapolation to measured data.
 
 ## Native delivery and route integration
 
@@ -44,13 +50,13 @@ One real day cannot establish a measured week. User-authorized extrapolation mus
 
 `BandFileIntake` validates an entire delivery before changing `BandStore`. Re-importing equivalent data is a no-op; a changed report for an occupied date requires `replaceExisting: true` after an explicit replacement decision. Cancellation, malformed files and stale picker replies preserve prior state. Imported files do not claim Bluetooth pairing. `forgetImports()` invalidates pending reads, clears native Inbox/queues and clears the store; confirmed profile answers retain the existing repository policy.
 
-The app starts native delivery on iOS through `BandFileSession.instance.start()`. For the design-owned band route, use the **same** `BandFileSession.instance.store` and `.intake`; call `importFromFiles()` from its import action and observe `busy`/`outcome` for result presentation. Its My data/unpair action should call `forgetImports()`. No band screen was edited in this task. Starting a second private store will not display files received by the root session. Visible import/replacement/error presentation and deletion wiring remain Daniel's UI integration dependency.
+The app starts native delivery on iOS through `BandFileSession.instance.start()`. For the design-owned band route, use the **same** `BandFileSession.instance.store` and `.intake`; call `importFromFiles()` from its import action and observe `busy`/`outcome` for result presentation. Its My data/unpair action should call `forgetImports()`. No band screen was edited in this task. Starting a second private store will not display files received by the root session. Daniel's current route wires the shared session to an import action, outcome messages and forgetting controls. Manual Files/Share verification, explicit changed-date replacement presentation and the final designed flow remain his UI acceptance dependency.
 
 ## Verification and handoff
 
 - Synthetic `valid_day.json`, `low_wear.json` and `midnight_bundle.json` exercise the actual schema, missing posture and distinct recorded dates/offsets.
 - `test/band/band_file_test.dart` covers strict rejection, atomic/idempotent imports, explicit replacement, fake-picker cancel/stale delivery, Inbox/warm streams, demo isolation and the existing confirmation/provenance boundary. Controlled measured-feed fixtures are test inputs, not evidence of real wear or calibration.
-- `integration_test/band_file_device_test.dart` accepts the supplied file from the test app's native Inbox on an iPhone. It checks parsing/store delivery, unknown posture, repeat import, Inbox cleanup and the insufficient-week rule; optional shifted demo days stay synthetic. The real file is copied locally before running and is never bundled.
+- `integration_test/band_file_device_test.dart` accepts the supplied file from the test app's native iOS Inbox (simulator here; Daniel owns physical-device testing). It checks parsing/store delivery, unknown posture, repeat import, Inbox cleanup and the insufficient-week rule; optional shifted demo days stay synthetic. The real file is copied locally before running and is never bundled.
 - A passing automated Inbox test does not prove manual Files-picker selection, Share/Open-in user interaction, final screen presentation, Bluetooth transport or model calibration. Record those separately in the task handoff.
 
 Track: C data/native file intake (#67). Contracts: band daily v0 plus app-only multi-day wrapper; no server/model contract change. Next dependencies: Daniel connects the shared session to approved screens and deletion controls; hardware/model owners validate intensity, posture and recreational-context mapping before stronger claims. BLE needs an agreed GATT contract and remains deferred.
