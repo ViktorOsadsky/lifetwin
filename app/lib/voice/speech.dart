@@ -71,6 +71,7 @@ class GuideTurn {
     this.providerStatus = 'not_configured',
     this.modelInputs,
     this.clientAction,
+    this.emergency = false,
   });
 
   final Map<String, dynamic> state;
@@ -89,6 +90,9 @@ class GuideTurn {
   /// What the server asks the app to do now: `open_health_import` after a yes to the
   /// Apple Health offer.
   final String? clientAction;
+
+  /// Something urgent was said: pause calmly, show "Call 911" and Continue (which sends `resume`).
+  final bool emergency;
 
   String get phase => (state['phase'] as String?) ?? 'idle';
   bool get isConfirming => phase == 'confirming';

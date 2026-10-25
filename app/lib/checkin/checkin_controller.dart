@@ -145,6 +145,9 @@ class CheckinController extends ChangeNotifier {
   /// all; [change] then the person's words ("my sleep was 6 hours") correct one.
   bool get finalReadback => turn?.isFinalReadback ?? false;
 
+  /// Mochi's warm reply to a low mood is open: "Keep going" or "Stop for today" (sent as replies).
+  bool get careQuestionOpen => turn?.careQuestionOpen ?? false;
+
   /// Quick and daily: "Did I hear 15 hours of sleep? ... Is that right?" mid check-in.
   bool get checkQuestion => turn?.isCheckQuestion ?? false;
 

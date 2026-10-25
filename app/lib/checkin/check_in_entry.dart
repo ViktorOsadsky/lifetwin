@@ -33,35 +33,43 @@ class CheckInEntry extends StatelessWidget {
           days: days,
           settings: repo.checkinSettings,
         );
+        // Long-press: the weekly check-in on demand, whatever the schedule says (demo and "do it now").
+        Widget onDemand(Widget child) => GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onLongPress: () => openCheckIn(context, kind: CheckInKind.weekly),
+          child: child,
+        );
         if (!due.any) {
           final today = isoDay(dayOf(now));
           final done = repo.store.checkins.any((c) => c.kind != 'weekly' && c.date == today);
-          return done ? const _CheckedInToday() : const SizedBox.shrink();
+          return done ? onDemand(const _CheckedInToday()) : const SizedBox.shrink();
         }
         final firstQuick = due.quick != null;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              LipButton(
-                label: firstQuick ? 'Check in' : 'Weekly check-in',
-                icon: firstQuick ? Icons.favorite_border_rounded : Icons.calendar_month_outlined,
-                fontSize: 24,
-                semanticLabel: firstQuick ? 'Check in. A 1-minute chat.' : 'Weekly check-in. Ready now.',
-                onTap: () => openCheckIn(context, kind: firstQuick ? CheckInKind.quick : CheckInKind.weekly),
-              ),
-              if (firstQuick && due.weekly) ...[
-                const SizedBox(height: 8),
+        return onDemand(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 LipButton(
-                  label: 'Weekly check-in',
-                  kind: LipKind.secondary,
-                  height: 56,
-                  fontSize: 20,
-                  onTap: () => openCheckIn(context, kind: CheckInKind.weekly),
+                  label: firstQuick ? 'Check in' : 'Weekly check-in',
+                  icon: firstQuick ? Icons.favorite_border_rounded : Icons.calendar_month_outlined,
+                  fontSize: 24,
+                  semanticLabel: firstQuick ? 'Check in. A 1-minute chat.' : 'Weekly check-in. Ready now.',
+                  onTap: () => openCheckIn(context, kind: firstQuick ? CheckInKind.quick : CheckInKind.weekly),
                 ),
+                if (firstQuick && due.weekly) ...[
+                  const SizedBox(height: 8),
+                  LipButton(
+                    label: 'Weekly check-in',
+                    kind: LipKind.secondary,
+                    height: 56,
+                    fontSize: 20,
+                    onTap: () => openCheckIn(context, kind: CheckInKind.weekly),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
