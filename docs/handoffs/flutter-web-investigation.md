@@ -100,7 +100,7 @@ establish a restriction on this independently authorized connection.
 | Supabase origin | Only `https://lifetwin-tau.vercel.app` added to `LIFETWIN_CORS_ORIGINS`, retaining existing provider keys and model configuration |
 | CORS probes | OPTIONS 204 and capabilities 200 return `Access-Control-Allow-Origin: https://lifetwin-tau.vercel.app` |
 | Served-byte checks | Index, bootstrap, `main.dart.js` and model reference exactly match the tested release files |
-| Browser acceptance | Public guest entry, typing choice, AI opt-out and the live text/memory prompt verified; a synthetic reply was sent, with its resulting turn still pending verification at this checkpoint |
+| Browser acceptance | Guest entry → typing → AI opt-out → memory decline → live backend age question verified. No browser error/warning logs in this flow. Voice and optional AI processing were declined; full intake/confirmation acceptance remains separate. |
 
 The canonical alias was already public; **no deployment protection or access
 settings were changed**. The team alias remains protected. Preview aliases have
@@ -177,7 +177,7 @@ PR / merge state: foundation [#236](https://github.com/ViktorOsadsky/lifetwin/pu
 merged at `a6bfa44`; the deployment is `READY`. This deployment-record update is a
 separate documentation PR pending merge.
 Contracts / model versions affected: none. Model assets are byte-unchanged.
-Next dependency: finish live typed-conversation acceptance, implement honest
+Next dependency: complete live typed intake/confirmation acceptance, implement honest
 platform capability gates and browser PDF input (plus PCM if voice is required),
 then complete a synthetic upload → confirm → forecast → experiment → quiz
 walkthrough on the canonical URL. Existing track owners remain unchanged.
