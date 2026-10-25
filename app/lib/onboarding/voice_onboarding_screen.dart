@@ -472,15 +472,17 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   /// The status pill and the hollow ring also show whenever the person types ("Not listening", VC-7), as in
   /// the check-in: whether typing was chosen at the voice question or by "Type instead", and hands-free or not.
   bool get _pillUi =>
-      _voiceUi || (c.typing && !c.askingVoice && !c.emergency && c.phase != VoicePhase.consent && c.phase != VoicePhase.done);
+      _voiceUi ||
+      (c.typing && !c.askingVoice && !c.emergency && c.phase != VoicePhase.consent && c.phase != VoicePhase.done);
 
   /// What the pill and ring say now. Only an open microphone is ever [VoiceLook.listening].
   VoiceLook get _look {
     if (c.typing) return VoiceLook.typing;
     return switch (c.phase) {
-      VoicePhase.listening => VoiceLook.listening,
+      VoicePhase.listening when !c.micOff => VoiceLook.listening,
       VoicePhase.speaking => VoiceLook.speaking,
       VoicePhase.interpreting => VoiceLook.thinking,
+      _ when c.micOff && c.voiceUsable && !c.screenReader => VoiceLook.micOff,
       _ => c.screenReader ? VoiceLook.waiting : VoiceLook.between,
     };
   }
@@ -1166,7 +1168,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   /// one tap target (the pill says Mochi is waiting). Without hands-free, the Talk button.
   List<Widget> _talkControl({bool compact = false}) {
     if (!c.handsFree) return [TalkButton(controller: c, compact: compact)];
-    if (c.continuous) return const [];
+    if (c.continuous) return _micToggle();
     final waiting = c.phase == VoicePhase.idle;
     return [
       LipButton(
@@ -1176,6 +1178,23 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         height: 72,
         hint: 'Double tap, then speak',
         onTap: waiting ? () => c.startTalk() : null,
+      ),
+    ];
+  }
+
+  /// Hands-free: "Turn off mic" while listening, "Turn on mic" while the person has it closed.
+  List<Widget> _micToggle() {
+    if (!c.voiceUsable || c.typing || c.askingVoice) return const [];
+    final off = c.micOff;
+    if (!off && c.phase != VoicePhase.listening) return const [];
+    return [
+      LipButton(
+        key: const ValueKey('mic-toggle'),
+        label: off ? 'Turn on mic' : 'Turn off mic',
+        icon: off ? Icons.mic_rounded : Icons.mic_off_rounded,
+        kind: LipKind.secondary,
+        height: 72,
+        onTap: off ? c.turnMicOn : c.turnMicOff,
       ),
     ];
   }
