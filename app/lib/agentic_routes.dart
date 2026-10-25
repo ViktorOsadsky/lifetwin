@@ -100,7 +100,15 @@ class AgenticRoutes {
 
   /// The check-in server; it is told the profile's age so Mochi's examples fit.
   late final CheckinGuide guide =
-      _guide ?? HttpCheckinClient(base: _api, age: () => repo?.profile['age']);
+      _guide ??
+      HttpCheckinClient(
+        base: _api,
+        age: () => repo?.profile['age'],
+        aiConsent: () => switch ((repo, repo?.outsideAiProvider)) {
+          (final r?, final p?) => r.outsideAiConsentFor(p),
+          _ => const {},
+        },
+      );
   final ChangeClient changeClient;
 
   /// Apple Health samples already allowed by the person; null when Health is not connected.

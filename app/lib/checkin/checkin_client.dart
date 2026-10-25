@@ -123,7 +123,7 @@ abstract class CheckinGuide {
 }
 
 class HttpCheckinClient implements CheckinGuide {
-  HttpCheckinClient({http.Client? client, ApiBase? base, this.age})
+  HttpCheckinClient({http.Client? client, ApiBase? base, this.age, this.aiConsent})
     : _client = client ?? http.Client(),
       base = base ?? ApiBase(apiBaseUrl, client);
 
@@ -132,6 +132,10 @@ class HttpCheckinClient implements CheckinGuide {
 
   /// The profile's age, sent with the start request so Mochi's everyday examples fit (optional; only 18 to 120).
   final Object? Function()? age;
+
+  /// The person's outside-AI consent for the current provider (e.g. `{"claude": true}`), sent with
+  /// each turn so the care reply may be worded by that provider. Empty: Mochi's own words.
+  final Map<String, bool> Function()? aiConsent;
 
   @override
   Future<CheckinTurn> start({
@@ -158,7 +162,14 @@ class HttpCheckinClient implements CheckinGuide {
     'state': state,
     'text': ?text,
     'input_mode': fromTranscript ? 'transcript' : 'text',
+    if (_consent() case final c when c.isNotEmpty) 'outside_ai_consent': c,
   });
+
+  // The server knows only these provider ids; anything else would be refused.
+  Map<String, bool> _consent() => {
+    for (final e in (aiConsent?.call() ?? const <String, bool>{}).entries)
+      if (e.value && (e.key == 'claude' || e.key == 'muse')) e.key: true,
+  };
 
   Future<CheckinTurn> _post(String path, Map<String, dynamic> body) async {
     try {

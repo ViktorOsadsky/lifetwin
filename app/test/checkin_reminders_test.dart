@@ -174,6 +174,33 @@ void main() {
       expect(bodies.last, {'action': 'reply', 'state': first.state, 'text': '7 hours', 'input_mode': 'transcript'});
     });
 
+    test('each turn carries the consent for the current provider, never another or an empty map', () async {
+      final bodies = <Map<String, dynamic>>[];
+      final client = MockClient((request) async {
+        bodies.add(jsonDecode(request.body) as Map<String, dynamic>);
+        return http.Response(
+          jsonEncode({
+            'state': {'kind': 'daily'},
+            'message': 'Hi',
+            'events': [
+              {'state': 'asking', 'caption': 'x'},
+            ],
+          }),
+          200,
+        );
+      });
+      var consent = <String, bool>{'claude': true};
+      final api = HttpCheckinClient(client: client, base: ApiBase('http://test', client), aiConsent: () => consent);
+      await api.turn(action: 'reply', state: const {'kind': 'daily'}, text: 'okay');
+      expect(bodies.last['outside_ai_consent'], {'claude': true});
+      consent = {'claude': false, 'someone_else': true};
+      await api.turn(action: 'reply', state: const {'kind': 'daily'}, text: 'okay');
+      expect(bodies.last.containsKey('outside_ai_consent'), isFalse, reason: 'no yes for a provider the server knows');
+      final plain = HttpCheckinClient(client: client, base: ApiBase('http://test', client));
+      await plain.turn(action: 'reply', state: const {'kind': 'daily'}, text: 'okay');
+      expect(bodies.last.containsKey('outside_ai_consent'), isFalse);
+    });
+
     test("a refusal carries the server's words; a bare error is the network", () async {
       var status = 409;
       final client = MockClient(
