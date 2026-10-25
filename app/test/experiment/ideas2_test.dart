@@ -659,14 +659,8 @@ void main() {
       await a.ideasHub.ensureToday();
       final look = ValueNotifier(const TwinAppearance(name: 'Mochi'));
       addTearDown(look.dispose);
-      Widget room() => RoomScreen(
-        appearance: look,
-        hasProfile: true,
-        onTalk: () {},
-        onCustomize: () {},
-        onFortune: () async {},
-        ideas: a.ideasAccess,
-      );
+      Widget room() =>
+          RoomScreen(appearance: look, hasProfile: true, onTalk: () {}, onCustomize: () {}, ideas: a.ideasAccess);
       await pumpIn(t, room());
       await t.pump(const Duration(milliseconds: 300));
       expect(find.text('See ideas ›'), findsOneWidget);
@@ -703,14 +697,7 @@ void main() {
       addTearDown(look.dispose);
       await pumpIn(
         t,
-        RoomScreen(
-          appearance: look,
-          hasProfile: true,
-          onTalk: () {},
-          onCustomize: () {},
-          onFortune: () async {},
-          ideas: a.ideasAccess,
-        ),
+        RoomScreen(appearance: look, hasProfile: true, onTalk: () {}, onCustomize: () {}, ideas: a.ideasAccess),
         scale: 1.5,
       );
       await t.pump(const Duration(milliseconds: 300));
@@ -764,13 +751,7 @@ void main() {
               ideas: () => access,
               child: child!,
             ),
-            home: RoomScreen(
-              appearance: look,
-              hasProfile: true,
-              onTalk: () {},
-              onCustomize: () {},
-              onFortune: () async {},
-            ),
+            home: RoomScreen(appearance: look, hasProfile: true, onTalk: () {}, onCustomize: () {}),
           ),
         );
         await t.pump();
@@ -951,13 +932,7 @@ void main() {
               ideas: () => access,
               child: child!,
             ),
-            home: RoomScreen(
-              appearance: look,
-              hasProfile: true,
-              onTalk: () {},
-              onCustomize: () {},
-              onFortune: () async {},
-            ),
+            home: RoomScreen(appearance: look, hasProfile: true, onTalk: () {}, onCustomize: () {}),
           ),
         );
         await t.pump();

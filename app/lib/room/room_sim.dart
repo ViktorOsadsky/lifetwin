@@ -9,8 +9,8 @@ import 'room_layout.dart';
 /// chosen twin's sprites (the human lacks some and falls back).
 enum RoomPose { stand, wave, walk, walkFront, walkBack, sit, eat, jump, stretch, think, ball, sleep, dizzy }
 
-/// The activity buttons, plus Fortune.
-enum RoomAction { exercise, eat, sleep, fortune }
+/// The activity buttons.
+enum RoomAction { exercise, eat, sleep }
 
 /// What the twin is doing, for the small activity pill beside it.
 enum RoomActivity { sleeping, walking, eating, exercising, fortune, relaxing }
@@ -39,7 +39,7 @@ class RoomFx {
 
 /// The room's behaviour, ported from the prototype (`design/room3d`): idle
 /// wander, walking with direction-picked poses, idle sit or wave, the
-/// Exercise / Eat / Sleep / Fortune actions, the tap hop, the long-press
+/// Exercise / Eat / Sleep actions, the tap hop, the long-press
 /// dizzy reaction, blinks and the effect particles. Pure state:
 /// call [step] with elapsed seconds; [RoomScene] draws it.
 class RoomSim extends ChangeNotifier {
@@ -53,10 +53,6 @@ class RoomSim extends ChangeNotifier {
   /// loops, no bob or tilt.
   bool reduced;
   final math.Random _rng;
-
-  /// Called once when the Fortune action has the ball glowing; the screen
-  /// then opens the ceremony and calls [fortuneDone] when it returns.
-  VoidCallback? onFortune;
 
   // ---- what the scene draws ---------------------------------------------
   Offset pos; // floor (x, z)
@@ -94,12 +90,11 @@ class RoomSim extends ChangeNotifier {
   double _hop = -1;
   double _dizzy = -1;
   double _blinkIn = 2.5, _blinkT = 0;
-  int _cycle = -1, _bite = -1, _sparkStep = -1;
+  int _cycle = -1, _bite = -1;
   double _fade = 0;
   Offset? _fadeTarget;
   RoomAction? _pending;
   double _zIn = 0;
-  bool _opened = false;
   String _extra = '';
   double _extraT = 0, _extraDur = 0;
   double _clock = 0;
@@ -130,7 +125,6 @@ class RoomSim extends ChangeNotifier {
       return switch (action) {
         RoomAction.exercise => RoomActivity.exercising,
         RoomAction.eat => RoomActivity.eating,
-        RoomAction.fortune => RoomActivity.fortune,
         _ => RoomActivity.relaxing,
       };
     }
@@ -173,12 +167,7 @@ class RoomSim extends ChangeNotifier {
     }
     _cancel();
     action = name;
-    const go = {
-      RoomAction.exercise: 'Off to the mat',
-      RoomAction.eat: 'Snack time!',
-      RoomAction.sleep: 'Off to bed',
-      RoomAction.fortune: 'Off to the shelf',
-    };
+    const go = {RoomAction.exercise: 'Off to the mat', RoomAction.eat: 'Snack time!', RoomAction.sleep: 'Off to bed'};
     final spot = layout.spots[name == RoomAction.sleep ? 'sleepSide' : name.name]!;
     _walkTo(spot, () => _beginAct(), go[name]);
     notifyListeners();
@@ -211,12 +200,6 @@ class RoomSim extends ChangeNotifier {
     _phase = 'getup';
     _actT = 0;
     _setStatus('Good morning!');
-  }
-
-  /// The ceremony has closed: put the ball back.
-  void fortuneDone() {
-    if (action == RoomAction.fortune) _finish('Hanging out');
-    notifyListeners();
   }
 
   /// The scene rested for [seconds] without ticking: count that time down
@@ -252,8 +235,7 @@ class RoomSim extends ChangeNotifier {
     _mode = _Mode.act;
     _actT = 0;
     _phase = '';
-    _opened = false;
-    _cycle = _bite = _sparkStep = -1;
+    _cycle = _bite = -1;
   }
 
   void _cancel() {
@@ -331,13 +313,6 @@ class RoomSim extends ChangeNotifier {
         spin: 2,
       );
     }
-  }
-
-  /// Where the held ball is, roughly (the ball sits left of the sprite's
-  /// centre, about half way up).
-  (double, double, double) _ballHeld() {
-    final r = layout.camRight, t = layout.camToward;
-    return (pos.dx - r.dx * 0.08 * flip + t.dx * 0.04, 0.51 + yOff, pos.dy - r.dy * 0.08 * flip + t.dy * 0.04);
   }
 
   /// Advances the room by [dt] seconds.
@@ -643,43 +618,6 @@ class RoomSim extends ChangeNotifier {
             final p = _pending;
             _pending = null;
             if (p != null) startAction(p);
-          }
-        }
-      case RoomAction.fortune:
-        final pulse = reduced ? 0.6 : 0.9, t0 = reduced ? 0.4 : 0.9;
-        if (t < t0) {
-          pose = RoomPose.think;
-          _setStatus('Hmm, let me see');
-          tilt = math.sin(t * 3) * 0.02;
-        } else {
-          if (!ballTaken) {
-            // The ball leaves the shelf with a sparkle.
-            final b = layout.shelfBallAt;
-            _spawn(RoomFxKind.sparkle, b, (0, -0.2, 0), 0.6, 0.25);
-          }
-          pose = RoomPose.ball;
-          ballTaken = true;
-          final k = (t - t0) / pulse;
-          // Two glow pulses, then a soft steady glow; steady under reduced motion.
-          glow = reduced ? 0.5 : (k < 2 ? math.pow(math.sin(k * math.pi), 2).toDouble() : 0.35);
-          _setStatus(k < 2 ? 'The ball glows!' : 'Your look ahead');
-          sq = 1 + 0.02 * glow;
-          final sp = (k * 3).floor();
-          if (k < 2 && sp != _sparkStep) {
-            _sparkStep = sp;
-            final bp = _ballHeld(), r = layout.camRight, j = (_rng.nextDouble() - 0.5) * 0.3;
-            _spawn(
-              RoomFxKind.sparkle,
-              (bp.$1 + r.dx * j, bp.$2 + 0.1, bp.$3 + r.dy * j),
-              (0, 0.25, 0),
-              0.8,
-              0.16,
-              spin: 2,
-            );
-          }
-          if (k >= 2.2 && !_opened) {
-            _opened = true;
-            onFortune?.call();
           }
         }
       case null:

@@ -26,7 +26,7 @@ class HomeWellnessPanel extends StatelessWidget {
   const HomeWellnessPanel({
     super.key,
     required this.snapshot,
-    required this.onEstimate,
+    this.onEstimate,
     this.onHistory,
     this.onDrivers,
     this.stateLine,
@@ -51,8 +51,8 @@ class HomeWellnessPanel extends StatelessWidget {
   /// A small state line under the card ("Still learning 2").
   final String? stateLine;
 
-  /// Opens the estimate (the chip).
-  final VoidCallback onEstimate;
+  /// Opens the estimate (the chip). Null: the chip is display only.
+  final VoidCallback? onEstimate;
 
   static const tagline = 'Feeling good now, and healthy years ahead.';
   static const underAgeLine = 'The health score is made for adults, ages 18 and over.';
@@ -262,13 +262,13 @@ class CollapsibleHealthScore extends StatefulWidget {
   const CollapsibleHealthScore({
     super.key,
     required this.snapshot,
-    required this.onEstimate,
+    this.onEstimate,
     this.onDrivers,
     this.stateLine,
     this.onAnswerMissing,
   });
   final WellnessSnapshot snapshot;
-  final VoidCallback onEstimate;
+  final VoidCallback? onEstimate;
   final VoidCallback? onDrivers;
   final String? stateLine;
 
@@ -542,15 +542,17 @@ Future<void> showHealthScoreSheet(BuildContext context, WellnessSnapshot snapsho
 class _EstimateChip extends StatelessWidget {
   const _EstimateChip({required this.lifespan, required this.onTap});
   final LifespanReveal? lifespan;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final l = lifespan;
     final label = l == null ? 'Your estimate' : l.yearText;
     return Semantics(
-      button: true,
-      label: l == null ? 'Your estimate. Open your estimate' : '${l.semantics} Open your estimate',
+      button: onTap != null,
+      label: l == null
+          ? (onTap == null ? 'Your estimate' : 'Your estimate. Open your estimate')
+          : (onTap == null ? l.semantics : '${l.semantics} Open your estimate'),
       excludeSemantics: true,
       onTap: onTap,
       child: InkWell(
@@ -574,7 +576,7 @@ class _EstimateChip extends StatelessWidget {
                   Flexible(
                     child: Text(label, style: LtText.body(weight: FontWeight.w700)),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: LtColors.ink),
+                  if (onTap != null) const Icon(Icons.chevron_right_rounded, color: LtColors.ink),
                 ],
               ),
             ),

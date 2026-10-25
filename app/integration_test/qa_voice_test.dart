@@ -132,10 +132,6 @@ void main() {
     expect(r.output.spoken.last, contains('were still living 5 years later'));
     await tapRound(t, 'Back');
     await waitFor(t, find.byType(RoomScreen));
-    await openFortune(t);
-    await waitFor(t, find.textContaining(forecastNumber));
-    await tapRound(t, 'Back');
-    await waitFor(t, find.byType(RoomScreen));
   });
 
   testWidgets('pressing Home while listening: nothing is sent, the same question waits, Talk works', (t) async {
