@@ -90,6 +90,8 @@ def request(endpoint, *, consent=False):
             "state": {
                 "phase": "confirming",
                 "memory_consent": False,
+                # The one offer of the missing answers was already made (and declined).
+                "missing_offered": True,
                 "confirmed_profile": PROFILE,
                 "pending_profile": {"height_cm": 160},
                 "skipped_fields": [

@@ -36,12 +36,14 @@ from lifetwin.onboarding.intents import (
     unknown_beside_answer,
 )
 from lifetwin.onboarding.intents import phrase as words_of
+from lifetwin.onboarding.model_inputs import INPUTS as MODEL_INPUT_FIELDS
 from lifetwin.onboarding.model_inputs import character_hints, model_inputs
 from lifetwin.onboarding.models import (
     FIELDS,
     ConversationState,
     HabitNote,
     MascotEvent,
+    ProfileField,
     Recommendation,
     TurnRequest,
     TurnResponse,
@@ -171,6 +173,31 @@ RESTART_QUESTION = (
     "If so, say yes, start over. Otherwise, just keep going."
 )
 DONE_LEAD = "All done. Thank you. Tap Continue to see your forecast."
+# The fields the estimate needs (the model's eleven inputs; height and weight give BMI), in the
+# order they are asked.
+ESTIMATE_FIELDS: tuple[ProfileField, ...] = tuple(
+    field for field in ASKED if any(field in fields for fields in MODEL_INPUT_FIELDS.values())
+)
+# End of the intake with estimate answers missing: said once, never a loop.
+MISSING_REPLIES = ("Yes", "Not now")
+MISSING_LATER = "That's okay. You can answer them any time from Home. "
+# Plainer names where two fields share one (both activity questions are "exercise").
+ESTIMATE_LABELS = {
+    "vigorous_recreation_min_week": "vigorous exercise",
+    "moderate_recreation_min_week": "moderate exercise",
+    "sedentary_min_day": "sitting time",
+}
+
+
+def _estimate_label(field: str) -> str:
+    return ESTIMATE_LABELS.get(field) or FRIENDLY_LABELS[field]
+
+
+# "Answer N more questions" (ask_only): only the missing answers, then back.
+ASK_ONLY_LEAD = "Hi again! "
+ASK_ONLY_NOTHING = "You've already answered everything I need. Tap Continue to go back."
+ASK_ONLY_UNKNOWN = "That's okay. Your estimate needs this one, so I'll offer it once more later."
+ASK_ONLY_DONE = "Thank you, that's all I needed. Tap Continue to see your estimate."
 SKIPPED = "No problem. We'll skip that. "
 NOT_CAUGHT = "Sorry, I didn't catch that."
 # Only a hesitation or the start of a cut-off sentence ("and also", "um so"): nothing was
@@ -564,11 +591,12 @@ class ConversationService:
                 "offering": "asking",
                 "probing": "asking",
                 "confirming": "confirming",
+                "missing": "asking",
                 "ready": "celebrating",
                 "cancelled": "idle",
             }[state.phase]
             recommendations: list[Recommendation] = []
-            if state.phase == "ready" and not was_ready and not urgent:
+            if state.phase == "ready" and not was_ready and not urgent and state.ask_only is None:
                 notes = state.habit_notes if state.memory_consent is not False else []
                 recommendations = _safe(suggest, state.confirmed_profile, notes) or []
                 if recommendations and message.endswith(DONE_LEAD):
@@ -613,6 +641,8 @@ class ConversationService:
             return respond(
                 "We can stop here. Your answers are cleared. Come back whenever you like."
             )
+        if action == "start" and state.phase == "idle" and state.ask_only is not None:
+            return respond(self._start_ask_only(state))
         if action == "start":
             if state.phase in {"cancelled", "idle"}:
                 state = ConversationState(seed=self.seed(), phase="remembering")
@@ -704,6 +734,17 @@ class ConversationService:
         ):
             # "Continue" after a pause: the same question or read-back again.
             return respond(RESUME_LEAD + self._prompt(state))
+        if action in {"reply", "skip"} and state.phase == "missing":
+            # Asked once: "yes" asks only the missing answers; anything else ends the intake.
+            if action == "reply" and YES_REPLY.fullmatch(words_of(text)):
+                missing = self._estimate_missing(state)
+                state.ask_only = missing
+                state.unknown_fields = [f for f in state.unknown_fields if f not in missing]
+                state.skipped_fields = [f for f in state.skipped_fields if f not in missing]
+                self._advance(state)
+                return respond("Great. " + self._prompt(state))
+            state.phase = "ready"
+            return respond(MISSING_LATER + DONE_LEAD)
         if action == "reply" and state.phase == "offering":
             intent = control_intent(text)
             if intent and intent.kind in {"repeat", "help", "ask"}:
@@ -781,7 +822,20 @@ class ConversationService:
                         + self._prompt(state)
                     )
                 if kind == "restart_confirmed":
-                    state = ConversationState(seed=state.seed, memory_consent=state.memory_consent)
+                    kept = {}
+                    if state.ask_only is not None:
+                        # "Start over" in "Answer N more questions" clears only those answers.
+                        kept = {
+                            "confirmed_profile": state.confirmed_profile.model_copy(
+                                update={field: None for field in state.ask_only}
+                            ),
+                            "ask_only": state.ask_only,
+                            "missing_offered": True,
+                            "health_offered": True,
+                        }
+                    state = ConversationState(
+                        seed=state.seed, memory_consent=state.memory_consent, **kept
+                    )
                     self._advance(state)
                     return respond(
                         "Okay, let's start over. I cleared your answers. " + self._prompt(state)
@@ -1354,7 +1408,7 @@ class ConversationService:
         """The next line after a saved answer: a habit follow-up, or the next topic."""
         probe = (
             None
-            if state.memory_consent is False
+            if state.memory_consent is False or state.ask_only is not None
             else choose_probe(
                 state.confirmed_profile,
                 just,
@@ -1416,9 +1470,51 @@ class ConversationService:
                 state.unknown_fields.append(name)
         state.skipped_fields = [f for f in state.skipped_fields if f not in names]
         state.proxy_field = None
+        if state.ask_only is not None:
+            # Allowed, and never a loop: the estimate needs it, it is offered once more later
+            # (the app's "Answer N more questions"), and the talk moves on or ends.
+            self._advance(state)
+            return ASK_ONLY_UNKNOWN + " " + self._prompt(state)
         ack = pick(UNKNOWN_ACKS, state.seed, "unknown", field)
         self._advance(state)
         return ack + (UNKNOWN_FIRST if first else "") + " " + self._prompt(state)
+
+    def _start_ask_only(self, state: ConversationState) -> str:
+        """ "Answer N more questions": the saved profile is confirmed; only the fields in
+        `ask_only` that still have no value are asked, in the usual order."""
+        ask = [f for f in ESTIMATE_FIELDS if f in state.ask_only]
+        ask += [f for f in state.ask_only if f not in ask]
+        state.ask_only = [f for f in ask if getattr(state.confirmed_profile, f) is None]
+        for name in ("skipped_fields", "unknown_fields", "proxies_asked"):
+            setattr(state, name, [f for f in getattr(state, name) if f not in state.ask_only])
+        state.seed = state.seed or self.seed()
+        state.missing_offered = state.health_offered = True
+        self._advance(state)
+        if state.phase == "ready":
+            return ASK_ONLY_NOTHING
+        n = len(state.ask_only)
+        lead = f"I just need {n} more {'answer' if n == 1 else 'answers'} for your estimate. "
+        return ASK_ONLY_LEAD + lead + self._prompt(state)
+
+    @staticmethod
+    def _estimate_missing(state: ConversationState) -> list[ProfileField]:
+        """The estimate's fields with no value, in asking order; none when the age is
+        outside what the estimate covers."""
+        age = state.confirmed_profile.age
+        if age is not None and not 18 <= age <= 85:
+            return []
+        return [f for f in ESTIMATE_FIELDS if getattr(state.confirmed_profile, f) is None]
+
+    @staticmethod
+    def _missing_offer(state: ConversationState) -> str:
+        missing = ConversationService._estimate_missing(state)
+        n = len(missing)
+        names = [_estimate_label(f) for f in missing]
+        listed = names[0] if n == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+        return (
+            f"I still need {n} {'answer' if n == 1 else 'answers'} for your estimate: your "
+            f"{listed}. Want to answer {'it' if n == 1 else 'them'} now?"
+        )
 
     @staticmethod
     def _proxy_answer(state: ConversationState, field: str, text: str):
@@ -1569,6 +1665,7 @@ class ConversationService:
             getattr(state.confirmed_profile, field) is None
             and field not in state.skipped_fields
             and field not in state.unknown_fields
+            and (state.ask_only is None or field in state.ask_only)
         )
 
     def _settled(self, state: ConversationState) -> set[str]:
@@ -1628,6 +1725,13 @@ class ConversationService:
                 step = "vigorous_recreation_min_week"  # Health's total: ask the harder part first
             state.current_field, state.phase = step, "asking"
             return
+        if state.ask_only is None and not state.missing_offered and self._estimate_missing(state):
+            # Said once at the end of the intake; "yes" asks only those, "not now" finishes.
+            state.missing_offered = True
+            state.current_field, state.phase = None, "missing"
+            return
+        # Finished once: a later change never brings the offer back.
+        state.missing_offered = True
         state.current_field, state.phase = None, "ready"
 
     @staticmethod
@@ -1653,8 +1757,16 @@ class ConversationService:
             pending = state.pending_profile.model_dump(exclude_none=True)
             note = ESTIMATE_NOTE if state.pending_estimate else ""
             return heard(pending, about or set()) + note + " Is that right?"
+        if state.phase == "ready" and state.ask_only is not None:
+            left = [f for f in state.ask_only if getattr(state.confirmed_profile, f) is None]
+            if not left:
+                return ASK_ONLY_DONE
+            names = " and ".join(_estimate_label(f) for f in left)
+            return f"Thank you. Your estimate still needs your {names}. Tap Continue to go back."
         if state.phase == "ready":
             return DONE_LEAD
+        if state.phase == "missing":
+            return ConversationService._missing_offer(state)
         if state.phase == "offering":
             return HEALTH_OFFER
         if state.phase == "remembering":
@@ -1673,6 +1785,8 @@ class ConversationService:
             return ["Yes", "No"]
         if state.phase == "offering":
             return list(HEALTH_OFFER_REPLIES)
+        if state.phase == "missing":
+            return list(MISSING_REPLIES)
         if state.phase == "remembering":
             return list(MEMORY_REPLIES)
         if state.phase == "probing":
@@ -1708,6 +1822,8 @@ class ConversationService:
         """The answered question before this one ("go back"), or the last one when done."""
         steps = [*ASKED, *(f for f in FIELDS if f not in ASKED)]
         answered = [field for field in steps if not self._open(state, field)]
+        if state.ask_only is not None:
+            answered = [field for field in answered if field in state.ask_only]
         if state.phase == "asking" and state.current_field in steps:
             here = steps.index(state.current_field)
             answered = [f for f in answered if steps.index(f) < here]

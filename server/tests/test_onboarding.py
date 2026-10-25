@@ -725,7 +725,10 @@ def test_diastolic_must_be_below_confirmed_systolic(client):
 def test_confirmed_answer_can_be_withdrawn_to_blank(client):
     others = [field for field in HealthProfile.model_fields if field != "diabetes"]
     state = ConversationState(
-        phase="ready", confirmed_profile=HealthProfile(diabetes=True), skipped_fields=others
+        phase="ready",
+        confirmed_profile=HealthProfile(diabetes=True),
+        skipped_fields=others,
+        missing_offered=True,
     ).model_dump()
     result = turn(client, "correct", state, field="diabetes", text="not sure")
     assert result["state"]["confirmed_profile"]["diabetes"] is None

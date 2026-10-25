@@ -17,6 +17,7 @@ import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/ui/twin_appearance.dart';
 import 'package:lifesim/voice/fakes.dart';
+import 'package:lifesim/voice/speech.dart';
 
 import 'checkin_controller_test.dart' show FakePort;
 import 'forecast_screen_test.dart' show FakeForecastClient;
@@ -36,7 +37,8 @@ void main() {
 
   Map<String, dynamic> copy(Object? v) => jsonDecode(jsonEncode(v)) as Map<String, dynamic>;
 
-  Future<void> pumpApp(WidgetTester t, {bool profile = false}) async {
+  late VoiceOnboardingController intake;
+  Future<void> pumpApp(WidgetTester t, {bool profile = false, ConversationGuide? guide}) async {
     t.view.physicalSize = const Size(390, 844);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -54,8 +56,8 @@ void main() {
     await t.pumpWidget(
       LifeTwinApp(
         autoStartOnboarding: true,
-        controller: VoiceOnboardingController(
-          guide: FakeConversationGuide(),
+        controller: intake = VoiceOnboardingController(
+          guide: guide ?? FakeConversationGuide(),
           input: FakeSpeechInput(),
           output: FakeSpeechOutput(),
         ),
@@ -182,4 +184,67 @@ void main() {
       File('$dir/autostart_wave.png').writeAsBytesSync(bytes!.buffer.asUint8List());
     });
   });
+
+  testWidgets('auto-start and the end-of-intake offer coexist: a skipped answer gives exactly one offer', (
+    t,
+  ) async {
+    final guide = _SkipThenOffer();
+    await pumpApp(t, guide: guide);
+    await pastWave(t);
+    expect(onboarding, findsOneWidget, reason: 'a fresh app starts onboarding by itself');
+    await intake.answerConsent(false);
+    await t.pumpAndSettle();
+    await intake.skip(); // the last question, skipped: the server makes its one offer
+    await t.pumpAndSettle();
+    expect(intake.turn!.phase, 'missing');
+    expect(find.textContaining('I still need 1 answer'), findsWidgets);
+    await intake.submitQuick('not now');
+    await t.pumpAndSettle();
+    expect(intake.turn!.complete, isTrue);
+    expect(guide.offers, 1);
+    // Back out to the Room: onboarding does not start by itself again.
+    t.state<NavigatorState>(find.byType(Navigator)).pop();
+    await t.pumpAndSettle();
+    await t.pump(const Duration(seconds: 3));
+    await t.pumpAndSettle();
+    expect(guide.starts, 1);
+  });
+}
+
+/// The server's end of an intake with one answer skipped: one offer, then "not now" finishes.
+class _SkipThenOffer implements ConversationGuide {
+  int offers = 0, starts = 0;
+
+  @override
+  Future<GuideTurn> turn({
+    required String action,
+    Map<String, dynamic>? state,
+    String? text,
+    bool fromTranscript = false,
+    Map<String, Object>? values,
+    bool aiHelper = false,
+    String? importSource,
+  }) async {
+    if (action == 'start') {
+      starts++;
+      return const GuideTurn(
+        state: {'phase': 'asking', 'current_field': 'vigorous_recreation_min_week', 'confirmed_profile': {}},
+        message: 'How many minutes of vigorous exercise a week?',
+        complete: false,
+      );
+    }
+    if (action == 'skip') {
+      offers++;
+      return const GuideTurn(
+        state: {'phase': 'missing', 'current_field': null, 'missing_offered': true, 'confirmed_profile': {}},
+        message: 'I still need 1 answer for your estimate: your vigorous exercise. Want to answer it now?',
+        complete: false,
+      );
+    }
+    return const GuideTurn(
+      state: {'phase': 'ready', 'current_field': null, 'missing_offered': true, 'confirmed_profile': {}},
+      message: "That's okay. You can answer them any time from Home. All done.",
+      complete: true,
+    );
+  }
 }
