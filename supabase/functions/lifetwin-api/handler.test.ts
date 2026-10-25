@@ -243,3 +243,46 @@ Deno.test("Only one PDF upload occupies an isolate and its slot is released", as
       .status === 200,
   );
 });
+Deno.test("Minors and unknown-age onboarding can open Ideas and age16 check-in remains valid", async () => {
+  const handler = createHandler(async () => ({}));
+  const start = await handler(
+    request("/api/onboarding/turn", { action: "start" }),
+  );
+  const initial = await start.json();
+  const accepted = await handler(
+    request("/api/onboarding/turn", {
+      action: "reply",
+      text: "Sure",
+      state: initial.state,
+    }),
+  );
+  const asking = await accepted.json();
+  for (const age of [null, 16]) {
+    const state = structuredClone(asking.state);
+    state.confirmed_profile.age = age;
+    const ideas = await handler(
+      request("/api/onboarding/turn", {
+        action: "reply",
+        text: "any ideas?",
+        state,
+      }),
+    );
+    const body = await ideas.json();
+    assert(ideas.status === 200 && body.client_action === "open_ideas");
+    assert(body.message.startsWith("I have an idea for you today."));
+  }
+  const check = await handler(
+    request("/api/checkin/start", { kind: "daily", age: 16 }),
+  );
+  assert(check.status === 200);
+  const checked = await check.json();
+  const ideas = await handler(
+    request("/api/checkin/turn", {
+      action: "reply",
+      text: "what should I do?",
+      state: checked.state,
+    }),
+  );
+  assert(ideas.status === 200);
+  assert((await ideas.json()).client_action === "open_ideas");
+});

@@ -165,8 +165,9 @@ Deno.test("Recommendations honor excluded IDs, limits, effects and day rotation"
   const minor = await call("/api/recommendations", {
     profile: { age: 16, smoking_status: "current" },
   });
-  assert(minor.body.status === "under_age");
-  assert(minor.body.recommendations.length === 0);
+  assert(minor.body.status === "ok");
+  assert(minor.body.recommendations.length > 0);
+  assert(minor.body.recommendations.every((idea: any) => idea.effect === null));
 });
 Deno.test("Coach pauses every movement card for acute symptoms and BP crisis", async () => {
   const emergency = await call("/api/coach/plan", {
@@ -311,4 +312,57 @@ Deno.test("Coach and recommendation calendar/reading dependencies fail closed", 
     assert(response.body.emergency === true, "shared emergency guard");
     assert(response.body.items.length === 0);
   }
+});
+Deno.test("Educational routes treat minors normally and document context changes no plan or prediction inputs", async () => {
+  const minor = await call("/api/coach/plan", {
+    local_date: "2026-10-25",
+    profile: { age: 16, smoking_status: "current", exercise_minutes_weekly: 0 },
+  });
+  assert(minor.body.status === "ok" && minor.body.items.length > 0);
+  assert(minor.body.revision_id !== null);
+  assert(minor.body.items.every((i: any) => i.intensity !== "vigorous"));
+  const adultAdvisor = await call("/api/advisor", {}),
+    minorAdvisor = await call("/api/advisor", { profile: { age: 16 } });
+  assert(
+    JSON.stringify(adultAdvisor.body.limitations) ===
+      JSON.stringify(minorAdvisor.body.limitations),
+  );
+  const context = {
+    readings: [{
+      field: "systolic_bp",
+      value: 185,
+      unit: "mmHg",
+      date: "2026-10-24",
+      source: "document",
+    }, {
+      field: "a1c",
+      value: 6.1,
+      unit: "%",
+      date: "2026-09-14",
+      source: "document",
+    }],
+    diagnoses: ["diabetes", "hypertension"],
+  };
+  const profile = { age: 50, smoking_status: "current" };
+  for (const path of ["/api/recommendations", "/api/coach/plan"]) {
+    const base = { local_date: "2026-10-25", profile, memory_consent: true };
+    const plain = await call(path, base),
+      withContext = await call(path, { ...base, document_context: context });
+    assert(
+      JSON.stringify(plain) === JSON.stringify(withContext),
+      "Document context is informational only",
+    );
+  }
+  const future = await call("/api/coach/plan", {
+    local_date: "2026-10-25",
+    document_context: {
+      readings: [{ ...context.readings[0], date: "2026-11-01" }],
+    },
+  });
+  assert(future.status === 422);
+  const badUnits = await call("/api/recommendations", {
+    profile,
+    document_context: { readings: [{ ...context.readings[0], unit: "%" }] },
+  });
+  assert(badUnits.status === 422);
 });

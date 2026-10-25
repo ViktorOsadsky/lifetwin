@@ -618,9 +618,13 @@ function onboardingRoute(p: Obj): Result {
     return respond(onboard.SUPPLEMENT_REPLY + " " + intakePrompt(s));
   }
   if (/\b(?:ideas?|what should i do today)\b/.test(low)) {
-    return respond("Let's look at your ideas. " + intakePrompt(s), {
-      client_action: "open_ideas",
-    });
+    return respond(
+      "I have an idea for you today. I'll show it to you now. " +
+        intakePrompt(s),
+      {
+        client_action: "open_ideas",
+      },
+    );
   }
   if (
     /^(?:repeat|say (?:that|it) again|what\??|slower|speak slower|louder|speak louder)$/

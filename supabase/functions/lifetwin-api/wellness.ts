@@ -40,11 +40,6 @@ function advisor(req: any): WellnessResult {
     ? "unconfigured"
     : "not_requested";
   const limitations = copy(data.advisor.limitations);
-  if (req.profile?.age != null && req.profile.age < 18) {
-    limitations.push(
-      "We do not set age-based goals for young people. A parent, guardian, or pediatric care team can help choose activities that suit a young person.",
-    );
-  }
   return ok({
     schema_version: "1.0",
     status: "educational",
@@ -151,9 +146,33 @@ function realDate(value: string): boolean {
   return Number.isFinite(parsed.getTime()) &&
     parsed.toISOString().slice(0, 10) === value;
 }
+const READING_RANGES: Record<string, Record<string, [number, number]>> = {
+  systolic_bp: { mmHg: [40, 300] },
+  diastolic_bp: { mmHg: [20, 200] },
+  a1c: { "%": [3, 20] },
+  ldl: { "mg/dL": [10, 500], "mmol/L": [0.3, 13] },
+};
+function validReading(entry: any): boolean {
+  const bounds = READING_RANGES[entry.field]?.[entry.unit];
+  return Boolean(
+    bounds && entry.value >= bounds[0] && entry.value <= bounds[1] &&
+      realDate(entry.date),
+  );
+}
 function recommendations(req: any): WellnessResult {
   if (req.local_date != null && !realDate(req.local_date)) {
     return error(422, "invalid_request", "Please check the calendar day.");
+  }
+  if (
+    (req.document_context?.readings ?? []).some((entry: any) =>
+      !validReading(entry)
+    )
+  ) {
+    return error(
+      422,
+      "invalid_request",
+      "Please check the reading and its unit.",
+    );
   }
   const p = req.profile ?? {},
     notes = req.habit_notes ?? [],
@@ -176,9 +195,6 @@ function recommendations(req: any): WellnessResult {
     causal_interpretation: false,
     limitations: copy(r.limitations),
   };
-  if (p.age != null && p.age < 18) {
-    return ok({ ...base, status: "under_age", message: r.under_age });
-  }
   const raw = notes.flatMap((n: any) =>
     Object.entries(n).filter(([key, value]) =>
       !["topic", "source", "estimate_for", "tried_quitting"].includes(key) &&
@@ -490,9 +506,9 @@ async function coach(req: any): Promise<WellnessResult> {
     readings = req.readings ?? [],
     habitNotes = req.habit_notes ?? [];
   if (
-    [...checkins, ...readings].some((entry: any) =>
-      !realDate(entry.date) || entry.date > date
-    ) ||
+    [...checkins, ...readings, ...(req.document_context?.readings ?? [])].some((
+      entry: any,
+    ) => !realDate(entry.date) || entry.date > date) ||
     habitNotes.some((entry: any) =>
       entry.noted_on != null && !realDate(entry.noted_on)
     ) ||
@@ -514,17 +530,10 @@ async function coach(req: any): Promise<WellnessResult> {
       "Please check the dates and duplicate entries.",
     );
   }
-  const readingRanges: Record<string, Record<string, [number, number]>> = {
-    systolic_bp: { mmHg: [40, 300] },
-    diastolic_bp: { mmHg: [20, 200] },
-    a1c: { "%": [3, 20] },
-    ldl: { "mg/dL": [10, 500], "mmol/L": [0.3, 13] },
-  };
   if (
-    readings.some((entry: any) => {
-      const bounds = readingRanges[entry.field]?.[entry.unit];
-      return !bounds || entry.value < bounds[0] || entry.value > bounds[1];
-    })
+    [...readings, ...(req.document_context?.readings ?? [])].some((
+      entry: any,
+    ) => !validReading(entry))
   ) {
     return error(
       422,
@@ -614,13 +623,6 @@ async function coach(req: any): Promise<WellnessResult> {
     base.reply = c.emergency_message;
     base.lines = [base.reply];
     base.mascot_events = [{ state: "concerned", caption: base.reply }];
-    return ok(base);
-  }
-  if (p.age != null && p.age < 18) {
-    base.status = "under_age";
-    base.reply = data.recommendations.under_age;
-    base.lines = [base.reply];
-    base.mascot_events = [{ state: "idle", caption: base.reply }];
     return ok(base);
   }
   const limits = new Set<string>(req.limits ?? []);

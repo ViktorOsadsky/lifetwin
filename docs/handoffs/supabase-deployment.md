@@ -28,9 +28,9 @@ key entry and update commands are in [backend credentials](../backend-credential
 
 Validation observed:
 
-- Full Python suite after the PDF merge: 4,381 passed, 5 skipped, 10 expected
+- Full Python suite after the PDF merge: 4,385 passed, 5 skipped, 10 expected
   failures; 29 exported schemas validated.
-- Deno entrypoint type check and 116 tests passed, including deadline cancellation. Integration tests cover all 95 fixture
+- Deno entrypoint type check and 118 tests passed, including deadline cancellation. Integration tests cover all 96 fixture
   statuses/response schemas, with the hosted prediction exception explicit.
 - Flutter after the first main integration: 1,448 tests passed; full analysis
   clean in a temporary validation copy. Only that copy's SDK floor was lowered to

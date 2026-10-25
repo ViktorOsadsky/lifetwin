@@ -11,12 +11,17 @@ import re
 from dataclasses import asdict
 from pathlib import Path
 
+# Initialize onboarding's models before the coach package. DocumentContext is
+# shared by recommendations, whose package initialization also loads onboarding.
+from lifetwin.onboarding.intents import EMERGENCY, EMERGENCY_MESSAGE, SELF_HARM
+
+# isort: split
+
 from lifetwin.advisor.models import AdvisorRequest
 from lifetwin.advisor.service import _COPY, build_plan
 from lifetwin.coach import catalog, safety
 from lifetwin.documents import parser, redact
 from lifetwin.documents.service import _ENGLISH, _FOREIGN
-from lifetwin.onboarding.intents import EMERGENCY, EMERGENCY_MESSAGE, SELF_HARM
 from lifetwin.quiz.service import load_bank
 from lifetwin.recommendations import ideas, levers
 from lifetwin.recommendations.models import RecommendationResponse
@@ -66,7 +71,6 @@ async def main(argv: list[str] | None = None) -> int:
             "model_version": levers.MODEL_VERSION,
             "medians": levers.MEDIAN_PP,
             "thresholds": levers.EFFECT_THRESHOLDS_PP,
-            "under_age": levers.UNDER_AGE,
             "limitations": RecommendationResponse.model_fields["limitations"].default_factory(),
             "limits": {k: v.pattern for k, v in ideas.NOTE_LIMITS.items()},
             "interests": {k: v.pattern for k, v in ideas.INTEREST_PATTERNS.items()},
