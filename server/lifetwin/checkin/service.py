@@ -93,6 +93,7 @@ from lifetwin.onboarding.parsing import (
     checkin_clarify,
     checkin_smoking,
     clarify,
+    is_filler,
     is_skip,
     no_new_reading,
     normalize_text,
@@ -104,11 +105,13 @@ from lifetwin.onboarding.service import (
     LOUDER_LEAD,
     NO_LEAD,
     NOT_CAUGHT,
+    OTHER_PERSON_LEAD,
     QUESTION_BACK_LEAD,
     REPEAT_LEAD,
     SKIPPED,
     SLOWER_LEAD,
     SUPPLEMENTS,
+    TAKE_YOUR_TIME,
     THANKS,
     UNSURE_LEAD,
     WHAT_NOW,
@@ -891,7 +894,13 @@ class CheckinService:
                 return respond(_echo(extras) + (hint or self._question(state)))
             if hint and state.phase != "confirming":
                 return respond(hint)
-            return respond((hint or NOT_CAUGHT) + " " + ask)
+            lead = hint
+            if not hint and state.phase == "asking":
+                if is_filler(text):
+                    lead = TAKE_YOUR_TIME
+                elif _safe(_others, text):
+                    lead = OTHER_PERSON_LEAD
+            return respond((lead or NOT_CAUGHT) + " " + ask)
         before = self._answers(state, without=state.checking)
         merged = before | values | extras
         if merged.get("systolic_bp") and merged.get("diastolic_bp"):

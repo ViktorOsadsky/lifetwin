@@ -64,6 +64,7 @@ from lifetwin.onboarding.parsing import (
     corrects,
     grounded_candidates,
     health_either,
+    is_filler,
     is_skip,
     normalize_text,
     parse_reply,
@@ -166,6 +167,10 @@ RESTART_QUESTION = (
 DONE_LEAD = "All done. Thank you. Tap Continue to see your forecast."
 SKIPPED = "No problem. We'll skip that. "
 NOT_CAUGHT = "Sorry, I didn't catch that."
+# Only a hesitation or the start of a cut-off sentence ("and also", "um so"): nothing was
+# answered, so there is nothing to apologise for. Or the reply was only about someone else.
+TAKE_YOUR_TIME = "Take your time."
+OTHER_PERSON_LEAD = "I only need your own answer, not anyone else's."
 CONFIRM_FIRST = "Please answer yes or no to what I just read back first."
 WHAT_NOW = re.compile(
     r"(?:so )?(?:what now|now what|what next|what's next|what do i do now|what happens now|"
@@ -1044,6 +1049,11 @@ class ConversationService:
                 notice = "The AI helper isn't available right now, but we can keep going. "
             hint = BOTH_BP_MESSAGE if lone_bottom else hint
             lead = hint or ("" if notice and provider_status == "consent_required" else NOT_CAUGHT)
+            if asking and not hint and not notice:
+                if is_filler(raw_text):
+                    lead = TAKE_YOUR_TIME
+                elif _safe(_others, raw_text):
+                    lead = OTHER_PERSON_LEAD
             ask = (
                 self._prompt(state)
                 if state.phase == "confirming"
