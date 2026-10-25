@@ -1058,6 +1058,12 @@ def _age_readings(text: str, today: date) -> list[tuple[set[int], tuple[int, int
 
 
 def _age(text: str, today: date) -> Found:
+    # "I've been married 45 years", "I worked there 35 years": how long, not how old.
+    if re.search(r"\b\d+ years?\b(?! old\b| of age\b| young\b)", text) and not re.search(
+        r"\b(?:i'm|i am|im|age|aged|turned|turning|i'll be|i will be)\s+(?:\w+\s+)?\d+ years?\b", text
+    ):
+        return None
+
     def current(match: re.Match):
         # "I retired at 65", "since 60": the age at some event, not now.
         before = text[: match.start()]

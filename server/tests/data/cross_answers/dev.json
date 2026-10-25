@@ -4030,6 +4030,70 @@
    "confirm": true,
    "id": "unit_conversion-44",
    "split": "dev"
+  },
+  {
+   "category": "stray_number",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "age",
+    "confirmed": {},
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: To start, how old are you?"
+   ],
+   "expect": {},
+   "allow": {},
+   "must_not": [
+    "age"
+   ],
+   "unknown": [],
+   "skip": [],
+   "next": null,
+   "confirm": false,
+   "split": "dev",
+   "note": "added after the held-out run found this class (a duration read as an age); new wording",
+   "id": "stray_number-15",
+   "turns": [
+    "I worked at the post office 35 years"
+   ]
+  },
+  {
+   "category": "stray_number",
+   "flow": "onboarding",
+   "start": {
+    "phase": "asking",
+    "field": "age",
+    "confirmed": {},
+    "pending": {},
+    "unknown": [],
+    "skipped": [],
+    "memory_consent": false,
+    "health_offered": false
+   },
+   "history": [
+    "Mochi: To start, how old are you?"
+   ],
+   "expect": {},
+   "allow": {},
+   "must_not": [
+    "age"
+   ],
+   "unknown": [],
+   "skip": [],
+   "next": null,
+   "confirm": false,
+   "split": "dev",
+   "note": "added after the held-out run found this class (a duration read as an age); new wording",
+   "id": "stray_number-16",
+   "turns": [
+    "we've had this house 40 years"
+   ]
   }
  ]
 }
