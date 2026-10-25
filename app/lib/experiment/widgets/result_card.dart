@@ -391,6 +391,9 @@ class _ScoreChange extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Each score is shown to two decimals, so the change (and its word) is the difference of the two
+    // numbers shown: the raw delta rounded alone read "+0.44 → +0.46 (+0.03)".
+    final delta = (((from + this.delta) * 100).round() - (from * 100).round()) / 100;
     final kind = scoreChangeOf(delta);
     final (word, fill, edge) = switch (kind) {
       ScoreChange.better => ('▲ Better', LtColors.mintTint, LtColors.teal),

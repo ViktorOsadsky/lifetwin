@@ -399,13 +399,15 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> with WidgetsBindingOb
           for (final item in plan.items) _item(item),
           if (widget.onIdeas != null) MoreIdeasLink(onTap: widget.onIdeas!),
         ],
-        if (plan.changes.isNotEmpty)
+        // Only real changes, each once: the live coach also reports every kept item ("Nothing new since
+        // today's plan, so it stays the same.") and Mochi's fresh words, which read as the same line 3-4 times.
+        if (plan.changedLines.isNotEmpty)
           WellnessCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 WholeWordText('What changed', style: LtText.display(24)),
-                for (final change in plan.changes)
+                for (final change in {...plan.changedLines})
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: WholeWordText(change, style: LtText.body()),

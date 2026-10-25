@@ -300,6 +300,26 @@ void main() {
       sem.dispose();
     });
 
+    // Bug hunt A: the simulator showed "Health score +0.44 → ▲ Better +0.46 (+0.03)". The two scores are
+    // rounded on their own, so the change shown must be their difference, not the raw delta rounded.
+    testWidgets('the change shown is the difference of the two scores shown', (t) async {
+      await pump(t, card(current: 0.436, delta: 0.0254));
+      expect(find.text('Health score +0.44 →'), findsOneWidget);
+      expect(find.text('+0.46'), findsOneWidget);
+      expect(find.text('(+0.02)'), findsOneWidget);
+      expect(find.text('(+0.03)'), findsNothing);
+      final sem = t.ensureSemantics();
+      await t.pump();
+      expect(t.getSemantics(find.text('+0.46')).label, contains('New health score plus 0.46, up 0.02 from plus 0.44'));
+      sem.dispose();
+      // Two different scores are never "About the same", and the word follows the numbers.
+      await pump(t, card(current: 0.4449, delta: 0.0049));
+      expect(find.text('Health score +0.44 →'), findsOneWidget);
+      expect(find.text('+0.45'), findsOneWidget);
+      expect(find.text('▲ Better'), findsOneWidget);
+      expect(find.text('(+0.01)'), findsOneWidget);
+    });
+
     testWidgets('about the same: a grey pill with no arrow, including the weight guard 0', (t) async {
       for (final delta in [0.0, 0.004, -0.004]) {
         await pump(t, card(current: 0.5, delta: delta));

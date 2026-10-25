@@ -1913,7 +1913,8 @@ class ConversationService:
             if not left:
                 return ASK_ONLY_DONE
             names = " and ".join(_estimate_label(f) for f in left)
-            return f"Thank you. Your estimate still needs your {names}. Tap Continue to go back."
+            # No "Thank you." of its own: the answer's acknowledgement comes first (often "Thank you.").
+            return f"Your estimate still needs your {names}. Tap Continue to go back."
         if state.phase == "ready":
             return DONE_LEAD
         if state.phase == "missing":

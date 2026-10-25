@@ -305,7 +305,9 @@ void main() {
         t,
         SideBySideScreen(repository: repo, whatIf: exp, appearance: const TwinAppearance(), open: fakeOpen),
       );
-      expect(find.text('About the same'), findsOneWidget);
+      // The headline, and the score pill when the two scores shown are equal (it once said "▲ Better" there).
+      expect(find.text('About the same'), findsWidgets);
+      expect(find.text('▲ Better'), findsNothing);
       expect(find.byType(BearArray), findsNothing);
       expect(find.textContaining('in 1,000'), findsNothing);
       expect(anyText(t, RegExp(r'more in 100')), isFalse);
