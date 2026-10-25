@@ -1,0 +1,5 @@
+project_id = "plpywefoeepfunptjujc"
+
+[functions.lifetwin-api]
+verify_jwt = true
+entrypoint = "./functions/lifetwin-api/index.ts"
