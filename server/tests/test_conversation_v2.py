@@ -34,6 +34,7 @@ from lifetwin.onboarding.script import (
 )
 from lifetwin.personalize.providers import DISPLAY_NAMES, PhrasingUnavailable
 from lifetwin.personalize.safety import safe_line
+from lifetwin.recommendations.ideas import BY_ID
 from lifetwin.recommendations.levers import LEVER_ORDER
 from lifetwin.recommendations.models import RecommendationRequest
 from lifetwin.recommendations.service import recommend, suggest
@@ -568,7 +569,7 @@ def test_walkers_may_pick_up_the_pace_unless_something_hurts():
     sore = HabitNote(topic="exercise", kind="walking", barrier="knee pain")
     found = recs(moderate_recreation_min_week=60, vigorous_recreation_min_week=0, notes=[sore])
     assert found[0].lever == "moderate_plus_90"
-    assert "about 150 minutes" in found[0].message  # 60 now, three more 30-minute walks
+    assert "knee_pain" not in BY_ID[found[0].id].avoid  # never an idea sore knees rule out
 
 
 def test_sleep_advice_only_under_seven_hours():
