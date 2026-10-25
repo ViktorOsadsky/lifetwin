@@ -409,7 +409,7 @@ def test_validation_message_names_wrong_answers_in_plain_words(client):
     assert response.status_code == 422
     message = response.json()["message"]
     assert "age" in message and "weight" in message and "try again" in message
-    assert "abc" not in response.text
+    assert '"abc"' not in response.text  # quoted: a random hex request id may contain abc
 
 
 def test_blood_pressure_order_error_is_plain(client):

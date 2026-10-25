@@ -144,6 +144,12 @@ class BandDayReport {
         throw const BandFileFailure('The export UTC offset is not valid.');
       }
     }
+    final dayStartUtc = date.subtract(Duration(minutes: offset));
+    if (DateTime.parse(generated).isBefore(dayStartUtc)) {
+      throw const BandFileFailure(
+        'The export time is earlier than the day it reports on.',
+      );
+    }
     final clockPart = generated.substring(11, 19);
     if (int.parse(clockPart.substring(0, 2)) > 23 ||
         int.parse(clockPart.substring(3, 5)) > 59 ||
@@ -181,6 +187,16 @@ class BandDayReport {
     if (first.compareTo(last) > 0) {
       throw const BandFileFailure(
         'A daily report cannot cross midnight; export separate dated days.',
+      );
+    }
+    final windowMinutes =
+        (int.parse(last.substring(0, 2)) * 60 + int.parse(last.substring(3))) -
+        (int.parse(first.substring(0, 2)) * 60 +
+            int.parse(first.substring(3))) +
+        1;
+    if (recorded > windowMinutes) {
+      throw const BandFileFailure(
+        'The recorded minutes are more than the first-to-last coverage window.',
       );
     }
     final minutes = _object(

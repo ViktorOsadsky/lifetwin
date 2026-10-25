@@ -143,10 +143,55 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   /// Visible from the first question on, until the conversation is done. One control, no timers.
   bool get _importWanted =>
       c.phase != VoicePhase.done &&
-      c.phase != VoicePhase.consent &&
-      c.turn != null &&
+      (c.phase == VoicePhase.consent || c.turn != null) &&
       !c.emergency &&
       (widget.onUseHealth != null || widget.onUploadDocument != null);
+
+  /// Tapped before the consent questions were answered: the import waits for them, then opens.
+  bool _importAfterConsent = false;
+
+  /// Importing never skips a consent. From the consent questions the tap only remembers the
+  /// wish; the sheet opens as soon as they are answered.
+  void _importTap() {
+    if (c.phase == VoicePhase.consent) {
+      setState(() => _importAfterConsent = true);
+    } else {
+      _fasterSheet();
+    }
+  }
+
+  void _openPendingImport() {
+    if (!_importAfterConsent || c.phase == VoicePhase.consent || c.turn == null) return;
+    _importAfterConsent = false;
+    if (!_importWanted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _fasterSheet();
+    });
+  }
+
+  /// The import control for the consent questions, with what happens next once it was tapped.
+  List<Widget> _consentImport() => [
+    if (_importWanted) ...[
+      SizedBox(
+        height: 56,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: ImportControl(collapsed: false, onTap: _importTap),
+        ),
+      ),
+      if (_importAfterConsent)
+        Semantics(
+          liveRegion: true,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Answer these two questions first. Then you can fill from Apple Health or a document.',
+              style: LtText.body(color: LtColors.secondary),
+            ),
+          ),
+        ),
+    ],
+  ];
 
   void _fasterSheet() {
     showModalBottomSheet<void>(
@@ -215,6 +260,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   ({int count, String source})? _shownImport;
 
   void _importChanged() {
+    _openPendingImport();
     final i = c.lastImport;
     if (i == null || identical(i, _shownImport)) return;
     _shownImport = i;
@@ -505,6 +551,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     bool header = false,
     bool crowded = false,
     bool hideKeyboard = false,
+    bool keyboardChip = false,
   }) {
     final keyboard = _keyboard;
     final compact = largeText(context) || crowded;
@@ -585,6 +632,20 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
                 onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
               ),
             ),
+          // Kept reachable while typing: a compact chip in its own row just above the keyboard,
+          // under the typing box and Send (never over them).
+          if (keyboardChip)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(_gutter, 0, _gutter, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ImportControl(
+                  collapsed: false,
+                  shortText: largeText(context),
+                  onTap: _importTap,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -602,6 +663,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     required String title,
     required String body,
     required List<Widget> buttons,
+    bool offerImport = false,
   }) => _page(
     frame: frame,
     windowOpacity: windowOpacity,
@@ -612,7 +674,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       _pad(_Card(child: Text(body, style: LtText.body(size: 19)))),
       const SizedBox(height: 12),
     ],
-    controls: buttons,
+    controls: [if (offerImport) ..._consentImport(), ...buttons],
   );
 
   Widget _consent(SwooshFrame frame, double w) {
@@ -623,6 +685,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       w,
       title: 'Talk with me?',
       body: _voiceCopy,
+      offerImport: true,
       buttons: [
         LipButton(label: "Yes, I'll talk", icon: Icons.mic_none_rounded, height: 72, onTap: () => _chooseVoice(true)),
         const SizedBox(height: 14),
@@ -668,6 +731,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     frame,
     w,
     title: 'Let an AI helper read hard answers?',
+    offerImport: true,
     body:
         "If I can't understand an answer, an AI service can read your words. "
         "It's off unless you say yes. You can change this in Settings.",
@@ -731,6 +795,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       line: line,
       crowded: crowded,
       hideKeyboard: keyboard && _showsTypingBox,
+      keyboardChip: keyboard && _importWanted,
       trailing: links ? LinkButton(label: 'Settings', icon: Icons.settings_outlined, onTap: _openSettings) : null,
       top: [
         // "Go back" (also once done, so an answer can still be changed or a skipped one
@@ -798,7 +863,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
               child: Row(
                 children: [
                   Flexible(
-                    child: ImportControl(collapsed: _importCollapsed || _importNote != null || largeText(context), onTap: _fasterSheet),
+                    child: ImportControl(collapsed: _importCollapsed || _importNote != null || largeText(context), onTap: _importTap),
                   ),
                   if (_importNote != null)
                     Expanded(
@@ -1425,8 +1490,11 @@ class _NoticeBox extends StatelessWidget {
 /// The one import control: a compact pill ("Fill from Apple Health or a document"), or after "Not now" a
 /// small icon in the same spot. Both are 48 pt targets and always reachable.
 class ImportControl extends StatelessWidget {
-  const ImportControl({super.key, required this.collapsed, required this.onTap});
+  const ImportControl({super.key, required this.collapsed, required this.onTap, this.shortText = false});
   final bool collapsed;
+
+  /// The shorter words, for the chip above the keyboard at large text. The spoken label stays whole.
+  final bool shortText;
   final VoidCallback onTap;
 
   static const label = 'Fill from Apple Health or a document';
@@ -1458,7 +1526,7 @@ class ImportControl extends StatelessWidget {
                   Flexible(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text(label, maxLines: 1, style: LtText.body(size: 16, weight: FontWeight.w700)),
+                      child: Text(shortText ? 'Fill from Health or document' : label, maxLines: 1, style: LtText.body(size: 16, weight: FontWeight.w700)),
                     ),
                   ),
                 ],

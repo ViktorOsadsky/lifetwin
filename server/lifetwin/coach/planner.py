@@ -54,6 +54,13 @@ from lifetwin.coach.safety import (
     words,
 )
 from lifetwin.onboarding.intents import EMERGENCY_MESSAGE
+from lifetwin.recommendations.levers import MIN_ADULT_AGE, UNDER_AGE
+
+# "Not for me" (the card's button) or the same said in words: a swap, not a retry.
+NOT_FOR_ME = re.compile(
+    r"\bnot for me\b|\bnot my thing\b|\b(?:don'?t|do not) (?:really )?(?:like|enjoy|want)\b|\bhate\b",
+    re.I,
+)
 
 LEVER_SOURCE = "docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z)"
 LEVER_ORDER = (
@@ -801,6 +808,11 @@ class Planner:
                 change = "swapped"
                 why = f"You said the weather got in the way, so today it's {activity.title.lower()}, indoors."
                 rule = "not_done, weather: swap to an indoor item"
+            elif status == "not_done" and NOT_FOR_ME.search(reason):
+                activity, note, minutes = fresh({prev_act.id})
+                change = "swapped"
+                why = f"You said {old} isn't for you, so today it's {activity.title.lower()}."
+                rule = "not_done, not for me: swap to the next allowed item"
             elif status == "not_done":
                 change, rule = "kept", "not_done: keep, no step up"
                 why = f"No rush. I kept {old} the same for today."
@@ -1339,6 +1351,8 @@ class Planner:
         texts = [self.req.said] + [f.reason for f in self.feedback.values()]
         if any(is_emergency(t) for t in texts):
             return self.emergency_plan()
+        if self.profile.age is not None and self.profile.age < MIN_ADULT_AGE:
+            return self.under_age_plan()
         self.read_said()
         self.read_readings()
         self.read_feedback_and_notes()
@@ -1559,6 +1573,37 @@ class Planner:
         out.extend(shown[: max(0, 10 - len(out) - len(items))])
         out.extend(item.message for item in items)
         return out[:10]
+
+    def under_age_plan(self) -> Plan:
+        self.trace.append(
+            TraceStep(
+                item_id="plan",
+                facts=[fact("profile.age", self.profile.age)],
+                rule="under_age_gate: the same adults-only reply as the recommendations; no plan",
+                evidence="server/lifetwin/recommendations/service.py (UNDER_AGE)",
+                action="adults-only reply, no plan",
+            )
+        )
+        return Plan(
+            status="under_age",
+            revision_id=None,
+            based_on=None,
+            inputs=None,
+            plan_type=None,
+            reused_previous=False,
+            clarify=None,
+            reply=UNDER_AGE,
+            lines=[UNDER_AGE],
+            items=[],
+            changes=[],
+            trace=self.trace,
+            mood="cozy",
+            emergency=False,
+            movement_paused=self.req.movement_paused,
+            memory_instruction=None,
+            drafts=[],
+            provider_blocked=True,
+        )
 
     def emergency_plan(self) -> Plan:
         self.trace.append(
