@@ -78,16 +78,31 @@ FIELD_WORDS = {
 }
 
 
+# Pydantic error types for a list or string over its maximum length.
+TOO_LONG = {"too_long", "string_too_long"}
+
+
 def invalid_input_message(exc: RequestValidationError) -> str:
     errors = exc.errors()
     if any(list(error.get("loc", []))[-1:] == ["voice_consent"] for error in errors):
         return "Please agree to use your voice first."
-    if any("pages" in list(error.get("loc", [])) for error in errors):
+
+    def about(field: str, too_long: bool) -> bool:
+        return any(
+            field in list(error.get("loc", [])) and (error.get("type") in TOO_LONG) == too_long
+            for error in errors
+        )
+
+    if about("pages", too_long=True):
         return "That document has too many pages or too much text. Please choose up to 10 pages."
-    if any("pdf_base64" in list(error.get("loc", [])) for error in errors):
+    if about("pdf_base64", too_long=True):
         return (
             "That PDF is too big to send. Please choose one under 10 MB, or read it on this phone."
         )
+    if about("pages", too_long=False):
+        return "We could not find any text to read. Please choose a document with text in it."
+    if about("pdf_base64", too_long=False):
+        return "We could not read that file as a PDF. Please choose a PDF and try again."
     if any(BP_ORDER_MESSAGE in str(error.get("msg", "")) for error in errors):
         return BP_ORDER_MESSAGE
     names = []

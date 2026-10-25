@@ -263,7 +263,7 @@
             ],
             "type": "string"
           },
-          "maxItems": 9,
+          "maxItems": 10,
           "title": "Skipped Fields",
           "type": "array"
         },
@@ -307,7 +307,7 @@
             ],
             "type": "string"
           },
-          "maxItems": 9,
+          "maxItems": 10,
           "title": "Unknown Fields",
           "type": "array"
         }

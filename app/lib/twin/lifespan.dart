@@ -224,11 +224,12 @@ class LifespanEstimate {
     final table = _lifeTable(profile, age, currentYear, logHazardShift);
     if (age < _checkedAges.low || age > _checkedAges.high) return table;
     final w = lifespanProjectionWeight(age);
+    // At exactly 35 and 79 the weight is 0: the pure life table, with its own method note.
+    if (w == 0) return table;
     // The projection steps whole years, so a fractional age runs it at the completed years
     // (the floor); the weight uses the fractional age.
     final whole = age == age.floor() ? profile : {...profile, 'age': age.floor()};
     final projection = lab == null ? null : _projection(whole, age, currentYear, lab, logHazardShift);
-    if (w == 0 && table != null && projection == null) return table;
     if (projection == null || (w < 1 && table == null)) return null;
     return w == 1 ? projection : _blend(table!, projection, w, age, currentYear);
   }

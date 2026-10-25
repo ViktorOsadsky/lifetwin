@@ -4,6 +4,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Request
 
+import lifetwin.onboarding  # noqa: F401,I001  (first: lifetwin.coach.* alone hit an import cycle)
 from lifetwin.coach.models import CoachPlanRequest, CoachPlanResponse
 from lifetwin.coach.phrasing import DailyCap, reword
 from lifetwin.coach.planner import Planner, StaleRevision, check_revision

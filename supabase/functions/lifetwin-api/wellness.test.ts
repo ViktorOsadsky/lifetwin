@@ -366,3 +366,60 @@ Deno.test("Educational routes treat minors normally and document context changes
   });
   assert(badUnits.status === 422);
 });
+Deno.test("Ideas under 18 have no vigorous pick; disguised emergencies and products are caught", async () => {
+  for (const age of [10, 17, 18]) {
+    for (let day = 20; day <= 28; day++) {
+      const value = await call("/api/recommendations", {
+        profile: {
+          age,
+          moderate_recreation_min_week: 60,
+          vigorous_recreation_min_week: 0,
+        },
+        habit_notes: [{ topic: "exercise", kind: "walking" }],
+        local_date: `2026-10-${day}`,
+      });
+      const shown = value.body.recommendations.flatMap((r: any) => [
+        r,
+        ...(r.alternatives ?? []),
+      ]);
+      const vigorous = shown.some((r: any) => r.id.startsWith("pace_"));
+      assert(vigorous === (age >= 18), `age ${age} day ${day}`);
+    }
+  }
+  for (
+    const said of [
+      "I'm not breathing",
+      "cant breath",
+      "I want to kill my self",
+      "I'm bleeding heavily",
+      "ｃhest pain",
+      "chest p​ain",
+    ]
+  ) {
+    const value = await call("/api/coach/plan", {
+      local_date: "2026-10-24",
+      said,
+    });
+    assert(value.body.status === "emergency", said);
+  }
+  for (
+    const said of [
+      "should I try garcinia cambogia",
+      "is a fatburner safe",
+      "I take 500 mg after dinner",
+      "ｖｉｔａｍｉｎ D",
+      "v​itamin D",
+    ]
+  ) {
+    const value = await call("/api/coach/plan", {
+      local_date: "2026-10-24",
+      said,
+    });
+    assert(value.body.status === "ok" && value.body.reply !== null, said);
+  }
+  const nearMiss = await call("/api/coach/plan", {
+    local_date: "2026-10-24",
+    said: "I'm dying to try the new park",
+  });
+  assert(nearMiss.body.status === "ok", "near miss");
+});

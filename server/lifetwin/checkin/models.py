@@ -38,9 +38,10 @@ class CheckinState(ApiModel):
     # Weekly only: answers said early, beside another answer. Each is read back when its
     # own question comes up, which is then not asked.
     early: CheckinValues = Field(default_factory=CheckinValues)
-    skipped_fields: list[CheckinField] = Field(default_factory=list, max_length=9)
+    # Ten: the nine questions, and the diastolic number beside the systolic one.
+    skipped_fields: list[CheckinField] = Field(default_factory=list, max_length=10)
     # "I don't know": left out, distinct from skipped, not asked again this check-in.
-    unknown_fields: list[CheckinField] = Field(default_factory=list, max_length=9)
+    unknown_fields: list[CheckinField] = Field(default_factory=list, max_length=10)
     # From the app (onboarding's memory_consent). Without it there are no habit
     # follow-ups and no habit notes.
     memory_consent: bool = False
@@ -81,6 +82,19 @@ class CheckinState(ApiModel):
     # "older" (60 and over) keeps gardening and pottering about; "younger" uses the gym,
     # running, cycling, the commute and desk time; null uses examples for anyone.
     age_band: Literal["younger", "older"] | None = None
+
+    @field_validator("local_date")
+    @classmethod
+    def real_local_date(cls, value: str | None) -> str | None:
+        # A real calendar day with a day on either side (the quick rows go back one).
+        if value is not None:
+            try:
+                day = date.fromisoformat(value)
+            except ValueError:
+                raise ValueError("local_date must be a real date") from None
+            if not (date.min < day < date.max) or not value.isascii():
+                raise ValueError("local_date must be a real date")
+        return value
 
     @model_validator(mode="after")
     def consistent_state(self):
