@@ -142,7 +142,7 @@ void main() {
     await t.pump();
     expect(find.text('Health score'), findsOneWidget);
     expect(find.text('Check in'), findsOneWidget);
-    expect(find.text('Today with Mochi'), findsOneWidget);
+    expect(find.textContaining('Today', findRichText: true), findsOneWidget);
     final scroll = t.state<ScrollableState>(find.byType(Scrollable).first);
     expect(scroll.position.maxScrollExtent, 0);
   });

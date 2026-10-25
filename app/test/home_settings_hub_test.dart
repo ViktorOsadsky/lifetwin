@@ -57,7 +57,7 @@ void main() {
     await pumpApp(t);
     expect(find.text('Health score'), findsOneWidget);
     expect(find.text('Check in'), findsOneWidget);
-    expect(find.text('Today with Mochi'), findsOneWidget);
+    expect(find.textContaining('Today', findRichText: true), findsOneWidget);
     for (final gone in ['Use my Apple Health', 'Upload a document', 'My data & privacy', 'What I see', 'Hanging out']) {
       expect(find.text(gone), findsNothing, reason: gone);
     }

@@ -73,9 +73,16 @@ class HomeWellnessPanel extends StatelessWidget {
     final title = Row(
       children: [
         Expanded(
-          child: Semantics(
-            header: true,
-            child: WholeWordText('Health score', style: LtText.display(22)),
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 10,
+            children: [
+              Semantics(
+                header: true,
+                child: WholeWordText('Health score', style: LtText.display(22)),
+              ),
+              if (compact && stateLine != null) WholeWordText(stateLine!, style: LtText.body(size: 15)),
+            ],
           ),
         ),
         info,
@@ -118,7 +125,7 @@ class HomeWellnessPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           title,
-          if (!big && score != null)
+          if (!big && !compact && score != null)
             Padding(
               padding: const EdgeInsets.only(right: 8, bottom: 4),
               child: WholeWordText(HomeWellnessPanel.tagline, style: LtText.body(size: 15)),
@@ -161,7 +168,7 @@ class HomeWellnessPanel extends StatelessWidget {
               padding: EdgeInsets.only(right: 8),
               child: Align(alignment: Alignment.centerLeft, child: RoughGuideBadge(caveat: extrapolationCaveat)),
             ),
-          if (stateLine != null)
+          if (!compact && stateLine != null)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: WholeWordText(stateLine!, style: LtText.body(size: 15)),

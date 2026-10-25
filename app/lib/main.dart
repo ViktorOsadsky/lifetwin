@@ -549,6 +549,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           wellness: _wellness?.snapshot ?? const WellnessSnapshot(),
           onHistory: _wellness == null ? null : () => _history(context),
           onQuiz: () => _playQuiz(context),
+          onExperiment: _wellness == null ? null : () => _agentic.experiment(context),
           onDrivers: () => _agentic.drivers(context),
           onBand: _wellness == null ? null : () => _agentic.bandFlow(context),
           onSettings: _wellness == null ? null : () => _settings(context),
@@ -559,7 +560,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               : GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: () => _agentic.todayPlan(context, onTalk: () => _talk(context)),
-                  child: _agentic.todayCard(context, onTalk: () => _talk(context)),
+                  child: _agentic.todayCard(context, onTalk: () => _talk(context), condensed: true),
                 ),
         ),
       ),
