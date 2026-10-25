@@ -13,19 +13,20 @@
   "documents": {
    "text_extraction": true,
    "pdf": {
-    "provider": "local",
-    "display_name": null,
-    "company": null,
+    "provider": "claude",
+    "display_name": "Claude by Anthropic",
+    "company": "Anthropic",
     "configured": false,
+    "may_train_on_content": false,
     "endpoint": "/api/documents/read",
     "max_bytes": 10485760,
     "max_pages": 20
    }
   },
   "conversation": {
-   "provider": "muse",
-   "display_name": "Muse by Meta",
-   "company": "Meta",
+   "provider": "claude",
+   "display_name": "Claude by Anthropic",
+   "company": "Anthropic",
    "configured": false,
    "may_train_on_content": false,
    "routes": [
@@ -35,9 +36,9 @@
    ]
   },
   "personalize": {
-   "provider": "muse",
-   "display_name": "Muse by Meta",
-   "company": "Meta",
+   "provider": "claude",
+   "display_name": "Claude by Anthropic",
+   "company": "Anthropic",
    "configured": false,
    "may_train_on_content": false
   },
@@ -46,9 +47,9 @@
    "planner": "deterministic_catalog",
    "runs": "on_app_open_or_resume",
    "personalize": {
-    "provider": "muse",
-    "display_name": "Muse by Meta",
-    "company": "Meta",
+    "provider": "claude",
+    "display_name": "Claude by Anthropic",
+    "company": "Anthropic",
     "configured": false,
     "may_train_on_content": false,
     "daily_cap_per_client": 30
@@ -68,10 +69,11 @@
   "documents": {
    "text_extraction": true,
    "pdf": {
-    "provider": "muse",
-    "display_name": "Muse by Meta",
-    "company": "Meta",
+    "provider": "claude",
+    "display_name": "Claude by Anthropic",
+    "company": "Anthropic",
     "configured": false,
+    "may_train_on_content": false,
     "endpoint": "/api/documents/read",
     "max_bytes": 10485760,
     "max_pages": 20

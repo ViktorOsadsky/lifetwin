@@ -34,38 +34,42 @@ export async function takeBudget(
   }
 }
 
+/**
+ * Owner ruling (2026-10-25): "switch out to Claude API officially". Claude is the
+ * provider for every call; without ANTHROPIC_API_KEY it is unconfigured and the local
+ * rules answer. Muse by Meta only when a setting names it explicitly
+ * (server/lifetwin/core/config.py).
+ */
 export function selectedProvider(config: Config): "muse" | "claude" {
-  return config.PERSONALIZE_PROVIDER === "claude" ||
-      (!config.PERSONALIZE_PROVIDER && Boolean(config.ANTHROPIC_API_KEY))
-    ? "claude"
-    : "muse";
+  return (config.PERSONALIZE_PROVIDER ?? "").trim().toLowerCase() === "muse"
+    ? "muse"
+    : "claude";
 }
 
 /**
- * Owner ruling (2026-10-25): conversation turns (onboarding, check-in, change) are read
- * by Claude once it is set up, whatever LLM_PROVIDER or PERSONALIZE_PROVIDER say:
- * CONVERSATION_PROVIDER, blank meaning "claude" with ANTHROPIC_API_KEY, else "muse"
- * (server/lifetwin/core/config.py). "local" makes no model call.
+ * Who reads conversation turns (onboarding, check-in, change): CONVERSATION_PROVIDER,
+ * blank meaning "claude". "muse" is an explicit opt-in; "local" makes no model call.
  */
 export function conversationProvider(
   config: Config,
 ): "claude" | "muse" | "local" {
   const named = (config.CONVERSATION_PROVIDER ?? "").trim().toLowerCase();
   if (named === "claude" || named === "muse" || named === "local") return named;
-  return (config.ANTHROPIC_API_KEY ?? "").trim() ? "claude" : "muse";
+  return "claude";
 }
 
 /**
  * The config for a conversation turn's model calls, its provider as PERSONALIZE_PROVIDER.
- * "muse" is the shared AI helper per LLM_PROVIDER, as on the server.
+ * "muse" (opted in) is the shared AI helper per LLM_PROVIDER, as on the server: Muse only
+ * with LLM_PROVIDER=chat_completions as well.
  */
 export function conversationConfig(config: Config): Config {
   return {
     ...config,
-    PERSONALIZE_PROVIDER: conversationProvider(config) === "claude" ||
-        config.LLM_PROVIDER === "anthropic"
-      ? "claude"
-      : "muse",
+    PERSONALIZE_PROVIDER: conversationProvider(config) === "muse" &&
+        config.LLM_PROVIDER === "chat_completions"
+      ? "muse"
+      : "claude",
   };
 }
 

@@ -540,7 +540,8 @@ def test_a_crash_logs_the_exception_type_not_the_request(caplog, monkeypatch):
 
 def test_capabilities_name_the_provider_and_company_for_the_consent_copy(flow):
     p = flow["capabilities"]["personalize"]
-    assert (p["display_name"], p["company"]) == ("Muse by Meta", "Meta")
+    # Owner ruling (2026-10-25): Claude by Anthropic out of the box; Muse only when opted in.
+    assert (p["display_name"], p["company"]) == ("Claude by Anthropic", "Anthropic")
     # Out of the box nothing is configured and nothing is claimed about training.
     assert p["configured"] is False and p["may_train_on_content"] is False
     c = flow["capabilities_contributor"]["personalize"]

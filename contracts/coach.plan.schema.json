@@ -626,6 +626,7 @@
       "default": "templates",
       "enum": [
         "templates",
+        "claude",
         "muse"
       ],
       "title": "Phrased By",

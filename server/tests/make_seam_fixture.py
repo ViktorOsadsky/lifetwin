@@ -85,7 +85,8 @@ def apply_profile_update(profile: dict, update: dict) -> dict:
 
 
 def contributor_app() -> TestClient:
-    """A keyless-in-practice app whose Muse model is a "-contributor" one (may train on content).
+    """A keyless-in-practice app explicitly opted into a "-contributor" Muse model (may train
+    on content). Since the owner ruling of 2026-10-25 Muse is never the default.
 
     The key is a dummy and is never used: only /api/capabilities is called.
     """
@@ -95,6 +96,8 @@ def contributor_app() -> TestClient:
                 _env_file=None,
                 app_env="test",
                 llm_provider="chat_completions",
+                personalize_provider="muse",
+                conversation_provider="muse",
                 llm_api_key="dummy-never-sent",
                 llm_model="muse-contributor",
                 llm_allow_contributor=True,

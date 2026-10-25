@@ -291,17 +291,15 @@ async def test_muse_is_off_unless_enabled():
     assert calls == []
 
 
-def test_app_offers_muse_by_default_and_can_switch_it_off():
-    app = create_app(settings(llm_provider="chat_completions", llm_api_key="k", llm_model="m"))
+def test_app_offers_muse_only_when_opted_in_and_can_switch_it_off():
+    muse = dict(llm_provider="chat_completions", llm_api_key="k", llm_model="m")
+    # Owner ruling (2026-10-25): LLM_PROVIDER alone is not a documents opt-in.
+    app = create_app(settings(**muse))
+    assert app.state.document_service.muse_available is False
+    assert app.state.document_service.provider == "claude"
+    app = create_app(settings(**muse, document_provider="muse"))
     assert app.state.document_service.muse_available is True
-    app = create_app(
-        settings(
-            llm_provider="chat_completions",
-            llm_api_key="k",
-            llm_model="m",
-            document_muse_enabled=False,
-        )
-    )
+    app = create_app(settings(**muse, document_provider="muse", document_muse_enabled=False))
     assert app.state.document_service.muse_available is False
     # Without a configured provider there is nothing to send to, whatever the flag says.
     app = create_app(settings())

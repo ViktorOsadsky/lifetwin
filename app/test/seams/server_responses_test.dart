@@ -212,7 +212,8 @@ void main() {
 
     test('capabilities: provider, company and training flag come from the server', () {
       final plain = AiProvider.fromCapabilities(at('capabilities'))!;
-      expect((plain.id, plain.displayName, plain.company), ('muse', 'Muse by Meta', 'Meta'));
+      // Owner ruling (2026-10-25): Claude by Anthropic is the provider by default.
+      expect((plain.id, plain.displayName, plain.company), ('claude', 'Claude by Anthropic', 'Anthropic'));
       expect(plain.configured, isFalse);
       expect(plain.trainingLine, isNull, reason: 'nothing is claimed when the server does not say so');
       final contributor = AiProvider.fromCapabilities(extras(at('capabilities_contributor')))!;
@@ -500,7 +501,8 @@ void main() {
     testWidgets('claims nothing about training when the server does not', (t) async {
       final p = AiProvider.fromCapabilities(at('capabilities'))!;
       await pumpConsent(t, p);
-      expect(find.text('With Muse by Meta'), findsOneWidget);
+      expect(find.text('With Claude by Anthropic'), findsOneWidget);
+      expect(find.textContaining('Meta'), findsNothing);
       expect(find.textContaining('improve its AI'), findsNothing);
     });
 

@@ -381,7 +381,7 @@ class CoachPlanResponse(ApiModel):
     emergency: bool = False
     movement_paused: bool = False
     memory_instruction: MemoryInstruction | None = None
-    phrased_by: Literal["templates", "muse"] = "templates"
+    phrased_by: Literal["templates", "claude", "muse"] = "templates"
     provider_status: Literal[
         "not_requested", "not_configured", "used", "fallback", "unavailable", "daily_cap"
     ] = "not_requested"

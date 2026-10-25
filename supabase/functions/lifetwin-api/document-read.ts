@@ -114,13 +114,9 @@ const unreadable = () =>
     "That file doesn't look like a PDF. Please choose another one, or read it on this phone.",
   );
 export function documentInfo(config: Config) {
-  const provider = config.DOCUMENT_PROVIDER?.trim() ||
-    (config.ANTHROPIC_API_KEY?.trim()
-      ? "claude"
-      : config.LLM_PROVIDER === "chat_completions" &&
-          !/^(false|0)$/i.test(config.DOCUMENT_MUSE_ENABLED ?? "true")
-      ? "muse"
-      : "local");
+  // Owner ruling (2026-10-25): Claude by default (unconfigured without its key, so the
+  // phone reads the PDF); "muse" or "local" only when DOCUMENT_PROVIDER names them.
+  const provider = config.DOCUMENT_PROVIDER?.trim() || "claude";
   return {
     provider,
     display_name: provider === "claude"
@@ -138,6 +134,8 @@ export function documentInfo(config: Config) {
         config.ANTHROPIC_API_KEY?.trim() &&
           (config.CLAUDE_MODEL ?? "claude-haiku-5-5").trim(),
       ),
+    // Only Claude reads whole PDFs, and it does not train on them.
+    may_train_on_content: false,
     endpoint: "/api/documents/read",
     max_bytes: MAX_BYTES,
     max_pages: MAX_PAGES,

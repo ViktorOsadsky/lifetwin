@@ -15,31 +15,35 @@ class Settings(BaseSettings):
     app_env: Literal["development", "test", "production"] = "development"
     openai_api_key: SecretStr = SecretStr("")
     openai_model: str = ""
-    # Conversation-guide provider: "openai" keeps the OPENAI_* settings above, "chat_completions"
-    # is Muse (LLM_*), "anthropic" is Claude (ANTHROPIC_API_KEY, CLAUDE_MODEL). Unset (or
-    # blank): Claude when ANTHROPIC_API_KEY is present, else "openai".
+    # Owner ruling (2026-10-25): "switch out to Claude API officially". Every provider setting
+    # below defaults to Claude (ANTHROPIC_API_KEY, CLAUDE_MODEL). Without the key the Claude
+    # adapters stay unconfigured and the local rules answer; nothing goes to Muse by Meta.
+    # Muse is reachable only by naming it ("chat_completions" / "muse") with the LLM_* values.
+    #
+    # The AI helper: "anthropic" is Claude, "chat_completions" is Muse (LLM_*), "openai"
+    # keeps the OPENAI_* settings above. Unset (or blank): "anthropic".
     llm_provider: Literal["openai", "chat_completions", "anthropic"] | None = None
     llm_base_url: str = ""
     llm_model: str = ""
     llm_api_key: SecretStr = SecretStr("")
-    # "-contributor" Muse models may be trained on by Meta: refused unless this is true.
+    # Muse opt-in only: "-contributor" Muse models may be trained on by Meta, so they are
+    # refused unless this is true. Claude (the default) never needs it.
     llm_allow_contributor: bool = False
     # Reasoning models (e.g. Muse) spend the token budget thinking unless effort is limited.
     llm_reasoning_effort: Literal["", "minimal", "low", "medium", "high"] = "minimal"
-    # Coach rewording (Muse, with consent): calls per client per day, and its time budget.
+    # Coach rewording (the personalize provider, with consent): calls per client per day, and its time budget.
     coach_llm_daily_cap: int = Field(default=30, ge=0, le=10000)
     coach_llm_timeout_seconds: float = Field(default=10, gt=0, le=20)
     # Outside-AI wording for Mochi's lines and suggestions, used only with the person's
-    # consent for this provider. "muse" reuses the LLM_* key and model; "claude" uses
-    # ANTHROPIC_API_KEY and CLAUDE_MODEL. Unset (or blank): "claude" when ANTHROPIC_API_KEY
-    # is present, else "muse".
+    # consent for this provider: ideas/recommendations, the coach plan. "claude" uses
+    # ANTHROPIC_API_KEY and CLAUDE_MODEL; "muse" (explicit opt-in only) reuses the LLM_* key
+    # and model. Unset (or blank): "claude".
     personalize_provider: Literal["muse", "claude"] | None = None
     # Who reads and words a conversation turn (onboarding, check-in, change): every model
     # call made while Mochi listens. Owner ruling (2026-10-25): Claude decides voice turns.
     # "claude" uses ANTHROPIC_API_KEY and CLAUDE_MODEL for the AI helper and the wording,
     # whatever LLM_PROVIDER and PERSONALIZE_PROVIDER say; "muse" keeps those two settings
-    # (the earlier behaviour); "local" calls no outside AI. Unset (or blank): "claude"
-    # when ANTHROPIC_API_KEY is present, else "muse".
+    # (explicit opt-in only); "local" calls no outside AI. Unset (or blank): "claude".
     conversation_provider: Literal["claude", "muse", "local"] | None = None
     # Short onboarding demo: at most one habit follow-up. Same questions, same order, the
     # memory question and the Apple Health offer after age, sex and smoking stay.
@@ -71,14 +75,14 @@ class Settings(BaseSettings):
     max_document_body_bytes: int = Field(
         default=393216, ge=1024, le=1048576, validation_alias="API_MAX_DOCUMENT_BODY_BYTES"
     )
-    # Muse may read identifier-stripped document text only when this is on AND the person
-    # agreed. Off by default pending the owner's ruling (docs/document-upload.md).
+    # The outside AI may read identifier-stripped document text only when this is on AND the
+    # person agreed for that provider (docs/document-upload.md).
     document_muse_enabled: bool = True
     # Who reads a whole PDF the person chose (POST /api/documents/read), with their yes for
-    # this document. "claude" uses ANTHROPIC_API_KEY and CLAUDE_MODEL; "muse" and "local"
-    # leave PDFs to the phone ("local" also turns off the outside-AI help for recognised
-    # text). Unset (or blank): "claude" when ANTHROPIC_API_KEY is present, else the earlier
-    # behaviour ("muse" when Muse may read document text, else "local").
+    # this document; it also selects who may help with recognised text. "claude" uses
+    # ANTHROPIC_API_KEY and CLAUDE_MODEL; "muse" (explicit opt-in, with
+    # LLM_PROVIDER=chat_completions) helps with recognised text only and leaves PDFs to the
+    # phone; "local" calls no outside AI. Unset (or blank): "claude".
     document_provider: Literal["local", "muse", "claude"] | None = None
     # Claude reading a PDF: its time budget (the request deadline grows to fit it).
     document_read_timeout_seconds: float = Field(default=25, gt=0, le=30)
@@ -107,21 +111,18 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def default_providers(self):
-        # Owner ruling (2026-10-24): Claude by default once an Anthropic key is configured;
-        # Muse (and the OpenAI extractor) stay selectable, and stay the default without it.
-        claude = bool(self.anthropic_api_key.get_secret_value().strip())
+        # Owner ruling (2026-10-25, supersedes "Muse for now" of 2026-10-24): "switch out to
+        # Claude API officially". Claude is the default for every call; with no
+        # ANTHROPIC_API_KEY its adapters are unconfigured, so the local rules answer and
+        # nothing goes to Muse. Muse stays one explicit setting away.
         if self.llm_provider is None:
-            self.llm_provider = "anthropic" if claude else "openai"
+            self.llm_provider = "anthropic"
         if self.personalize_provider is None:
-            self.personalize_provider = "claude" if claude else "muse"
+            self.personalize_provider = "claude"
         if self.conversation_provider is None:
-            # Owner ruling (2026-10-25): conversation turns go to Claude once it is set up,
-            # even when LLM_PROVIDER or PERSONALIZE_PROVIDER name Muse for the rest.
-            self.conversation_provider = "claude" if claude else "muse"
+            self.conversation_provider = "claude"
         if self.document_provider is None:
-            # Owner ruling (2026-10-25): PDFs go to Claude, with consent, when it is set up.
-            muse = self.document_muse_enabled and self.llm_provider == "chat_completions"
-            self.document_provider = "claude" if claude else "muse" if muse else "local"
+            self.document_provider = "claude"
         return self
 
     @field_validator("cors_origins")

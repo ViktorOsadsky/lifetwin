@@ -684,6 +684,17 @@ def test_readings_never_reach_the_provider():
     assert "higher than before" not in sent  # notices are fixed text, never reworded
 
 
+def test_claude_rewording_is_reported_and_needs_consent_for_claude():
+    # Owner ruling (2026-10-25): Claude is the coach's provider; "claude" is a valid phrased_by.
+    fake = FakeMuse()
+    fake.name = "claude"
+    client, _ = make_client(fake)
+    body = post(client, {**PERSONAL, "outside_ai_consent": {"muse": True}})
+    assert body["phrased_by"] == "templates" and not fake.calls
+    body = post(client, {**PERSONAL, "outside_ai_consent": {"claude": True}})
+    assert body["phrased_by"] == "claude" and len(fake.calls) == 1
+
+
 def test_provider_gets_only_drafts_never_names_profile_or_words():
     fake = FakeMuse()
     client, _ = make_client(fake)
@@ -789,8 +800,10 @@ def test_provider_lines_naming_energy_drinks_or_caffeine_pills_fall_back(line):
 def test_capabilities_name_the_real_provider():
     client, _ = make_client()
     coach = client.get("/api/capabilities").json()["coach"]
-    assert coach["personalize"]["display_name"] == "Muse by Meta"
-    assert coach["personalize"]["provider"] == "muse"
+    # Owner ruling (2026-10-25): Claude is the provider, even with no key configured.
+    assert coach["personalize"]["display_name"] == "Claude by Anthropic"
+    assert coach["personalize"]["provider"] == "claude"
+    assert coach["personalize"]["may_train_on_content"] is False
     assert coach["runs"] == "on_app_open_or_resume"
 
 
@@ -1051,7 +1064,9 @@ def test_feedback_without_the_latest_revision_is_refused():
 
 def _muse_caps(model, allow):
     settings = Settings(
+        _env_file=None,
         llm_provider="chat_completions",
+        personalize_provider="muse",
         llm_api_key="k",
         llm_model=model,
         llm_allow_contributor=allow,

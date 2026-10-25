@@ -8,7 +8,7 @@ session draws the real screens.
 ## Owner rulings this design follows
 
 - History lives on the phone. The server stores nothing.
-- Outside LLMs only after the person is told and agrees. Muse now, shown as **"Muse by Meta"**.
+- Outside LLMs only after the person is told and agrees. Claude, shown as **"Claude by Anthropic"** (owner ruling 2026-10-25: "switch out to Claude API officially"; Muse by Meta is an explicit opt-in only).
 - No direct edits. A value is used only after a read-back confirmation ("Is this right?"). A "No" discards it and the
   person gives the right value by talking or typing to Mochi, the mascot. There is never a free-form edit field.
 
@@ -155,7 +155,10 @@ Response, `200`:
    and add `conflicting_values`. Blood pressure keeps up to 6 distinct readings, newest first.
 7. **Two patients.** Two different names on "Patient:" or "Name:" lines mean nothing is offered (`multiple_patients`).
 
-### Muse by Meta (optional, consented)
+### Muse by Meta (explicit opt-in only, consented)
+
+Since the owner ruling of 2026-10-25 ("switch out to Claude API officially") Claude by Anthropic helps with recognised text by default (`DOCUMENT_PROVIDER` blank, `outside_ai_consent: {"claude": true}`), under the same rules below. Muse applies only with `DOCUMENT_PROVIDER=muse` and `LLM_PROVIDER=chat_completions`.
+
 
 - Muse is used only if all of these hold: the request has `outside_ai_consent: true`, the server is configured for
   Muse (`LLM_PROVIDER=chat_completions`), and `DOCUMENT_MUSE_ENABLED=true`, which is **on by default** (owner ruling: Muse on, with consent;
@@ -262,7 +265,7 @@ pickers are native sheets and were not driven by the test.
 
 - Showing the "Document" source label in the forecast screens (the source is recorded: `recordImport(..., source: 'document')` and a `document` history entry).
 
-- **Ruled:** document text may go to Muse with the person's consent (owner, 2026-10-24). Muse's retention terms are
+- **Ruled (superseded 2026-10-25 by "switch out to Claude API officially": Claude by default):** document text may go to Muse with the person's consent (owner, 2026-10-24). Muse's retention terms are
   still unverified; the consent copy must not claim any retention promise until they are checked.
 - **Ruled (Tier-1, owner, 2026-10-25): document notes are long-term context.** "Keep document notes into
   long-term context (most of it stays in the onboarding info)."

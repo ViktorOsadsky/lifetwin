@@ -97,7 +97,7 @@ After building, the lead runs two fresh critics. The gate is both scoring at lea
 - **Combined changes are evaluated together, not summed.** Show ONE combined "Modeled difference between profiles" for the whole what-if twin, not a sum of per-lever numbers. Per-lever previews may show each lever alone, labelled as such.
 
 ## Owner rulings, batch 2 (relayed by the engine session, 2026-10-24)
-1. **Outside AI:** "use muse for now, but we will do things with claude later". The consent copy reads the provider from `/api/capabilities` → `personalize.display_name`. It's "Muse by Meta" today and "Claude by Anthropic" later, with no copy change. Show "Muse by Meta" as the current example and note that it's dynamic.
+1. **Outside AI:** "use muse for now, but we will do things with claude later". **Superseded by the owner ruling of 2026-10-25: "switch out to Claude API officially". Claude by Anthropic is now the provider; Muse is an explicit opt-in only.** The consent copy reads the provider from `/api/capabilities` → `personalize.display_name`. It's "Muse by Meta" today and "Claude by Anthropic" later, with no copy change. Show "Muse by Meta" as the current example and note that it's dynamic.
 2. **Supplements** are never suggested, in any recommendation or copy.
 3. **988** comes later and is NOT in the current designs. The emergency line stays 911 only.
 4. **Memory is opt-in,** asked early in onboarding and framed as improving results, e.g. "Can I remember the little things you tell me? It helps me give you better, more personal suggestions. You can change this any time." There's also a Settings toggle. "Mochi's notebook" (habit notes) appears only when memory is on.

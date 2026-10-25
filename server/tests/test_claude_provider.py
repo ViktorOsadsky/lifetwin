@@ -20,7 +20,7 @@ from lifetwin.core import claude as claude_module
 from lifetwin.core.config import Settings
 from lifetwin.documents.models import DocumentExtractRequest
 from lifetwin.documents.service import DocumentService
-from lifetwin.onboarding import AnthropicExtractor, ChatCompletionsExtractor, OpenAIExtractor
+from lifetwin.onboarding import AnthropicExtractor, ChatCompletionsExtractor
 from lifetwin.onboarding.intents import SAFETY_PHRASE
 from lifetwin.onboarding.providers import ExtractionUnavailable
 from lifetwin.personalize.providers import (
@@ -42,6 +42,7 @@ PROVIDER_ENV = (
     "OPENAI_MODEL",
     "LLM_ALLOW_CONTRIBUTOR",
     "CONVERSATION_PROVIDER",
+    "DOCUMENT_PROVIDER",
 )
 REQUEST = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
 
@@ -86,14 +87,88 @@ def capabilities(app) -> dict:
 # -- selection -------------------------------------------------------------------
 
 
-def test_without_an_anthropic_key_the_defaults_are_unchanged():
+def test_without_an_anthropic_key_nothing_goes_to_muse():
+    # Owner ruling (2026-10-25): Claude is the default everywhere; with no key its adapters
+    # are unconfigured, so the local rules answer and no outside AI is called.
     settings = Settings(_env_file=None)
-    assert (settings.llm_provider, settings.personalize_provider) == ("openai", "muse")
-    app = app_for()
+    assert (
+        settings.llm_provider,
+        settings.personalize_provider,
+        settings.conversation_provider,
+        settings.document_provider,
+    ) == ("anthropic", "claude", "claude", "claude")
+    # Muse values alone (key, model, contributor flag) are not an opt-in.
+    for env in ({}, {"LLM_API_KEY": "m", "LLM_MODEL": "muse-spark-1.3-contributor"}):
+        app = app_for(**env, LLM_ALLOW_CONTRIBUTOR="true")
+        for adapter in (
+            app.state.personalizer,
+            app.state.coach_phraser,
+            app.state.conversation_service.extractor,
+            app.state.conversation_personalizer,
+            app.state.checkin_service.personalizer,
+            app.state.document_service.extractor,
+        ):
+            assert not isinstance(adapter, (MusePersonalizer, ChatCompletionsExtractor))
+            assert adapter.configured is False
+        caps = capabilities(app)
+        assert caps["llm_configured"] is False
+        for block in (caps["personalize"], caps["coach"]["personalize"], caps["conversation"]):
+            assert block["provider"] == "claude"
+            assert block["configured"] is False
+            assert block["may_train_on_content"] is False
+        assert caps["documents"]["pdf"]["configured"] is False
+
+
+def test_only_an_anthropic_key_makes_every_route_claude():
+    app = app_for(ANTHROPIC_API_KEY="k")
+    for adapter in (
+        app.state.personalizer,
+        app.state.coach_phraser,
+        app.state.conversation_personalizer,
+        app.state.checkin_service.personalizer,
+    ):
+        assert isinstance(adapter, ClaudePersonalizer) and adapter.configured
+    assert isinstance(app.state.conversation_service.extractor, AnthropicExtractor)
+    assert isinstance(app.state.document_service.extractor, AnthropicExtractor)
+    assert app.state.document_service.provider == "claude"
+    assert app.state.document_service.pdf_reader.configured
+    caps = capabilities(app)
+    claude = {"provider": "claude", "display_name": "Claude by Anthropic", "company": "Anthropic"}
+    blocks = [
+        caps["personalize"],
+        caps["coach"]["personalize"],
+        caps["conversation"],
+        caps["documents"]["pdf"],
+    ]
+    for block in blocks:
+        assert {k: block[k] for k in claude} == claude
+        assert block["configured"] is True
+    for block in blocks:
+        assert block["may_train_on_content"] is False
+    assert "muse" not in json.dumps(caps).lower() and "meta" not in json.dumps(caps).lower()
+
+
+def test_muse_is_used_only_when_explicitly_opted_in():
+    muse = {"LLM_API_KEY": "m", "LLM_MODEL": "muse-model"}
+    # LLM_PROVIDER=chat_completions alone moves no route: each route names Muse itself.
+    app = app_for(ANTHROPIC_API_KEY="k", LLM_PROVIDER="chat_completions", **muse)
+    assert isinstance(app.state.personalizer, ClaudePersonalizer)
+    assert isinstance(app.state.conversation_service.extractor, AnthropicExtractor)
+    assert isinstance(app.state.document_service.extractor, AnthropicExtractor)
+    app = app_for(
+        LLM_PROVIDER="chat_completions",
+        PERSONALIZE_PROVIDER="muse",
+        CONVERSATION_PROVIDER="muse",
+        DOCUMENT_PROVIDER="muse",
+        **muse,
+    )
     assert isinstance(app.state.personalizer, MusePersonalizer)
-    assert isinstance(app.state.conversation_service.extractor, OpenAIExtractor)
-    assert app.state.document_service.extractor is None
-    assert capabilities(app)["personalize"]["provider"] == "muse"
+    assert isinstance(app.state.conversation_service.extractor, ChatCompletionsExtractor)
+    assert isinstance(app.state.document_service.extractor, ChatCompletionsExtractor)
+    assert app.state.document_service.provider == "muse"
+    caps = capabilities(app)
+    assert caps["personalize"]["company"] == "Meta"
+    assert caps["conversation"]["provider"] == "muse"
 
 
 def test_an_anthropic_key_makes_claude_the_default_when_providers_are_unset():
@@ -127,9 +202,9 @@ def test_explicit_env_selects_either_provider():
         LLM_MODEL="muse-model",
     )
     assert isinstance(app.state.personalizer, MusePersonalizer)
-    # Owner ruling (2026-10-25): conversation turns still go to Claude.
+    # Owner ruling (2026-10-25): conversation turns and documents still go to Claude.
     assert isinstance(app.state.conversation_service.extractor, AnthropicExtractor)
-    assert app.state.document_service.provider == "muse"
+    assert app.state.document_service.provider == "claude"
     app = app_for(
         ANTHROPIC_API_KEY="k",
         LLM_PROVIDER="chat_completions",

@@ -434,6 +434,7 @@ def test_capabilities_name_claude_for_documents_and_muse_stays_pinned():
         "display_name": "Claude by Anthropic",
         "company": "Anthropic",
         "configured": True,
+        "may_train_on_content": False,
         "endpoint": "/api/documents/read",
         "max_bytes": MAX_PDF_BYTES,
         "max_pages": 20,
@@ -443,10 +444,12 @@ def test_capabilities_name_claude_for_documents_and_muse_stays_pinned():
 
 
 def test_without_an_anthropic_key_pdfs_stay_on_the_phone():
+    # Owner ruling (2026-10-25): Claude is the default; without its key it is unconfigured,
+    # and naming Muse for the AI helper does not move documents to Muse.
     settings = Settings(_env_file=None)
-    assert settings.document_provider == "local"
+    assert settings.document_provider == "claude"
     muse = Settings(_env_file=None, llm_provider="chat_completions")
-    assert muse.document_provider == "muse"
+    assert muse.document_provider == "claude"
     assert Settings(_env_file=None, anthropic_api_key=KEY).document_provider == "claude"
     assert (
         Settings(_env_file=None, anthropic_api_key=KEY, document_provider="local").document_provider

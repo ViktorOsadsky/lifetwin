@@ -830,7 +830,15 @@ def test_recommendations_route_uses_only_the_consented_active_provider():
 
 @pytest.mark.parametrize(("setting", "name"), [("muse", "muse"), ("claude", "claude")])
 def test_capabilities_name_the_provider_that_would_be_called(setting, name):
-    app = create_app(Settings(_env_file=None, app_env="test", personalize_provider=setting))
+    # CONVERSATION_PROVIDER=muse (explicit opt-in) keeps the shared personalizer.
+    app = create_app(
+        Settings(
+            _env_file=None,
+            app_env="test",
+            personalize_provider=setting,
+            conversation_provider="muse",
+        )
+    )
     personalize = TestClient(app).get("/api/capabilities").json()["personalize"]
     assert personalize == {
         "provider": name,
