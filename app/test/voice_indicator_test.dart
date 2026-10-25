@@ -299,7 +299,7 @@ void main() {
       await end(t);
     });
 
-    testWidgets('VC-7 Typing: "Not listening", the text field, Send; "Talk instead" returns to Mochi speaking', (
+    testWidgets('VC-7 Typing: "Not listening", the text field, Send; "Talk instead" just listens, no re-read', (
       t,
     ) async {
       await open(t);
@@ -314,18 +314,15 @@ void main() {
       expect(find.text('Send'), findsOneWidget);
       expect(find.text('Talk instead'), findsOneWidget);
       await shot(t, 'vc_7_typing');
-      output.replayGate = Completer<void>();
+      final spoken = output.spoken.length;
       await t.tap(find.text('Talk instead'));
       await t.pump();
       await t.pump(const Duration(milliseconds: 300));
-      expect(c.phase, VoicePhase.speaking);
-      expect(output.replays, 1, reason: 'Mochi repeats the question');
-      expect(input.listening, isFalse);
-      expect(find.text('Mochi is talking'), findsOneWidget);
-      expectRings({}); // Mochi talking: no ring.
-      output.replayGate!.complete();
-      await t.pump();
-      await t.pump(const Duration(milliseconds: 300));
+      // Owner: a question Mochi already said is not read again; the mic just listens.
+      expect(output.replays, 0);
+      expect(output.spoken.length, spoken);
+      expect(c.phase, VoicePhase.listening);
+      expect(input.listening, isTrue);
       expect(find.text('Listening…'), findsOneWidget);
       await end(t);
     });
@@ -452,15 +449,14 @@ void main() {
       await t.pump(const Duration(milliseconds: 300));
       expect(find.text('Not listening'), findsOneWidget);
       expect(find.byKey(ring['listening']!), findsNothing);
-      output.replayGate = Completer<void>();
       await t.tap(find.text('Talk instead'));
       await t.pump();
       await t.pump(const Duration(milliseconds: 300));
-      expect(c.phase, CheckinPhase.speaking);
-      expect(find.text('Mochi is talking'), findsOneWidget);
-      expect(find.byKey(ring['listening']!), findsNothing);
-      output.replayGate!.complete();
-      await t.pump();
+      // Owner: a question Mochi already said is not read again; the mic just listens.
+      expect(output.replays, 0);
+      expect(c.phase, CheckinPhase.listening);
+      expect(find.text('Listening'), findsOneWidget);
+      expect(find.byKey(ring['listening']!), findsOneWidget);
       await t.pumpWidget(const SizedBox());
     });
   });

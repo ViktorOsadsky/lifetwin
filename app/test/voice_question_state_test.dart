@@ -235,6 +235,27 @@ void main() {
       });
     });
 
+    test('back to voice, back on screen or mic on, on a question already said: no re-read, it just listens', () {
+      fakeAsync((fa) {
+        begin(fa);
+        run(fa, () => c.setTyping(true));
+        run(fa, () => c.setTyping(false));
+        expect(c.phase, VoicePhase.listening);
+        run(fa, c.pauseVoice);
+        c.resumeVoice();
+        fa.flushMicrotasks();
+        expect(c.phase, VoicePhase.listening);
+        run(fa, c.turnMicOff);
+        c.turnMicOn();
+        fa.flushMicrotasks();
+        expect(c.phase, VoicePhase.listening);
+        expect(output.spoken, ['Hello! I am Mochi. How old are you?']);
+        expect(output.replays, 0);
+        run(fa, c.hearAgain); // the explicit way to hear it again
+        expect(output.replays, 1);
+      });
+    });
+
     test('starts once: the opening and first question are said a single time', () {
       fakeAsync((fa) {
         begin(fa);
@@ -436,6 +457,27 @@ void main() {
         expect(output.spoken.where((s) => s == sitting).length, 1);
         expect(c.phase, CheckinPhase.listening);
         expect(c.savedNumber, 1);
+      });
+    });
+
+    test('back to voice, back on screen or mic on, on a question already said: no re-read, it just listens', () {
+      fakeAsync((fa) {
+        begin(fa);
+        run(fa, () => c.setTyping(true));
+        run(fa, () => c.setTyping(false));
+        expect(c.phase, CheckinPhase.listening);
+        run(fa, c.pauseVoice);
+        c.resumeVoice();
+        fa.flushMicrotasks();
+        expect(c.phase, CheckinPhase.listening);
+        run(fa, c.turnMicOff);
+        c.turnMicOn();
+        fa.flushMicrotasks();
+        expect(c.phase, CheckinPhase.listening);
+        expect(output.spoken, ['How did you sleep last night?']);
+        expect(output.replays, 0);
+        run(fa, c.hearAgain);
+        expect(output.replays, 1);
       });
     });
 

@@ -804,13 +804,11 @@ class CheckinController extends ChangeNotifier {
     }
     _set(() => typing = value);
     if (!value) {
-      // Back to voice: Mochi says the open question (never an older one), then listens. Once
-      // done, nothing is said or heard. While a reply is on its way, the reply is said instead.
-      if (continuous && canHearAgain && _restingPhase != CheckinPhase.done && !_busy) {
-        unawaited(hearAgain());
-      } else {
-        _listenAgain();
-      }
+      // Back to voice (owner): a question Mochi already said is not read again, the mic just
+      // listens; one not said yet (it came while typing) is said once first. Once done,
+      // nothing is said or heard; while a reply is on its way, the reply is said instead.
+      // "Hear it again" is the way to replay.
+      _listenAgain(sayFirst: true);
     }
   }
 
