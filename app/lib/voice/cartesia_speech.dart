@@ -14,6 +14,10 @@ typedef SocketConnector = WebSocketChannel Function(Uri uri);
 
 WebSocketChannel _defaultConnect(Uri uri) => WebSocketChannel.connect(uri);
 
+/// Counts microphone starts. The recorder sets its own audio session when it starts, so
+/// playback set up before a listen must be set up again after it.
+int _micStarts = 0;
+
 String _newContextId() {
   final r = Random.secure();
   return List.generate(16, (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
@@ -74,11 +78,18 @@ class FlutterPcmSoundPlayer implements PcmPlayer {
   int _frames = 0;
   final _drain = PlaybackDrain();
 
+  /// The playback session that is set up now (null when released), and the mic start count
+  /// at setup. Consecutive lines with no listen between them reuse it instead of
+  /// releasing and setting up the audio session again.
+  int? _sessionRate;
+  int _sessionMic = -1;
+
   @override
   Future<void> begin(int sampleRate) async {
     _rate = sampleRate;
     _frames = 0;
     _drain.reset();
+    if (_sessionRate == sampleRate && _sessionMic == _micStarts) return;
     // `playback` uses the loudspeaker. The plugin sets `playAndRecord` without
     // `defaultToSpeaker`, which iOS routes to the quiet phone-call earpiece.
     // The microphone (record package) sets its own playAndRecord + defaultToSpeaker,
@@ -86,6 +97,8 @@ class FlutterPcmSoundPlayer implements PcmPlayer {
     // `playback` also plays when the silent switch is on.
     await FlutterPcmSound.setup(sampleRate: sampleRate, channelCount: 1, iosAudioCategory: IosAudioCategory.playback);
     FlutterPcmSound.setFeedCallback(_drain.remaining);
+    _sessionRate = sampleRate;
+    _sessionMic = _micStarts;
   }
 
   @override
@@ -106,7 +119,12 @@ class FlutterPcmSoundPlayer implements PcmPlayer {
 
   @override
   Future<void> stop() async {
+    final idle = _drain.drained;
     _drain.reset();
+    // Nothing queued: keep the session for the next line. Queued audio can only be dropped
+    // by releasing.
+    if (idle && _sessionRate != null) return;
+    _sessionRate = null;
     FlutterPcmSound.setFeedCallback(null);
     await FlutterPcmSound.release();
   }
@@ -157,10 +175,10 @@ class CartesiaSpeechOutput implements SpeechOutput {
     var gotAudio = false;
     StreamSubscription<dynamic>? sub;
     try {
-      await ch.ready;
-      if (_contextId != id) return;
       _lastRate = token.ttsSampleRate;
-      await _player.begin(token.ttsSampleRate);
+      // The socket opens while the player sets up.
+      await Future.wait([ch.ready, _player.begin(token.ttsSampleRate)]);
+      if (_contextId != id) return;
       final finished = Completer<void>();
       sub = ch.stream.listen(
         (m) async {
@@ -300,6 +318,7 @@ class CartesiaSpeechInput implements SpeechInput {
     _pause = PauseDetector();
     _flushesOwed = 0;
     _early.clear();
+    _micStarts++;
     // The mic starts before the token and the socket, so the first words are not lost:
     // the screen already says "listening". Audio waits in [_early] until the socket is open.
     final stream = await _recorder.startStream(

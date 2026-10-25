@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,7 @@ import 'engine_fakes.dart';
 
 void main() {
   drainTests();
+  speakingTests();
 
   group('listening', () {
     late TokenServer server;
@@ -55,6 +57,31 @@ void main() {
       await starting;
       await pumpEventQueue();
       expect(sockets.made, isEmpty);
+    });
+  });
+}
+
+/// The context id of the last speak request on [s].
+String contextOf(FakeSocket s) => (jsonDecode(s.texts.last) as Map)['context_id'] as String;
+
+void speakingTests() {
+  group('speaking', () {
+    test('the player sets up while the socket opens, not after', () async {
+      final server = TokenServer();
+      final sockets = Sockets(autoOpen: false);
+      final player = FakePlayer();
+      final out = CartesiaSpeechOutput(tokens: server.provider, player: player, connect: sockets.connect);
+      final speaking = out.speak('Hello');
+      await pumpEventQueue();
+      expect(sockets.made, hasLength(1));
+      expect(player.calls, contains('begin'), reason: 'begun before the socket is open');
+      sockets.last.open();
+      await pumpEventQueue();
+      final id = contextOf(sockets.last);
+      sockets.last.reply({'context_id': id, 'data': base64Encode(loudChunk())});
+      sockets.last.reply({'context_id': id, 'type': 'done'});
+      await speaking;
+      expect(player.calls, ['stop', 'begin', 'feed', 'finish']);
     });
   });
 }
