@@ -433,28 +433,21 @@ void main() {
         );
       }
 
-      // ---- "Use my Apple Health" on the first question: open, then cancel ----
+      // ---- The opening (3fc79e9): no Health button on the first question, one plain "Try saying" line;
+      // Apple Health and documents are in the "Fill this in faster" pill, which waits for question 3 ----
       {
-        final before = c.turn;
-        await pumpFor(t, const Duration(milliseconds: 800)); // the chip ignores taps right after a new turn
-        final opened = await tapButton(t, 'Use my Apple Health', seconds: 3);
-        final intro = await waitUntil(t, () => shows(find.text('Use Apple Health?')), seconds: 5);
-        await log('  health intro: ${shows(find.byType(HealthImportScreen)) ? screenText() : '(not shown)'}');
-        // Never "Yes, use Apple Health": that would bring up the real HealthKit sheet.
-        final cancelled = await tapButton(t, "No thanks, I'll answer myself", seconds: 5);
-        final back = await waitUntil(
-          t,
-          () => !shows(find.byType(HealthImportScreen)) && shows(find.byKey(const ValueKey('answer-field'))),
-          seconds: 5,
-        );
-        await pumpFor(t, const Duration(milliseconds: 300));
-        final same = identical(c.turn, before) && c.mascotLine.contains(memoryQuestion);
-        final ok = opened && intro && cancelled && back && same;
+        await pumpFor(t, const Duration(milliseconds: 800));
+        final text = screenText();
+        final noButton = !shows(find.widgetWithText(LipButton, 'Use my Apple Health'));
+        final noPill = !shows(find.byType(FasterPill));
+        final trySaying = text.contains('Try saying');
+        final onMemory = c.mascotLine.contains(memoryQuestion);
+        final ok = noButton && noPill && trySaying && onMemory;
         await record(
-          'Apple Health from the first question: open + cancel',
+          'Opening: no first-question Health button, pill waits',
           ok,
-          'opened=$opened intro=$intro cancelled=$cancelled backOnMemory=$same notice="${c.notice}"',
-          ok ? '' : 'screen: ${screenText()}',
+          'noHealthButton=$noButton noPillYet=$noPill trySaying=$trySaying onMemory=$onMemory',
+          ok ? '' : 'screen: $text',
         );
       }
 
