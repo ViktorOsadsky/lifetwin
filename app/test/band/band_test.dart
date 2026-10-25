@@ -404,6 +404,76 @@ void main() {
       },
     );
 
+    Future<(TwinRepository, BandStore, BandService)> panelWithOffer() async {
+      final repo = await repoWith(30);
+      final store = BandStore(StubBandClient(), now: () => today);
+      await store.pair(const BandDevice(name: 'LifeTwin Band'));
+      for (final m in week([11, 11, 11, 11, 3, 3, 3], [6, 7, 6, 4, 0, 0, 0])) {
+        store.addMinute(m);
+      }
+      return (repo, store, BandService(repository: repo, now: () => today));
+    }
+
+    // The real app pushes the offer or read-back over the panel; the panel must refresh when it returns.
+    Widget panelOver(BandStore store, BandService svc, {required bool readback}) => Builder(
+      builder: (context) => BandPanelScreen(
+        store: store,
+        service: svc,
+        onBack: () {},
+        onSettings: () {},
+        onUseSuggestion: (o) => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (s) => readback
+                ? BandReadbackScreen(
+                    service: svc,
+                    suggestion: o,
+                    appearance: const TwinAppearance(),
+                    onClose: () => Navigator.of(s).pop(),
+                  )
+                : BandSuggestScreen(
+                    service: svc,
+                    store: store,
+                    suggestion: o,
+                    appearance: const TwinAppearance(),
+                    onBack: () => Navigator.of(s).pop(),
+                    onUse: () {},
+                  ),
+          ),
+        ),
+      ),
+    );
+
+    testWidgets('panel: after Yes, save the suggestion is gone and the saved state shows', (t) async {
+      final (repo, store, svc) = await panelWithOffer();
+      await pump(t, panelOver(store, svc, readback: true));
+      await t.tap(find.text('Week'));
+      await t.pump();
+      expect(find.text('Mochi has a suggestion'), findsOneWidget);
+      await t.tap(find.text('Mochi has a suggestion'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Yes, save'));
+      await t.pumpAndSettle();
+      expect(repo.profile['moderate_recreation_min_week'], 40);
+      await t.tap(find.text('Close'));
+      await t.pumpAndSettle();
+      expect(find.text('Mochi has a suggestion'), findsNothing);
+      expect(find.text('Saved: about 40 minutes a week'), findsOneWidget);
+    });
+
+    testWidgets('panel: after Not now the suggestion is gone and nothing is saved', (t) async {
+      final (repo, store, svc) = await panelWithOffer();
+      await pump(t, panelOver(store, svc, readback: false));
+      await t.tap(find.text('Week'));
+      await t.pump();
+      await t.tap(find.text('Mochi has a suggestion'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Not now'));
+      await t.pumpAndSettle();
+      expect(find.text('Mochi has a suggestion'), findsNothing);
+      expect(find.textContaining('Saved:'), findsNothing);
+      expect(repo.profile['moderate_recreation_min_week'], 30);
+    });
+
     testWidgets('settings: what is sent, nothing for an AI provider, unpair erases band days', (t) async {
       final store = BandStore(StubBandClient(), now: () => today);
       await store.pair(const BandDevice(name: 'LifeTwin Band'));
