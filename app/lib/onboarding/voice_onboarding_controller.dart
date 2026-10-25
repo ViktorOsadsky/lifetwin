@@ -250,6 +250,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _nudged = false;
       _drops = 0;
       _spokeMascotLine = false;
+      _paused = false;
       _retry = null;
       _lastReply = null;
       _pendingHealth = null;
