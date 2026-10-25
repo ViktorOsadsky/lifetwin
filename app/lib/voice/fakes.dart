@@ -59,6 +59,10 @@ class FakeSpeechInput implements SpeechInput {
   Object? startError;
   Object? finishError;
 
+  /// Thrown by [warmUp] if set.
+  Object? warmUpError;
+  int warmUps = 0;
+
   int starts = 0;
   int finishes = 0;
   int cancels = 0;
@@ -70,15 +74,30 @@ class FakeSpeechInput implements SpeechInput {
   @override
   Future<bool> hasPermission() async => permission == null ? true : permission!.future;
 
+  /// The latest listen's callbacks, so a test can send words or drop the connection later.
+  void Function(String text)? onCaption;
+  void Function(Object error)? onDropped;
+
   @override
-  Future<void> start(void Function(String text) onCaption) async {
+  Future<void> warmUp() async {
+    warmUps++;
+    if (warmUpError != null) throw warmUpError!;
+  }
+
+  @override
+  Future<void> start(void Function(String text) onCaption, {void Function(Object error)? onDropped}) async {
     starts++;
     if (startError != null) throw startError!;
     if (!await hasPermission()) throw const MicDeniedException(); // as the real recorder does
+    this.onCaption = onCaption;
+    this.onDropped = onDropped;
     for (final c in captions) {
       onCaption(c);
     }
   }
+
+  /// The connection is lost while listening.
+  void drop([Object error = const VoiceFailure('dropped')]) => onDropped?.call(error);
 
   @override
   Future<String> finish() async {

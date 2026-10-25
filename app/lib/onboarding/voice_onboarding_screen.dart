@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -143,12 +144,67 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   /// After two answers, or when Mochi offers Apple Health. Gone once something was imported or dismissed.
   bool get _pillWanted =>
       !_pillDismissed &&
+      !_offerVisible &&
       c.phase != VoicePhase.done &&
       c.turn != null &&
       !c.emergency &&
       (c.questionNumber ?? 0) >= 3 &&
       c.lastImport == null &&
       (widget.onUseHealth != null || widget.onUploadDocument != null);
+
+  // ---- the offer in the conversation ------------------------------------------
+
+  /// The inline "Want to save time?" offer was answered (a button, or an import by the pill). It is shown
+  /// once; after that the pill is the shortcut.
+  bool _offerAnswered = false;
+
+  /// Shown when the server offers Apple Health, or on the client by question 3 if it has not. Never at
+  /// the same moment as the pill.
+  bool get _offerVisible =>
+      !_offerAnswered &&
+      c.lastImport == null &&
+      c.phase != VoicePhase.done &&
+      c.phase != VoicePhase.listening &&
+      c.turn != null &&
+      !c.emergency &&
+      !c.confirming &&
+      (widget.onUseHealth != null || widget.onUploadDocument != null) &&
+      (c.healthOffer || (c.questionNumber ?? 0) >= 3);
+
+  void _answerOffer(VoidCallback? then) {
+    setState(() => _offerAnswered = true);
+    then?.call();
+  }
+
+  List<Widget> _inlineOffer() => [
+    WholeWordText(
+      'Want to save time? I can fill some of this from Apple Health or a health document.',
+      style: LtText.body(weight: FontWeight.w700),
+    ),
+    const SizedBox(height: 12),
+    if (widget.onUseHealth != null) ...[
+      LipButton(
+        label: 'Use Apple Health',
+        icon: Icons.favorite_border_rounded,
+        kind: LipKind.secondary,
+        height: 64,
+        onTap: () => _answerOffer(_useHealth),
+      ),
+      const SizedBox(height: 10),
+    ],
+    if (widget.onUploadDocument != null) ...[
+      LipButton(
+        label: 'Upload a document',
+        icon: Icons.description_outlined,
+        kind: LipKind.secondary,
+        height: 64,
+        onTap: () => _answerOffer(widget.onUploadDocument),
+      ),
+      const SizedBox(height: 10),
+    ],
+    LinkButton(label: 'Keep talking', onTap: () => _answerOffer(null)),
+    const SizedBox(height: 14),
+  ];
 
   void _fasterSheet() {
     showModalBottomSheet<void>(
@@ -870,6 +926,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     }
     final quick = !c.typing && c.quickAnswers.isNotEmpty;
     return [
+      if (_offerVisible && (!keyboard || c.healthOffer)) ..._inlineOffer(),
       // The offer after an answer the server could not read, first so it is seen.
       if (c.helperWouldHelp && !busy) ...[
         LipButton(
@@ -885,7 +942,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       if (quick) TalkButton(controller: c, compact: true) else ..._answerControls(busy, keyboard),
       // On the first question, and when Mochi offers it (or the person just said yes):
       // Apple Health, right under Talk (or Send). Shown with the keyboard too at the offer.
-      if (widget.onUseHealth != null && c.phase != VoicePhase.listening && c.healthOffer) ...[
+      if (widget.onUseHealth != null && c.phase != VoicePhase.listening && c.healthOffer && !_offerVisible) ...[
         const SizedBox(height: 12),
         _healthButton(),
       ],
@@ -1156,7 +1213,7 @@ class TalkButton extends StatefulWidget {
 }
 
 class _TalkButtonState extends State<TalkButton> {
-  static const _holdThreshold = Duration(milliseconds: 600);
+  static const _holdThreshold = Duration(seconds: 1);
   DateTime? _downAt;
   bool _stoppedByThisPress = false;
 
@@ -1178,6 +1235,8 @@ class _TalkButtonState extends State<TalkButton> {
     final at = _downAt;
     if (_stoppedByThisPress || at == null) return;
     _downAt = null;
+    // Letting go while the mic is still opening would send nothing ("I didn't hear anything"): keep listening.
+    if (c.micStarting) return;
     // A long press is "hold to talk": letting go sends. A short tap keeps listening.
     if (DateTime.now().difference(at) >= _holdThreshold) c.stopTalk();
   }
@@ -1193,10 +1252,14 @@ class _TalkButtonState extends State<TalkButton> {
     final listening = c.phase == VoicePhase.listening;
     final busy = c.phase == VoicePhase.interpreting;
     final left = c.listenSecondsLeft;
+    // The very first question, before any answer: the button says it takes talking or typing.
+    final opening = !widget.compact && c.questionNumber == 1 && c.caption.isEmpty && c.phase == VoicePhase.idle;
     final label = busy
         ? 'One moment…'
         : c.phase == VoicePhase.speaking
         ? 'Tap to answer'
+        : opening
+        ? 'Talk or type'
         : 'Tap to talk';
     final big = largeText(context);
 
@@ -1285,18 +1348,27 @@ class _TalkButtonState extends State<TalkButton> {
         lip: 5,
         radius: 30,
         enabled: !busy,
-        child: lay(mic, WholeWordText(label, textAlign: TextAlign.center, style: LtText.display(26))),
+        child: lay(
+          opening
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [mic, const SizedBox(width: 6), const Icon(Icons.keyboard_outlined, size: 30, color: LtColors.ink)],
+                )
+              : mic,
+          WholeWordText(label, textAlign: TextAlign.center, style: LtText.display(26)),
+        ),
       );
     }
 
     return Semantics(
       button: true,
       enabled: !busy,
-      label: busy ? label : (listening ? 'Stop listening' : 'Talk'),
+      label: busy ? label : (listening ? 'Stop listening' : (opening ? 'Talk or type' : 'Talk')),
       value: listening ? 'Listening' : 'Not listening',
       hint: busy ? null : (listening ? 'Double tap when you are done' : 'Double tap, then speak'),
       excludeSemantics: true,
       onTap: busy ? null : () => listening ? c.stopTalk() : c.startTalk(),
+      customSemanticsActions: opening ? {const CustomSemanticsAction(label: 'Type instead'): () => c.setTyping(true)} : null,
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: _down,

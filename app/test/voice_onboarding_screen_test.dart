@@ -98,6 +98,8 @@ void main() {
       ),
     );
     await choose(t, "No, I'll type");
+    await t.tap(find.text('Keep talking')); // the inline offer, answered; the pill is the later shortcut
+    await t.pumpAndSettle();
     expect(find.text('Fill this in faster'), findsOneWidget);
     await t.tap(find.text('Fill this in faster'));
     await t.pumpAndSettle();
@@ -129,9 +131,76 @@ void main() {
       ),
     );
     await choose(t, "No, I'll type");
+    await t.tap(find.text('Keep talking'));
+    await t.pumpAndSettle();
     await t.tap(find.byIcon(Icons.close_rounded));
     await t.pump();
     expect(find.text('Fill this in faster'), findsNothing);
+  });
+
+  group('the inline offer to fill this in from Apple Health or a document', () {
+    Future<(VoiceOnboardingController, List<String>)> open(WidgetTester t) async {
+      t.view.physicalSize = const Size(390, 844);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      final c = VoiceOnboardingController(
+        guide: ThirdQuestionGuide(),
+        input: FakeSpeechInput(),
+        output: FakeSpeechOutput(),
+      );
+      final opened = <String>[];
+      await t.pumpWidget(
+        MaterialApp(
+          home: VoiceOnboardingScreen(
+            controller: c,
+            onDone: (_) {},
+            onUseHealth: () => opened.add('health'),
+            onUploadDocument: () => opened.add('document'),
+          ),
+        ),
+      );
+      await choose(t, "No, I'll type");
+      return (c, opened);
+    }
+
+    const ask = 'Want to save time? I can fill some of this from Apple Health or a health document.';
+
+    testWidgets('appears once by question 3, without the pill beside it; Keep talking brings the pill', (t) async {
+      await open(t);
+      expect(find.text(ask), findsOneWidget);
+      expect(find.text('Use Apple Health'), findsOneWidget);
+      expect(find.text('Upload a document'), findsOneWidget);
+      expect(find.text('Fill this in faster'), findsNothing, reason: 'never both at once');
+      await t.tap(find.text('Keep talking'));
+      await t.pumpAndSettle();
+      expect(find.text(ask), findsNothing, reason: 'offered once');
+      expect(find.text('Fill this in faster'), findsOneWidget);
+    });
+
+    testWidgets('Use Apple Health opens the Health import, once', (t) async {
+      final (_, opened) = await open(t);
+      await t.pump(const Duration(milliseconds: 700)); // a fresh question ignores a tap at first
+      await t.tap(find.text('Use Apple Health'));
+      await t.pumpAndSettle();
+      expect(opened, ['health']);
+      expect(find.text(ask), findsNothing);
+    });
+
+    testWidgets('Upload a document opens the document upload, once', (t) async {
+      final (_, opened) = await open(t);
+      await t.tap(find.text('Upload a document'));
+      await t.pumpAndSettle();
+      expect(opened, ['document']);
+      expect(find.text(ask), findsNothing);
+    });
+
+    testWidgets('not offered before question 3, and not after an import', (t) async {
+      final r = Rig();
+      await r.pump(t);
+      await choose(t, "No, I'll type");
+      expect(r.c.questionNumber, 1);
+      expect(find.text('Want to save time?', findRichText: true, skipOffstage: false), findsNothing);
+    });
   });
 
   testWidgets('an emergency pauses calmly: Call 911 is a tap, Continue sends resume and asks the question again', (
@@ -237,7 +306,7 @@ void main() {
     await r.pump(t);
     await choose(t, "No, I'll type");
     expect(find.text('How old are you?'), findsOneWidget);
-    expect(find.text('Tap to talk'), findsNothing);
+    expect(find.text('Talk or type'), findsNothing);
     expect(r.output.spoken, isEmpty);
     // The opening is decluttered: one plain example, no Health button (the pill carries it).
     expect(find.text('Use my Apple Health'), findsNothing);
@@ -256,10 +325,10 @@ void main() {
     expect(find.text('How old are you?'), findsOneWidget);
     expect(r.output.spoken, ['How old are you?']);
     expect(find.text('Hear it again'), findsOneWidget);
-    expect(find.text('Tap to talk'), findsOneWidget);
+    expect(find.text('Talk or type'), findsOneWidget);
 
     r.input.captions = ['I am 70'];
-    await t.tap(find.text('Tap to talk')); // quick tap = start
+    await t.tap(find.text('Talk or type')); // quick tap = start
     await t.pumpAndSettle();
     expect(find.text('Hearing:'), findsOneWidget);
     expect(find.text('I am 70'), findsOneWidget);
@@ -284,11 +353,29 @@ void main() {
     final g = await t.startGesture(t.getCenter(find.byType(TalkButton)));
     await t.pump();
     expect(r.c.phase, VoicePhase.listening);
-    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 700)));
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 1100)));
     await g.up();
     await t.pumpAndSettle();
     expect(r.input.finishes, 1);
     expect(find.text('Yes'), findsOneWidget);
+  });
+
+  testWidgets('letting go while the mic is still opening does not send; it keeps listening', (t) async {
+    final r = Rig();
+    await r.pump(t);
+    await choose(t, "Yes, I'll talk");
+    r.input.permission = Completer<bool>(); // the mic is "starting" until this is answered
+    final g = await t.startGesture(t.getCenter(find.byType(TalkButton)));
+    await t.pump();
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 1100)));
+    await g.up();
+    await t.pump();
+    r.input.permission!.complete(true);
+    await t.pumpAndSettle();
+    expect(r.input.finishes, 0, reason: 'a release before the mic opened is not "send"');
+    expect(r.c.phase, VoicePhase.listening);
+    await r.c.stopTalk(); // stops the listening clock
+    await t.pumpAndSettle();
   });
 
   testWidgets('mic denied: plain message stays, typing box appears', (t) async {
@@ -296,7 +383,7 @@ void main() {
     r.input.startError = const MicDeniedException();
     await r.pump(t);
     await choose(t, "Yes, I'll talk");
-    await t.tap(find.text('Tap to talk'));
+    await t.tap(find.text('Talk or type'));
     await t.pumpAndSettle();
     expect(find.textContaining('open Settings'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
@@ -309,9 +396,9 @@ void main() {
     r.input.transcript = '';
     await r.pump(t, scale: 2.0);
     await choose(t, "Yes, I'll talk");
-    await t.ensureVisible(find.text('Tap to talk'));
+    await t.ensureVisible(find.text('Talk or type'));
     await t.pumpAndSettle();
-    await t.tap(find.text('Tap to talk'));
+    await t.tap(find.text('Talk or type'));
     await t.pumpAndSettle();
     await t.ensureVisible(find.byType(TalkButton));
     await t.pumpAndSettle();
@@ -458,7 +545,7 @@ void main() {
     final r = Rig();
     await r.pump(t);
     await choose(t, "No, I'll type");
-    expect(find.text('Tap to talk'), findsNothing);
+    expect(find.text('Talk or type'), findsNothing);
     final talk = find.text('Talk instead');
     await t.ensureVisible(talk);
     expect(
@@ -479,7 +566,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text("Yes, I'll talk"));
     await t.pumpAndSettle();
-    expect(find.text('Tap to talk'), findsOneWidget);
+    expect(find.text('Talk or type'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
     await t.ensureVisible(find.text('Type instead'));
     await t.tap(find.text('Type instead'));
@@ -645,7 +732,7 @@ void main() {
       for (final l in ['Female', 'Male', 'Not sure', 'I smoke now']) {
         expect(find.text(l), findsNothing);
       }
-      expect(find.text('Tap to talk'), findsOneWidget);
+      expect(find.text('Talk or type'), findsOneWidget);
     });
 
     testWidgets('no buttons while confirming, or while correcting', (t) async {

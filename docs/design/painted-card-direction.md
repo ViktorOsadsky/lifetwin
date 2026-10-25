@@ -59,6 +59,8 @@ Notes:
 - The four always-filled inputs suggest onboarding should ask about sitting time, diabetes, blood pressure and self-rated health.
 
 > **Tier-1 decision (team):** a true "when you die" age range would need a model that supports it. Until the team decides, the fortune shows horizon survival only.
+>
+> **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [docs/lifespan-estimate.md](../lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else.
 
 ## 3. Visual system
 

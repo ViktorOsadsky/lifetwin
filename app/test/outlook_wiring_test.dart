@@ -83,7 +83,7 @@ void main() {
     );
     await t.pump();
     await t.pump();
-    await t.tap(find.text('What moves it'));
+    await t.tap(find.byTooltip('What moves your score'));
     await t.pumpAndSettle();
     expect(find.byType(OutlookDriversScreen), findsOneWidget);
     expect(find.text('Linked with a lower modeled outlook'), findsWidgets);
@@ -130,7 +130,7 @@ void main() {
     // A change saved through Mochi (or a weekly check-in).
     await repo.saveConversationProfile({'age': 71});
     await t.pumpAndSettle();
-    await t.tap(find.text('See your estimate'));
+    await t.tap(find.text('Your estimate'));
     await t.pumpAndSettle();
     await t.tap(find.text('Ask the ball'));
     await t.pumpAndSettle();

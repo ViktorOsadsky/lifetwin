@@ -399,8 +399,8 @@ void main() {
       expect(find.text('Getting to know you'), findsOneWidget);
       expect(find.text('about 88 in 100'), findsNothing);
       forecast.answers.add(forecastFrom(supportedJson()));
-      await t.ensureVisible(find.text('See your estimate'));
-      await t.tap(find.text('See your estimate'));
+      await t.ensureVisible(find.text('Your estimate'));
+      await t.tap(find.text('Your estimate'));
       await pumpUntil(t, find.byType(FortuneCeremonyScreen));
       await t.pumpAndSettle();
       await t.tap(find.text('Ask the ball'));
@@ -423,8 +423,8 @@ void main() {
       // Left unfinished: the Room no longer offers a forecast from the older answers.
       Navigator.of(t.element(find.byType(VoiceOnboardingScreen))).pop();
       await t.pumpAndSettle();
-      await t.ensureVisible(find.text('See your estimate'));
-      await t.tap(find.text('See your estimate'));
+      await t.ensureVisible(find.text('Your estimate'));
+      await t.tap(find.text('Your estimate'));
       await t.pump();
       expect(find.text(RoomScreen.talkFirst), findsOneWidget);
       await frames(t, 3);

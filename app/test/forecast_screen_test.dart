@@ -245,6 +245,6 @@ void main() {
     expect(find.byType(RoomScreen), findsOneWidget);
     expect(find.text('Getting to know you'), findsOneWidget);
     expect(find.text('about 88 in 100'), findsNothing);
-    expect(find.text('See your estimate'), findsOneWidget);
+    expect(find.text('Your estimate'), findsOneWidget);
   });
 }

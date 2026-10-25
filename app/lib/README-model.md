@@ -18,6 +18,7 @@ This folder (`lib/twin/`) is the data and logic layer behind the forecast, "expe
 - Label the curve `TwinAssessment.survivalTitle` ("Modeled survival of similar people").
 - Label comparisons `ExperimentResult.title` ("Modeled difference between profiles"). `causalInterpretation` is always false.
 - Never show a death date, an age at death or years gained.
+  - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [docs/lifespan-estimate.md](../../docs/lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else. API: `repo.lifespanEstimate` and `lifespanRevealSeen` (see "Lifespan reveal" below).
 - Nothing is filled in. A missing answer is never replaced by a typical or healthy value. The "We assumed" section is gone.
 
 ## Ages 18–34 and 80–85 (extrapolated)
@@ -38,28 +39,44 @@ The age term is linear: the package encodes `age_decade = (age − 55) / 10` (ch
 
 ## Health score
 
-The app's health score is the model owner's own number: `log_relative_hazard_score` from `LifeTwinModel.predict()`, used as is (no rescaling, no sign flip, no bands, no 0–100 mapping). It is Σ(encoded input − centre) × coefficient, the log relative hazard against the average survey participant, so it **includes the age and sex terms**. In practice it runs about −3 to +3. **Lower is better** (lower modelled risk); 0 is the average survey participant.
+**Higher is better** (owner ruling, 2026-10-24: "higher should mean better health rating"). 0 is the average survey participant; the typical range is about −3 to +3.
+
+The score is the model owner's own number, `log_relative_hazard_score` from `LifeTwinModel.predict()`, with its sign flipped and nothing else (no rescaling, no bands, no 0–100 mapping). That number is Σ(encoded input − centre) × coefficient, the log relative hazard against the average survey participant, so the score **includes the age and sex terms**. The raw value (lower is lower modelled risk) stays available as `rawLogRelativeHazard`. The sign flip lives in ONE function, `healthScoreFromRaw` in `twin_model.dart`, so a new scoring from the model owner drops in there.
 
 | API | Meaning |
 |---|---|
-| `TwinAssessment.healthScore` / `TwinRepository.healthScore` | `double?`; null unless the model gave a number. Never filled with defaults |
+| `TwinAssessment.healthScore` / `TwinRepository.healthScore` | `double?`, higher is better; null unless the model gave a number. Never filled with defaults |
+| `TwinAssessment.rawLogRelativeHazard` / `TwinRepository.rawLogRelativeHazard` | The model's `log_relative_hazard_score` unchanged (lower is better) |
 | `healthScoreStatus` (`HealthScoreStatus?`) | `available`, `extrapolated`, `missingInputs`, `unsupportedAge`, `unsupportedProfile`, `underAge` (under 18) and the app's own `invalidInput`; null on the repository before a profile |
 | `healthScoreMessage` | The model's message when there is no number |
-| `healthScoreHistory({from, to})` | `List<HealthScorePoint>` oldest first: `(at, date, score, status, modelVersion)` |
+| `healthScoreHistory({from, to})` | `List<HealthScorePoint>` oldest first: `(at, date, score, rawLogRelativeHazard, status, modelVersion)`; `score` is higher-is-better, computed on read |
 
 Availability: same as the forecast. Ages 35–79 are `available`; 18–34 and 80–85 are `extrapolated` and carry the same extrapolated score the forecast uses (the age term moved to the real age, see above), so show `extrapolationCaveat`. Missing inputs, ages under 18 (`underAge`) or over 85, and unsupported profiles give null with the matching status.
 
 ### Age-group percentile ("people like you in the survey")
 
-Added beside the score; the score itself is unchanged. `ageGroupPercentile` (0–100) is the share of the package's reference people of the same sex and age band whose score is **higher (worse)** than the person's, so 70 means "healthier than 70 of 100 people like you in the survey", per the model. Also `ageGroupSize` (people compared), `ageGroupBand` (e.g. `40–50`), `ageGroupWidth` (half-width, 5, 7 or 10) and `ageGroupNearestBand` (true for ages outside 35–79). All are on `TwinAssessment` and `TwinRepository`; all are null when there is no score.
+Added beside the score; the score itself is unchanged, and the percentile already points the same way (higher = healthier). `ageGroupPercentile` (0–100) is the share of the package's reference people of the same sex and age band whose score is **higher (worse)** than the person's, so 70 means "healthier than 70 of 100 people like you in the survey", per the model. Also `ageGroupSize` (people compared), `ageGroupBand` (e.g. `40–50`), `ageGroupWidth` (half-width, 5, 7 or 10) and `ageGroupNearestBand` (true for ages outside 35–79). All are on `TwinAssessment` and `TwinRepository`; all are null when there is no score.
 
 - **Reference:** `assets/support_reference.f64.gz`, 2000 survey participants × 17 encoded features in the order of `encoded_features`, ages 35–79, unweighted NHANES training participants. It is not a national population, so the copy should say "people like you in the survey", never "people your age" without that.
-- **Scoring:** each reference row and the person use Σ(x − centre) × coefficient **without the `age_decade` and `female` terms**, which removes leftover age differences inside the band. The person's value is the displayed score minus those two terms (their real age, also when extrapolated).
+- **Scoring:** each reference row and the person use Σ(x − centre) × coefficient **without the `age_decade` and `female` terms**, which removes leftover age differences inside the band. The person's value is the raw score minus those two terms (their real age, also when extrapolated).
 - **Band:** age ±5, same sex; fewer than 50 people widens to ±7, then ±10 (the width is reported). Outside 35–79 the nearest band inside it is used (35–45 below, ±w inside 35–79 above) and `ageGroupNearestBand` is true.
 - **Sizes seen** at ±5 for ages 20, 35, 45, 55, 65, 75, 79, 85 (men / women): 281/290, 169/148, 259/295, 235/268, 263/259, 175/151, 90/77, 194/167. No band needed widening.
 - Each `HealthScorePoint` also carries `ageGroupPercentile`, `ageGroupSize` and `ageGroupBand`.
 
-History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it.
+History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it. Each point stores the **raw** value under the JSON key `score` (as before the sign change, so older history stays valid); `HealthScorePoint.score` negates it on read.
+
+## Lifespan reveal (one-time, proof of concept)
+
+Owner override (2026-10-24): a rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method and validation: [docs/lifespan-estimate.md](../../docs/lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band).
+
+| API | Meaning |
+|---|---|
+| `TwinRepository.lifespanEstimate` | `LifespanEstimate?` from the current profile; null without a health score (no profile, missing inputs, unsupported profile, under 18, over 85) |
+| `LifespanEstimate.expectedAge`, `p25Age`, `p75Age` | Expected age at death and the 25th–75th percentile ages (unrounded; show whole years, e.g. `headline`) |
+| `LifespanEstimate.expectedYear` | Current year + (expectedAge − current age), rounded to a year. There is no day or date |
+| `LifespanEstimate.status` | `LifespanStatus.available` (35–79) or `extrapolated` (18–34, 80–85: nearest band's calibration) |
+| `LifespanEstimate.caveat` | "Proof of concept: a rough estimate …" text; always show it with the number |
+| `TwinRepository.lifespanRevealSeen` / `markLifespanRevealSeen()` | One-time flag: show the reveal once, then de-emphasise it. Persisted; `deleteMyData()` clears it |
 
 ## Profile mapping (`profile_mapping.dart`)
 
@@ -130,6 +147,7 @@ This is the one object the UI and the check-in controller (`lib/checkin/`) shoul
 | `Future<void> applyMemoryConsent(bool)` | The conversation's `memory_consent`; false deletes stored habit notes |
 | `Future<bool> addHabitNote(Map note)` | Kept only with memory consent; returns false otherwise |
 | `Future<void> saveTwinLook(Map look)` | Cosmetic `{type, look, name}` only |
+| `bool lifespanRevealSeen` / `markLifespanRevealSeen()` | The one-time lifespan reveal was shown; a UI flag, not health data |
 | `List<WellnessCard> wellnessCards` | The package's guidance cards for `current` |
 | `TwinState twinState()` | The character's state now |
 | `TwinExperiment? experiment()` | A fresh experiment from `current` |
@@ -148,7 +166,7 @@ The owner's rule is: "people shouldn't be able to edit their things unless they 
 3. `applyCheckin`, for a finished check-in: a weekly `profile_update`, a quick check-in's `daily_logs`.
 4. `applyDayCorrection`, for a past day's answer, from a confirmed Mochi read-back.
 5. `applyMemoryConsent` / `addHabitNote`, for habit notes, only with consent.
-6. `saveTwinLook` and `saveCheckinSettings`, which are preferences.
+6. `saveTwinLook`, `saveCheckinSettings` and `markLifespanRevealSeen`, which are preferences.
 7. `deleteMyData`.
 
 Every health write appends its history entry at the same time, in one write to the file: if the write fails, nothing of that event is kept (memory is put back), so a retry never records a check-in twice. Experiment levers are hypothetical and never write to the profile.

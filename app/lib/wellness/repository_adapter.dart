@@ -18,7 +18,29 @@ class RepositoryWellness extends ChangeNotifier {
     status: repository.healthScoreStatus,
     ageGroupPercentile: repository.ageGroupPercentile,
     message: repository.healthScoreMessage,
+    lifespan: _lifespan(repository.lifespanEstimate),
+    lifespanRevealSeen: repository.lifespanRevealSeen,
+    history: [
+      for (final p in repository.healthScoreHistory().reversed.take(14).toList().reversed)
+        if (p.score != null) p.score!,
+    ],
   );
+
+  static LifespanReveal? _lifespan(LifespanEstimate? e) => e == null
+      ? null
+      : LifespanReveal(
+          expectedAge: _round(e.expectedAge),
+          p25Age: _round(e.p25Age),
+          p75Age: _round(e.p75Age),
+          expectedYear: e.expectedYear,
+          caveat: e.caveat,
+          roughGuide: e.status == LifespanStatus.extrapolated,
+        );
+
+  static int _round(double x) => x.round();
+
+  /// The reveal after onboarding was shown; the estimate then appears only on "See your estimate".
+  void markLifespanRevealSeen() => repository.markLifespanRevealSeen().ignore();
 
   List<WellnessDay> historyDays({DateTime? from, DateTime? to}) {
     final byDay = <DateTime, List<HistoryValue>>{};

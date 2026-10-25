@@ -58,8 +58,8 @@ void main() {
     expect(find.text('Getting to know you'), findsOneWidget);
     expect(find.text('Check in'), findsNothing);
     expect(find.textContaining('days this week'), findsNothing);
-    await reveal(t, find.text('See your estimate'));
-    await t.tap(find.text('See your estimate'));
+    await reveal(t, find.text('Your estimate'));
+    await t.tap(find.text('Your estimate'));
     expect(estimates, 1);
     expect(t.takeException(), isNull);
   });
@@ -80,7 +80,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('\u22120.4'), findsOneWidget);
+    expect(find.text('\u22120.42'), findsOneWidget);
     expect(find.text(HomeWellnessPanel.tagline), findsOneWidget);
     expect(find.text('Healthier than 62 of 100 people your age'), findsOneWidget);
     expect(find.text(RoughGuideBadge.label), findsOneWidget);
@@ -102,7 +102,7 @@ void main() {
       scale: 1.6,
     );
     expect(find.text(HomeWellnessPanel.tagline), findsNothing);
-    expect(find.text('+0.3'), findsOneWidget);
+    expect(find.text('+0.30'), findsOneWidget);
     expect(find.text(RoughGuideBadge.label), findsNothing);
     await phone(
       t,
@@ -113,7 +113,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('+0.3'), findsNothing);
+    expect(find.text('+0.30'), findsNothing);
     expect(find.text(HomeWellnessPanel.underAgeLine), findsOneWidget);
     expect(find.text('See your estimate'), findsNothing);
     expect(t.takeException(), isNull);
@@ -155,7 +155,7 @@ void main() {
         ),
       );
       expect(find.text('2 good weeks'), findsOneWidget);
-      expect(find.text('Wristband · Estimated'), findsOneWidget);
+      expect(find.text('Activity band · Estimated'), findsOneWidget);
       expect(find.text('Older reading: recorded'), findsNothing);
       expect(find.byType(TextField), findsNothing);
       await t.tap(find.text('All time'));

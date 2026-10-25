@@ -18,6 +18,7 @@ Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent im
 | [demo/voice-usability-demo.md](demo/voice-usability-demo.md) | Clearly labeled synthetic voice-session dataset; not real study evidence |
 | [ios-testing.md](ios-testing.md) | Running the app on the test iPhone and the simulator |
 | [model-sensitivity.md](model-sensitivity.md) | Which inputs move the packaged Cox model's 5-year estimate most, by age band and sex, with [machine-readable lever ranking](model-sensitivity.json); observational, not causal |
+| [lifespan-estimate.md](lifespan-estimate.md) | One-time lifespan reveal (proof of concept, owner override 2026-10-24): expected age and year from the CDC 2024 US life table times the Cox relative risk, calibrated per age band, with validation and attenuation sensitivity |
 | [document-upload.md](document-upload.md) | Health-document upload: on-device text recognition, `/api/documents/extract`, confirmation, privacy boundary, failure modes |
 | [apple-health.md](apple-health.md) | Apple Health import: what is read, read-back rules, privacy decisions, what is left |
 | [design/agentic/agentic-handoff.md](design/agentic/agentic-handoff.md) | Approved K/Q/R/S and other screen exports, HTML source and twin/cosmetic design masters |

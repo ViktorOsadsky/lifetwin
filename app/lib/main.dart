@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatf
 import 'band/band_file_session.dart';
 
 import 'checkin/checkin_reminders.dart';
+import 'checkin/checkin_screen.dart' show ReminderOfferCard;
 import 'checkin/consents.dart' show AiProvider;
 import 'customize/customize_screen.dart';
 import 'demo/demo_seed.dart';
@@ -23,6 +24,7 @@ import 'room/room_screen.dart';
 import 'quiz/quiz_game.dart';
 import 'quiz/quiz_screen.dart';
 import 'wellness/home_panel.dart' show HealthScoreSummary;
+import 'wellness/lifespan_block.dart';
 import 'wellness/models.dart';
 import 'wellness/settings_screen.dart';
 import 'wellness/widgets.dart' show WellnessCard;
@@ -265,9 +267,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
 
   /// Keeps the finished conversation on the phone: memory consent, habit notes (only
   /// with consent) and the confirmed answers, each Apple Health value labelled as such.
-  void _keepConversation() {
+  Future<TwinRepository?> _keepConversation() async {
     final state = _controller.state;
-    if (state == null) return;
+    if (state == null) return null;
     final confirmed = (state['confirmed_profile'] as Map?) ?? const {};
     final sources = {
       for (final e in _healthValues.entries)
@@ -275,14 +277,35 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       for (final e in _documentValues.entries)
         if (confirmed[e.key] == e.value) e.key: HistorySource.document,
     };
-    _twin
-        .then((repo) => repo.saveOnboarding(state, modelInputs: _controller.modelInputs, sources: sources))
-        .then<void>((_) {
-          _saved = true;
-          _syncOutlook();
-        })
-        .ignore();
+    try {
+      final repo = await _twin;
+      await repo.saveOnboarding(state, modelInputs: _controller.modelInputs, sources: sources);
+      _saved = true;
+      _syncOutlook();
+      return repo;
+    } catch (e) {
+      debugPrint('Could not keep the conversation: $e');
+      return null;
+    }
   }
+
+  Future<void> _offerReminders(BuildContext context, TwinRepository repo) => showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialog) => Dialog(
+      backgroundColor: Colors.transparent,
+      child: ReminderOfferCard(
+        onNotNow: () async {
+          await repo.declineReminders();
+          if (dialog.mounted) Navigator.of(dialog).pop();
+        },
+        onYes: () async {
+          await repo.acceptReminders();
+          if (dialog.mounted) Navigator.of(dialog).pop();
+        },
+      ),
+    ),
+  );
 
   @override
   void dispose() {
@@ -298,9 +321,18 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     super.dispose();
   }
 
+  /// Set once onboarding is saved and the reminder offer is still due; shown on the first return to the Room.
+  (BuildContext, TwinRepository)? _reminderOffer;
+
   void _toRoom(BuildContext context) {
     Navigator.of(context).popUntil((r) => r.isFirst);
     _syncOutlook();
+    final offer = _reminderOffer;
+    if (offer == null) return;
+    _reminderOffer = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && offer.$1.mounted && offer.$2.shouldOfferReminders) _offerReminders(offer.$1, offer.$2);
+    });
   }
 
   /// The conversation, swooshing up from the Room.
@@ -313,8 +345,14 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       onUseHealth: () => _health(talkContext),
       onUploadDocument: () => _documents(talkContext),
       onDone: (profile) {
-        _keepConversation();
-        _ceremony(talkContext, fromTalk: true);
+        // The reveal waits for the save, so it sees the new answers.
+        final saved = _keepConversation();
+        _ceremony(talkContext, fromTalk: true, saved: saved);
+        // Then the one-time reminder offer: after the reveal, when the person is back on the Room.
+        // Not offered again after the first check-in once it has been answered.
+        saved.then((repo) {
+          if (repo != null && repo.shouldOfferReminders) _reminderOffer = (context, repo);
+        }).ignore();
       },
     ),
   );
@@ -366,8 +404,20 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// The ceremony, then the fortune. From the intake's Continue ([fromTalk]) the
   /// conversation is dropped, so Back lands on the Room; from the Room it is pushed.
   /// Completes when the person is back on the Room.
-  Future<void> _ceremony(BuildContext context, {bool fromTalk = false}) {
+  Future<void> _ceremony(BuildContext context, {bool fromTalk = false, Future<void>? saved}) {
     final nav = Navigator.of(context);
+    // The one-time lifespan reveal, decided once (after the save) and then marked seen.
+    var decided = false, reveal = false;
+    bool revealNow() {
+      if (!decided) {
+        decided = true;
+        final snap = _wellness?.snapshot;
+        reveal = fromTalk && snap?.lifespan != null && !(snap?.lifespanRevealSeen ?? true);
+        if (reveal) WidgetsBinding.instance.addPostFrameCallback((_) => _wellness?.markLifespanRevealSeen());
+      }
+      return reveal;
+    }
+
     final route = MaterialPageRoute<void>(
       builder: (ceremonyContext) => FortuneCeremonyScreen(
         appearance: _look.value,
@@ -386,7 +436,22 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
                 if (f.supported) _outlook.value = f;
               },
               scoreCard: switch (_wellness?.snapshot) {
-                final score? when !score.underAge => WellnessCard(child: HealthScoreSummary(snapshot: score)),
+                final score? when !score.underAge => WellnessCard(
+                  child: FutureBuilder<void>(
+                    future: saved ?? Future<void>.value(),
+                    builder: (_, done) {
+                      final show = done.connectionState == ConnectionState.done && revealNow();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          HealthScoreSummary(snapshot: _wellness?.snapshot ?? score, emphasis: show),
+                          // The estimate: once, after onboarding; later only on "See your estimate".
+                          if (show || !fromTalk) LifespanBlock(lifespan: (_wellness?.snapshot ?? score).lifespan),
+                        ],
+                      );
+                    },
+                  ),
+                ),
                 _ => null,
               },
               // The mascot speaks only if the person chose voice and it still works.
@@ -441,7 +506,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
                 SettingsEntry(label: 'Try a change', description: 'Explore what could move your outlook', open: () => _agentic.experiment(c)),
                 SettingsEntry(label: 'What I see', description: 'Your wellness cards, with sources', open: () => _agentic.wellness(c)),
                 SettingsEntry(label: 'Still learning', description: 'Answers Mochi still needs', open: () => _agentic.stillLearning(c)),
-                SettingsEntry(label: 'Wristband', description: 'Pair or try the recorded demo', open: () => _agentic.bandFlow(c)),
+                SettingsEntry(label: 'Activity band', description: 'Pair or try the recorded demo', open: () => _agentic.bandFlow(c)),
               ],
             ),
           ),
