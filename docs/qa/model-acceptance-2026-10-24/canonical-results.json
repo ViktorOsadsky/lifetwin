@@ -1,0 +1,135 @@
+{
+  "schema": "lifetwin.qa107.oracle.v2",
+  "host_fixture_only": false,
+  "proposed_sha": null,
+  "merged_sha": "9ace866404bb8df89de673dd299041e25791ccad",
+  "source": "/private/tmp/lifetwin-task-107/model_handoff/lifetwin_on_device/",
+  "tolerance": 1e-9,
+  "records": [
+    {
+      "id": "rosa_seed_effective",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": true,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "synthetic_45_male",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": true,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "synthetic_58_female",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": true,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "synthetic_76_male",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": null,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "edge_18",
+      "canonical_status": "unsupported_age",
+      "canonical_annual": null,
+      "fallback_check": "required: check_fallback.py"
+    },
+    {
+      "id": "edge_34",
+      "canonical_status": "unsupported_age",
+      "canonical_annual": null,
+      "fallback_check": "required: check_fallback.py"
+    },
+    {
+      "id": "edge_35",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": null,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "edge_39",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": null,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "edge_40",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": true,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "edge_44",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": true,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "edge_45",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": true,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "edge_70",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": true,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "edge_74",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": true,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "edge_75",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": null,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "edge_78",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": null,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "edge_79",
+      "canonical_status": "available",
+      "projection_component_all_points_parity": true,
+      "selected_projection_curve_parity": null,
+      "summary_check": "required: check_fallback.py weighted CDC mean/projection crossings"
+    },
+    {
+      "id": "edge_80",
+      "canonical_status": "unsupported_age",
+      "canonical_annual": null,
+      "fallback_check": "required: check_fallback.py"
+    },
+    {
+      "id": "edge_85",
+      "canonical_status": "unsupported_age",
+      "canonical_annual": null,
+      "fallback_check": "required: check_fallback.py"
+    }
+  ],
+  "reference_person_parity": true,
+  "missing_masks_parity": true,
+  "bmi_guards_checked": 4
+}
