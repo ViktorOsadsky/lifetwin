@@ -34,7 +34,7 @@ class RepositoryWellness extends ChangeNotifier {
           roughGuide: e.status == LifespanStatus.extrapolated,
         );
 
-  static int _round(double x) => (x + 0.5).floor();
+  static int _round(double x) => x.round();
 
   /// The reveal after onboarding was shown; the estimate then appears only on "See your estimate".
   void markLifespanRevealSeen() => repository.markLifespanRevealSeen().ignore();

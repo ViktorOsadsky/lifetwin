@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lifesim/demo/demo_seed.dart' show rosaProfile;
+import 'package:lifesim/demo/demo_seed.dart' show openTwin;
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
@@ -14,6 +14,9 @@ import '../support/assessments.dart';
 
 /// Onboarding that finishes at once with Rosa's (64) confirmed answers.
 class RosaGuide extends FakeConversationGuide {
+  RosaGuide(this.profile);
+  final Map<String, dynamic> profile;
+
   @override
   Future<GuideTurn> turn({
     required String action,
@@ -29,7 +32,7 @@ class RosaGuide extends FakeConversationGuide {
       state: {
         'phase': done ? 'ready' : 'asking',
         'current_field': done ? null : 'age',
-        'confirmed_profile': done ? rosaProfile : <String, dynamic>{},
+        'confirmed_profile': done ? profile : <String, dynamic>{},
         'pending_profile': <String, dynamic>{},
       },
       message: done ? 'All done.' : 'How old are you?',
@@ -41,7 +44,12 @@ class RosaGuide extends FakeConversationGuide {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late TwinModelService model;
-  setUpAll(() async => model = await TwinModelService.load());
+  late Map<String, dynamic> rosa;
+  setUpAll(() async {
+    model = await TwinModelService.load();
+    // The seeded demo Rosa (64), as she is after her two weeks of history.
+    rosa = Map<String, dynamic>.from((await openTwin(demo: true, backend: MemoryBackend())).profile);
+  });
 
   Future<void> launch(WidgetTester t, TwinRepository repo) async {
     t.view.physicalSize = const Size(390, 844);
@@ -50,7 +58,11 @@ void main() {
     final client = FakeForecastClient()..answers.add(forecastFrom(supportedJson()));
     await t.pumpWidget(
       LifeTwinApp(
-        controller: VoiceOnboardingController(guide: RosaGuide(), input: FakeSpeechInput(), output: FakeSpeechOutput()),
+        controller: VoiceOnboardingController(
+          guide: RosaGuide(rosa),
+          input: FakeSpeechInput(),
+          output: FakeSpeechOutput(),
+        ),
         forecastClient: client,
         twin: Future.value(repo),
       ),
@@ -85,14 +97,12 @@ void main() {
     await launch(t, repo);
     await finishOnboarding(t);
     expect(repo.lifespanRevealSeen, isTrue);
-    // Rosa: about 2050, age about 88-89, most likely 83-95 (the engine's own numbers, shown rounded).
+    // Seeded Rosa: 2051, age 89 (88.68 rounds up), most likely 83–95.
     final est = repo.lifespanEstimate!;
-    expect(est.expectedYear, inInclusiveRange(year + 24, year + 25));
-    expect(est.expectedAge.round(), inInclusiveRange(88, 89));
-    final age = (est.expectedAge + 0.5).floor(), lo = (est.p25Age + 0.5).floor(), hi = (est.p75Age + 0.5).floor();
-    expect((lo, hi), (83, 95));
+    expect(est.expectedYear, year + 25);
+    expect((est.expectedAge.round(), est.p25Age.round(), est.p75Age.round()), (89, 83, 95));
     expect(find.text('Around ${est.expectedYear}'), findsOneWidget);
-    expect(find.textContaining('about age $age, most likely 83–95'), findsOneWidget);
+    expect(find.text('about age 89, most likely 83–95'), findsOneWidget);
     expect(find.text('Rough guide'), findsNothing, reason: 'age 64 is inside 35–79');
 
     // The next launch: the flag is remembered, so a later conversation does not reveal again.
@@ -106,7 +116,11 @@ void main() {
     final client3 = FakeForecastClient()..answers.add(forecastFrom(supportedJson()));
     await t.pumpWidget(
       LifeTwinApp(
-        controller: VoiceOnboardingController(guide: RosaGuide(), input: FakeSpeechInput(), output: FakeSpeechOutput()),
+        controller: VoiceOnboardingController(
+          guide: RosaGuide(rosa),
+          input: FakeSpeechInput(),
+          output: FakeSpeechOutput(),
+        ),
         forecastClient: client3,
         twin: Future.value(next),
       ),
