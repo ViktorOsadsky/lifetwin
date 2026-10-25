@@ -384,6 +384,8 @@ def test_unread_server_fields_are_the_known_ones(flow):
             "probe_topic",
             "reopened",
             "suggested_activity_min",
+            # Always false on check-ins (rules only); the app reads it with the noise PR (#216).
+            "off_topic",
             "voice_status",
         },
     }

@@ -198,7 +198,11 @@ void stopTests() {
 
     test('waits for the reply to its own finalize, not for a pause finalize still owed', () async {
       final (socket, input, rec) = await listening();
-      rec.mic.add(loudChunk(0)); // quiet, then speech, then a pause: a pause finalize is sent
+      // Quiet past the 300 ms settle, then speech, then a pause: a pause finalize is sent.
+      for (var i = 0; i < 3; i++) {
+        rec.mic.add(loudChunk(0));
+      }
+      rec.mic.add(loudChunk());
       rec.mic.add(loudChunk());
       for (var i = 0; i < 6; i++) {
         rec.mic.add(loudChunk(0));

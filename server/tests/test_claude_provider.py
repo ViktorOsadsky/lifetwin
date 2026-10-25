@@ -41,6 +41,7 @@ PROVIDER_ENV = (
     "OPENAI_API_KEY",
     "OPENAI_MODEL",
     "LLM_ALLOW_CONTRIBUTOR",
+    "CONVERSATION_PROVIDER",
 )
 REQUEST = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
 
@@ -109,7 +110,8 @@ def test_an_anthropic_key_makes_claude_the_default_when_providers_are_unset():
     assert isinstance(app.state.personalizer, ClaudePersonalizer)
     assert isinstance(app.state.conversation_service.extractor, AnthropicExtractor)
     assert app.state.document_service.provider == "claude"
-    assert app.state.checkin_service.personalizer is app.state.personalizer
+    # Conversation turns have their own Claude personalizer (CONVERSATION_PROVIDER).
+    assert app.state.checkin_service.personalizer.name == "claude"
 
 
 def test_explicit_env_selects_either_provider():
@@ -125,8 +127,17 @@ def test_explicit_env_selects_either_provider():
         LLM_MODEL="muse-model",
     )
     assert isinstance(app.state.personalizer, MusePersonalizer)
-    assert isinstance(app.state.conversation_service.extractor, ChatCompletionsExtractor)
+    # Owner ruling (2026-10-25): conversation turns still go to Claude.
+    assert isinstance(app.state.conversation_service.extractor, AnthropicExtractor)
     assert app.state.document_service.provider == "muse"
+    app = app_for(
+        ANTHROPIC_API_KEY="k",
+        LLM_PROVIDER="chat_completions",
+        LLM_API_KEY="m",
+        LLM_MODEL="muse-model",
+        CONVERSATION_PROVIDER="muse",
+    )
+    assert isinstance(app.state.conversation_service.extractor, ChatCompletionsExtractor)
     # Claude selected without a key: unconfigured, so nothing is ever sent.
     app = app_for(LLM_PROVIDER="anthropic", PERSONALIZE_PROVIDER="claude")
     assert app.state.personalizer.configured is False

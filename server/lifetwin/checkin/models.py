@@ -317,6 +317,8 @@ class CheckinResponse(ApiModel):
     message: str = Field(min_length=1, max_length=1500)
     guide_mode: Literal["guided"] = "guided"
     provider_status: Literal["not_configured"] = "not_configured"
+    # Always false here: check-in replies are read by rules (see TurnResponse.off_topic).
+    off_topic: bool = False
     voice_status: Literal["deferred", "available", "unavailable"] = "deferred"
     speech_hint: Literal["slower", "louder"] | None = None
     # "open_ideas": the person asked for ideas; the app shows today's idea. The state is

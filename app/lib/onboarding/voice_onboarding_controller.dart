@@ -89,8 +89,30 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// A message that stays until the next action. Never auto-dismissed.
   String? notice;
 
+  /// The one current question is the server's: [turn]'s `current_field`. Everything the
+  /// client does is checked against it.
   GuideTurn? turn;
   bool _busy = false;
+
+  /// "Question N saved": the number of the question just answered. Set the moment the answer
+  /// is sent (typed, spoken or tapped), before the reply, and kept beside the next question
+  /// until the next answer. Cleared when the reply asks that same question again (not
+  /// understood, read back for a yes, or Go back) or the request failed.
+  int? savedNumber;
+
+  /// The question being answered while its reply is on its way: already counted as done.
+  String? _sending;
+
+  /// Bumped whenever the open question changes hands: an answer is sent, a turn arrives, or
+  /// heard words are dropped (Type instead, leaving). Voice work begun under an older token,
+  /// a late caption, an end-of-turn timer, a recognizer still finishing or a dropped
+  /// connection with words, belongs to a question that is no longer open, and is dropped.
+  int _turnToken = 0;
+  bool _stale(int token) => token != _turnToken;
+
+  /// The turn whose line Mochi last said to the end. Its audio is what a replay plays, so a
+  /// line that came while typing or out of sight is said fresh, never an older one replayed.
+  GuideTurn? _saidTurn;
 
   /// "Change" was pressed: the next answer replaces the one being checked.
   /// The server needs the new answer along with the correction, so Change by
@@ -137,6 +159,9 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// Hands-free: the one nudge for this question was said.
   bool _nudged = false;
   bool _nudging = false;
+
+  /// "I think I heard someone else" was said for this question (server `off_topic`).
+  bool _offTopicSaid = false;
 
   /// Read-only, for the voice indicator: the nudge was said for this question.
   bool get nudged => _nudged;
@@ -188,9 +213,6 @@ class VoiceOnboardingController extends ChangeNotifier {
   (String, bool)? _lastReply;
   bool _disposed = false;
 
-  /// The last thing spoken was the mascot line (not a notice), so it can be replayed.
-  bool _spokeMascotLine = false;
-
   bool get confirming => turn?.isConfirming ?? false;
 
   /// The last answer could not be read because the AI helper was off.
@@ -225,13 +247,9 @@ class VoiceOnboardingController extends ChangeNotifier {
   Set<String> get _doneFields {
     final s = state;
     if (s == null) return {};
-    final confirmed = (s['confirmed_profile'] as Map?) ?? const {};
-    return {
-      for (final e in confirmed.entries)
-        if (e.value != null) '${e.key}',
-      for (final f in (s['skipped_fields'] as List?) ?? const []) '$f',
-      for (final f in (s['unknown_fields'] as List?) ?? const []) '$f',
-    }..remove(s['current_field']);
+    return _doneIn(s)
+      ..remove(s['current_field'])
+      ..addAll([?_sending]);
   }
 
   /// "Question N of 12", worked out from the server's state. Null when there is no question
@@ -295,7 +313,10 @@ class VoiceOnboardingController extends ChangeNotifier {
       _nudged = false;
       _drops = 0;
       _startFailures = 0;
-      _spokeMascotLine = false;
+      _saidTurn = null;
+      _sending = null;
+      savedNumber = null;
+      _turnToken++;
       _paused = false;
       _micOff = false;
       _retry = null;
@@ -468,7 +489,10 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// Not after a failed request (its Try again stays), in an emergency pause, once done, or
   /// before both the voice consent and the phone's microphone permission were given (the
   /// permission is asked by the first listen itself, and a no switches to typing for good).
-  void _listenAgain() {
+  ///
+  /// [sayFirst] (back in sight, back to voice): a question Mochi has not said to the end yet,
+  /// say, one that came while typing or out of sight, is said once first. Never an older one.
+  void _listenAgain({bool sayFirst = false}) {
     if (!continuous || _disposed) return;
     final t = turn;
     final why = _paused
@@ -495,6 +519,10 @@ class VoiceOnboardingController extends ChangeNotifier {
         ? 'not_on_screen'
         : null;
     if (why != null) return _hf('listen_skip', why);
+    if (sayFirst && !identical(_saidTurn, t) && mascotLine.isNotEmpty) {
+      unawaited(hearAgain());
+      return;
+    }
     unawaited(startTalk(auto: true));
   }
 
@@ -529,17 +557,18 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (!_micOff) return;
     _set(() => _micOff = false);
     _hf('mic_on');
-    _listenAgain();
+    _listenAgain(sayFirst: true); // a question that came while it was off is said once first
   }
 
   /// The screen is in sight again: hands-free listens again by itself.
   void resumeVoice() {
     _paused = false;
-    _listenAgain();
+    _listenAgain(sayFirst: true);
   }
 
   Future<void> _openMic() async {
     final gen = _conversationGen;
+    final token = _turnToken;
     try {
       // The system's "Allow microphone?" question waits for the person, however long they
       // take to read it; only connecting afterwards is held to the start limit.
@@ -548,7 +577,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       await input
           .start(
             (text) {
-              if (!_currentConversation(gen) || phase != VoicePhase.listening) return;
+              if (!_currentConversation(gen) || _stale(token) || phase != VoicePhase.listening) return;
               if (text != caption) {
                 _silentSeconds = 0;
                 _hf('partial', heardForLog(text));
@@ -557,7 +586,7 @@ class VoiceOnboardingController extends ChangeNotifier {
               _armEndOfTurn(text);
             },
             onDropped: (e) {
-              if (_currentConversation(gen)) _inputDropped(e);
+              if (_currentConversation(gen) && !_stale(token)) _inputDropped(e);
             },
           )
           .timeout(_micStartLimit);
@@ -743,9 +772,10 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (_disposed || text.trim().isEmpty) return;
     _drops = 0;
     _endOfTurnTimer?.cancel();
+    final token = _turnToken;
     _endOfTurnTimer = Timer(endOfTurn, () {
       _endOfTurnTimer = null;
-      if (!_disposed && phase == VoicePhase.listening) {
+      if (!_disposed && !_stale(token) && phase == VoicePhase.listening) {
         _hf('end_of_turn');
         unawaited(stopTalk());
       }
@@ -758,16 +788,25 @@ class VoiceOnboardingController extends ChangeNotifier {
     await _starting;
     if (!_currentConversation(gen)) return;
     if (phase != VoicePhase.listening) return;
+    final token = _turnToken;
+    // Heard for another question meanwhile (typed, tapped, Type instead): dropped, never sent.
+    bool superseded() {
+      if (!_currentConversation(gen)) return true;
+      if (!_stale(token)) return false;
+      _hf('stale_drop', 'finish');
+      return true;
+    }
+
     _stopListenClock();
     _hf('mic_close', 'finish');
     _set(() => phase = VoicePhase.interpreting);
     String text;
     try {
       text = (await input.finish().timeout(_micFinishLimit)).trim();
-      if (!_currentConversation(gen)) return;
+      if (superseded()) return;
       _hf('final', heardForLog(text));
     } on VoiceUnavailableException {
-      if (!_currentConversation(gen)) return;
+      if (superseded()) return;
       _hf('error', 'finish voice_unavailable');
       _set(() {
         phase = VoicePhase.idle;
@@ -776,7 +815,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       });
       return;
     } catch (e) {
-      if (!_currentConversation(gen)) return;
+      if (superseded()) return;
       _hf('error', 'finish $e');
       final heard = caption.trim();
       if (continuous && !_paused) {
@@ -821,6 +860,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (!_currentConversation(gen)) return;
     }
     if (phase != VoicePhase.listening) return;
+    _turnToken++; // what was heard is dropped, and any late word of it too
     _stopListenClock();
     _hf('mic_close', 'cancel');
     try {
@@ -949,17 +989,20 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (!_currentConversation(gen)) return;
       await _stopSpeech();
       if (!_currentConversation(gen)) return;
-      // A microphone that never answered must not leave the field switched off.
-      if (!_busy && phase == VoicePhase.interpreting) _set(() => phase = VoicePhase.idle);
+      // A microphone still finishing: its words are dropped (the person types instead), and
+      // the field is not left switched off.
+      if (!_busy && phase == VoicePhase.interpreting) {
+        _turnToken++;
+        _set(() => phase = VoicePhase.idle);
+      }
     }
     _set(() => typing = value);
     if (!value) {
-      // Back to voice: hands-free repeats the question (Mochi always speaks first), then listens.
-      if (continuous && canHearAgain) {
-        unawaited(hearAgain());
-      } else {
-        _listenAgain();
-      }
+      // Back to voice (owner): a question Mochi already said is not read again, the mic just
+      // listens; one not said yet (it came while typing) is said once first. Once done,
+      // nothing is said or heard; while a reply is on its way, the reply is said instead.
+      // "Hear it again" is the way to replay.
+      _listenAgain(sayFirst: true);
     }
   }
 
@@ -986,7 +1029,8 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (phase == VoicePhase.listening) await cancelTalk();
     if (!_currentConversation(gen)) return;
     final line = mascotLine;
-    if (await _speak(line, replay: output.canReplay && _spokeMascotLine)) _listenAgain();
+    // The speaker's last audio is replayed only when it is this very question.
+    if (await _speak(line, replay: output.canReplay && identical(_saidTurn, turn))) _listenAgain();
   }
 
   // ---- server turn -----------------------------------------------------------
@@ -1014,10 +1058,17 @@ class VoiceOnboardingController extends ChangeNotifier {
     // After "No, change it" the next answer is a correction. Otherwise a reply
     // to a read-back goes as a reply, so the server can hear "yes", "no" or a new value.
     final wire = action == 'reply' && confirming && correcting ? 'correct' : action;
+    // This answer is for the open question: it is marked done now, and anything still heard
+    // or timed for that question is dropped.
+    _turnToken++;
+    final answering = _answering(action, text);
+    final number = answering == null ? null : questionNumber;
     _set(() {
       phase = VoicePhase.interpreting;
       notice = null;
       _retry = null;
+      _sending = answering;
+      savedNumber = number;
     });
     _hf('send', action == 'reply' && text != null ? '$wire ${heardForLog(text)}' : wire);
     final GuideTurn t;
@@ -1039,6 +1090,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _hf('error', 'turn rejected');
       _busy = false;
       _set(() {
+        _unmark();
         phase = turn?.complete == true ? VoicePhase.done : VoicePhase.idle;
         notice = action == 'import' ? '$healthRejectedPrefix${e.message}' : e.message;
       });
@@ -1048,6 +1100,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _hf('error', 'turn $e');
       _busy = false;
       _set(() {
+        _unmark();
         phase = VoicePhase.idle;
         notice = e is GuideTooBusy ? e.message : noNetworkNotice;
         _retry = () async {
@@ -1061,16 +1114,32 @@ class VoiceOnboardingController extends ChangeNotifier {
     }
     if (!_currentConversation(gen)) return;
     _busy = false;
-    _hf('turn', 'field=${t.state['current_field']} phase=${t.phase} complete=${t.complete}');
+    _hf(
+      'turn',
+      'field=${t.state['current_field']} phase=${t.phase} complete=${t.complete}${t.offTopic ? ' off_topic' : ''}',
+    );
     _set(() {
       if (_voiceBack) _voiceIn();
       correcting = false;
-      if (t.state['current_field'] != turn?.state['current_field'] || t.phase != turn?.phase) _nudged = false;
+      if (t.state['current_field'] != turn?.state['current_field'] || t.phase != turn?.phase) {
+        _nudged = false;
+        _offTopicSaid = false;
+      }
       _drops = 0;
+      // The answer stays marked only if the reply took it; the same question asked again
+      // (not understood, read back, Go back) is open again.
+      final sent = _sending;
+      _sending = null;
+      if (sent != null && (t.state['current_field'] == sent || !_doneIn(t.state).contains(sent))) savedNumber = null;
+      _turnToken++;
       turn = t;
-      mascotLine = t.message;
+      // Someone else was heard: the question on screen stays, and the screen says why.
+      if (!t.offTopic || mascotLine.isEmpty) mascotLine = t.message;
+      if (t.offTopic) notice = offTopicLine;
       phase = t.complete ? VoicePhase.done : VoicePhase.idle;
     });
+    final sayOffTopic = t.offTopic && !_offTopicSaid;
+    if (t.offTopic) _offTopicSaid = true;
     final pending = _pendingHealth;
     if (action == 'start' && pending != null) {
       // The answer to the import asks the first open question, so only it is spoken.
@@ -1079,10 +1148,39 @@ class VoiceOnboardingController extends ChangeNotifier {
     }
     // Nothing is said while the screen is out of sight; back on screen, it listens.
     if (typing || !voiceUsable || screenReader || _paused) return;
+    if (t.offTopic) {
+      // Asked once per question; after that it just listens again, so a TV never loops it.
+      if (!sayOffTopic || await _speak(offTopicLine, mascotLine: false)) _listenAgain();
+      return;
+    }
     final first = _firstLine;
     _firstLine = false;
     if (await _speak(t.message, first: first)) _listenAgain();
   }
+
+  /// The open question this action answers (typed, spoken, tapped, skipped or confirmed),
+  /// or null when it answers none (start, import, resume, Go back, a follow-up).
+  String? _answering(String action, String? text) {
+    final s = turn?.state;
+    final field = s?['current_field'];
+    if (field is! String || turn!.complete) return null;
+    if (s!['phase'] != 'asking' && s['phase'] != 'confirming') return null;
+    if (!const {'reply', 'skip', 'confirm', 'correct'}.contains(action) || text == 'go back') return null;
+    return field;
+  }
+
+  /// The request failed or was refused: the question is open again. Call inside [_set].
+  void _unmark() {
+    _sending = null;
+    savedNumber = null;
+  }
+
+  static Set<String> _doneIn(Map<String, dynamic> s) => {
+    for (final e in ((s['confirmed_profile'] as Map?) ?? const {}).entries)
+      if (e.value != null) '${e.key}',
+    for (final f in (s['skipped_fields'] as List?) ?? const []) '$f',
+    for (final f in (s['unknown_fields'] as List?) ?? const []) '$f',
+  };
 
   // ---- voice outage ----------------------------------------------------------
 
@@ -1163,7 +1261,10 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// and nothing else took over meanwhile: hands-free may listen next.
   Future<bool> _speak(String line, {bool replay = false, bool mascotLine = true, bool first = false}) async {
     final gen = ++_speechGen;
-    _spokeMascotLine = mascotLine;
+    // The speaker's last audio becomes this line: a replay is right only once it was said
+    // to the end, and only for this turn.
+    final saying = mascotLine ? turn : null;
+    _saidTurn = null;
     _hf('tts_start', '${mascotLine ? 'line' : 'notice'}${first ? ' first' : ''}${replay ? ' replay' : ''}');
     _set(() => phase = VoicePhase.speaking);
     // The first line: if no audio has started within [firstAudioLimit], its words are on
@@ -1195,12 +1296,14 @@ class VoiceOnboardingController extends ChangeNotifier {
         if (gen != _speechGen || _disposed) return false;
         await _stopOutput();
         _hf('tts_end', 'gave_up_first');
+        if (gen == _speechGen) _saidTurn = saying; // on screen, and not said again
         if (gen == _speechGen && phase == VoicePhase.speaking) {
           _set(() => phase = turn?.complete == true ? VoicePhase.done : VoicePhase.idle);
         }
         return gen == _speechGen;
       }
       _hf('tts_end', gen == _speechGen ? 'done' : 'stopped');
+      if (gen == _speechGen) _saidTurn = saying;
     } on VoiceUnavailableException {
       _hf('tts_end', 'error voice_unavailable');
       // A notice that could not be said aloud is still on screen; replacing it (say, "can't

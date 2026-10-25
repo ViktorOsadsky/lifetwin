@@ -570,6 +570,45 @@ def test_not_a_pdf_is_a_gentle_422(payload, code):
     assert r.json()["code"] == code
 
 
+def encrypted(user_password: str, algorithm: str) -> bytes:
+    import io
+
+    import pypdf
+
+    writer = pypdf.PdfWriter(clone_from=pypdf.PdfReader(io.BytesIO(make_pdf([VISIT]))))
+    writer.encrypt(user_password=user_password, owner_password="owner", algorithm=algorithm)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+@pytest.mark.parametrize("algorithm", ["RC4-128", "AES-128", "AES-256"])
+async def test_a_pdf_that_opens_without_a_password_is_read(algorithm):
+    # Portal downloads are often encrypted only against printing or editing (AES): the text
+    # layer still reads, so the quote checks still work.
+    claude, fake = reader(reply(finding("weight_kg", "82.6", "Weight: 182 lb", section="Vitals")))
+    response, _ = await read_pdf(consented(encrypted("", algorithm)), claude, today=TODAY)
+    assert response.provider_status == "used"
+    assert [c.field for c in response.candidates] == ["weight_kg"]
+    assert len(fake.calls) == 1
+
+
+@pytest.mark.parametrize("algorithm", ["RC4-128", "AES-128", "AES-256"])
+def test_a_password_locked_pdf_is_a_gentle_locked_422(algorithm):
+    with app() as client:
+        fake = install(client, reply())
+        r = client.post(
+            "/api/documents/read",
+            json={
+                "pdf_base64": b64(encrypted("secret", algorithm)),
+                "outside_ai_consent": {"claude": True},
+            },
+        )
+    assert r.status_code == 422
+    assert r.json()["code"] == "pdf_locked"
+    assert fake.calls == []
+
+
 # -- privacy -----------------------------------------------------------------------------------
 
 

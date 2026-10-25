@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lifesim/checkin/consents.dart';
 import 'package:lifesim/voice/http_conversation_guide.dart';
 import 'package:lifesim/voice/speech.dart';
 
@@ -93,5 +94,58 @@ void main() {
     await expectLater(guide.turn(action: 'start'), throwsA(isA<GuideFailure>()));
     up = true;
     expect((await guide.turn(action: 'start')).message, 'Hi');
+  });
+
+  group('the AI helper names and consents for the conversation provider', () {
+    const caps = {
+      'personalize': {'provider': 'muse', 'display_name': 'Muse by Meta', 'company': 'Meta', 'configured': true},
+      'conversation': {
+        'provider': 'claude',
+        'display_name': 'Claude by Anthropic',
+        'company': 'Anthropic',
+        'configured': true,
+        'may_train_on_content': false,
+      },
+    };
+
+    test('capabilities: the helper is Claude while suggestions stay Muse', () {
+      final p = AiProvider.fromCapabilities(caps)!;
+      expect(p.id, 'muse');
+      expect(p.helper.displayName, 'Claude by Anthropic');
+      expect(AiProvider.helperConsent(p, aiHelper: true), {'claude': true});
+      expect(AiProvider.helperConsent(p, aiHelper: false), isEmpty);
+      // An older server without the block: the helper is the personalize provider.
+      final old = AiProvider.fromCapabilities({'personalize': caps['personalize']})!;
+      expect(old.helper.id, 'muse');
+    });
+
+    Future<Map<String, dynamic>> sentWith({required bool aiHelper}) async {
+      late Map<String, dynamic> sent;
+      final guide = HttpConversationGuide(
+        baseUrl: 'http://x',
+        provider: () async => AiProvider.fromCapabilities(caps),
+        client: MockClient((req) async {
+          sent = jsonDecode(req.body) as Map<String, dynamic>;
+          return http.Response(
+            jsonEncode({
+              'state': {'phase': 'asking'},
+              'message': 'ok',
+              'complete': false,
+            }),
+            200,
+          );
+        }),
+      );
+      await guide.turn(action: 'reply', text: 'two hours', aiHelper: aiHelper);
+      return sent;
+    }
+
+    test('a turn sends outside_ai_consent.claude only with the AI helper on', () async {
+      final on = await sentWith(aiHelper: true);
+      expect(on['provider_consent'], true);
+      expect(on['outside_ai_consent'], {'claude': true});
+      final off = await sentWith(aiHelper: false);
+      expect(off.containsKey('outside_ai_consent'), isFalse);
+    });
   });
 }

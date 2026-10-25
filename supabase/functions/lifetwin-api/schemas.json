@@ -751,6 +751,11 @@
         "title": "Message",
         "type": "string"
       },
+      "off_topic": {
+        "default": false,
+        "title": "Off Topic",
+        "type": "boolean"
+      },
       "profile_update": { "$ref": "#/$defs/HealthProfile" },
       "provider_status": {
         "const": "not_configured",
@@ -786,6 +791,7 @@
       "message",
       "guide_mode",
       "provider_status",
+      "off_topic",
       "voice_status",
       "speech_hint",
       "emergency",
@@ -2180,6 +2186,11 @@
         "title": "Message",
         "type": "string"
       },
+      "off_topic": {
+        "default": false,
+        "title": "Off Topic",
+        "type": "boolean"
+      },
       "profile_update": { "$ref": "#/$defs/HealthProfile" },
       "provider_status": {
         "const": "not_configured",
@@ -2215,6 +2226,7 @@
       "message",
       "guide_mode",
       "provider_status",
+      "off_topic",
       "voice_status",
       "speech_hint",
       "client_action",
@@ -6560,6 +6572,11 @@
         "type": "string"
       },
       "model_inputs": { "$ref": "#/$defs/ModelInputs" },
+      "off_topic": {
+        "default": false,
+        "title": "Off Topic",
+        "type": "boolean"
+      },
       "phrased_by": {
         "default": "templates",
         "enum": ["templates", "muse", "claude"],
@@ -6618,6 +6635,7 @@
       "message",
       "guide_mode",
       "provider_status",
+      "off_topic",
       "voice_status",
       "speech_hint",
       "emergency",
