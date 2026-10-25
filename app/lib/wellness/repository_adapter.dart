@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../twin/lifespan.dart' show LifespanEstimate, LifespanStatus;
 import '../twin/twin_repository.dart';
 import 'models.dart';
 
@@ -18,20 +19,25 @@ class RepositoryWellness extends ChangeNotifier {
     status: repository.healthScoreStatus,
     ageGroupPercentile: repository.ageGroupPercentile,
     message: repository.healthScoreMessage,
-    // TODO(engine #52): lifespan: repository.lifespanEstimate mapped to LifespanReveal (roughGuide when the
-    // age is outside 35-79) and lifespanRevealSeen: repository.lifespanRevealSeen. Until it lands the
-    // lifespan block stays hidden.
-    lifespan: null,
-    lifespanRevealSeen: _revealSeen,
+    lifespan: _lifespan(repository.lifespanEstimate),
+    lifespanRevealSeen: repository.lifespanRevealSeen,
   );
 
-  bool _revealSeen = false;
+  static LifespanReveal? _lifespan(LifespanEstimate? e) => e == null
+      ? null
+      : LifespanReveal(
+          expectedAge: _round(e.expectedAge),
+          p25Age: _round(e.p25Age),
+          p75Age: _round(e.p75Age),
+          expectedYear: e.expectedYear,
+          caveat: e.caveat,
+          roughGuide: e.status == LifespanStatus.extrapolated,
+        );
+
+  static int _round(double x) => (x + 0.5).floor();
 
   /// The reveal after onboarding was shown; the estimate then appears only on "See your estimate".
-  /// TODO(engine #52): persist with repository.setLifespanRevealSeen().
-  void markLifespanRevealSeen() {
-    _revealSeen = true;
-  }
+  void markLifespanRevealSeen() => repository.markLifespanRevealSeen().ignore();
 
   List<WellnessDay> historyDays({DateTime? from, DateTime? to}) {
     final byDay = <DateTime, List<HistoryValue>>{};

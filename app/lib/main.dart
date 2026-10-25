@@ -236,7 +236,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
 
   /// Keeps the finished conversation on the phone: memory consent, habit notes (only
   /// with consent) and the confirmed answers, each Apple Health value labelled as such.
-  void _keepConversation() {
+  Future<void> _keepConversation() async {
     final state = _controller.state;
     if (state == null) return;
     final confirmed = (state['confirmed_profile'] as Map?) ?? const {};
@@ -246,7 +246,10 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       for (final e in _documentValues.entries)
         if (confirmed[e.key] == e.value) e.key: HistorySource.document,
     };
-    _twin.then((repo) => repo.saveOnboarding(state, modelInputs: _controller.modelInputs, sources: sources)).ignore();
+    try {
+      final repo = await _twin;
+      await repo.saveOnboarding(state, modelInputs: _controller.modelInputs, sources: sources);
+    } catch (_) {}
   }
 
   @override
@@ -272,8 +275,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       onUseHealth: () => _health(talkContext),
       onUploadDocument: () => _documents(talkContext),
       onDone: (profile) {
-        _keepConversation();
-        _ceremony(talkContext, fromTalk: true);
+        // The reveal waits for the save, so it sees the new answers.
+        _ceremony(talkContext, fromTalk: true, saved: _keepConversation());
       },
     ),
   );
@@ -323,11 +326,20 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// The ceremony, then the fortune. From the intake's Continue ([fromTalk]) the
   /// conversation is dropped, so Back lands on the Room; from the Room it is pushed.
   /// Completes when the person is back on the Room.
-  Future<void> _ceremony(BuildContext context, {bool fromTalk = false}) {
+  Future<void> _ceremony(BuildContext context, {bool fromTalk = false, Future<void>? saved}) {
     final nav = Navigator.of(context);
-    final snap = _wellness?.snapshot;
-    final reveal = fromTalk && snap?.lifespan != null && !(snap?.lifespanRevealSeen ?? true);
-    if (reveal) _wellness?.markLifespanRevealSeen();
+    // The one-time lifespan reveal, decided once (after the save) and then marked seen.
+    var decided = false, reveal = false;
+    bool revealNow() {
+      if (!decided) {
+        decided = true;
+        final snap = _wellness?.snapshot;
+        reveal = fromTalk && snap?.lifespan != null && !(snap?.lifespanRevealSeen ?? true);
+        if (reveal) WidgetsBinding.instance.addPostFrameCallback((_) => _wellness?.markLifespanRevealSeen());
+      }
+      return reveal;
+    }
+
     final route = MaterialPageRoute<void>(
       builder: (ceremonyContext) => FortuneCeremonyScreen(
         appearance: _look.value,
@@ -345,13 +357,19 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               },
               scoreCard: switch (_wellness?.snapshot) {
                 final score? when !score.underAge => WellnessCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      HealthScoreSummary(snapshot: score, emphasis: reveal),
-                      // The estimate: once, after onboarding; later only on "See your estimate".
-                      if (reveal || !fromTalk) LifespanBlock(lifespan: score.lifespan),
-                    ],
+                  child: FutureBuilder<void>(
+                    future: saved ?? Future<void>.value(),
+                    builder: (_, done) {
+                      final show = done.connectionState == ConnectionState.done && revealNow();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          HealthScoreSummary(snapshot: _wellness?.snapshot ?? score, emphasis: show),
+                          // The estimate: once, after onboarding; later only on "See your estimate".
+                          if (show || !fromTalk) LifespanBlock(lifespan: (_wellness?.snapshot ?? score).lifespan),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 _ => null,
