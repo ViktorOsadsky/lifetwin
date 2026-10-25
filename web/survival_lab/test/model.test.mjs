@@ -12,6 +12,7 @@ const lab = createLab({
 });
 const coxVectors = json('./cox_vectors.json');
 const neuralVectors = json('./neural_vectors.json');
+const projectionVectors = json('./projection_vectors.json');
 const close = (actual, expected, tolerance = 1e-8) =>
   assert.ok(Math.abs(actual - expected) < tolerance, `${actual} != ${expected}`);
 
@@ -36,25 +37,45 @@ test('browser neural arithmetic matches exported Keras vectors', () => {
   close(lab.assess(neuralVectors[0].profile).neural.relativeHazardVsReference, 1);
 });
 
-test('both age-stepping methods match the Dart reference and mark extrapolation', () => {
-  const result = lab.assess(neuralVectors[1].profile);
-  assert.equal(result.status, 'available');
-  close(result.annual.points[1].survivalPercent,
-    result.current.survivalProbabilities[0] * 100);
-  close(result.fiveYear.points[5].survivalPercent,
-    result.current.survivalProbabilities[4] * 100);
-  close(result.annual.medianCrossingAge, 103.07835601243912, 1e-8);
-  close(result.fiveYear.medianCrossingAge, 103.13947364142528, 1e-8);
-  assert.equal(result.annual.medianCrossingExtrapolated, true);
-  assert.equal(result.fiveYear.medianCrossingExtrapolated, true);
-  for (const curve of [result.annual, result.fiveYear]) {
-    for (let i = 1; i < curve.points.length; i++) {
-      assert.ok(curve.points[i].survivalPercent <= curve.points[i - 1].survivalPercent);
+test('both age-stepping methods match independent lifelines vectors', () => {
+  for (const vector of projectionVectors) {
+    const result = lab.assess(vector.profile);
+    assert.equal(result.status, 'available');
+    close(result.annual.points[1].survivalPercent,
+      result.current.survivalProbabilities[0] * 100);
+    close(result.fiveYear.points[5].survivalPercent,
+      result.current.survivalProbabilities[4] * 100);
+    close(result.annual.medianCrossingAge, vector.annual_50, 1e-8);
+    close(result.fiveYear.medianCrossingAge, vector.five_year_50, 1e-8);
+    assert.equal(result.annual.medianCrossingExtrapolated, true);
+    assert.equal(result.fiveYear.medianCrossingExtrapolated, true);
+    for (const curve of [result.annual, result.fiveYear]) {
+      for (let i = 1; i < curve.points.length; i++) {
+        assert.ok(curve.points[i].survivalPercent <= curve.points[i - 1].survivalPercent);
+      }
     }
   }
   const supported = lab.assess(neuralVectors[1].profile, {includeExtrapolation: false});
   assert.equal(supported.annual.points.at(-1).age, 80);
   assert.equal(supported.annual.medianCrossingAge, null);
+});
+
+test('raising high BMI cannot improve the Cox forecast or delay its 50% crossing', () => {
+  for (const age of [19, 55, 79]) {
+    const profile = {...neuralVectors[0].profile, age};
+    const values = [27, 35, 50, 100, 150].map((bmi) => lab.assess({...profile, bmi}));
+    for (let i = 1; i < values.length; i++) {
+      assert.ok(values[i].current.survivalProbabilities[4] <=
+        values[i - 1].current.survivalProbabilities[4] + 1e-12);
+      assert.ok(values[i].annual.medianCrossingAge <=
+        values[i - 1].annual.medianCrossingAge + 1e-12);
+    }
+    close(values[0].current.survivalProbabilities[4], values[1].current.survivalProbabilities[4]);
+    if (age === 19) {
+      assert.ok(values.at(-1).neural.relativeHazardVsReference >
+        values.at(-2).neural.relativeHazardVsReference);
+    }
+  }
 });
 
 test('realistic zero-shot profiles calculate with visible distribution warnings', () => {

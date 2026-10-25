@@ -39,26 +39,26 @@ The age term is linear: the package encodes `age_decade = (age − 55) / 10` (ch
 
 ## Health score
 
-**Higher is better.** The health score is the **health index** (owner ruling, 2026-10-24: "hazard index needs to turn into health index/score. invert so higher is better"):
+**Positive is healthier.** The health score is **centred on 0** (owner: "i wish health score would be positive if it is good"; before that, "invert so higher is better"):
 
-`healthScore = exp(median s of the age group − s(profile))`
+`healthScore = median s of the age group − s(profile)`
 
-where `s` is exactly the quantity `ageGroupPercentile` ranks (the Cox log relative hazard **without the `age_decade` and `female` terms**), over the same rows (same sex, the same ±5 y band, see below). The median is the ⌈n/2⌉-th smallest `s` of the band (the lower median for an even band), so **1.0 is the middle of people your age and sex in the survey, and the index is above 1 exactly when the percentile is above 50** (a tie at the median gives exactly 1.0). It is a ratio of modelled hazards, always above 0, not a probability. `healthGroupLabel` names the band actually used, e.g. `women 59–69` (for ages outside 35–79 the nearest band, e.g. `women 35–45`). The raw Cox `log_relative_hazard_score` (lower is lower modelled risk; includes age and sex) stays available as `rawLogRelativeHazard` for internal use. The index lives in `AgeGroup.healthIndex` in `twin_model.dart`.
+where `s` is exactly the quantity `ageGroupPercentile` ranks (the Cox log relative hazard **without the `age_decade` and `female` terms**), over the same rows (same sex, the same ±5 y band, see below). The median is the ⌈n/2⌉-th smallest `s` of the band (the lower median for an even band), so **0 is the middle of people your age and sex in the survey, and the score is above 0 exactly when the percentile is above 50** (a tie at the median gives exactly 0). It is the log of a ratio of modelled hazards (the earlier health index is `exp(score)`), not a probability. Display placeholder: signed, two decimals (`+0.50`, `−0.40`). `healthGroupLabel` names the band actually used, e.g. `women 59–69` (for ages outside 35–79 the nearest band, e.g. `women 35–45`). The raw Cox `log_relative_hazard_score` (lower is lower modelled risk; includes age and sex) stays available as `rawLogRelativeHazard` for internal use. The score lives in `AgeGroup.healthScore` in `twin_model.dart`.
 
 | API | Meaning |
 |---|---|
-| `TwinAssessment.healthScore` / `TwinRepository.healthScore` | `double?`, the health index: higher is better, 1.0 = the middle of your group; null unless the model gave a number. Never filled with defaults |
+| `TwinAssessment.healthScore` / `TwinRepository.healthScore` | `double?`, centred: positive = healthier than the middle of your group, 0 = the middle; null unless the model gave a number. Never filled with defaults |
 | `TwinAssessment.healthGroupLabel` / `TwinRepository.healthGroupLabel` | `String?`, the band the index and percentile use, e.g. `women 59–69`; null with no score |
 | `TwinAssessment.rawLogRelativeHazard` / `TwinRepository.rawLogRelativeHazard` | The model's `log_relative_hazard_score` unchanged (lower is better); internal use |
 | `healthScoreStatus` (`HealthScoreStatus?`) | `available`, `extrapolated`, `missingInputs`, `unsupportedAge`, `unsupportedProfile`, `underAge` (under 18) and the app's own `invalidInput`; null on the repository before a profile |
 | `healthScoreMessage` | The model's message when there is no number |
-| `healthScoreHistory({from, to, engine})` | `List<HealthScorePoint>` oldest first: `(at, date, engine, score, rawLogRelativeHazard, status, modelVersion)`; only points of `engine` (default `healthScoreEngine`, `cox_index_v1`); `score` is the health index |
+| `healthScoreHistory({from, to, engine})` | `List<HealthScorePoint>` oldest first: `(at, date, engine, score, rawLogRelativeHazard, status, modelVersion)`; only points of `engine` (default `healthScoreEngine`, `cox_centered_v1`); `score` is the centred score |
 
 Availability: same as the forecast. Ages 35–79 are `available`; 18–34 and 80–85 are `extrapolated` (the Rough guide flag): the raw score is the forecast's extrapolated one and the index uses the percentile's nearest band, so show `extrapolationCaveat`. Missing inputs, ages under 18 (`underAge`) or over 85, and unsupported profiles give null with the matching status.
 
 ### Age-group percentile ("people like you in the survey")
 
-The health index is built on the same comparison, so the two always agree: index > 1 exactly when the percentile is above 50. `ageGroupPercentile` (0–100) is the share of the package's reference people of the same sex and age band whose score is **higher (worse)** than the person's, so 70 means "healthier than 70 of 100 people like you in the survey", per the model. Also `ageGroupSize` (people compared), `ageGroupBand` (e.g. `40–50`), `ageGroupWidth` (half-width, 5, 7 or 10) and `ageGroupNearestBand` (true for ages outside 35–79). All are on `TwinAssessment` and `TwinRepository`; all are null when there is no score.
+The health score is built on the same comparison, so the two always agree: score > 0 exactly when the percentile is above 50. `ageGroupPercentile` (0–100) is the share of the package's reference people of the same sex and age band whose score is **higher (worse)** than the person's, so 70 means "healthier than 70 of 100 people like you in the survey", per the model. Also `ageGroupSize` (people compared), `ageGroupBand` (e.g. `40–50`), `ageGroupWidth` (half-width, 5, 7 or 10) and `ageGroupNearestBand` (true for ages outside 35–79). All are on `TwinAssessment` and `TwinRepository`; all are null when there is no score.
 
 - **Reference:** `assets/support_reference.f64.gz`, 2000 survey participants × 17 encoded features in the order of `encoded_features`, ages 35–79, unweighted NHANES training participants. It is not a national population, so the copy should say "people like you in the survey", never "people your age" without that.
 - **Scoring:** each reference row and the person use Σ(x − centre) × coefficient **without the `age_decade` and `female` terms**, which removes leftover age differences inside the band. The person's value is the raw score minus those two terms (their real age, also when extrapolated).
@@ -66,7 +66,7 @@ The health index is built on the same comparison, so the two always agree: index
 - **Sizes seen** at ±5 for ages 20, 35, 45, 55, 65, 75, 79, 85 (men / women): 281/290, 169/148, 259/295, 235/268, 263/259, 175/151, 90/77, 194/167. No band needed widening.
 - Each `HealthScorePoint` also carries `ageGroupPercentile`, `ageGroupSize` and `ageGroupBand`.
 
-History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it. Each point stores `engine` (`cox_index_v1`), the index under `health_index` (`HealthScorePoint.score`) and the raw value under `score`. Points written before the engine tag (the earlier −log-hazard scale) read as `legacyHealthScoreEngine` (`cox_v1`) and, like any other engine's points, are **left out** of `healthScoreHistory()` and so of the sparkline: scales never mix. Simplest correct option: the old points have no index, and recomputing them would need the profile at that time, which a point does not keep.
+History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it. Each point stores `engine` (`cox_centered_v1`), the centred score under `centered_score` (`HealthScorePoint.score`) and the raw value under `score`. Points written before the engine tag (the earlier −log-hazard scale) read as `legacyHealthScoreEngine` (`cox_v1`) and, like `cox_index_v1` points (the health index) and any other engine's points, are **left out** of `healthScoreHistory()` and so of the sparkline: scales never mix. Simplest correct option: the old points have no centred score, and recomputing them would need the profile at that time, which a point does not keep.
 
 ## Lifespan reveal (one-time, proof of concept)
 
@@ -297,7 +297,7 @@ e.reset();                     // or e.reset(LeverId.vigorous)
 
 Levers only move the way guidance points. Less exercise, more sitting, and weight gain are never offered.
 
-**Weight guard (engine boundary, `TwinModelService.compare`):** the model card notes an inverse BMI association for older/heavier profiles. Any `compare()` whose only change is a higher BMI (`bmi`, or `height_cm`/`weight_kg`) returns the current survival for the alternative, a zero difference in every year, `health_index_delta: 0`, `weight_guard: true` and `weightGuardWarning`. Every experiment, plan and recommendation goes through `compare()`.
+**Weight guard (engine boundary, `TwinModelService.compare`):** the model card notes an inverse BMI association for older/heavier profiles. Any `compare()` whose only change is a higher BMI (`bmi`, or `height_cm`/`weight_kg`) returns the current survival for the alternative, a zero difference in every year, `health_score_delta: 0`, `weight_guard: true` and `weightGuardWarning`. Every experiment, plan and recommendation goes through `compare()`.
 
 **`ExperimentLever` fields:** `id`, `label`, `unit`, `min`, `max`, `step`, `current` (null when unknown), `value`, `options`, `supported`, `reason` / `reasonText`, `caveat`, `missingInput`, `changed`.
 
@@ -311,7 +311,7 @@ Levers only move the way guidance points. Less exercise, more sitting, and weigh
   - `alternative_unavailable`: the tried profile is outside the model's support; show `message` and no number
   - `invalid_input`: the tried values add up to more than 24 hours a day
 - `message`
-- `scoreDelta`: the health index of the changed twin minus the current twin's (`currentScore`, `alternativeScore`), from the same `compare()`; 0 under the weight guard
+- `scoreDelta`: the centred health score of the changed twin minus the current twin's (`currentScore`, `alternativeScore`), from the same `compare()`; 0 under the weight guard
 - `differenceByYear`: years 1–5 → percentage points, alternative minus current, raw and unrounded (Cox survival)
 - `difference5`
 - `currentPercentByYear`, `alternativePercentByYear`

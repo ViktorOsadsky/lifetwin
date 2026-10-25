@@ -16,6 +16,11 @@ export async function loadLab() {
 }
 
 export function createLab({cox, neural, referenceBytes}) {
+  const bmiHighFeature = cox.encoded_features?.[2];
+  const bmiHighKnot = Number(/^bmi_above(\d+)$/.exec(bmiHighFeature)?.[1]);
+  if (cox.encoded_features?.length !== COX_COLUMNS || !Number.isFinite(bmiHighKnot)) {
+    throw new Error('Unsupported Cox feature encoding');
+  }
   const bytes = referenceBytes instanceof Uint8Array
     ? referenceBytes
     : new Uint8Array(referenceBytes);
@@ -65,7 +70,7 @@ export function createLab({cox, neural, referenceBytes}) {
     return [
       (p.age - 55) / 10,
       Math.max(23 - p.bmi, 0) / 5,
-      Math.max(p.bmi - 27, 0) / 5,
+      Math.max(p.bmi - bmiHighKnot, 0) / 5,
       Math.max(7 - p.sleep_hours, 0),
       Math.max(p.sleep_hours - 8, 0),
       Math.log1p(p.vigorous_recreation_min_week) / Math.log(76),

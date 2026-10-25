@@ -13,13 +13,13 @@
       "moderate_recreation_min_week": 120,
       "sedentary_min_day": 360
     },
-    "log_relative_hazard_score": -1.558015201300663,
+    "log_relative_hazard_score": -1.566277627711532,
     "survival_probabilities": {
-      "1": 0.9988050317356533,
-      "2": 0.9976671789349414,
-      "3": 0.9962932635299774,
-      "4": 0.9948999562278703,
-      "5": 0.9931850509406549
+      "1": 0.99881510102113,
+      "2": 0.9976866051517587,
+      "3": 0.9963243186331642,
+      "4": 0.9949429885696104,
+      "5": 0.993242941735678
     }
   },
   {
@@ -36,13 +36,13 @@
       "moderate_recreation_min_week": 120,
       "sedentary_min_day": 360
     },
-    "log_relative_hazard_score": -0.09228936794200376,
+    "log_relative_hazard_score": -0.09185235338115236,
     "survival_probabilities": {
-      "1": 0.9948352572376845,
-      "2": 0.9899364631708792,
-      "3": 0.9840460984319885,
-      "4": 0.9781001619112472,
-      "5": 0.9708197840812451
+      "1": 0.9948340604621787,
+      "2": 0.9899331835383597,
+      "3": 0.9840418160689356,
+      "4": 0.978095734664978,
+      "5": 0.9708157769457714
     }
   },
   {
@@ -59,13 +59,105 @@
       "moderate_recreation_min_week": 90,
       "sedentary_min_day": 420
     },
-    "log_relative_hazard_score": 1.0967333230216636,
+    "log_relative_hazard_score": 1.0656755137840839,
     "survival_probabilities": {
-      "1": 0.9831394624606102,
-      "2": 0.9673307930776381,
-      "3": 0.9485574151671525,
-      "4": 0.9298654379817842,
-      "5": 0.9073292052999756
+      "1": 0.9836541464155305,
+      "2": 0.9683172469139139,
+      "3": 0.9500987123253187,
+      "4": 0.9319507334799156,
+      "5": 0.910057105050366
+    }
+  },
+  {
+    "profile": {
+      "age": 19,
+      "sex_nhanes": 1,
+      "bmi": 35,
+      "sleep_hours": 7,
+      "smoking_status": 0,
+      "diabetes_diagnosed": 0,
+      "hypertension_diagnosed": 0,
+      "general_health": 2,
+      "vigorous_recreation_min_week": 60,
+      "moderate_recreation_min_week": 120,
+      "sedentary_min_day": 360
+    },
+    "log_relative_hazard_score": -3.2448167984795813,
+    "survival_probabilities": {
+      "1": 0.9997787361835093,
+      "2": 0.9995678063017521,
+      "3": 0.9993129193687227,
+      "4": 0.9990541797468666,
+      "5": 0.9987353392900915
+    }
+  },
+  {
+    "profile": {
+      "age": 19,
+      "sex_nhanes": 1,
+      "bmi": 50,
+      "sleep_hours": 7,
+      "smoking_status": 0,
+      "diabetes_diagnosed": 0,
+      "hypertension_diagnosed": 0,
+      "general_health": 2,
+      "vigorous_recreation_min_week": 60,
+      "moderate_recreation_min_week": 120,
+      "sedentary_min_day": 360
+    },
+    "log_relative_hazard_score": -3.140397021242608,
+    "survival_probabilities": {
+      "1": 0.9997543854766052,
+      "2": 0.9995202477368437,
+      "3": 0.9992373237653853,
+      "4": 0.9989501314408805,
+      "5": 0.99859624046005
+    }
+  },
+  {
+    "profile": {
+      "age": 19,
+      "sex_nhanes": 1,
+      "bmi": 100,
+      "sleep_hours": 7,
+      "smoking_status": 0,
+      "diabetes_diagnosed": 0,
+      "hypertension_diagnosed": 0,
+      "general_health": 2,
+      "vigorous_recreation_min_week": 60,
+      "moderate_recreation_min_week": 120,
+      "sedentary_min_day": 360
+    },
+    "log_relative_hazard_score": -2.7923310971193667,
+    "survival_probabilities": {
+      "1": 0.9996521476453737,
+      "2": 0.9993205824442472,
+      "3": 0.9989199736302415,
+      "4": 0.9985133692966107,
+      "5": 0.99801240052996
+    }
+  },
+  {
+    "profile": {
+      "age": 19,
+      "sex_nhanes": 1,
+      "bmi": 150,
+      "sleep_hours": 7,
+      "smoking_status": 0,
+      "diabetes_diagnosed": 0,
+      "hypertension_diagnosed": 0,
+      "general_health": 2,
+      "vigorous_recreation_min_week": 60,
+      "moderate_recreation_min_week": 120,
+      "sedentary_min_day": 360
+    },
+    "log_relative_hazard_score": -2.4442651729961242,
+    "survival_probabilities": {
+      "1": 0.9995073634760887,
+      "2": 0.9990378596236054,
+      "3": 0.9984706749603184,
+      "4": 0.9978950986278605,
+      "5": 0.9971860771322253
     }
   }
 ]

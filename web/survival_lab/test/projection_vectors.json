@@ -1,0 +1,53 @@
+[
+  {
+    "profile": {
+      "age": 45,
+      "sex_nhanes": 1,
+      "bmi": 25,
+      "sleep_hours": 7,
+      "smoking_status": 0,
+      "diabetes_diagnosed": 0,
+      "hypertension_diagnosed": 0,
+      "general_health": 2,
+      "vigorous_recreation_min_week": 60,
+      "moderate_recreation_min_week": 120,
+      "sedentary_min_day": 360
+    },
+    "annual_50": 102.1340768477943,
+    "five_year_50": 102.21925199678384
+  },
+  {
+    "profile": {
+      "age": 19,
+      "sex_nhanes": 1,
+      "bmi": 100,
+      "sleep_hours": 7,
+      "smoking_status": 0,
+      "diabetes_diagnosed": 0,
+      "hypertension_diagnosed": 0,
+      "general_health": 2,
+      "vigorous_recreation_min_week": 60,
+      "moderate_recreation_min_week": 120,
+      "sedentary_min_day": 360
+    },
+    "annual_50": 94.84885694104399,
+    "five_year_50": 94.83412109844782
+  },
+  {
+    "profile": {
+      "age": 19,
+      "sex_nhanes": 1,
+      "bmi": 150,
+      "sleep_hours": 7,
+      "smoking_status": 0,
+      "diabetes_diagnosed": 0,
+      "hypertension_diagnosed": 0,
+      "general_health": 2,
+      "vigorous_recreation_min_week": 60,
+      "moderate_recreation_min_week": 120,
+      "sedentary_min_day": 360
+    },
+    "annual_50": 89.50440214905001,
+    "five_year_50": 89.48948426104901
+  }
+]
