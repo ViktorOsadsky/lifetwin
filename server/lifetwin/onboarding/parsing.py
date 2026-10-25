@@ -2848,6 +2848,21 @@ def _clinician_report(text: str, field: str) -> str:
     return " ".join(CLINICIAN_REPORT.sub(" ", text).split()) or text
 
 
+NOT_NUMBER = re.compile(
+    r"[,;]?\s*(?:\band\s+)?\bnot\s+(?:about\s+)?\d[\d.']*"
+    r"(?:\s+(?:pounds?|lbs?|kg|kilos?|cm|hours?|minutes?|years?|drinks?))?(?=\s*(?:[,;.]|$))",
+    re.I,
+)
+
+
+def _drop_negated_number(text: str) -> str:
+    """ "150 pounds, not 146": the number after "not" is the one being corrected away."""
+    found = NOT_NUMBER.search(text)
+    if found and re.search(r"\d", text[: found.start()]):
+        return text[: found.start()] + text[found.end() :]
+    return text
+
+
 def parse_reply(
     text: str,
     field: ProfileField,
@@ -2882,6 +2897,7 @@ def parse_reply(
     # One measurement may contain commas or "and" ("5 feet, 10 inches").
     whole = parse_value(field, text, today=today, period=period)
     split = re.sub(SEX_AND_NUMBER, lambda m: (m.group(1) or m.group(2)) + ", ", text, flags=re.I)
+    split = _drop_negated_number(split)
     # "an hour and a half", "an hour and fifteen minutes" are one duration, not two parts.
     parts = [
         part
@@ -2904,6 +2920,7 @@ def parse_reply(
     parts = own if dropped else parts
     several = len(parts) > 1
     values: dict = {}
+    clashed: set[str] = set()
     for part in parts:
         label = re.fullmatch(LABELED, part, re.I)
         if label:
@@ -2932,8 +2949,13 @@ def parse_reply(
         # Parts for the same question are pieces of one answer ("two beers on Friday and
         # two on Saturday" is never 2): the reply is read as a whole, or asked about.
         if any(key in values for key in parsed):
-            return whole
+            # Unless the whole reply agrees with the first part ("I used to smoke, quit ten
+            # years ago, and I'm 64": two pieces of one smoking answer, and an age).
+            clashed |= parsed.keys() & values.keys()
+            parsed = {k: v for k, v in parsed.items() if k not in values}
         values.update(parsed)
+    if any(whole.get(key) != values[key] for key in clashed):
+        return whole
     # A fragment for another question is held to a stricter range: "forty six pounds", the
     # end of "a hundred and forty six pounds", is no adult's weight.
     for key, (low, high) in STRAY_RANGE.items():
