@@ -71,7 +71,7 @@ void main() {
     final days = port.scheduled.map((s) => s.$1).toList();
     expect(days.toSet(), hasLength(days.length), reason: 'a day is planned once');
     expect(days, hasLength(reminderDays));
-    expect(port.scheduled.last.$3, reminderPauseLine);
+    expect(port.scheduled.last.$3, endsWith(reminderPauseLine)); // the weekly one may share it
     expect(port.scheduled.where((s) => s.$3 == reminderPauseLine), hasLength(1));
   });
 
@@ -127,8 +127,8 @@ void main() {
     await t.pumpAndSettle();
     final ids = port.scheduled.map((s) => s.$1).toList();
     expect(ids.toSet(), hasLength(ids.length), reason: 'ResumeRefresh and refresh() both replan; days must not double up: $ids');
-    expect(port.scheduled.where((s) => s.$3 == reminderPauseLine), hasLength(1), reason: 'one pause line, on the last day');
-    expect(port.scheduled.last.$3, reminderPauseLine);
+    expect(port.scheduled.where((s) => s.$3.endsWith(reminderPauseLine)), hasLength(1), reason: 'one pause line, on the last day');
+    expect(port.scheduled.last.$3, endsWith(reminderPauseLine)); // the weekly one may share it
   });
 
   testWidgets('resume the same day after checking in: today stays unplanned', (t) async {

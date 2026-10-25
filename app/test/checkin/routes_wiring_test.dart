@@ -55,8 +55,11 @@ void main() {
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
     deleted = 0;
-    repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()));
+    // Joined 8 days ago, so the weekly check-in is open (see weekly_gate_test.dart for the gate itself).
+    var clock = DateTime.now().subtract(const Duration(days: 8));
+    repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => clock);
     await repo.saveConversationProfile(profile);
+    clock = DateTime.now();
     final look = ValueNotifier(const TwinAppearance(name: 'Mochi'));
     addTearDown(look.dispose);
     final voice = VoiceOnboardingController(
