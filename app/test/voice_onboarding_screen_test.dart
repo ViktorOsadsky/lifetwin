@@ -51,7 +51,89 @@ Future<void> choose(WidgetTester t, String voiceLabel, {bool aiHelper = false}) 
   await t.pumpAndSettle();
 }
 
+/// Two answers already in: the conversation is on its third question.
+class ThirdQuestionGuide extends FakeConversationGuide {
+  @override
+  Future<GuideTurn> turn({
+    required String action,
+    Map<String, dynamic>? state,
+    String? text,
+    bool fromTranscript = false,
+    Map<String, Object>? values,
+    bool aiHelper = false,
+    String? importSource,
+  }) async => GuideTurn(
+    state: {
+      'phase': 'asking',
+      'current_field': 'smoking_status',
+      'confirmed_profile': {'age': 60, 'sex': 'male'},
+      'pending_profile': <String, dynamic>{},
+    },
+    message: 'Do you smoke?',
+    complete: false,
+  );
+}
+
 void main() {
+  testWidgets('Fill this in faster: appears from the third question, opens the sheet, dismisses, and notes an import', (
+    t,
+  ) async {
+    t.view.physicalSize = const Size(390, 844);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final c = VoiceOnboardingController(
+      guide: ThirdQuestionGuide(),
+      input: FakeSpeechInput(),
+      output: FakeSpeechOutput(),
+    );
+    var health = 0, docs = 0;
+    await t.pumpWidget(
+      MaterialApp(
+        home: VoiceOnboardingScreen(
+          controller: c,
+          onDone: (_) {},
+          onUseHealth: () => health++,
+          onUploadDocument: () => docs++,
+        ),
+      ),
+    );
+    await choose(t, "No, I'll type");
+    expect(find.text('Fill this in faster'), findsOneWidget);
+    await t.tap(find.text('Fill this in faster'));
+    await t.pumpAndSettle();
+    expect(find.textContaining('fewer questions', findRichText: true), findsOneWidget);
+    await t.tap(find.text('Upload a document'));
+    await t.pumpAndSettle();
+    expect(docs, 1);
+    // After an import the pill gives way to a quiet note.
+    await c.importHealth({'height_cm': 170});
+    await t.pump();
+    expect(find.text('Added 1 thing from Apple Health'), findsOneWidget);
+    await t.pump(const Duration(seconds: 7));
+    expect(find.text('Added 1 thing from Apple Health'), findsNothing);
+    expect(find.text('Fill this in faster'), findsNothing, reason: 'already imported');
+  });
+
+  testWidgets('Fill this in faster: the × hides it for the rest of the conversation', (t) async {
+    t.view.physicalSize = const Size(390, 844);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final c = VoiceOnboardingController(
+      guide: ThirdQuestionGuide(),
+      input: FakeSpeechInput(),
+      output: FakeSpeechOutput(),
+    );
+    await t.pumpWidget(
+      MaterialApp(
+        home: VoiceOnboardingScreen(controller: c, onDone: (_) {}, onUseHealth: () {}),
+      ),
+    );
+    await choose(t, "No, I'll type");
+    await t.tap(find.byIcon(Icons.close_rounded));
+    await t.pump();
+    expect(find.text('Fill this in faster'), findsNothing);
+  });
+
   testWidgets('an emergency pauses calmly: Call 911 is a tap, Continue sends resume and asks the question again', (
     t,
   ) async {

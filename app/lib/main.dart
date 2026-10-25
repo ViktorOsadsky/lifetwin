@@ -202,6 +202,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       appearance: _look.value,
       aiProvider: _aiProvider,
       onUseHealth: () => _health(talkContext),
+      onUploadDocument: () => _documents(talkContext),
       onDone: (profile) {
         _keepConversation();
         _ceremony(talkContext, fromTalk: true);

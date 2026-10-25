@@ -248,6 +248,10 @@ class VoiceOnboardingController extends ChangeNotifier {
   Future<bool> importDocument(Map<String, Object> values) =>
       _importConfirmed(values, source: 'document', none: documentNoneNotice, wait: documentWaitNotice);
 
+  /// The last import that was taken: how many answers and from where (`apple_health` or `document`), for the
+  /// quiet "Added N things" note. A new record each time.
+  ({int count, String source})? lastImport;
+
   Future<bool> _importConfirmed(
     Map<String, Object> values, {
     required String source,
@@ -258,6 +262,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (values.isEmpty) return false;
       _pendingHealth = {...?_pendingHealth, ...values};
       _pendingSource = source;
+      _set(() => lastImport = (count: values.length, source: source));
       return true;
     }
     if (_busy) return false;
@@ -273,7 +278,9 @@ class VoiceOnboardingController extends ChangeNotifier {
     await _stopSpeech();
     final before = turn;
     await _send('import', values: values, importSource: source);
-    return notice == null && !identical(turn, before);
+    final taken = notice == null && !identical(turn, before);
+    if (taken) _set(() => lastImport = (count: values.length, source: source));
+    return taken;
   }
 
   // ---- talking -----------------------------------------------------------
