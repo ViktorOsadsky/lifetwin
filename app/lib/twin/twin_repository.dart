@@ -35,7 +35,7 @@ part 'twin_store.dart';
 /// - [applyCheckin]: a finished check-in (weekly `profile_update`, quick `daily_logs`);
 /// - [applyDayCorrection]: a past day's answer corrected through a confirmed Mochi read-back;
 /// - [applyMemoryConsent] / [addHabitNote]: habit notes, only with `memory_consent`;
-/// - [saveTwinLook], [saveCheckinSettings] and [markLifespanRevealSeen]: preferences, not
+/// - [saveTwinLook], [saveCheckinSettings], [continueAsGuest] and [markLifespanRevealSeen]: preferences, not
 ///   health data;
 /// - [saveTodayPlan]: the coach's latest daily plan, so its next revision has a base after a relaunch;
 /// - [deleteMyData].
@@ -567,6 +567,13 @@ class TwinRepository extends ChangeNotifier {
 
   /// The twin's cosmetic look (`type`, `look`, `name`); never part of the health profile.
   Future<void> saveTwinLook(Map<String, dynamic> look) => store._saveTwin(look);
+
+  /// Remembers local guest entry without creating an account or granting AI, memory,
+  /// microphone or health-data consent. Delete my data removes this preference too.
+  Future<void> continueAsGuest() async {
+    await store._acceptGuestEntry();
+    notifyListeners();
+  }
 
   /// The person's consent to outside-AI wording (owner ruling: Muse is on, but only after
   /// this yes). Stored on the phone; off by default and after Delete my data. It covers
