@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../../widgets/whole_word_text.dart';
 import '../theme.dart';
 
-/// "Question 3 of 11" with one segment per question: done ones filled ink, the
+/// "Question 3 of 12" with one segment per question: done ones filled ink, the
 /// current one a wide mint pill, the rest outlined. Stays put until the answer
 /// is confirmed.
 class StepProgress extends StatelessWidget {

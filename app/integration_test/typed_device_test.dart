@@ -403,7 +403,7 @@ void main() {
           'Room -> Talk -> consent -> typing -> memory question',
           ok,
           'first="${oneLine(c.mascotLine)}" ${ms}ms typing=${c.typing} phase=${serverPhase(c)} '
-              'step="${shows(find.text('Question 1 of 11'))}"',
+              'step="${shows(find.text('Question 1 of 12'))}"',
           ok
               ? ''
               : 'room=$room swoosh=$swooshed type=$typed notNow=$notNow first=$first memory=$memory '
