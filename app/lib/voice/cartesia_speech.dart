@@ -245,6 +245,10 @@ class CartesiaSpeechInput implements SpeechInput {
   @override
   Future<bool> hasPermission() => _recorder.hasPermission();
 
+  /// The token is shared with [CartesiaSpeechOutput], so this readies both.
+  @override
+  Future<void> warmUp() => tokens.prefetch();
+
   @override
   Future<void> start(void Function(String text) onCaption) async {
     await _teardown();

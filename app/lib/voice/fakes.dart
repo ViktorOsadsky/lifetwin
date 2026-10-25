@@ -59,6 +59,10 @@ class FakeSpeechInput implements SpeechInput {
   Object? startError;
   Object? finishError;
 
+  /// Thrown by [warmUp] if set.
+  Object? warmUpError;
+  int warmUps = 0;
+
   int starts = 0;
   int finishes = 0;
   int cancels = 0;
@@ -69,6 +73,12 @@ class FakeSpeechInput implements SpeechInput {
 
   @override
   Future<bool> hasPermission() async => permission == null ? true : permission!.future;
+
+  @override
+  Future<void> warmUp() async {
+    warmUps++;
+    if (warmUpError != null) throw warmUpError!;
+  }
 
   @override
   Future<void> start(void Function(String text) onCaption) async {

@@ -215,6 +215,7 @@ class CheckinController extends ChangeNotifier {
   /// Health; it does nothing when there is nothing left to ask today.
   Future<bool> start({String kind = 'quick'}) async {
     if (_busy || phase != CheckinPhase.notStarted) return false;
+    if (voiceUsable) _warmUp(); // the token is ready by the time Mochi first speaks
     final now = _clock();
     final today = isoDay(dayOf(now));
     final history = await store.checkins();
@@ -463,6 +464,7 @@ class CheckinController extends ChangeNotifier {
 
   Future<void> setTyping(bool value) async {
     if (value == typing || (!value && !voiceUsable)) return;
+    if (!value) _warmUp();
     if (value) {
       if (phase == CheckinPhase.listening) await cancelTalk();
       await _stopSpeech();
@@ -600,6 +602,9 @@ class CheckinController extends ChangeNotifier {
   }
 
   // ---- speaking ----------------------------------------------------------------
+
+  /// Gets voice ready in the background; any problem shows up when voice is used.
+  void _warmUp() => input.warmUp().ignore();
 
   Future<void> _stopOutput() async {
     try {

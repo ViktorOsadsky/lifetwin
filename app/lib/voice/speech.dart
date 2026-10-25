@@ -47,6 +47,10 @@ abstract class SpeechInput {
   /// the first time, and waits for the answer however long the person takes to read it.
   Future<bool> hasPermission();
 
+  /// Gets voice ready ahead of time (an access token), so the first Talk and the first
+  /// spoken line don't wait for it. Throws [VoiceUnavailableException] or [VoiceFailure].
+  Future<void> warmUp();
+
   /// Starts listening. [onCaption] receives the words heard so far.
   /// Throws [MicDeniedException], [VoiceUnavailableException] or [VoiceFailure].
   Future<void> start(void Function(String text) onCaption);

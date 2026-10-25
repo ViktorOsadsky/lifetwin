@@ -207,6 +207,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       typing = !yes;
       this.aiHelper = aiHelper;
     });
+    if (yes) _warmUp(); // the token is ready by the time the first question is spoken
     await _send('start');
   }
 
@@ -503,6 +504,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() => askingVoice = true);
       return;
     }
+    if (!value) _warmUp();
     if (value) {
       if (phase == VoicePhase.listening) await cancelTalk();
       await _stopSpeech();
@@ -522,6 +524,7 @@ class VoiceOnboardingController extends ChangeNotifier {
         notice = null;
       }
     });
+    if (yes) _warmUp();
   }
 
   Future<void> hearAgain() async {
@@ -605,6 +608,9 @@ class VoiceOnboardingController extends ChangeNotifier {
   }
 
   // ---- speaking --------------------------------------------------------------
+
+  /// Gets voice ready in the background; any problem shows up when voice is used.
+  void _warmUp() => input.warmUp().ignore();
 
   Future<void> _stopOutput() async {
     try {
