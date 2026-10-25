@@ -96,6 +96,11 @@
           "title": "Health Offered",
           "type": "boolean"
         },
+        "health_reasked": {
+          "default": false,
+          "title": "Health Reasked",
+          "type": "boolean"
+        },
         "memory_consent": {
           "anyOf": [
             {

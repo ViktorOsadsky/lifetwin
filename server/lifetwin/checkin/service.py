@@ -236,6 +236,10 @@ TOPIC_OF: dict[str, str] = {
     "sedentary_min_day": "sitting",
     "wellbeing": "feeling",
     "alcohol_drinks_yesterday": "drinks",
+    "sleep_hours": "sleep",
+    "vigorous_recreation_min_week": "activity",
+    "moderate_recreation_min_week": "activity",
+    "alcohol_drinks_weekly": "drinks",
 }
 TOPIC_LABELS = {
     "sleep": "your sleep",
@@ -639,6 +643,16 @@ class CheckinService:
                     notes = _safe(read_notes, text, topic=state.probe_topic) or []
                     state.habit_notes = merge(state.habit_notes, notes)[-5:]
                     lead = "Thanks for telling me. "
+                    extras = _safe(self._volunteered, state, text, voice) or {}
+                    if extras:
+                        # "I walked the dog, and I sat about 6 hours": also an answer.
+                        if _deferred(state):
+                            state.pending = CheckinValues.model_validate(
+                                state.pending.model_dump(exclude_none=True) | extras
+                            )
+                        else:
+                            self._keep_early(state, extras)
+                        lead += _echo(extras)
                 state.probe_topic = None
                 self._advance(state)
                 return respond(lead + self._prompt(state))
@@ -780,6 +794,17 @@ class CheckinService:
             # The one read-back at the end (quick and daily). Only a plain yes saves.
             said, rest = (read_back, "") if read_back else read_back_reply(text)
             answered = self._answered_topics(state)
+            if said in {"yes_value", "unsure"} and rest and not read_back:
+                # "Yes, and I also walked 20 minutes": a skipped question answered early.
+                _, topics = self._clause_topics(rest)
+                extras = {}
+                if not set(topics) & set(answered):
+                    extras = _safe(self._volunteered, state, rest, voice) or {}
+                if extras:
+                    state.pending = CheckinValues.model_validate(
+                        state.pending.model_dump(exclude_none=True) | extras
+                    )
+                    return respond(_echo(extras) + "Here is everything now. " + self._prompt(state))
             if said == "yes_value" and len(answered) == 1:
                 # "Yes, 7 hours" to "you slept 7 hours" saves; "yes, 8" is not a yes.
                 (only,) = answered.values()
@@ -941,11 +966,14 @@ class CheckinService:
         values, hint, same, extras, notes = read
         if not values:
             ask = self._prompt(state) if state.phase == "confirming" else self._question(state)
-            if extras and _deferred(state) and state.phase == "asking":
+            if extras and state.phase == "asking":
                 # The open question wasn't answered, but a later one was: kept for later.
-                state.pending = CheckinValues.model_validate(
-                    state.pending.model_dump(exclude_none=True) | extras
-                )
+                if _deferred(state):
+                    state.pending = CheckinValues.model_validate(
+                        state.pending.model_dump(exclude_none=True) | extras
+                    )
+                else:
+                    self._keep_early(state, extras)
                 return respond(_echo(extras) + (hint or self._question(state)))
             if hint and state.phase != "confirming":
                 return respond(hint)
@@ -968,6 +996,7 @@ class CheckinService:
             lead = asked_back + (SAME_LEAD if same else "")
             return self._hear(state, values, request, text, lead=lead, extras=extras, notes=notes)
         state.pending = CheckinValues.model_validate(values)
+        self._keep_early(state, extras)
         state.phase = "confirming"
         state.from_health = False
         state.held_minutes = None
@@ -1193,16 +1222,10 @@ class CheckinService:
         clause beside the answer that is only a note ("pretty good, my knee is sore")
         is a habit note, never a value.
         """
-        if not _deferred(state) or state.phase != "asking":
+        if state.phase != "asking":
             return (*self._read(state, text, voice), {}, [])
-        clauses = [c.strip() for c in re.split(CLAUSES, text.lower()) if c and c.strip()]
+        clauses, topics = self._clause_topics(text)
         own = TOPIC_OF.get(state.current_field)
-        topics: list[str | None] = []
-        for clause in clauses:
-            named = {t for t, cue in TOPIC_CUES.items() if re.search(cue, normalize_text(clause))}
-            if "feeling" in named and len(named) > 1:
-                named.discard("feeling")  # "slept well", "a good walk": not how they feel
-            topics.append(next(iter(named)) if len(named) == 1 else (None if not named else "?"))
         later = self._later(state)
         if clauses and "?" not in topics and set(topics) & set(later):
             # Clauses without a topic of their own belong to the open question.
@@ -1218,8 +1241,13 @@ class CheckinService:
             extras = {k: v for k, v in extras.items() if k not in values}
             unusual = self._unusual(state, extras)
             extras = {k: v for k, v in extras.items() if k not in unusual}
-            return values, hint, False, extras, []
+            if values or _deferred(state):
+                return values, hint, False, extras, []
+            # Weekly: room noise ("the tv's on") never stands in for the open question.
+            return (*self._read(state, text, voice), {}, [])
         values, hint, same = self._read(state, text, voice)
+        if not _deferred(state):
+            return values, hint, same, {}, []
         if values or same or len(clauses) < 2 or own in {None, "activity"}:
             return values, hint, same, {}, []
         if any(t not in {None, own} for t in topics):
@@ -1237,6 +1265,45 @@ class CheckinService:
         notes = (_safe(read_notes, text, topic=topic) or []) if topic else []
         return first, None, False, {}, notes
 
+    @staticmethod
+    def _keep_early(state: CheckinState, extras: dict) -> None:
+        """Weekly: answers to later questions, read back when their question comes up."""
+        if extras:
+            state.early = CheckinValues.model_validate(
+                state.early.model_dump(exclude_none=True) | extras
+            )
+
+    @staticmethod
+    def _clause_topics(text: str) -> tuple[list[str], list[str | None]]:
+        """The clauses of a reply and the one topic each is about (None: none, "?": several)."""
+        clauses = [c.strip() for c in re.split(CLAUSES, text.lower()) if c and c.strip()]
+        topics: list[str | None] = []
+        for clause in clauses:
+            named = {t for t, cue in TOPIC_CUES.items() if re.search(cue, normalize_text(clause))}
+            if "feeling" in named and len(named) > 1:
+                named.discard("feeling")  # "slept well", "a good walk": not how they feel
+            topics.append(next(iter(named)) if len(named) == 1 else (None if not named else "?"))
+        return clauses, topics
+
+    def _volunteered(self, state: CheckinState, text: str, voice: bool) -> dict:
+        """Answers said beside something else (a yes, a habit note) for questions that are
+        skipped or still open. A topic already answered is left to the usual handling."""
+        clauses, topics = self._clause_topics(text)
+        open_: dict[str, str] = {}
+        for name in state.questions:
+            names = [name, PAIRS[name]] if name in PAIRS else [name]
+            if name in TOPIC_OF and not any(
+                self._saved(state, n) or getattr(state.early, n, None) is not None for n in names
+            ):
+                open_.setdefault(TOPIC_OF[name], name)
+        found: dict = {}
+        for topic, field in open_.items():
+            said = [c for c, t in zip(clauses, topics, strict=True) if t == topic]
+            if said:
+                found |= self._read_later(state, field, ", ".join(said), voice)
+        unusual = self._unusual(state, found)
+        return {k: v for k, v in found.items() if k not in unusual}
+
     def _later(self, state: CheckinState) -> dict[str, str]:
         """Topic -> question, for the questions after this one not answered yet."""
         order = state.questions
@@ -1244,7 +1311,12 @@ class CheckinService:
         later: dict[str, str] = {}
         for name in order[at + 1 :]:
             names = [name, PAIRS[name]] if name in PAIRS else [name]
-            if any(self._saved(state, n) or n in state.skipped_fields for n in names):
+            if any(
+                self._saved(state, n)
+                or n in state.skipped_fields
+                or getattr(state.early, n, None) is not None
+                for n in names
+            ):
                 continue
             if name in state.unknown_fields or name not in TOPIC_OF:
                 continue
@@ -1256,7 +1328,7 @@ class CheckinService:
         """What a clause says for a later question, read as if that question were open."""
         ahead = state.model_copy(deep=True)
         ahead.current_field, ahead.one_pace, ahead.held_minutes = field, False, None
-        ahead.from_health = False
+        ahead.from_health, ahead.phase, ahead.checking = False, "asking", []
         values, _, _ = _safe(self._read, ahead, text, voice) or ({}, None, False)
         return values
 
@@ -1630,6 +1702,25 @@ class CheckinService:
         return None
 
     @staticmethod
+    def _read_early(state: CheckinState) -> None:
+        """Weekly: the open question was already answered early: read it back, don't ask."""
+        field = state.current_field
+        if _deferred(state) or state.phase != "asking" or field is None:
+            return
+        names = [field, PAIRS[field]] if field in PAIRS else [field]
+        said = {n: getattr(state.early, n) for n in names if getattr(state.early, n) is not None}
+        if len(said) == len(names):
+            state.pending = CheckinValues.model_validate(said)
+            state.early = CheckinValues.model_validate(
+                {
+                    k: v
+                    for k, v in state.early.model_dump(exclude_none=True).items()
+                    if k not in said
+                }
+            )
+            state.phase, state.from_health = "confirming", False
+
+    @staticmethod
     def _advance(state: CheckinState) -> None:
         state.current_field = next(
             (
@@ -1650,6 +1741,7 @@ class CheckinService:
             state.phase = "confirming"  # quick and daily: one read-back of every answer
         state.one_pace, state.held_minutes, state.from_health = False, None, False
         state.reopened = False
+        CheckinService._read_early(state)
         CheckinService._offer(state)
 
     @staticmethod
