@@ -4,9 +4,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../twin/twin_state.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
+import '../ui/twin_pose_map.dart';
 import '../ui/widgets/twin_sprite.dart';
 import 'room_layout.dart';
 import 'room_sim.dart';
@@ -23,10 +25,21 @@ import 'room_sim.dart';
 /// Swap point: a future room engine (for example Flame) replaces this widget
 /// and its projector; [RoomSim] and the screen around it stay the same.
 class RoomScene extends StatefulWidget {
-  const RoomScene({super.key, required this.sim, required this.appearance, this.clear = EdgeInsets.zero});
+  const RoomScene({
+    super.key,
+    required this.sim,
+    required this.appearance,
+    this.clear = EdgeInsets.zero,
+    this.twinState,
+  });
 
   final RoomSim sim;
   final TwinAppearance appearance;
+
+  /// The character's state. While the twin is just standing around, it shows this
+  /// (concerned, sleepy, thinking, sitting, proud, waving or jumping); an activity or a walk
+  /// still shows its own pose. Null: the plain standing pose.
+  final TwinState? twinState;
 
   /// How much of the screen the UI covers at the top and the bottom.
   final EdgeInsets clear;
@@ -112,7 +125,23 @@ double roomAlignmentY(RoomLayout layout, Size box, EdgeInsets clear) {
 /// fractions of the square sprite box, measured from the v2 art (darkest
 /// blobs in the head). Re-measure when that file is swapped for new art.
 const _eyes = [Offset(0.4123, 0.2959), Offset(0.6007, 0.2932)];
-const _standAssets = {'assets/twin/bear/pose/stand.png', 'assets/twin/bear/pose_nohat/stand.png'};
+final _standAssets = {
+  twinAsset(TwinType.bear, TwinLook.calHat, TwinPose.stand),
+  twinAsset(TwinType.bear, TwinLook.plain, TwinPose.stand),
+};
+
+/// The room pose whose height and shadow a mood pose shares, and a correction for mood
+/// poses drawn taller or shorter than the standing one (from the art's real sizes).
+(RoomPose, double) _moodShape(TwinType type, TwinPose pose) {
+  Size native(TwinPose p) => type == TwinType.bear ? p.bearNative : p.humanNative;
+  return switch (pose) {
+    TwinPose.wave => (RoomPose.wave, 1.0),
+    TwinPose.jump => (RoomPose.jump, 1.0),
+    TwinPose.sit => (RoomPose.sit, 1.0),
+    TwinPose.stand => (RoomPose.stand, 1.0),
+    _ => (RoomPose.stand, native(pose).height / native(TwinPose.stand).height),
+  };
+}
 
 class _RoomSceneState extends State<RoomScene> {
   late final Ticker _ticker = Ticker(_tick);
@@ -274,14 +303,23 @@ class _RoomSceneState extends State<RoomScene> {
 
   List<Widget> _twin(RoomLayout layout) {
     final proj = layout.projector;
-    final (twinPose, shape) = resolveRoomPose(widget.appearance, sim.pose);
+    var (twinPose, shape) = resolveRoomPose(widget.appearance, sim.pose);
+    var moodScale = 1.0;
+    final mood = widget.twinState;
+    if (mood != null && shape == RoomPose.stand) {
+      final p = poseForTwinState(mood);
+      if (twinHasPose(widget.appearance.type, widget.appearance.look, p)) {
+        twinPose = p;
+        (shape, moodScale) = _moodShape(widget.appearance.type, p);
+      }
+    }
     final asset = twinAsset(widget.appearance.type, widget.appearance.look, twinPose);
     final size = twinSpriteSize1x[asset] ?? const Size(180, 180);
     final x = sim.pos.dx, z = sim.pos.dy, y = sim.yOff + sim.bob;
     final az = layout.cameraAzimuth;
     // The billboard leans back toward the camera; lying down, it faces it.
     final lean = (shape == RoomPose.sleep ? layout.cameraPitchDeg : layout.leanDeg) * math.pi / 180;
-    final h = layout.bearHeight * (_poseHeight[shape] ?? 1);
+    final h = layout.bearHeight * (_poseHeight[shape] ?? 1) * moodScale;
     final feet = proj.project(x, y, z);
     final head = proj.project(
       x - math.sin(lean) * math.sin(az) * h,

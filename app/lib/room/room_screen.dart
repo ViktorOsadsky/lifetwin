@@ -5,6 +5,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../forecast/forecast_client.dart';
+import '../checkin/checkin_client.dart' show CheckInKind;
+import '../checkin/checkin_scheduler.dart';
+import '../twin/twin_model.dart' show extrapolationCaveat;
+import '../twin/twin_repository.dart';
 import '../ui/swoosh_route.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
@@ -34,6 +38,12 @@ class RoomScreen extends StatefulWidget {
     this.outlook,
     this.hasProfile = false,
     this.onUseHealth,
+    this.twin,
+    this.onExperiment,
+    this.onStillLearning,
+    this.onWellness,
+    this.checkins,
+    this.onCheckIn,
   });
 
   /// Cosmetic look only; never part of the health profile.
@@ -53,6 +63,25 @@ class RoomScreen extends StatefulWidget {
 
   /// "Use my Apple Health": the Health import. Null (no pill) once Health data is confirmed.
   final VoidCallback? onUseHealth;
+
+  /// The on-device twin. Mochi shows its `twinState()` and follows its changes; with a
+  /// profile saved, "Try a change" appears beside the status line. Null: a plain standing twin.
+  final TwinRepository? twin;
+
+  /// Opens "Experiment with your twin".
+  final VoidCallback? onExperiment;
+
+  /// Opens "Still learning": the answers the model still needs. The pill shows only while some are missing.
+  final VoidCallback? onStillLearning;
+
+  /// Which check-in is due. The Room shows it as its most prominent control, or "Checked in today".
+  final CheckinScheduler? checkins;
+
+  /// Opens a check-in (`openCheckIn`).
+  final void Function(CheckInKind kind)? onCheckIn;
+
+  /// Opens "Here's what I see so far": the wellness cards, each with its source link.
+  final VoidCallback? onWellness;
 
   static const talkFirst = "Let's talk first, so I can make your forecast.";
 
@@ -169,7 +198,11 @@ class _RoomScreenState extends State<RoomScreen> {
               Positioned.fill(
                 child: ValueListenableBuilder<TwinAppearance>(
                   valueListenable: widget.appearance,
-                  builder: (context, look, _) => RoomScene(sim: _sim, appearance: look, clear: _clear),
+                  builder: (context, look, _) => _TwinListener(
+                    twin: widget.twin,
+                    builder: (context, repo) =>
+                        RoomScene(sim: _sim, appearance: look, clear: _clear, twinState: repo?.twinState()),
+                  ),
                 ),
               ),
               SafeArea(
@@ -204,6 +237,13 @@ class _RoomScreenState extends State<RoomScreen> {
                                     key: _bottomKey,
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
+                                      if (widget.checkins != null && widget.onCheckIn != null) ...[
+                                        _TwinListener(
+                                          twin: widget.twin,
+                                          builder: (context, _) =>
+                                              _CheckinEntry(scheduler: widget.checkins!, onOpen: widget.onCheckIn!),
+                                        ),
+                                      ],
                                       if (_needTalk && !widget.hasProfile) ...[
                                         const Bubble(
                                           text: RoomScreen.talkFirst,
@@ -223,6 +263,45 @@ class _RoomScreenState extends State<RoomScreen> {
                                         children: [
                                           StatusPill(label: _sim.status, icon: Icons.circle),
                                           if (widget.onUseHealth != null) _HealthPill(onTap: _useHealth),
+                                          if (widget.onStillLearning != null)
+                                            _TwinListener(
+                                              twin: widget.twin,
+                                              builder: (context, repo) {
+                                                final n = repo?.current?.missingInputs.length ?? 0;
+                                                return n == 0
+                                                    ? const SizedBox.shrink()
+                                                    : _RoomPill(
+                                                        icon: Icons.help_outline_rounded,
+                                                        label: 'Still learning $n',
+                                                        semantics: 'Still learning: $n answers to add',
+                                                        onTap: widget.onStillLearning!,
+                                                      );
+                                              },
+                                            ),
+                                          if (widget.onWellness != null)
+                                            _TwinListener(
+                                              twin: widget.twin,
+                                              builder: (context, repo) => (repo?.wellnessCards.isEmpty ?? true)
+                                                  ? const SizedBox.shrink()
+                                                  : _RoomPill(
+                                                      icon: Icons.star_border_rounded,
+                                                      label: 'What I see',
+                                                      semantics: 'What I see: wellness cards, each with its source',
+                                                      onTap: widget.onWellness!,
+                                                    ),
+                                            ),
+                                          if (widget.onExperiment != null)
+                                            _TwinListener(
+                                              twin: widget.twin,
+                                              builder: (context, repo) => repo?.current == null
+                                                  ? const SizedBox.shrink()
+                                                  : _RoomPill(
+                                                      icon: Icons.science_outlined,
+                                                      label: 'Try a change',
+                                                      semantics: 'Try a change with your twin',
+                                                      onTap: widget.onExperiment!,
+                                                    ),
+                                            ),
                                         ],
                                       ),
                                       const SizedBox(height: 10),
@@ -303,7 +382,7 @@ class _OutlookCard extends StatelessWidget {
     final has = f != null && f.supported;
     final years = has ? f.maxHorizonYears : 5;
     final line = has ? 'about ${f.outOf100(years)} in 100' : 'Ask the ball';
-    return Semantics(
+    final card = Semantics(
       button: true,
       label: 'Your $years-year look: $line',
       excludeSemantics: true,
@@ -347,6 +426,15 @@ class _OutlookCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+    if (!has || !f.extrapolated) return card;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        card,
+        RoughGuideBadge(caveat: extrapolationCaveat),
+      ],
     );
   }
 }
@@ -603,6 +691,132 @@ class _DockItem extends StatelessWidget {
 
 /// "Use my Apple Health", compact: a plain heart (never Apple's Health app icon) and one
 /// line that shrinks rather than wraps. At least 48 pt tall.
+/// Rebuilds when the repository changes (a saved profile, a check-in, an emergency).
+class _TwinListener extends StatelessWidget {
+  const _TwinListener({required this.twin, required this.builder});
+  final TwinRepository? twin;
+  final Widget Function(BuildContext, TwinRepository?) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    final repo = twin;
+    if (repo == null) return builder(context, null);
+    return ListenableBuilder(listenable: repo, builder: (context, _) => builder(context, repo));
+  }
+}
+
+/// The check-in entry. Daily is the core loop: when one is due it is the most prominent control in the
+/// Room (a primary button, 64pt); a due weekly one sits under it. When nothing is due, a quiet
+/// "Checked in today". Customize, Talk and Fortune stay in the dock below.
+class _CheckinEntry extends StatelessWidget {
+  const _CheckinEntry({required this.scheduler, required this.onOpen});
+  final CheckinScheduler scheduler;
+  final void Function(CheckInKind) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final due = scheduler.dueKinds();
+    if (due.isEmpty) {
+      if (!scheduler.doneToday(CheckInKind.daily)) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Center(
+          child: Semantics(
+            label: 'Checked in today. See you tomorrow.',
+            excludeSemantics: true,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: LtColors.mintWash,
+                borderRadius: BorderRadius.circular(LtRadii.chip),
+                border: Border.all(color: LtColors.container, width: LtBorders.container),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.check_circle_outline_rounded, size: 24, color: LtColors.ink),
+                  const SizedBox(width: 8),
+                  _OneLine('Checked in today', style: LtText.body(weight: FontWeight.w700)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    final first = due.first;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          LipButton(
+            label: first == CheckInKind.daily ? 'Daily check-in' : 'Weekly check-in',
+            icon: first == CheckInKind.daily ? Icons.favorite_border_rounded : Icons.calendar_month_outlined,
+            fontSize: 24,
+            semanticLabel: first == CheckInKind.daily ? 'Daily check-in. A 1-minute chat.' : 'Weekly check-in. Ready now.',
+            onTap: () => onOpen(first),
+          ),
+          if (due.length > 1) ...[
+            const SizedBox(height: 8),
+            LipButton(
+              label: 'Weekly check-in',
+              kind: LipKind.secondary,
+              height: 56,
+              fontSize: 20,
+              onTap: () => onOpen(due[1]),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// A pill beside the status line ("Try a change", "What I see", "Still learning 2").
+class _RoomPill extends StatelessWidget {
+  const _RoomPill({required this.icon, required this.label, required this.semantics, required this.onTap});
+  final IconData icon;
+  final String label;
+  final String semantics;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: semantics,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: LtColors.paper,
+            borderRadius: BorderRadius.circular(LtRadii.chip),
+            border: Border.all(color: LtColors.control, width: LtBorders.control),
+            boxShadow: LtShadows.small,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 24, color: LtColors.ink),
+              const SizedBox(width: 8),
+              Flexible(
+                child: _OneLine(label, style: LtText.body(weight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _HealthPill extends StatelessWidget {
   const _HealthPill({required this.onTap});
   final VoidCallback onTap;

@@ -9,6 +9,15 @@ import 'health/health_screen.dart';
 import 'health/health_summary.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'onboarding/voice_onboarding_screen.dart';
+import 'checkin/change_chat.dart';
+import 'checkin/check_in.dart';
+import 'checkin/checkin_client.dart';
+import 'checkin/checkin_scheduler.dart';
+import 'experiment/answers.dart';
+import 'experiment/experiment_screen.dart';
+import 'experiment/still_learning_screen.dart';
+import 'experiment/weight_screen.dart';
+import 'experiment/wellness_screen.dart';
 import 'room/room_screen.dart';
 import 'twin/twin_repository.dart';
 import 'ui/swoosh_route.dart';
@@ -26,7 +35,7 @@ void main() => runApp(const LifeTwinApp());
 /// The confirmed profile, check-in history and twin look are kept on the phone only
 /// (lib/twin/twin_store.dart); the forecast runs on the phone (lib/twin/).
 class LifeTwinApp extends StatefulWidget {
-  const LifeTwinApp({super.key, this.controller, this.forecastClient, this.healthReader, this.appearance, this.twin});
+  const LifeTwinApp({super.key, this.controller, this.forecastClient, this.healthReader, this.appearance, this.twin, this.checkinClient, this.changeClient});
 
   /// Tests pass a controller built from fakes.
   final VoiceOnboardingController? controller;
@@ -36,6 +45,12 @@ class LifeTwinApp extends StatefulWidget {
 
   /// Tests may pass one; otherwise the model is loaded and the store opened at startup.
   final Future<TwinRepository>? twin;
+
+  /// Tests pass a fake; otherwise `/api/checkin/*` over HTTP.
+  final CheckInClient? checkinClient;
+
+  /// Tests pass a fake; otherwise `/api/change/*` over HTTP.
+  final ChangeClient? changeClient;
 
   /// Tests pass a fake; otherwise Apple Health.
   final HealthReader? healthReader;
@@ -54,6 +69,12 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   // Loaded once, at startup.
   late final Future<TwinRepository> _twin = widget.twin ?? TwinRepository.open();
   late final ForecastClient _forecast = widget.forecastClient ?? OnDeviceForecastClient(_twin);
+
+  /// The opened repository, once it has loaded (the Room's twin state and "Try a change").
+  TwinRepository? _repo;
+  CheckinScheduler? _scheduler;
+  late final ChangeClient _changeClient = widget.changeClient ?? HttpChangeClient(base: _api);
+  late final CheckInClient _checkinClient = widget.checkinClient ?? HttpCheckInClient(base: _api);
 
   /// The profile saved on the phone by an earlier session, once the store is open.
   Map<String, dynamic>? _stored;
@@ -90,7 +111,11 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       final look = repo.store.twin;
       if (look != null && widget.appearance == null) _look.value = _appearanceFrom(look);
       _look.addListener(() => repo.saveTwinLook(_appearanceJson(_look.value)).ignore());
-      if (repo.store.hasProfile) setState(() => _stored = repo.store.profile);
+      setState(() {
+        _repo = repo;
+        _scheduler = CheckinScheduler(repo);
+        if (repo.store.hasProfile) _stored = repo.store.profile;
+      });
     }, onError: (Object e) => debugPrint('LifeTwin model or store did not load: $e'));
   }
 
@@ -190,6 +215,105 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     return fromTalk ? nav.pushAndRemoveUntil(route, (r) => r.isFirst) : nav.push(route);
   }
 
+  /// "Tell Mochi" and "Change": a short talk with Mochi about one saved answer (`/api/change/start`
+  /// with `field`) or "What would you like to update?" (no field). Saves only after "Yes, save".
+  void _changeWithMochi(BuildContext context, String? field) {
+    final repo = _repo;
+    if (repo == null) return;
+    final controller = ChangeChatController(client: _changeClient, repository: repo, field: field);
+    Navigator.of(context)
+        .push<void>(
+          MaterialPageRoute<void>(
+            fullscreenDialog: true,
+            builder: (c) => ChangeChatScreen(
+              controller: controller,
+              appearance: _look.value,
+              onClose: () => Navigator.of(c).pop(),
+            ),
+          ),
+        )
+        .whenComplete(controller.dispose);
+  }
+
+  void _experiment(BuildContext context) {
+    final repo = _repo;
+    if (repo == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (experimentContext) => ExperimentScreen(
+          repository: repo,
+          appearance: _look.value,
+          onBack: () => Navigator.of(experimentContext).pop(),
+          onTellMochi: (field) {
+            Navigator.of(experimentContext).pop();
+            _changeWithMochi(context, field);
+          },
+        ),
+      ),
+    );
+  }
+
+  /// "Still learning": the answers the model needs, from the stored result.
+  void _stillLearning(BuildContext context) {
+    final repo = _repo;
+    if (repo == null) return;
+    final a = repo.current ?? repo.assess(const {});
+    final known = [
+      for (final e in a.profileUsed.entries)
+        if (Answers.text(e.key, e.value) case final text?) (e.key, text),
+      // Height and weight are one model input (BMI); never shown as a number.
+      if (a.profileUsed['bmi'] != null) ('bmi', ''),
+    ];
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (c) => StillLearningScreen(
+          appearance: _look.value,
+          assessment: a,
+          known: known,
+          onBack: () => Navigator.of(c).pop(),
+          onTellMochi: (field) {
+            Navigator.of(c).pop();
+            _changeWithMochi(context, field);
+          },
+        ),
+      ),
+    );
+  }
+
+  /// "Here's what I see so far": the wellness cards, each with its own source link.
+  void _wellness(BuildContext context) {
+    final repo = _repo;
+    if (repo == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (c) => WellnessScreen(
+          appearance: _look.value,
+          state: repo.twinState(),
+          cards: repo.wellnessCards,
+          onBack: () => Navigator.of(c).pop(),
+          onWeight: () {
+            final bmi = repo.wellnessCards.where((w) => w.id == 'bmi').firstOrNull;
+            if (bmi == null) return;
+            Navigator.of(c).push(
+              MaterialPageRoute<void>(
+                builder: (w) => WeightInfoScreen(
+                  appearance: _look.value,
+                  card: bmi,
+                  onBack: () => Navigator.of(w).pop(),
+                  onAskMochi: () {
+                    Navigator.of(w).pop();
+                    Navigator.of(c).pop();
+                    _changeWithMochi(context, 'weight_kg');
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   void _customize(BuildContext context) => Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (_) => CustomizeScreen(appearance: _look, onDone: () => Navigator.of(context).pop()),
@@ -202,6 +326,10 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       title: 'LifeTwin',
       debugShowCheckedModeBanner: false,
       theme: lifeTwinTheme(),
+      // Check-ins read the repository, client and look from here, so any screen can call `openCheckIn`.
+      builder: (context, child) => _repo == null
+          ? child!
+          : CheckInScope(repository: _repo!, client: _checkinClient, appearance: _look, child: child!),
       home: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) => RoomScreen(
@@ -212,6 +340,12 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onCustomize: () => _customize(context),
           onFortune: () => _ceremony(context),
           outlook: _outlook,
+          twin: _repo,
+          onExperiment: _repo == null ? null : () => _experiment(context),
+          checkins: _scheduler,
+          onCheckIn: _repo == null ? null : (kind) => openCheckIn(context, kind: kind),
+          onStillLearning: _repo == null ? null : () => _stillLearning(context),
+          onWellness: _repo == null ? null : () => _wellness(context),
         ),
       ),
     );
