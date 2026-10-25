@@ -91,8 +91,15 @@ class BandWeek {
   ];
   int get validCount => validDays.length;
 
-  /// The suggestion needs 4 or more valid days.
-  bool get hasEstimate => validCount >= validDaysNeeded;
+  /// Wear can be known while posture/activity records were not saved. Those
+  /// minutes cannot be treated as zero movement in a weekly model suggestion.
+  bool get hasUnknownActivityCoverage => validDays.any(
+    (day) => (day.report?.postures['positions_not_saved'] ?? 0) > 0,
+  );
+
+  /// Four valid days plus complete activity classification for the used days.
+  bool get hasEstimate =>
+      validCount >= validDaysNeeded && !hasUnknownActivityCoverage;
 
   /// Moderate-to-vigorous minutes on the valid days.
   int get validModerate => validDays.fold(0, (a, d) => a + d.moderateMinutes);

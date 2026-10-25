@@ -703,6 +703,11 @@ TOPICS: dict[str, str] = {
         r"armchair)\b"
     ),
 }
+# A verb that names the measurement itself ("I weigh about 146") attributes a bare number to
+# it; "class of 1998" does not, so most topics still need a unit.
+SAID_OUTRIGHT: dict[str, str] = {
+    "weight_kg": r"\bweigh\w*\b",
+}
 # Units also attribute a number to a topic (used for clauses a provider did not quote).
 TOPIC_UNITS: dict[str, str] = {
     "age": r"\byear\b",
@@ -2679,7 +2684,7 @@ def _validated(values: dict) -> dict:
 
 LABELED = r"\s*([a-z_ ]+?)\s*[:=]\s*(.+)\s*"
 CORRECTION_CUE = r"\b(?:actually|i meant|sorry)\b|\bnot\s+\d"
-SELF_AGE = r"\b(?:i'm|i am)\s+\d{2,3}(?![\d.])(?!\s?(?:ft|inch|cm|m|kg|lb|stone|hour|minute)\b)"
+SELF_AGE = r"\b(?:i'm|i am)\s+(?:actually\s+|really\s+|now\s+)?\d{2,3}(?![\d.])(?!\s?(?:ft|inch|cm|m|kg|lb|stone|hour|minute)\b)"
 SEX_CUE = r"\b(?:female|male|woman|man)\b"
 # Beside another answer, "man" is often an exclamation ("7 hours, oh man").
 SEX_CUE_OTHER = r"\b(?:female|male)\b|\b(?:i'm|i am) an? (?:wo)?man\b|^an? (?:wo)?man$"
@@ -2713,6 +2718,7 @@ def _part_fields(part: str, asked: ProfileField, several: bool) -> set[str]:
         for topic in named
         if topic in CATEGORICAL | {_topic(asked), "alcohol_drinks_weekly"}
         or re.search(TOPIC_UNITS[topic], text)
+        or (topic in SAID_OUTRIGHT and re.search(SAID_OUTRIGHT[topic] + r".*\d", text))
     }
     bp = asked if asked in BP_FIELDS else "systolic_bp"
     fields = {
@@ -2729,6 +2735,25 @@ def _part_fields(part: str, asked: ProfileField, several: bool) -> set[str]:
         if level and (activity or "exercise_minutes_weekly" in fields):
             fields = (fields - ACTIVITY_FIELDS) | {level}
     return fields
+
+
+STRAY_RANGE = {"weight_kg": (30, 400), "height_cm": (100, 250), "age": (18, 120)}
+# Words that carry no answer: hesitations, connectors, and the start of a sentence that was
+# cut off ("and I", "um so", "my"). A part made only of these is dropped, so a trailing
+# fragment never costs the answer beside it.
+FILLER_WORDS = (
+    r"oh|ah|um+|uh+|er+|hm+|mm+|well|so|also|and|but|then|anyway|like|you know|i mean|"
+    r"too|as well|just|now|i|i'm|i am|i'd|i've|i'll|my|me|we|it|it's|its|the|a|an|to|of|is|was|"
+    r"that|which|that's|what|how|when|because|if|or|with|for|in|on|at|about|around|maybe|"
+    r"let me think|let me see|let's see|hold on|one second|one sec"
+)
+FILLER = re.compile(rf"(?:{FILLER_WORDS})(?:[\s,.;]+(?:{FILLER_WORDS}))*")
+
+
+def is_filler(text: str) -> bool:
+    """Only hesitations and the dangling start of a sentence: nothing was answered."""
+    plain = " ".join(re.sub(r"[^\w'\s-]", " ", text.lower()).split())
+    return bool(plain) and bool(FILLER.fullmatch(plain))
 
 
 # No answer has seven digits in a row; refusing them early keeps huge inputs cheap.
@@ -2784,7 +2809,7 @@ def competing(text: str, field: ProfileField) -> bool:
     I'm 5'4"). In a room full of voices it may not be the person's own answer."""
     if field in CATEGORICAL:
         return False
-    pieces = [p for p in re.split(rf"{SENTENCE_END}|[;,]|\s+and\s+", text, flags=re.I) if p]
+    pieces = [p for p in re.split(rf"{SENTENCE_END}|[;,]|\s+(?:and|but)\s+", text, flags=re.I) if p]
     theirs = [p for p in pieces if p.strip() and _others(p)]
     numbered = [p for p in pieces if re.search(r"\d", _canonical(p))]
     return any(re.search(r"\d", _canonical(p)) for p in theirs) and len(numbered) > 1
@@ -2822,6 +2847,21 @@ def _clinician_report(text: str, field: str) -> str:
     return " ".join(CLINICIAN_REPORT.sub(" ", text).split()) or text
 
 
+NOT_NUMBER = re.compile(
+    r"[,;]?\s*(?:\band\s+)?\bnot\s+(?:about\s+)?\d[\d.']*"
+    r"(?:\s+(?:pounds?|lbs?|kg|kilos?|cm|hours?|minutes?|years?|drinks?))?(?=\s*(?:[,;.]|$))",
+    re.I,
+)
+
+
+def _drop_negated_number(text: str) -> str:
+    """ "150 pounds, not 146": the number after "not" is the one being corrected away."""
+    found = NOT_NUMBER.search(text)
+    if found and re.search(r"\d", text[: found.start()]):
+        return text[: found.start()] + text[found.end() :]
+    return text
+
+
 def parse_reply(
     text: str,
     field: ProfileField,
@@ -2839,6 +2879,8 @@ def parse_reply(
     text = _clinician_report(normalize_text(text), field)
     if LONG_NUMBER.search(text) or (strict and competing(text, field)):
         return {}
+    if re.search(r"\b(?:hundred|thousand)\s+and\W*$", text, re.I):
+        return {}  # "a hundred and": cut off before the rest of the number
     # "I'm 70. My wife, 72": sentences about someone else are left out, and what is
     # left must be said about oneself ("No. My mother, yes." answers nothing).
     sentences = [part for part in re.split(SENTENCE_END, text) if part.strip()]
@@ -2854,16 +2896,18 @@ def parse_reply(
     # One measurement may contain commas or "and" ("5 feet, 10 inches").
     whole = parse_value(field, text, today=today, period=period)
     split = re.sub(SEX_AND_NUMBER, lambda m: (m.group(1) or m.group(2)) + ", ", text, flags=re.I)
+    split = _drop_negated_number(split)
     # "an hour and a half", "an hour and fifteen minutes" are one duration, not two parts.
     parts = [
         part
+        for piece in re.split(SENTENCE_END, split)
         for part in re.split(
-            r"[;,]|\s+and\s+(?!(?:a\s+)?(?:half|quarter)\b|three\s+quarters\b|"
+            r"[;,]|\s+but\s+|\s+and\s+(?!(?:a\s+)?(?:half|quarter)\b|three\s+quarters\b|"
             r"[\w-]+(?:\s+[\w-]+)?\s+min)",
-            split,
+            piece,
             flags=re.I,
         )
-        if part.strip()
+        if part.strip() and not is_filler(part)
     ]
     labeled = any(re.fullmatch(LABELED, part, re.I) for part in parts)
     own = [part for part in parts if not _others(part)]
@@ -2872,9 +2916,16 @@ def parse_reply(
     if any(_others(part) and re.search(COMPARED_TO, _canonical(part)) for part in parts):
         return {}
     dropped = bool(own) and len(own) < len(parts) and not labeled
+    if (
+        strict
+        and dropped
+        and any(re.search(r"\d", _canonical(part)) for part in parts if _others(part))
+    ):
+        return {}  # a voice transcript can't tell whose number it heard
     parts = own if dropped else parts
     several = len(parts) > 1
     values: dict = {}
+    clashed: set[str] = set()
     for part in parts:
         label = re.fullmatch(LABELED, part, re.I)
         if label:
@@ -2903,8 +2954,18 @@ def parse_reply(
         # Parts for the same question are pieces of one answer ("two beers on Friday and
         # two on Saturday" is never 2): the reply is read as a whole, or asked about.
         if any(key in values for key in parsed):
-            return whole
+            # Unless the whole reply agrees with the first part ("I used to smoke, quit ten
+            # years ago, and I'm 64": two pieces of one smoking answer, and an age).
+            clashed |= parsed.keys() & values.keys()
+            parsed = {k: v for k, v in parsed.items() if k not in values}
         values.update(parsed)
+    if any(whole.get(key) != values[key] for key in clashed):
+        return whole
+    # A fragment for another question is held to a stricter range: "forty six pounds", the
+    # end of "a hundred and forty six pounds", is no adult's weight.
+    for key, (low, high) in STRAY_RANGE.items():
+        if key != field and key in values and not low <= values[key] <= high:
+            del values[key]
     if field in ACTIVITY_BASE and len(values.keys() & ACTIVITY_FIELDS) > 1:
         # Lighter and harder activity told apart by their own words: the whole reply,
         # read as one question, would add them up.
