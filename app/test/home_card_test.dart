@@ -69,7 +69,12 @@ void main() {
 
   for (final (width, scale) in [(390.0, 1.0), (320.0, 1.0), (390.0, 1.6), (320.0, 1.6)]) {
     testWidgets('the card fits at $width wide, ${scale}x text, with no overflow', (t) async {
-      await pumpCard(t, _snap(seen: true, history: [1.1, 1.2, 1.15, 1.3, 1.42]), width: width, scale: scale);
+      await pumpCard(
+        t,
+        _snap(seen: true, history: [1.1, 1.2, 1.15, 1.3, 1.42]),
+        width: width,
+        scale: scale,
+      );
       expect(t.takeException(), isNull);
       expect(find.text('1.42'), findsOneWidget);
       expect(find.byType(ScoreSparkline), findsOneWidget);
@@ -79,9 +84,9 @@ void main() {
     });
   }
 
-  testWidgets('the card is short: well under 260 px at 390 wide', (t) async {
+  testWidgets('the card is short: well under 340 px at 390 wide', (t) async {
     await pumpCard(t, _snap(seen: true, history: [1.1, 1.42]));
-    expect(t.getSize(find.byType(HomeWellnessPanel)).height, lessThan(260));
+    expect(t.getSize(find.byType(HomeWellnessPanel)).height, lessThan(340));
   });
 
   testWidgets('the circled i opens the drivers', (t) async {

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/demo/demo_seed.dart' show rosaProfile;
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
+import 'package:lifesim/twin/lifespan.dart' show LifespanStatus;
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/voice/fakes.dart';
@@ -102,8 +103,10 @@ void main() {
     expect(est.expectedYear, year + 35);
     expect((est.expectedAge.round(), est.p25Age.round(), est.p75Age.round()), (99, 87, 109));
     expect(find.text('Around ${est.expectedYear}'), findsOneWidget);
-    expect(find.text('about age 99, most likely 87–109'), findsOneWidget);
-    expect(find.text('Rough guide'), findsNothing, reason: 'age 64 is inside 35–79');
+    expect(find.text('age 87–109'), findsOneWidget);
+    expect(find.text('Rough guide'), findsNothing, reason: 'age 64 is inside 35–79: no flag badge');
+    expect(est.status, LifespanStatus.available, reason: 'the engine flag is off for Rosa');
+    expect(find.text('Estimate, rough guide'), findsOneWidget, reason: 'the lifespan is always a rough guide');
 
     // The next launch: the flag is remembered, so a later conversation does not reveal again.
     await t.pumpWidget(const SizedBox());
@@ -126,6 +129,7 @@ void main() {
       ),
     );
     await t.pumpAndSettle();
+    expect(find.text('Estimate, rough guide'), findsOneWidget, reason: 'on the Home chip too, flag off');
     await t.ensureVisible(find.text('Around ${next.lifespanEstimate!.expectedYear}'));
     await t.tap(find.text('Around ${next.lifespanEstimate!.expectedYear}'));
     await t.pumpAndSettle();

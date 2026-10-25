@@ -27,8 +27,12 @@ void main() {
       expect(formatHealthScore(1.04), '1.04');
       expect(formatHealthScore(0.5), '0.50');
       expect(formatHealthScore(1.001), '1.00');
-      expect(healthScoreSemantics(1.04), 'Health score 1.04. Higher is better. 1 is the middle of people your age.');
-      expect(healthScoreSemantics(0.5), 'Health score 0.50. Higher is better. 1 is the middle of people your age.');
+      expect(healthScoreSemantics(1.04), 'Health score 1.04. Higher is better; 1.0 is the middle of people your age.');
+      expect(
+        healthScoreSemantics(1.653, percentile: 78.6),
+        'Health score 1.65. Higher is better; 1.0 is the middle of people your age. '
+        'Healthier than 79 of 100 people your age.',
+      );
     });
 
     test('the marker sits by the public value: better health is to the right, 1.0 in the middle', () {
@@ -79,7 +83,8 @@ void main() {
     testWidgets('a year and ages, the caveat behind (i), never a day', (t) async {
       await pump(t, const LifespanBlock(lifespan: l));
       expect(find.text('Around 2051'), findsOneWidget);
-      expect(find.text('about age 87, most likely 80–93'), findsOneWidget);
+      expect(find.text('age 80–93'), findsOneWidget);
+      expect(find.text('Estimate, rough guide'), findsOneWidget, reason: 'always, whatever the flag says');
       expect(find.text('Rough guide'), findsNothing);
       for (final s in t.widgetList<Text>(find.byType(Text)).map((w) => w.data ?? '')) {
         expect(
@@ -95,14 +100,22 @@ void main() {
       expect(find.text(l.caveat!), findsOneWidget);
     });
 
-    testWidgets('outside ages 35-79 the Rough guide badge shows', (t) async {
+    testWidgets('a flagged estimate shows the same caption and the open end as 110+', (t) async {
       await pump(
         t,
         const LifespanBlock(
-          lifespan: LifespanReveal(expectedAge: 90, p25Age: 84, p75Age: 95, expectedYear: 2040, roughGuide: true),
+          lifespan: LifespanReveal(
+            expectedAge: 105,
+            p25Age: 89,
+            p75Age: 110,
+            expectedYear: 2040,
+            roughGuide: true,
+            p75OpenEnded: true,
+          ),
         ),
       );
-      expect(find.text('Rough guide'), findsOneWidget);
+      expect(find.text('age 89–110+'), findsOneWidget);
+      expect(find.text('Estimate, rough guide'), findsOneWidget);
     });
   });
 

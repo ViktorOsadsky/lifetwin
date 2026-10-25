@@ -148,6 +148,8 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
             leverName: _name,
             summary: counted > 0 && display.hasNumber ? _together(counted) : null,
             celebrate: true,
+            currentScore: exp.result.currentScore,
+            scoreDelta: exp.result.scoreDelta,
           ),
           const SizedBox(height: 14),
           Sheet(
