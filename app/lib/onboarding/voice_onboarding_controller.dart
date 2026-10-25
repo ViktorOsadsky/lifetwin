@@ -53,11 +53,16 @@ class VoiceOnboardingController extends ChangeNotifier {
     required this.output,
     this.handsFree = false,
     this.startState,
+    this.ownsSpeech = true,
   });
 
   final ConversationGuide guide;
   final SpeechInput input;
   final SpeechOutput output;
+
+  /// False when [input] and [output] are another conversation's (the intake's, lent to "Answer N
+  /// more questions"): dispose then stops this conversation's listen and speech but leaves them alive.
+  final bool ownsSpeech;
 
   /// Voice mode is one continuous session, as in a phone call: whenever Mochi is not
   /// speaking, the microphone listens, and quiet never closes it. Typing pauses it until
@@ -128,7 +133,16 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   /// A screen reader (VoiceOver) is on. It already reads the mascot's words
   /// aloud, so the mascot does not speak them a second time. Set by the screen.
-  bool screenReader = false;
+  bool get screenReader => _screenReader;
+  bool _screenReader = false;
+
+  /// Turned off while Mochi waits for a tap: hands-free listens now, not only at the next turn.
+  set screenReader(bool on) {
+    if (on == _screenReader) return;
+    _screenReader = on;
+    // Set by the screen while it builds: the microphone opens just after.
+    if (!on) scheduleMicrotask(_listenAgain);
+  }
 
   /// The fields the intake asks about, in the server's order (its ASKED list). Blood pressure
   /// comes from Apple Health or a reading, not from a question.
@@ -189,6 +203,11 @@ class VoiceOnboardingController extends ChangeNotifier {
   int _startFailures = 0;
   static const _startRetries = 3;
   Timer? _startRetry;
+
+  /// The recognizer's connection is open: what is said now is heard. Until then a listen is
+  /// [connecting] ("Connecting…", never "Listening").
+  bool _micLive = false;
+  bool get connecting => phase == VoicePhase.listening && !_micLive;
 
   /// The screen is out of sight (left, or the app is in the background): nothing opens by itself.
   bool _paused = false;
@@ -580,6 +599,7 @@ class VoiceOnboardingController extends ChangeNotifier {
   Future<void> _openMic() async {
     final gen = _conversationGen;
     final token = _turnToken;
+    if (_micLive) _set(() => _micLive = false);
     try {
       // The system's "Allow microphone?" question waits for the person, however long they
       // take to read it; only connecting afterwards is held to the start limit.
@@ -605,6 +625,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (phase == VoicePhase.listening && !_paused) {
         _hf('mic_open');
         _startFailures = 0;
+        _set(() => _micLive = true);
         _startListenClock();
       }
     } on MicDeniedException {
@@ -630,7 +651,8 @@ class VoiceOnboardingController extends ChangeNotifier {
         await input.cancel().timeout(_quickLimit); // a start that never answered must not leave the mic on
       } catch (_) {}
       if (!_currentConversation(gen)) return;
-      if (_retryStart()) return;
+      // A start that hangs (a token server that never answers) is tried once more, not three times.
+      if (_startFailures == 0 && _retryStart()) return;
       _set(() {
         phase = VoicePhase.idle;
         notice = voiceTroubleNotice;
@@ -1354,8 +1376,13 @@ class VoiceOnboardingController extends ChangeNotifier {
     _conversationGen++;
     _speechGen++;
     _stopListenClock();
-    input.dispose();
-    output.dispose();
+    if (ownsSpeech) {
+      input.dispose();
+      output.dispose();
+    } else {
+      if (phase == VoicePhase.listening || _starting != null) input.cancel().ignore();
+      if (phase == VoicePhase.speaking) output.stop().ignore();
+    }
     super.dispose();
   }
 }

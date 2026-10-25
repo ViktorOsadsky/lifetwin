@@ -132,6 +132,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   final _noticeKey = GlobalKey(debugLabel: 'notice');
   final _quickKey = GlobalKey(debugLabel: 'quick answers');
   final _transcriptKey = GlobalKey();
+  final _readBackKey = GlobalKey(debugLabel: 'read-back value');
   String _shownCaption = '';
   final _lineKey = GlobalKey(debugLabel: "the twin's line");
 
@@ -445,6 +446,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       _turnLock?.cancel();
       _turnLock = Timer(secondTapGuard, () {});
       _reveal(_lineKey);
+      _reveal(_readBackKey); // under the line: the answer being read back
       if (_quickInStory && !largeText(context)) _reveal(_quickKey);
       if (_controlsScroll.hasClients) _controlsScroll.jumpTo(0);
     }
@@ -490,17 +492,15 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   bool get _voiceUi =>
       c.handsFree && !c.askingVoice && !c.emergency && c.phase != VoicePhase.consent && c.phase != VoicePhase.done;
 
-  /// The status pill and the hollow ring also show whenever the person types ("Not listening", VC-7), as in
-  /// the check-in: whether typing was chosen at the voice question or by "Type instead", and hands-free or not.
-  bool get _pillUi =>
-      _voiceUi ||
-      (c.typing && !c.askingVoice && !c.emergency && c.phase != VoicePhase.consent && c.phase != VoicePhase.done);
+  /// The status pill and the ring are about the voice: typing shows neither (no "Not listening" pill;
+  /// "Talk instead" is the way back).
+  bool get _pillUi => _voiceUi && !c.typing;
 
   /// What the pill and ring say now. Only an open microphone is ever [VoiceLook.listening].
   VoiceLook get _look {
     if (c.typing) return VoiceLook.typing;
     return switch (c.phase) {
-      VoicePhase.listening when !c.micOff => VoiceLook.listening,
+      VoicePhase.listening when !c.micOff => c.connecting ? VoiceLook.connecting : VoiceLook.listening,
       VoicePhase.speaking => VoiceLook.speaking,
       VoicePhase.interpreting => VoiceLook.thinking,
       _ when c.micOff && c.voiceUsable && !c.screenReader => VoiceLook.micOff,
@@ -674,6 +674,19 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     final keyboard = _keyboard;
     final compact = largeText(context) || crowded;
     final inWindow = line.isNotEmpty && !compact && !keyboard && line.length <= 70;
+    // Very large text (2x): the words and the controls scroll together, as one page. A fixed sheet
+    // would take most of the screen and leave the question and its read-back below the fold. Not
+    // with the typing box: it stays in the sheet, so it keeps its focus when the keyboard comes up.
+    final onePage = MediaQuery.textScalerOf(context).scale(1) >= 1.8 && !keyboard && !_showsTypingBox;
+    Widget sheet(Widget content) => SwooshSheetTransform(
+      frame: frame,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(10, 0, 10, hideKeyboard ? 6 : 10),
+        child: Sheet(padding: EdgeInsets.zero, child: content),
+      ),
+    );
+    const controlsPadding = EdgeInsets.fromLTRB(16, 16, 16, 12);
+    Widget controlsColumn() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: controls);
     return LayoutBuilder(
       builder: (context, box) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -719,27 +732,18 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
                 ...top,
                 if (line.isNotEmpty && !inWindow) ...[_pad(_bubble(line, inWindow: false, header: header))],
                 ...story,
+                if (onePage) sheet(Padding(padding: controlsPadding, child: controlsColumn())),
               ],
             ),
           ),
-          ConstrainedBox(
-            key: const ValueKey('sheet'),
-            constraints: BoxConstraints(maxHeight: box.maxHeight * (hideKeyboard ? 0.5 : 0.6)),
-            child: SwooshSheetTransform(
-              frame: frame,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(10, 0, 10, hideKeyboard ? 6 : 10),
-                child: Sheet(
-                  padding: EdgeInsets.zero,
-                  child: SingleChildScrollView(
-                    controller: _controlsScroll,
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: controls),
-                  ),
-                ),
+          if (!onePage)
+            ConstrainedBox(
+              key: const ValueKey('sheet'),
+              constraints: BoxConstraints(maxHeight: box.maxHeight * (hideKeyboard ? 0.5 : 0.6)),
+              child: sheet(
+                SingleChildScrollView(controller: _controlsScroll, padding: controlsPadding, child: controlsColumn()),
               ),
             ),
-          ),
           if (hideKeyboard)
             Padding(
               padding: const EdgeInsets.fromLTRB(_gutter, 0, _gutter, 12),
@@ -935,10 +939,10 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       story: [
         if (c.confirming && !c.correcting && _readBackValue.isNotEmpty) ...[
           const SizedBox(height: 10),
-          _pad(_ValueCard(text: _readBackValue)),
+          _pad(_ValueCard(key: _readBackKey, text: _readBackValue)),
         ],
         // The opening: one plain example. Apple Health and documents are in the "Fill this in faster" pill.
-        if (c.questionNumber == 1 && c.caption.isEmpty && !keyboard) ...[
+        if (c.questionNumber == 1 && c.caption.isEmpty && !keyboard && !c.confirming) ...[
           const SizedBox(height: 8),
           _pad(Text('Try saying: “I’m 62.”', style: LtText.body(color: LtColors.secondary))),
         ],
@@ -1398,7 +1402,7 @@ class _Card extends StatelessWidget {
 
 /// The read-back value, big, so people can confirm by eye (V-3).
 class _ValueCard extends StatelessWidget {
-  const _ValueCard({required this.text});
+  const _ValueCard({super.key, required this.text});
   final String text;
 
   @override

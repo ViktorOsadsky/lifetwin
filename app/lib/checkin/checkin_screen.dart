@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 
 import '../experiment/experiment_page.dart';
 import '../onboarding/missing_answers.dart';
@@ -24,7 +27,7 @@ import 'outlook_change.dart';
 import 'readback_adapter.dart';
 import 'updated_card.dart';
 
-/// Mochi's short line in the bubble for the field being asked (the full question sits in the card).
+/// Mochi's short line in the bubble, used only until her own line arrives (or once done).
 String bubbleFor(
   String? field, {
   required bool confirming,
@@ -209,7 +212,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
   VoiceLook get _look {
     if (c.typing || !c.voiceUsable) return VoiceLook.typing;
     return switch (c.phase) {
-      CheckinPhase.listening when !c.micOff => VoiceLook.listening,
+      CheckinPhase.listening when !c.micOff => c.connecting ? VoiceLook.connecting : VoiceLook.listening,
       CheckinPhase.speaking => VoiceLook.speaking,
       CheckinPhase.interpreting => VoiceLook.thinking,
       _ when c.micOff && c.voiceUsable && !c.screenReader => VoiceLook.micOff,
@@ -293,6 +296,9 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
         ? EmergencyCard.apology
         : _nothing
         ? 'All set for today!'
+        // The question itself, in full, once: Mochi's whole line while one is open.
+        : c.mascotLine.isNotEmpty && !_finished
+        ? c.mascotLine
         : bubbleFor(
             c.turn?.currentField,
             confirming: c.confirming,
@@ -311,7 +317,21 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
         if (mounted && target != null) {
           // Bottom alignment keeps the question above the answer dock. Do this only
           // for a new question/keyboard geometry, never for an ordinary user scroll.
-          Scrollable.ensureVisible(target, alignment: 1);
+          // A question taller than the room under the page's 76 pt bar (very large text)
+          // starts just under the bar instead, so it is read from its first line.
+          final box = target.findRenderObject();
+          final view = box == null ? null : RenderAbstractViewport.maybeOf(box);
+          final position = Scrollable.maybeOf(target)?.position;
+          const bar = 76.0;
+          if (box is RenderBox &&
+              view != null &&
+              position != null &&
+              box.size.height > position.viewportDimension - bar) {
+            final top = view.getOffsetToReveal(box, 0).offset - bar;
+            position.jumpTo(math.max(position.minScrollExtent, math.min(position.maxScrollExtent, top)));
+          } else {
+            Scrollable.ensureVisible(target, alignment: 1);
+          }
           final field = _answerField.currentContext;
           if (field != null) Scrollable.ensureVisible(field, alignment: 1);
         }
@@ -319,7 +339,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
     }
     // Speech takes real space in the scroll view. A positioned bubble in the fixed
     // plate can grow beyond its scroll extent and disappear behind the keyboard dock.
-    return Bubble(key: _questionBubble, text: words, tail: BubbleTail.none, fontSize: 19);
+    return Bubble(key: _questionBubble, text: words, tail: BubbleTail.none, fontSize: 19, liveRegion: true);
   }
 
   Widget _title(String text) => Semantics(header: true, child: Text(text, style: LtText.display(28)));
@@ -358,29 +378,8 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
         ),
         WholeWordText(weekly ? 'A few minutes' : 'About 1 minute', style: LtText.body(color: LtColors.secondary)),
         const SizedBox(height: 8),
+        // Mochi's line is the bubble above, said once (not again here).
         if (c.savedNumber case final saved?) ...[SavedMark(number: saved, word: 'done'), const SizedBox(height: 8)],
-        Semantics(
-          liveRegion: true,
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            decoration: BoxDecoration(
-              color: LtColors.paper,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: LtColors.container, width: 1.5),
-            ),
-            child: WholeWordText.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Mochi  ',
-                    style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary),
-                  ),
-                  TextSpan(text: c.mascotLine, style: LtText.body()),
-                ],
-              ),
-            ),
-          ),
-        ),
         if (widget.ideas case final access? when c.turn?.clientAction == 'open_ideas') ...[
           const SizedBox(height: 10),
           IdeasOpenCard(access: access, appearance: widget.appearance),

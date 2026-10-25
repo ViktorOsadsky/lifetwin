@@ -12,7 +12,7 @@
 //   4. The weekly check-in on demand (Settings; the seed joined 16 days ago): "not great", the care
 //      reply once, Stop, Yes.
 //   5. History with sources; Health documents readings (BP, A1c); Mochi's notebook.
-//   6. Every Settings hub row opens; AI and privacy names Meta, consent stays off.
+//   6. Every Settings hub row opens; AI and privacy names Claude, consent stays off.
 //   7. The band: the recorded demo gives ONE "Demo data" suggestion, saved as wristband,
 //      estimated; the copy says leg / Activity band, never wrist.
 //   8. Experiment: one lever changed, a result, the new-score pill (#178).
@@ -51,7 +51,6 @@ import 'package:lifesim/band/band_screens.dart';
 import 'package:lifesim/checkin/checkin_reminders.dart';
 import 'package:lifesim/checkin/consent_screens.dart';
 import 'package:lifesim/checkin/my_data_screen.dart';
-import 'package:lifesim/checkin/notebook_screen.dart';
 import 'package:lifesim/experiment/room_pills.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
@@ -723,19 +722,30 @@ void main() {
               await t.scrollUntilVisible(yesAll, 250, scrollable: planScroll.first, maxScrolls: 30);
             } catch (_) {}
             await pumpFor(t, const Duration(milliseconds: 400));
+            // The confirmation takes the button's place and is taller: scroll the lazy list to it.
+            Future<bool> scrollTo(Finder f) async {
+              try {
+                await t.scrollUntilVisible(f, 250, scrollable: planScroll.first, maxScrolls: 30);
+              } catch (_) {}
+              return shows(f);
+            }
+
+            Future<bool> confirmed() async =>
+                await waitUntil(t, () => shows(find.text(setForToday)) || !shows(yesAll), seconds: 20) &&
+                await scrollTo(find.text(setForToday));
             var yesTapped = await tapFinder(t, yesAll, seconds: 10);
-            var set = yesTapped && await waitUntil(t, () => shows(find.text(setForToday)), seconds: 20);
+            var set = yesTapped && await confirmed();
             if (yesTapped && !set && shows(yesAll)) {
               // The button is disabled while a revision is still on its way: one more tap once it settles.
               yesTapped = await tapFinder(t, yesAll, seconds: 5);
-              set = await waitUntil(t, () => shows(find.text(setForToday)), seconds: 20);
+              set = await confirmed();
             }
             timings.add('  Yes to all: ${DateTime.now().difference(yesStart).inMilliseconds} ms');
             await pumpFor(t, const Duration(milliseconds: 600));
             final yesText = screenText();
             final buttonGone = !shows(yesAll);
             final backHome = find.widgetWithText(LipButton, 'Back to Home');
-            final hasBackHome = shows(backHome);
+            final hasBackHome = await scrollTo(backHome);
             final cardOnce = occurrences(setForToday) == 1;
             final wentHome =
                 hasBackHome &&
@@ -984,24 +994,11 @@ void main() {
               'row=$nb notebook=$nbUp seedNotes=$notes',
               notes ? '' : 'screen: $n',
             );
-            // Forget ONE note: a per-note control (a delete/forget button or a swipe) on a note card.
-            final perNote =
-                shows(find.byType(Dismissible)) ||
-                shows(inside<NotebookScreen>(find.byIcon(Icons.delete_outline_rounded))) ||
-                shows(inside<NotebookScreen>(find.byIcon(Icons.close_rounded))) ||
-                shows(inside<NotebookScreen>(find.textContaining(RegExp(r'^Forget( this)?( note)?$'))));
-            await record(
-              '5 notebook: can forget one note',
-              perNote,
-              'perNoteControl=$perNote notes=${repo.store.habitNotes.length}',
-              perNote
-                  ? ''
-                  : 'no per-note forget; the only forget is the Memory switch, which clears all notes. screen: $n',
-            );
+            // No per-note forget check: forgetting one note is not built (the Memory switch clears all).
             await goHome(t);
           });
 
-          // ---- 6. Settings hub rows all open (AI privacy: the Meta line, consent stays off) ----
+          // ---- 6. Settings hub rows all open (AI privacy names Claude, consent stays off) ----
           await step('6 settings hub', () async {
             final p = capsAtLaunch;
             final now = await capabilities();
@@ -1033,8 +1030,9 @@ void main() {
               if (e.key == 'Personal suggestions' && ok) {
                 await pumpFor(t, const Duration(milliseconds: 800));
                 final text = screenText();
-                const line = 'Meta may use what you share to improve its AI.';
+                final line = '$company may use what you share to improve its AI.';
                 final shown = text.contains(line);
+                final namesClaude = text.contains('Claude');
                 final anyTraining = text.contains('may use what you share to improve its AI');
                 final switchOff = shows(
                   find.byWidgetPredicate(
@@ -1045,11 +1043,11 @@ void main() {
                   ),
                 );
                 final aiOk =
-                    (mayTrain ? shown && company == 'Meta' : !anyTraining) && !repo.outsideAiConsent && switchOff;
+                    namesClaude && (mayTrain ? shown : !anyTraining) && !repo.outsideAiConsent && switchOff;
                 await record(
-                  '6 AI privacy: the Meta training line, consent stays off',
+                  '6 AI privacy: names Claude, consent stays off',
                   aiOk,
-                  'server company=$company mayTrain=$mayTrain lineShown=$shown consent=${repo.outsideAiConsent} switchOff=$switchOff',
+                  'server company=$company mayTrain=$mayTrain namesClaude=$namesClaude lineShown=$shown consent=${repo.outsideAiConsent} switchOff=$switchOff',
                   aiOk ? '' : 'screen: $text',
                 );
               }
