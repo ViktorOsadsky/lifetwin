@@ -65,10 +65,14 @@ class TwinAssessment {
   /// gives it (for ages 18–34 and 80–85, the same extrapolated score the forecast uses).
   /// Lower is lower modelled risk, 0 is the average survey participant, and it includes
   /// the age and sex terms. Null unless the model gave a number; never filled in.
-  double? get healthScore {
+  double? get rawLogRelativeHazard {
     final s = survival['log_relative_hazard_score'];
     return available && s is num ? s.toDouble() : null;
   }
+
+  /// The health score shown to the person: HIGHER IS BETTER (owner ruling 2026-10-24);
+  /// 0 is the average survey participant. See [healthScoreFromRaw].
+  double? get healthScore => healthScoreFromRaw(rawLogRelativeHazard);
 
   HealthScoreStatus get healthScoreStatus => switch (status) {
     'available' => extrapolated ? HealthScoreStatus.extrapolated : HealthScoreStatus.available,
@@ -173,6 +177,12 @@ class WellnessCard {
   final String message;
   final String sourceUrl;
 }
+
+/// The ONE place the health score's direction is set. Owner ruling (2026-10-24): "higher
+/// should mean better health rating", so the displayed score is the negated
+/// `log_relative_hazard_score`. If the model owner changes the scoring, change only this.
+double? healthScoreFromRaw(double? rawLogRelativeHazard) =>
+    rawLogRelativeHazard == null ? null : -rawLogRelativeHazard;
 
 /// Owner ruling: "it is okay to extrapolate a bit below and above the age ranges".
 const extrapolatedAgeRange = (low: 18, high: 85);
