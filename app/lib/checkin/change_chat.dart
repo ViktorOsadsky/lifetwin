@@ -290,6 +290,7 @@ class _ChangeChatScreenState extends State<ChangeChatScreen> {
         title: 'Update with Mochi',
         onBack: c.emergency ? c.resume : _close,
         backLabel: c.emergency ? 'Continue' : 'Close',
+        onLeaveCheck: () => !c.emergency && (c.busy || c.confirming),
         dock: c.emergency ? const SizedBox.shrink() : _dock(context),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
