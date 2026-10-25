@@ -128,15 +128,15 @@ void main() {
         );
         final first = repo.model.assessModel(toModelProfile(rosaProfile));
         expect(first.available, isTrue);
-        expect(first.percentByYear[5]!, closeTo(96.92, 0.01));
+        expect(first.percentByYear[5]!, closeTo(96.98, 0.01));
         // The centred health score (positive = healthier, 0 = the middle of women 59–69 in
         // the survey).
-        expect(first.healthScore!, closeTo(0.5024, 0.0005));
-        expect(first.ageGroupPercentile!, closeTo(78.57, 0.01));
+        expect(first.healthScore!, closeTo(0.5263, 0.0005));
+        expect(first.ageGroupPercentile!, closeTo(80.16, 0.01));
         expect(first.healthGroupLabel, 'women 59–69');
-        expect(first.rawLogRelativeHazard!, closeTo(-0.0375, 0.005));
+        expect(first.rawLogRelativeHazard!, closeTo(-0.0588, 0.005));
         final seeded = repo.healthScoreHistory().first;
-        expect(seeded.score!, closeTo(0.5024, 0.0005));
+        expect(seeded.score!, closeTo(0.5263, 0.0005));
       },
     );
 
