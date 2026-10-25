@@ -548,7 +548,11 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               onBack: () => Navigator.of(c).pop(),
               entries: [
                 SettingsEntry(label: 'Change an answer', description: 'Tell Mochi what changed', open: () => _agentic.changeAnswer(c)),
-                SettingsEntry(label: 'Weekly check-in', description: 'A few questions about your week', open: () => _agentic.weeklyCheckIn(c)),
+                SettingsEntry(
+                  label: 'Weekly check-in',
+                  description: _wellness?.repository.weeklyGateLine ?? 'A few questions about your week',
+                  open: () => _agentic.weeklyCheckIn(c),
+                ),
                 SettingsEntry(label: 'Apple Health', description: 'Bring in values you check', open: () => _health(c)),
                 SettingsEntry(label: 'Health documents', description: 'Upload a visit summary or lab report', open: () => _agentic.healthDocuments(c)),
                 SettingsEntry(label: 'Try a change', description: 'Explore what could move your outlook', open: () => _agentic.experiment(c)),

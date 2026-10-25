@@ -40,12 +40,13 @@ class CheckinScheduler {
     required List<DayLog> days,
     CheckinSettings settings = const CheckinSettings(),
     HealthDay health = const HealthDay(),
+    String? firstJoined,
   }) {
     final today = isoDay(dayOf(localNow));
     final doneToday = history.any((c) => c.kind != 'weekly' && c.date == today);
     return DueCheckins(
       quick: doneToday ? null : quickPlan(localNow: localNow, history: history, days: days, health: health),
-      weekly: weeklyDue(today: today, history: history, settings: settings),
+      weekly: weeklyDue(today: today, history: history, settings: settings, firstJoined: firstJoined),
     );
   }
 
@@ -97,16 +98,18 @@ class CheckinScheduler {
     );
   }
 
-  /// Once a week, from the person's weekly day. A weekly check-in missed on its day stays
-  /// ready the days after, quietly, until it's done.
-  bool weeklyDue({required String today, required List<CheckinEntry> history, required CheckinSettings settings}) {
+  /// Never before 7 full days after [firstJoined]; then the first one is ready at once and
+  /// stays ready, quietly, until done. After that, once a week from the person's weekly day.
+  bool weeklyDue({
+    required String today,
+    required List<CheckinEntry> history,
+    required CheckinSettings settings,
+    required String? firstJoined,
+  }) {
+    if (!weeklyOpen(today: today, firstJoined: firstJoined)) return false;
     final weeklies = history.where((c) => c.kind == 'weekly').map((c) => c.date).toList()..sort();
-    final weekday = parseDay(today).weekday;
-    if (weeklies.isEmpty) {
-      // The first one waits for the weekly day, after at least one quick check-in.
-      return weekday == settings.weeklyDay && history.isNotEmpty;
-    }
+    if (weeklies.isEmpty) return true;
     final since = parseDay(today).difference(parseDay(weeklies.last)).inDays;
-    return since >= 7 || (since >= 6 && weekday == settings.weeklyDay);
+    return since >= 7 || (since >= 6 && parseDay(today).weekday == settings.weeklyDay);
   }
 }

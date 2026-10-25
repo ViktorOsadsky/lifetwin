@@ -172,9 +172,9 @@ class MyDataScreen extends StatelessWidget {
               _Row(
                 icon: Icons.calendar_month_outlined,
                 title: 'Weekly check-in',
-                sub: 'Do it now',
-                onTap: onWeeklyCheckIn,
-                semantic: 'Weekly check-in. Do it now.',
+                sub: repository.weeklyGateLine ?? 'Do it now',
+                onTap: repository.weeklyAvailable ? onWeeklyCheckIn : null,
+                semantic: 'Weekly check-in. ${repository.weeklyGateLine ?? 'Do it now.'}',
               ),
             ],
             if (onReminders != null) ...[
