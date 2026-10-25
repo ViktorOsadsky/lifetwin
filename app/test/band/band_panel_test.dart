@@ -261,7 +261,7 @@ void main() {
       );
       await t.pump();
       expect(t.takeException(), isNull);
-      expect(find.textContaining('Live pairing isn’t available'), findsOneWidget);
+      expect(find.textContaining('No band yet? Try a recorded demo band'), findsOneWidget);
       expect(find.text('Import band file'), findsOneWidget);
       expect(find.textContaining('oming soon'), findsNothing);
       expect((store.client as StubBandClient).scans, 0);

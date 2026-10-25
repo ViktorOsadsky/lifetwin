@@ -83,8 +83,7 @@ class AgenticRoutes {
        capabilities = capabilities ?? HttpCapabilitiesClient(base: api),
        _bandClientParam = bandClient,
        // ignore: prefer_initializing_formals
-       _bandFilePicker = bandFilePicker,
-       _bandClient = bandClient ?? StubBandClient();
+       _bandFilePicker = bandFilePicker;
 
   final ValueListenable<TwinAppearance> look;
 
@@ -122,7 +121,6 @@ class AgenticRoutes {
   /// Apple Health samples already allowed by the person; null when Health is not connected.
   final Future<List<HealthSample>> Function()? healthSamples;
   final CapabilitiesClient capabilities;
-  final BandClient _bandClient;
   final BandClient? _bandClientParam;
   final BandFilePicker? _bandFilePicker;
 
@@ -133,8 +131,12 @@ class AgenticRoutes {
   /// The AI consents; created once the repository has loaded.
   ConsentStore? consents;
 
-  /// The wristband (recorded demo only until a Bluetooth plugin exists) and what it suggests.
-  late final BandStore band = _bandClientGiven ? BandStore(_bandClient) : BandFileSession.instance.store;
+  /// The activity band and what it suggests: the shared session's store, whose client is the real
+  /// Bluetooth band (band_file_session.dart), unless a test gave a client.
+  late final BandStore band = switch (_bandClientParam) {
+    final client? => BandStore(client),
+    null => BandFileSession.instance.store,
+  };
 
   /// Band files (`lifetwin.band_day.v0`): the shared phone-only import session unless a test gave a client.
   late final BandFileIntake intake = _bandClientGiven
