@@ -22,6 +22,8 @@ The original spec itself is unchanged. [MASTER_PLAN.md](../MASTER_PLAN.md) gover
 | §5.3 Advisor context | Profile, predictions, comparisons, attributions, curated guidelines | The LLM gets the user's inputs plus the model's results (predictions, comparisons, risk factors). Guidelines are curated by Track D. **May change later** | Decided, revisable |
 | §15 Privacy | "Keep scenario comparisons in browser state" | Keep scenarios on device. Check-in history stays on the phone; an across-day planner needs explicit local persistence, consent and deletion decisions. No implied durable server health store | Follows from Flutter and existing check-in boundary |
 
+**Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [lifespan-estimate.md](lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else. This qualifies the "Longevity presentation" row.
+
 ## Where each master-doc section lives
 
 | Master doc | Track | Notes |
