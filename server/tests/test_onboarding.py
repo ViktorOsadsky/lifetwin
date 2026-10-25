@@ -1017,19 +1017,26 @@ def test_llm_provider_selection_and_capabilities(monkeypatch):
         with TestClient(app) as test_client:
             return app, test_client.get("/api/capabilities").json()
 
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("CONVERSATION_PROVIDER", raising=False)
+    # Owner ruling (2026-10-25): Claude by default, unconfigured without its key.
     app, body = caps()
     assert body["llm_configured"] is False
-    assert isinstance(app.state.conversation_service.extractor, OpenAIExtractor)
-    app, body = caps(OPENAI_API_KEY="k", OPENAI_MODEL="m")
+    assert app.state.conversation_service.extractor.provider == "claude"
+    # The OpenAI extractor and Muse are explicit opt-ins only.
+    app, body = caps(LLM_PROVIDER="openai", OPENAI_API_KEY="k", OPENAI_MODEL="m")
     assert body["llm_configured"] is True
     app, body = caps(LLM_PROVIDER="chat_completions", LLM_MODEL="m")
     assert body["llm_configured"] is False
-    app, body = caps(LLM_PROVIDER="chat_completions", LLM_MODEL="m", LLM_API_KEY="k")
+    muse = dict(LLM_PROVIDER="chat_completions", LLM_MODEL="m", LLM_API_KEY="k")
+    app, body = caps(**muse)
+    assert app.state.conversation_service.extractor.provider == "claude"
+    app, body = caps(**muse, CONVERSATION_PROVIDER="muse")
     assert body["llm_configured"] is True
     extractor = app.state.conversation_service.extractor
     assert isinstance(extractor, ChatCompletionsExtractor)
     assert extractor._base_url == "https://api.meta.ai/v1"
-    assert Settings(_env_file=None, LLM_PROVIDER="").llm_provider == "openai"
+    assert Settings(_env_file=None, LLM_PROVIDER="").llm_provider == "anthropic"
 
 
 def test_answered_but_no_value_does_not_claim_the_helper_is_unavailable():

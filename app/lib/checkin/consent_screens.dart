@@ -299,7 +299,7 @@ class OutsideAiConsentScreen extends StatelessWidget {
   );
 }
 
-/// "Meta may use what you share to improve its AI." (the company comes from the server): shown beside an
+/// "`Company` may use what you share to improve its AI." (the company comes from the server): shown beside an
 /// outside-AI Yes button only when the server says the provider may train on content.
 class TrainingLine extends StatelessWidget {
   const TrainingLine(this.line, {super.key});

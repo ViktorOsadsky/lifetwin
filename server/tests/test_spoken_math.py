@@ -238,9 +238,13 @@ def test_conversation_turns_go_to_claude_even_when_the_rest_names_muse(monkeypat
     assert caps["personalize"]["provider"] == "muse"
 
 
-def test_without_a_key_conversation_falls_back_to_the_earlier_choice():
+def test_without_a_key_conversation_stays_claude_and_never_muse():
+    # Owner ruling (2026-10-25): LLM_PROVIDER naming Muse is not a conversation opt-in.
     settings = Settings(_env_file=None, LLM_PROVIDER="chat_completions")
-    assert settings.conversation_provider == "muse"
+    assert settings.conversation_provider == "claude"
+    app = create_app(settings)
+    assert app.state.conversation_service.extractor.configured is False
+    assert app.state.conversation_service.extractor.provider == "claude"
     local = create_app(
         Settings(_env_file=None, ANTHROPIC_API_KEY="k", CONVERSATION_PROVIDER="local")
     )

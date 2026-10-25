@@ -172,8 +172,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.personalizer = personalizer
     claude_key = settings.anthropic_api_key.get_secret_value()
     voice_timeout = min(6, settings.provider_timeout_seconds)
-    # The AI helper per LLM_PROVIDER: recognised document text, and conversation turns
-    # when CONVERSATION_PROVIDER is "muse".
+    # Owner ruling (2026-10-25): Claude is the AI provider for every call below; Muse by
+    # Meta is reached only when a *_PROVIDER setting names it explicitly.
+    # The AI helper per LLM_PROVIDER: conversation turns when CONVERSATION_PROVIDER is
+    # "muse", and recognised document text when DOCUMENT_PROVIDER is "muse".
     shared_extractor = (
         AnthropicExtractor(
             api_key=claude_key, model=settings.claude_model, timeout_seconds=voice_timeout
@@ -239,9 +241,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         max_probes=1 if settings.onboarding_demo else MAX_PROBES,
         intent_reader=intent_reader,
     )
-    # Documents: the deterministic parser always; the selected outside AI (Muse over Chat
-    # Completions, or Claude) only when enabled, configured and the person agreed for
-    # that provider in the request. It reads the words only, never the photo.
+    # Documents: the deterministic parser always; the DOCUMENT_PROVIDER's outside AI (Claude,
+    # or Muse over Chat Completions when explicitly opted in) only when enabled, configured
+    # and the person agreed for that provider in the request. It reads the words only.
     # A whole PDF goes to Claude only with DOCUMENT_PROVIDER=claude and the person's yes for
     # that document (POST /api/documents/read); otherwise the phone reads it.
     pdf_reader = (
@@ -253,11 +255,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if settings.document_provider == "claude"
         else None
     )
+    document_extractor = (
+        AnthropicExtractor(
+            api_key=claude_key, model=settings.claude_model, timeout_seconds=voice_timeout
+        )
+        if settings.document_provider == "claude"
+        else shared_extractor
+        if settings.document_provider == "muse" and settings.llm_provider == "chat_completions"
+        else None
+    )
     application.state.document_service = DocumentService(
-        shared_extractor
-        if settings.llm_provider in {"chat_completions", "anthropic"}
-        and settings.document_provider != "local"
-        else None,
+        document_extractor,
         muse_enabled=settings.document_muse_enabled,
         timeout_seconds=settings.provider_timeout_seconds,
         pdf_reader=pdf_reader,
@@ -352,6 +360,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "display_name": DISPLAY_NAMES.get(settings.document_provider),
                     "company": COMPANIES.get(settings.document_provider),
                     "configured": bool(pdf_reader and pdf_reader.configured),
+                    # Only Claude reads whole PDFs, and it does not train on them.
+                    "may_train_on_content": False,
                     "endpoint": "/api/documents/read",
                     "max_bytes": MAX_PDF_BYTES,
                     "max_pages": MAX_PDF_PAGES,

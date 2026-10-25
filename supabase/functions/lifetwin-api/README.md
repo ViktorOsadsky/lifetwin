@@ -37,11 +37,15 @@ runtime. See
 
 Apply the later `lifetwin_pdf_provider_config` migration before configuring PDF
 options, and `lifetwin_conversation_provider_config` before setting
-`CONVERSATION_PROVIDER`. Set that value to `claude` for conversation turns;
-`PERSONALIZE_PROVIDER=muse` keeps Ideas, coach and recommendations on Muse.
-Claude still requires the person's provider consent. `local` disables
-conversation AI; `muse` is available as an explicit override. Changing this
-setting does not grant consent or change the PDF provider.
+`CONVERSATION_PROVIDER`. Owner ruling (2026-10-25): "switch out to Claude API
+officially". Blank `PERSONALIZE_PROVIDER`, `CONVERSATION_PROVIDER` and
+`DOCUMENT_PROVIDER` all mean Claude (Ideas, coach, recommendations, conversation
+turns and PDFs); without `ANTHROPIC_API_KEY` the rules answer and nothing goes
+to Muse. Set `PERSONALIZE_PROVIDER=claude` (or drop the Muse values) in a live
+config that still names Muse. Claude still requires the person's provider
+consent. `local` disables conversation AI; `muse` is available only as an
+explicit override (conversation Muse also needs
+`LLM_PROVIDER=chat_completions`). Changing this setting does not grant consent.
 
 The database stores encrypted provider configuration and anonymous aggregate
 provider-call counters only. It stores no profiles, documents, transcripts or

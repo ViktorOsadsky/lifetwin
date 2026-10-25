@@ -90,10 +90,14 @@ Deno.test("Document capability identifies only the dedicated Claude provider", (
       false,
   );
   assert(documentInfo({ LLM_API_KEY: "muse" }).configured === false);
-  assert(documentInfo({}).provider === "local");
+  // Owner ruling (2026-10-25): Claude by default, unconfigured without its key; Muse only
+  // when DOCUMENT_PROVIDER names it.
+  assert(documentInfo({}).provider === "claude");
+  assert(documentInfo({}).configured === false);
   assert(
-    documentInfo({ LLM_PROVIDER: "chat_completions" }).provider === "muse",
+    documentInfo({ LLM_PROVIDER: "chat_completions" }).provider === "claude",
   );
+  assert(documentInfo({ DOCUMENT_PROVIDER: "muse" }).provider === "muse");
   assert(documentInfo({ ...CONFIG, DOCUMENT_PROVIDER: "" }).configured);
   assert(documentInfo(CONFIG).max_pages === 20);
 });

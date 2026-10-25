@@ -3,6 +3,8 @@ import {
   completeJSON,
   type Config,
   consentFor,
+  conversationConfig,
+  conversationProvider,
   type Fetcher,
   providerInfo,
   selectedProvider,
@@ -53,8 +55,33 @@ function noCalls(): Fetcher {
 }
 
 Deno.test("provider selection and metadata expose no API credentials", () => {
-  assert.equal(selectedProvider({}), "muse");
+  // Owner ruling (2026-10-25): Claude everywhere; Muse only when explicitly named.
+  assert.equal(selectedProvider({}), "claude");
   assert.equal(selectedProvider({ ANTHROPIC_API_KEY: "fake" }), "claude");
+  assert.equal(
+    selectedProvider({ LLM_API_KEY: "m", LLM_MODEL: "muse-spark-1.3" }),
+    "claude",
+  );
+  const keyless = providerInfo({});
+  assert.equal(keyless.provider, "claude");
+  assert.equal(keyless.configured, false);
+  assert.equal(keyless.may_train_on_content, false);
+  assert.equal(
+    conversationProvider({ LLM_PROVIDER: "chat_completions" }),
+    "claude",
+  );
+  assert.equal(
+    conversationConfig({ LLM_PROVIDER: "chat_completions" })
+      .PERSONALIZE_PROVIDER,
+    "claude",
+  );
+  assert.equal(
+    conversationConfig({
+      LLM_PROVIDER: "chat_completions",
+      CONVERSATION_PROVIDER: "muse",
+    }).PERSONALIZE_PROVIDER,
+    "muse",
+  );
   assert.equal(
     selectedProvider({ ...claude, PERSONALIZE_PROVIDER: "muse" }),
     "muse",

@@ -4258,7 +4258,7 @@
       },
       "phrased_by": {
         "default": "templates",
-        "enum": ["templates", "muse"],
+        "enum": ["templates", "claude", "muse"],
         "title": "Phrased By",
         "type": "string"
       },

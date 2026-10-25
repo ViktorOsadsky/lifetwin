@@ -35,7 +35,8 @@ class DocumentReading {
   /// The PDF had more than 10 pages; only the first 10 were read.
   final bool truncated;
 
-  /// Muse by Meta could read lines the parser could not, if the person agrees.
+  /// The server's outside AI (Claude by Anthropic) could read lines the parser could not, if the
+  /// person agrees. The name shown comes from `/api/capabilities`.
   final bool museCouldHelp;
 
   /// The server's own words, for [DocumentReadStatus.rejected].
@@ -44,7 +45,7 @@ class DocumentReading {
 
 /// Pick or capture → recognise on the phone → send only the text → candidates.
 ///
-/// The recognised text is held in memory only: until the server answers, or, when Muse
+/// The recognised text is held in memory only: until the server answers, or, when the outside AI
 /// could help, until the person answers that question. Then it is dropped.
 class DocumentUploadService {
   DocumentUploadService({required this.ocr, required this.extractor, this.pdfPicker, this.pdfReader});
@@ -62,7 +63,7 @@ class DocumentUploadService {
   int _generation = 0;
   PickedPdf? _pdf;
 
-  /// True while text waits for the Muse question.
+  /// True while text waits for the outside-AI question.
   bool get holdingText => _text != null;
 
   /// True while a picked PDF waits for the "send it?" question.

@@ -1,9 +1,10 @@
 """Outside-AI providers that may phrase Mochi's lines. They never decide values.
 
-Owner rulings (2026-10-24): Claude by Anthropic (Claude Haiku 5.5) is the provider once
-ANTHROPIC_API_KEY is set; Muse by Meta stays selectable (``PERSONALIZE_PROVIDER=muse``)
-and is the default without that key. Consent is per provider, so switching providers
-asks the person again. Keys stay server-side. Payloads and replies are never logged.
+Owner ruling (2026-10-25, "switch out to Claude API officially"): Claude by Anthropic
+(Claude Haiku 5.5) is the provider; without ANTHROPIC_API_KEY it is unconfigured and
+Mochi's own wording is used. Muse by Meta is an explicit opt-in only
+(``PERSONALIZE_PROVIDER=muse``). Consent is per provider, so switching providers asks the
+person again. Keys stay server-side. Payloads and replies are never logged.
 """
 
 import json

@@ -575,14 +575,14 @@ class TwinRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// The person's consent to outside-AI wording (owner ruling: Muse is on, but only after
+  /// The person's consent to outside-AI wording (owner ruling 2026-10-25: Claude, only after
   /// this yes). Stored on the phone; off by default and after Delete my data. It covers
   /// only [outsideAiProvider]: consent for one provider never covers another.
   bool get outsideAiConsent => store.outsideAiConsent;
   String? get outsideAiProvider => store.outsideAiProvider;
 
   /// Sets the consent for [provider], the id from `/api/capabilities` `personalize.provider`
-  /// (`claude` or `muse`). Required: no caller can record a consent for a provider by default.
+  /// (`claude`; `muse` only when the server is explicitly opted in). Required: no caller can record a consent for a provider by default.
   Future<void> setOutsideAiConsent(bool consent, {required String provider}) async {
     await store._saveOutsideAiConsent(consent, provider);
     notifyListeners();
