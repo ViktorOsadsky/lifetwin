@@ -377,14 +377,15 @@ class _TopBar extends StatelessWidget {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // The quiz chip is the first thing on Home; every gap below is 8.
+                if (quiz != null) ...[Align(alignment: Alignment.centerLeft, child: quiz), const SizedBox(height: 8)],
                 Row(
                   children: [
                     Expanded(child: Align(alignment: Alignment.centerLeft, child: banner)),
                     ...actions,
                   ],
                 ),
-                if (quiz != null) Align(alignment: Alignment.centerRight, child: quiz),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 card,
               ],
             ),

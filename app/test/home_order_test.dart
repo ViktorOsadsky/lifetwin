@@ -42,7 +42,7 @@ void main() {
 
   final key = GlobalKey();
 
-  Future<void> pumpHome(WidgetTester t, {double width = 390, double height = 844, double scale = 1}) async {
+  Future<void> pumpHome(WidgetTester t, {double width = 390, double height = 844, double scale = 1, double topInset = 0, double bottomInset = 0}) async {
     t.view.physicalSize = Size(width, height);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -52,7 +52,12 @@ void main() {
       RepaintBoundary(
         key: key,
         child: MediaQuery(
-          data: MediaQueryData(size: Size(width, height), textScaler: TextScaler.linear(scale)),
+          data: MediaQueryData(
+            size: Size(width, height),
+            textScaler: TextScaler.linear(scale),
+            padding: EdgeInsets.only(top: topInset, bottom: bottomInset),
+            viewPadding: EdgeInsets.only(top: topInset, bottom: bottomInset),
+          ),
           child: LifeTwinApp(
             controller: VoiceOnboardingController(
               guide: FakeConversationGuide(),
@@ -121,9 +126,17 @@ void main() {
     });
   });
 
-  testWidgets('Mochi has a clear window: no Home card or button covers the twin at 390 x 844', (t) async {
-    await pumpHome(t);
+  for (final (w, h, top, bottom) in [(390.0, 844.0, 0.0, 0.0), (402.0, 874.0, 62.0, 34.0)]) {
+  testWidgets('Mochi has a clear window and the quiz chip is the topmost element at $w x $h (top inset $top)', (t) async {
+    await pumpHome(t, width: w, height: h, topInset: top, bottomInset: bottom);
     await loadArt(t);
+    // The quiz chip is the first element, one inset (safe area + 8) from the top; gaps below are 8.
+    final quizBox = t.getRect(find.ancestor(of: find.text('Quiz · play'), matching: find.byType(Semantics)).first);
+    expect(quizBox.top, top + 8);
+    final header = t.getRect(find.byTooltip('Settings'));
+    expect(header.top, greaterThanOrEqualTo(quizBox.bottom));
+    expect(t.getTopLeft(find.byType(HomeWellnessPanel)).dy - header.bottom, lessThanOrEqualTo(8.5));
+    expect(top, lessThan(quizBox.top));
     final twin = t.getRect(find.byType(TwinSprite).first);
     // The sprite box has transparent margins: test against the body (the middle of the box).
     final body = Rect.fromCenter(center: twin.center, width: twin.width * 0.5, height: twin.height * 0.7);
@@ -140,7 +153,17 @@ void main() {
     for (final e in boxes.entries) {
       expect(body.overlaps(e.value), isFalse, reason: '${e.key} ${e.value} covers the twin $body');
     }
+    if (h == 874.0) {
+      final shots = Directory('${Directory.current.path}/../../evidence_shots')..createSync(recursive: true);
+      await t.runAsync(() async {
+        final bnd = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+        final img = await bnd.toImage(pixelRatio: 2);
+        final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+        File('${shots.path}/home_top_17pro.png').writeAsBytesSync(bytes!.buffer.asUint8List());
+      });
+    }
   });
+  }
 
   for (final w in [390.0, 320.0]) {
     testWidgets('fits without overflow at $w wide, 1.0x text', (t) async {
