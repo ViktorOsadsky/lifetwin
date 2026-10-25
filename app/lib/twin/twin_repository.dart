@@ -171,7 +171,7 @@ class TwinRepository extends ChangeNotifier {
   /// lists every confirmed value; a Mochi change only the values that changed (old → new).
   ///
   /// Each changed value's provenance is kept (`store.profileMeta`, [provenance]): its
-  /// source from [sources] (by default "You said", or "Mochi change" for a Mochi change)
+  /// source from [sources] (by default "You said", or "Changed with Mochi" for a Mochi change)
   /// and `estimated` for the fields in [estimated] and every wristband value.
   Future<TwinAssessment> saveConversationProfile(
     Map<String, dynamic> confirmed, {

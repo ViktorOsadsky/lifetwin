@@ -45,7 +45,7 @@ abstract final class HistorySource {
   static String label(String source) => switch (source) {
     appleHealth => 'Apple Health',
     document => 'Document',
-    mochiChange => 'Mochi change',
+    mochiChange => 'Changed with Mochi',
     wristband => 'From your band',
     _ => 'You said',
   };

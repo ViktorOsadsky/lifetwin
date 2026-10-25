@@ -185,7 +185,7 @@ final bp = repo.readings();
 | `id` | Stable id (`h1`, `h2`, ...) |
 | `kind` | `HistoryKind`: `quick`, `daily`, `weekly`, `onboarding`, `mochi_change`, `health_import`, `correction`, `reading`; `document` is reserved for document-upload confirmations |
 | `at`, `date`, `time` | The phone's local date and time it happened (`YYYY-MM-DD`, `HH:MM`) |
-| `source`, `sourceLabel` | `HistorySource`: `you_said` "You said", `apple_health` "Apple Health", `document` "Document", `mochi_change` "Mochi change", `wristband` "From your band" |
+| `source`, `sourceLabel` | `HistorySource`: `you_said` "You said", `apple_health` "Apple Health", `document` "Document", `mochi_change` "Changed with Mochi", `wristband` "From your band" |
 | `items` | `HistoryItem`s, below |
 | `days` | Quick check-ins and corrections: the days whose day-log row this wrote |
 | `weekStart` | Weekly check-ins whose answers made a weekly summary: that week's Monday |

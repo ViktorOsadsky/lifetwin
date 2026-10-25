@@ -462,7 +462,7 @@ void main() {
 
       final change = of(HistoryKind.mochiChange);
       expect(change.source, HistorySource.mochiChange);
-      expect(change.sourceLabel, 'Mochi change');
+      expect(change.sourceLabel, 'Changed with Mochi');
       // Only what changed is listed, old → new; the unchanged age is not.
       expect(change.items.single.field, 'general_health');
       expect((change.items.single.oldText, change.items.single.text), ('good', 'very good'));
