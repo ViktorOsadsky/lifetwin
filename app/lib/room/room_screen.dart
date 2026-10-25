@@ -610,11 +610,16 @@ class _Dock extends StatelessWidget {
           final body = LtText.body(weight: FontWeight.w700);
           final side = math.max(_labelWidth(context, 'Customize', body), _labelWidth(context, 'Ideas', body));
           final talk = math.max(120.0, math.min(talkW, box.maxWidth - side * _labelFloor(context)));
+          final talkSlot = math.min(talk, box.maxWidth * 0.5);
+          // Both side labels shrink by the same amount, so the bar stays symmetrical.
+          final fit = math.min(1.0, (box.maxWidth - talkSlot) / 2 / side);
+          final label = body.copyWith(fontSize: body.fontSize! * fit);
           return Row(
             children: [
               Expanded(
                 child: _DockItem(
                   label: 'Customize',
+                  style: label,
                   icon: Icons.checkroom_rounded,
                   face: LtColors.peach,
                   lip: LtColors.peachLip,
@@ -623,7 +628,7 @@ class _Dock extends StatelessWidget {
                 ),
               ),
               SizedBox(
-                width: math.min(talk, box.maxWidth * 0.5),
+                width: talkSlot,
                 // Scaled down whole (never wrapped) if its slot is narrower.
                 child: Center(
                   child: FittedBox(
@@ -648,6 +653,7 @@ class _Dock extends StatelessWidget {
               Expanded(
                 child: _DockItem(
                   label: 'Ideas',
+                  style: label,
                   hint: 'Ideas for you',
                   icon: Icons.lightbulb_outline_rounded,
                   face: LtColors.mint,
@@ -672,10 +678,12 @@ class _DockItem extends StatelessWidget {
     required this.lip,
     required this.iconColor,
     required this.onTap,
+    required this.style,
     this.hint,
   });
 
   final String label;
+  final TextStyle style;
   final String? hint;
   final IconData icon;
   final Color face;
@@ -715,7 +723,7 @@ class _DockItem extends StatelessWidget {
                 child: Icon(icon, size: 30, color: iconColor),
               ),
               const SizedBox(height: 6),
-              _OneLine(label, style: LtText.body(weight: FontWeight.w700)),
+              _OneLine(label, style: style),
             ],
           ),
         ),

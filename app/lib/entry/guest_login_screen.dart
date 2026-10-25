@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/widgets/widgets.dart';
+import '../widgets/whole_word_text.dart';
 
 /// A local guest entry, not remote authentication. Entering never grants provider,
 /// microphone, memory or health-import consent; those remain in their own flows.
@@ -48,7 +49,7 @@ class _GuestLoginScreenState extends State<GuestLoginScreen> {
             children: [
               Semantics(
                 header: true,
-                child: Text('Welcome to LifeTwin', style: LtText.display(34), textAlign: TextAlign.center),
+                child: WholeWordText('Welcome to LifeTwin', style: LtText.display(34), textAlign: TextAlign.center),
               ),
               const SizedBox(height: 8),
               Text('A little twin. A healthier routine.', style: LtText.body(size: 20), textAlign: TextAlign.center),

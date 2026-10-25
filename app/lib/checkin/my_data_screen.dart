@@ -72,6 +72,8 @@ class MyDataScreen extends StatelessWidget {
     final first = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
+      // Full height when needed: at large text the words and both buttons are taller than the default sheet.
+      isScrollControlled: true,
       builder: (c) => _TwoStep(
         title: 'Delete your data?',
         body: 'This erases everything Mochi saved on this phone. It can’t be undone. Answers, check-ins, notes, your twin’s look, privacy choices, reminders. Apple Health stays as it is.',
@@ -85,6 +87,8 @@ class MyDataScreen extends StatelessWidget {
     final second = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
+      // Full height when needed: at large text the words and both buttons are taller than the default sheet.
+      isScrollControlled: true,
       builder: (c) => _TwoStep(
         title: 'Delete everything now?',
         body: 'It can’t be undone.',
@@ -141,7 +145,7 @@ class MyDataScreen extends StatelessWidget {
                           children: [
                             Icon(icon, size: 20, color: LtColors.ink),
                             const SizedBox(width: 6),
-                            Flexible(child: Text(t, style: LtText.body())),
+                            Flexible(child: WholeWordText(t, style: LtText.body())),
                           ],
                         ),
                     ],
@@ -252,7 +256,7 @@ class _Row extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: LtText.body(size: 18, weight: FontWeight.w700)),
+                    WholeWordText(title, style: LtText.body(size: 18, weight: FontWeight.w700)),
                     if (sub != null) WholeWordText(sub!, style: LtText.body(color: LtColors.secondary)),
                   ],
                 ),
@@ -318,13 +322,13 @@ class _TwoStep extends StatelessWidget {
           borderRadius: BorderRadius.circular(LtRadii.panel),
           border: Border.all(color: LtColors.container, width: LtBorders.container),
         ),
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Semantics(header: true, child: Text(title, style: LtText.display(26))),
+              Semantics(header: true, child: WholeWordText(title, style: LtText.display(26))),
               const SizedBox(height: 8),
               WholeWordText(body, style: LtText.body()),
               const SizedBox(height: 16),

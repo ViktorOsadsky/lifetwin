@@ -519,8 +519,15 @@ class ConversationService:
 
     async def turn(self, request: TurnRequest) -> TurnResponse:
         response = await self._turn(request)
+        # The same provider just failed this turn (a timeout or an outage): asking it again
+        # for the wording would only double the silence, so the template stands.
+        failed = (
+            response.provider_status == "unavailable"
+            and self.personalizer is not None
+            and (getattr(self.extractor, "provider", None) == self.personalizer.name)
+        )
         if consented(request.outside_ai_consent, self.personalizer) and not (
-            response.emergency or response.off_topic
+            response.emergency or response.off_topic or failed
         ):
             response = await self._phrase(response)
         return response

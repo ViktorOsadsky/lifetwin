@@ -414,7 +414,9 @@ async def read_pdf(
         logger.warning("claude document read unavailable: %s", type(exc).__name__)
         return answer("unavailable", identifiers_removed=stripped.removed)
 
-    found = verify(reading, raw_pages, stripped.pages, today, stats)
+    # Off the event loop: checking every quote against every line of a dense 20-page PDF
+    # takes about half a second, which would stall everyone else's voice turns.
+    found = await asyncio.to_thread(verify, reading, raw_pages, stripped.pages, today, stats)
     doc_date = parser.document_date(stripped.pages, today) if has_text else None
     if doc_date is None:
         # No date in the text itself: the date Claude gave most often, never a future one.
