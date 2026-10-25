@@ -34,6 +34,7 @@ from lifetwin.onboarding.script import (
 )
 from lifetwin.personalize.providers import DISPLAY_NAMES, PhrasingUnavailable
 from lifetwin.personalize.safety import safe_line
+from lifetwin.recommendations.ideas import BY_ID
 from lifetwin.recommendations.levers import LEVER_ORDER
 from lifetwin.recommendations.models import RecommendationRequest
 from lifetwin.recommendations.service import recommend, suggest
@@ -568,7 +569,7 @@ def test_walkers_may_pick_up_the_pace_unless_something_hurts():
     sore = HabitNote(topic="exercise", kind="walking", barrier="knee pain")
     found = recs(moderate_recreation_min_week=60, vigorous_recreation_min_week=0, notes=[sore])
     assert found[0].lever == "moderate_plus_90"
-    assert "about 150 minutes" in found[0].message  # 60 now, three more 30-minute walks
+    assert "knee_pain" not in BY_ID[found[0].id].avoid  # never an idea sore knees rule out
 
 
 def test_sleep_advice_only_under_seven_hours():
@@ -729,11 +730,20 @@ def test_consent_for_another_provider_does_not_count():
 
 def test_consent_sends_answers_and_their_words_but_never_a_name(caplog):
     lines = lambda facts: {  # noqa: E731
-        "lines": [f"Lovely walks with your dog! {item['draft']}" for item in facts["items"]]
+        "lines": [
+            item["approved_wordings"][1] if item["approved_wordings"] else item["draft"]
+            for item in facts["items"]
+        ]
     }
     provider = FakeProvider(reply=lines)
+    state = finished_state()
+    state["confirmed_profile"]["smoking_status"] = "current"  # an unquoted template is eligible
     with caplog.at_level(logging.DEBUG):
-        result = confirm(client_for(personalizer=provider), outside_ai_consent={"muse": True})
+        result = confirm(
+            client_for(personalizer=provider, max_probes=0),
+            state=state,
+            outside_ai_consent={"muse": True},
+        )
     assert len(provider.calls) == 1
     instructions, facts = provider.calls[0]
     assert "never add numbers" in instructions
@@ -741,8 +751,8 @@ def test_consent_sends_answers_and_their_words_but_never_a_name(caplog):
     assert "dog" in sent and "moderate_recreation_min_week" in sent
     assert not re.search(r"\b(?:name|email|phone|address)\b", sent)
     assert result["phrased_by"] == "muse"
-    assert result["recommendations"][0]["message"].startswith("Lovely walks with your dog!")
-    assert "Lovely walks" in result["message"]
+    assert result["recommendations"][0]["message"].endswith("We can go at your pace.")
+    assert "We can go at your pace." in result["message"]
     assert "dog" not in caplog.text and "moderate" not in caplog.text
 
 
@@ -773,7 +783,7 @@ def test_provider_outage_uses_the_template():
 
 
 def test_provider_may_rephrase_a_question_but_never_a_read_back():
-    provider = FakeProvider(reply={"line": "And do you sleep well, about how many hours a night?"})
+    provider = FakeProvider(reply=lambda facts: {"line": facts["approved_wordings"][1]})
     client = client_for(personalizer=provider)
     consent = {"muse": True}
     response = client.post(
@@ -787,7 +797,8 @@ def test_provider_may_rephrase_a_question_but_never_a_read_back():
     )
     result = response.json()
     assert result["phrased_by"] == "muse"
-    assert result["message"].endswith("about how many hours a night?")
+    assert "Take your time." in result["message"]
+    assert result["message"].endswith("?")
     read_back = client.post(
         "/api/onboarding/turn",
         json={
@@ -942,12 +953,13 @@ def test_a_bare_yes_never_means_150_minutes():
     ],
 )
 def test_safety_check_blocks_weight_dates_supplements_and_new_numbers(line):
-    assert not safe_line(line, json.dumps({"draft": "Adding one more walk a week."}))
+    assert not safe_line(line, "Adding one more walk a week.")
 
 
-def test_safety_check_allows_numbers_and_words_from_the_facts():
-    facts = json.dumps({"draft": "Adding one more walk of about 30 minutes a week."})
-    assert safe_line("With your dog, one more 30 minute walk each week is lovely.", facts)
+def test_safety_check_keeps_the_whole_grounded_action_and_its_numbers():
+    draft = "Adding one more walk of about 30 minutes a week."
+    assert safe_line(f"{draft} We can go at your pace.", draft)
+    assert not safe_line("With your dog, one more 30 minute walk each week is lovely.", draft)
 
 
 @pytest.mark.parametrize(

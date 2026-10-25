@@ -1,0 +1,69 @@
+{
+  "source": "1a648bd405df4c76b5c1dea3339194c31201913c",
+  "mode": "silent native UI, actual normal main app, keyless template server",
+  "result": "FAILED: harness selector after Experiment preview",
+  "complete_route": false,
+  "planned_seconds": 178,
+  "measured_total_seconds": null,
+  "completed_through_seconds": 97.00518591665605,
+  "completed_beats": [
+    {
+      "beat": "intake",
+      "start": 0.0009885833278531209,
+      "actions_end": 9.140705791665823,
+      "end": 25.004269999990356,
+      "elapsed": 25.003281416662503
+    },
+    {
+      "beat": "reveal",
+      "start": 25.004605833324604,
+      "actions_end": 52.69968983333092,
+      "end": 55.005049833329394,
+      "elapsed": 30.00044400000479
+    },
+    {
+      "beat": "home",
+      "start": 55.00512249999156,
+      "actions_end": 56.860732208326226,
+      "end": 72.0050566666614,
+      "elapsed": 16.999934166669846
+    },
+    {
+      "beat": "daily-checkin",
+      "start": 72.00514016665693,
+      "actions_end": 84.7993109166564,
+      "end": 97.00518591665605,
+      "elapsed": 25.000045749999117
+    }
+  ],
+  "native_test_duration_seconds_including_preparation": 158.2,
+  "last_step": "Experiment moderate activity +15 minute preview; failed to find literal Use in my what-if",
+  "actual_accessible_label": "Use 2 hours 15 minutes in my what-if. Nothing is saved to your answers.",
+  "unmeasured_remaining": [
+    "Experiment commit to what-if",
+    "Ideas",
+    "recorded-band suggestion/readback",
+    "close"
+  ],
+  "visible_daily_readback": {
+    "sleep_hours_last_night": 7,
+    "vigorous_minutes": 0,
+    "moderate_minutes": 20,
+    "sitting_minutes": 420,
+    "confirmed": true,
+    "data": "fictional synthetic day"
+  },
+  "displayed_score": "+0.59",
+  "displayed_percentile": 86,
+  "open_ended_upper_range_visible": "110+",
+  "selected_screenshots": [
+    "01-import-choice.png",
+    "02-intake-readback.png",
+    "04-reveal-caveat.png",
+    "05-reveal.png",
+    "06-home-score.png",
+    "07-checkin-readback.png",
+    "08-checkin-saved.png",
+    "09-experiment-step.png"
+  ]
+}

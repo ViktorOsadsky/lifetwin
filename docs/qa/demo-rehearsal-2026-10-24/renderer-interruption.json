@@ -1,0 +1,55 @@
+{
+  "source": "1a648bd",
+  "result": "INCOMPLETE: simulator renderer crashed",
+  "full_route_pass": false,
+  "completed_beats": [
+    {
+      "beat": "intake",
+      "start": 0.0005957083340035751,
+      "actions_end": 8.96344008333108,
+      "end": 25.004246458338457
+    },
+    {
+      "beat": "reveal",
+      "start": 25.004691916663432,
+      "actions_end": 52.706924875004916,
+      "end": 55.00199150000117
+    },
+    {
+      "beat": "home",
+      "start": 55.00214350000897,
+      "actions_end": 56.64829279166588,
+      "end": 72.00093950000883
+    }
+  ],
+  "last_logged_test_second": 114.82,
+  "last_action": "Find Send after typing the combined activity answer; no daily confirmation/save yet",
+  "renderer": {
+    "procName": "SimRenderServer",
+    "captureTime": "2026-10-24 22:41:07.9863 -0700",
+    "exception": {
+      "codes": "0x0000000000000001, 0x0000000102d19d58",
+      "rawCodes": [
+        1,
+        4342259032
+      ],
+      "type": "EXC_BREAKPOINT",
+      "signal": "SIGTRAP"
+    },
+    "termination": {
+      "flags": 0,
+      "code": 5,
+      "namespace": "SIGNAL",
+      "indicator": "Trace/BPT trap: 5",
+      "byProc": "exc handler",
+      "byPid": 73689
+    }
+  },
+  "native_test_timeouts_enabled": false,
+  "native_default_execution_allowance_seconds": 600,
+  "session_evidence": [
+    "22:41:07.856 test runner session lost connection",
+    "22:41:28.876 test operation failure: Test crashed with signal term."
+  ],
+  "scope": "This is a simulator infrastructure failure, not evidence of a product-app crash or a completed three-minute route."
+}

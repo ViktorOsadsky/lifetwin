@@ -1,0 +1,7 @@
+Test Case '-[Demo133UITests.Demo133UITests testPrepareRealIntake]' started.
+    t =     3.80s Waiting 60.0s for "Experiment with your twin" Button to exist
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+2026-10-24 22:52:40.362 xcodebuild[90226:3117298] [MT] IDETestOperationsObserverDebug: 63.861 elapsed -- Testing started completed.
+** TEST EXECUTE FAILED **

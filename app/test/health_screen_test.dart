@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/health/health_reader.dart';
 import 'package:lifesim/health/health_sample.dart';
 import 'package:lifesim/health/health_screen.dart';
 import 'package:lifesim/health/health_summary.dart';
+import 'package:lifesim/health/workout_averages.dart';
 import 'package:lifesim/ui/widgets/widgets.dart';
 
 final now = DateTime(2026, 10, 24, 12);
 
 class FakeReader extends HealthReader {
-  FakeReader(this.samples, {this.fail = false});
+  FakeReader(this.samples, {this.fail = false, super.activityReader});
   final List<HealthSample> samples;
   final bool fail;
 
@@ -53,6 +55,56 @@ void main() {
     expect(r.toAsk, contains(HealthField.weightKg));
     expect(r.toAsk, contains(HealthField.sleepHours)); // nothing found, so the mascot asks
     expect(r.samples, samples);
+  });
+
+  testWidgets('native workout estimate requires context confirmation and preserves missing buckets', (t) async {
+    const channel = MethodChannel('lifetwin/health_activity');
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    var queries = 0;
+    messenger.setMockMethodCallHandler(channel, (_) async {
+      queries++;
+      return {
+        'schema': WorkoutAverages.schema,
+        'window_days': 28,
+        'method': WorkoutAverages.method,
+        'moderate_weekly_minutes': 30,
+        'vigorous_weekly_minutes': null,
+        'eligible_workout_count': 1,
+        'excluded_counts': {for (final key in WorkoutAverages.exclusionKeys) key: 0},
+        'truncated': false,
+        'requires_recreation_confirmation': true,
+      };
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    HealthImportResult? result;
+    await t.pumpWidget(
+      MaterialApp(
+        home: HealthImportScreen(reader: FakeReader([]), now: () => now, onDone: (r) => result = r),
+      ),
+    );
+    await t.tap(find.text('Yes, use Apple Health'));
+    await t.pumpAndSettle();
+    final prompt = find.textContaining('Were these recreational activities');
+    expect(prompt, findsOneWidget);
+    expect(find.textContaining('not time measured in effort zones'), findsOneWidget);
+    expect(result, isNull, reason: 'Reading data never confirms it');
+    // Reject, undo and explicitly confirm; neither the unavailable vigorous bucket
+    // nor unsupported sitting may turn into a zero answer.
+    await t.tap(find.text('No, let me fix it'));
+    await t.pump(const Duration(seconds: 1));
+    await t.tap(find.text('Go back'));
+    await t.pump();
+    expect(prompt, findsOneWidget);
+    await t.tap(find.text("Yes, that's right"));
+    await t.pump(const Duration(seconds: 1));
+    await t.tap(find.text('Continue'));
+    await t.pump();
+    expect(queries, 1);
+    expect(result!.confirmed.single.field, HealthField.moderateRecreationMinWeek);
+    expect(result!.confirmed.single.value, 30);
+    expect(result!.confirmed.single.isEstimate, isTrue);
+    expect(result!.toAsk, containsAll([HealthField.vigorousRecreationMinWeek, HealthField.sedentaryMinDay]));
+    expect(result!.toAsk, isNot(contains(HealthField.moderateRecreationMinWeek)));
   });
 
   testWidgets('a quick double tap answers only one question', (t) async {
