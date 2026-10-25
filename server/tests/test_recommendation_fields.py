@@ -138,3 +138,13 @@ def test_existing_fields_unchanged(client):
     assert rec["causal_interpretation"] is False
     assert out["lever_ranking"]["order"][0] == "quit_smoking"
     assert out["message"].startswith("Here are a few ideas")
+
+
+def test_missing_current_value_gives_null_target_not_a_default():
+    found = targets(moderate_recreation_min_week=60)
+    assert found["vigorous_plus_60"] == ("vigorous_recreation_min_week", None)
+    assert targets(sleep_hours=None, exercise_minutes_weekly=0)["moderate_plus_90"] == (
+        "moderate_recreation_min_week",
+        None,
+    )
+    assert targets(smoking_status="current")["quit_smoking"] == ("smoking_status", "former")

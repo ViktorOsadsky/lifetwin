@@ -94,20 +94,27 @@ def _rec(
 
 def _experiment(
     rec: Recommendation, profile: HealthProfile
-) -> tuple[str, float | int | str] | None:
-    """The model input a lever changes and the value to try, from the person's own value."""
-    match rec.lever:
-        case "quit_smoking":
-            return "smoking_status", "former"
-        case "vigorous_plus_60":
-            return "vigorous_recreation_min_week", (profile.vigorous_recreation_min_week or 0) + 60
-        case "moderate_plus_90":
-            return "moderate_recreation_min_week", (profile.moderate_recreation_min_week or 0) + 90
-        case "short_sleep_plus_1h":
-            return "sleep_hours", min(24, (profile.sleep_hours or 0) + 1)
-        case "sitting_minus_60_realistic":
-            return "sedentary_min_day", max(0, (profile.sedentary_min_day or 0) - 60)
-    return None
+) -> tuple[str, float | int | str | None] | None:
+    """The model input a lever changes and the value to try, from the person's own value.
+
+    A missing current value is never filled in: the target is then None.
+    """
+    if rec.lever == "quit_smoking":
+        return "smoking_status", "former"
+    steps = {
+        "vigorous_plus_60": ("vigorous_recreation_min_week", 60, None),
+        "moderate_plus_90": ("moderate_recreation_min_week", 90, None),
+        "short_sleep_plus_1h": ("sleep_hours", 1, 24),
+        "sitting_minus_60_realistic": ("sedentary_min_day", -60, None),
+    }
+    if rec.lever not in steps:
+        return None
+    field, delta, cap = steps[rec.lever]
+    current = getattr(profile, field)
+    if current is None:
+        return field, None
+    target = current + delta
+    return field, min(cap, target) if cap is not None else max(0, target)
 
 
 def missing_inputs(profile: HealthProfile) -> list[str]:
@@ -216,8 +223,8 @@ def _activity(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation 
             "vigorous_plus_60",
             "activity",
             "Pick up the pace",
-            f"You said {doing}. You could try a faster pace for part of it. Brisk minutes "
-            f"count double toward the weekly {GOAL}.",
+            f"You said {doing}. You could try a faster pace for part of it. Minutes that leave "
+            f"you out of breath count double toward the weekly {GOAL}.",
             based,
             "activity_pace",
         )
