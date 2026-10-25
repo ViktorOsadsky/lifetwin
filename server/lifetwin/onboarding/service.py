@@ -773,13 +773,22 @@ class ConversationService:
             names = list(dict.fromkeys(self._label(name) for name in additions))
             named = ", ".join(names[:-1]) + " and " + names[-1] if len(names) > 1 else names[0]
             # Asking the same question again without saying why feels like being stuck.
+            document = request.import_source == "document"
             missing = (
-                f"Apple Health didn't have your {FRIENDLY_LABELS[asked]}, so I still need it. "
+                ("Your document didn't show" if document else "Apple Health didn't have")
+                + f" your {FRIENDLY_LABELS[asked]}, so I still need it. "
                 if asked and state.current_field == asked
                 else ""
             )
+            source = (
+                "your document"
+                if document
+                else "your wristband"
+                if request.import_source == "wristband"
+                else "Apple Health"
+            )
             return respond(
-                f"Thank you. I added your {named} from Apple Health. " + missing + follow_up.strip()
+                f"Thank you. I added your {named} from {source}. " + missing + follow_up.strip()
             )
         if action == "skip":
             target = request.field or state.current_field

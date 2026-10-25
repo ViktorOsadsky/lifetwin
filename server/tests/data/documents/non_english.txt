@@ -1,0 +1,31 @@
+CLINICA FAMILIAR SOL NACIENTE
+Calle Olmo 45
+Valle Sereno, TX 78099
+Tel (555) 010-8800
+RESUMEN DE LA VISITA
+Paciente: Rosa Ejemplo-Prueba
+Fecha de nacimiento: 15/03/1950
+Expediente 4401828
+Fecha de la visita: 14/09/2026
+Motivo de la consulta
+Control de la diabetes y de la presion arterial
+Signos vitales
+Peso: 80 kg
+Talla: 1.62 m
+Presion arterial: 140/90 mmHg
+Frecuencia cardiaca: 74 latidos por minuto
+Diagnosticos
+Diabetes tipo 2
+Hipertension arterial
+Historia social
+Nunca ha fumado
+Resultados
+Hemoglobina glucosilada 7.2 %
+Colesterol LDL 135 mg/dL
+Plan
+Continuar con metformina dos veces al dia.
+Reducir el consumo de sal.
+Caminar treinta minutos casi todos los dias.
+Volver a la clinica en tres meses.
+Firmado: Dra. Camila Reyes-Prueba
+Pagina 1 de 1

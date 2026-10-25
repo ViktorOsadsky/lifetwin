@@ -31,6 +31,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>LifeTwin uses the camera only when you choose to scan a health document. The text is read on your phone; the picture is not kept.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>LifeTwin listens only while the Talk button is on, so you can answer questions by speaking instead of typing.</string>
 	<key>NSHealthShareUsageDescription</key>

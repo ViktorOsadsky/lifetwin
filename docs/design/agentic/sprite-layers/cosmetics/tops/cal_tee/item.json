@@ -1,0 +1,128 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "cal_tee",
+ "category": "top",
+ "label": "Cal tee",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "top",
+   "slot": "top",
+   "bone": "torso",
+   "z": 32,
+   "pivot": [
+    321.5,
+    745.0
+   ],
+   "box": {
+    "x": 57,
+    "y": 331,
+    "w": 524,
+    "h": 382
+   },
+   "vector": "top.svg",
+   "painted": "top.p.png"
+  },
+  {
+   "name": "sleeve_l",
+   "slot": "top_sleeve_l",
+   "bone": "arm_l",
+   "z": 35.15,
+   "pivot": [
+    126.5,
+    470.0
+   ],
+   "box": {
+    "x": 67,
+    "y": 418,
+    "w": 122,
+    "h": 148
+   },
+   "vector": "sleeve_l.default.svg",
+   "painted": "sleeve_l.default.p.png",
+   "variant": "default",
+   "follow": "arm_l"
+  },
+  {
+   "name": "sleeve_r",
+   "slot": "top_sleeve_r",
+   "bone": "arm_r",
+   "z": 35.15,
+   "pivot": [
+    516.5,
+    470.0
+   ],
+   "box": {
+    "x": 454,
+    "y": 419,
+    "w": 119,
+    "h": 146
+   },
+   "vector": "sleeve_r.default.svg",
+   "painted": "sleeve_r.default.p.png",
+   "variant": "default",
+   "follow": "arm_r"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "default",
+ "colourable": {
+  "body": {
+   "key": "#24426f",
+   "tones": {
+    "hi": "#8993a3",
+    "lt": "#596b88",
+    "base": "#24426f",
+    "sh": "#263964",
+    "dk": "#202c51",
+    "ink": "#232434"
+   }
+  },
+  "logo": {
+   "key": "#f0b429",
+   "tones": {
+    "hi": "#f7d17d",
+    "lt": "#f4c253",
+    "base": "#f0b429",
+    "sh": "#b98b32",
+    "dk": "#8a672c",
+    "ink": "#664a1d"
+   }
+  }
+ },
+ "material": "jersey",
+ "notes": [
+  "\"Cal\" script on the chest (front only; a back view must not repeat it).",
+  "Short sleeves ride the arm bones; a shoulder disc around the socket pivot keeps the joint covered at any angle."
+ ],
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side",
+   "back"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head"
+ }
+}

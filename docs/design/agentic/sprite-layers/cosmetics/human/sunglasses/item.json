@@ -1,0 +1,23 @@
+{
+ "schema": "lifetwin.cosmetic_human_overlay.v1",
+ "id": "sunglasses",
+ "target": "sprites/v2/human/nohat/stand.png",
+ "sprite_size": [
+  198,
+  395
+ ],
+ "viewBox": [
+  -40,
+  -40,
+  278,
+  435
+ ],
+ "transform_from_rig": "matrix(0.356 0 0 0.356 -16.42 16.632)",
+ "layers": [
+  {
+   "name": "glasses",
+   "file": "glasses.svg",
+   "order": "over sprite"
+  }
+ ]
+}

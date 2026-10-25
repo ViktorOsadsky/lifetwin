@@ -1,0 +1,1117 @@
+{
+  "$defs": {
+    "CoachNote": {
+      "additionalProperties": false,
+      "description": "A habit note the phone keeps (conversation-v2's ``HabitNote`` fields), plus the\nphone's ``id``, a first ``name`` for a pet or person, and the day it was noted.\nNotes are data, never instructions.",
+      "properties": {
+        "barrier": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Barrier"
+        },
+        "bedtime": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bedtime"
+        },
+        "concern": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Concern"
+        },
+        "estimate": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimate"
+        },
+        "estimate_for": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimate For"
+        },
+        "feeling": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Feeling"
+        },
+        "frequency": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frequency"
+        },
+        "id": {
+          "maxLength": 40,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 30,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "naps": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Naps"
+        },
+        "noted_on": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Noted On"
+        },
+        "quit_ago": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quit Ago"
+        },
+        "quit_aid": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quit Aid"
+        },
+        "reading": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reading"
+        },
+        "smoked_years": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Smoked Years"
+        },
+        "source": {
+          "default": "said",
+          "enum": [
+            "said",
+            "ai_helper"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "time_of_day": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time Of Day"
+        },
+        "topic": {
+          "enum": [
+            "exercise",
+            "sleep",
+            "smoking",
+            "sitting",
+            "health",
+            "food",
+            "pet",
+            "people",
+            "schedule"
+          ],
+          "title": "Topic",
+          "type": "string"
+        },
+        "tried_quitting": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tried Quitting"
+        },
+        "wake_time": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wake Time"
+        },
+        "wakes_for": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wakes For"
+        },
+        "with": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "With"
+        }
+      },
+      "required": [
+        "id",
+        "topic"
+      ],
+      "title": "CoachNote",
+      "type": "object"
+    },
+    "CoachProfile": {
+      "additionalProperties": false,
+      "description": "The confirmed profile, in the one shared vocabulary (``HealthProfile``). Height,\nweight and blood pressure are accepted but never used: weight is never a lever.",
+      "properties": {
+        "age": {
+          "anyOf": [
+            {
+              "maximum": 120,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age"
+        },
+        "alcohol_drinks_weekly": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alcohol Drinks Weekly"
+        },
+        "diabetes": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diabetes"
+        },
+        "diastolic_bp": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 20,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diastolic Bp"
+        },
+        "exercise_minutes_weekly": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exercise Minutes Weekly"
+        },
+        "general_health": {
+          "anyOf": [
+            {
+              "enum": [
+                "excellent",
+                "very_good",
+                "good",
+                "fair",
+                "poor"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "General Health"
+        },
+        "height_cm": {
+          "anyOf": [
+            {
+              "maximum": 280,
+              "minimum": 50,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Height Cm"
+        },
+        "hypertension_diagnosed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hypertension Diagnosed"
+        },
+        "moderate_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min Week"
+        },
+        "sedentary_min_day": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sedentary Min Day"
+        },
+        "sex": {
+          "anyOf": [
+            {
+              "enum": [
+                "female",
+                "male"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sex"
+        },
+        "sleep_hours": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours"
+        },
+        "smoking_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "never",
+                "former",
+                "current",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Smoking Status"
+        },
+        "systolic_bp": {
+          "anyOf": [
+            {
+              "maximum": 300,
+              "minimum": 40,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Systolic Bp"
+        },
+        "vigorous_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min Week"
+        },
+        "weight_kg": {
+          "anyOf": [
+            {
+              "maximum": 700,
+              "minimum": 10,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weight Kg"
+        }
+      },
+      "title": "CoachProfile",
+      "type": "object"
+    },
+    "DaySummary": {
+      "additionalProperties": false,
+      "description": "One day of check-in history, in the on-device ``daily_logs`` names\n(codex/c-frequent-checkins) plus the check-in's ``wellbeing``.",
+      "properties": {
+        "date": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "title": "Date",
+          "type": "string"
+        },
+        "moderate_recreation_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min"
+        },
+        "sedentary_min_day": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sedentary Min Day"
+        },
+        "sleep_hours": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sleep Hours"
+        },
+        "vigorous_recreation_min": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min"
+        },
+        "wellbeing": {
+          "anyOf": [
+            {
+              "enum": [
+                "good",
+                "okay",
+                "not_great"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wellbeing"
+        }
+      },
+      "required": [
+        "date"
+      ],
+      "title": "DaySummary",
+      "type": "object"
+    },
+    "ItemFeedback": {
+      "additionalProperties": false,
+      "properties": {
+        "item_id": {
+          "enum": [
+            "move",
+            "food",
+            "habit",
+            "cheer"
+          ],
+          "title": "Item Id",
+          "type": "string"
+        },
+        "minutes": {
+          "anyOf": [
+            {
+              "maximum": 120,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minutes"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "status": {
+          "enum": [
+            "accepted",
+            "edited",
+            "dismissed",
+            "done",
+            "not_done"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "time_of_day": {
+          "anyOf": [
+            {
+              "enum": [
+                "morning",
+                "afternoon",
+                "evening"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time Of Day"
+        }
+      },
+      "required": [
+        "item_id",
+        "status"
+      ],
+      "title": "ItemFeedback",
+      "type": "object"
+    },
+    "PlanFeedback": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/ItemFeedback"
+          },
+          "maxItems": 4,
+          "title": "Items",
+          "type": "array"
+        },
+        "revision_id": {
+          "maxLength": 40,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Revision Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "revision_id"
+      ],
+      "title": "PlanFeedback",
+      "type": "object"
+    },
+    "PlanItemRef": {
+      "additionalProperties": false,
+      "description": "The part of a plan item the phone sends back: what was chosen, not the words.",
+      "properties": {
+        "callback_note_id": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Callback Note Id"
+        },
+        "catalog_id": {
+          "maxLength": 40,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Catalog Id",
+          "type": "string"
+        },
+        "id": {
+          "enum": [
+            "move",
+            "food",
+            "habit",
+            "cheer"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "workout",
+            "diet",
+            "habit",
+            "encourage"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "minutes": {
+          "anyOf": [
+            {
+              "maximum": 120,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minutes"
+        },
+        "time_of_day": {
+          "anyOf": [
+            {
+              "enum": [
+                "morning",
+                "afternoon",
+                "evening"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time Of Day"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "catalog_id"
+      ],
+      "title": "PlanItemRef",
+      "type": "object"
+    },
+    "PreviousPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "based_on": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Based On"
+        },
+        "input_snapshot_id": {
+          "maxLength": 40,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Input Snapshot Id",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/PlanItemRef"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        },
+        "local_date": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "title": "Local Date",
+          "type": "string"
+        },
+        "revision_id": {
+          "maxLength": 40,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Revision Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "revision_id",
+        "local_date",
+        "input_snapshot_id",
+        "items"
+      ],
+      "title": "PreviousPlan",
+      "type": "object"
+    },
+    "Reading": {
+      "additionalProperties": false,
+      "description": "A confirmed reading the phone keeps over time (owner ruling 2026-10-24): blood\npressure, and A1c or LDL from uploaded documents. Used only for trends and the\ncrisis line; never a diagnosis, never sent to a provider.",
+      "properties": {
+        "date": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "title": "Date",
+          "type": "string"
+        },
+        "field": {
+          "enum": [
+            "systolic_bp",
+            "diastolic_bp",
+            "a1c",
+            "ldl"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "typed",
+            "voice",
+            "apple_health",
+            "document",
+            "checkin"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "mmHg",
+            "%",
+            "mg/dL",
+            "mmol/L"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "maximum": 500,
+          "minimum": 0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "unit",
+        "date",
+        "source"
+      ],
+      "title": "Reading",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checkins": {
+      "items": {
+        "$ref": "#/$defs/DaySummary"
+      },
+      "maxItems": 28,
+      "title": "Checkins",
+      "type": "array"
+    },
+    "feedback": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PlanFeedback"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "goals": {
+      "items": {
+        "maxLength": 80,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 3,
+      "title": "Goals",
+      "type": "array"
+    },
+    "habit_notes": {
+      "items": {
+        "$ref": "#/$defs/CoachNote"
+      },
+      "maxItems": 20,
+      "title": "Habit Notes",
+      "type": "array"
+    },
+    "latest_revision_id": {
+      "anyOf": [
+        {
+          "maxLength": 40,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Latest Revision Id"
+    },
+    "limits": {
+      "items": {
+        "enum": [
+          "knee_pain",
+          "walking_aid",
+          "fall_risk",
+          "cardio_caution",
+          "seated_only"
+        ],
+        "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Limits",
+      "type": "array"
+    },
+    "local_date": {
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "title": "Local Date",
+      "type": "string"
+    },
+    "local_time": {
+      "anyOf": [
+        {
+          "pattern": "^\\d{2}:\\d{2}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Local Time"
+    },
+    "memory_consent": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Memory Consent"
+    },
+    "movement_paused": {
+      "default": false,
+      "title": "Movement Paused",
+      "type": "boolean"
+    },
+    "outside_ai_consent": {
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "propertyNames": {
+        "enum": [
+          "claude",
+          "muse"
+        ]
+      },
+      "title": "Outside Ai Consent",
+      "type": "object"
+    },
+    "previous_plan": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PreviousPlan"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "profile": {
+      "$ref": "#/$defs/CoachProfile"
+    },
+    "readings": {
+      "items": {
+        "$ref": "#/$defs/Reading"
+      },
+      "maxItems": 60,
+      "title": "Readings",
+      "type": "array"
+    },
+    "said": {
+      "anyOf": [
+        {
+          "maxLength": 500,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Said"
+    }
+  },
+  "required": [
+    "local_date"
+  ],
+  "title": "CoachPlanRequest",
+  "type": "object"
+}

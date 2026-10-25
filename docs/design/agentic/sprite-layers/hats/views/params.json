@@ -1,0 +1,130 @@
+{
+ "bear": {
+  "walk_side": {
+   "view": "three_quarter",
+   "s": 0.8,
+   "th": -2,
+   "x": 132,
+   "y": 60,
+   "ears": [
+    [
+     70,
+     30,
+     28
+    ],
+    [
+     172,
+     28,
+     28
+    ]
+   ],
+   "earover": [],
+   "noclip": true
+  },
+  "walk_back": {
+   "view": "back",
+   "s": 0.92,
+   "th": 0,
+   "x": 115,
+   "y": 56,
+   "ears": [
+    [
+     60,
+     30,
+     26
+    ],
+    [
+     168,
+     30,
+     26
+    ]
+   ]
+  },
+  "sleep": {
+   "view": "front",
+   "s": 0.7,
+   "th": -30,
+   "x": 66,
+   "y": 52,
+   "ears": [
+    [
+     30,
+     62,
+     22
+    ],
+    [
+     100,
+     16,
+     22
+    ]
+   ],
+   "smooth": true
+  }
+ },
+ "human": {
+  "walk_side": {
+   "view": "three_quarter",
+   "s": 1.0,
+   "th": 0,
+   "x": 98,
+   "y": 62
+  },
+  "walk_back": {
+   "view": "back",
+   "s": 1.0,
+   "th": 0,
+   "x": 98,
+   "y": 60
+  },
+  "sleep": {
+   "view": "front",
+   "s": 1.04,
+   "th": -25,
+   "x": 86,
+   "y": 55,
+   "smooth": true,
+   "nounder": true,
+   "erase": [
+    [
+     0,
+     60,
+     24,
+     140
+    ]
+   ]
+  }
+ },
+ "human_f": {
+  "walk_side": {
+   "view": "three_quarter",
+   "s": 1.0,
+   "th": 0,
+   "x": 98,
+   "y": 62
+  },
+  "walk_back": {
+   "view": "back",
+   "s": 1.0,
+   "th": 0,
+   "x": 98,
+   "y": 60
+  },
+  "sleep": {
+   "view": "front",
+   "s": 1.04,
+   "th": -25,
+   "x": 86,
+   "y": 55,
+   "smooth": true,
+   "nounder": true,
+   "erase": [
+    [
+     0,
+     60,
+     24,
+     140
+    ]
+   ]
+  }
+ }
+}

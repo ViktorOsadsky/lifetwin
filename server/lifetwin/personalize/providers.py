@@ -58,7 +58,8 @@ class MusePersonalizer:
 
     @property
     def configured(self) -> bool:
-        return bool(self._api_key and self._model)
+        # "-contributor" variants may train on content: never use them.
+        return bool(self._api_key and self._model and "contributor" not in self._model.lower())
 
     async def phrase(self, instructions: str, facts: dict) -> dict:
         if not self.configured:

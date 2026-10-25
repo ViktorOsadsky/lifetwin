@@ -1,0 +1,146 @@
+{
+ "wave": {
+  "size": [
+   226,
+   397
+  ],
+  "feet_anchor": {
+   "x": 0.5177,
+   "y": 0.9798
+  },
+  "scale": 0.798,
+  "sheet": "human_middle_regular_A"
+ },
+ "walk_side": {
+  "size": [
+   191,
+   396
+  ],
+  "feet_anchor": {
+   "x": 0.5288,
+   "y": 0.9798
+  },
+  "scale": 0.798,
+  "sheet": "human_middle_regular_A"
+ },
+ "sit": {
+  "size": [
+   204,
+   318
+  ],
+  "feet_anchor": {
+   "x": 0.4951,
+   "y": 0.9748
+  },
+  "scale": 0.798,
+  "sheet": "human_middle_regular_A"
+ },
+ "jump": {
+  "size": [
+   275,
+   340
+  ],
+  "feet_anchor": {
+   "x": 0.3727,
+   "y": 0.9765
+  },
+  "scale": 0.798,
+  "sheet": "human_middle_regular_A"
+ },
+ "sleep": {
+  "size": [
+   357,
+   193
+  ],
+  "feet_anchor": {
+   "x": 0.6232,
+   "y": 0.9585
+  },
+  "scale": 0.798,
+  "sheet": "human_middle_regular_A"
+ },
+ "eat": {
+  "size": [
+   207,
+   338
+  ],
+  "feet_anchor": {
+   "x": 0.5024,
+   "y": 0.9763
+  },
+  "scale": 0.798,
+  "sheet": "human_middle_regular_A"
+ },
+ "stretch": {
+  "size": [
+   177,
+   399
+  ],
+  "feet_anchor": {
+   "x": 0.5367,
+   "y": 0.9799
+  },
+  "scale": 0.798,
+  "sheet": "human_middle_regular_A"
+ },
+ "concerned": {
+  "size": [
+   161,
+   393
+  ],
+  "feet_anchor": {
+   "x": 0.5093,
+   "y": 0.9796
+  },
+  "scale": 0.611,
+  "sheet": "human_middle_regular_B"
+ },
+ "listening": {
+  "size": [
+   162,
+   387
+  ],
+  "feet_anchor": {
+   "x": 0.4475,
+   "y": 0.9793
+  },
+  "scale": 0.611,
+  "sheet": "human_middle_regular_B"
+ },
+ "thinking": {
+  "size": [
+   163,
+   405
+  ],
+  "feet_anchor": {
+   "x": 0.5828,
+   "y": 0.9802
+  },
+  "scale": 0.611,
+  "sheet": "human_middle_regular_B"
+ },
+ "sleepy": {
+  "size": [
+   210,
+   404
+  ],
+  "feet_anchor": {
+   "x": 0.4952,
+   "y": 0.9802
+  },
+  "scale": 0.611,
+  "sheet": "human_middle_regular_B"
+ },
+ "proud": {
+  "size": [
+   162,
+   405
+  ],
+  "feet_anchor": {
+   "x": 0.4969,
+   "y": 0.9802
+  },
+  "scale": 0.611,
+  "sheet": "human_middle_regular_B"
+ }
+}

@@ -1,0 +1,198 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "cap",
+ "category": "hat",
+ "label": "Cap",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "hat_front",
+   "slot": "hat_front",
+   "bone": "head",
+   "z": 70,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 150,
+    "y": 83,
+    "w": 340,
+    "h": 192
+   },
+   "vector": "hat_front.svg",
+   "painted": "hat_front.p.png"
+  },
+  {
+   "name": "ear_over",
+   "slot": "hat_ear_over",
+   "bone": "head",
+   "z": 72,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 128,
+    "y": 58,
+    "w": 382,
+    "h": 98
+   },
+   "vector": "ear_over.svg",
+   "painted": "ear_over.p.png",
+   "note": "the ears, cut from the rig head part along a soft round arc, drawn over hat_front (rig request: a hat-supplied ear-over clip)"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "default",
+ "colourable": {
+  "body": {
+   "key": "#7cc6a5",
+   "tones": {
+    "hi": "#b8dbc0",
+    "lt": "#9bd0b1",
+    "base": "#7cc6a5",
+    "sh": "#65988b",
+    "dk": "#4e716d",
+    "ink": "#405046"
+   }
+  },
+  "bill_under": {
+   "key": "#61a085",
+   "tones": {
+    "hi": "#aac6ae",
+    "lt": "#87b398",
+    "base": "#61a085",
+    "sh": "#527c74",
+    "dk": "#405d5c",
+    "ink": "#37433c"
+   }
+  },
+  "emblem": {
+   "key": "#f6ecd6",
+   "tones": {
+    "hi": "#faefda",
+    "lt": "#f8ecd6",
+    "base": "#f6ecd6",
+    "sh": "#bdb3ae",
+    "dk": "#8d8486",
+    "ink": "#685c57"
+   }
+  }
+ },
+ "material": "cotton",
+ "notes": [
+  "Bill faces the viewer; embroidered paw emblem instead of any brand mark."
+ ],
+ "fit": {
+  "frame": "canonical Cal hat (rig hat_front/hd == v2 hatcomp canonical placement)",
+  "anchor": [
+   320,
+   191
+  ],
+  "band_bottom": [
+   [
+    148,
+    224
+   ],
+   [
+    200,
+    207
+   ],
+   [
+    245,
+    198
+   ],
+   [
+    320,
+    191
+   ],
+   [
+    395,
+    196
+   ],
+   [
+    440,
+    205
+   ],
+   [
+    492,
+    222
+   ]
+  ],
+  "front_max_over_eyes": [
+   [
+    150,
+    269
+   ],
+   [
+    170,
+    262
+   ],
+   [
+    200,
+    254
+   ],
+   [
+    245,
+    244
+   ],
+   [
+    320,
+    238
+   ],
+   [
+    395,
+    244
+   ],
+   [
+    440,
+    252
+   ],
+   [
+    470,
+    259
+   ],
+   [
+    490,
+    277
+   ]
+  ],
+  "ref_head": {
+   "width_at_band": 396,
+   "crown_top_y": 105
+  },
+  "per_head_scale": "for an age/build head variant: s = head_width / 396, about anchor, then move anchor to the variant crown-base centre",
+  "v2_sprites": "rig px -> v2 hat-stand px: x = (x_rig - 49) / 2.5 + 3, y = (y_rig - 45) / 2.5 + 3; then apply hatc/bear_match.json per pose like the canonical hat"
+ },
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side",
+   "back"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head"
+ }
+}

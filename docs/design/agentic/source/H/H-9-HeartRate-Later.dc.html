@@ -1,0 +1,148 @@
+<!doctype html>
+<!-- LifeTwin H screens (ESP32 wrist band: pairing, today, suggestions, reaction, heart rate, states, settings), v1. Tokens and components match V and X. Twin sprites: sprites/v2, one scale per character (stand pose = 196px), feet on one baseline. -->
+<!-- Flutter: the page is a scroll view with the dock AND back/close pinned (never inside the scroll view); scroll content gets bottom padding = dock height + 16. Sections are flow layout with min-heights, never fixed heights, so 200% text grows. Only the plate window has a fixed height; the twin sits in a fixed 200px box. -->
+<!-- Pinned controls (usability rule, iPhone test): Back, Home and Close sit in a fixed header (.hdr) or the change-chat header; they never scroll away. -->
+<!-- Band data rules (owner, 2026-10-23): band numbers are sensor estimates. They reach saved answers ONLY through a Mochi read-back the person confirms (D2). D3 (ruled 2026-10-24, calibration under way): a band estimate may change the Outlook ONLY after the person confirms it as their answer in the Mochi read-back (H-7). No H screen shows a survival number or a difference, and unconfirmed band data never moves the forecast. Band activity may change the twin's cosmetic mood only; never quiz/game health and never a prediction (APP-05, VAL-02). Raw samples never leave the band; minute records stay on the phone (D1). -->
+<!-- TBD (owner, open): whether band summaries may be forwarded to outside AI providers (e.g. personalize.display_name). No H screen shows band data going to an AI provider until that is ruled. -->
+<!-- ANNOTATION (outside the phone frame, on the canvas next to this artboard): "After heart-rate sensor (D5)". FUTURE SCREEN: only reachable after the MAX30101 heart-rate sensor ships (D5, HW-09). Until then H-3, H-5 and H-11 show "later" / dashed "Coming soon". APP-09: green channel, per-minute mean at rest. Informational only: not a profile field, not a model input, not sent anywhere, not stored beyond the on-phone day. Minutes the motion sensor flags as moving are shown as "Moving, skipped" (low confidence), never as a number. Forbidden words here: normal, high, low, healthy, irregular, alert, risk, fitness age, any colour coding of the number. No alerts or notifications from heart rate (plan: out of scope). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>H Heart rate (after heart-rate sensor, D5)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.scr{width:390px;position:relative;overflow:hidden;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#4A2F25;-webkit-font-smoothing:antialiased}
+.g-mint{background:radial-gradient(140% 70% at 50% 18%,#E3F5EC 0%,#D3EEE2 72%)}
+.g-lav{background:radial-gradient(140% 70% at 50% 18%,#F0ECFD 0%,#E6E0FA 72%)}
+.g-paper{background:radial-gradient(140% 70% at 50% 18%,#FFFBF3 0%,#F6EEE2 72%)}
+.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.pn{position:relative;box-sizing:border-box;border:1.5px solid #A88B7D;border-radius:28px;background:#FFFDF8;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.win{border-radius:30px}
+.pa{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border-radius:24px;overflow:hidden;background:#E9E2F8}
+.pa img.plate{position:absolute;display:block;object-fit:cover}
+.key{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(226,179,87,.7);border-radius:24px;pointer-events:none}
+.banner{position:absolute;left:50%;transform:translateX(-50%);height:44px;max-width:240px;box-sizing:border-box;padding:0 20px;display:flex;align-items:center;justify-content:center;gap:6px;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;white-space:nowrap;z-index:3}
+.banner .br{color:#B4532F}
+.btn{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:#4A2F25;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid #8C6B5D;background:#FFFDF8;padding:0;text-align:left;text-decoration:none}
+.btn.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.lip{background:#9FD9C3;box-shadow:inset 0 -3px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-cream{background:#FFFDF8;box-shadow:inset 0 -3px 0 rgba(233,223,208,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-ink{background:#4A2F25;color:#FFFDF8;border-color:#2E1C15;box-shadow:inset 0 -3px 0 rgba(0,0,0,.35),0 6px 16px rgba(74,47,37,.18)}
+.lip-teal{background:#17594A;color:#FFFDF8;border-color:#0F3F33;box-shadow:inset 0 -4px 0 rgba(10,60,48,.45),0 8px 18px rgba(36,128,106,.28)}
+.cta{width:100%;min-height:64px;border-radius:32px;font-size:24px}
+.cta2{width:100%;min-height:56px;border-radius:28px;font-size:20px}
+.link{border:0;background:transparent;box-shadow:none;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;font-weight:700;font-size:17px;min-height:48px;min-width:48px;padding:0 6px}
+.back{position:absolute;width:52px;height:52px;border-radius:26px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);z-index:2}
+.tail{position:absolute;width:20px;height:20px;background:#FFFDF8;border:1.5px solid #A88B7D;border-top-color:transparent;border-right-color:transparent;box-sizing:border-box}
+.bub{position:absolute;z-index:2;padding:12px 16px;border-radius:24px;max-width:180px;white-space:normal}
+.bub p{margin:0;font-size:20px;line-height:1.18;position:relative}
+.sheet{margin-top:-14px;padding:16px 16px 18px;z-index:1}
+.card{margin-top:14px;padding:14px 14px 16px}
+.lab{font-size:17px;font-weight:700;margin:0;line-height:1.2}
+.sub{font-size:17px;line-height:1.3;color:#6B4E42;margin:0}
+.dots{display:flex;gap:8px;justify-content:center;align-items:center}
+.dot{width:12px;height:12px;border-radius:6px;border:2px solid #8C6B5D;box-sizing:border-box;background:#FFFDF8}
+.dot.done{background:#4A2F25;border-color:#4A2F25}
+.dot.now{width:30px;background:#9FD9C3;border-color:#7A5B4E}
+.ic{width:44px;height:44px;border-radius:22px;flex:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:2px solid #8C6B5D}
+.say{align-self:flex-end;max-width:286px;position:relative;box-sizing:border-box;background:#E3F5EC;border:1.5px solid #A88B7D;border-radius:22px 22px 6px 22px;padding:10px 16px;font-size:18px;line-height:1.3}
+.say small{display:block;font-size:17px;color:#6B4E42;margin-bottom:2px}
+.msay{align-self:flex-start;max-width:286px;box-sizing:border-box;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px 22px 22px 6px;padding:10px 16px;font-size:18px;line-height:1.3}
+.msay.now{border:2px solid #7A5B4E;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.fchip{display:flex;align-items:center;gap:12px;box-sizing:border-box;width:100%;min-height:60px;border:1.5px solid #A88B7D;border-radius:20px;background:#FBF7F0;padding:6px 14px 6px 10px;text-align:left}
+.fchip .t{flex:1;min-width:0}
+.fchip .t span{display:block;font-size:17px;line-height:1.2;color:#6B4E42}
+.fchip .t b{display:block;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;line-height:1.15;color:#4A2F25}
+.fchip .ed{width:48px;height:48px;border-radius:24px;flex:none;display:flex;align-items:center;justify-content:center;border:2px solid #8C6B5D;box-sizing:border-box;background:#FFFDF8}
+.fchip.unk{border-style:dashed;border-color:#8C6B5D;background:#FBF7F0;box-shadow:none}
+.src{display:inline-flex;align-items:center;gap:4px}
+.ans{min-height:52px;border-radius:26px;padding:0 18px;font-size:18px;font-weight:700;box-shadow:0 3px 10px rgba(74,47,37,.10);white-space:nowrap}
+.ans.on{background:#9FD9C3;border-color:#7A5B4E;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.ans.unk{border-style:dashed;box-shadow:none;background:#FBF7F0}
+.wrap{display:flex;flex-wrap:wrap;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 14px;border-radius:18px;background:#9FD9C3;border:2px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:19px;white-space:nowrap;box-sizing:border-box}
+.tag{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:16px;border:1.5px solid #A88B7D;background:#FFFDF8;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
+.tag.dash{border-style:dashed}
+.sw{width:64px;height:38px;border-radius:19px;flex:none;position:relative;box-sizing:border-box;border:2px solid #7A5B4E;background:#9FD9C3}
+.sw i{position:absolute;right:3px;top:3px;width:28px;height:28px;border-radius:14px;background:#FFFDF8;border:2px solid #7A5B4E;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.row{position:relative;display:flex;align-items:center;gap:12px;box-sizing:border-box;border:2px solid #8C6B5D;border-radius:22px;background:#FFFDF8;padding:8px 10px 8px 12px;box-shadow:0 3px 10px rgba(74,47,37,.10);width:100%;min-height:64px;text-align:left}
+.row .rt{flex:1;min-width:0}
+.row .rt b{display:block;font-size:18px;line-height:1.2}
+.row .rt span{display:block;font-size:17px;line-height:1.25;color:#6B4E42}
+.dock{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;background:#FFFDF8;border-top:1.5px solid #A88B7D;border-radius:28px 28px 0 0;box-shadow:0 -6px 16px rgba(74,47,37,.12),inset 0 1px 0 rgba(255,255,255,.75);padding:10px 16px 18px;z-index:5}
+.full .dock{position:relative;margin-top:16px}
+.bar{position:absolute;left:14px;right:14px;bottom:30px;z-index:5}
+.full .bar{position:relative;left:auto;right:auto;bottom:auto;margin:16px 14px 30px}
+.phdr{position:absolute;left:0;right:0;top:0;height:120px;box-sizing:border-box;background:#FFFBF3;border-bottom:1.5px solid #E9DFD0;z-index:6;display:flex;align-items:flex-end;gap:12px;padding:0 16px 12px}
+.pin{position:absolute;width:52px;height:52px;border-radius:26px;z-index:4}
+.rg{display:inline-flex;align-items:center;gap:6px;min-height:48px;height:48px;padding:0 16px;border-radius:24px;border:2px solid #8C6B5D;background:#FFF6DD;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
+p{overflow-wrap:break-word}
+h1,h2{margin:0}
+
+.hdr{position:absolute;left:0;right:0;top:0;z-index:6;box-sizing:border-box;min-height:112px;padding:50px 14px 10px;display:flex;align-items:center;gap:12px}
+.full .hdr{position:relative}
+.hbtn{width:52px;height:52px;border-radius:26px;flex:none}
+.grp{margin-top:12px;padding:2px 14px}
+.grp .row{border:0;box-shadow:none;border-radius:0;padding:8px 0;min-height:64px;background:transparent}
+.grp .row + .row{border-top:1.5px solid #E9DFD0}
+.glab{margin:18px 6px 0;font-size:17px;font-weight:700;color:#6B4E42}
+.ok{width:40px;height:40px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:2px solid #8C6B5D;background:#9FD9C3}
+.seg{display:flex;gap:6px;padding:5px;border-radius:30px;border:1.5px solid #A88B7D;background:#FBF7F0}
+.seg .btn{flex:1;min-height:48px;border-radius:24px;border:0;background:transparent;font-size:19px}
+.seg .btn.on{background:#FFFDF8;border:2px solid #7A5B4E;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.hr{display:grid;grid-template-columns:repeat(9,1fr);align-items:end;gap:5px;height:96px;padding-top:18px}
+.hrl{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;margin-top:6px;font-size:17px;color:#6B4E42}
+.hr i{flex:1;display:block;border-radius:7px 7px 3px 3px;box-sizing:border-box;border:1.5px solid #17594A;background:#24806A}
+.hr i.off{background:transparent;border:0;border-bottom:2px dashed #8C6B5D;border-radius:0;height:0 !important;align-self:end}
+.hr i{position:relative}
+.hr i b{position:absolute;left:50%;transform:translateX(-50%);bottom:100%;margin-bottom:2px;font:700 15px/1 'Atkinson Hyperlegible',system-ui,sans-serif;color:#4A2F25;white-space:nowrap}
+.wear i:not(.no){display:flex;align-items:center;justify-content:center}
+.wear i:not(.no)::after{content:"";width:6px;height:6px;border-radius:3px;background:#17594A}
+.hr i.now{background:#9FD9C3;border:1.5px dashed #17594A}
+.g-mint .tag.dash{border-color:#8C6B5D}
+.tl{width:100%;height:56px;border-radius:16px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:2px dashed #8C6B5D;background:transparent;font-size:17px;font-weight:400}
+.tl.on{background:#9FD9C3;border:2px solid #7A5B4E}
+.tl.today{border-color:#7A5B4E}
+.lgd i{display:inline-block;width:14px;height:14px;border-radius:4px;border:1.5px solid #7A5B4E;box-sizing:border-box;vertical-align:-2px;margin-right:5px}
+.wear{display:flex;gap:4px}
+.wear i{flex:1;height:16px;border-radius:8px;border:1.5px solid #7A5B4E;box-sizing:border-box;background:#9FD9C3}
+.wear i.no{background:#FFFDF8;border-style:dashed;border-color:#8C6B5D}
+.wk7{display:flex;justify-content:space-between;align-items:flex-end;gap:6px}
+.wk7{align-items:flex-start !important}
+.wk7 li{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:17px;font-weight:700}
+.wk7 .col{width:100%;height:68px;display:flex;align-items:flex-end}
+.wk7 .col i{display:block;width:100%;border-radius:10px 10px 4px 4px;box-sizing:border-box;border:1.5px solid #7A5B4E;background:#24806A}
+.wk7 .col i.no{background:transparent;border:2px dashed #A88B7D;height:24px}
+.wk7 .col i.today{background:transparent;border:2px dashed #7A5B4E;height:24px}
+</style>
+</helmet>
+<div class="scr g-paper" style="width: 390px; height: 844px">
+<div class="scroll" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow-y: auto; overflow-x: hidden"><div class="flow" style="padding: 146px 14px 16px; display: flex; flex-direction: column">
+<div class="pn win" style="height: 230px"><div class="pa"><img class="plate" src="/_blob/d16f2dd61c0d54c11b27c2e6626acc71" alt="" style="width: 460px; height: 690px; left: -118px; top: -156px"><div aria-hidden="true" style="position: absolute; left: -8px; top: 20px; width: 240px; height: 210px; background: radial-gradient(closest-side, rgba(255,227,176,.30), rgba(255,227,176,0))"></div><div aria-hidden="true" style="position: absolute; left: 42px; top: 201px; width: 140px; height: 18px; border-radius: 50%; background: rgba(74,47,37,.22); filter: blur(3px)"></div><div style="position: absolute; left: 12px; top: 10px; width: 200px; height: 200px; display: flex; align-items: flex-end; justify-content: center"><img src="/_blob/3ead28f7328bb2b2a40a4ea0d3cd3d68" alt="Mochi the bear sitting quietly" style="width: 150px; height: 181px; display: block; position: relative; left: 0px; top: 5px"></div></div><div class="key"></div>
+<div class="banner" style="top: -22px" aria-label="Twin name: Mochi"><span class="br">{</span><span>Mochi</span><span class="br">}</span></div>
+<div class="pn bub" style="right: 8px; top: 34px"><span class="tail" style="left: -10px; top: 26px; transform: rotate(45deg)"></span><p class="fd">Here&#8217;s your heartbeat.</p></div>
+</div>
+<section class="pn card" style="margin-top: 16px" aria-label="Heart rate">
+<div style="display: flex; align-items: center; gap: 14px"><span class="ic" style="width: 56px; height: 56px; border-radius: 28px; background: #FFF4EF"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg></span>
+<p style="margin: 0; line-height: 1"><b class="fd" style="font-size: 52px">68</b><span style="display: block; font-size: 18px; margin-top: 4px">beats a minute, resting</span></p></div>
+<div style="margin-top: 10px"><span class="tag" style="background: #FFFDF8; "><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M4 10c2.5-2.5 5.5-2.5 8 0s5.5 2.5 8 0M4 15c2.5-2.5 5.5-2.5 8 0s5.5 2.5 8 0"/></svg>Sensor estimate</span></div>
+<p style="margin: 8px 0 0; font-size: 18px; line-height: 1.3">Just for your info. Not saved to your answers.</p>
+<p class="lab" style="margin-top: 14px; padding-top: 10px; border-top: 1.5px solid #E9DFD0">Today</p>
+<ul aria-label="Today" style="list-style: none; margin: 2px 0 0; padding: 0"><li style="display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; "><span style="font-size: 18px; color: #6B4E42">2:05 PM</span><b class="fd" style="font-size: 22px">68</b></li><li style="display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; border-top: 1.5px solid #E9DFD0"><span style="font-size: 18px; color: #6B4E42">11:30 AM</span><span class="tag dash" style="background: #FFFDF8; color: #6B4E42"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M9.5 6v12M14.5 6v12"/></svg>Moving, skipped</span></li><li style="display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; border-top: 1.5px solid #E9DFD0"><span style="font-size: 18px; color: #6B4E42">9:10 AM</span><b class="fd" style="font-size: 22px">72</b></li></ul></section>
+</div></div>
+<header class="hdr" style="background: #FFFBF3"><a class="btn lip-cream hbtn" href="H-5-Today.dc.html" aria-label="Back to your band"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M15 5l-7 7 7 7"/></svg></a><h1 class="fd" style="flex: 1; font-size: 26px; line-height: 1.1; min-width: 0">Heart rate</h1></header>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
