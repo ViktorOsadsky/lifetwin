@@ -61,17 +61,18 @@ void main() {
     expect(c.turn!.phase, 'offering');
     expect(c.questionNumber, isNot(1)); // three answers are already confirmed
     expect(c.healthOffer, isTrue);
-    expect(find.text('Use Apple Health'), findsOneWidget, reason: 'the inline offer');
-    await t.tap(find.text('Keep talking'));
-    await t.pumpAndSettle();
+    expect(find.textContaining('Tap the button below to fill from Apple Health or a document'), findsOneWidget);
+    expect(find.text('Use my Apple Health'), findsNothing, reason: 'no extra buttons; the one control is the entry');
+    expect(find.text('Fill from Apple Health or a document'), findsOneWidget);
 
     await t.enterText(find.byType(TextField), 'yes please');
     await t.tap(find.text('Send'));
     await t.pumpAndSettle();
     expect(c.turn!.clientAction, 'open_health_import');
     await t.pump(const Duration(milliseconds: 700));
-    await t.ensureVisible(find.text('Use my Apple Health'));
-    await t.tap(find.text('Use my Apple Health'));
+    await t.tap(find.text('Fill from Apple Health or a document'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Use Apple Health'));
     expect(opened, 1);
   });
 }
