@@ -126,7 +126,7 @@
    "seed": 0,
    "small_talk": false
   },
-  "message": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150. More ideas are on the next screen.",
+  "message": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen.",
   "guide_mode": "guided",
   "provider_status": "not_configured",
   "voice_status": "deferred",
@@ -139,7 +139,7 @@
   "mascot_events": [
    {
     "state": "celebrating",
-    "caption": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150. More ideas are on the next screen."
+    "caption": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen."
    }
   ],
   "complete": true,
@@ -176,7 +176,7 @@
     "id": "vigorous_plus_60",
     "lever": "vigorous_plus_60",
     "title": "Pick up the pace",
-    "message": "You said you walk. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150.",
+    "message": "You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150.",
     "based_on": [
      "moderate_recreation_min_week",
      "vigorous_recreation_min_week",
@@ -185,6 +185,12 @@
     "wellness_card": "activity",
     "source_title": "CDC: Physical activity for adults",
     "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+    "effect": "some",
+    "effect_note": "Modeled difference for people like you, not a promise.",
+    "experiment_lever": "vigorous_recreation_min_week",
+    "experiment_target": 60,
+    "why_short": "A faster pace for part of your walk is a simple next step.",
+    "source_domain": "cdc.gov",
     "causal_interpretation": false
    },
    {
@@ -199,6 +205,12 @@
     "wellness_card": "sleep",
     "source_title": "CDC: About sleep",
     "source_url": "https://www.cdc.gov/sleep/about/index.html",
+    "effect": "small",
+    "effect_note": "Modeled difference for people like you, not a promise.",
+    "experiment_lever": "sleep_hours",
+    "experiment_target": 7.5,
+    "why_short": "A regular bedtime leaves room for the sleep adults are advised to get.",
+    "source_domain": "cdc.gov",
     "causal_interpretation": false
    },
    {
@@ -213,6 +225,12 @@
     "wellness_card": "sitting",
     "source_title": "CDC: Physical activity for adults",
     "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+    "effect": "small",
+    "effect_note": "Modeled difference for people like you, not a promise.",
+    "experiment_lever": "sedentary_min_day",
+    "experiment_target": 360,
+    "why_short": "Standing and moving a bit more often breaks up long sitting.",
+    "source_domain": "cdc.gov",
     "causal_interpretation": false
    }
   ],
@@ -279,7 +297,7 @@
    "seed": 0,
    "small_talk": false
   },
-  "message": "Got it. All done, thank you! One idea for you: You said you're active. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150. More ideas are on the next screen.",
+  "message": "Got it. All done, thank you! One idea for you: You said you're active. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen.",
   "guide_mode": "guided",
   "provider_status": "not_configured",
   "voice_status": "deferred",
@@ -292,7 +310,7 @@
   "mascot_events": [
    {
     "state": "celebrating",
-    "caption": "Got it. All done, thank you! One idea for you: You said you're active. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150. More ideas are on the next screen."
+    "caption": "Got it. All done, thank you! One idea for you: You said you're active. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen."
    }
   ],
   "complete": true,
@@ -329,7 +347,7 @@
     "id": "vigorous_plus_60",
     "lever": "vigorous_plus_60",
     "title": "Pick up the pace",
-    "message": "You said you're active. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150.",
+    "message": "You said you're active. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150.",
     "based_on": [
      "moderate_recreation_min_week",
      "vigorous_recreation_min_week"
@@ -337,6 +355,12 @@
     "wellness_card": "activity",
     "source_title": "CDC: Physical activity for adults",
     "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+    "effect": "some",
+    "effect_note": "Modeled difference for people like you, not a promise.",
+    "experiment_lever": "vigorous_recreation_min_week",
+    "experiment_target": 60,
+    "why_short": "A faster pace for part of your walk is a simple next step.",
+    "source_domain": "cdc.gov",
     "causal_interpretation": false
    },
    {
@@ -350,6 +374,12 @@
     "wellness_card": "sleep",
     "source_title": "CDC: About sleep",
     "source_url": "https://www.cdc.gov/sleep/about/index.html",
+    "effect": "small",
+    "effect_note": "Modeled difference for people like you, not a promise.",
+    "experiment_lever": "sleep_hours",
+    "experiment_target": 7.5,
+    "why_short": "A regular bedtime leaves room for the sleep adults are advised to get.",
+    "source_domain": "cdc.gov",
     "causal_interpretation": false
    },
    {
@@ -363,6 +393,12 @@
     "wellness_card": "sitting",
     "source_title": "CDC: Physical activity for adults",
     "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+    "effect": "small",
+    "effect_note": "Modeled difference for people like you, not a promise.",
+    "experiment_lever": "sedentary_min_day",
+    "experiment_target": 360,
+    "why_short": "Standing and moving a bit more often breaks up long sitting.",
+    "source_domain": "cdc.gov",
     "causal_interpretation": false
    }
   ],
@@ -446,6 +482,8 @@
     "unknown_fields": [],
     "memory_consent": false,
     "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
     "probe_topic": null,
     "habit_notes": [],
     "local_date": "2026-10-19",
@@ -600,6 +638,8 @@
     "unknown_fields": [],
     "memory_consent": false,
     "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
     "probe_topic": null,
     "habit_notes": [],
     "local_date": "2026-10-20",
@@ -754,6 +794,8 @@
     "unknown_fields": [],
     "memory_consent": false,
     "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
     "probe_topic": null,
     "habit_notes": [],
     "local_date": "2026-10-21",
@@ -908,6 +950,8 @@
     "unknown_fields": [],
     "memory_consent": false,
     "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
     "probe_topic": null,
     "habit_notes": [],
     "local_date": "2026-10-22",
@@ -1062,6 +1106,8 @@
     "unknown_fields": [],
     "memory_consent": false,
     "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
     "probe_topic": null,
     "habit_notes": [],
     "local_date": "2026-10-23",
@@ -1216,6 +1262,8 @@
     "unknown_fields": [],
     "memory_consent": false,
     "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
     "probe_topic": null,
     "habit_notes": [],
     "local_date": "2026-10-24",
@@ -1370,6 +1418,8 @@
     "unknown_fields": [],
     "memory_consent": false,
     "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
     "probe_topic": null,
     "habit_notes": [],
     "local_date": "2026-10-25",
@@ -1530,6 +1580,8 @@
    "unknown_fields": [],
    "memory_consent": false,
    "probe_asked": false,
+   "care_line_shown": false,
+   "care_question_open": false,
    "probe_topic": null,
    "habit_notes": [],
    "local_date": null,
@@ -1675,6 +1727,8 @@
    "unknown_fields": [],
    "memory_consent": false,
    "probe_asked": false,
+   "care_line_shown": true,
+   "care_question_open": false,
    "probe_topic": null,
    "habit_notes": [],
    "local_date": null,

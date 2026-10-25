@@ -109,6 +109,7 @@ from lifetwin.onboarding.service import (
     OTHER_PERSON_LEAD,
     QUESTION_BACK_LEAD,
     REPEAT_LEAD,
+    REQUEST,
     SKIPPED,
     SLOWER_LEAD,
     SUPPLEMENTS,
@@ -666,6 +667,9 @@ class CheckinService:
             if SUPPLEMENTS.search(words_of(text)) and ASKING.search(text.lower()):
                 # Mochi never suggests a supplement: the same fixed reply as onboarding.
                 return respond(SUPPLEMENT_REPLY + " " + self._prompt(state))
+            if state.phase == "asking" and REQUEST.search(text.lower()):
+                # A request is not an answer: nothing is recorded, the question comes back.
+                return respond(QUESTION_BACK_LEAD + self._prompt(state))
             intent = control_intent(text)
             kind = intent.kind if intent else None
             if kind in {"repeat", "slower", "louder"}:

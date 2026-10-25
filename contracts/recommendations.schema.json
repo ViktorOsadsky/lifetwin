@@ -92,6 +92,60 @@
           "title": "Causal Interpretation",
           "type": "boolean"
         },
+        "effect": {
+          "anyOf": [
+            {
+              "enum": [
+                "big",
+                "some",
+                "small",
+                "tiny"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effect"
+        },
+        "effect_note": {
+          "const": "Modeled difference for people like you, not a promise.",
+          "default": "Modeled difference for people like you, not a promise.",
+          "title": "Effect Note",
+          "type": "string"
+        },
+        "experiment_lever": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Experiment Lever"
+        },
+        "experiment_target": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Experiment Target"
+        },
         "id": {
           "maxLength": 60,
           "minLength": 1,
@@ -114,6 +168,11 @@
           "maxLength": 400,
           "minLength": 1,
           "title": "Message",
+          "type": "string"
+        },
+        "source_domain": {
+          "default": "",
+          "title": "Source Domain",
           "type": "string"
         },
         "source_title": {
@@ -139,6 +198,12 @@
           ],
           "title": "Wellness Card",
           "type": "string"
+        },
+        "why_short": {
+          "default": "",
+          "maxLength": 90,
+          "title": "Why Short",
+          "type": "string"
         }
       },
       "required": [
@@ -150,6 +215,12 @@
         "wellness_card",
         "source_title",
         "source_url",
+        "effect",
+        "effect_note",
+        "experiment_lever",
+        "experiment_target",
+        "why_short",
+        "source_domain",
         "causal_interpretation"
       ],
       "title": "Recommendation",
@@ -185,6 +256,14 @@
       "title": "Message",
       "type": "string"
     },
+    "missing_inputs": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10,
+      "title": "Missing Inputs",
+      "type": "array"
+    },
     "phrased_by": {
       "default": "templates",
       "enum": [
@@ -212,7 +291,8 @@
     "status": {
       "enum": [
         "ok",
-        "not_enough_information"
+        "not_enough_information",
+        "under_age"
       ],
       "title": "Status",
       "type": "string"
@@ -223,6 +303,7 @@
     "status",
     "message",
     "recommendations",
+    "missing_inputs",
     "character_hints",
     "lever_ranking",
     "phrased_by",

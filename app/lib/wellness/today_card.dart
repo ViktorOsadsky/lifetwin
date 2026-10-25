@@ -24,6 +24,9 @@ class TodayWithMochiCard extends StatefulWidget {
     required this.onOpen,
     this.beforeFirstPlan,
     this.onPlan,
+    this.condensed = false,
+    this.trailing,
+    this.onIdeas,
     this.openUrl = defaultOpenUrl,
   });
 
@@ -35,6 +38,15 @@ class TodayWithMochiCard extends StatefulWidget {
   /// Told each plan the coach gives (the first and every revision).
   final void Function(DailyPlan plan)? onPlan;
   final OpenUrl openUrl;
+
+  /// One line for Home: "Today: brisk walk · protein · …", opening the plan on a tap.
+  final bool condensed;
+
+  /// Condensed only: a control at the right of the row (Home's Check in button).
+  final Widget? trailing;
+
+  /// "More ideas ›" (full card only; Home's compact card stays one short row). Null hides it (under 18).
+  final VoidCallback? onIdeas;
 
   @override
   State<TodayWithMochiCard> createState() => _TodayWithMochiCardState();
@@ -74,14 +86,21 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
       context['previous_plan'] = previous.previousPlan();
       context['latest_revision_id'] = previous.revision;
       if (feedback != null) {
-        context['feedback'] = {'revision_id': previous.revision, 'items': feedback};
+        context['feedback'] = {
+          'revision_id': previous.revision,
+          'items': feedback,
+        };
       }
     }
     return context;
   }
 
   /// 👍 accepted, 👎 skipped, "Not for me" not done with that reason: the coach revises the plan.
-  Future<void> _feedback(Map<String, dynamic> item, String status, {String? reason}) async {
+  Future<void> _feedback(
+    Map<String, dynamic> item,
+    String status, {
+    String? reason,
+  }) async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
@@ -123,7 +142,10 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Semantics(header: true, child: WholeWordText('Why this?', style: LtText.display(28))),
+          Semantics(
+            header: true,
+            child: WholeWordText('Why this?', style: LtText.display(28)),
+          ),
           const SizedBox(height: 12),
           WholeWordText(item['why'] as String, style: LtText.body()),
           const SizedBox(height: 8),
@@ -133,7 +155,10 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
             open: widget.openUrl,
           ),
           const SizedBox(height: 8),
-          TextButton(onPressed: () => Navigator.of(c).pop(), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.of(c).pop(),
+            child: const Text('Close'),
+          ),
         ],
       ),
     ),
@@ -150,6 +175,63 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
     ];
     final encourage = _first('encourage');
     final showRows = plan != null && !plan.emergency && plan.items.isNotEmpty;
+    if (widget.condensed) {
+      final titles = [
+        for (final kind in ['workout', 'diet', 'habit'])
+          if (showRows && _first(kind)?['title'] is String)
+            (_first(kind)!['title'] as String).toLowerCase(),
+      ];
+      final line = titles.isEmpty
+          ? (_failed || _loading
+                ? todayFallbackLine
+                : (encourage?['message'] as String? ?? todayFallbackLine))
+          : titles.join(' · ');
+      return Semantics(
+        container: true,
+        label: 'Today with Mochi',
+        child: WellnessCard(
+          padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+          child: InkWell(
+            onTap: widget.onOpen,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: titles.isEmpty
+                              ? 'Today with Mochi · '
+                              : 'Today: ',
+                          style: LtText.body(size: 17, weight: FontWeight.w700),
+                        ),
+                        TextSpan(text: line, style: LtText.body(size: 17)),
+                      ],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (widget.trailing != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, right: 6),
+                    child: widget.trailing!,
+                  )
+                else
+                  const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: LtColors.ink,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Semantics(
       container: true,
       label: 'Today with Mochi',
@@ -164,7 +246,10 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
                   Expanded(
                     child: Semantics(
                       header: true,
-                      child: Text('Today with Mochi', style: LtText.display(26)),
+                      child: Text(
+                        'Today with Mochi',
+                        style: LtText.display(26),
+                      ),
                     ),
                   ),
                   const Icon(Icons.chevron_right_rounded, color: LtColors.ink),
@@ -191,8 +276,10 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
                     chosen: _chosen[item['id']],
                     busy: _busy,
                     onWhy: () => _why(item),
-                    onFeedback: (status, {reason}) => _feedback(item, status, reason: reason),
+                    onFeedback: (status, {reason}) =>
+                        _feedback(item, status, reason: reason),
                   ),
+            if (widget.onIdeas != null) MoreIdeasLink(onTap: widget.onIdeas!),
           ],
         ),
       ),
@@ -221,7 +308,12 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final minutes = item['minutes'];
-    Widget chip(String text, String semantic, VoidCallback? onTap, {bool on = false}) => Semantics(
+    Widget chip(
+      String text,
+      String semantic,
+      VoidCallback? onTap, {
+      bool on = false,
+    }) => Semantics(
       button: true,
       selected: on,
       label: semantic,
@@ -238,7 +330,10 @@ class _Row extends StatelessWidget {
             color: on ? LtColors.mint : null,
             borderRadius: BorderRadius.circular(LtRadii.chip),
           ),
-          child: Text(text, style: LtText.body(size: 16, weight: FontWeight.w700)),
+          child: Text(
+            text,
+            style: LtText.body(size: 16, weight: FontWeight.w700),
+          ),
         ),
       ),
     );
@@ -259,7 +354,9 @@ class _Row extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     WholeWordText(
-                      minutes is int ? '${item['title']} · $minutes min' : '${item['title']}',
+                      minutes is int
+                          ? '${item['title']} · $minutes min'
+                          : '${item['title']}',
                       style: LtText.body(weight: FontWeight.w700),
                     ),
                     WholeWordText(
@@ -290,7 +387,9 @@ class _Row extends StatelessWidget {
               chip(
                 'Not for me',
                 '$label: not for me',
-                busy ? null : () => onFeedback('not_done', reason: 'Not for me'),
+                busy
+                    ? null
+                    : () => onFeedback('not_done', reason: 'Not for me'),
                 on: chosen == 'Not for me',
               ),
             ],
@@ -299,4 +398,39 @@ class _Row extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "More ideas ›": opens Ideas for you. A 48pt target.
+class MoreIdeasLink extends StatelessWidget {
+  const MoreIdeasLink({super.key, required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerLeft,
+    child: Semantics(
+      button: true,
+      label: 'More ideas',
+      excludeSemantics: true,
+      onTap: onTap,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            widthFactor: 1,
+            child: Text(
+              'More ideas ›',
+              style: LtText.body(weight: FontWeight.w700).copyWith(
+                decoration: TextDecoration.underline,
+                decorationThickness: 2,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }

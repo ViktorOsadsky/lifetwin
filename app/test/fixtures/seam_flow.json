@@ -1,0 +1,5948 @@
+{
+ "about": "Real server responses, written by server/tests/make_seam_fixture.py.",
+ "capabilities": {
+  "schema_version": "1.0",
+  "intake": "guided",
+  "llm_configured": false,
+  "web_research_configured": false,
+  "advisor": "curated_educational",
+  "quiz": "local_scoring_content",
+  "prediction": "available",
+  "voice": "unavailable",
+  "health_data_storage": "none",
+  "documents": "text_extraction",
+  "personalize": {
+   "provider": "muse",
+   "display_name": "Muse by Meta",
+   "company": "Meta",
+   "configured": false,
+   "may_train_on_content": false
+  },
+  "coach": {
+   "endpoint": "/api/coach/plan",
+   "planner": "deterministic_catalog",
+   "runs": "on_app_open_or_resume",
+   "personalize": {
+    "provider": "muse",
+    "display_name": "Muse by Meta",
+    "company": "Meta",
+    "configured": false,
+    "may_train_on_content": false,
+    "daily_cap_per_client": 30
+   }
+  }
+ },
+ "capabilities_contributor": {
+  "schema_version": "1.0",
+  "intake": "guided",
+  "llm_configured": true,
+  "web_research_configured": false,
+  "advisor": "curated_educational",
+  "quiz": "local_scoring_content",
+  "prediction": "available",
+  "voice": "unavailable",
+  "health_data_storage": "none",
+  "documents": "text_extraction",
+  "personalize": {
+   "provider": "muse",
+   "display_name": "Muse by Meta",
+   "company": "Meta",
+   "configured": true,
+   "may_train_on_content": true
+  },
+  "coach": {
+   "endpoint": "/api/coach/plan",
+   "planner": "deterministic_catalog",
+   "runs": "on_app_open_or_resume",
+   "personalize": {
+    "provider": "muse",
+    "display_name": "Muse by Meta",
+    "company": "Meta",
+    "configured": true,
+    "may_train_on_content": true,
+    "daily_cap_per_client": 30
+   }
+  }
+ },
+ "onboarding_ready": {
+  "schema_version": "1.0",
+  "state": {
+   "phase": "ready",
+   "confirmed_profile": {
+    "age": 72,
+    "sex": "female",
+    "height_cm": 162.6,
+    "weight_kg": 68.0,
+    "sleep_hours": 6.5,
+    "exercise_minutes_weekly": null,
+    "smoking_status": "never",
+    "alcohol_drinks_weekly": null,
+    "diabetes": false,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": "good",
+    "hypertension_diagnosed": false,
+    "sedentary_min_day": 420,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 0
+   },
+   "pending_profile": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": null,
+    "vigorous_recreation_min_week": null
+   },
+   "current_field": null,
+   "skipped_fields": [],
+   "unknown_fields": [],
+   "estimated_fields": [],
+   "proxy_field": null,
+   "proxies_asked": [],
+   "pending_estimate": null,
+   "steer_field": null,
+   "steer_lead": null,
+   "health_offered": true,
+   "current_probe": null,
+   "probes_asked": [
+    "sleep_pattern"
+   ],
+   "habit_notes": [
+    {
+     "topic": "sleep",
+     "kind": null,
+     "with": null,
+     "time_of_day": null,
+     "frequency": null,
+     "barrier": null,
+     "bedtime": "11",
+     "wake_time": null,
+     "wakes_for": null,
+     "naps": null,
+     "smoked_years": null,
+     "tried_quitting": null,
+     "quit_aid": null,
+     "quit_ago": null,
+     "feeling": null,
+     "concern": null,
+     "reading": null,
+     "estimate_for": null,
+     "estimate": null,
+     "source": "said"
+    },
+    {
+     "topic": "sitting",
+     "kind": "tv",
+     "with": null,
+     "time_of_day": null,
+     "frequency": null,
+     "barrier": null,
+     "bedtime": null,
+     "wake_time": null,
+     "wakes_for": null,
+     "naps": null,
+     "smoked_years": null,
+     "tried_quitting": null,
+     "quit_aid": null,
+     "quit_ago": null,
+     "feeling": null,
+     "concern": null,
+     "reading": null,
+     "estimate_for": null,
+     "estimate": null,
+     "source": "said"
+    },
+    {
+     "topic": "exercise",
+     "kind": "walking",
+     "with": null,
+     "time_of_day": null,
+     "frequency": null,
+     "barrier": null,
+     "bedtime": null,
+     "wake_time": null,
+     "wakes_for": null,
+     "naps": null,
+     "smoked_years": null,
+     "tried_quitting": null,
+     "quit_aid": null,
+     "quit_ago": null,
+     "feeling": null,
+     "concern": null,
+     "reading": null,
+     "estimate_for": null,
+     "estimate": null,
+     "source": "said"
+    }
+   ],
+   "memory_consent": true,
+   "seed": 0,
+   "small_talk": false
+  },
+  "message": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen.",
+  "guide_mode": "guided",
+  "provider_status": "not_configured",
+  "voice_status": "deferred",
+  "speech_hint": null,
+  "emergency": false,
+  "accepted_input_modes": [
+   "text",
+   "transcript"
+  ],
+  "mascot_events": [
+   {
+    "state": "celebrating",
+    "caption": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen."
+   }
+  ],
+  "complete": true,
+  "quick_replies": [],
+  "client_action": null,
+  "model_inputs": {
+   "status": "ready",
+   "profile": {
+    "age": 72,
+    "sex_nhanes": 2,
+    "height_cm": 162.6,
+    "weight_kg": 68.0,
+    "smoking_status": 0,
+    "diabetes_diagnosed": 0,
+    "hypertension_diagnosed": 0,
+    "general_health": 3,
+    "sleep_hours": 6.5,
+    "vigorous_recreation_min_week": 0,
+    "moderate_recreation_min_week": 90,
+    "sedentary_min_day": 420
+   },
+   "missing": [],
+   "unknown": [],
+   "skipped": [],
+   "estimated": []
+  },
+  "character_hints": {
+   "mood": "good",
+   "energy": "medium"
+  },
+  "phrased_by": "templates",
+  "recommendations": [
+   {
+    "id": "vigorous_plus_60",
+    "lever": "vigorous_plus_60",
+    "title": "Pick up the pace",
+    "message": "You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150.",
+    "based_on": [
+     "moderate_recreation_min_week",
+     "vigorous_recreation_min_week",
+     "note:exercise"
+    ],
+    "wellness_card": "activity",
+    "source_title": "CDC: Physical activity for adults",
+    "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+    "effect": "some",
+    "effect_note": "Modeled difference for people like you, not a promise.",
+    "experiment_lever": "vigorous_recreation_min_week",
+    "experiment_target": 60,
+    "why_short": "A faster pace for part of your walk is a simple next step.",
+    "source_domain": "cdc.gov",
+    "causal_interpretation": false
+   },
+   {
+    "id": "short_sleep_plus_1h",
+    "lever": "short_sleep_plus_1h",
+    "title": "A bit more sleep",
+    "message": "You said you go to bed around 11. Going to bed a little earlier could help you get closer to the 7 hours CDC suggests for adults.",
+    "based_on": [
+     "sleep_hours",
+     "note:sleep"
+    ],
+    "wellness_card": "sleep",
+    "source_title": "CDC: About sleep",
+    "source_url": "https://www.cdc.gov/sleep/about/index.html",
+    "effect": "small",
+    "effect_note": "Modeled difference for people like you, not a promise.",
+    "experiment_lever": "sleep_hours",
+    "experiment_target": 7.5,
+    "why_short": "A regular bedtime leaves room for the sleep adults are advised to get.",
+    "source_domain": "cdc.gov",
+    "causal_interpretation": false
+   },
+   {
+    "id": "sitting_minus_60_realistic",
+    "lever": "sitting_minus_60_realistic",
+    "title": "Sit a little less",
+    "message": "You said a lot of your sitting is watching TV. You could stand up and move around during the ads. Moving more and sitting less is good advice for everyone.",
+    "based_on": [
+     "sedentary_min_day",
+     "note:sitting"
+    ],
+    "wellness_card": "sitting",
+    "source_title": "CDC: Physical activity for adults",
+    "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+    "effect": "small",
+    "effect_note": "Modeled difference for people like you, not a promise.",
+    "experiment_lever": "sedentary_min_day",
+    "experiment_target": 360,
+    "why_short": "Standing and moving a bit more often breaks up long sitting.",
+    "source_domain": "cdc.gov",
+    "causal_interpretation": false
+   }
+  ],
+  "limitations": [
+   "Speech capture and playback are not implemented; final transcripts use the text path.",
+   "Prediction functionality is deferred. No forecast is generated by intake.",
+   "State is held by the caller. The server does not retain your conversation."
+  ]
+ },
+ "recommendations": {
+  "from_onboarding": {
+   "schema_version": "1.0",
+   "status": "ok",
+   "message": "Here are a few ideas from what you told me. You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. You said you go to bed around 11. Going to bed a little earlier could help you get closer to the 7 hours CDC suggests for adults. You said a lot of your sitting is watching TV. You could stand up and move around during the ads. Moving more and sitting less is good advice for everyone.",
+   "recommendations": [
+    {
+     "id": "vigorous_plus_60",
+     "lever": "vigorous_plus_60",
+     "title": "Pick up the pace",
+     "message": "You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150.",
+     "based_on": [
+      "moderate_recreation_min_week",
+      "vigorous_recreation_min_week",
+      "note:exercise"
+     ],
+     "wellness_card": "activity",
+     "source_title": "CDC: Physical activity for adults",
+     "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+     "effect": "some",
+     "effect_note": "Modeled difference for people like you, not a promise.",
+     "experiment_lever": "vigorous_recreation_min_week",
+     "experiment_target": 60,
+     "why_short": "A faster pace for part of your walk is a simple next step.",
+     "source_domain": "cdc.gov",
+     "causal_interpretation": false
+    },
+    {
+     "id": "short_sleep_plus_1h",
+     "lever": "short_sleep_plus_1h",
+     "title": "A bit more sleep",
+     "message": "You said you go to bed around 11. Going to bed a little earlier could help you get closer to the 7 hours CDC suggests for adults.",
+     "based_on": [
+      "sleep_hours",
+      "note:sleep"
+     ],
+     "wellness_card": "sleep",
+     "source_title": "CDC: About sleep",
+     "source_url": "https://www.cdc.gov/sleep/about/index.html",
+     "effect": "small",
+     "effect_note": "Modeled difference for people like you, not a promise.",
+     "experiment_lever": "sleep_hours",
+     "experiment_target": 7.5,
+     "why_short": "A regular bedtime leaves room for the sleep adults are advised to get.",
+     "source_domain": "cdc.gov",
+     "causal_interpretation": false
+    },
+    {
+     "id": "sitting_minus_60_realistic",
+     "lever": "sitting_minus_60_realistic",
+     "title": "Sit a little less",
+     "message": "You said a lot of your sitting is watching TV. You could stand up and move around during the ads. Moving more and sitting less is good advice for everyone.",
+     "based_on": [
+      "sedentary_min_day",
+      "note:sitting"
+     ],
+     "wellness_card": "sitting",
+     "source_title": "CDC: Physical activity for adults",
+     "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+     "effect": "small",
+     "effect_note": "Modeled difference for people like you, not a promise.",
+     "experiment_lever": "sedentary_min_day",
+     "experiment_target": 360,
+     "why_short": "Standing and moving a bit more often breaks up long sitting.",
+     "source_domain": "cdc.gov",
+     "causal_interpretation": false
+    }
+   ],
+   "missing_inputs": [],
+   "character_hints": {
+    "mood": "good",
+    "energy": "medium"
+   },
+   "lever_ranking": {
+    "source": "docs/model-sensitivity.json",
+    "model_version": "personal-cox-v2-20261024T182404Z",
+    "order": [
+     "quit_smoking",
+     "vigorous_plus_60",
+     "moderate_plus_90",
+     "short_sleep_plus_1h",
+     "sitting_minus_60_realistic"
+    ]
+   },
+   "phrased_by": "templates",
+   "causal_interpretation": false,
+   "limitations": [
+    "Suggestions follow public-health guidance and the model's lever ranking; they are not medical advice and promise no benefit.",
+    "The model compares similar people over one to five years; it does not show what a change would do for you.",
+    "The server keeps nothing. Habit notes and history stay on your phone."
+   ]
+  },
+  "smoker": {
+   "schema_version": "1.0",
+   "status": "ok",
+   "message": "Here are a few ideas from what you told me. Quitting smoking helps health at any age. When you feel ready, you could call 1-800-QUIT-NOW for free, friendly support. You're already active, at about 200 minutes a week. That's at or above the 150 minutes adults are advised to aim for. Keep it up!",
+   "recommendations": [
+    {
+     "id": "quit_smoking",
+     "lever": "quit_smoking",
+     "title": "Support for quitting",
+     "message": "Quitting smoking helps health at any age. When you feel ready, you could call 1-800-QUIT-NOW for free, friendly support.",
+     "based_on": [
+      "smoking_status"
+     ],
+     "wellness_card": "smoking",
+     "source_title": "CDC: Smoking and tobacco use",
+     "source_url": "https://www.cdc.gov/tobacco/about/",
+     "effect": "some",
+     "effect_note": "Modeled difference for people like you, not a promise.",
+     "experiment_lever": "smoking_status",
+     "experiment_target": "former",
+     "why_short": "Support is there whenever you feel ready to quit.",
+     "source_domain": "cdc.gov",
+     "causal_interpretation": false
+    },
+    {
+     "id": "keep_it_up",
+     "lever": "keep_it_up",
+     "title": "Keep it up",
+     "message": "You're already active, at about 200 minutes a week. That's at or above the 150 minutes adults are advised to aim for. Keep it up!",
+     "based_on": [
+      "moderate_recreation_min_week",
+      "vigorous_recreation_min_week"
+     ],
+     "wellness_card": "activity",
+     "source_title": "CDC: Physical activity for adults",
+     "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+     "effect": null,
+     "effect_note": "Modeled difference for people like you, not a promise.",
+     "experiment_lever": null,
+     "experiment_target": null,
+     "why_short": "You are already active, so keep doing what works for you.",
+     "source_domain": "cdc.gov",
+     "causal_interpretation": false
+    }
+   ],
+   "missing_inputs": [],
+   "character_hints": {
+    "mood": null,
+    "energy": "high"
+   },
+   "lever_ranking": {
+    "source": "docs/model-sensitivity.json",
+    "model_version": "personal-cox-v2-20261024T182404Z",
+    "order": [
+     "quit_smoking",
+     "vigorous_plus_60",
+     "moderate_plus_90",
+     "short_sleep_plus_1h",
+     "sitting_minus_60_realistic"
+    ]
+   },
+   "phrased_by": "templates",
+   "causal_interpretation": false,
+   "limitations": [
+    "Suggestions follow public-health guidance and the model's lever ranking; they are not medical advice and promise no benefit.",
+    "The model compares similar people over one to five years; it does not show what a change would do for you.",
+    "The server keeps nothing. Habit notes and history stay on your phone."
+   ]
+  },
+  "very_old_smoker": {
+   "schema_version": "1.0",
+   "status": "ok",
+   "message": "Here are a few ideas from what you told me. Quitting smoking helps health at any age. When you feel ready, you could call 1-800-QUIT-NOW for free, friendly support. You're already active, at about 200 minutes a week. That's at or above the 150 minutes adults are advised to aim for. Keep it up!",
+   "recommendations": [
+    {
+     "id": "quit_smoking",
+     "lever": "quit_smoking",
+     "title": "Support for quitting",
+     "message": "Quitting smoking helps health at any age. When you feel ready, you could call 1-800-QUIT-NOW for free, friendly support.",
+     "based_on": [
+      "smoking_status"
+     ],
+     "wellness_card": "smoking",
+     "source_title": "CDC: Smoking and tobacco use",
+     "source_url": "https://www.cdc.gov/tobacco/about/",
+     "effect": null,
+     "effect_note": "Modeled difference for people like you, not a promise.",
+     "experiment_lever": "smoking_status",
+     "experiment_target": "former",
+     "why_short": "Support is there whenever you feel ready to quit.",
+     "source_domain": "cdc.gov",
+     "causal_interpretation": false
+    },
+    {
+     "id": "keep_it_up",
+     "lever": "keep_it_up",
+     "title": "Keep it up",
+     "message": "You're already active, at about 200 minutes a week. That's at or above the 150 minutes adults are advised to aim for. Keep it up!",
+     "based_on": [
+      "moderate_recreation_min_week",
+      "vigorous_recreation_min_week"
+     ],
+     "wellness_card": "activity",
+     "source_title": "CDC: Physical activity for adults",
+     "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+     "effect": null,
+     "effect_note": "Modeled difference for people like you, not a promise.",
+     "experiment_lever": null,
+     "experiment_target": null,
+     "why_short": "You are already active, so keep doing what works for you.",
+     "source_domain": "cdc.gov",
+     "causal_interpretation": false
+    }
+   ],
+   "missing_inputs": [],
+   "character_hints": {
+    "mood": null,
+    "energy": "high"
+   },
+   "lever_ranking": {
+    "source": "docs/model-sensitivity.json",
+    "model_version": "personal-cox-v2-20261024T182404Z",
+    "order": [
+     "quit_smoking",
+     "vigorous_plus_60",
+     "moderate_plus_90",
+     "short_sleep_plus_1h",
+     "sitting_minus_60_realistic"
+    ]
+   },
+   "phrased_by": "templates",
+   "causal_interpretation": false,
+   "limitations": [
+    "Suggestions follow public-health guidance and the model's lever ranking; they are not medical advice and promise no benefit.",
+    "The model compares similar people over one to five years; it does not show what a change would do for you.",
+    "The server keeps nothing. Habit notes and history stay on your phone."
+   ]
+  },
+  "guideline_only": {
+   "schema_version": "1.0",
+   "status": "ok",
+   "message": "Here are a few ideas from what you told me. You're already active, at about 500 minutes a week. That's at or above the 150 minutes adults are advised to aim for. Keep it up!",
+   "recommendations": [
+    {
+     "id": "keep_it_up",
+     "lever": "keep_it_up",
+     "title": "Keep it up",
+     "message": "You're already active, at about 500 minutes a week. That's at or above the 150 minutes adults are advised to aim for. Keep it up!",
+     "based_on": [
+      "moderate_recreation_min_week",
+      "vigorous_recreation_min_week"
+     ],
+     "wellness_card": "activity",
+     "source_title": "CDC: Physical activity for adults",
+     "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+     "effect": null,
+     "effect_note": "Modeled difference for people like you, not a promise.",
+     "experiment_lever": null,
+     "experiment_target": null,
+     "why_short": "You are already active, so keep doing what works for you.",
+     "source_domain": "cdc.gov",
+     "causal_interpretation": false
+    }
+   ],
+   "missing_inputs": [],
+   "character_hints": {
+    "mood": null,
+    "energy": "high"
+   },
+   "lever_ranking": {
+    "source": "docs/model-sensitivity.json",
+    "model_version": "personal-cox-v2-20261024T182404Z",
+    "order": [
+     "quit_smoking",
+     "vigorous_plus_60",
+     "moderate_plus_90",
+     "short_sleep_plus_1h",
+     "sitting_minus_60_realistic"
+    ]
+   },
+   "phrased_by": "templates",
+   "causal_interpretation": false,
+   "limitations": [
+    "Suggestions follow public-health guidance and the model's lever ranking; they are not medical advice and promise no benefit.",
+    "The model compares similar people over one to five years; it does not show what a change would do for you.",
+    "The server keeps nothing. Habit notes and history stay on your phone."
+   ]
+  },
+  "not_enough_information": {
+   "schema_version": "1.0",
+   "status": "not_enough_information",
+   "message": "Once I know a little more about your days, I'll have some ideas for you. There's no rush.",
+   "recommendations": [],
+   "missing_inputs": [
+    "smoking_status",
+    "vigorous_recreation_min_week",
+    "moderate_recreation_min_week",
+    "sleep_hours",
+    "sedentary_min_day"
+   ],
+   "character_hints": {
+    "mood": null,
+    "energy": null
+   },
+   "lever_ranking": {
+    "source": "docs/model-sensitivity.json",
+    "model_version": "personal-cox-v2-20261024T182404Z",
+    "order": [
+     "quit_smoking",
+     "vigorous_plus_60",
+     "moderate_plus_90",
+     "short_sleep_plus_1h",
+     "sitting_minus_60_realistic"
+    ]
+   },
+   "phrased_by": "templates",
+   "causal_interpretation": false,
+   "limitations": [
+    "Suggestions follow public-health guidance and the model's lever ranking; they are not medical advice and promise no benefit.",
+    "The model compares similar people over one to five years; it does not show what a change would do for you.",
+    "The server keeps nothing. Habit notes and history stay on your phone."
+   ]
+  },
+  "under_age": {
+   "schema_version": "1.0",
+   "status": "under_age",
+   "message": "I'm only able to share ideas with adults for now. A parent, guardian or your doctor is the best person to ask about healthy habits.",
+   "recommendations": [],
+   "missing_inputs": [],
+   "character_hints": {
+    "mood": null,
+    "energy": null
+   },
+   "lever_ranking": {
+    "source": "docs/model-sensitivity.json",
+    "model_version": "personal-cox-v2-20261024T182404Z",
+    "order": [
+     "quit_smoking",
+     "vigorous_plus_60",
+     "moderate_plus_90",
+     "short_sleep_plus_1h",
+     "sitting_minus_60_realistic"
+    ]
+   },
+   "phrased_by": "templates",
+   "causal_interpretation": false,
+   "limitations": [
+    "Suggestions follow public-health guidance and the model's lever ranking; they are not medical advice and promise no benefit.",
+    "The model compares similar people over one to five years; it does not show what a change would do for you.",
+    "The server keeps nothing. Habit notes and history stay on your phone."
+   ]
+  }
+ },
+ "coach": {
+  "request": {
+   "profile": {
+    "age": 72,
+    "sex": "female",
+    "height_cm": 162.6,
+    "weight_kg": 71.6676,
+    "sleep_hours": 6.0,
+    "smoking_status": "never",
+    "diabetes": false,
+    "general_health": "good",
+    "hypertension_diagnosed": false,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60,
+    "alcohol_drinks_weekly": 2.0,
+    "systolic_bp": 128,
+    "diastolic_bp": 78
+   },
+   "checkins": [
+    {
+     "date": "2026-10-19",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-20",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-21",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-22",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-23",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-24",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-25",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-26",
+     "wellbeing": "good"
+    }
+   ],
+   "readings": [
+    {
+     "field": "systolic_bp",
+     "value": 128,
+     "unit": "mmHg",
+     "date": "2026-10-26",
+     "source": "checkin"
+    },
+    {
+     "field": "diastolic_bp",
+     "value": 78,
+     "unit": "mmHg",
+     "date": "2026-10-26",
+     "source": "checkin"
+    }
+   ],
+   "memory_consent": true,
+   "habit_notes": [
+    {
+     "id": "note-2246e12d",
+     "topic": "sleep",
+     "kind": null,
+     "with": null,
+     "time_of_day": null,
+     "frequency": null,
+     "barrier": null,
+     "bedtime": "11",
+     "wake_time": null,
+     "wakes_for": null,
+     "naps": null,
+     "smoked_years": null,
+     "tried_quitting": null,
+     "quit_aid": null,
+     "quit_ago": null,
+     "feeling": null,
+     "concern": null,
+     "reading": null,
+     "estimate_for": null,
+     "estimate": null,
+     "source": "said",
+     "noted_on": "2026-10-26"
+    },
+    {
+     "id": "note-368f701e",
+     "topic": "sitting",
+     "kind": "tv",
+     "with": null,
+     "time_of_day": null,
+     "frequency": null,
+     "barrier": null,
+     "bedtime": null,
+     "wake_time": null,
+     "wakes_for": null,
+     "naps": null,
+     "smoked_years": null,
+     "tried_quitting": null,
+     "quit_aid": null,
+     "quit_ago": null,
+     "feeling": null,
+     "concern": null,
+     "reading": null,
+     "estimate_for": null,
+     "estimate": null,
+     "source": "said",
+     "noted_on": "2026-10-26"
+    },
+    {
+     "id": "note-7000cf81",
+     "topic": "exercise",
+     "kind": "walking",
+     "with": null,
+     "time_of_day": null,
+     "frequency": null,
+     "barrier": null,
+     "bedtime": null,
+     "wake_time": null,
+     "wakes_for": null,
+     "naps": null,
+     "smoked_years": null,
+     "tried_quitting": null,
+     "quit_aid": null,
+     "quit_ago": null,
+     "feeling": null,
+     "concern": null,
+     "reading": null,
+     "estimate_for": null,
+     "estimate": null,
+     "source": "said",
+     "noted_on": "2026-10-26"
+    }
+   ],
+   "outside_ai_consent": {},
+   "movement_paused": false,
+   "local_date": "2026-10-26",
+   "local_time": "09:30"
+  },
+  "plan": {
+   "schema_version": "1.0",
+   "status": "ok",
+   "revision_id": "r381fec211b321c6d",
+   "based_on": null,
+   "local_date": "2026-10-26",
+   "inputs": {
+    "snapshot_id": "s30ed15f25eecba92",
+    "observed": [
+     "profile.age",
+     "profile.sex",
+     "profile.height_cm",
+     "profile.weight_kg",
+     "profile.sleep_hours",
+     "profile.smoking_status",
+     "profile.alcohol_drinks_weekly",
+     "profile.diabetes",
+     "profile.systolic_bp",
+     "profile.diastolic_bp",
+     "profile.general_health",
+     "profile.hypertension_diagnosed",
+     "profile.sedentary_min_day",
+     "profile.moderate_recreation_min_week",
+     "profile.vigorous_recreation_min_week",
+     "checkins (8 days)",
+     "note:note-2246e12d",
+     "note:note-368f701e",
+     "note:note-7000cf81",
+     "readings (2)"
+    ],
+    "missing": [],
+    "stale": [],
+    "days_logged_last_7": 6,
+    "experiments_used": false
+   },
+   "plan_type": "personal",
+   "reused_previous": false,
+   "clarify": null,
+   "alert": null,
+   "notices": [],
+   "lines": [
+    "Here's a small plan for today.",
+    "Hold a kitchen counter. Stand with one foot right in front of the other, heel to toe, then switch feet, for 5 minutes.",
+    "Try adding some protein to each meal, like eggs, beans, yogurt or fish. If your doctor has told you to limit protein, follow that.",
+    "When an ad comes on, stand up and move around until the show is back.",
+    "You moved on 6 days this week. Nice rhythm!"
+   ],
+   "reply": null,
+   "items": [
+    {
+     "id": "move",
+     "kind": "workout",
+     "action_id": "tandem_stand",
+     "catalog_id": "tandem_stand",
+     "lever": null,
+     "title": "Heel-to-toe stand, holding the counter",
+     "message": "Hold a kitchen counter. Stand with one foot right in front of the other, heel to toe, then switch feet, for 5 minutes.",
+     "why": "Strength and balance moves help keep you steady on your feet.",
+     "minutes": 5,
+     "time_of_day": "morning",
+     "intensity": "light",
+     "position": "supported_standing",
+     "counts_as": "none",
+     "based_on": [
+      "checkins.6 logged days this week, minutes",
+      "profile.moderate + 2 x vigorous minutes weekly"
+     ],
+     "wellness_card": "activity",
+     "source_title": "USPSTF 2024: exercise to prevent falls in older adults (AAFP summary)",
+     "source_url": "https://aafp.org/pubs/afp/issues/2024/0800/uspstf-fall-prevention-older-adults.html",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "food",
+     "kind": "diet",
+     "action_id": "protein_each_meal",
+     "catalog_id": "protein_each_meal",
+     "lever": null,
+     "title": "Some protein at each meal",
+     "message": "Try adding some protein to each meal, like eggs, beans, yogurt or fish. If your doctor has told you to limit protein, follow that.",
+     "why": "Many older adults don't get enough protein, and it helps keep muscles strong.",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "default"
+     ],
+     "wellness_card": null,
+     "source_title": "ACL: Nutrition needs of older adults, protein",
+     "source_url": "https://acl.gov/sites/default/files/nutrition/Nutrition-Needs_Protein_FINAL-2.18.20_508.pdf",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "habit",
+     "kind": "habit",
+     "action_id": "sitting_breaks",
+     "catalog_id": "sitting_breaks",
+     "lever": "sitting_minus_60_realistic",
+     "title": "Up during the ad breaks",
+     "message": "When an ad comes on, stand up and move around until the show is back.",
+     "why": "Breaking up long sitting is good for everyone, whatever else you do.",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "checkins.average sitting"
+     ],
+     "wellness_card": "sitting",
+     "source_title": "WHO 2020 guidelines on physical activity and sedentary behaviour",
+     "source_url": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "cheer",
+     "kind": "encourage",
+     "action_id": "cheer_happy",
+     "catalog_id": "cheer_happy",
+     "lever": "keep_it_up",
+     "title": "A word from Mochi",
+     "message": "You moved on 6 days this week. Nice rhythm!",
+     "why": "Mochi notices effort. Every bit counts.",
+     "minutes": null,
+     "time_of_day": "morning",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "checkins.active days last week",
+      "checkins.active days this week",
+      "checkins.good weeks of the last 4 (2+ active days)",
+      "feedback.done"
+     ],
+     "wellness_card": null,
+     "source_title": "Gallagher & Updegraff 2012: gain-framed messages and prevention behaviours",
+     "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    }
+   ],
+   "changes": [
+    {
+     "item_id": "move",
+     "change": "new",
+     "explanation": "A fresh pick from the activity list."
+    },
+    {
+     "item_id": "food",
+     "change": "new",
+     "explanation": "A food pattern to try."
+    },
+    {
+     "item_id": "habit",
+     "change": "new",
+     "explanation": "A small habit to try."
+    },
+    {
+     "item_id": "cheer",
+     "change": "new",
+     "explanation": "Fresh words from how your days went."
+    }
+   ],
+   "trace": [
+    {
+     "item_id": "move",
+     "facts": [
+      {
+       "source": "profile.moderate + 2 x vigorous minutes weekly",
+       "value": "210"
+      },
+      {
+       "source": "checkins.6 logged days this week, minutes",
+       "value": "420"
+      }
+     ],
+     "rule": "pick_active: first allowed item in the active pool",
+     "evidence": "https://aafp.org/pubs/afp/issues/2024/0800/uspstf-fall-prevention-older-adults.html",
+     "action": "tandem_stand, 5 min, supported_standing, morning"
+    },
+    {
+     "item_id": "food",
+     "facts": [
+      {
+       "source": "default",
+       "value": "no food facts, so the first pattern"
+      }
+     ],
+     "rule": "pattern_order: first pattern for this profile",
+     "evidence": "https://acl.gov/sites/default/files/nutrition/Nutrition-Needs_Protein_FINAL-2.18.20_508.pdf",
+     "action": "protein_each_meal"
+    },
+    {
+     "item_id": "habit",
+     "facts": [
+      {
+       "source": "checkins.average sitting",
+       "value": "360"
+      }
+     ],
+     "rule": "lever order from docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
+     "evidence": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+     "action": "sitting_breaks"
+    },
+    {
+     "item_id": "cheer",
+     "facts": [
+      {
+       "source": "checkins.active days this week",
+       "value": "6"
+      },
+      {
+       "source": "checkins.active days last week",
+       "value": "1"
+      },
+      {
+       "source": "feedback.done",
+       "value": "none"
+      },
+      {
+       "source": "checkins.good weeks of the last 4 (2+ active days)",
+       "value": "1"
+      }
+     ],
+     "rule": "tone_table: mood follows effort and engagement, never the forecast; good weeks, never streaks (report §4)",
+     "evidence": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+     "action": "mood happy"
+    }
+   ],
+   "mood": "happy",
+   "mascot_events": [
+    {
+     "state": "celebrating",
+     "caption": "Here's a small plan for today."
+    }
+   ],
+   "emergency": false,
+   "movement_paused": false,
+   "memory_instruction": null,
+   "phrased_by": "templates",
+   "provider_status": "not_requested",
+   "causal_interpretation": false,
+   "limitations": [
+    "Ideas follow public-health guidance; they are not medical advice and promise no benefit. The activity and food lists await professional review.",
+    "The server keeps nothing. The plan, notes and history stay on your phone.",
+    "Plans refresh when the app is opened or resumed; nothing runs in the background."
+   ]
+  },
+  "previous_plan_as_app_builds_it": {
+   "revision_id": "r381fec211b321c6d",
+   "based_on": null,
+   "local_date": "2026-10-26",
+   "input_snapshot_id": "s30ed15f25eecba92",
+   "items": [
+    {
+     "id": "move",
+     "kind": "workout",
+     "catalog_id": "tandem_stand",
+     "minutes": 5,
+     "time_of_day": "morning",
+     "callback_note_id": null
+    },
+    {
+     "id": "food",
+     "kind": "diet",
+     "catalog_id": "protein_each_meal",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "callback_note_id": null
+    },
+    {
+     "id": "habit",
+     "kind": "habit",
+     "catalog_id": "sitting_breaks",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "callback_note_id": null
+    },
+    {
+     "id": "cheer",
+     "kind": "encourage",
+     "catalog_id": "cheer_happy",
+     "minutes": null,
+     "time_of_day": "morning",
+     "callback_note_id": null
+    }
+   ]
+  },
+  "reused": {
+   "schema_version": "1.0",
+   "status": "ok",
+   "revision_id": "r381fec211b321c6d",
+   "based_on": null,
+   "local_date": "2026-10-26",
+   "inputs": {
+    "snapshot_id": "s30ed15f25eecba92",
+    "observed": [
+     "profile.age",
+     "profile.sex",
+     "profile.height_cm",
+     "profile.weight_kg",
+     "profile.sleep_hours",
+     "profile.smoking_status",
+     "profile.alcohol_drinks_weekly",
+     "profile.diabetes",
+     "profile.systolic_bp",
+     "profile.diastolic_bp",
+     "profile.general_health",
+     "profile.hypertension_diagnosed",
+     "profile.sedentary_min_day",
+     "profile.moderate_recreation_min_week",
+     "profile.vigorous_recreation_min_week",
+     "checkins (8 days)",
+     "note:note-2246e12d",
+     "note:note-368f701e",
+     "note:note-7000cf81",
+     "readings (2)"
+    ],
+    "missing": [],
+    "stale": [],
+    "days_logged_last_7": 6,
+    "experiments_used": false
+   },
+   "plan_type": "personal",
+   "reused_previous": true,
+   "clarify": null,
+   "alert": null,
+   "notices": [],
+   "lines": [
+    "Nothing new since this morning, so today's plan stays the same.",
+    "Hold a kitchen counter. Stand with one foot right in front of the other, heel to toe, then switch feet, for 5 minutes.",
+    "Try adding some protein to each meal, like eggs, beans, yogurt or fish. If your doctor has told you to limit protein, follow that.",
+    "When an ad comes on, stand up and move around until the show is back.",
+    "You moved on 6 days this week. Nice rhythm!"
+   ],
+   "reply": null,
+   "items": [
+    {
+     "id": "move",
+     "kind": "workout",
+     "action_id": "tandem_stand",
+     "catalog_id": "tandem_stand",
+     "lever": null,
+     "title": "Heel-to-toe stand, holding the counter",
+     "message": "Hold a kitchen counter. Stand with one foot right in front of the other, heel to toe, then switch feet, for 5 minutes.",
+     "why": "Strength and balance moves help keep you steady on your feet.",
+     "minutes": 5,
+     "time_of_day": "morning",
+     "intensity": "light",
+     "position": "supported_standing",
+     "counts_as": "none",
+     "based_on": [
+      "inputs",
+      "previous_plan"
+     ],
+     "wellness_card": "activity",
+     "source_title": "USPSTF 2024: exercise to prevent falls in older adults (AAFP summary)",
+     "source_url": "https://aafp.org/pubs/afp/issues/2024/0800/uspstf-fall-prevention-older-adults.html",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "food",
+     "kind": "diet",
+     "action_id": "protein_each_meal",
+     "catalog_id": "protein_each_meal",
+     "lever": null,
+     "title": "Some protein at each meal",
+     "message": "Try adding some protein to each meal, like eggs, beans, yogurt or fish. If your doctor has told you to limit protein, follow that.",
+     "why": "Many older adults don't get enough protein, and it helps keep muscles strong.",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "inputs",
+      "previous_plan"
+     ],
+     "wellness_card": null,
+     "source_title": "ACL: Nutrition needs of older adults, protein",
+     "source_url": "https://acl.gov/sites/default/files/nutrition/Nutrition-Needs_Protein_FINAL-2.18.20_508.pdf",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "habit",
+     "kind": "habit",
+     "action_id": "sitting_breaks",
+     "catalog_id": "sitting_breaks",
+     "lever": "sitting_minus_60_realistic",
+     "title": "Up during the ad breaks",
+     "message": "When an ad comes on, stand up and move around until the show is back.",
+     "why": "Breaking up long sitting is good for everyone, whatever else you do.",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "previous_plan"
+     ],
+     "wellness_card": "sitting",
+     "source_title": "WHO 2020 guidelines on physical activity and sedentary behaviour",
+     "source_url": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "cheer",
+     "kind": "encourage",
+     "action_id": "cheer_happy",
+     "catalog_id": "cheer_happy",
+     "lever": "keep_it_up",
+     "title": "A word from Mochi",
+     "message": "You moved on 6 days this week. Nice rhythm!",
+     "why": "Mochi notices effort. Every bit counts.",
+     "minutes": null,
+     "time_of_day": "morning",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "checkins.active days last week",
+      "checkins.active days this week",
+      "checkins.good weeks of the last 4 (2+ active days)",
+      "feedback.done"
+     ],
+     "wellness_card": null,
+     "source_title": "Gallagher & Updegraff 2012: gain-framed messages and prevention behaviours",
+     "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    }
+   ],
+   "changes": [
+    {
+     "item_id": "move",
+     "change": "kept",
+     "explanation": "Nothing new since today's plan, so it stays the same."
+    },
+    {
+     "item_id": "food",
+     "change": "kept",
+     "explanation": "Nothing new since today's plan, so it stays the same."
+    },
+    {
+     "item_id": "habit",
+     "change": "kept",
+     "explanation": "Nothing new since today's plan, so it stays the same."
+    },
+    {
+     "item_id": "cheer",
+     "change": "kept",
+     "explanation": "Nothing new since today's plan, so it stays the same."
+    }
+   ],
+   "trace": [
+    {
+     "item_id": "move",
+     "facts": [
+      {
+       "source": "previous_plan",
+       "value": "move: tandem_stand"
+      },
+      {
+       "source": "inputs",
+       "value": "snapshot s30ed15f25eecba92 unchanged today"
+      }
+     ],
+     "rule": "reuse: nothing new since today's plan",
+     "evidence": "https://aafp.org/pubs/afp/issues/2024/0800/uspstf-fall-prevention-older-adults.html",
+     "action": "tandem_stand, 5 min, supported_standing, morning"
+    },
+    {
+     "item_id": "food",
+     "facts": [
+      {
+       "source": "previous_plan",
+       "value": "food: protein_each_meal"
+      },
+      {
+       "source": "inputs",
+       "value": "snapshot s30ed15f25eecba92 unchanged today"
+      }
+     ],
+     "rule": "reuse: nothing new since today's plan",
+     "evidence": "https://acl.gov/sites/default/files/nutrition/Nutrition-Needs_Protein_FINAL-2.18.20_508.pdf",
+     "action": "protein_each_meal"
+    },
+    {
+     "item_id": "habit",
+     "facts": [
+      {
+       "source": "previous_plan",
+       "value": "habit: sitting_breaks"
+      },
+      {
+       "source": "inputs",
+       "value": "snapshot s30ed15f25eecba92 unchanged today"
+      }
+     ],
+     "rule": "reuse: nothing new since today's plan",
+     "evidence": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+     "action": "sitting_breaks"
+    },
+    {
+     "item_id": "cheer",
+     "facts": [
+      {
+       "source": "checkins.active days this week",
+       "value": "6"
+      },
+      {
+       "source": "checkins.active days last week",
+       "value": "1"
+      },
+      {
+       "source": "feedback.done",
+       "value": "none"
+      },
+      {
+       "source": "checkins.good weeks of the last 4 (2+ active days)",
+       "value": "1"
+      }
+     ],
+     "rule": "tone_table: mood follows effort and engagement, never the forecast; good weeks, never streaks (report §4)",
+     "evidence": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+     "action": "mood happy"
+    }
+   ],
+   "mood": "happy",
+   "mascot_events": [
+    {
+     "state": "celebrating",
+     "caption": "Nothing new since this morning, so today's plan stays the same."
+    }
+   ],
+   "emergency": false,
+   "movement_paused": false,
+   "memory_instruction": null,
+   "phrased_by": "templates",
+   "provider_status": "not_requested",
+   "causal_interpretation": false,
+   "limitations": [
+    "Ideas follow public-health guidance; they are not medical advice and promise no benefit. The activity and food lists await professional review.",
+    "The server keeps nothing. The plan, notes and history stay on your phone.",
+    "Plans refresh when the app is opened or resumed; nothing runs in the background."
+   ]
+  },
+  "after_feedback": {
+   "schema_version": "1.0",
+   "status": "ok",
+   "revision_id": "rd3f28547e4001a94",
+   "based_on": "r381fec211b321c6d",
+   "local_date": "2026-10-26",
+   "inputs": {
+    "snapshot_id": "s30ed15f25eecba92",
+    "observed": [
+     "profile.age",
+     "profile.sex",
+     "profile.height_cm",
+     "profile.weight_kg",
+     "profile.sleep_hours",
+     "profile.smoking_status",
+     "profile.alcohol_drinks_weekly",
+     "profile.diabetes",
+     "profile.systolic_bp",
+     "profile.diastolic_bp",
+     "profile.general_health",
+     "profile.hypertension_diagnosed",
+     "profile.sedentary_min_day",
+     "profile.moderate_recreation_min_week",
+     "profile.vigorous_recreation_min_week",
+     "checkins (8 days)",
+     "note:note-2246e12d",
+     "note:note-368f701e",
+     "note:note-7000cf81",
+     "readings (2)"
+    ],
+    "missing": [],
+    "stale": [],
+    "days_logged_last_7": 6,
+    "experiments_used": false
+   },
+   "plan_type": "personal",
+   "reused_previous": false,
+   "clarify": null,
+   "alert": null,
+   "notices": [],
+   "lines": [
+    "Here's today's plan.",
+    "You said heel-to-toe stand, holding the counter hurt your knee, so today is gentle on the knees: walking in the pool.",
+    "Walk back and forth in the shallow end of a pool for 15 minutes. The water is gentle on sore joints.",
+    "Try adding some protein to each meal, like eggs, beans, yogurt or fish. If your doctor has told you to limit protein, follow that.",
+    "When an ad comes on, stand up and move around until the show is back.",
+    "I'm sorry you're not feeling your best. Rest is fine, and gentle is good."
+   ],
+   "reply": null,
+   "items": [
+    {
+     "id": "move",
+     "kind": "workout",
+     "action_id": "water_walk",
+     "catalog_id": "water_walk",
+     "lever": "moderate_plus_90",
+     "title": "Walking in the pool",
+     "message": "Walk back and forth in the shallow end of a pool for 15 minutes. The water is gentle on sore joints.",
+     "why": "Moving at an easy pace on most days is what the guidelines for older adults ask for.",
+     "minutes": 15,
+     "time_of_day": "morning",
+     "intensity": "moderate",
+     "position": "water",
+     "counts_as": "moderate",
+     "based_on": [
+      "checkins.6 logged days this week, minutes",
+      "feedback.move",
+      "previous_plan.move",
+      "profile.moderate + 2 x vigorous minutes weekly"
+     ],
+     "wellness_card": "activity",
+     "source_title": "CDC: What counts as physical activity for older adults",
+     "source_url": "https://cdc.gov/physical-activity-basics/adding-older-adults/what-counts.html",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "food",
+     "kind": "diet",
+     "action_id": "protein_each_meal",
+     "catalog_id": "protein_each_meal",
+     "lever": null,
+     "title": "Some protein at each meal",
+     "message": "Try adding some protein to each meal, like eggs, beans, yogurt or fish. If your doctor has told you to limit protein, follow that.",
+     "why": "Many older adults don't get enough protein, and it helps keep muscles strong.",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "default"
+     ],
+     "wellness_card": null,
+     "source_title": "ACL: Nutrition needs of older adults, protein",
+     "source_url": "https://acl.gov/sites/default/files/nutrition/Nutrition-Needs_Protein_FINAL-2.18.20_508.pdf",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "habit",
+     "kind": "habit",
+     "action_id": "sitting_breaks",
+     "catalog_id": "sitting_breaks",
+     "lever": "sitting_minus_60_realistic",
+     "title": "Up during the ad breaks",
+     "message": "When an ad comes on, stand up and move around until the show is back.",
+     "why": "Breaking up long sitting is good for everyone, whatever else you do.",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "checkins.average sitting"
+     ],
+     "wellness_card": "sitting",
+     "source_title": "WHO 2020 guidelines on physical activity and sedentary behaviour",
+     "source_url": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "cheer",
+     "kind": "encourage",
+     "action_id": "cheer_concerned",
+     "catalog_id": "cheer_concerned",
+     "lever": "keep_it_up",
+     "title": "A word from Mochi",
+     "message": "I'm sorry you're not feeling your best. Rest is fine, and gentle is good.",
+     "why": "Mochi notices effort. Every bit counts.",
+     "minutes": null,
+     "time_of_day": "morning",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "checkins.active days last week",
+      "checkins.active days this week",
+      "checkins.good weeks of the last 4 (2+ active days)",
+      "feedback.done"
+     ],
+     "wellness_card": null,
+     "source_title": "Gallagher & Updegraff 2012: gain-framed messages and prevention behaviours",
+     "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    }
+   ],
+   "changes": [
+    {
+     "item_id": "move",
+     "change": "seated",
+     "explanation": "You said heel-to-toe stand, holding the counter hurt your knee, so today is gentle on the knees: walking in the pool."
+    },
+    {
+     "item_id": "food",
+     "change": "kept",
+     "explanation": "Kept some protein at each meal, since nothing called for a change."
+    },
+    {
+     "item_id": "habit",
+     "change": "kept",
+     "explanation": "Kept up during the ad breaks, since it still fits."
+    },
+    {
+     "item_id": "cheer",
+     "change": "new",
+     "explanation": "Fresh words from how your days went."
+    }
+   ],
+   "trace": [
+    {
+     "item_id": "move",
+     "facts": [
+      {
+       "source": "profile.moderate + 2 x vigorous minutes weekly",
+       "value": "210"
+      },
+      {
+       "source": "checkins.6 logged days this week, minutes",
+       "value": "420"
+      },
+      {
+       "source": "feedback.move",
+       "value": "said it hurt -> knee_pain"
+      },
+      {
+       "source": "previous_plan.move",
+       "value": "tandem_stand, 5 min"
+      },
+      {
+       "source": "feedback.move",
+       "value": "not_done: Knee hurt"
+      }
+     ],
+     "rule": "limit_gate: the previous item is ruled out by a limitation tag",
+     "evidence": "https://cdc.gov/physical-activity-basics/adding-older-adults/what-counts.html",
+     "action": "water_walk, 15 min, water, morning"
+    },
+    {
+     "item_id": "food",
+     "facts": [
+      {
+       "source": "default",
+       "value": "no food facts, so the first pattern"
+      }
+     ],
+     "rule": "no feedback: keep",
+     "evidence": "https://acl.gov/sites/default/files/nutrition/Nutrition-Needs_Protein_FINAL-2.18.20_508.pdf",
+     "action": "protein_each_meal"
+    },
+    {
+     "item_id": "habit",
+     "facts": [
+      {
+       "source": "checkins.average sitting",
+       "value": "360"
+      }
+     ],
+     "rule": "lever order from docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
+     "evidence": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+     "action": "sitting_breaks"
+    },
+    {
+     "item_id": "cheer",
+     "facts": [
+      {
+       "source": "checkins.active days this week",
+       "value": "6"
+      },
+      {
+       "source": "checkins.active days last week",
+       "value": "1"
+      },
+      {
+       "source": "feedback.done",
+       "value": "none"
+      },
+      {
+       "source": "checkins.good weeks of the last 4 (2+ active days)",
+       "value": "1"
+      }
+     ],
+     "rule": "tone_table: mood follows effort and engagement, never the forecast; good weeks, never streaks (report §4)",
+     "evidence": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+     "action": "mood concerned"
+    }
+   ],
+   "mood": "concerned",
+   "mascot_events": [
+    {
+     "state": "concerned",
+     "caption": "Here's today's plan."
+    }
+   ],
+   "emergency": false,
+   "movement_paused": false,
+   "memory_instruction": null,
+   "phrased_by": "templates",
+   "provider_status": "not_requested",
+   "causal_interpretation": false,
+   "limitations": [
+    "Ideas follow public-health guidance; they are not medical advice and promise no benefit. The activity and food lists await professional review.",
+    "The server keeps nothing. The plan, notes and history stay on your phone.",
+    "Plans refresh when the app is opened or resumed; nothing runs in the background."
+   ]
+  },
+  "emergency": {
+   "schema_version": "1.0",
+   "status": "emergency",
+   "revision_id": null,
+   "based_on": null,
+   "local_date": "2026-10-26",
+   "inputs": null,
+   "plan_type": null,
+   "reused_previous": false,
+   "clarify": null,
+   "alert": null,
+   "notices": [],
+   "lines": [
+    "I'm sorry you're going through that. If you need help right now, please call 911. We can carry on whenever you're ready."
+   ],
+   "reply": "I'm sorry you're going through that. If you need help right now, please call 911. We can carry on whenever you're ready.",
+   "items": [],
+   "changes": [],
+   "trace": [
+    {
+     "item_id": "plan",
+     "facts": [
+      {
+       "source": "said",
+       "value": "something urgent is happening now"
+      }
+     ],
+     "rule": "emergency_gate: the existing 911 line; no plan and no provider call",
+     "evidence": "server/lifetwin/onboarding/intents.py (EMERGENCY)",
+     "action": "911 line, no plan"
+    }
+   ],
+   "mood": "concerned",
+   "mascot_events": [
+    {
+     "state": "concerned",
+     "caption": "I'm sorry you're going through that. If you need help right now, please call 911. We can carry on whenever you're ready."
+    }
+   ],
+   "emergency": true,
+   "movement_paused": false,
+   "memory_instruction": null,
+   "phrased_by": "templates",
+   "provider_status": "not_requested",
+   "causal_interpretation": false,
+   "limitations": [
+    "Ideas follow public-health guidance; they are not medical advice and promise no benefit. The activity and food lists await professional review.",
+    "The server keeps nothing. The plan, notes and history stay on your phone.",
+    "Plans refresh when the app is opened or resumed; nothing runs in the background."
+   ]
+  },
+  "bp_crisis": {
+   "schema_version": "1.0",
+   "status": "ok",
+   "revision_id": "r3b1b14dab9f290bb",
+   "based_on": null,
+   "local_date": "2026-10-26",
+   "inputs": {
+    "snapshot_id": "s5b3a3b69afd65cae",
+    "observed": [
+     "profile.age",
+     "profile.sex",
+     "profile.height_cm",
+     "profile.weight_kg",
+     "profile.sleep_hours",
+     "profile.smoking_status",
+     "profile.alcohol_drinks_weekly",
+     "profile.diabetes",
+     "profile.systolic_bp",
+     "profile.diastolic_bp",
+     "profile.general_health",
+     "profile.hypertension_diagnosed",
+     "profile.sedentary_min_day",
+     "profile.moderate_recreation_min_week",
+     "profile.vigorous_recreation_min_week",
+     "checkins (8 days)",
+     "note:note-2246e12d",
+     "note:note-368f701e",
+     "note:note-7000cf81",
+     "readings (2)"
+    ],
+    "missing": [],
+    "stale": [],
+    "days_logged_last_7": 6,
+    "experiments_used": false
+   },
+   "plan_type": "personal",
+   "reused_previous": false,
+   "clarify": null,
+   "alert": "bp_crisis",
+   "notices": [],
+   "lines": [
+    "That blood pressure reading is very high. Sit quietly for a few minutes and check it again. If it is still that high, please contact your doctor now. Call 911 if you have chest pain, shortness of breath, back pain, numbness, weakness, a change in vision or trouble speaking.",
+    "Here's a small plan for today.",
+    "No movement idea today, because of that very high blood pressure reading. Please check with your doctor first.",
+    "Taste your food before adding salt, and pick lower-salt soups and sauces when you can.",
+    "When an ad comes on, stand up and move around until the show is back.",
+    "I'm sorry you're not feeling your best. Rest is fine, and gentle is good."
+   ],
+   "reply": "That blood pressure reading is very high. Sit quietly for a few minutes and check it again. If it is still that high, please contact your doctor now. Call 911 if you have chest pain, shortness of breath, back pain, numbness, weakness, a change in vision or trouble speaking.",
+   "items": [
+    {
+     "id": "food",
+     "kind": "diet",
+     "action_id": "dash_less_salt",
+     "catalog_id": "dash_less_salt",
+     "lever": null,
+     "title": "Go easy on salt",
+     "message": "Taste your food before adding salt, and pick lower-salt soups and sauces when you can.",
+     "why": "Less salt and a DASH-style way of eating help keep blood pressure down.",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "readings"
+     ],
+     "wellness_card": null,
+     "source_title": "NHLBI: Why DASH works",
+     "source_url": "https://internet-prod.nhlbi.nih.gov/sites/default/files/publications/WhyDASHWorks_UpdateNov20.pdf",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "habit",
+     "kind": "habit",
+     "action_id": "sitting_breaks",
+     "catalog_id": "sitting_breaks",
+     "lever": "sitting_minus_60_realistic",
+     "title": "Up during the ad breaks",
+     "message": "When an ad comes on, stand up and move around until the show is back.",
+     "why": "Breaking up long sitting is good for everyone, whatever else you do.",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "checkins.average sitting"
+     ],
+     "wellness_card": "sitting",
+     "source_title": "WHO 2020 guidelines on physical activity and sedentary behaviour",
+     "source_url": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "cheer",
+     "kind": "encourage",
+     "action_id": "cheer_concerned",
+     "catalog_id": "cheer_concerned",
+     "lever": "keep_it_up",
+     "title": "A word from Mochi",
+     "message": "I'm sorry you're not feeling your best. Rest is fine, and gentle is good.",
+     "why": "Mochi notices effort. Every bit counts.",
+     "minutes": null,
+     "time_of_day": "morning",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "checkins.active days last week",
+      "checkins.active days this week",
+      "checkins.good weeks of the last 4 (2+ active days)",
+      "feedback.done"
+     ],
+     "wellness_card": null,
+     "source_title": "Gallagher & Updegraff 2012: gain-framed messages and prevention behaviours",
+     "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    }
+   ],
+   "changes": [
+    {
+     "item_id": "move",
+     "change": "paused",
+     "explanation": "No movement idea today, because of that very high blood pressure reading. Please check with your doctor first."
+    },
+    {
+     "item_id": "food",
+     "change": "new",
+     "explanation": "A food pattern to try."
+    },
+    {
+     "item_id": "habit",
+     "change": "new",
+     "explanation": "A small habit to try."
+    },
+    {
+     "item_id": "cheer",
+     "change": "new",
+     "explanation": "Fresh words from how your days went."
+    }
+   ],
+   "trace": [
+    {
+     "item_id": "plan",
+     "facts": [
+      {
+       "source": "readings",
+       "value": "blood pressure on 2026-10-26 at or above 180/120"
+      }
+     ],
+     "rule": "crisis_gate: at or above 180/120 -> re-check, contact your doctor now, 911 with symptoms (AHA)",
+     "evidence": "https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/hypertensive-crisis-when-you-should-call-911-for-high-blood-pressure",
+     "action": "crisis reply; movement paused"
+    },
+    {
+     "item_id": "plan",
+     "facts": [
+      {
+       "source": "profile.moderate + 2 x vigorous minutes weekly",
+       "value": "210"
+      },
+      {
+       "source": "checkins.6 logged days this week, minutes",
+       "value": "420"
+      },
+      {
+       "source": "bp_crisis",
+       "value": "red flag or pause"
+      }
+     ],
+     "rule": "red_flag_gate: warning signs pause movement until cleared (report §1)",
+     "evidence": "https://order.nia.nih.gov/sites/default/files/2025-04/exercise-and-older-adults-nia_0.pdf",
+     "action": "no workout item; check-with-your-doctor line"
+    },
+    {
+     "item_id": "food",
+     "facts": [
+      {
+       "source": "readings",
+       "value": "trend -> dash_less_salt"
+      }
+     ],
+     "rule": "pattern_order: first pattern for this profile",
+     "evidence": "https://internet-prod.nhlbi.nih.gov/sites/default/files/publications/WhyDASHWorks_UpdateNov20.pdf",
+     "action": "dash_less_salt"
+    },
+    {
+     "item_id": "habit",
+     "facts": [
+      {
+       "source": "checkins.average sitting",
+       "value": "360"
+      }
+     ],
+     "rule": "lever order from docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
+     "evidence": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+     "action": "sitting_breaks"
+    },
+    {
+     "item_id": "cheer",
+     "facts": [
+      {
+       "source": "checkins.active days this week",
+       "value": "6"
+      },
+      {
+       "source": "checkins.active days last week",
+       "value": "1"
+      },
+      {
+       "source": "feedback.done",
+       "value": "none"
+      },
+      {
+       "source": "checkins.good weeks of the last 4 (2+ active days)",
+       "value": "1"
+      }
+     ],
+     "rule": "tone_table: mood follows effort and engagement, never the forecast; good weeks, never streaks (report §4)",
+     "evidence": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+     "action": "mood concerned"
+    }
+   ],
+   "mood": "concerned",
+   "mascot_events": [
+    {
+     "state": "concerned",
+     "caption": "That blood pressure reading is very high. Sit quietly for a few minutes and check it again. If it is still that high, please contact your doctor now. Call 911 if you have chest pain, shortness of breath, back pain, numbness, weakness, a change in vision or trouble speaking."
+    }
+   ],
+   "emergency": false,
+   "movement_paused": true,
+   "memory_instruction": null,
+   "phrased_by": "templates",
+   "provider_status": "not_requested",
+   "causal_interpretation": false,
+   "limitations": [
+    "Ideas follow public-health guidance; they are not medical advice and promise no benefit. The activity and food lists await professional review.",
+    "The server keeps nothing. The plan, notes and history stay on your phone.",
+    "Plans refresh when the app is opened or resumed; nothing runs in the background."
+   ]
+  },
+  "general": {
+   "schema_version": "1.0",
+   "status": "ok",
+   "revision_id": "re2592a416260819d",
+   "based_on": null,
+   "local_date": "2026-10-26",
+   "inputs": {
+    "snapshot_id": "s56153f0959e41cba",
+    "observed": [],
+    "missing": [
+     "weekly activity",
+     "age",
+     "sleep"
+    ],
+    "stale": [],
+    "days_logged_last_7": 0,
+    "experiments_used": false
+   },
+   "plan_type": "general",
+   "reused_previous": false,
+   "clarify": "To make this more personal: on how many days did you get moving last week?",
+   "alert": null,
+   "notices": [],
+   "lines": [
+    "Here's a general plan for today, until I know a little more about you.",
+    "Sit tall in a sturdy chair and march your feet in place for 5 minutes. Swing your arms too, if that feels good.",
+    "Try adding some protein to each meal, like eggs, beans, yogurt or fish. If your doctor has told you to limit protein, follow that.",
+    "When an ad comes on, stand up and move around until the show is back.",
+    "Nice to hear from you. How have you been?"
+   ],
+   "reply": null,
+   "items": [
+    {
+     "id": "move",
+     "kind": "workout",
+     "action_id": "chair_march",
+     "catalog_id": "chair_march",
+     "lever": null,
+     "title": "Chair marching",
+     "message": "Sit tall in a sturdy chair and march your feet in place for 5 minutes. Swing your arms too, if that feels good.",
+     "why": "An easy way to get going. Every bit of movement counts.",
+     "minutes": 5,
+     "time_of_day": "morning",
+     "intensity": "light",
+     "position": "seated",
+     "counts_as": "none",
+     "based_on": [
+      "default"
+     ],
+     "wellness_card": "activity",
+     "source_title": "NIA: Exercise and physical activity for older adults",
+     "source_url": "https://order.nia.nih.gov/sites/default/files/2025-04/exercise-and-older-adults-nia_0.pdf",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "food",
+     "kind": "diet",
+     "action_id": "protein_each_meal",
+     "catalog_id": "protein_each_meal",
+     "lever": null,
+     "title": "Some protein at each meal",
+     "message": "Try adding some protein to each meal, like eggs, beans, yogurt or fish. If your doctor has told you to limit protein, follow that.",
+     "why": "Most people do well with some protein at each meal, and it helps keep muscles strong.",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "default"
+     ],
+     "wellness_card": null,
+     "source_title": "Dietary Guidelines for Americans, 2020-2025",
+     "source_url": "https://www.dietaryguidelines.gov/sites/default/files/2021-03/Dietary_Guidelines_for_Americans-2020-2025.pdf",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "habit",
+     "kind": "habit",
+     "action_id": "sitting_breaks",
+     "catalog_id": "sitting_breaks",
+     "lever": "sitting_minus_60_realistic",
+     "title": "Up during the ad breaks",
+     "message": "When an ad comes on, stand up and move around until the show is back.",
+     "why": "Breaking up long sitting is good for everyone, whatever else you do.",
+     "minutes": null,
+     "time_of_day": "afternoon",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "profile.sedentary_min_day"
+     ],
+     "wellness_card": "sitting",
+     "source_title": "WHO 2020 guidelines on physical activity and sedentary behaviour",
+     "source_url": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    },
+    {
+     "id": "cheer",
+     "kind": "encourage",
+     "action_id": "cheer_waiting",
+     "catalog_id": "cheer_waiting",
+     "lever": "keep_it_up",
+     "title": "A word from Mochi",
+     "message": "Nice to hear from you. How have you been?",
+     "why": "Mochi notices effort. Every bit counts.",
+     "minutes": null,
+     "time_of_day": "morning",
+     "intensity": null,
+     "position": null,
+     "counts_as": null,
+     "based_on": [
+      "checkins.active days last week",
+      "checkins.active days this week",
+      "checkins.good weeks of the last 4 (2+ active days)",
+      "feedback.done"
+     ],
+     "wellness_card": null,
+     "source_title": "Gallagher & Updegraff 2012: gain-framed messages and prevention behaviours",
+     "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+     "callback_note_id": null,
+     "controls": [
+      "accept",
+      "edit",
+      "dismiss"
+     ],
+     "reviewed_by": "awaiting professional review",
+     "causal_interpretation": false
+    }
+   ],
+   "changes": [
+    {
+     "item_id": "move",
+     "change": "new",
+     "explanation": "A gentle start while I get to know you."
+    },
+    {
+     "item_id": "food",
+     "change": "new",
+     "explanation": "A food pattern to try."
+    },
+    {
+     "item_id": "habit",
+     "change": "new",
+     "explanation": "A small habit to try."
+    },
+    {
+     "item_id": "cheer",
+     "change": "new",
+     "explanation": "Fresh words from how your days went."
+    }
+   ],
+   "trace": [
+    {
+     "item_id": "plan",
+     "facts": [
+      {
+       "source": "default",
+       "value": "no profile, check-ins, notes or plan yet"
+      }
+     ],
+     "rule": "fallback: nothing confirmed yet, so a labelled general plan with the safest seated start",
+     "evidence": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+     "action": "general plan"
+    },
+    {
+     "item_id": "move",
+     "facts": [
+      {
+       "source": "default",
+       "value": "no profile, check-ins, notes or plan yet"
+      }
+     ],
+     "rule": "fallback: chair marching suits everyone",
+     "evidence": "https://order.nia.nih.gov/sites/default/files/2025-04/exercise-and-older-adults-nia_0.pdf",
+     "action": "chair_march, 5 min, seated, morning"
+    },
+    {
+     "item_id": "food",
+     "facts": [
+      {
+       "source": "default",
+       "value": "no food facts, so the first pattern"
+      }
+     ],
+     "rule": "pattern_order: first pattern for this profile",
+     "evidence": "https://www.dietaryguidelines.gov/sites/default/files/2021-03/Dietary_Guidelines_for_Americans-2020-2025.pdf",
+     "action": "protein_each_meal"
+    },
+    {
+     "item_id": "habit",
+     "facts": [
+      {
+       "source": "profile.sedentary_min_day",
+       "value": "not known"
+      }
+     ],
+     "rule": "guideline order (age outside the model's 35-79 range, so no model ranking)",
+     "evidence": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+     "action": "sitting_breaks"
+    },
+    {
+     "item_id": "cheer",
+     "facts": [
+      {
+       "source": "checkins.active days this week",
+       "value": "not logged (unknown)"
+      },
+      {
+       "source": "checkins.active days last week",
+       "value": "not logged (unknown)"
+      },
+      {
+       "source": "feedback.done",
+       "value": "none"
+      },
+      {
+       "source": "checkins.good weeks of the last 4 (2+ active days)",
+       "value": "0"
+      }
+     ],
+     "rule": "tone_table: mood follows effort and engagement, never the forecast; good weeks, never streaks (report §4)",
+     "evidence": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+     "action": "mood waiting"
+    }
+   ],
+   "mood": "waiting",
+   "mascot_events": [
+    {
+     "state": "idle",
+     "caption": "Here's a general plan for today, until I know a little more about you."
+    }
+   ],
+   "emergency": false,
+   "movement_paused": false,
+   "memory_instruction": null,
+   "phrased_by": "templates",
+   "provider_status": "not_requested",
+   "causal_interpretation": false,
+   "limitations": [
+    "Ideas follow public-health guidance; they are not medical advice and promise no benefit. The activity and food lists await professional review.",
+    "The server keeps nothing. The plan, notes and history stay on your phone.",
+    "Plans refresh when the app is opened or resumed; nothing runs in the background."
+   ]
+  }
+ },
+ "daily": {
+  "schema_version": "1.0",
+  "state": {
+   "kind": "daily",
+   "phase": "ready",
+   "questions": [
+    "sleep_hours_last_night",
+    "exercise_minutes_today",
+    "wellbeing"
+   ],
+   "current_field": null,
+   "previous": {
+    "sleep_hours_last_night": null,
+    "exercise_minutes_today": null,
+    "alcohol_drinks_yesterday": null,
+    "sleep_hours_night_before": null,
+    "vigorous_recreation_min": null,
+    "moderate_recreation_min": null,
+    "sedentary_min_day": null,
+    "vigorous_recreation_min_week": null,
+    "moderate_recreation_min_week": null,
+    "wellbeing": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "weight_kg": null,
+    "systolic_bp": null,
+    "diastolic_bp": null
+   },
+   "confirmed": {
+    "sleep_hours_last_night": 6.0,
+    "exercise_minutes_today": 30,
+    "alcohol_drinks_yesterday": null,
+    "sleep_hours_night_before": null,
+    "vigorous_recreation_min": null,
+    "moderate_recreation_min": null,
+    "sedentary_min_day": null,
+    "vigorous_recreation_min_week": null,
+    "moderate_recreation_min_week": null,
+    "wellbeing": "not_great",
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "weight_kg": null,
+    "systolic_bp": null,
+    "diastolic_bp": null
+   },
+   "pending": {
+    "sleep_hours_last_night": null,
+    "exercise_minutes_today": null,
+    "alcohol_drinks_yesterday": null,
+    "sleep_hours_night_before": null,
+    "vigorous_recreation_min": null,
+    "moderate_recreation_min": null,
+    "sedentary_min_day": null,
+    "vigorous_recreation_min_week": null,
+    "moderate_recreation_min_week": null,
+    "wellbeing": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "weight_kg": null,
+    "systolic_bp": null,
+    "diastolic_bp": null
+   },
+   "skipped_fields": [],
+   "unknown_fields": [],
+   "memory_consent": false,
+   "probe_asked": false,
+   "care_line_shown": true,
+   "care_question_open": false,
+   "probe_topic": null,
+   "habit_notes": [],
+   "local_date": null,
+   "activity_day": null,
+   "suggested": {
+    "sleep_hours_last_night": null,
+    "exercise_minutes_today": null,
+    "alcohol_drinks_yesterday": null,
+    "sleep_hours_night_before": null,
+    "vigorous_recreation_min": null,
+    "moderate_recreation_min": null,
+    "sedentary_min_day": null,
+    "vigorous_recreation_min_week": null,
+    "moderate_recreation_min_week": null,
+    "wellbeing": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "weight_kg": null,
+    "systolic_bp": null,
+    "diastolic_bp": null
+   },
+   "suggested_activity_min": null,
+   "from_health": false,
+   "one_pace": false,
+   "held_minutes": null,
+   "checking": [],
+   "reopened": false,
+   "age_band": null
+  },
+  "message": "Thank you for telling me. I hope tomorrow feels a little better. See you then.",
+  "guide_mode": "guided",
+  "provider_status": "not_configured",
+  "voice_status": "deferred",
+  "speech_hint": null,
+  "emergency": false,
+  "profile_update": {
+   "age": null,
+   "sex": null,
+   "height_cm": null,
+   "weight_kg": null,
+   "sleep_hours": null,
+   "exercise_minutes_weekly": null,
+   "smoking_status": null,
+   "alcohol_drinks_weekly": null,
+   "diabetes": null,
+   "systolic_bp": null,
+   "diastolic_bp": null,
+   "general_health": null,
+   "hypertension_diagnosed": null,
+   "sedentary_min_day": null,
+   "moderate_recreation_min_week": null,
+   "vigorous_recreation_min_week": null
+  },
+  "daily_logs": [],
+  "accepted_input_modes": [
+   "text",
+   "transcript"
+  ],
+  "mascot_events": [
+   {
+    "state": "celebrating",
+    "caption": "Thank you for telling me. I hope tomorrow feels a little better. See you then."
+   }
+  ],
+  "complete": true,
+  "limitations": [
+   "Check-in history lives on the phone. The server keeps nothing.",
+   "A check-in gives no score or medical advice; weekly answers update the profile.",
+   "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+  ]
+ },
+ "weekly_care_turns": [
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "asking",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "sleep_hours",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "Hi, it's Mochi! It's time for our weekly check-in. It takes a few minutes, and you can skip any question. Let's start with sleep. On a usual night this week, how many hours did you sleep?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": null,
+    "vigorous_recreation_min_week": null
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "asking",
+     "caption": "Hi, it's Mochi! It's time for our weekly check-in. It takes a few minutes, and you can skip any question. Let's start with sleep. On a usual night this week, how many hours did you sleep?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "confirming",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "sleep_hours",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "I heard you slept 7 hours on a usual night this week. Is that right?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": null,
+    "vigorous_recreation_min_week": null
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "confirming",
+     "caption": "I heard you slept 7 hours on a usual night this week. Is that right?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "asking",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "vigorous_recreation_min_week",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "Got it. Now activity this week. Did anything get you out of breath, like brisk walking uphill? And easier things, like gentle walks? About how many minutes of each?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": null,
+    "vigorous_recreation_min_week": null
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "asking",
+     "caption": "Got it. Now activity this week. Did anything get you out of breath, like brisk walking uphill? And easier things, like gentle walks? About how many minutes of each?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "confirming",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "vigorous_recreation_min_week",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "I heard you did an hour of activity that got you out of breath, and you did 1.5 hours of easy activity this week. Is that right?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": null,
+    "vigorous_recreation_min_week": null
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "confirming",
+     "caption": "I heard you did an hour of activity that got you out of breath, and you did 1.5 hours of easy activity this week. Is that right?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "asking",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "sedentary_min_day",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "Got it. On a usual day this week, about how many hours did you spend sitting? Count reading, TV, meals and time in the car.",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "asking",
+     "caption": "Got it. On a usual day this week, about how many hours did you spend sitting? Count reading, TV, meals and time in the car."
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "confirming",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "sedentary_min_day",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "I heard you sat for about 6 hours on a usual day this week. Is that right?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "confirming",
+     "caption": "I heard you sat for about 6 hours on a usual day this week. Is that right?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "asking",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "alcohol_drinks_weekly",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "Got it. How many alcoholic drinks did you have this week? Say none if you had none.",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "asking",
+     "caption": "Got it. How many alcoholic drinks did you have this week? Say none if you had none."
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "confirming",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "alcohol_drinks_weekly",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": 2.0,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "I heard you had 2 drinks this week. Is that right?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "confirming",
+     "caption": "I heard you had 2 drinks this week. Is that right?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "asking",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "smoking_status",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": 2.0,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "Got it. Do you smoke at all these days?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": 2.0,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "asking",
+     "caption": "Got it. Do you smoke at all these days?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "confirming",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "smoking_status",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": 2.0,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": "never",
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "I heard you have never smoked. Is that right?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": 2.0,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "confirming",
+     "caption": "I heard you have never smoked. Is that right?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "asking",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "weight_kg",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": "never",
+     "alcohol_drinks_weekly": 2.0,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "Got it. What do you weigh these days? For example, 160 pounds.",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": "never",
+    "alcohol_drinks_weekly": 2.0,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "asking",
+     "caption": "Got it. What do you weigh these days? For example, 160 pounds."
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "confirming",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "weight_kg",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": "never",
+     "alcohol_drinks_weekly": 2.0,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": 68.0389,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "I heard you weigh 150 pounds (about 68 kg). Is that right?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": "never",
+    "alcohol_drinks_weekly": 2.0,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "confirming",
+     "caption": "I heard you weigh 150 pounds (about 68 kg). Is that right?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "asking",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "systolic_bp",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": "never",
+     "alcohol_drinks_weekly": 2.0,
+     "weight_kg": 68.0389,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "Got it. Have you had your blood pressure checked lately? If you know the numbers, tell me, like 120 over 80. If not, just say no.",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": 68.0389,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": "never",
+    "alcohol_drinks_weekly": 2.0,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "asking",
+     "caption": "Got it. Have you had your blood pressure checked lately? If you know the numbers, tell me, like 120 over 80. If not, just say no."
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "confirming",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "systolic_bp",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": "never",
+     "alcohol_drinks_weekly": 2.0,
+     "weight_kg": 68.0389,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": 128,
+     "diastolic_bp": 78
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "I heard your blood pressure was 128 over 78. Is that right?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": 68.0389,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": "never",
+    "alcohol_drinks_weekly": 2.0,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "confirming",
+     "caption": "I heard your blood pressure was 128 over 78. Is that right?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "asking",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "wellbeing",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": "never",
+     "alcohol_drinks_weekly": 2.0,
+     "weight_kg": 68.0389,
+     "systolic_bp": 128,
+     "diastolic_bp": 78
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "Got it. Last one: how did this week go for you: good, okay, or not great?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": 68.0389,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": "never",
+    "alcohol_drinks_weekly": 2.0,
+    "diabetes": null,
+    "systolic_bp": 128,
+    "diastolic_bp": 78,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "asking",
+     "caption": "Got it. Last one: how did this week go for you: good, okay, or not great?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "confirming",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "wellbeing",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": "never",
+     "alcohol_drinks_weekly": 2.0,
+     "weight_kg": 68.0389,
+     "systolic_bp": 128,
+     "diastolic_bp": 78
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": "not_great",
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": true,
+    "care_question_open": true,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "I'm really sorry today's been so hard. Thank you for telling me. You don't have to carry it alone. If it would help, we can just take this slowly. And if you're ever thinking about hurting yourself, please call 911. Would you like to keep going with the check-in, or stop here for today?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": 68.0389,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": "never",
+    "alcohol_drinks_weekly": 2.0,
+    "diabetes": null,
+    "systolic_bp": 128,
+    "diastolic_bp": 78,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "confirming",
+     "caption": "I'm really sorry today's been so hard. Thank you for telling me. You don't have to carry it alone. If it would help, we can just take this slowly. And if you're ever thinking about hurting yourself, please call 911. Would you like to keep going with the check-in, or stop here for today?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "confirming",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": "wellbeing",
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": null,
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": "never",
+     "alcohol_drinks_weekly": 2.0,
+     "weight_kg": 68.0389,
+     "systolic_bp": 128,
+     "diastolic_bp": 78
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": "not_great",
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": true,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "Okay, let's keep going. I heard your week was not great. Is that right?",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": 68.0389,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": "never",
+    "alcohol_drinks_weekly": 2.0,
+    "diabetes": null,
+    "systolic_bp": 128,
+    "diastolic_bp": 78,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "confirming",
+     "caption": "Okay, let's keep going. I heard your week was not great. Is that right?"
+    }
+   ],
+   "complete": false,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  },
+  {
+   "schema_version": "1.0",
+   "state": {
+    "kind": "weekly",
+    "phase": "ready",
+    "questions": [
+     "sleep_hours",
+     "vigorous_recreation_min_week",
+     "moderate_recreation_min_week",
+     "sedentary_min_day",
+     "alcohol_drinks_weekly",
+     "smoking_status",
+     "weight_kg",
+     "systolic_bp",
+     "wellbeing"
+    ],
+    "current_field": null,
+    "previous": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "confirmed": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": 360,
+     "vigorous_recreation_min_week": 60,
+     "moderate_recreation_min_week": 90,
+     "wellbeing": "not_great",
+     "sleep_hours": 7.0,
+     "exercise_minutes_weekly": null,
+     "smoking_status": "never",
+     "alcohol_drinks_weekly": 2.0,
+     "weight_kg": 68.0389,
+     "systolic_bp": 128,
+     "diastolic_bp": 78
+    },
+    "pending": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": true,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+     "sleep_hours_last_night": null,
+     "exercise_minutes_today": null,
+     "alcohol_drinks_yesterday": null,
+     "sleep_hours_night_before": null,
+     "vigorous_recreation_min": null,
+     "moderate_recreation_min": null,
+     "sedentary_min_day": null,
+     "vigorous_recreation_min_week": null,
+     "moderate_recreation_min_week": null,
+     "wellbeing": null,
+     "sleep_hours": null,
+     "exercise_minutes_weekly": null,
+     "smoking_status": null,
+     "alcohol_drinks_weekly": null,
+     "weight_kg": null,
+     "systolic_bp": null,
+     "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+   },
+   "message": "Got it. Thank you for sharing your week with me. I hope next week is kinder to you. I'll check in again soon.",
+   "guide_mode": "guided",
+   "provider_status": "not_configured",
+   "voice_status": "deferred",
+   "speech_hint": null,
+   "emergency": false,
+   "profile_update": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": 68.0389,
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": "never",
+    "alcohol_drinks_weekly": 2.0,
+    "diabetes": null,
+    "systolic_bp": 128,
+    "diastolic_bp": 78,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60
+   },
+   "daily_logs": [],
+   "accepted_input_modes": [
+    "text",
+    "transcript"
+   ],
+   "mascot_events": [
+    {
+     "state": "celebrating",
+     "caption": "Got it. Thank you for sharing your week with me. I hope next week is kinder to you. I'll check in again soon."
+    }
+   ],
+   "complete": true,
+   "limitations": [
+    "Check-in history lives on the phone. The server keeps nothing.",
+    "A check-in gives no score or medical advice; weekly answers update the profile.",
+    "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+   ]
+  }
+ ],
+ "weekly_care": {
+  "schema_version": "1.0",
+  "state": {
+   "kind": "weekly",
+   "phase": "ready",
+   "questions": [
+    "sleep_hours",
+    "vigorous_recreation_min_week",
+    "moderate_recreation_min_week",
+    "sedentary_min_day",
+    "alcohol_drinks_weekly",
+    "smoking_status",
+    "weight_kg",
+    "systolic_bp",
+    "wellbeing"
+   ],
+   "current_field": null,
+   "previous": {
+    "sleep_hours_last_night": null,
+    "exercise_minutes_today": null,
+    "alcohol_drinks_yesterday": null,
+    "sleep_hours_night_before": null,
+    "vigorous_recreation_min": null,
+    "moderate_recreation_min": null,
+    "sedentary_min_day": null,
+    "vigorous_recreation_min_week": null,
+    "moderate_recreation_min_week": null,
+    "wellbeing": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "weight_kg": null,
+    "systolic_bp": null,
+    "diastolic_bp": null
+   },
+   "confirmed": {
+    "sleep_hours_last_night": null,
+    "exercise_minutes_today": null,
+    "alcohol_drinks_yesterday": null,
+    "sleep_hours_night_before": null,
+    "vigorous_recreation_min": null,
+    "moderate_recreation_min": null,
+    "sedentary_min_day": 360,
+    "vigorous_recreation_min_week": 60,
+    "moderate_recreation_min_week": 90,
+    "wellbeing": "not_great",
+    "sleep_hours": 7.0,
+    "exercise_minutes_weekly": null,
+    "smoking_status": "never",
+    "alcohol_drinks_weekly": 2.0,
+    "weight_kg": 68.0389,
+    "systolic_bp": 128,
+    "diastolic_bp": 78
+   },
+   "pending": {
+    "sleep_hours_last_night": null,
+    "exercise_minutes_today": null,
+    "alcohol_drinks_yesterday": null,
+    "sleep_hours_night_before": null,
+    "vigorous_recreation_min": null,
+    "moderate_recreation_min": null,
+    "sedentary_min_day": null,
+    "vigorous_recreation_min_week": null,
+    "moderate_recreation_min_week": null,
+    "wellbeing": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "weight_kg": null,
+    "systolic_bp": null,
+    "diastolic_bp": null
+   },
+   "skipped_fields": [],
+   "unknown_fields": [],
+   "memory_consent": false,
+   "probe_asked": false,
+   "care_line_shown": true,
+   "care_question_open": false,
+   "probe_topic": null,
+   "habit_notes": [],
+   "local_date": null,
+   "activity_day": null,
+   "suggested": {
+    "sleep_hours_last_night": null,
+    "exercise_minutes_today": null,
+    "alcohol_drinks_yesterday": null,
+    "sleep_hours_night_before": null,
+    "vigorous_recreation_min": null,
+    "moderate_recreation_min": null,
+    "sedentary_min_day": null,
+    "vigorous_recreation_min_week": null,
+    "moderate_recreation_min_week": null,
+    "wellbeing": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "weight_kg": null,
+    "systolic_bp": null,
+    "diastolic_bp": null
+   },
+   "suggested_activity_min": null,
+   "from_health": false,
+   "one_pace": false,
+   "held_minutes": null,
+   "checking": [],
+   "reopened": false,
+   "age_band": null
+  },
+  "message": "Got it. Thank you for sharing your week with me. I hope next week is kinder to you. I'll check in again soon.",
+  "guide_mode": "guided",
+  "provider_status": "not_configured",
+  "voice_status": "deferred",
+  "speech_hint": null,
+  "emergency": false,
+  "profile_update": {
+   "age": null,
+   "sex": null,
+   "height_cm": null,
+   "weight_kg": 68.0389,
+   "sleep_hours": 7.0,
+   "exercise_minutes_weekly": null,
+   "smoking_status": "never",
+   "alcohol_drinks_weekly": 2.0,
+   "diabetes": null,
+   "systolic_bp": 128,
+   "diastolic_bp": 78,
+   "general_health": null,
+   "hypertension_diagnosed": null,
+   "sedentary_min_day": 360,
+   "moderate_recreation_min_week": 90,
+   "vigorous_recreation_min_week": 60
+  },
+  "daily_logs": [],
+  "accepted_input_modes": [
+   "text",
+   "transcript"
+  ],
+  "mascot_events": [
+   {
+    "state": "celebrating",
+    "caption": "Got it. Thank you for sharing your week with me. I hope next week is kinder to you. I'll check in again soon."
+   }
+  ],
+  "complete": true,
+  "limitations": [
+   "Check-in history lives on the phone. The server keeps nothing.",
+   "A check-in gives no score or medical advice; weekly answers update the profile.",
+   "Quick answers are parts of daily logs; the app keeps a day once it is complete."
+  ]
+ },
+ "updated_profile": {
+  "age": 72,
+  "sex": "female",
+  "height_cm": 162.6,
+  "weight_kg": 68.0389,
+  "sleep_hours": 7.0,
+  "exercise_minutes_weekly": null,
+  "smoking_status": "never",
+  "alcohol_drinks_weekly": 2.0,
+  "diabetes": false,
+  "systolic_bp": 128,
+  "diastolic_bp": 78,
+  "general_health": "good",
+  "hypertension_diagnosed": false,
+  "sedentary_min_day": 360,
+  "moderate_recreation_min_week": 90,
+  "vigorous_recreation_min_week": 60
+ },
+ "recommendations_after_weekly": {
+  "schema_version": "1.0",
+  "status": "ok",
+  "message": "Here are a few ideas from what you told me. You said a lot of your sitting is watching TV. You could stand up and move around during the ads. Moving more and sitting less is good advice for everyone. You're already active, walking, at about 210 minutes a week. That's at or above the 150 minutes adults are advised to aim for. Keep it up!",
+  "recommendations": [
+   {
+    "id": "sitting_minus_60_realistic",
+    "lever": "sitting_minus_60_realistic",
+    "title": "Sit a little less",
+    "message": "You said a lot of your sitting is watching TV. You could stand up and move around during the ads. Moving more and sitting less is good advice for everyone.",
+    "based_on": [
+     "sedentary_min_day",
+     "note:sitting"
+    ],
+    "wellness_card": "sitting",
+    "source_title": "CDC: Physical activity for adults",
+    "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+    "effect": "small",
+    "effect_note": "Modeled difference for people like you, not a promise.",
+    "experiment_lever": "sedentary_min_day",
+    "experiment_target": 300,
+    "why_short": "Standing and moving a bit more often breaks up long sitting.",
+    "source_domain": "cdc.gov",
+    "causal_interpretation": false
+   },
+   {
+    "id": "keep_it_up",
+    "lever": "keep_it_up",
+    "title": "Keep it up",
+    "message": "You're already active, walking, at about 210 minutes a week. That's at or above the 150 minutes adults are advised to aim for. Keep it up!",
+    "based_on": [
+     "moderate_recreation_min_week",
+     "vigorous_recreation_min_week",
+     "note:exercise"
+    ],
+    "wellness_card": "activity",
+    "source_title": "CDC: Physical activity for adults",
+    "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+    "effect": null,
+    "effect_note": "Modeled difference for people like you, not a promise.",
+    "experiment_lever": null,
+    "experiment_target": null,
+    "why_short": "You are already active, so keep doing what works for you.",
+    "source_domain": "cdc.gov",
+    "causal_interpretation": false
+   }
+  ],
+  "missing_inputs": [],
+  "character_hints": {
+   "mood": "good",
+   "energy": "high"
+  },
+  "lever_ranking": {
+   "source": "docs/model-sensitivity.json",
+   "model_version": "personal-cox-v2-20261024T182404Z",
+   "order": [
+    "quit_smoking",
+    "vigorous_plus_60",
+    "moderate_plus_90",
+    "short_sleep_plus_1h",
+    "sitting_minus_60_realistic"
+   ]
+  },
+  "phrased_by": "templates",
+  "causal_interpretation": false,
+  "limitations": [
+   "Suggestions follow public-health guidance and the model's lever ranking; they are not medical advice and promise no benefit.",
+   "The model compares similar people over one to five years; it does not show what a change would do for you.",
+   "The server keeps nothing. Habit notes and history stay on your phone."
+  ]
+ },
+ "coach_after_weekly": {
+  "schema_version": "1.0",
+  "status": "ok",
+  "revision_id": "r4e1aad9f63195795",
+  "based_on": null,
+  "local_date": "2026-10-26",
+  "inputs": {
+   "snapshot_id": "sc743b4c91d6cd2d9",
+   "observed": [
+    "profile.age",
+    "profile.sex",
+    "profile.height_cm",
+    "profile.weight_kg",
+    "profile.sleep_hours",
+    "profile.smoking_status",
+    "profile.alcohol_drinks_weekly",
+    "profile.diabetes",
+    "profile.systolic_bp",
+    "profile.diastolic_bp",
+    "profile.general_health",
+    "profile.hypertension_diagnosed",
+    "profile.sedentary_min_day",
+    "profile.moderate_recreation_min_week",
+    "profile.vigorous_recreation_min_week",
+    "checkins (8 days)",
+    "note:note-2246e12d",
+    "note:note-368f701e",
+    "note:note-7000cf81",
+    "readings (2)"
+   ],
+   "missing": [],
+   "stale": [],
+   "days_logged_last_7": 6,
+   "experiments_used": false
+  },
+  "plan_type": "personal",
+  "reused_previous": false,
+  "clarify": null,
+  "alert": null,
+  "notices": [],
+  "lines": [
+   "Here's a small plan for today.",
+   "Hold a kitchen counter. Stand with one foot right in front of the other, heel to toe, then switch feet, for 5 minutes.",
+   "Try adding some protein to each meal, like eggs, beans, yogurt or fish. If your doctor has told you to limit protein, follow that.",
+   "When an ad comes on, stand up and move around until the show is back.",
+   "You moved on 6 days this week. Nice rhythm!"
+  ],
+  "reply": null,
+  "items": [
+   {
+    "id": "move",
+    "kind": "workout",
+    "action_id": "tandem_stand",
+    "catalog_id": "tandem_stand",
+    "lever": null,
+    "title": "Heel-to-toe stand, holding the counter",
+    "message": "Hold a kitchen counter. Stand with one foot right in front of the other, heel to toe, then switch feet, for 5 minutes.",
+    "why": "Strength and balance moves help keep you steady on your feet.",
+    "minutes": 5,
+    "time_of_day": "morning",
+    "intensity": "light",
+    "position": "supported_standing",
+    "counts_as": "none",
+    "based_on": [
+     "checkins.6 logged days this week, minutes",
+     "profile.moderate + 2 x vigorous minutes weekly"
+    ],
+    "wellness_card": "activity",
+    "source_title": "USPSTF 2024: exercise to prevent falls in older adults (AAFP summary)",
+    "source_url": "https://aafp.org/pubs/afp/issues/2024/0800/uspstf-fall-prevention-older-adults.html",
+    "callback_note_id": null,
+    "controls": [
+     "accept",
+     "edit",
+     "dismiss"
+    ],
+    "reviewed_by": "awaiting professional review",
+    "causal_interpretation": false
+   },
+   {
+    "id": "food",
+    "kind": "diet",
+    "action_id": "protein_each_meal",
+    "catalog_id": "protein_each_meal",
+    "lever": null,
+    "title": "Some protein at each meal",
+    "message": "Try adding some protein to each meal, like eggs, beans, yogurt or fish. If your doctor has told you to limit protein, follow that.",
+    "why": "Many older adults don't get enough protein, and it helps keep muscles strong.",
+    "minutes": null,
+    "time_of_day": "afternoon",
+    "intensity": null,
+    "position": null,
+    "counts_as": null,
+    "based_on": [
+     "default"
+    ],
+    "wellness_card": null,
+    "source_title": "ACL: Nutrition needs of older adults, protein",
+    "source_url": "https://acl.gov/sites/default/files/nutrition/Nutrition-Needs_Protein_FINAL-2.18.20_508.pdf",
+    "callback_note_id": null,
+    "controls": [
+     "accept",
+     "edit",
+     "dismiss"
+    ],
+    "reviewed_by": "awaiting professional review",
+    "causal_interpretation": false
+   },
+   {
+    "id": "habit",
+    "kind": "habit",
+    "action_id": "sitting_breaks",
+    "catalog_id": "sitting_breaks",
+    "lever": "sitting_minus_60_realistic",
+    "title": "Up during the ad breaks",
+    "message": "When an ad comes on, stand up and move around until the show is back.",
+    "why": "Breaking up long sitting is good for everyone, whatever else you do.",
+    "minutes": null,
+    "time_of_day": "afternoon",
+    "intensity": null,
+    "position": null,
+    "counts_as": null,
+    "based_on": [
+     "checkins.average sitting"
+    ],
+    "wellness_card": "sitting",
+    "source_title": "WHO 2020 guidelines on physical activity and sedentary behaviour",
+    "source_url": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+    "callback_note_id": null,
+    "controls": [
+     "accept",
+     "edit",
+     "dismiss"
+    ],
+    "reviewed_by": "awaiting professional review",
+    "causal_interpretation": false
+   },
+   {
+    "id": "cheer",
+    "kind": "encourage",
+    "action_id": "cheer_happy",
+    "catalog_id": "cheer_happy",
+    "lever": "keep_it_up",
+    "title": "A word from Mochi",
+    "message": "You moved on 6 days this week. Nice rhythm!",
+    "why": "Mochi notices effort. Every bit counts.",
+    "minutes": null,
+    "time_of_day": "morning",
+    "intensity": null,
+    "position": null,
+    "counts_as": null,
+    "based_on": [
+     "checkins.active days last week",
+     "checkins.active days this week",
+     "checkins.good weeks of the last 4 (2+ active days)",
+     "feedback.done"
+    ],
+    "wellness_card": null,
+    "source_title": "Gallagher & Updegraff 2012: gain-framed messages and prevention behaviours",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+    "callback_note_id": null,
+    "controls": [
+     "accept",
+     "edit",
+     "dismiss"
+    ],
+    "reviewed_by": "awaiting professional review",
+    "causal_interpretation": false
+   }
+  ],
+  "changes": [
+   {
+    "item_id": "move",
+    "change": "new",
+    "explanation": "A fresh pick from the activity list."
+   },
+   {
+    "item_id": "food",
+    "change": "new",
+    "explanation": "A food pattern to try."
+   },
+   {
+    "item_id": "habit",
+    "change": "new",
+    "explanation": "A small habit to try."
+   },
+   {
+    "item_id": "cheer",
+    "change": "new",
+    "explanation": "Fresh words from how your days went."
+   }
+  ],
+  "trace": [
+   {
+    "item_id": "move",
+    "facts": [
+     {
+      "source": "profile.moderate + 2 x vigorous minutes weekly",
+      "value": "210"
+     },
+     {
+      "source": "checkins.6 logged days this week, minutes",
+      "value": "420"
+     }
+    ],
+    "rule": "pick_active: first allowed item in the active pool",
+    "evidence": "https://aafp.org/pubs/afp/issues/2024/0800/uspstf-fall-prevention-older-adults.html",
+    "action": "tandem_stand, 5 min, supported_standing, morning"
+   },
+   {
+    "item_id": "food",
+    "facts": [
+     {
+      "source": "default",
+      "value": "no food facts, so the first pattern"
+     }
+    ],
+    "rule": "pattern_order: first pattern for this profile",
+    "evidence": "https://acl.gov/sites/default/files/nutrition/Nutrition-Needs_Protein_FINAL-2.18.20_508.pdf",
+    "action": "protein_each_meal"
+   },
+   {
+    "item_id": "habit",
+    "facts": [
+     {
+      "source": "checkins.average sitting",
+      "value": "360"
+     }
+    ],
+    "rule": "lever order from docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
+    "evidence": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
+    "action": "sitting_breaks"
+   },
+   {
+    "item_id": "cheer",
+    "facts": [
+     {
+      "source": "checkins.active days this week",
+      "value": "6"
+     },
+     {
+      "source": "checkins.active days last week",
+      "value": "1"
+     },
+     {
+      "source": "feedback.done",
+      "value": "none"
+     },
+     {
+      "source": "checkins.good weeks of the last 4 (2+ active days)",
+      "value": "1"
+     }
+    ],
+    "rule": "tone_table: mood follows effort and engagement, never the forecast; good weeks, never streaks (report §4)",
+    "evidence": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
+    "action": "mood happy"
+   }
+  ],
+  "mood": "happy",
+  "mascot_events": [
+   {
+    "state": "celebrating",
+    "caption": "Here's a small plan for today."
+   }
+  ],
+  "emergency": false,
+  "movement_paused": false,
+  "memory_instruction": null,
+  "phrased_by": "templates",
+  "provider_status": "not_requested",
+  "causal_interpretation": false,
+  "limitations": [
+   "Ideas follow public-health guidance; they are not medical advice and promise no benefit. The activity and food lists await professional review.",
+   "The server keeps nothing. The plan, notes and history stay on your phone.",
+   "Plans refresh when the app is opened or resumed; nothing runs in the background."
+  ]
+ },
+ "change_start": {
+  "schema_version": "1.0",
+  "state": {
+   "phase": "asking",
+   "field": "weight_kg",
+   "pending": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": null,
+    "vigorous_recreation_min_week": null
+   },
+   "saved": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": null,
+    "vigorous_recreation_min_week": null
+   },
+   "options": [],
+   "probed": false,
+   "metric": false,
+   "doctor_said": false,
+   "note": null
+  },
+  "message": "Let's update your weight. Right now I have you at 158 pounds. What's changed?",
+  "guide_mode": "guided",
+  "provider_status": "not_configured",
+  "voice_status": "deferred",
+  "speech_hint": null,
+  "emergency": false,
+  "profile_update": {
+   "age": null,
+   "sex": null,
+   "height_cm": null,
+   "weight_kg": null,
+   "sleep_hours": null,
+   "exercise_minutes_weekly": null,
+   "smoking_status": null,
+   "alcohol_drinks_weekly": null,
+   "diabetes": null,
+   "systolic_bp": null,
+   "diastolic_bp": null,
+   "general_health": null,
+   "hypertension_diagnosed": null,
+   "sedentary_min_day": null,
+   "moderate_recreation_min_week": null,
+   "vigorous_recreation_min_week": null
+  },
+  "habit_note": null,
+  "accepted_input_modes": [
+   "text",
+   "transcript"
+  ],
+  "mascot_events": [
+   {
+    "state": "asking",
+    "caption": "Let's update your weight. Right now I have you at 158 pounds. What's changed?"
+   }
+  ],
+  "complete": false,
+  "limitations": [
+   "Your answers stay on your phone. The server keeps nothing.",
+   "Nothing changes until you say yes. Mochi gives no medical advice."
+  ]
+ },
+ "change_turn": {
+  "schema_version": "1.0",
+  "state": {
+   "phase": "asking",
+   "field": "weight_kg",
+   "pending": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": null,
+    "vigorous_recreation_min_week": null
+   },
+   "saved": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": null,
+    "vigorous_recreation_min_week": null
+   },
+   "options": [],
+   "probed": false,
+   "metric": false,
+   "doctor_said": false,
+   "note": null
+  },
+  "message": "Thanks for telling me. What do you weigh now?",
+  "guide_mode": "guided",
+  "provider_status": "not_configured",
+  "voice_status": "deferred",
+  "speech_hint": null,
+  "emergency": false,
+  "profile_update": {
+   "age": null,
+   "sex": null,
+   "height_cm": null,
+   "weight_kg": null,
+   "sleep_hours": null,
+   "exercise_minutes_weekly": null,
+   "smoking_status": null,
+   "alcohol_drinks_weekly": null,
+   "diabetes": null,
+   "systolic_bp": null,
+   "diastolic_bp": null,
+   "general_health": null,
+   "hypertension_diagnosed": null,
+   "sedentary_min_day": null,
+   "moderate_recreation_min_week": null,
+   "vigorous_recreation_min_week": null
+  },
+  "habit_note": null,
+  "accepted_input_modes": [
+   "text",
+   "transcript"
+  ],
+  "mascot_events": [
+   {
+    "state": "asking",
+    "caption": "Thanks for telling me. What do you weigh now?"
+   }
+  ],
+  "complete": false,
+  "limitations": [
+   "Your answers stay on your phone. The server keeps nothing.",
+   "Nothing changes until you say yes. Mochi gives no medical advice."
+  ]
+ },
+ "documents_extract": {
+  "schema_version": "1.0",
+  "status": "found",
+  "candidates": [
+   {
+    "field": "blood_pressure",
+    "use": "information",
+    "value": "128/78",
+    "unit": "mmHg",
+    "date": "2026-10-01",
+    "date_basis": "line",
+    "source_text": "Blood pressure 128/78 mmHg on 2026-10-01",
+    "page": 1,
+    "section": null,
+    "confidence": "high",
+    "method": "parser"
+   }
+  ],
+  "notices": [],
+  "identifiers_removed": 0,
+  "provider_status": "not_requested",
+  "limitations": [
+   "Every value is a suggestion until the person confirms it.",
+   "Nothing from the document is stored. The text is discarded after this response.",
+   "A missing diagnosis in a document does not mean the person does not have it."
+  ]
+ },
+ "errors": {
+  "422": {
+   "schema_version": "1.0",
+   "status": "error",
+   "code": "invalid_request",
+   "message": "Please check these answers: date. Then try again.",
+   "request_id": "request-id-varies-per-call"
+  },
+  "503": {
+   "schema_version": "1.0",
+   "status": "error",
+   "code": "voice_unavailable",
+   "message": "Voice isn't available right now. You can keep going by typing.",
+   "request_id": "request-id-varies-per-call"
+  },
+  "429": {
+   "schema_version": "1.0",
+   "status": "error",
+   "code": "rate_limit_exceeded",
+   "message": "Too many tries in a short time. Please wait one minute, then try again.",
+   "request_id": "request-id-varies-per-call"
+  }
+ }
+}

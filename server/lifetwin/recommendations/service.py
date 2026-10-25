@@ -14,13 +14,23 @@ gave any. Rules (owner and model-sensitivity rulings):
 """
 
 import math
+import re
+from urllib.parse import urlparse
 
+from lifetwin.coach.safety import safe_slot
 from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.model_inputs import character_hints
 from lifetwin.onboarding.models import HabitNote, Recommendation
 from lifetwin.personalize.providers import Personalizer
 from lifetwin.personalize.service import consented, phrase_recommendations
-from lifetwin.recommendations.levers import LEVER_ORDER, MODEL_VERSION
+from lifetwin.recommendations.levers import (
+    LEVER_FIELD,
+    LEVER_ORDER,
+    MIN_ADULT_AGE,
+    MODEL_VERSION,
+    UNDER_AGE,
+    effect_category,
+)
 from lifetwin.recommendations.models import (
     LeverRanking,
     RecommendationRequest,
@@ -41,6 +51,17 @@ SOURCES = {
     "smoking": ("CDC: Smoking and tobacco use", "https://www.cdc.gov/tobacco/about/"),
 }
 LEAD = "Here are a few ideas from what you told me."
+# One plain sentence per lever and template: no numbers, no promise of benefit (max 90).
+WHY_SHORT = {
+    "quit_smoking": "Support is there whenever you feel ready to quit.",
+    "activity_start": "Even a short, easy walk is a good place to begin.",
+    "activity_enjoy": "Building on something you already enjoy is easier to keep up.",
+    "activity_pace": "A faster pace for part of your walk is a simple next step.",
+    "activity_more": "A little more of what you already do is within reach.",
+    "keep_it_up": "You are already active, so keep doing what works for you.",
+    "short_sleep_plus_1h": "A regular bedtime leaves room for the sleep adults are advised to get.",
+    "sitting_minus_60_realistic": "Standing and moving a bit more often breaks up long sitting.",
+}
 NOTHING_YET = (
     "Once I know a little more about your days, I'll have some ideas for you. There's no rush."
 )
@@ -52,7 +73,9 @@ def _note(notes: list[HabitNote], topic: str) -> HabitNote | None:
     return next((note for note in reversed(notes) if note.topic == topic), None)
 
 
-def _rec(lever: str, card: str, title: str, message: str, based_on: list[str]) -> Recommendation:
+def _rec(
+    lever: str, card: str, title: str, message: str, based_on: list[str], why: str | None = None
+) -> Recommendation:
     source_title, source_url = SOURCES[card]
     return Recommendation(
         id=lever,
@@ -63,7 +86,38 @@ def _rec(lever: str, card: str, title: str, message: str, based_on: list[str]) -
         wellness_card=card,
         source_title=source_title,
         source_url=source_url,
+        why_short=WHY_SHORT[why or lever],
+        source_domain=(urlparse(source_url).hostname or "").removeprefix("www."),
     )
+
+
+def _experiment(
+    rec: Recommendation, profile: HealthProfile
+) -> tuple[str, float | int | str | None] | None:
+    """The model input a lever changes and the value to try, from the person's own value.
+
+    A missing current value is never filled in: the target is then None.
+    """
+    if rec.lever == "quit_smoking":
+        return "smoking_status", "former"
+    steps = {
+        "vigorous_plus_60": ("vigorous_recreation_min_week", 60, None),
+        "moderate_plus_90": ("moderate_recreation_min_week", 90, None),
+        "short_sleep_plus_1h": ("sleep_hours", 1, 24),
+        "sitting_minus_60_realistic": ("sedentary_min_day", -60, None),
+    }
+    if rec.lever not in steps:
+        return None
+    field, delta, cap = steps[rec.lever]
+    current = getattr(profile, field)
+    if current is None:
+        return field, None
+    target = current + delta
+    return field, min(cap, target) if cap is not None else max(0, target)
+
+
+def missing_inputs(profile: HealthProfile) -> list[str]:
+    return [f for f in LEVER_FIELD.values() if getattr(profile, f) is None]
 
 
 def _plural(kind: str) -> str:
@@ -90,6 +144,11 @@ def _smoking(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation |
     return _rec("quit_smoking", "smoking", "Support for quitting", text, based)
 
 
+def _slot(value: str | None) -> bool:
+    """The coach's slot filter, except that a note may name vitamin D (well known, low risk)."""
+    return bool(value) and safe_slot(re.sub(r"\bvitamin d\b", "walk", value, flags=re.I))
+
+
 def _activity_minutes(profile: HealthProfile) -> int | None:
     moderate, vigorous = profile.moderate_recreation_min_week, profile.vigorous_recreation_min_week
     if moderate is None and vigorous is None:
@@ -100,13 +159,13 @@ def _activity_minutes(profile: HealthProfile) -> int | None:
 def _activity(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation | None:
     minutes = _activity_minutes(profile)
     note = _note(notes, "exercise")
-    kind = note.kind if note and note.kind else None
+    kind = note.kind if note and _slot(note.kind) else None
     company = (
         f" with your {note.with_}"
-        if note and note.with_ and note.with_ not in {"alone", "a class", "a group"}
+        if note and _slot(note.with_) and note.with_ not in {"alone", "a class", "a group"}
         else ""
     )
-    barrier = note.barrier if note and note.barrier else None
+    barrier = note.barrier if note and _slot(note.barrier) else None
     gentle = barrier is not None and any(word in barrier for word in GENTLE_BARRIERS)
     fields = [
         f
@@ -127,6 +186,7 @@ def _activity(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation 
             "More of what you enjoy",
             f"You said you enjoy {kind}{company}. Adding one more time each week is an easy way to build on it.",
             based,
+            "activity_enjoy",
         )
     if minutes == 0:
         if barrier and gentle:
@@ -145,7 +205,7 @@ def _activity(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation 
                 "Even 10 to 15 minutes counts. You could start small, with a short walk after "
                 "a meal a few days a week."
             )
-        return _rec("moderate_plus_90", "activity", "A small start", text, based)
+        return _rec("moderate_plus_90", "activity", "A small start", text, based, "activity_start")
     if minutes >= GOAL:
         doing = f" {kind}{company}" if kind else ""
         return _rec(
@@ -156,6 +216,7 @@ def _activity(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation 
             f"minutes a week. That's at or above the {GOAL} minutes adults are advised to aim "
             "for. Keep it up!",
             based,
+            "keep_it_up",
         )
     walks = (
         profile.moderate_recreation_min_week or 0
@@ -166,9 +227,10 @@ def _activity(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation 
             "vigorous_plus_60",
             "activity",
             "Pick up the pace",
-            f"You said {doing}. You could try a faster pace for part of it. Brisk minutes "
-            f"count double toward the weekly {GOAL}.",
+            f"You said {doing}. You could try a faster pace for part of it. Minutes that leave "
+            f"you out of breath count double toward the weekly {GOAL}.",
             based,
+            "activity_pace",
         )
     gap = GOAL - minutes
     sessions = max(1, min(3, math.ceil(gap / 30)))
@@ -184,6 +246,7 @@ def _activity(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation 
         f"{lead}Adding {count} {one} of about 30 minutes a week would bring you to about "
         f"{total} minutes, close to the {GOAL} minutes adults are advised to aim for.",
         based,
+        "activity_more",
     )
 
 
@@ -263,7 +326,17 @@ def suggest(profile: HealthProfile, notes: list[HabitNote]) -> list[Recommendati
         build = BUILDERS.get(lever)
         rec = build(profile, notes) if build else None
         if rec:
-            found.append(rec)
+            effect = effect_category(rec.lever, profile.age, profile.sex)
+            exp = _experiment(rec, profile)
+            found.append(
+                rec.model_copy(
+                    update={
+                        "effect": effect,
+                        "experiment_lever": exp[0] if exp else None,
+                        "experiment_target": exp[1] if exp else None,
+                    }
+                )
+            )
     # Encouragement goes last: changes first, praise after.
     found.sort(key=lambda rec: rec.lever == "keep_it_up")
     return found[:3]
@@ -272,6 +345,14 @@ def suggest(profile: HealthProfile, notes: list[HabitNote]) -> list[Recommendati
 async def recommend(
     request: RecommendationRequest, personalizer: Personalizer | None = None
 ) -> RecommendationResponse:
+    if request.profile.age is not None and request.profile.age < MIN_ADULT_AGE:
+        return RecommendationResponse(
+            status="under_age",
+            message=UNDER_AGE,
+            recommendations=[],
+            character_hints=character_hints(request.profile, []),
+            lever_ranking=LeverRanking(model_version=MODEL_VERSION, order=list(LEVER_ORDER)),
+        )
     recs = suggest(request.profile, request.habit_notes)
     phrased_by = "templates"
     if recs and consented(request.outside_ai_consent, personalizer):
@@ -282,6 +363,7 @@ async def recommend(
     message = " ".join([LEAD, *(rec.message for rec in recs)]) if recs else NOTHING_YET
     return RecommendationResponse(
         status="ok" if recs else "not_enough_information",
+        missing_inputs=[] if recs else missing_inputs(request.profile),
         message=message[:1500],
         recommendations=recs,
         character_hints=character_hints(request.profile, request.habit_notes),

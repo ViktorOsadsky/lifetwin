@@ -25,13 +25,16 @@ import 'room_sim.dart';
 /// Swap point: a future room engine (for example Flame) replaces this widget
 /// and its projector; [RoomSim] and the screen around it stay the same.
 class RoomScene extends StatefulWidget {
-  const RoomScene({super.key, required this.sim, required this.appearance, this.clear = EdgeInsets.zero, this.twinState});
+  const RoomScene({super.key, required this.sim, required this.appearance, this.clear = EdgeInsets.zero, this.twinState, this.onActivityTap});
 
   final RoomSim sim;
   final TwinAppearance appearance;
 
   /// The character's state; while the twin just stands around it shows this pose. Null: plain standing.
   final TwinState? twinState;
+
+  /// Tapping the activity pill ("Walking"): opens the chooser for what the twin does. Null: not tappable.
+  final VoidCallback? onActivityTap;
 
   /// How much of the screen the UI covers at the top and the bottom.
   final EdgeInsets clear;
@@ -457,40 +460,49 @@ class _RoomSceneState extends State<RoomScene> {
     final p = layout.projector.project(sim.pos.dx, 0, sim.pos.dy);
     // Under the feet (on the bed: under the quilt edge), centred, kept inside the render.
     final dy = sim.inBed ? -18.0 : 14.0;
+    final pill = Container(
+      padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
+      decoration: BoxDecoration(
+        color: LtColors.paper,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: LtColors.container, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: LtColors.ink),
+          const SizedBox(width: 4),
+          Text(label, style: LtText.body(weight: FontWeight.w700).copyWith(fontSize: 13, height: 1.1)),
+          if (widget.onActivityTap != null) ...[
+            const SizedBox(width: 2),
+            const Icon(Icons.expand_more_rounded, size: 16, color: LtColors.ink),
+          ],
+        ],
+      ),
+    );
+    final tap = widget.onActivityTap;
+    // A 48 pt hit area around the small pill.
     return Positioned(
       key: const ValueKey('room-activity'),
       left: p.dx - 70,
-      top: p.dy + dy,
+      top: p.dy + dy - 12,
       width: 140,
-      child: IgnorePointer(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Semantics(
-            liveRegion: true,
-            label: '$who is ${label.toLowerCase()}',
-            excludeSemantics: true,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
-              decoration: BoxDecoration(
-                color: LtColors.paper,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: LtColors.container, width: 1.5),
+      height: 48,
+      child: Semantics(
+        button: tap != null,
+        liveRegion: true,
+        label: tap == null
+            ? '$who is ${label.toLowerCase()}'
+            : '$who is ${label.toLowerCase()}. Change what $who does.',
+        excludeSemantics: true,
+        onTap: tap,
+        child: tap == null
+            ? IgnorePointer(child: Center(child: FittedBox(fit: BoxFit.scaleDown, child: pill)))
+            : GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: tap,
+                child: Center(child: FittedBox(fit: BoxFit.scaleDown, child: pill)),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 16, color: LtColors.ink),
-                  const SizedBox(width: 4),
-                  Text(
-                    label,
-                    style: LtText.body(weight: FontWeight.w700)
-                        .copyWith(fontSize: 13, height: 1.1),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

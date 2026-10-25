@@ -37,7 +37,6 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime as dt
-import gzip
 import json
 import math
 import struct
@@ -49,7 +48,7 @@ from xml.etree import ElementTree
 ROOT = Path(__file__).resolve().parents[2]
 LIFE_TABLE_CSV = ROOT / "server/tools/data/us_life_table_2024.csv"
 MODEL_JSON = ROOT / "model_handoff/lifetwin_on_device/assets/model.json"
-SUPPORT_REFERENCE = ROOT / "model_handoff/lifetwin_on_device/assets/support_reference.f64.gz"
+SUPPORT_REFERENCE = ROOT / "model_handoff/lifetwin_on_device/assets/support_reference.f64"
 DART_DATA = ROOT / "app/lib/twin/lifespan_data.dart"
 GOLDEN = ROOT / "app/test/twin/lifespan_golden.json"
 
@@ -175,7 +174,7 @@ def risk_score(encoded: list[float], coefficients: list[float]) -> float:
 
 
 def read_support(path: Path = SUPPORT_REFERENCE) -> list[list[float]]:
-    raw = gzip.decompress(path.read_bytes())
+    raw = path.read_bytes()
     values = struct.unpack(f"<{len(raw) // 8}d", raw)
     return [list(values[i : i + 17]) for i in range(0, len(values), 17)]
 

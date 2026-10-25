@@ -1944,6 +1944,8 @@ def _own_clauses(text: str) -> list[tuple[str, str]]:
 
 
 AT_BIRTH = re.compile(r"\b(?:born|at birth|assigned)\b")
+# Gender identity is not sex at birth: "I'm a trans woman", "I identify as a woman".
+GENDER_IDENTITY = re.compile(r"\b(?:trans\w*|identif\w*|gender\w*|pronouns?|cis\w*)\b")
 PREFER_NOT = re.compile(r"\b(?:prefer not to|rather not)(?:\s+(?:say|answer|tell))?\b")
 SEX_FAMILIES = {
     # "wife" and "husband" describe a partner ("I have a wife"), never the person.
@@ -1970,6 +1972,8 @@ def _sex(text: str) -> str | None:
         return {"f": "female", "m": "male"}[phrase]
     text = re.sub(INTERJECTION, " ", text)
     if _doubtful(text) or re.search(PARTNER, text):
+        return None
+    if GENDER_IDENTITY.search(text) and not AT_BIRTH.search(text):
         return None
     families: set[str] = set()
     for clause, _ in _own_clauses(text):
@@ -2577,6 +2581,12 @@ def clarify(
     # A past value, goal or advice gets no unit or how-often question.
     if _spoiled(field, canonical) or NOT_CURRENT.search(canonical):
         return None
+    if field == "sex" and GENDER_IDENTITY.search(canonical) and not AT_BIRTH.search(canonical):
+        return (
+            "Thanks for telling me. The forecast needs sex at birth, which can differ from "
+            "gender. Was it female or male? You can also say intersex, or that you'd rather "
+            "not say."
+        )
     if field == "sex" and OTHER_SEX.search(canonical):
         return (
             "For the forecast I can only use female or male at birth. "
@@ -2949,6 +2959,8 @@ def parse_reply(
         parsed = parse_value(target, part, today=today, period=period) if target else {}
         if not parsed and several and _habit_aside(part):
             continue  # "... and I walk my dog every morning": a habit note, not a value
+        if not parsed and several and target != field and _ambiguous_aside(part):
+            continue  # an unclear clause for another question: asked later, not a veto
         if not parsed:
             return whole
         # Parts for the same question are pieces of one answer ("two beers on Friday and
@@ -2971,6 +2983,11 @@ def parse_reply(
         # read as one question, would add them up.
         return values
     return values if whole.items() <= values.items() else {}
+
+
+def _ambiguous_aside(part: str) -> bool:
+    """A clause that plainly names a field but is too unclear to read ("I don't smoke")."""
+    return bool(_part_fields(part, "", True))
 
 
 def _habit_aside(part: str) -> bool:

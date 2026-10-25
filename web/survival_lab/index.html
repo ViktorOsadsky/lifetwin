@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f4">
+  <meta name="description" content="Private local tester for LifeTwin neural hazard and survival projection experiments.">
+  <title>LifeTwin · Survival Lab</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">L<span>★</span></span><span>LifeTwin <strong>Survival Lab</strong></span></div>
+    <span class="internal-pill">INTERNAL TESTING</span>
+  </header>
+
+  <main class="shell">
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">MODEL EXPERIMENT / 01</p>
+      <h1 id="page-title">See what the models actually say.</h1>
+      <p>Edit your inputs to compare the dense neural network’s relative hazard with two ways of chaining short Cox forecasts into a longer curve. Your entries stay in this browser tab.</p>
+    </section>
+
+    <div class="workspace">
+      <aside class="input-panel" aria-labelledby="input-title">
+        <div class="panel-heading"><div><p class="eyebrow">YOUR TEST PROFILE</p><h2 id="input-title">Inputs</h2></div><span class="step-count">11 fields</span></div>
+        <form id="profile-form">
+          <fieldset>
+            <legend>Basics</legend>
+            <div class="two-col">
+              <label>Age <span>years</span><input id="age" name="age" type="number" min="18" max="109" step="1" value="65" required></label>
+              <label>BMI <span>kg/m²</span><input id="bmi" name="bmi" type="number" min="0.1" step="0.1" value="27" required></label>
+            </div>
+            <label>Survey sex category<select id="sex_nhanes" name="sex_nhanes"><option value="1">Male</option><option value="2">Female</option></select></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Current routine</legend>
+            <div class="two-col">
+              <label>Usual sleep <span>hours/night</span><input id="sleep_hours" name="sleep_hours" type="number" min="0" max="24" step="0.1" value="7" required></label>
+              <label>Awake sitting <span>min/day</span><input id="sedentary_min_day" name="sedentary_min_day" type="number" min="0" max="1440" step="1" value="360" required></label>
+              <label>Moderate recreation <span>min/week</span><input id="moderate_recreation_min_week" name="moderate_recreation_min_week" type="number" min="0" max="10080" step="1" value="150" required></label>
+              <label>Vigorous recreation <span>min/week</span><input id="vigorous_recreation_min_week" name="vigorous_recreation_min_week" type="number" min="0" max="10080" step="1" value="0" required></label>
+            </div>
+            <label>Smoking status<select id="smoking_status" name="smoking_status"><option value="0">Never</option><option value="1">Former</option><option value="2">Current</option></select></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Health history</legend>
+            <div class="two-col">
+              <label>Diagnosed diabetes<select id="diabetes_diagnosed" name="diabetes_diagnosed"><option value="0">No</option><option value="1">Yes</option></select></label>
+              <label>Diagnosed hypertension<select id="hypertension_diagnosed" name="hypertension_diagnosed"><option value="0">No</option><option value="1">Yes</option></select></label>
+            </div>
+            <label>Self-rated general health<select id="general_health" name="general_health"><option value="1">Excellent</option><option value="2">Very good</option><option value="3" selected>Good</option><option value="4">Fair</option><option value="5">Poor</option></select></label>
+          </fieldset>
+
+          <label class="toggle-row" for="extrapolate"><span class="toggle-copy"><strong>Show ages beyond 79</strong><small>Experimental age extrapolation to 110</small></span><input id="extrapolate" type="checkbox" checked><span class="switch" aria-hidden="true"></span></label>
+          <div class="form-actions"><button class="primary-button" type="submit" id="run-button">Run both models <span aria-hidden="true">↗</span></button><button class="reset-button" type="reset">Reset</button></div>
+        </form>
+        <p class="privacy-note"><span aria-hidden="true">●</span> Inference runs locally. This page does not save a profile or call a prediction API.</p>
+      </aside>
+
+      <section class="results" aria-labelledby="results-title">
+        <div class="results-heading"><div><p class="eyebrow">OUTPUTS / LIVE CALCULATION</p><h2 id="results-title">Model results</h2></div><span id="run-status" role="status" aria-live="polite">Loading models…</span></div>
+        <div id="error-box" class="error-box" role="alert" hidden></div>
+        <div id="result-content" hidden>
+          <div id="model-warnings" class="model-warnings" role="note" hidden><strong>Outside the model's reference population</strong><ul id="warning-list"></ul><p>The calculations are shown for zero-shot testing; accuracy has not been established for this profile.</p></div>
+          <div class="metric-grid">
+            <article class="metric neural"><p>NEURAL RELATIVE HAZARD</p><strong id="hazard-value">—</strong><span>vs. a fixed reference profile · not a probability</span></article>
+            <article class="metric cox"><p>COX 5-YEAR OUTLOOK</p><strong id="cox-value">—</strong><span>modeled survival through the next 5 years</span></article>
+            <article class="metric yearly"><p>50% CROSSING / YEARLY</p><strong id="annual-value">—</strong><span id="annual-note">experimental median threshold</span></article>
+            <article class="metric blocks"><p>50% CROSSING / 5-YEAR</p><strong id="five-value">—</strong><span id="five-note">experimental median threshold</span></article>
+          </div>
+
+          <article class="chart-card">
+            <div class="chart-head"><div><p class="eyebrow">IF ALL OTHER INPUTS STAY FIXED</p><h3>Exploratory survival curves</h3></div><div class="legend"><span><i class="swatch annual-swatch"></i>Age updated yearly</span><span><i class="swatch block-swatch"></i>Age updated every 5 years</span></div></div>
+            <svg id="chart" viewBox="0 0 1000 410" preserveAspectRatio="none" role="img" aria-label="Two experimental cumulative survival curves by age"></svg>
+            <p class="chart-caption">Faded dashed lines use age inputs outside 35–79. The 50% line marks a modeled median crossing, not an individual death age.</p>
+          </article>
+
+          <article class="difference-card"><div><p class="eyebrow">METHOD DIFFERENCE</p><h3>How far apart do the curves get?</h3><p>They reuse the same Cox model, so they may nearly overlap. The exact values are in the table below.</p></div><div class="gap-stat"><strong id="gap-value">—</strong><span id="gap-age">maximum displayed gap</span></div></article>
+
+          <article class="detail-card">
+            <div class="detail-head"><div><p class="eyebrow">COMPARE THE METHODS</p><h3>Age-by-age values</h3></div><button id="download-csv" type="button" class="text-button">Download CSV ↓</button></div>
+            <div class="table-scroll"><table><thead><tr><th scope="col">Age</th><th scope="col">Yearly update</th><th scope="col">5-year update</th><th scope="col">Status</th></tr></thead><tbody id="year-rows"></tbody></table></div>
+            <p class="table-note">* Uses an age input outside 35–79. Other unusual inputs appear in the notice above. Values shown to two decimals; calculations use full precision.</p>
+          </article>
+
+          <details class="method-details"><summary>What does “relative hazard” mean? <span aria-hidden="true">＋</span></summary><div><p>The neural network outputs a Cox log hazard score. The displayed ratio compares it with one fixed reference: age 55, male survey category, BMI 27, seven hours sleep, 150 moderate recreational minutes, no vigorous minutes, 360 sitting minutes/day, never smoker, no reported diabetes or hypertension, self-rated health good. For example, 2× is twice that reference profile’s modeled instantaneous hazard, not a 2% death risk.</p><p><strong>Neural version:</strong> <code id="neural-version"></code><br><strong>Cox version:</strong> <code id="cox-version"></code></p></div></details>
+          <div class="warning"><strong>Research prototype</strong><p>Both long-range curves repeatedly reuse a model trained for short follow-up. The model was fitted with baseline ages 35–79. Inputs outside that age range or training distribution are zero-shot extrapolations, not validated predictions. Neither repeated projection has lifelong validation. A 50% crossing is not validated life expectancy, and changing an input does not establish a causal benefit.</p></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

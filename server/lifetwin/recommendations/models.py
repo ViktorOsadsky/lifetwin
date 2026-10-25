@@ -25,10 +25,13 @@ class LeverRanking(ApiModel):
 class RecommendationResponse(ApiModel):
     schema_version: Literal["1.0"] = "1.0"
     # "not_enough_information": nothing confirmed yet that a suggestion could rest on.
-    status: Literal["ok", "not_enough_information"]
+    status: Literal["ok", "not_enough_information", "under_age"]
     # Mochi's spoken lines: a short lead-in, then each suggestion.
     message: str = Field(min_length=1, max_length=1500)
     recommendations: list[Recommendation] = Field(max_length=3)
+    # Model input fields still empty, in lever-ranking order; only when status is
+    # "not_enough_information", otherwise empty.
+    missing_inputs: list[str] = Field(default_factory=list, max_length=10)
     character_hints: CharacterHints
     lever_ranking: LeverRanking
     # "templates": Mochi's own wording. A provider name: that provider phrased the
