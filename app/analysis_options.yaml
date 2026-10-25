@@ -13,6 +13,8 @@ analyzer:
   exclude:
     - build/**
     - ios/**
+    # The model package is vendored as delivered (model_handoff/) and checked by its own tests.
+    - packages/**
 
 linter:
   # The lint rules applied to this project can be customized in the

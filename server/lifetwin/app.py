@@ -9,9 +9,11 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from lifetwin.advisor import router as advisor_router
+from lifetwin.change import ChangeService
+from lifetwin.change import router as change_router
 from lifetwin.checkin import CheckinService
 from lifetwin.checkin import router as checkin_router
-from lifetwin.coach import DISPLAY_NAMES, DailyCap, MusePhraser
+from lifetwin.coach import DailyCap
 from lifetwin.coach import router as coach_router
 from lifetwin.core.config import Settings
 from lifetwin.core.middleware import RequestBudgetMiddleware
@@ -25,10 +27,13 @@ from lifetwin.core.models import (
 )
 from lifetwin.onboarding import ChatCompletionsExtractor, ConversationService, OpenAIExtractor
 from lifetwin.onboarding import router as onboarding_router
+from lifetwin.onboarding.probes import MAX_PROBES
+from lifetwin.personalize.providers import DISPLAY_NAMES, ClaudePersonalizer, MusePersonalizer
 from lifetwin.prediction import load_model
 from lifetwin.prediction.models import PredictionResponse
 from lifetwin.quiz.router import router as quiz_router
 from lifetwin.quiz.service import load_bank
+from lifetwin.recommendations.router import router as recommendations_router
 from lifetwin.research.tavily import TavilyResearch
 from lifetwin.voice import VoiceService, voice_configured
 from lifetwin.voice import router as voice_router
@@ -54,6 +59,7 @@ FIELD_WORDS = {
     "alcohol_drinks_yesterday": "yesterday's drinks",
     "wellbeing": "how you feel",
     "local_date": "date",
+    "memory_consent": "memory",
 }
 
 
@@ -102,13 +108,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title="LifeTwin backend",
         version="0.1.0",
         description=(
-            "Mascot intake and check-ins, survival forecast, educational plans and quiz content. "
+            "Mascot intake, check-ins and changes, survival forecast, educational plans and quiz content. "
             "Compare and sensitivity are deferred."
         ),
         lifespan=lifespan,
         responses=COMMON_ERRORS,
     )
     application.state.settings = settings
+    personalizer = (
+        ClaudePersonalizer(
+            api_key=settings.anthropic_api_key.get_secret_value(), model=settings.claude_model
+        )
+        if settings.personalize_provider == "claude"
+        else MusePersonalizer(
+            base_url=settings.llm_base_url,
+            api_key=settings.llm_api_key.get_secret_value(),
+            model=settings.llm_model,
+            timeout_seconds=settings.provider_timeout_seconds,
+            reasoning_effort=settings.llm_reasoning_effort,
+        )
+    )
+    application.state.personalizer = personalizer
     application.state.conversation_service = ConversationService(
         extractor=(
             ChatCompletionsExtractor(
@@ -126,28 +146,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         ),
         timeout_seconds=settings.provider_timeout_seconds,
+        personalizer=personalizer,
+        max_probes=1 if settings.onboarding_demo else MAX_PROBES,
     )
     # Check-ins are guided only and stateless: the caller sends the previous answers.
     application.state.checkin_service = CheckinService()
+    # Changing a saved answer is a stateless talk with Mochi: the caller sends the profile.
+    application.state.change_service = ChangeService()
     application.state.research_client = TavilyResearch(
         api_key=settings.tavily_api_key.get_secret_value(),
         timeout_seconds=settings.provider_timeout_seconds,
     )
 
     application.state.voice_service = VoiceService(settings)
-    # Coach: deterministic plans; Muse may reword them only with the person's consent.
-    coach_phraser = MusePhraser(
-        base_url=settings.llm_base_url,
-        api_key=(
-            settings.llm_api_key.get_secret_value()
-            if settings.llm_provider == "chat_completions"
-            else ""
-        ),
-        model=settings.llm_model,
-        timeout_seconds=settings.coach_llm_timeout_seconds,
-        reasoning_effort=settings.llm_reasoning_effort,
-    )
-    application.state.coach_phraser = coach_phraser
+    # Coach: deterministic plans; the shared personalizer may reword them only with the person's consent.
+    application.state.coach_phraser = personalizer
     application.state.coach_cap = DailyCap(settings.coach_llm_daily_cap)
     application.state.coach_timeout = settings.coach_llm_timeout_seconds
     # Loaded once at startup; None when the artifact files are missing (route stays 501).
@@ -211,15 +224,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "prediction": prediction_state,
             "voice": "available" if voice_configured(settings) else "unavailable",
             "health_data_storage": "none",
+            # The app's consent text names this provider; consent is per provider.
+            "personalize": {
+                "provider": personalizer.name,
+                "display_name": DISPLAY_NAMES[personalizer.name],
+                "configured": personalizer.configured,
+            },
             "coach": {
                 "endpoint": "/api/coach/plan",
                 "planner": "deterministic_catalog",
                 "runs": "on_app_open_or_resume",
                 "personalize": {
-                    "provider": coach_phraser.name,
-                    "display_name": DISPLAY_NAMES[coach_phraser.name],
-                    "model": coach_phraser.model or None,
-                    "configured": coach_phraser.configured,
+                    "provider": personalizer.name,
+                    "display_name": DISPLAY_NAMES[personalizer.name],
+                    "configured": personalizer.configured,
                     "daily_cap_per_client": settings.coach_llm_daily_cap,
                 },
             },
@@ -272,7 +290,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         prefix="/api",
         responses={**BODY_ERRORS, **_described({409: "Invalid check-in transition"})},
     )
+    application.include_router(
+        change_router,
+        prefix="/api",
+        responses={**BODY_ERRORS, **_described({409: "Invalid change transition"})},
+    )
     application.include_router(advisor_router, prefix="/api", responses=BODY_ERRORS)
+    application.include_router(recommendations_router, prefix="/api", responses=BODY_ERRORS)
     application.include_router(
         coach_router,
         prefix="/api",

@@ -40,6 +40,9 @@ SUPPLEMENT_WORDS = (
     r"\belderberry\b|\bashwagandha\b|\bcreatine\b|\bwhey\b|\bcbd\b|\bcannabi\w*|\bhemp\b",
     r"\bensure\b|\bboost shakes?\b|\bprotein (?:powder|shake|drink)s?\b|\bherb(?:al|s)?\b",
     r"\bgumm(?:y|ies)\b|\bcapsules?\b|\bsoftgels?\b|\bkelp\b|\bspirulina\b|\bkombucha\b",
+    r"\benergy (?:drinks?|shots?|gels?|chews?|bars?)\b|\bred ?bull\b|\bmonster energy\b",
+    r"\bpre[ -]?workouts?\b|\bcaffeine (?:pills?|tablets?|capsules?|supplements?|powder|shots?)\b",
+    r"\bcaffeinated (?:pills?|tablets?)\b|\bno[ -]?doz\b|\bpreworkout\b",
 )
 DRUG_WORDS = (
     r"\bmetformin\b|\binsulin\b|\bwarfarin\b|\bcoumadin\b|\beliquis\b|\bapixaban\b|\bxarelto\b",

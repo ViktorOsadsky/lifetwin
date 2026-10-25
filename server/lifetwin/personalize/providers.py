@@ -1,7 +1,9 @@
-"""The outside-AI phraser: Muse by Meta now, behind the same interface as
-conversation-v2's ``lifetwin.personalize`` (``name``, ``configured``, ``phrase``), so
-Claude can come later and the two modules can merge. Keys stay server-side; payloads
-and replies are never logged.
+"""Outside-AI providers that may phrase Mochi's lines. They never decide values.
+
+Owner rulings (2026-10-24): Muse by Meta is the demo provider now; Claude by Anthropic
+comes later behind the same interface (``PERSONALIZE_PROVIDER=claude``). Consent is
+per provider, so switching providers asks the person again. Keys stay server-side.
+Payloads and replies are never logged.
 """
 
 import json
@@ -10,17 +12,20 @@ from typing import Literal, Protocol
 
 import httpx
 
-logger = logging.getLogger("lifetwin.coach")
+logger = logging.getLogger(__name__)
 
 ProviderName = Literal["muse", "claude"]
-DISPLAY_NAMES: dict[ProviderName, str] = {"muse": "Muse by Meta", "claude": "Claude by Anthropic"}
+DISPLAY_NAMES: dict[ProviderName, str] = {
+    "muse": "Muse by Meta",
+    "claude": "Claude by Anthropic",
+}
 
 
 class PhrasingUnavailable(Exception):
     """The provider could not answer; Mochi's own wording is used."""
 
 
-class Phraser(Protocol):
+class Personalizer(Protocol):
     name: ProviderName
 
     @property
@@ -29,8 +34,8 @@ class Phraser(Protocol):
     async def phrase(self, instructions: str, facts: dict) -> dict: ...
 
 
-class MusePhraser:
-    """Muse over Meta's OpenAI-compatible Chat Completions endpoint (standard tier only)."""
+class MusePersonalizer:
+    """Meta Muse over its OpenAI-compatible Chat Completions endpoint."""
 
     name: ProviderName = "muse"
 
@@ -46,21 +51,21 @@ class MusePhraser:
     ):
         self._base_url = (base_url.strip() or "https://api.meta.ai/v1").rstrip("/")
         self._api_key = api_key.strip()
-        self.model = model.strip()
-        self._timeout = max(0.1, min(timeout_seconds, 20.0))
+        self._model = model.strip()
+        self._timeout = max(0.1, min(timeout_seconds, 15.0))
         self._effort = reasoning_effort.strip()
         self._client = client
 
     @property
     def configured(self) -> bool:
-        # "-contributor" variants may train on content (report §6a): never use them.
-        return bool(self._api_key and self.model and "contributor" not in self.model.lower())
+        # "-contributor" variants may train on content: never use them.
+        return bool(self._api_key and self._model and "contributor" not in self._model.lower())
 
     async def phrase(self, instructions: str, facts: dict) -> dict:
         if not self.configured:
             raise PhrasingUnavailable()
         payload = {
-            "model": self.model,
+            "model": self._model,
             "max_tokens": 1200,
             "messages": [
                 {"role": "system", "content": instructions},
@@ -91,8 +96,26 @@ class MusePhraser:
             return result
         except (httpx.HTTPError, ValueError, KeyError, TypeError, IndexError) as exc:
             # Only the type: never the payload or the reply.
-            logger.warning("coach phrasing provider failed: %s", type(exc).__name__)
+            logger.warning("phrasing provider failed: %s", type(exc).__name__)
             raise PhrasingUnavailable() from exc
         finally:
             if self._client is None:
                 await client.aclose()
+
+
+class ClaudePersonalizer:
+    """Claude by Anthropic: a placeholder until the owner switches it on (not wired yet)."""
+
+    name: ProviderName = "claude"
+
+    def __init__(self, *, api_key: str = "", model: str = ""):
+        self._api_key = api_key.strip()
+        self._model = model.strip()
+
+    @property
+    def configured(self) -> bool:
+        # Not implemented yet: never reports ready, so templates are used.
+        return False
+
+    async def phrase(self, instructions: str, facts: dict) -> dict:
+        raise PhrasingUnavailable()

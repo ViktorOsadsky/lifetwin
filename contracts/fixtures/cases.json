@@ -134,8 +134,8 @@
       "voice_status": "deferred",
       "complete": false,
       "state": {
-        "phase": "asking",
-        "current_field": "age",
+        "phase": "remembering",
+        "current_field": null,
         "confirmed_profile": {
           "age": null,
           "sex": null,
@@ -163,7 +163,11 @@
           "diastolic_bp": null
         },
         "skipped_fields": []
-      }
+      },
+      "quick_replies": [
+        "Yes, remember",
+        "No thanks"
+      ]
     }
   },
   {
@@ -630,7 +634,9 @@
         "phase": "asking",
         "questions": [
           "sleep_hours",
-          "exercise_minutes_weekly",
+          "vigorous_recreation_min_week",
+          "moderate_recreation_min_week",
+          "sedentary_min_day",
           "alcohol_drinks_weekly",
           "smoking_status",
           "weight_kg",
@@ -673,7 +679,9 @@
         "phase": "confirming",
         "questions": [
           "sleep_hours",
-          "exercise_minutes_weekly",
+          "vigorous_recreation_min_week",
+          "moderate_recreation_min_week",
+          "sedentary_min_day",
           "alcohol_drinks_weekly",
           "smoking_status",
           "weight_kg",
@@ -692,7 +700,7 @@
       "complete": false,
       "state": {
         "phase": "asking",
-        "current_field": "exercise_minutes_weekly",
+        "current_field": "vigorous_recreation_min_week",
         "confirmed": {
           "sleep_hours": 7.0
         },
@@ -890,7 +898,9 @@
         "phase": "confirming",
         "questions": [
           "sleep_hours",
-          "exercise_minutes_weekly",
+          "vigorous_recreation_min_week",
+          "moderate_recreation_min_week",
+          "sedentary_min_day",
           "alcohol_drinks_weekly",
           "smoking_status",
           "weight_kg",
@@ -900,7 +910,10 @@
         "current_field": "wellbeing",
         "confirmed": {
           "sleep_hours": 6,
-          "exercise_minutes_weekly": 90,
+          "vigorous_recreation_min_week": 30,
+          "moderate_recreation_min_week": 90,
+          "sedentary_min_day": 360,
+          "smoking_status": "unknown",
           "weight_kg": 71.67
         },
         "pending": {
@@ -908,7 +921,6 @@
         },
         "skipped_fields": [
           "alcohol_drinks_weekly",
-          "smoking_status",
           "systolic_bp",
           "diastolic_bp"
         ]
@@ -926,12 +938,1052 @@
       },
       "profile_update": {
         "sleep_hours": 6.0,
-        "exercise_minutes_weekly": 90,
+        "vigorous_recreation_min_week": 30,
+        "moderate_recreation_min_week": 90,
+        "sedentary_min_day": 360,
+        "smoking_status": null,
         "weight_kg": 71.67,
+        "exercise_minutes_weekly": null,
         "alcohol_drinks_weekly": null,
         "systolic_bp": null,
         "age": null
       }
+    }
+  },
+  {
+    "name": "change-free-start",
+    "method": "POST",
+    "path": "/api/change/start",
+    "request_schema": "change.start.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Hi, it's Mochi! What would you like to update?",
+      "complete": false,
+      "state": {
+        "phase": "choosing",
+        "field": null
+      }
+    }
+  },
+  {
+    "name": "change-weight-start",
+    "method": "POST",
+    "path": "/api/change/start",
+    "request_schema": "change.start.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      },
+      "field": "weight_kg"
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Let's update your weight. Right now I have you at 160 pounds. What's changed?",
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      }
+    }
+  },
+  {
+    "name": "change-free-answer",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "I quit smoking",
+      "state": {
+        "phase": "choosing"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "current",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Right now I have that you smoke. I heard you don't smoke now, but you used to. Is that right?",
+      "complete": false,
+      "state": {
+        "phase": "confirming",
+        "field": "smoking_status",
+        "pending": {
+          "smoking_status": "former"
+        }
+      },
+      "profile_update": {
+        "smoking_status": null
+      }
+    }
+  },
+  {
+    "name": "change-big-jump-double-check",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "120 pounds",
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "That's quite a change from 160 to 120 pounds. Is 120 right?",
+      "complete": false,
+      "state": {
+        "phase": "confirming"
+      }
+    }
+  },
+  {
+    "name": "change-confirm-profile-update",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "yes",
+      "state": {
+        "phase": "confirming",
+        "field": "weight_kg",
+        "pending": {
+          "weight_kg": 68.0389
+        }
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Got it. I've updated your weight.",
+      "complete": true,
+      "profile_update": {
+        "age": null,
+        "sex": null,
+        "height_cm": null,
+        "weight_kg": 68.0389,
+        "sleep_hours": null,
+        "exercise_minutes_weekly": null,
+        "smoking_status": null,
+        "alcohol_drinks_weekly": null,
+        "diabetes": null,
+        "systolic_bp": null,
+        "diastolic_bp": null
+      },
+      "state": {
+        "phase": "done"
+      },
+      "habit_note": null
+    }
+  },
+  {
+    "name": "change-probe-with-memory-consent",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "150 pounds",
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      },
+      "memory_consent": true
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Thank you. Before I read it back: did something change, like a new routine?",
+      "complete": false,
+      "state": {
+        "phase": "probing",
+        "probed": true
+      }
+    }
+  },
+  {
+    "name": "change-habit-note",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "yes",
+      "state": {
+        "phase": "confirming",
+        "field": "weight_kg",
+        "pending": {
+          "weight_kg": 68.0389
+        },
+        "probed": true,
+        "note": "I've been walking every morning"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      },
+      "memory_consent": true
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "complete": true,
+      "habit_note": {
+        "field": "weight_kg",
+        "text": "I've been walking every morning"
+      },
+      "profile_update": {
+        "weight_kg": 68.0389
+      }
+    }
+  },
+  {
+    "name": "change-age-more-than-a-birthday",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "I'm 75",
+      "state": {
+        "phase": "asking",
+        "field": "age"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Your age only changes on your birthday, so I can't change it from 72 to 75. If you've had a birthday, just tell me, and I'll make it 73.",
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "pending": {
+          "age": null
+        }
+      }
+    }
+  },
+  {
+    "name": "change-sex-at-birth-refused",
+    "method": "POST",
+    "path": "/api/change/start",
+    "request_schema": "change.start.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      },
+      "field": "sex"
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Sex at birth can't be changed here. Your twin's forecast is built on it, so it stays as you first told me. If it was saved by mistake, \"Delete my data\" in Settings lets you start fresh. Is there anything else you'd like to update?",
+      "complete": false,
+      "state": {
+        "phase": "choosing",
+        "field": null
+      }
+    }
+  },
+  {
+    "name": "change-diabetes-asks-doctor",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "I have diabetes now",
+      "state": {
+        "phase": "asking",
+        "field": "diabetes"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Did a doctor tell you that you have diabetes?",
+      "complete": false,
+      "state": {
+        "phase": "confirming",
+        "pending": {
+          "diabetes": true
+        }
+      }
+    }
+  },
+  {
+    "name": "change-emergency-pause",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "I have chest pain right now",
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "I'm sorry you're going through that. If you need help right now, please call 911. We can carry on whenever you're ready.",
+      "emergency": true,
+      "complete": false,
+      "mascot_events": {
+        "$each": {
+          "state": "concerned"
+        }
+      },
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      }
+    }
+  },
+  {
+    "name": "change-resume-after-pause",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "resume",
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Okay, let's carry on. Right now I have you at 160 pounds. What's changed?",
+      "emergency": false,
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      }
+    }
+  },
+  {
+    "name": "change-confirm-nothing",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "confirm",
+      "state": {
+        "phase": "choosing"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 409,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_change_transition"
+    }
+  },
+  {
+    "name": "change-inconsistent-state",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "150",
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg",
+        "pending": {
+          "weight_kg": 70
+        }
+      }
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "change-diastolic-is-not-a-field",
+    "method": "POST",
+    "path": "/api/change/start",
+    "request_schema": "change.start.request.schema.json",
+    "request_schema_valid": false,
+    "request": {
+      "field": "diastolic_bp"
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "checkin-quick-start-health-read-back",
+    "method": "POST",
+    "path": "/api/checkin/start",
+    "request_schema": "checkin.start.request.schema.json",
+    "request": {
+      "kind": "quick",
+      "local_date": "2026-10-24",
+      "previous": {},
+      "quick": {
+        "topics": [
+          "sleep",
+          "activity",
+          "sitting"
+        ],
+        "activity_day": "yesterday",
+        "suggested": {
+          "sleep_hours_last_night": 7.5
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": false,
+      "message": "Hi, it's Mochi! Just a quick check-in, under a minute. You can skip anything. Apple Health says you slept about 7.5 hours last night. Looks right?",
+      "daily_logs": [],
+      "state": {
+        "kind": "quick",
+        "phase": "confirming",
+        "from_health": true,
+        "current_field": "sleep_hours_last_night",
+        "pending": {
+          "sleep_hours_last_night": 7.5
+        },
+        "questions": [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day"
+        ],
+        "local_date": "2026-10-24",
+        "activity_day": "yesterday"
+      }
+    }
+  },
+  {
+    "name": "checkin-quick-out-of-breath",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "I got out of breath walking up the hill for 20 minutes",
+      "input_mode": "transcript",
+      "state": {
+        "kind": "quick",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day"
+        ],
+        "current_field": "vigorous_recreation_min",
+        "local_date": "2026-10-24",
+        "activity_day": "yesterday",
+        "confirmed": {
+          "sleep_hours_last_night": 7.5
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": false,
+      "message": "I heard you did 20 minutes of activity that got you out of breath yesterday. Is that right?",
+      "state": {
+        "phase": "confirming",
+        "pending": {
+          "vigorous_recreation_min": 20,
+          "moderate_recreation_min": null
+        }
+      }
+    }
+  },
+  {
+    "name": "checkin-quick-pottering-asks-how-long",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "pottered in the garden all afternoon",
+      "state": {
+        "kind": "quick",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day"
+        ],
+        "current_field": "vigorous_recreation_min",
+        "local_date": "2026-10-24",
+        "activity_day": "yesterday",
+        "confirmed": {
+          "sleep_hours_last_night": 7.5
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": false,
+      "message": "That counts as easy activity. About how long was it, in minutes or hours?",
+      "state": {
+        "phase": "asking",
+        "current_field": "moderate_recreation_min",
+        "one_pace": true
+      }
+    }
+  },
+  {
+    "name": "checkin-quick-complete-daily-logs",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "confirm",
+      "state": {
+        "kind": "quick",
+        "phase": "confirming",
+        "questions": [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day"
+        ],
+        "current_field": "sedentary_min_day",
+        "local_date": "2026-10-24",
+        "activity_day": "yesterday",
+        "confirmed": {
+          "sleep_hours_last_night": 7.5,
+          "vigorous_recreation_min": 20,
+          "moderate_recreation_min": 30
+        },
+        "pending": {
+          "sedentary_min_day": 360
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": true,
+      "message": "Got it. That's all. Thank you for checking in with me!",
+      "profile_update": {
+        "sleep_hours": null
+      },
+      "daily_logs": [
+        {
+          "date": "2026-10-23",
+          "sleep_hours": null,
+          "vigorous_recreation_min": 20,
+          "moderate_recreation_min": 30,
+          "sedentary_min_day": 360
+        },
+        {
+          "date": "2026-10-24",
+          "sleep_hours": 7.5,
+          "vigorous_recreation_min": null,
+          "moderate_recreation_min": null,
+          "sedentary_min_day": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "checkin-quick-emergency-pause",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "I can't breathe",
+      "state": {
+        "kind": "quick",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day"
+        ],
+        "current_field": "vigorous_recreation_min",
+        "local_date": "2026-10-24",
+        "activity_day": "yesterday",
+        "confirmed": {
+          "sleep_hours_last_night": 7.5
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "emergency": true,
+      "complete": false,
+      "message": "I'm sorry you're going through that. If you need help right now, please call 911. We can carry on whenever you're ready.",
+      "state": {
+        "current_field": "vigorous_recreation_min",
+        "phase": "asking"
+      }
+    }
+  },
+  {
+    "name": "checkin-quick-plan-on-weekly",
+    "method": "POST",
+    "path": "/api/checkin/start",
+    "request_schema": "checkin.start.request.schema.json",
+    "request_schema_valid": true,
+    "request": {
+      "kind": "weekly",
+      "quick": {
+        "topics": [
+          "sleep"
+        ]
+      }
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "checkin-quick-too-many-topics",
+    "method": "POST",
+    "path": "/api/checkin/start",
+    "request_schema": "checkin.start.request.schema.json",
+    "request_schema_valid": false,
+    "request": {
+      "kind": "quick",
+      "quick": {
+        "topics": [
+          "sleep",
+          "activity",
+          "sitting",
+          "feeling"
+        ]
+      }
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "onboarding-memory-consent",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "sure, that's fine",
+      "state": {
+        "phase": "remembering"
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "age",
+        "memory_consent": true
+      }
+    }
+  },
+  {
+    "name": "onboarding-dont-know-is-unknown",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "my doctor would know",
+      "state": {
+        "phase": "asking",
+        "current_field": "hypertension_diagnosed",
+        "confirmed_profile": {
+          "age": 72,
+          "sex": "female"
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "unknown_fields": [
+          "hypertension_diagnosed"
+        ],
+        "skipped_fields": [],
+        "pending_profile": {
+          "hypertension_diagnosed": null
+        }
+      },
+      "model_inputs": {
+        "status": "still_learning",
+        "unknown": [
+          "hypertension_diagnosed"
+        ],
+        "profile": {
+          "age": 72,
+          "sex_nhanes": 2,
+          "hypertension_diagnosed": null
+        }
+      }
+    }
+  },
+  {
+    "name": "onboarding-blood-pressure-reading-is-not-a-diagnosis",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "Last time it was 140 over 90",
+      "state": {
+        "phase": "asking",
+        "current_field": "hypertension_diagnosed"
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "hypertension_diagnosed",
+        "pending_profile": {
+          "hypertension_diagnosed": null,
+          "systolic_bp": null
+        },
+        "habit_notes": {
+          "$each": {
+            "topic": "health",
+            "reading": "140 over 90"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "onboarding-habit-probe-note",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "Mostly walking with my dog in the morning",
+      "state": {
+        "phase": "probing",
+        "current_probe": "activity",
+        "probes_asked": [
+          "activity"
+        ],
+        "memory_consent": true
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "state": {
+        "current_probe": null,
+        "habit_notes": {
+          "$each": {
+            "topic": "exercise",
+            "kind": "walking",
+            "with": "dog",
+            "time_of_day": "morning",
+            "source": "said"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "onboarding-supplement-question",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "Should I take vitamin D?",
+      "state": {
+        "phase": "asking",
+        "current_field": "general_health"
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "message": "That's a good one to ask your pharmacist or doctor. Bring your bottles to your next visit so they can check them with your other medicines. How would you rate your health: excellent, very good, good, fair or poor?",
+      "state": {
+        "phase": "asking",
+        "current_field": "general_health"
+      }
+    }
+  },
+  {
+    "name": "recommendations-from-profile-and-notes",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "smoking_status": "never",
+        "sleep_hours": 6,
+        "moderate_recreation_min_week": 90,
+        "vigorous_recreation_min_week": 0,
+        "sedentary_min_day": 480
+      },
+      "habit_notes": [
+        {
+          "topic": "exercise",
+          "kind": "walking",
+          "with": "dog",
+          "time_of_day": "morning"
+        },
+        {
+          "topic": "sitting",
+          "kind": "tv"
+        }
+      ]
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "phrased_by": "templates",
+      "causal_interpretation": false,
+      "recommendations": {
+        "$each": {
+          "causal_interpretation": false
+        }
+      },
+      "lever_ranking": {
+        "source": "docs/model-sensitivity.json",
+        "order": [
+          "quit_smoking",
+          "vigorous_plus_60",
+          "moderate_plus_90",
+          "short_sleep_plus_1h",
+          "sitting_minus_60_realistic"
+        ]
+      }
+    }
+  },
+  {
+    "name": "recommendations-nothing-yet",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {}
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "not_enough_information",
+      "recommendations": []
+    }
+  },
+  {
+    "name": "recommendations-reject-unknown-provider-consent",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request_schema_valid": false,
+    "request": {
+      "profile": {},
+      "outside_ai_consent": {
+        "someone_else": true
+      }
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "code": "invalid_request"
     }
   },
   {

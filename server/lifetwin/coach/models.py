@@ -59,19 +59,8 @@ Lever = Literal[
 
 
 class CoachProfile(HealthProfile):
-    """The confirmed profile. Main's fields plus conversation-v2's extra model inputs,
-    so either app version can send its profile. Height, weight and blood pressure are
-    accepted but never used: weight is never a lever."""
-
-    general_health: GeneralHealth | None = None
-    hypertension: bool | None = None
-    sitting_minutes_daily: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1439)
-    moderate_minutes_weekly: Annotated[int | None, WholeNumber] = Field(
-        default=None, ge=0, le=10080
-    )
-    vigorous_minutes_weekly: Annotated[int | None, WholeNumber] = Field(
-        default=None, ge=0, le=10080
-    )
+    """The confirmed profile, in the one shared vocabulary (``HealthProfile``). Height,
+    weight and blood pressure are accepted but never used: weight is never a lever."""
 
 
 class DaySummary(ApiModel):

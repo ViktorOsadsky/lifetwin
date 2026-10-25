@@ -249,7 +249,10 @@ def test_typed_replies_keep_their_own_value_beside_a_relative():
 
 
 def test_skipping_blood_pressure_skips_both_numbers():
-    for text in ("skip", "I don't know"):
-        result = say("systolic_bp", text)
-        assert result.state.skipped_fields == ["systolic_bp", "diastolic_bp"]
-        assert result.state.current_field != "diastolic_bp"
+    result = say("systolic_bp", "skip")
+    assert result.state.skipped_fields == ["systolic_bp", "diastolic_bp"]
+    assert result.state.current_field != "diastolic_bp"
+    # v2: not knowing it leaves both numbers unknown instead.
+    result = say("systolic_bp", "I don't know")
+    assert result.state.unknown_fields == ["systolic_bp", "diastolic_bp"]
+    assert result.state.current_field != "diastolic_bp"

@@ -14,8 +14,8 @@ import threading
 from datetime import UTC, datetime
 
 from lifetwin.coach.planner import Draft
-from lifetwin.coach.providers import Phraser, PhrasingUnavailable
 from lifetwin.coach.safety import safe_line
+from lifetwin.personalize.providers import Personalizer, PhrasingUnavailable
 
 logger = logging.getLogger("lifetwin.coach")
 
@@ -54,7 +54,7 @@ class DailyCap:
 
 
 async def reword(
-    phraser: Phraser, drafts: list[Draft], timeout: float
+    phraser: Personalizer, drafts: list[Draft], timeout: float
 ) -> tuple[dict[str, str] | None, str]:
     """({slot: line with names filled back in}, status) or (None, status)."""
     facts = {

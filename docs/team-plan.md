@@ -1,6 +1,6 @@
 # LifeSim team plan
 
-How we split the original spec ([`projectspec.md`](../projectspec.md)) so four people can build in parallel without drifting apart. Read [MASTER_PLAN.md](../MASTER_PLAN.md) first for the current product and [the backend run guide](../server/README.md) for implemented non-prediction functionality/contracts. This document governs owners and original sync targets. Changes from the spec are listed in [prd-reconciliation.md](prd-reconciliation.md); stack defaults are in [tech-stack.md](tech-stack.md). Flutter, voice, model, numerical stub and iOS helper paths below remain future work; the user explicitly deferred prediction implementation.
+How we split the original spec ([`projectspec.md`](../projectspec.md)) so four people can build in parallel without drifting apart. Read [MASTER_PLAN.md](../MASTER_PLAN.md) first for the current product and [the backend run guide](../server/README.md) for implemented non-prediction functionality/contracts. This document governs owners and original sync targets. Changes from the spec are listed in [prd-reconciliation.md](prd-reconciliation.md); stack defaults are in [tech-stack.md](tech-stack.md). The relative checkpoints below are the original build schedule, not current completion claims. The master guide records merged app/voice/model/check-in work. Document upload and autonomous daily planning are new planned extensions.
 
 ## Decisions so far
 
@@ -10,7 +10,9 @@ How we split the original spec ([`projectspec.md`](../projectspec.md)) so four p
 | Presentation | LottieFiles motion and SVG assets; Talking Tom-style game shell, mascot-led voice/text intake, magic-ball fortune, quiz with independent game-health reactions |
 | Training | Python. Victor picks the method |
 | Server | FastAPI (master doc §7). Serves Victor's model and keeps the LLM key off the phone (§15) |
-| Advisor input | The user's inputs plus the model's results. May change later |
+| Intake refinement | Immediate document upload/import option; confirm candidates and ask only for missing inputs. Upload is planned |
+| Advisor input | Confirmed inputs, authorized check-in history, goals/constraints, completion feedback and versioned results from the selected model when available |
+| Daily planning | Target a daily schedule with evidence and explained revisions; notifications and deterministic scores alone do not fulfill the agent loop. Scheduling/storage remain design dependencies |
 | Merging | Short branch → PR → merge to `main` after applicable checks and repository protections pass. No extra review required unless repository rules require it. Bad merge → revert through a PR |
 
 Because Victor is free to choose the model, the shared boundary is **the API, not the model file**. Everyone builds against the
@@ -91,3 +93,14 @@ Branching from an ancestor checkpoint and merging it back does not undo later co
 - Always label results as modeled associations from observational data, not causal effects.
 - Don't store or log raw health profiles. The stub server logs only method, path and status.
 - API keys live on the server only.
+
+## October 23 refinement: next coordination point
+
+Source and acceptance: [meeting decisions](meetings/2026-10-23-product-refinement.md), implemented in the product vision in [MASTER_PLAN.md](../MASTER_PLAN.md). Preserve the owners above; these responsibilities add no assignments or deadlines.
+
+- **B:** agree upload/extraction candidate and error boundaries with C/D; coordinate plan input snapshots, revision IDs, consent and execution constraints. Existing check-ins remain stateless and history remains on device.
+- **C:** surface upload/import at entry, candidate confirmation and missing-field follow-up, then a daily schedule/check-in/revision view. Keep actual logs, confirmed profile, experiments and quiz health separate.
+- **D:** guide extraction clarification, define evidence-grounded plan/revision behavior and evaluate changed-feedback and missing-data cases. Revise the pitch around daily usefulness and supported outlooks.
+- **A (Victor):** retain authority over model inputs, support and validation. Any lifespan summary or new aggregation requires model evidence; the meeting does not authorize unsupported dates or years gained.
+
+Land a focused contract/design PR before dependent upload/planner code. No existing shared contract changes in this refinement. Prove the existing app/backend flow first; present upload or background planning as unavailable until implemented and verified.

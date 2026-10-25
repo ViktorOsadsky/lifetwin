@@ -50,6 +50,10 @@ VoiceOnboardingController ctl(WidgetTester t) =>
     t.widget<VoiceOnboardingScreen>(find.byType(VoiceOnboardingScreen)).controller;
 
 String fieldOf(VoiceOnboardingController c) => '${c.turn?.state['current_field']}';
+
+/// Mochi's wording varies by session, so the age question is found by shared words.
+bool ageWords(String s) => s.toLowerCase().contains('how old are you');
+
 String oneLine(String s) => s.replaceAll('\n', ' ');
 
 String screenText() => find
@@ -239,9 +243,23 @@ void main() {
       }
       log('first question (${fieldOf(c)}): "${oneLine(c.mascotLine)}"');
 
+      // Conversation v2 opens with whether Mochi may remember the little things. The "no"
+      // clip answers it (so no habit follow-ups come between the questions).
+      {
+        final h = await talk(t, mic, 'diabetes');
+        final ok = h.error == null && !h.confirming && fieldOf(c) == 'age' && ageWords(h.reply);
+        record(
+          'memory question: "no"',
+          ok,
+          '$h',
+          ok ? '' : h.error ?? 'age question did not follow; field ${fieldOf(c)}',
+        );
+        if (c.confirming) await recover(t);
+      }
+
       {
         final h = await talk(t, mic, 'what');
-        final ok = h.error == null && !h.confirming && fieldOf(c) == 'age' && h.reply.contains('How old are you');
+        final ok = h.error == null && !h.confirming && fieldOf(c) == 'age' && ageWords(h.reply);
         record(
           'what? repeats question',
           ok,
@@ -300,20 +318,37 @@ void main() {
         }
       }
 
+      // Smoking, then the Apple Health offer (declined by saying "no"), then only what is
+      // missing. A step with no expected read-back words is the offer.
       const steps = [
+        ('smoking_status', 'smoking', 'I used to smoke but I quit years ago', ['smoked in the past']),
+        ('apple_health', 'diabetes', 'no (to the Apple Health offer)', <String>[]),
         ('height_cm', 'height', 'five foot four', ['5 feet 4 inches']),
         ('weight_kg', 'weight', 'a hundred and forty five pounds', ['145 pounds']),
         ('sleep_hours', 'sleep', 'about seven hours', ['7 hours']),
-        ('exercise_minutes_weekly', 'exercise', 'I walk thirty minutes five days a week', ['150 minutes']),
-        ('smoking_status', 'smoking', 'I used to smoke but I quit years ago', ['smoked in the past']),
-        ('alcohol_drinks_weekly', 'alcohol', 'two glasses of wine a week', ['2 drinks']),
+        ('general_health', 'health', 'good', ['your health is good']),
+        ('hypertension_diagnosed', 'diabetes', 'no', ['not told you that you have high blood pressure']),
         ('diabetes', 'diabetes', 'no', ['not told you that you have diabetes']),
-        ('systolic_bp', 'bp', 'one thirty over eighty five', ['130 over 85']),
+        ('sedentary_min_day', 'sleep', 'about seven hours (sitting)', ['7 hours']),
+        ('moderate_recreation_min_week', 'exercise', 'I walk thirty minutes five days a week', ['150 minutes']),
+        ('vigorous_recreation_min_week', 'diabetes', 'no (harder exercise)', ['no harder exercise']),
       ];
       for (final (field, clip, words, expects) in steps) {
         await waitUntil(t, () => c.phase != VoicePhase.interpreting, seconds: 30);
         if (fieldOf(c) != field) log('  note: expected field $field but the app is on ${fieldOf(c)}');
         final h = await talk(t, mic, clip);
+        if (field == 'apple_health') {
+          // Declining the offer is not read back: the height question follows.
+          final declined = h.error == null && !h.confirming && fieldOf(c) == 'height_cm';
+          record(
+            '$field: "$words"',
+            declined,
+            '$h',
+            declined ? '' : h.error ?? 'offer not declined; field ${fieldOf(c)}',
+          );
+          if (!declined) await recover(t);
+          continue;
+        }
         final missing = expects.where((e) => !h.reply.contains(e)).toList();
         final ok = h.error == null && h.confirming && missing.isEmpty;
         record(
@@ -342,8 +377,8 @@ void main() {
           await tapButton(t, 'Continue') &&
           await waitUntil(t, () => find.text('Ask the ball').evaluate().isNotEmpty) &&
           await tick(t, 900).then((_) => tapButton(t, 'Ask the ball'))) {
-        final seen = await waitUntil(t, () => screenText().contains('still living'), seconds: 45);
-        record('forecast screen', seen, 'screen="${screenText()}"', seen ? '' : 'no "still living" text');
+        final seen = await waitUntil(t, () => screenText().contains('were still living'), seconds: 45);
+        record('forecast screen', seen, 'screen="${screenText()}"', seen ? '' : 'no "were still living" number');
       } else {
         record('forecast screen', false, '', 'conversation not finished / no Continue button; screen: ${screenText()}');
       }

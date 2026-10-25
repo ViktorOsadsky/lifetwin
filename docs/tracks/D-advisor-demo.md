@@ -2,11 +2,11 @@
 
 **Owner:** _TBD_ · **Master doc:** §5, §15, §16, §12 phases 4–5
 
-Read [MASTER_PLAN.md](../../MASTER_PLAN.md) for current requirements, [tech-stack.md](../tech-stack.md) for choices and [the backend run guide](../../server/README.md) for implemented intake, curated educational plans, research adapter and quiz delivery. Contracts/checkers now exist. Voice, real provider access and the model-dependent goals below remain future work; keys are blank and prediction is explicitly deferred.
+Read [MASTER_PLAN.md](../../MASTER_PLAN.md) for current requirements, [tech-stack.md](../tech-stack.md) for choices and [the backend run guide](../../server/README.md) for implemented intake, curated educational plans, research adapter and quiz delivery. Contracts/checkers now exist. App/Cartesia/check-in/model work has since landed; live-provider/device validation must still be reported separately. The master guide records current boundaries. Upload and autonomous daily planning remain planned.
 
 ## Mascot guide, fortune and quiz
 
-- Implement the LLM conversation guide (“Muse” in the user description): one clear question at a time, schema-shaped candidate fields, ambiguity/unit follow-ups, confirmation and correction. Voice and text share the same guide; audio provider selection is deferred.
+- Implement the LLM conversation guide (“Muse” in the user description): one clear question at a time, schema-shaped candidate fields, ambiguity/unit follow-ups, confirmation and correction. Voice and text share the same guide; Cartesia integration is documented in the voice guide.
 - Write grounded magic-ball narration: mascot presentation uses the validated model value/horizon, never an invented exact death date. Coordinate animation events with C and validated context with B.
 - Author a small reviewed bank of challenging food-choice and situational questions with options, answers, explanations, difficulty and source links. C scores deterministically and updates independent game health/reactions immediately; quiz results never change medical inputs or predictions.
 - Own evidence retrieval, sensitivity interpretation and plan-to-experiment mappings from the master guide. Plans must distinguish modeled association, external evidence, and proposed action; unmodeled supplements/actions receive no invented numerical benefit.
@@ -31,7 +31,13 @@ association vs. cause. Hand it to Track C.
 
 ## Demo (§16)
 
-- Script follows the updated master guide: talk/type → confirm → magic-ball fortune → cited plan → experiment/reset → quiz error/recovery. Prepare 3-minute and 2-minute versions, accurately labeling deferred voice or fixture mode.
+- Script follows the updated master guide: upload/import or talk/type → confirm missing inputs → outlook/drivers → experiment/reset → daily schedule → real check-in → explained next-plan revision; include quiz error/recovery separately. Prepare 3-minute and 2-minute versions, accurately labeling unavailable capabilities, provider setup and any fixture mode.
 - Keep one held-out profile the team hasn't tuned on, and rehearse a judge changing an input live.
 - Rehearse on the actual iPhone ([ios-testing.md](../ios-testing.md)), including what to say if the network drops.
 - Quote only measured model numbers from Track A's eval report.
+
+## October 23 product refinement (planned)
+
+Use [the meeting decisions](../meetings/2026-10-23-product-refinement.md) to refine the pitch: a daily health companion that helps users understand their modeled outlook and adapt a practical plan. Keep document upload at entry and ask only for missing inputs. The exact-death-year request is an aspiration for a tangible future, not permission to invent a date, cutoff or years gained.
+
+Define the agent's bounded observe → evidence/action selection → daily schedule → completion feedback → explained revision loop with B/C. Include goals, constraints, missing data, declined actions and provider failure; prove a changed-input revision in replay. Notifications, LLM interpretation or health-score calculations alone are insufficient. Subjective wellbeing informs feasibility and tone, never an invented medical score or prescription. Respect on-device check-in history and the model's supported reassessment windows. The current curated advisor and scripted check-ins do not yet fulfill this planner requirement.

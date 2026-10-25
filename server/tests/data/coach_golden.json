@@ -265,8 +265,8 @@
         "age": 66,
         "sex": "male",
         "exercise_minutes_weekly": 300,
-        "moderate_minutes_weekly": 200,
-        "vigorous_minutes_weekly": 60,
+        "moderate_recreation_min_week": 200,
+        "vigorous_recreation_min_week": 60,
         "smoking_status": "never"
       },
       "limits": [
@@ -303,8 +303,8 @@
         "age": 66,
         "sex": "male",
         "exercise_minutes_weekly": 300,
-        "moderate_minutes_weekly": 200,
-        "vigorous_minutes_weekly": 60,
+        "moderate_recreation_min_week": 200,
+        "vigorous_recreation_min_week": 60,
         "smoking_status": "never"
       }
     },
@@ -1792,7 +1792,7 @@
       "said": "Can I stop my blood pressure pills if I walk more?",
       "profile": {
         "age": 73,
-        "hypertension": true
+        "hypertension_diagnosed": true
       }
     },
     "expect": {
@@ -2109,7 +2109,7 @@
         "exercise_minutes_weekly": 150,
         "smoking_status": "current",
         "diabetes": true,
-        "hypertension": true,
+        "hypertension_diagnosed": true,
         "general_health": "poor"
       },
       "checkins": [

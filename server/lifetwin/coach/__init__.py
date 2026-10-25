@@ -7,10 +7,10 @@ from fastapi import APIRouter, HTTPException, Request
 from lifetwin.coach.models import CoachPlanRequest, CoachPlanResponse
 from lifetwin.coach.phrasing import DailyCap, reword
 from lifetwin.coach.planner import Planner, StaleRevision, check_revision
-from lifetwin.coach.providers import DISPLAY_NAMES, MusePhraser, Phraser
 from lifetwin.coach.safety import is_emergency
 from lifetwin.core.models import ApiError
 from lifetwin.onboarding.models import MascotEvent
+from lifetwin.personalize.providers import Personalizer
 
 logger = logging.getLogger("lifetwin.coach")
 router = APIRouter(tags=["coach"])
@@ -27,7 +27,7 @@ MASCOT = {
 
 async def plan(
     req: CoachPlanRequest,
-    phraser: Phraser | None,
+    phraser: Personalizer | None,
     cap: DailyCap | None,
     client: str,
     timeout: float = 8,
@@ -113,4 +113,4 @@ async def coach_plan(payload: CoachPlanRequest, request: Request) -> CoachPlanRe
         ) from None
 
 
-__all__ = ["DISPLAY_NAMES", "DailyCap", "MusePhraser", "plan", "router"]
+__all__ = ["DailyCap", "plan", "router"]

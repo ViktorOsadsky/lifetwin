@@ -15,22 +15,57 @@ import 'support/qa_support.dart';
 
 const label = String.fromEnvironment('QA_LABEL', defaultValue: 'default');
 
+/// One screen: every control named, tap targets logged, a screenshot saved.
+Future<void> lookAt(WidgetTester t, List<String> problems, String name) async {
+  await pumpFor(t, const Duration(milliseconds: 700));
+  final labels = await labeledTapTargetGuideline.evaluate(t);
+  if (!labels.passed) problems.add('$name label: ${labels.reason}');
+  // Advisory only: a control partly scrolled out of view (a link at the top edge of a
+  // scrolled story) is measured by its visible sliver. Check these in the screenshots.
+  final size = await iOSTapTargetGuideline.evaluate(t);
+  if (!size.passed) debugPrint('QA-LAYOUT ADVISORY $name tap target: ${size.reason}');
+  await qaAction(t, 'shot', name: '$label-$name', wait: const Duration(milliseconds: 900));
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('the forecast without a number fits too ($label)', (t) async {
+    final semantics = t.ensureSemantics();
+    final problems = <String>[];
+    Future<void> look(String name) => lookAt(t, problems, name);
+    await startTyped(t);
+    await say(t, '71', 'you are 71');
+    await yes(t, sexQuestion);
+    await tapText(t, 'Skip this question');
+    await waitFor(t, find.textContaining(smokingQuestion));
+    await settled(t);
+    await tapText(t, 'Skip this question');
+    await declineHealth(t);
+    for (var i = 0; i < 12 && find.text('Continue').evaluate().isEmpty; i++) {
+      await tapText(t, 'Skip this question');
+      await pumpFor(t, const Duration(milliseconds: 800));
+      await settled(t);
+    }
+    await hideKeyboard(t);
+    await tapText(t, 'Continue');
+    await askTheBall(t);
+    // Skipped answers: the on-device model reports missing inputs and shows no number.
+    await waitFor(t, find.textContaining('Complete every model input to show annual survival percentages.'));
+    expect(find.textContaining('still living'), findsNothing);
+    await pumpFor(t, const Duration(seconds: 2));
+    await look('13d-no-number');
+    for (final p in problems) {
+      debugPrint('QA-LAYOUT PROBLEM $p');
+    }
+    semantics.dispose();
+    expect(problems, isEmpty);
+  });
 
   testWidgets('every screen fits, is reachable and labeled ($label)', (t) async {
     final semantics = t.ensureSemantics();
     final problems = <String>[];
-    Future<void> look(String name) async {
-      await pumpFor(t, const Duration(milliseconds: 700));
-      final labels = await labeledTapTargetGuideline.evaluate(t);
-      if (!labels.passed) problems.add('$name label: ${labels.reason}');
-      // Advisory only: a control partly scrolled out of view (a link at the top edge of a
-      // scrolled story) is measured by its visible sliver. Check these in the screenshots.
-      final size = await iOSTapTargetGuideline.evaluate(t);
-      if (!size.passed) debugPrint('QA-LAYOUT ADVISORY $name tap target: ${size.reason}');
-      await qaAction(t, 'shot', name: '$label-$name', wait: const Duration(milliseconds: 900));
-    }
+    Future<void> look(String name) => lookAt(t, problems, name);
 
     await qaReset();
     debugPrint(
@@ -73,8 +108,13 @@ void main() {
     await readQuestion(t);
     await look('04-ai-consent');
     await tapText(t, 'Not now');
-    await waitFor(t, find.textContaining('How old are you?'));
+    // The memory question comes first, then age.
+    await waitFor(t, find.textContaining(memoryQuestion));
     await settled(t);
+    await hideKeyboard(t);
+    await look('04b-memory-question');
+    await say(t, 'No thanks', ageQuestion);
+    await hideKeyboard(t);
     await look('05-question');
     await typeAndSend(t, '71');
     await waitFor(t, find.textContaining('you are 71'));
@@ -84,7 +124,7 @@ void main() {
     await hideKeyboard(t);
     await look('07-correcting');
     await tapText(t, 'Never mind');
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     await hideKeyboard(t);
     await look('08-quick-answers');
     await qaMode('down', path: '/api/onboarding/turn', times: 1);
@@ -95,17 +135,19 @@ void main() {
     await tapText(t, 'Try again');
     await waitFor(t, find.textContaining('female at birth'));
     await settled(t);
-    await yes(t, 'How tall');
+    await yes(t, smokingQuestion);
     await hideKeyboard(t);
     await tapText(t, 'Settings');
     await waitFor(t, find.text('AI helper'));
     await look('10-settings');
     await tapText(t, 'Done');
     await pumpFor(t, const Duration(milliseconds: 600));
-    for (final (answer, readBack, next) in fullIntake.sublist(2)) {
-      await say(t, answer, readBack);
-      await yes(t, next);
-    }
+    // Smoking, then the Apple Health offer (it fits too), then the rest.
+    await answerAll(t, fullIntake.sublist(2, 3));
+    await settled(t);
+    await hideKeyboard(t);
+    await look('10b-health-offer');
+    await answerAll(t, fullIntake.sublist(3));
     await hideKeyboard(t);
     await look('11-done');
     await tapText(t, 'Use my Apple Health');
@@ -118,7 +160,7 @@ void main() {
     await waitFor(t, find.text('Ask the ball'));
     await look('12b-ceremony');
     await askTheBall(t);
-    await waitFor(t, find.textContaining('were still living 5 years later'));
+    await waitFor(t, find.textContaining(forecastNumber));
     await pumpFor(t, const Duration(seconds: 2));
     await look('13-forecast');
     await tapText(t, 'See what shaped it');
@@ -130,19 +172,12 @@ void main() {
     await pumpFor(t, const Duration(milliseconds: 600));
     await tapRound(t, 'Back to your look ahead');
     await waitFor(t, find.text('See what shaped it'));
-    // The server without its model: "still learning".
+    // Back to the Room and the forecast again from the shelf.
     await tapRound(t, 'Back');
     await waitFor(t, find.text('Fortune'));
-    await pumpFor(t, const Duration(milliseconds: 800));
-    await qaMode('501', path: '/api/predict', times: 1);
+    await pumpFor(t, const Duration(seconds: 4)); // the twin strolls back from the ceremony
     await openFortune(t);
-    await waitFor(t, find.text('Still learning'));
-    await look('13d-still-learning');
-    await tapText(t, 'Back to room');
-    await waitFor(t, find.text('Fortune'));
-    await pumpFor(t, const Duration(milliseconds: 800));
-    await openFortune(t);
-    await waitFor(t, find.textContaining('were still living 5 years later'));
+    await waitFor(t, find.textContaining(forecastNumber));
     await pumpFor(t, const Duration(seconds: 2));
     await t.scrollUntilVisible(find.text('Go back to my answers'), 300, scrollable: find.byType(Scrollable).first);
     await look('14-forecast-end');

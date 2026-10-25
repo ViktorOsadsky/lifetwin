@@ -24,6 +24,7 @@ import 'package:lifesim/ui/widgets/widgets.dart';
 import 'package:lifesim/voice/fakes.dart';
 
 import 'forecast_screen_test.dart' show FakeForecastClient, supportedJson;
+import 'support/assessments.dart';
 import 'health_screen_test.dart' show FakeReader;
 
 VoiceOnboardingController fakeController() =>
@@ -172,14 +173,7 @@ void main() {
     addTearDown(outlook.dispose);
     await pumpRoom(t, outlook: outlook);
     expect(find.text('Ask the ball'), findsOneWidget);
-    outlook.value = Forecast.parse({
-      'status': 'supported',
-      'model_version': 'm',
-      'max_horizon_years': 5,
-      'survival': [
-        {'years': 5, 'survival': 0.9080},
-      ],
-    });
+    outlook.value = forecastFrom(availableAssessment(const {1: 0.99, 2: 0.97, 3: 0.95, 4: 0.93, 5: 0.9080}));
     await t.pump();
     expect(find.text('about 91 in 100'), findsOneWidget);
     expect(find.text('Your 5-yr look'), findsOneWidget);
@@ -381,7 +375,7 @@ void main() {
   group('in the app, after a typed answer', () {
     Future<(VoiceOnboardingController, FakeForecastClient)> start(WidgetTester t) async {
       setPhone(t);
-      final forecast = FakeForecastClient()..answers.add(Forecast.parse(supportedJson()));
+      final forecast = FakeForecastClient()..answers.add(forecastFrom(supportedJson()));
       final c = fakeController();
       await t.pumpWidget(LifeTwinApp(controller: c, forecastClient: forecast));
       await t.tap(find.text('Talk'));
@@ -412,7 +406,7 @@ void main() {
       await t.pumpAndSettle();
       expect(find.byType(RoomScreen), findsOneWidget);
       expect(find.text('about 88 in 100'), findsOneWidget); // the real forecast on the outlook card
-      forecast.answers.add(Forecast.parse(supportedJson()));
+      forecast.answers.add(forecastFrom(supportedJson()));
       await t.tap(find.text('Fortune'));
       await pumpUntil(t, find.byType(FortuneCeremonyScreen));
       await t.pumpAndSettle();

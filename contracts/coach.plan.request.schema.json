@@ -326,7 +326,7 @@
     },
     "CoachProfile": {
       "additionalProperties": false,
-      "description": "The confirmed profile. Main's fields plus conversation-v2's extra model inputs,\nso either app version can send its profile. Height, weight and blood pressure are\naccepted but never used: weight is never a lever.",
+      "description": "The confirmed profile, in the one shared vocabulary (``HealthProfile``). Height,\nweight and blood pressure are accepted but never used: weight is never a lever.",
       "properties": {
         "age": {
           "anyOf": [
@@ -429,7 +429,7 @@
           "default": null,
           "title": "Height Cm"
         },
-        "hypertension": {
+        "hypertension_diagnosed": {
           "anyOf": [
             {
               "type": "boolean"
@@ -439,9 +439,9 @@
             }
           ],
           "default": null,
-          "title": "Hypertension"
+          "title": "Hypertension Diagnosed"
         },
-        "moderate_minutes_weekly": {
+        "moderate_recreation_min_week": {
           "anyOf": [
             {
               "maximum": 10080,
@@ -453,7 +453,21 @@
             }
           ],
           "default": null,
-          "title": "Moderate Minutes Weekly"
+          "title": "Moderate Recreation Min Week"
+        },
+        "sedentary_min_day": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sedentary Min Day"
         },
         "sex": {
           "anyOf": [
@@ -470,20 +484,6 @@
           ],
           "default": null,
           "title": "Sex"
-        },
-        "sitting_minutes_daily": {
-          "anyOf": [
-            {
-              "maximum": 1439,
-              "minimum": 0,
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Sitting Minutes Daily"
         },
         "sleep_hours": {
           "anyOf": [
@@ -531,7 +531,7 @@
           "default": null,
           "title": "Systolic Bp"
         },
-        "vigorous_minutes_weekly": {
+        "vigorous_recreation_min_week": {
           "anyOf": [
             {
               "maximum": 10080,
@@ -543,7 +543,7 @@
             }
           ],
           "default": null,
-          "title": "Vigorous Minutes Weekly"
+          "title": "Vigorous Recreation Min Week"
         },
         "weight_kg": {
           "anyOf": [

@@ -11,10 +11,11 @@ from pathlib import Path
 
 import pytest
 
-from lifetwin.coach import MusePhraser, plan
+from lifetwin.coach import plan
 from lifetwin.coach.models import CoachPlanRequest
 from lifetwin.coach.safety import safe_line
 from lifetwin.core.config import Settings
+from lifetwin.personalize.providers import MusePersonalizer
 
 ENV_FILE = os.environ.get("COACH_LIVE_ENV_FILE", "")
 
@@ -64,7 +65,7 @@ SCENARIOS = {
 
 @pytest.mark.parametrize("name", SCENARIOS)
 async def test_muse_rewording_is_safe_or_falls_back(name):
-    phraser = MusePhraser(
+    phraser = MusePersonalizer(
         base_url=SETTINGS.llm_base_url,
         api_key=SETTINGS.llm_api_key.get_secret_value(),
         model=SETTINGS.llm_model,

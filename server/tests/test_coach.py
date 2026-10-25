@@ -19,9 +19,9 @@ from lifetwin.coach import catalog as cat
 from lifetwin.coach.models import CoachPlanRequest, PlanItemRef
 from lifetwin.coach.phrasing import DailyCap
 from lifetwin.coach.planner import Planner, revision_id
-from lifetwin.coach.providers import PhrasingUnavailable
 from lifetwin.coach.safety import safe_line, safe_slot
 from lifetwin.core.config import Settings
+from lifetwin.personalize.providers import PhrasingUnavailable
 
 DATA = Path(__file__).parent / "data"
 GOLDEN = json.loads((DATA / "coach_golden.json").read_text())
@@ -700,6 +700,32 @@ def test_supplement_reply_is_fixed_and_names_nothing():
     assert not re.search(r"\d|vitamin|fish|magnesium|http", cat.SUPPLEMENT_REPLY, re.I)
 
 
+@pytest.mark.parametrize(
+    "said",
+    [
+        "Should I have an energy drink before my walk?",
+        "Is pre-workout okay at my age?",
+        "Would caffeine pills help me exercise?",
+        "Can I take a Red Bull and then walk?",
+    ],
+)
+def test_energy_drinks_pre_workout_and_caffeine_pills_count_as_supplements(said):
+    client, _ = make_client()
+    assert post(client, {"local_date": "2026-10-24", "said": said})["reply"] == cat.SUPPLEMENT_REPLY
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Try an energy drink first.",
+        "A pre-workout helps you move.",
+        "Take a caffeine pill before you walk.",
+    ],
+)
+def test_provider_lines_naming_energy_drinks_or_caffeine_pills_fall_back(line):
+    assert not safe_line(f"{line} Take a short walk.", "Take a short walk.", ("walk",))
+
+
 def test_capabilities_name_the_real_provider():
     client, _ = make_client()
     coach = client.get("/api/capabilities").json()["coach"]
@@ -913,7 +939,7 @@ def test_reuse_keeps_seated_wording_and_rechecks_limits():
         **BASE,
         "local_date": "2026-10-20",
         "limits": ["seated_only"],
-        "profile": {"age": 80, "sitting_minutes_daily": 600},
+        "profile": {"age": 80, "sedentary_min_day": 600},
     }
     first = post(client, seated)
     again = post(

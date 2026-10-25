@@ -324,8 +324,8 @@ class Planner:
         missing = []
         if (
             p.exercise_minutes_weekly is None
-            and p.moderate_minutes_weekly is None
-            and p.vigorous_minutes_weekly is None
+            and p.moderate_recreation_min_week is None
+            and p.vigorous_recreation_min_week is None
             and not logged
         ):
             missing.append("weekly activity")
@@ -535,8 +535,8 @@ class Planner:
     def weekly_minutes(self) -> tuple[int | None, list[TraceFact]]:
         p = self.profile
         found: list[tuple[int, TraceFact]] = []
-        if p.moderate_minutes_weekly is not None or p.vigorous_minutes_weekly is not None:
-            value = _n(p.moderate_minutes_weekly) + 2 * _n(p.vigorous_minutes_weekly)
+        if p.moderate_recreation_min_week is not None or p.vigorous_recreation_min_week is not None:
+            value = _n(p.moderate_recreation_min_week) + 2 * _n(p.vigorous_recreation_min_week)
             found.append((value, fact("profile.moderate + 2 x vigorous minutes weekly", value)))
         elif p.exercise_minutes_weekly is not None:
             value = p.exercise_minutes_weekly
@@ -913,10 +913,10 @@ class Planner:
         fb = self.feedback.get("food")
         gate, facts = self.diet_gate()
         order = list(cat.DIET_ORDER)
-        if self.profile.hypertension:
+        if self.profile.hypertension_diagnosed:
             order.remove("dash_less_salt")
             order.insert(0, "dash_less_salt")
-            facts.append(fact("profile.hypertension", True))
+            facts.append(fact("profile.hypertension_diagnosed", True))
         if self.food_first:
             order.remove(self.food_first)
             order.insert(0, self.food_first)
@@ -1033,7 +1033,7 @@ class Planner:
             sleep, sleep_source = sum(nights) / len(nights), "checkins.average sleep"
         if sleep is not None and sleep < 7:
             out.append(("sleep_routine", [fact(sleep_source, round(sleep, 1))]))
-        sitting, sitting_source = p.sitting_minutes_daily, "profile.sitting_minutes_daily"
+        sitting, sitting_source = p.sedentary_min_day, "profile.sedentary_min_day"
         sat = [d.sedentary_min_day for d in recent if d.sedentary_min_day is not None]
         if sat:
             sitting, sitting_source = round(sum(sat) / len(sat)), "checkins.average sitting"

@@ -1,0 +1,13 @@
+# Packaged model card
+
+**Version:** `personal-cox-v2-20261024T182404Z` (see `artifact/model.json` for the machine-readable version).
+
+**Task:** all-cause cumulative survival at years 1–5 after a current profile assessment, ages 35–79. Eleven inputs are used. A penalized additive Cox model includes separate low/high BMI and short/long sleep terms. The packaged JSON/NumPy artifact reproduces the original lifelines model at those five horizons without loading a pickle.
+
+**Development:** NHANES 2007–2012 fitting participants (`n=9,109`), validation participants (`n=2,570`); later 2013–2014 cycle test (`n=3,826`, 260 deaths during all available follow-up, 204 by year five). On the later cycle, C-index was **0.790** versus **0.727** for an age/sex model. Five-year censoring-adjusted Brier score was **0.04691** versus **0.04823**. Mean predicted versus observed five-year survival was **94.27% versus 94.67%** overall and **87.42% versus 88.82%** for ages 65–79. This is temporal validation within NHANES, not external-population validation. The 35–49 group had only 25 deaths by year five.
+
+**Neural benchmark:** retrained on the identical split, DeepSurv had C-index **0.7974** and five-year Brier **0.04647**. The paired 95% bootstrap interval for its C-index advantage over Cox was **−0.0006 to +0.0156**. It had worse ages 65–79 calibration and a strong inverse older-profile BMI response. Cox remains selected for the personal percentage display.
+
+**Data and interpretation:** The training file uses [2019 public-use linked mortality](https://www.cdc.gov/nchs/linked-data/mortality-files/index.html). For some public-use records, CDC substitutes synthetic follow-up times; vital status is unchanged. Age 80+ is [top-coded to 80](https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2007/DataFiles/DEMO_E.htm). The model is not survey-weighted to a US national target population and has not been externally validated. BMI above 27 has a near-zero, slightly inverse fitted association; it is **not** evidence that gaining weight helps. As [TRIPOD+AI](https://www.bmj.com/content/385/bmj-2023-078378) notes, discrimination and calibration are separate aspects of prediction performance.
+
+**Release scope:** This is a labeled hackathon research model, not a clinical prediction tool. Complete, supported profiles only; years 1–5 only. Do not extrapolate a life expectancy, exact death date, diagnosis, or causal change in survival from it. Guideline cards in `guidance.py` are a separate system. See `SOURCES.md` for their source and `artifact/golden_vectors.json` for exact numerical checks.
