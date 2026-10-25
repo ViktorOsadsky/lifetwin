@@ -10,3 +10,5 @@ export 'plate_window.dart';
 export 'step_progress.dart';
 export 'survival_curve.dart';
 export 'twin_sprite.dart';
+export 'twin_state_sprite.dart';
+export 'rough_guide_badge.dart';

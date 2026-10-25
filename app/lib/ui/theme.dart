@@ -39,6 +39,22 @@ abstract final class LtColors {
 
   /// Switch track when off.
   static const trackOff = Color(0xFFEFE6D8);
+
+  /// Experiment: result numbers, gained heads (4.9:1 on paper).
+  static const teal = Color(0xFF24806A);
+
+  /// Secondary text (5.9:1 on paper).
+  static const secondary = Color(0xFF6B4E42);
+
+  /// Light mint behind lever icons.
+  static const mintTint = Color(0xFFE3F5EC);
+
+  /// Bear heads that are "today" in the Experiment arrays.
+  static const headBrown = Color(0xFFA0683F);
+
+  /// A disabled stepper button.
+  static const stepOff = Color(0xFFF3EDE5);
+  static const stepOffLine = Color(0xFFCDB8AB);
 }
 
 abstract final class LtRadii {
@@ -66,7 +82,10 @@ enum LtMode {
   room(Color(0xFFF0ECFD), Color(0xFFE6E0FA)),
   onboarding(Color(0xFFE3F5EC), Color(0xFFD3EEE2)),
   customize(Color(0xFFFDEBE1), Color(0xFFFBE0D2)),
-  fortune(Color(0xFF1B2245), Color(0xFF121731));
+  fortune(Color(0xFF1B2245), Color(0xFF121731)),
+
+  /// Experiment ("what-if"): warm sun, #FEF7E2 to #FBEDC8.
+  sun(Color(0xFFFEF7E2), Color(0xFFFBEDC8));
 
   const LtMode(this.inner, this.outer);
   final Color inner;

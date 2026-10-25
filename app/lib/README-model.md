@@ -119,7 +119,8 @@ This is the one object the UI and the check-in controller (`lib/checkin/`) shoul
 | `Future<CheckinOutcome> applyCheckin(Map response, {String? localDate})` | Applies a `/api/checkin/start` or `/turn` response (below) |
 | `Future<HistoryEntry?> applyDayCorrection(DateTime date, String field, Object? value, [String source])` | A past day's answer corrected through a confirmed Mochi read-back (below) |
 | `List<HistoryEntry> history({DateTime? from, DateTime? to})` | The person's history, newest first (below) |
-| `List<HistoryEntry> readings()` | Confirmed blood pressure readings over time, oldest first |
+| `List<HistoryEntry> readings()` | Confirmed readings over time, oldest first: the `reading` entries of `history()`. Items: `systolic_bp`, `diastolic_bp` (mmHg), `hba1c` (%, 3–20), `ldl_cholesterol` (mg/dL, 20–400). Item `date` = the document's own date; none means the confirmation date in `entry.at` (`dateNotOnDocument`, show "date not on the document"). Never a model, forecast or health score input |
+| `Future<void> recordDocumentReadings(Iterable<DocumentCandidate> kept)` | Records the kept ("Keep") blood pressure, A1c and LDL candidates as `reading` entries, source `document`. Out-of-range values (`readingSchema`, not `profileSchema`) are rejected, never clamped; an LDL in mmol/L is converted to mg/dL. "Skip" and "Change with Mochi" record nothing |
 | `List<DayLog> dayLogs({required DateTime from, required DateTime to})` | One row per day for a calendar; a day without an answer has null values |
 | `int goodWeeks()` | Monday–Sunday weeks with at least 4 different days with a finished check-in of any kind |
 | `CheckinSettings checkinSettings` / `saveCheckinSettings(s)` | Reminder time and weekly day; not health data |
@@ -235,7 +236,7 @@ What each kind holds:
 - **health_import:** the values confirmed on the Health screen ("Is this accurate?").
 - **quick:** each day-log value with its `date` (sleep is the night before that date), then the feeling. Old → new when it replaced an earlier answer for that day.
 - **daily / weekly:** the confirmed answers; weekly ones show old → new for each profile field they changed.
-- **reading:** a confirmed blood pressure reading (`systolic_bp`, `diastolic_bp`) from a weekly check-in or a Mochi change, with its date and source. Information for the person and the coach, never a model input. Later A1c and LDL from documents go here too. A reading said in passing during onboarding stays a habit note (`reading`), since it was not read back.
+- **reading:** a confirmed blood pressure reading (`systolic_bp`, `diastolic_bp`, mmHg) from a weekly check-in, a Mochi change or a document, and `hba1c` (%) and `ldl_cholesterol` (mg/dL) from a kept document value (`source` `document`; item `date` is the document's date, absent when it had none). Information for the person and the coach, never a model input; also listed in `history()`. A reading said in passing during onboarding stays a habit note (`reading`), since it was not read back.
 - **correction:** below.
 
 **Calendar:** `dayLogs({from, to})` returns one `DayLog` per day. A day with no answer has `sleepHours`, `vigorousMin`, `moderateMin` and `sedentaryMin` all null: show a blank, never 0, and never the word "missed". `DayLog.complete` says whether the day can count for the model.
