@@ -899,6 +899,10 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
               child: LinkButton(label: 'Go back', icon: Icons.undo_rounded, onTap: _goBack),
             ),
           ),
+        if (c.savedNumber case final saved? when !keyboard) ...[
+          _pad(SavedMark(number: saved)),
+          const SizedBox(height: 8),
+        ],
         if (n != null && !keyboard) ...[
           _pad(StepProgress(step: n, total: c.questionTotal)),
           const SizedBox(height: 12),

@@ -336,6 +336,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
         ),
         WholeWordText(weekly ? 'A few minutes' : 'About 1 minute', style: LtText.body(color: LtColors.secondary)),
         const SizedBox(height: 8),
+        if (c.savedNumber case final saved?) ...[SavedMark(number: saved, word: 'done'), const SizedBox(height: 8)],
         Semantics(
           liveRegion: true,
           child: Container(
