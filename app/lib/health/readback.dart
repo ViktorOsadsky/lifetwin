@@ -5,6 +5,15 @@ import 'health_summary.dart';
 /// Values are rounded only for speaking; the exact metric value is what gets
 /// confirmed. US users hear feet, inches and pounds.
 String readBack(HealthCandidate c, {required bool imperial, required DateTime now}) {
+  if (c.isEstimate &&
+      (c.field == HealthField.moderateRecreationMinWeek || c.field == HealthField.vigorousRecreationMinWeek)) {
+    final intensity = c.field == HealthField.moderateRecreationMinWeek ? 'moderate' : 'hard';
+    return 'Apple Health recorded workouts averaging about ${spokenDuration(c.value)} a week over the last 4 weeks '
+        'in the $intensity average-intensity group. This is an estimate: each whole workout is grouped by its '
+        'average effort, not time measured in effort zones. Some workouts may be missing. '
+        'Were these recreational activities, and does this amount represent your usual weekly '
+        '$intensity recreational activity? Is this accurate?';
+  }
   final when = c.measuredAt != null ? ' That was measured on ${spokenDate(c.measuredAt!, now)}.' : '';
   final said = switch (c.field) {
     HealthField.heightCm => 'you are ${spokenHeight(c.value, imperial: imperial)} tall',

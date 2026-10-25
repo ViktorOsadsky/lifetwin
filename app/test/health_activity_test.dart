@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lifesim/health/health_reader.dart';
 import 'package:lifesim/health/health_sample.dart';
 import 'package:lifesim/health/health_summary.dart';
 import 'package:lifesim/health/readback.dart';
@@ -17,14 +16,6 @@ HealthSample sample(String type, {num? value, String? workoutType, int daysAgo =
   );
 }
 
-class FixedHealthReader extends HealthReader {
-  FixedHealthReader(this.samples);
-  final List<HealthSample> samples;
-
-  @override
-  Future<List<HealthSample>> read({required DateTime now, int days = 30}) async => samples;
-}
-
 void main() {
   test('no data or denied read leaves all three model inputs unknown', () {
     final summary = summarizeWithAvailability([], now);
@@ -33,14 +24,14 @@ void main() {
     expect(summary.unavailableActivity.values, everyElement(HealthActivityUnavailableReason.noData));
   });
 
-  test('moderate-only exercise evidence does not invent a vigorous zero or recreation', () async {
+  test('moderate-only exercise evidence does not invent a vigorous zero or recreation', () {
     // A real native workout has an activity type, not recreational context or
     // validated moderate/vigorous active minutes. Even a walking workout plus
     // Exercise Time is insufficient to fill either recreational model input.
-    final summary = await FixedHealthReader([
+    final summary = summarizeWithAvailability([
       sample('WORKOUT', workoutType: 'WALKING'),
       sample('EXERCISE_TIME', value: 30),
-    ]).readSummary(now: now);
+    ], now);
     expect(summary.candidates.where((c) => modelActivityFields.contains(c.field)), isEmpty);
     for (final field in [HealthField.moderateRecreationMinWeek, HealthField.vigorousRecreationMinWeek]) {
       expect(summary.unavailableActivity[field], HealthActivityUnavailableReason.recreationAndIntensityNotEstablished);

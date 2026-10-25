@@ -1,7 +1,11 @@
+import 'dart:async';
+
+import 'package:flutter/services.dart';
 import 'package:health/health.dart';
 
 import 'health_sample.dart';
 import 'health_summary.dart';
+import 'workout_averages.dart';
 
 /// Types used to suggest profile answers.
 const profileTypes = [
@@ -36,6 +40,10 @@ const _units = {
 
 /// Read-only access to Apple Health. LifeTwin never writes.
 class HealthReader {
+  HealthReader({WorkoutActivityReader? activityReader})
+    : _activityReader = activityReader ?? const WorkoutActivityReader();
+
+  final WorkoutActivityReader _activityReader;
   final Health _health = Health();
   bool _configured = false;
 
@@ -75,12 +83,27 @@ class HealthReader {
   /// Bounded import suggestions and explicit activity availability, computed on
   /// the phone. This does not add HealthKit permissions or send any samples.
   ///
-  /// The pinned plugin's iOS workout reader omits workout metadata. Its workout
-  /// type, energy and distance do not establish recreational intensity minutes;
-  /// HealthKit stand hours do not measure awake sitting. Those model inputs
-  /// therefore remain unavailable, so the conversation can ask the person.
-  Future<HealthSummary> readSummary({required DateTime now}) async =>
-      summarizeWithAvailability(await read(now: now), now);
+  /// Native mean-MET estimates are separate from the plugin's generic samples.
+  /// They are confirm-only: readBack explicitly asks about recreational context
+  /// and representativeness. Errors preserve the existing generic suggestions.
+  /// The existing read()/summarize() path is unchanged; sitting stays unavailable.
+  Future<HealthSummary> readSummary({required DateTime now}) async {
+    final samples = await read(now: now);
+    WorkoutAverages? averages;
+    var unavailable = false;
+    try {
+      averages = await _activityReader.read(now: now);
+    } on PlatformException {
+      unavailable = true;
+    } on MissingPluginException {
+      unavailable = true;
+    } on FormatException {
+      unavailable = true;
+    } on TimeoutException {
+      unavailable = true;
+    }
+    return summarizeWithAvailability(samples, now, workoutAverages: averages, workoutEstimateUnavailable: unavailable);
+  }
 }
 
 HealthSample _toSample(HealthDataPoint p) {

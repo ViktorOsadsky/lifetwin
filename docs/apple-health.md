@@ -17,51 +17,79 @@ Claimed in [issue #6](https://github.com/ViktorOsadsky/lifetwin/issues/6). Code 
 | `exercise_minutes_weekly` | Exercise Time | Weekly average over the last 28 days, overlapping iPhone/Watch time counted once |
 | `sleep_hours` | Asleep (core/deep/REM/unspecified) | Median night over the last 14 nights; needs at least 3 nights |
 | `systolic_bp`, `diastolic_bp` | Blood Pressure | Average of the last 3 readings within 90 days |
-| `vigorous_recreation_min_week`, `moderate_recreation_min_week` | No supported mapping in the pinned iOS reader | Unavailable; ask the person. Exercise Time and workout type do not establish recreational intensity minutes |
+| `vigorous_recreation_min_week`, `moderate_recreation_min_week` | Native workout mean-MET metadata + recorded active duration | Confirm-only estimate through `readSummary()`; group whole workouts by mean MET and average across 28 days. Missing buckets stay unknown |
 | `sedentary_min_day` | No supported awake-sitting measurement | Unavailable; ask the person. Do not subtract stand hours from a day |
 
 Age, sex, smoking, alcohol and diabetes stay as conversation questions. In onboarding v2 Mochi offers Apple Health right after age, sex and smoking (the server returns `client_action: "open_health_import"` on a yes), and the confirmed values come back with action `import`. Exercise Time is all brisk-or-harder movement, so after an import Mochi asks only how much of it is harder exercise and reads the rest back as lighter activity (`moderate_recreation_min_week = exercise_minutes_weekly - vigorous_recreation_min_week`); this split needs owner approval. US users hear feet, inches and pounds; values are
 stored in the profile's metric units.
 
-## Activity mapping follow-up (#106): partial implementation
+## Activity estimates (#106): data API, pending UI/device acceptance
 
-The app's `HealthField`/profile-key and read-back vocabulary now include the three separate model inputs above.
-`summarizeWithAvailability(samples, now)` returns the existing `HealthCandidate` suggestions plus an on-phone
-`unavailableActivity` map. `HealthReader.readSummary(now: ...)` runs that same summary on the real reader's results.
-No returned candidate supplies these three fields yet: their absence sends them to the existing conversation path,
-without a zero or healthy default. The existing Exercise Time suggestion and onboarding split are preserved as the
-older flow; this work does **not** validate that split as recreational activity.
+`HealthReader.readSummary(now: ...)` combines the existing generic candidates with optional native workout
+**estimates**. `summarizeWithAvailability()` exposes which model activity inputs remain unanswered and why. The
+existing `read()` / `summarize()` path, Exercise Time suggestion and onboarding split are preserved; this work does
+not validate that older split as recreational activity. No screens or engine code changed. The current
+`HealthImportScreen` still calls the generic path; Daniel owns switching its data call to `readSummary()` and
+preserving its confirmation boundary.
 
-Availability uses a 28-day lookback and distinguishes no returned data (also consistent with denied HealthKit reads),
-missing recreational/intensity evidence, and unmeasured awake sitting. The three new read-backs name Apple Health,
-recreational versus awake-sitting context, minutes per week/day, a four-week average and explicit confirmation. This
-is vocabulary for a future supported candidate, **not** a claim that a numeric estimator has been implemented.
+The app-owned channel is `lifetwin/health_activity`, method `readWorkoutAverages`, schema
+`apple_health_workout_averages.v0`. Its coordination is recorded on
+[#106](https://github.com/ViktorOsadsky/lifetwin/issues/106#issuecomment-6393243281). Native code uses existing read-only
+workout permission, queries a fixed 28-day window, and reads `HKMetadataKeyAverageMETs` as a compatible MET quantity.
+It groups each **whole workout** at a mean of 3–<6 METs or ≥6 METs and sums recorded active duration in that group,
+dividing seconds by 240 to obtain weekly minutes averaged over four weeks. It does **not** measure time spent in
+intensity zones, infer recreational purpose, or use workout names/heart-rate guesses to fill missing MET metadata.
+Absolute MET intensity can differ from a person's relative effort and from the model's self-reported inputs.
 
-The native data limits were checked against Apple and the pinned `health` **13.3.2** package on October 24, 2026:
+`HealthActivityBridge` uses the recorded `HKWorkout.duration`, which already accounts for recorded pauses. It does
+not subtract pauses twice. Available pause/resume timelines must agree with duration; impossible or inconsistent
+durations are excluded. Unrecorded pauses and source errors cannot be detected. Duplicate UUIDs count once;
+unresolved overlapping groups and window-crossing workouts are excluded rather than selecting a source or
+prorating a whole-workout average. Missing/invalid metadata and light-intensity workouts are excluded explicitly.
+The query caps at 2,000 workouts with a one-record overflow sentinel and a five-second timeout. Overflow suppresses
+all estimates. An absent bucket is `null`, never zero, and a value rounding below one profile minute stays unanswered.
 
-- Apple's [Exercise Time](https://developer.apple.com/documentation/healthkit/hkquantitytypeidentifier/1615696-appleexercisetime)
-  counts full minutes at least as intense as a brisk walk. It does not distinguish moderate from vigorous recreation.
-- [Stand Hour](https://developer.apple.com/documentation/healthkit/hkcategorytypeidentifierapplestandhour)
-  counts hours with at least **one minute** standing/moving (or rolling for a wheelchair user). It is not standing
-  duration. Actual Stand Time also cannot distinguish sitting from sleep, lying, movement or non-wear in the remaining
-  time. Neither supports `24 hours - standing = awake sitting`.
-- The package's [workout value](https://pub.dev/documentation/health/latest/health/WorkoutHealthValue-class.html)
-  contains workout type, energy, distance and steps. In the installed 13.3.2 iOS `HealthDataReader.swift`, the
-  `HKWorkout` branches omit `metadata` even though quantity/category branches include it; `HealthDataPoint.metadata`
-  therefore does not provide native workout intensity evidence through this path. No arbitrary metadata is retained
-  or serialized by this change.
+Only bounded aggregates cross the native/Dart channel:
+
+- Fixed schema, `window_days: 28`, `method: whole_workout_mean_mets`, and `requires_recreation_confirmation: true`.
+- Nullable positive `moderate_weekly_minutes` / `vigorous_weekly_minutes` (combined maximum 10,080), eligible workout
+  count, bounded exclusion counts (`missing_metadata`, `duration`, `overlap`, `boundary`, `light_intensity`, `duplicate`)
+  and a truncation flag.
+- No individual workouts, MET samples, identifiers, source/device names, timestamps or arbitrary metadata. Nothing
+  is logged, persisted or sent to a provider by the native helper. The Dart parser rejects unknown keys/versions,
+  nonfinite/range-invalid values, inconsistent counts and truncation carrying estimates.
+
+Successful positive buckets become `HealthCandidate` suggestions with `isEstimate: true`, a 28-day period and
+`whole_workout_mean_mets` basis. `readBack()` explains that each whole workout is grouped by its average effort,
+not measured zone time; warns that recordings may be incomplete; and explicitly asks whether these were
+**recreational activities** and whether the amount represents the person's **usual weekly activity**. Only a user's
+explicit confirmation can put the values into the existing confirmed import flow. Reading/summarizing does not
+write a profile. Refusal leaves the question for the mascot. Native failure, unsupported platforms, timeout,
+malformed results, empty reads and missing buckets preserve generic suggestions and explicit unavailable reasons.
+Sitting always remains unavailable: no stand-hour subtraction or healthy default is used.
+
+Primary sources and API checks (October 24, 2026):
+
 - Apple's [Average METs metadata](https://developer.apple.com/documentation/healthkit/hkmetadatakeyaveragemets)
-  represents intensity averaged over the entire workout. Even with a native bridge, that average would not supply
-  time within intensity zones, paused versus active duration, or recreational context. Workout names and heart rate
-  alone are not a validated replacement for these model inputs.
+  describes an `HKQuantity` in kcal/(kg*hr) averaged over the entire workout. The local Xcode HealthKit headers mark
+  the key available on iOS 13+, below the app's iOS 15 target. The pinned `health` 13.3.2 plugin omits iOS workout
+  metadata, so the app-owned native helper reads this directly without a package fork.
+- Apple's [workout duration](https://developer.apple.com/documentation/healthkit/hkworkout/duration) and
+  [workout events](https://developer.apple.com/documentation/healthkit/hkworkoutevent) describe recorded active
+  duration and pause/resume semantics. Explicit-duration constructors also exist, motivating consistency checks.
+- [CDC intensity guidance](https://www.cdc.gov/physical-activity-basics/measuring/index.html) supplies the absolute
+  MET bands and distinguishes them from relative effort. Applying one mean-intensity band to a whole workout is
+  LifeTwin's disclosed approximation, not a CDC-validated way to measure minutes in zones or a validated model input.
+- Apple's [Stand Hour](https://developer.apple.com/documentation/healthkit/hkcategorytypeidentifierapplestandhour)
+  counts hours with at least **one minute** standing/moving (or rolling). It is not standing duration. Even actual
+  Stand Time cannot identify awake sitting among sleep, lying, movement and non-wear in the remaining time.
 
-**Numeric mapping remains unimplemented; do not close #106 on this partial work.** A positive path needs explicit
-recreational context, supported active minutes at each intensity (including coverage/deduplication rules), and an
-owner-approved relationship to the model's self-reported recreational inputs. Sitting additionally needs a supported
-awake-sitting measure with sleep/non-wear/unknown time separated. A native bridge or package fix alone does not settle
-those estimator decisions. Once agreed, weekly values must be four-week averages and sitting a daily average across
-that window; only the confirmed bounded averages for these three inputs may leave the phone. New raw activity or
-metadata must not be added to outside-AI payloads.
+**Acceptance limits:** real device availability of optional workout MET metadata remains unverified. Simulator
+`HKWorkout` fixtures exercise the real native extraction/aggregation API without HealthKit writes; they do not prove
+that a user's Watch/workout producer populates the key. Daniel must connect the data API and verify real-source
+availability and the explicit read-back/confirmation path before claiming end-to-end #106 completion. The sitting
+input still needs its own supported awake-sitting source; it remains a conversation question. Only confirmed bounded
+averages for these three inputs may leave the phone; no new raw activity/metadata may be added to outside-AI payloads.
 
 ## Decisions (user rulings, 2026-10-24)
 
@@ -79,7 +107,8 @@ no server route, provider request, HealthKit permission or raw-data retention.
 ## Not done yet
 
 - Server contract and route for `apple_health_samples.v0` (Track B).
-- Hooking `HealthImportScreen` into the mascot conversation once the game shell exists. For now `main.dart` hosts it alone.
+- Switching the existing `HealthImportScreen` generic data call to `readSummary()` and checking the stronger
+  recreational-activity estimate read-back. Daniel owns this UI integration.
 - On-device run: needs Developer Mode on the test iPhone. A signed generic iOS build with the HealthKit entitlement
   succeeded on team `A5C3J42JT3`.
 
