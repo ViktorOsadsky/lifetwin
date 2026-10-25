@@ -67,8 +67,28 @@ def _instructions(field: ProfileField) -> str:
     )
 
 
-def _strict_schema() -> dict:
+_NO_MATH = (
+    "Never rewrite, convert, add up or join separate parts into one quote; if the answer "
+    "needs arithmetic, quote the pieces the user actually said or nothing. "
+)
+assert _NO_MATH in QUOTE_RULES
+# Claude does the arithmetic in "value"; its quote still holds only the person's words.
+QUOTE_RULES_CLAUDE = QUOTE_RULES.replace(
+    _NO_MATH, "Never rewrite a quote: any arithmetic goes in value, not in the quote. "
+)
+
+
+def _quote_schema() -> dict:
+    """Muse and OpenAI only point at evidence: the schema without Claude's computed value."""
     schema = ExtractionResult.model_json_schema()
+    schema.get("properties", {}).pop("off_topic", None)
+    for definition in schema.get("$defs", {}).values():
+        definition.get("properties", {}).pop("value", None)
+    return schema
+
+
+def _strict_schema() -> dict:
+    schema = _quote_schema()
     # Structured Outputs requires every object property to be required.
     schema["required"] = list(schema["properties"])
     for definition in schema.get("$defs", {}).values():
@@ -180,8 +200,9 @@ class AnthropicExtractor:
         return self._claude.configured
 
     async def extract(self, text: str, field: ProfileField) -> ExtractionResult:
+        # Claude also does the arithmetic (owner ruling 2026-10-25); the server re-checks it.
         content = await self.complete_json(
-            _instructions(field), text, ExtractionResult.model_json_schema()
+            claude_instructions(field), text, ExtractionResult.model_json_schema()
         )
         try:
             return ExtractionResult.model_validate_json(content)
@@ -196,12 +217,62 @@ class AnthropicExtractor:
             raise ExtractionUnavailable() from exc
 
 
+# The unit each answer is stored in, for Claude's "value" (the server re-checks it).
+FIELD_UNITS: dict[str, str] = {
+    "age": "whole years",
+    "height_cm": "centimetres (1 inch = 2.54 cm, 1 foot = 12 inches)",
+    "weight_kg": "kilograms (1 lb = 0.45359237 kg, 1 stone = 14 lb)",
+    "sleep_hours": "hours of sleep on a usual night (90 minutes = 1.5)",
+    "exercise_minutes_weekly": "minutes per week, all sessions added up",
+    "moderate_recreation_min_week": "minutes per week, all sessions added up",
+    "vigorous_recreation_min_week": "minutes per week, all sessions added up",
+    "sedentary_min_day": "minutes per day",
+    "alcohol_drinks_weekly": "drinks per week",
+    "systolic_bp": "mmHg",
+    "diastolic_bp": "mmHg",
+}
+MATH_RULES = (
+    "Also give value: the answer as one number in the field's own unit, with the "
+    "arithmetic done. Convert units (2 hours = 120 minutes, an hour and a half = 90 "
+    "minutes, half an hour = 30 minutes, 90 minutes of sleep = 1.5 hours, 5 foot 10 = "
+    "177.8 cm, 170 lbs = 77.11 kg), read number words and fractions (seven and a half = "
+    "7.5), and multiply by how often for a weekly field (30 minutes three times a week = "
+    "90, 2 hours a day = 840 a week). For a weekly field an amount with no period is the "
+    "week's total. Never guess: when the person gives a range, a vague amount, a period "
+    "that does not fit the field (2 hours a week to a nightly sleep question), an amount "
+    "for a different question, or no number, set value to null. For yes/no and "
+    "categorical answers value is null. Quote the shortest exact span holding every "
+    "number your value uses, character for character."
+)
+RELEVANCE_RULES = (
+    "Also judge off_topic. The words come from a microphone and may be background speech. "
+    "Set off_topic true only when the text is clearly not the person answering: a TV or "
+    "radio line, an advert, or someone else talking to another person. An attempt to "
+    "answer this question, an answer to a different health question, small talk, a "
+    'question back, "I don\'t know" or a muddled answer are all the person: off_topic '
+    "false. When unsure, off_topic is false. When off_topic is true, candidates is empty."
+)
+
+
+def claude_instructions(field: ProfileField) -> str:
+    """The extraction instructions, with the arithmetic Claude may now do."""
+    return (
+        _instructions(field).replace(QUOTE_RULES, QUOTE_RULES_CLAUDE)
+        + f" The asked field {field} is stored in {FIELD_UNITS.get(field, 'its own unit')}. "
+        + MATH_RULES
+        + " "
+        + RELEVANCE_RULES
+    )
+
+
 class ChatCompletionsExtractor:
     """OpenAI-compatible Chat Completions adapter (Meta Muse today, others later).
 
     Muse documents ``response_format`` ``json_schema`` for Chat Completions; output
     is still validated strictly and grounded by the caller, never trusted.
     """
+
+    provider = "muse"
 
     def __init__(
         self,
@@ -230,9 +301,7 @@ class ChatCompletionsExtractor:
         return bool(self._base_url and self._api_key and self._model)
 
     async def extract(self, text: str, field: ProfileField) -> ExtractionResult:
-        content = await self.complete_json(
-            _instructions(field), text, ExtractionResult.model_json_schema()
-        )
+        content = await self.complete_json(_instructions(field), text, _quote_schema())
         try:
             return ExtractionResult.model_validate_json(content)
         except ValueError as exc:

@@ -215,6 +215,6 @@
  {"script": "weekly", "field": "sedentary_min_day", "mode": "text", "previous": {}, "text": "around 6 hours a day", "expected": {"sedentary_min_day": 360}, "why": "usual day"},
  {"script": "weekly", "field": "sedentary_min_day", "mode": "text", "previous": {"sedentary_min_day": 300}, "text": "same as last week", "expected": {"sedentary_min_day": 300}, "why": "same"},
  {"script": "weekly", "field": "sedentary_min_day", "mode": "text", "previous": {}, "text": "a lot, I'm afraid", "expected": null, "why": "vague"},
- {"script": "weekly", "field": "moderate_recreation_min_week", "mode": "text", "previous": {}, "text": "about two hours of gardening", "expected": null, "why": "hours without how often", "confirmed": {"vigorous_recreation_min_week": 30}},
+ {"script": "weekly", "field": "moderate_recreation_min_week", "mode": "text", "previous": {}, "text": "about two hours of gardening", "expected": {"moderate_recreation_min_week": 120}, "why": "hours to the weekly question are the week's total (owner 2026-10-25)", "confirmed": {"vigorous_recreation_min_week": 30}},
  {"script": "weekly", "field": "moderate_recreation_min_week", "mode": "text", "previous": {}, "text": "none", "expected": {"moderate_recreation_min_week": 0}, "why": "follow-up zero", "confirmed": {"vigorous_recreation_min_week": 30}}
 ]

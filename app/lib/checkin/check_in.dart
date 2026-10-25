@@ -118,6 +118,15 @@ class CheckInScope extends InheritedWidget {
       repository != old.repository || guide != old.guide || appearance != old.appearance;
 }
 
+/// The check-in screens on the navigator now, so a reminder tapped during one doesn't stack another.
+final _openCheckIns = <Route<void>>{};
+
+/// A check-in screen is open (on top or under another screen).
+bool get checkInOpen {
+  _openCheckIns.removeWhere((r) => !r.isActive);
+  return _openCheckIns.isNotEmpty;
+}
+
 /// Starts a [kind] check-in and completes when the person is back out of it. Does nothing without a
 /// saved profile. If nothing is due (a quick check-in already done today) the screen says so.
 Future<void> openCheckIn(BuildContext context, {required CheckInKind kind}) {
@@ -136,23 +145,24 @@ Future<void> openCheckIn(BuildContext context, {required CheckInKind kind}) {
     voiceUsable: scope.voiceUsable?.call() ?? false,
     handsFree: scope.handsFree,
   );
-  return Navigator.of(context)
-      .push<void>(
-        MaterialPageRoute<void>(
-          builder: (route) => ValueListenableBuilder<TwinAppearance>(
-            valueListenable: scope.appearance,
-            builder: (_, look, _) => CheckInScreen(
-              controller: controller,
-              kind: kind,
-              repository: scope.repository,
-              appearance: look,
-              open: scope.openUrl,
-              todayPlan: scope.todayPlan,
-              ideas: scope.ideas?.call(),
-              onDone: () => Navigator.of(route).pop(),
-            ),
-          ),
-        ),
-      )
-      .whenComplete(controller.dispose);
+  final page = MaterialPageRoute<void>(
+    builder: (route) => ValueListenableBuilder<TwinAppearance>(
+      valueListenable: scope.appearance,
+      builder: (_, look, _) => CheckInScreen(
+        controller: controller,
+        kind: kind,
+        repository: scope.repository,
+        appearance: look,
+        open: scope.openUrl,
+        todayPlan: scope.todayPlan,
+        ideas: scope.ideas?.call(),
+        onDone: () => Navigator.of(route).pop(),
+      ),
+    ),
+  );
+  _openCheckIns.add(page);
+  return Navigator.of(context).push<void>(page).whenComplete(() {
+    _openCheckIns.remove(page);
+    controller.dispose();
+  });
 }

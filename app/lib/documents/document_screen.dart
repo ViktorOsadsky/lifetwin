@@ -62,6 +62,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
   @override
   void dispose() {
+    _request++; // a read still on its way is dropped: no picker opens after leaving
     widget.service.discard();
     super.dispose();
   }

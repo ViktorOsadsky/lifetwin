@@ -14,6 +14,7 @@ import 'documents/health_documents_screen.dart';
 import 'wellness/coach_client.dart';
 import 'wellness/coach_context.dart';
 import 'wellness/daily_plan_screen.dart';
+import 'wellness/home_panel.dart' show CollapsibleHealthScore;
 import 'wellness/plan_acceptance.dart';
 import 'wellness/today_card.dart';
 import 'checkin/check_in.dart';
@@ -111,9 +112,14 @@ class AgenticRoutes {
       HttpCheckinClient(
         base: _api,
         age: () => repo?.profile['age'],
-        aiConsent: () => switch ((repo, repo?.outsideAiProvider)) {
-          (final r?, final p?) => r.outsideAiConsentFor(p),
-          _ => const {},
+        // Personal suggestions' yes, plus the AI helper's yes for the conversation provider
+        // (Claude today): the care reply is worded only with a yes for its provider.
+        aiConsent: () => {
+          ...switch ((repo, repo?.outsideAiProvider)) {
+            (final r?, final p?) => r.outsideAiConsentFor(p),
+            _ => const <String, bool>{},
+          },
+          ...AiProvider.helperConsent(_known, aiHelper: consents?.aiHelper ?? false),
         },
       );
   final ChangeClient changeClient;
@@ -147,7 +153,10 @@ class AgenticRoutes {
   Future<AiProvider?>? _provider;
 
   /// The outside AI provider from `/api/capabilities` (asked once; null when none is set up).
-  Future<AiProvider?> provider() => _provider ??= capabilities.personalize();
+  Future<AiProvider?> provider() => _provider ??= capabilities.personalize().then((p) => _known = p);
+
+  /// The last provider answer, for request bodies built synchronously.
+  AiProvider? _known;
 
   /// The repository has loaded.
   void attach(TwinRepository r) {
@@ -185,7 +194,7 @@ class AgenticRoutes {
     final r = repo, context = navigatorKey.currentContext;
     if (r == null || context == null || !context.mounted) return;
     final target = reminderTapTarget(payload, weeklyOpen: r.weeklyAvailable);
-    if (target == null || CheckInScope.maybeOf(context) == null) return;
+    if (target == null || CheckInScope.maybeOf(context) == null || checkInOpen) return;
     await openCheckIn(context, kind: target == ReminderCheckin.weekly ? CheckInKind.weekly : CheckInKind.quick);
   }
 
@@ -321,13 +330,12 @@ class AgenticRoutes {
         .push<void>(
           MaterialPageRoute<void>(
             fullscreenDialog: true,
-            builder: (c) =>
-                ChangeChatScreen(
-                  controller: controller,
-                  appearance: look.value,
-                  ideas: ideasAccess,
-                  onClose: () => Navigator.of(c).pop(),
-                ),
+            builder: (c) => ChangeChatScreen(
+              controller: controller,
+              appearance: look.value,
+              ideas: ideasAccess,
+              onClose: () => Navigator.of(c).pop(),
+            ),
           ),
         )
         .whenComplete(controller.dispose);
@@ -410,7 +418,9 @@ class AgenticRoutes {
     final r = repo;
     if (r != null) bandService = BandService(repository: r);
     planAcceptance.clear();
+    CollapsibleHealthScore.forget().ignore();
     _provider = null;
+    _known = null;
     _hub?.clear();
     onDeleted?.call();
   }
@@ -632,12 +642,7 @@ class AgenticRoutes {
           onBack: () => Navigator.of(c).pop(),
           onTry: idea.leverId == null
               ? null
-              : () => experiment(
-                  c,
-                  presetLever: idea.leverId,
-                  presetValue: idea.leverValue,
-                  backLabel: 'Back to idea',
-                ),
+              : () => experiment(c, presetLever: idea.leverId, presetValue: idea.leverValue, backLabel: 'Back to idea'),
         ),
       ),
     );

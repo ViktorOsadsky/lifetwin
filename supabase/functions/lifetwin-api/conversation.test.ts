@@ -157,9 +157,18 @@ test("outside-AI extraction requires consent and cannot fabricate an unquoted va
     );
     assert.equal(calls, 0);
     assert.equal(noConsent.body.provider_status, "consent_required");
+    // The AI helper's yes alone never reaches Claude: a yes for Claude is needed too.
+    const helperOnly = await conversationRoute("/api/onboarding/turn", {
+      ...request,
+      provider_consent: true,
+      outside_ai_consent: { muse: true },
+    }, config);
+    assert.equal(calls, 0);
+    assert.equal(helperOnly.body.provider_status, "consent_required");
     const rejected = await conversationRoute("/api/onboarding/turn", {
       ...request,
       provider_consent: true,
+      outside_ai_consent: { claude: true },
     }, config);
     assert.equal(calls, 1);
     assert.equal(rejected.body.state.pending_profile.weight_kg, null);

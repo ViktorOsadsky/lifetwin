@@ -92,48 +92,4 @@ void main() {
     await t.pumpAndSettle();
     expect(find.byType(ExperimentScreen), findsOneWidget);
   });
-
-  testWidgets('after a change through Mochi the reveal shows the saved answers, not the old intake', (t) async {
-    phone(t);
-    final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()));
-    final forecast = FakeForecastClient()
-      ..answers.addAll([forecastFrom(supportedJson()), forecastFrom(supportedJson())]);
-    final c = VoiceOnboardingController(
-      guide: FakeConversationGuide(),
-      input: FakeSpeechInput(),
-      output: FakeSpeechOutput(),
-    );
-    await t.pumpWidget(LifeTwinApp(controller: c, forecastClient: forecast, twin: Future.value(repo)));
-    await t.pump();
-    await t.tap(find.text('Talk'));
-    await t.pumpAndSettle();
-    await t.tap(find.text("No, I'll type"));
-    await t.pumpAndSettle();
-    await t.pump(const Duration(milliseconds: 700));
-    await t.ensureVisible(find.text('Not now'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Not now'));
-    await t.pumpAndSettle();
-    await t.enterText(find.byType(TextField), '70');
-    await t.tap(find.text('Send'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Yes'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Continue'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Ask the ball'));
-    await t.pumpAndSettle();
-    expect(forecast.calls.last['age'], 70);
-    await t.tap(find.bySemanticsLabel('Back'));
-    await t.pumpAndSettle();
-
-    // A change saved through Mochi (or a weekly check-in).
-    await repo.saveConversationProfile({'age': 71});
-    await t.pumpAndSettle();
-    await t.tap(find.text('Your estimate'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Ask the ball'));
-    await t.pumpAndSettle();
-    expect(forecast.calls.last['age'], 71);
-  });
 }

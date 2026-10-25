@@ -2,9 +2,26 @@
 
 The Flutter app and device helpers are implemented. Product requirements are in [MASTER_PLAN.md](../MASTER_PLAN.md); stack decisions are in [tech-stack.md](tech-stack.md).
 
-## Hosted backend (default helper workflow)
+## Hosted backend
 
 From the repository root:
+
+```sh
+cd app
+flutter run -d "iPhone 18 Pro"            # uses assets/config/backend.json
+```
+
+This checkout has a local public backend asset, so plain `flutter run` loads the
+hosted URL and public gateway key at startup. On a fresh checkout, after creating
+the public-only `.env.deploy/flutter.json` described below, install it once:
+
+```sh
+cp .env.deploy/flutter.json app/assets/config/backend.json
+```
+
+The asset is gitignored. Never copy private server/provider configuration into it.
+Explicit `API_BASE_URL` build defines take precedence over the asset.
+Alternatively, from the repository root:
 
 ```sh
 bash scripts/run-app.sh -d "iPhone 18 Pro"  # booted simulator
@@ -19,8 +36,8 @@ the function base in that guide and the public anon key from the LifeTwin
 Supabase project's API settings. Never put provider or service-role keys in it.
 The helper stops with instructions if the file is missing.
 
-A plain `flutter run` does not load this file: without build defines the app
-defaults to `http://localhost:8000`. A missing local server then causes the
+Without either the public asset or build defines, the app defaults to
+`http://localhost:8000`. A missing local server then causes the
 “I can't reach LifeTwin” message before any voice conversation can start.
 Changing build defines requires stopping and relaunching the app; hot reload
 does not update them.
@@ -56,7 +73,7 @@ const apiBase = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://loc
 ## Simulator
 
 ```sh
-cd app && flutter run -d "iPhone 17"    # localhost:8000 works directly here
+cd app && flutter run -d "iPhone 18 Pro" --dart-define=API_BASE_URL=http://localhost:8000
 ```
 
 This local-server command requires a server listening on the Mac's port 8000.

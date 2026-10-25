@@ -78,13 +78,7 @@ void main() {
             now: () => now,
             child: child!,
           ),
-          home: RoomScreen(
-            appearance: look,
-            hasProfile: true,
-            onTalk: () {},
-            onCustomize: () {},
-            onFortune: () async {},
-          ),
+          home: RoomScreen(appearance: look, hasProfile: true, onTalk: () {}, onCustomize: () {}),
         ),
       );
       await t.pump();
@@ -113,7 +107,7 @@ void main() {
       expect(find.text('Checked in today'), findsNothing);
       final entry = t.getSize(find.ancestor(of: find.text('Check in'), matching: find.byType(ConstrainedBox)).first);
       expect(entry.height, greaterThanOrEqualTo(48));
-      for (final dock in ['Customize', 'Talk', 'Fortune']) {
+      for (final dock in ['Customize', 'Talk']) {
         expect(find.text(dock), findsOneWidget, reason: dock);
       }
       expect(t.getTopLeft(find.text('Check in')).dy, lessThan(t.getTopLeft(find.text('Talk')).dy));
@@ -153,7 +147,7 @@ void main() {
         expect(repo.store.checkins, hasLength(1));
         expect(find.text('Checked in today'), findsOneWidget);
         expect(find.text('Check in'), findsNothing);
-        for (final dock in ['Customize', 'Talk', 'Fortune']) {
+        for (final dock in ['Customize', 'Talk']) {
           expect(find.text(dock), findsOneWidget);
         }
       },

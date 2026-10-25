@@ -110,7 +110,7 @@ void main() {
     expect(t.getCenter(checkIn).dx, greaterThan(t.getCenter(today).dx));
     expect((t.getCenter(checkIn).dy - t.getCenter(today).dy).abs(), lessThan(30));
     expect(top(t, experiment), lessThan(top(t, find.text('Talk'))));
-    expect(find.text('Fortune'), findsOneWidget);
+    expect(find.text('Fortune'), findsNothing);
     for (final gone in ['Exercise', 'Eat', 'Sleep']) {
       expect(find.text(gone), findsNothing, reason: 'no $gone row on Home');
     }

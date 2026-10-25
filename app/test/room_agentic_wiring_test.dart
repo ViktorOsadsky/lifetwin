@@ -54,7 +54,7 @@ void main() {
     return repo;
   }
 
-  Future<void> pumpRoom(WidgetTester t, TwinRepository repo, ) async {
+  Future<void> pumpRoom(WidgetTester t, TwinRepository repo) async {
     t.view.physicalSize = const Size(390, 844);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -77,13 +77,7 @@ void main() {
           hasProfile: repo.store.hasProfile,
           onTalk: () {},
           onCustomize: () {},
-          onFortune: () async {},
-          extraPills: roomPills(
-            repository: repo,
-            onExperiment: () {},
-            onStillLearning: () {},
-            onWellness: () {},
-          ),
+          extraPills: roomPills(repository: repo, onExperiment: () {}, onStillLearning: () {}, onWellness: () {}),
         ),
       ),
     );

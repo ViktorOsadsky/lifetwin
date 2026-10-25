@@ -25,17 +25,13 @@ void main() {
 
   tearDown(qaReset);
 
-  testWidgets('typed happy path: room, talk, done, forecast on the phone, back, room, forecast again', (t) async {
+  testWidgets('typed happy path: room, talk, done, forecast on the phone, back to the room', (t) async {
     await startTyped(t);
     await answerAll(t);
     await tapText(t, 'Continue');
     await askTheBall(t);
     await waitFor(t, find.textContaining(forecastNumber));
     expect(find.textContaining(missingInputs), findsNothing);
-    await tapRound(t, 'Back');
-    await waitFor(t, find.byType(RoomScreen));
-    await openFortune(t);
-    await waitFor(t, find.textContaining(forecastNumber));
     await tapRound(t, 'Back');
     await waitFor(t, find.byType(RoomScreen));
     expect(await qaCount('/api/predict'), 0);

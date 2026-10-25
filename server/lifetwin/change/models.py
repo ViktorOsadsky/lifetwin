@@ -126,6 +126,8 @@ class ChangeResponse(ApiModel):
     message: str = Field(min_length=1, max_length=1500)
     guide_mode: Literal["guided"] = "guided"
     provider_status: Literal["not_configured"] = "not_configured"
+    # Always false here: change turns are rule-based (see TurnResponse.off_topic).
+    off_topic: bool = False
     voice_status: Literal["deferred", "available", "unavailable"] = "deferred"
     speech_hint: Literal["slower", "louder"] | None = None
     # The reply said something urgent is happening: the conversation is paused where it

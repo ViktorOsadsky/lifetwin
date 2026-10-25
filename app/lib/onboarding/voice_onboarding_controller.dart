@@ -160,6 +160,9 @@ class VoiceOnboardingController extends ChangeNotifier {
   bool _nudged = false;
   bool _nudging = false;
 
+  /// "I think I heard someone else" was said for this question (server `off_topic`).
+  bool _offTopicSaid = false;
+
   /// Read-only, for the voice indicator: the nudge was said for this question.
   bool get nudged => _nudged;
 
@@ -1111,11 +1114,17 @@ class VoiceOnboardingController extends ChangeNotifier {
     }
     if (!_currentConversation(gen)) return;
     _busy = false;
-    _hf('turn', 'field=${t.state['current_field']} phase=${t.phase} complete=${t.complete}');
+    _hf(
+      'turn',
+      'field=${t.state['current_field']} phase=${t.phase} complete=${t.complete}${t.offTopic ? ' off_topic' : ''}',
+    );
     _set(() {
       if (_voiceBack) _voiceIn();
       correcting = false;
-      if (t.state['current_field'] != turn?.state['current_field'] || t.phase != turn?.phase) _nudged = false;
+      if (t.state['current_field'] != turn?.state['current_field'] || t.phase != turn?.phase) {
+        _nudged = false;
+        _offTopicSaid = false;
+      }
       _drops = 0;
       // The answer stays marked only if the reply took it; the same question asked again
       // (not understood, read back, Go back) is open again.
@@ -1124,9 +1133,13 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (sent != null && (t.state['current_field'] == sent || !_doneIn(t.state).contains(sent))) savedNumber = null;
       _turnToken++;
       turn = t;
-      mascotLine = t.message;
+      // Someone else was heard: the question on screen stays, and the screen says why.
+      if (!t.offTopic || mascotLine.isEmpty) mascotLine = t.message;
+      if (t.offTopic) notice = offTopicLine;
       phase = t.complete ? VoicePhase.done : VoicePhase.idle;
     });
+    final sayOffTopic = t.offTopic && !_offTopicSaid;
+    if (t.offTopic) _offTopicSaid = true;
     final pending = _pendingHealth;
     if (action == 'start' && pending != null) {
       // The answer to the import asks the first open question, so only it is spoken.
@@ -1135,6 +1148,11 @@ class VoiceOnboardingController extends ChangeNotifier {
     }
     // Nothing is said while the screen is out of sight; back on screen, it listens.
     if (typing || !voiceUsable || screenReader || _paused) return;
+    if (t.offTopic) {
+      // Asked once per question; after that it just listens again, so a TV never loops it.
+      if (!sayOffTopic || await _speak(offTopicLine, mascotLine: false)) _listenAgain();
+      return;
+    }
     final first = _firstLine;
     _firstLine = false;
     if (await _speak(t.message, first: first)) _listenAgain();
