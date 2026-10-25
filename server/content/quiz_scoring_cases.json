@@ -1,6 +1,6 @@
 {
   "description": "Reference game-health scoring vectors for the bundled quiz bank. Each step lists the game state expected after the client applies that event. 'scored' is false when an event must not change game health or play a reaction. 'start_game_health' is test setup only; real play starts at local_scoring.initial_game_health. Events: answer, review (the player opens the explanation), network_failure.",
-  "bank_version": "2.0",
+  "bank_version": "2.1",
   "cases": [
     {
       "name": "duplicate tap on the same answer is counted once",
