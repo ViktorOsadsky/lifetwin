@@ -626,7 +626,6 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           hasProfile: _profile != null,
           onTalk: () => _talk(context),
           onCustomize: () => _customize(context),
-          onFortune: () => _ceremony(context),
           outlook: _outlook,
           // The seven days come from the phone repository.
           wellness: _wellness?.snapshot ?? const WellnessSnapshot(),
