@@ -169,12 +169,18 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
                 height: 160,
               ),
             ],
-            overlay: const Stack(
-              children: [
-                Positioned(left: 14, top: 18, child: ModePill.today()),
-                Positioned(right: 14, top: 18, child: ModePill.whatIf()),
-              ],
-            ),
+          ),
+          const SizedBox(height: 12),
+          // The name banner and labels grow independently with the chosen text size.
+          // Flow below the plate so neither the banner nor the other label can cover a pill.
+          const Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              IntrinsicWidth(child: ModePill.today()),
+              IntrinsicWidth(child: ModePill.whatIf()),
+            ],
           ),
           const SizedBox(height: 14),
           ResultCard(
