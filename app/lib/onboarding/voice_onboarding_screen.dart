@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../checkin/consent_screens.dart' show TrainingLine;
+import '../checkin/consents.dart' show AiProvider;
+import '../checkin/emergency_card.dart';
 import '../forecast/profile_labels.dart';
 import '../health/readback.dart' show usesImperial;
 import '../ui/swoosh_route.dart';
@@ -49,6 +53,8 @@ class VoiceOnboardingScreen extends StatefulWidget {
     this.onUseHealth,
     this.onOpenSettings = openAppSettings,
     this.appearance = const TwinAppearance(),
+    this.aiProvider,
+    this.onUploadDocument,
   });
 
   final VoiceOnboardingController controller;
@@ -59,11 +65,17 @@ class VoiceOnboardingScreen extends StatefulWidget {
   /// Opens the Apple Health import. The chip is hidden when null.
   final VoidCallback? onUseHealth;
 
+  /// Opens the document upload ("Upload a document" in the "Fill this in faster" sheet). Hidden when null.
+  final VoidCallback? onUploadDocument;
+
   /// Opens the phone's Settings app after the microphone was not allowed.
   final Future<void> Function() onOpenSettings;
 
   /// Cosmetic look of the twin in the window.
   final TwinAppearance appearance;
+
+  /// The outside AI provider, for the training line beside "Yes, turn it on" when the server says it applies.
+  final AiProvider? aiProvider;
 
   @override
   State<VoiceOnboardingScreen> createState() => _VoiceOnboardingScreenState();
@@ -123,6 +135,91 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     if (!_justChanged) widget.onUseHealth?.call();
   }
 
+  // ---- "Fill this in faster" -----------------------------------------------
+
+  /// The pill is dismissed for the rest of the conversation.
+  bool _pillDismissed = false;
+
+  /// After two answers, or when Mochi offers Apple Health. Gone once something was imported or dismissed.
+  bool get _pillWanted =>
+      !_pillDismissed &&
+      c.phase != VoicePhase.done &&
+      c.turn != null &&
+      !c.emergency &&
+      (c.questionNumber ?? 0) >= 3 &&
+      c.lastImport == null &&
+      (widget.onUseHealth != null || widget.onUploadDocument != null);
+
+  void _fasterSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: LtColors.paper,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(LtRadii.panel))),
+      builder: (sheet) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Semantics(header: true, child: WholeWordText('Fill this in faster', style: LtText.display(28))),
+              const SizedBox(height: 8),
+              WholeWordText('Mochi asks fewer questions when you add health data.', style: LtText.body()),
+              const SizedBox(height: 16),
+              if (widget.onUseHealth != null)
+                LipButton(
+                  label: 'Use Apple Health',
+                  icon: Icons.favorite_border_rounded,
+                  kind: LipKind.secondary,
+                  height: 64,
+                  onTap: () {
+                    Navigator.of(sheet).pop();
+                    widget.onUseHealth!();
+                  },
+                ),
+              if (widget.onUploadDocument != null) ...[
+                const SizedBox(height: 12),
+                LipButton(
+                  label: 'Upload a document',
+                  icon: Icons.description_outlined,
+                  kind: LipKind.secondary,
+                  height: 64,
+                  onTap: () {
+                    Navigator.of(sheet).pop();
+                    widget.onUploadDocument!();
+                  },
+                ),
+              ],
+              const SizedBox(height: 12),
+              LipButton(label: 'Not now', height: 48, onTap: () => Navigator.of(sheet).pop()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// "Added N things from Apple Health": a quiet note, gone after 6 s (8 s with large text).
+  String? _importNote;
+  Timer? _noteTimer;
+  ({int count, String source})? _shownImport;
+
+  void _importChanged() {
+    final i = c.lastImport;
+    if (i == null || identical(i, _shownImport)) return;
+    _shownImport = i;
+    _noteTimer?.cancel();
+    setState(
+      () => _importNote =
+          'Added ${i.count} ${i.count == 1 ? 'thing' : 'things'} from '
+          '${i.source == 'document' ? 'your document' : 'Apple Health'}',
+    );
+    _noteTimer = Timer(Duration(seconds: largeText(context) ? 8 : 6), () {
+      if (mounted) setState(() => _importNote = null);
+    });
+  }
+
   /// Back to the Room, as the swipe-back does: the route is popped, the controller (and
   /// every confirmed answer) stays with the app. The guard keeps a double tap from also
   /// popping the Room's own route.
@@ -157,6 +254,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   void initState() {
     super.initState();
     c.addListener(_changed);
+    c.addListener(_importChanged);
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -202,6 +300,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   @override
   void dispose() {
     c.removeListener(_changed);
+    c.removeListener(_importChanged);
+    _noteTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _aiLock?.cancel();
     _turnLock?.cancel();
@@ -565,6 +665,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         "If I can't understand an answer, an AI service can read your words. "
         "It's off unless you say yes. You can change this in Settings.",
     buttons: [
+      if (widget.aiProvider?.trainingLine case final line?) TrainingLine(line),
       LipButton(
         label: 'Yes, turn it on',
         icon: Icons.check_rounded,
@@ -589,6 +690,17 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   bool get _showsTypingBox => c.typing && c.phase != VoicePhase.done && (!c.confirming || c.correcting);
 
   Widget _talk(SwooshFrame frame, double windowOpacity) {
+    if (c.emergency) {
+      // The calm pause: nothing is saved, no progress, no other buttons. Call 911 is a tap, never automatic.
+      return _page(
+        frame: frame,
+        windowOpacity: windowOpacity,
+        line: EmergencyCard.apology,
+        crowded: true,
+        story: const [],
+        controls: [EmergencyCard(onContinue: c.continueAfterEmergency, picksUpAt: c.mascotLine)],
+      );
+    }
     final keyboard = _keyboard;
     final busy = c.phase == VoicePhase.interpreting;
     final line = c.mascotLine.isEmpty ? (busy ? 'One moment…' : '') : c.mascotLine;
@@ -633,6 +745,11 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           const SizedBox(height: 10),
           _pad(_ValueCard(text: _readBackValue)),
         ],
+        // The opening: one plain example. Apple Health and documents are in the "Fill this in faster" pill.
+        if (c.questionNumber == 1 && c.caption.isEmpty && !keyboard) ...[
+          const SizedBox(height: 8),
+          _pad(Text('Try saying: “I’m 62.”', style: LtText.body(color: LtColors.secondary))),
+        ],
         if (voiceLine != null) ...[
           const SizedBox(height: 4),
           _pad(Align(alignment: Alignment.centerLeft, child: voiceLine)),
@@ -655,7 +772,28 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         if (quick) ...[const SizedBox(height: 14), KeyedSubtree(key: _quickKey, child: _pad(_quickAnswers(busy)))],
         const SizedBox(height: 8),
       ],
-      controls: _controls(keyboard),
+      controls: [
+        // A reserved slot at the top of the controls (always in view), so the pill appearing or going never
+        // moves anything.
+        if (!keyboard && c.phase != VoicePhase.done && (_pillWanted || _importNote != null))
+          SizedBox(
+            height: 84,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _importNote != null
+                  ? Semantics(
+                      liveRegion: true,
+                      child: Text(_importNote!, style: LtText.body(color: LtColors.secondary)),
+                    )
+                  : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: FasterPill(onTap: _fasterSheet, onDismiss: () => setState(() => _pillDismissed = true)),
+                    ),
+            ),
+          ),
+        ..._controls(keyboard),
+      ],
     );
   }
 
@@ -747,9 +885,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       if (quick) TalkButton(controller: c, compact: true) else ..._answerControls(busy, keyboard),
       // On the first question, and when Mochi offers it (or the person just said yes):
       // Apple Health, right under Talk (or Send). Shown with the keyboard too at the offer.
-      if (widget.onUseHealth != null &&
-          c.phase != VoicePhase.listening &&
-          (c.healthOffer || (!keyboard && c.questionNumber == 1))) ...[
+      if (widget.onUseHealth != null && c.phase != VoicePhase.listening && c.healthOffer) ...[
         const SizedBox(height: 12),
         _healthButton(),
       ],
@@ -1253,4 +1389,87 @@ class _NoticeBox extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Fill this in faster": one 420 ms wiggle (±3°) and a haptic when it first appears, no wiggle under Reduce
+/// Motion (the haptic only), and it never times out. The × dismisses it for the rest of the conversation.
+class FasterPill extends StatefulWidget {
+  const FasterPill({super.key, required this.onTap, required this.onDismiss});
+  final VoidCallback onTap;
+  final VoidCallback onDismiss;
+
+  @override
+  State<FasterPill> createState() => _FasterPillState();
+}
+
+class _FasterPillState extends State<FasterPill> with SingleTickerProviderStateMixin {
+  late final AnimationController _wiggle = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    HapticFeedback.lightImpact();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !MediaQuery.disableAnimationsOf(context)) _wiggle.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _wiggle.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      AnimatedBuilder(
+        animation: _wiggle,
+        builder: (context, child) =>
+            Transform.rotate(angle: math.sin(_wiggle.value * 2 * math.pi) * 3 * math.pi / 180, child: child),
+        child: Semantics(
+          button: true,
+          label: 'Fill this in faster. Shortcut available.',
+          excludeSemantics: true,
+          onTap: widget.onTap,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onTap,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: LtColors.paper,
+                borderRadius: BorderRadius.circular(LtRadii.chip),
+                border: Border.all(color: LtColors.control, width: LtBorders.control),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.bolt_rounded, size: 22, color: LtColors.ink),
+                  const SizedBox(width: 6),
+                  Text('Fill this in faster', style: LtText.body(weight: FontWeight.w700)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      Semantics(
+        button: true,
+        label: 'Dismiss Fill this in faster',
+        excludeSemantics: true,
+        onTap: widget.onDismiss,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onDismiss,
+          child: const SizedBox(width: 48, height: 48, child: Icon(Icons.close_rounded, size: 22, color: LtColors.ink)),
+        ),
+      ),
+    ],
+  );
 }

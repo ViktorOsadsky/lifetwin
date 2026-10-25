@@ -62,6 +62,7 @@ class FakeSpeechInput implements SpeechInput {
   int starts = 0;
   int finishes = 0;
   int cancels = 0;
+  int disposals = 0;
 
   /// Set to hold the "Allow microphone?" answer until it is completed.
   Completer<bool>? permission;
@@ -92,7 +93,9 @@ class FakeSpeechInput implements SpeechInput {
   }
 
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() async {
+    disposals++;
+  }
 }
 
 /// A small scripted conversation: asks age, then height, then asks to confirm.
@@ -170,6 +173,17 @@ class FakeConversationGuide implements ConversationGuide {
           confirmed,
           pending,
         );
+      // Something urgent: pause calmly. "resume" (Continue) asks the same question again.
+      case 'reply' when (text ?? '').contains('chest pain'):
+        return _turn(
+          'asking',
+          'I’m sorry you’re going through that. If you need help right now, please call 911. We can carry on whenever you’re ready.',
+          confirmed,
+          pending,
+          emergency: true,
+        );
+      case 'resume':
+        return _turn('asking', 'How old are you?', confirmed, pending);
       case 'reply' when text == 'go back':
         return _turn('asking', "Okay, let's go back to your age. How old are you?", confirmed, pending);
       case 'reply':
@@ -205,8 +219,10 @@ class FakeConversationGuide implements ConversationGuide {
     bool complete = false,
     String mascot = 'asking',
     String provider = 'not_configured',
+    bool emergency = false,
   }) {
     return GuideTurn(
+      emergency: emergency,
       providerStatus: provider,
       state: {
         'phase': phase,

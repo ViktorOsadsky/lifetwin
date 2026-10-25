@@ -15,11 +15,19 @@ import 'check_in.dart';
 import 'checkin_controller.dart';
 import 'emergency_card.dart';
 import 'outlook_change.dart';
+import 'readback_adapter.dart';
 import 'updated_card.dart';
 
 /// Mochi's short line in the bubble for the field being asked (the full question sits in the card).
-String bubbleFor(String? field, {required bool confirming, required bool done, required bool weekly}) {
+String bubbleFor(
+  String? field, {
+  required bool confirming,
+  required bool done,
+  required bool weekly,
+  bool finalReadback = false,
+}) {
   if (done) return weekly ? 'Your week is in.' : 'Thanks for checking in!';
+  if (finalReadback) return 'Here’s what I heard.';
   if (confirming) return 'Did I get that right?';
   return switch (field) {
     'wellbeing' => 'How are you feeling?',
@@ -47,6 +55,7 @@ class CheckInScreen extends StatefulWidget {
     required this.appearance,
     required this.onDone,
     this.open = defaultOpenUrl,
+    this.readback = const ServerReadback(),
   });
 
   final CheckinController controller;
@@ -55,6 +64,9 @@ class CheckInScreen extends StatefulWidget {
   final TwinAppearance appearance;
   final VoidCallback onDone;
   final OpenUrl open;
+
+  /// How the server's read-back is listed.
+  final ReadbackAdapter readback;
 
   @override
   State<CheckInScreen> createState() => _CheckInScreenState();
@@ -96,13 +108,23 @@ class _CheckInScreenState extends State<CheckInScreen> {
     c.submitTyped(t);
   }
 
-  Future<void> _quick(String words) async {
-    await c.submitQuick(words);
-    // The tap is the answer: no second tap to confirm it (an Apple Health value still asks).
-    if (c.confirming && !c.confirmingHealth) await c.confirm();
-  }
+  // A tapped answer is heard like a spoken or typed one; quick and daily check-ins read everything back once, at the end.
+  Future<void> _quick(String words) => c.submitQuick(words);
 
   bool get _finished => c.turn?.complete ?? false;
+
+  /// "Stop for today" was chosen after Mochi's care reply.
+  bool _stopped = false;
+
+  /// Back to the Room; after "Stop for today" Mochi says it is okay.
+  void _leave() {
+    if (_stopped && _finished) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('That’s okay. I saved what you told me.'), duration: Duration(seconds: 2)),
+      );
+    }
+    widget.onDone();
+  }
 
   TwinState _twin() {
     if (c.emergency) {
@@ -130,7 +152,13 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 ? EmergencyCard.apology
                 : _nothing
                 ? 'All set for today!'
-                : bubbleFor(c.turn?.currentField, confirming: c.confirming, done: _finished, weekly: weekly),
+                : bubbleFor(
+                    c.turn?.currentField,
+                    confirming: c.confirming,
+                    done: _finished,
+                    weekly: weekly,
+                    finalReadback: c.finalReadback,
+                  ),
           ),
           const SizedBox(height: 14),
           Sheet(
@@ -202,6 +230,26 @@ class _CheckInScreenState extends State<CheckInScreen> {
             ),
           ),
         ),
+        if (c.finalReadback) ...[
+          const SizedBox(height: 10),
+          Semantics(
+            header: true,
+            child: Text('Here’s what I heard', style: LtText.body(weight: FontWeight.w700)),
+          ),
+          const SizedBox(height: 6),
+          _AnswerList(items: widget.readback.items(c.turn!)),
+        ] else if (!c.confirming && c.heardAnswers.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Semantics(
+            header: true,
+            child: Text(
+              'So far',
+              style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary),
+            ),
+          ),
+          const SizedBox(height: 6),
+          _AnswerList(items: widget.readback.heard(c.turn!)),
+        ],
         if (c.phase == CheckinPhase.listening && c.caption.isNotEmpty) ...[
           const SizedBox(height: 8),
           WholeWordText('“${c.caption}”', style: LtText.body(color: LtColors.secondary)),
@@ -296,48 +344,100 @@ class _CheckInScreenState extends State<CheckInScreen> {
     if (_nothing || _finished) {
       return Padding(
         padding: pad,
-        child: LipButton(label: 'Back to my room', fontSize: 24, onTap: widget.onDone),
+        child: LipButton(label: 'Back to my room', fontSize: 24, onTap: _leave),
       );
     }
     if (c.turn == null) return const SizedBox.shrink();
     final busy = c.phase == CheckinPhase.interpreting;
+    if (c.careQuestionOpen) {
+      // Two equal choices, no red: the warm reply (with the soft 911 line) is Mochi's bubble above.
+      return Padding(
+        padding: pad,
+        child: Row(
+          children: [
+            Expanded(
+              child: LipButton(
+                label: 'Stop for today',
+                kind: LipKind.secondary,
+                fontSize: 20,
+                onTap: busy
+                    ? null
+                    : () {
+                        _stopped = true;
+                        c.submitQuick('stop');
+                      },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: LipButton(
+                label: 'Keep going',
+                fontSize: 20,
+                onTap: busy ? null : () => c.submitQuick('keep going'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    // A yes or no is open (the final read-back, a check on an unusual value, Apple Health's value, or a weekly
+    // answer), unless the person is saying what to change.
+    final yesNo = (c.confirming || c.confirmingHealth) && !c.correcting;
     return Padding(
       padding: pad,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (c.confirming)
+          if (yesNo) ...[
             Row(
               children: [
                 Expanded(
                   child: LipButton(
-                    label: 'Not quite',
+                    label: c.finalReadback ? 'Change with Mochi' : 'Not quite',
+                    icon: c.finalReadback ? Icons.chat_bubble_outline_rounded : null,
                     kind: LipKind.secondary,
-                    fontSize: 20,
+                    fontSize: c.finalReadback ? 18 : 20,
                     onTap: busy ? null : c.change,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: LipButton(
-                    label: c.confirmingHealth ? 'Looks right' : 'Yes',
+                    label: c.confirmingHealth ? 'Looks right' : (c.finalReadback ? 'Looks right' : 'Yes'),
                     icon: Icons.check_rounded,
                     fontSize: 20,
                     onTap: busy ? null : c.confirm,
                   ),
                 ),
               ],
-            )
-          else ...[
+            ),
+            if (c.checkQuestion || (c.finalReadback && c.canGoBack)) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  // An unusual value can be dropped; the final read-back can reopen an earlier question.
+                  if (c.checkQuestion)
+                    _Chip(label: 'Skip', icon: Icons.keyboard_double_arrow_right_rounded, onTap: busy ? null : c.skip),
+                  if (c.finalReadback && c.canGoBack)
+                    _Chip(label: 'Go back', icon: Icons.undo_rounded, onTap: busy ? null : c.goBack),
+                ],
+              ),
+            ],
+          ] else ...[
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final (label, words) in c.quickAnswers)
-                  _Chip(label: label, onTap: busy ? null : () => _quick(words)),
-                _Chip(label: 'Skip', icon: Icons.keyboard_double_arrow_right_rounded, onTap: busy ? null : c.skip),
-                if (c.canGoBack) _Chip(label: 'Go back', icon: Icons.undo_rounded, onTap: busy ? null : c.goBack),
+                if (c.correcting)
+                  _Chip(label: 'Keep it', icon: Icons.check_rounded, onTap: c.keepAnswer)
+                else ...[
+                  for (final (label, words) in c.quickAnswers)
+                    _Chip(label: label, onTap: busy ? null : () => _quick(words)),
+                  _Chip(label: 'Skip', icon: Icons.keyboard_double_arrow_right_rounded, onTap: busy ? null : c.skip),
+                  if (c.canGoBack) _Chip(label: 'Go back', icon: Icons.undo_rounded, onTap: busy ? null : c.goBack),
+                ],
               ],
             ),
             const SizedBox(height: 10),
@@ -350,7 +450,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                       autofocus: true,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(hintText: 'Type your answer'),
+                      decoration: InputDecoration(hintText: c.correcting ? 'What should it be?' : 'Type your answer'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -470,5 +570,45 @@ class _Dots extends StatelessWidget {
           ),
       ],
     ),
+  );
+}
+
+/// The answers heard, each with the value the server holds now (the last one said).
+class _AnswerList extends StatelessWidget {
+  const _AnswerList({required this.items});
+  final List<ReadbackItem> items;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      for (final item in items)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: item.value == null
+              ? NoNumberBox(icon: Icons.keyboard_double_arrow_right_rounded, title: '${item.label} · Skipped')
+              : Semantics(
+                  container: true,
+                  label: '${item.label}: ${item.value}',
+                  excludeSemantics: true,
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 52),
+                    padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
+                    alignment: Alignment.centerLeft,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFBF6EE),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: LtColors.container, width: 1.5),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.label, style: LtText.body(size: 15, color: LtColors.secondary)),
+                        Text(item.value!, style: LtText.display(20)),
+                      ],
+                    ),
+                  ),
+                ),
+        ),
+    ],
   );
 }

@@ -10,7 +10,13 @@ import '../voice/api_base.dart';
 /// hard-coded in the app: the screens say [displayName], so changing provider changes no copy.
 @immutable
 class AiProvider {
-  const AiProvider({required this.id, required this.displayName, required this.configured});
+  const AiProvider({
+    required this.id,
+    required this.displayName,
+    required this.configured,
+    this.company,
+    this.mayTrainOnContent = false,
+  });
 
   final String id;
   final String displayName;
@@ -18,12 +24,30 @@ class AiProvider {
   /// False: personal suggestions are not offered and no consent is asked.
   final bool configured;
 
+  /// The company behind the provider, from `personalize.company`; null when the server does not say.
+  final String? company;
+
+  /// `personalize.may_train_on_content`: the provider may use what is shared to improve its AI.
+  /// False when missing: nothing is claimed.
+  final bool mayTrainOnContent;
+
+  /// Shown beside every outside-AI Yes button when [mayTrainOnContent] is true and the company is known.
+  String? get trainingLine =>
+      mayTrainOnContent && company != null ? '$company may use what you share to improve its AI.' : null;
+
   static AiProvider? fromCapabilities(Object? json) {
     final p = json is Map ? json['personalize'] : null;
     if (p is! Map) return null;
     final id = p['provider'], name = p['display_name'];
     if (id is! String || name is! String || id.isEmpty || name.isEmpty) return null;
-    return AiProvider(id: id, displayName: name, configured: p['configured'] == true);
+    final company = p['company'];
+    return AiProvider(
+      id: id,
+      displayName: name,
+      configured: p['configured'] == true,
+      company: company is String && company.isNotEmpty ? company : null,
+      mayTrainOnContent: p['may_train_on_content'] == true,
+    );
   }
 }
 

@@ -94,6 +94,7 @@ class HttpConversationGuide implements ConversationGuide {
       providerStatus: json['provider_status'] as String? ?? 'not_configured',
       modelInputs: json['model_inputs'] is Map ? Map<String, dynamic>.from(json['model_inputs'] as Map) : null,
       clientAction: json['client_action'] as String?,
+      emergency: json['emergency'] == true,
     );
   }
 }

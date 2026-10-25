@@ -65,12 +65,16 @@ class CheckinController extends ChangeNotifier {
     this.onFinished,
     DateTime Function()? clock,
     this.voiceUsable = true,
+    this.ownsSpeech = true,
   }) : _clock = clock ?? DateTime.now,
        typing = !voiceUsable;
 
   final CheckinGuide guide;
   final SpeechInput input;
   final SpeechOutput output;
+
+  /// False when [input] and [output] are the app-wide ones shared with later check-ins: dispose leaves them alone.
+  final bool ownsSpeech;
   final CheckinStore store;
   final CheckinScheduler scheduler;
 
@@ -144,6 +148,9 @@ class CheckinController extends ChangeNotifier {
   /// Quick and daily: the one read-back of every answer, at the end. [confirm] saves them
   /// all; [change] then the person's words ("my sleep was 6 hours") correct one.
   bool get finalReadback => turn?.isFinalReadback ?? false;
+
+  /// Mochi's warm reply to a low mood is open: "Keep going" or "Stop for today" (sent as replies).
+  bool get careQuestionOpen => turn?.careQuestionOpen ?? false;
 
   /// Quick and daily: "Did I hear 15 hours of sleep? ... Is that right?" mid check-in.
   bool get checkQuestion => turn?.isCheckQuestion ?? false;
@@ -644,8 +651,10 @@ class CheckinController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _stopListenClock();
-    input.dispose();
-    output.dispose();
+    if (ownsSpeech) {
+      input.dispose();
+      output.dispose();
+    }
     super.dispose();
   }
 }

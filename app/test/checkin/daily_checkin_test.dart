@@ -15,6 +15,7 @@ import '../support/app_fonts.dart';
 import 'package:lifesim/voice/fakes.dart';
 
 import '../checkin_controller_test.dart' show FakeCheckinGuide;
+import 'readback_flow_test.dart' show ContractGuide;
 
 const profile = {
   'age': 55,
@@ -51,7 +52,7 @@ void main() {
 
   group('the Room entry and the quick check-in, end to end', () {
     late TwinRepository repo;
-    late FakeCheckinGuide guide;
+    late dynamic guide;
     final opened = <Uri>[];
 
     Future<void> pumpRoom(WidgetTester t) async {
@@ -118,31 +119,29 @@ void main() {
       'tapping it opens the flow; a tapped answer needs no confirm; finishing records it ONCE and marks it done',
       (t) async {
         repo = await repoWith(profile);
+        guide = ContractGuide();
         await pumpRoom(t);
         await t.tap(find.text('Check in'));
         await t.pumpAndSettle();
         expect(find.textContaining('How did you sleep last night?'), findsWidgets);
         expect(find.text('Skip'), findsOneWidget);
-        // Typed answers are read back, as the server asks.
         await t.enterText(find.byType(TextField), '7 hours');
         await t.testTextInput.receiveAction(TextInputAction.send);
         await t.pumpAndSettle();
-        expect(find.text('Yes'), findsOneWidget);
-        expect(find.text('Not quite'), findsOneWidget);
-        await t.tap(find.text('Yes'));
-        await t.pumpAndSettle();
-        expect(repo.store.checkins, isEmpty, reason: 'nothing is saved before the check-in finishes');
-        // A tapped answer is the answer: no Yes / Not quite to press.
-        expect(find.text('About 6 hours'), findsOneWidget);
+        // One read-back at the end, not one per answer.
+        expect(find.text('Yes'), findsNothing);
+        expect(find.text('Not quite'), findsNothing);
+        expect(repo.store.checkins, isEmpty);
         await t.tap(find.text('About 6 hours'));
         await t.pumpAndSettle();
-        expect(find.text('Not quite'), findsNothing);
-        expect(find.text('Yes'), findsNothing);
+        expect(find.text('Looks right'), findsOneWidget);
+        expect(repo.store.checkins, isEmpty, reason: 'nothing is saved before the yes');
+        await t.tap(find.text('Looks right'));
+        await t.pumpAndSettle();
         // Finished: recorded exactly once.
         expect(repo.store.checkins, hasLength(1));
         expect(repo.store.checkins.single.kind, 'quick');
         expect(repo.history().where((e) => e.kind == HistoryKind.quick), hasLength(1));
-        expect(guide.calls.where((c) => c['action'] == 'confirm'), hasLength(2));
         expect(find.text('Back to my room'), findsOneWidget);
         await t.tap(find.text('Back to my room'));
         await t.pumpAndSettle();
@@ -155,6 +154,43 @@ void main() {
         }
       },
     );
+
+    testWidgets('a low answer gets a warm reply with Keep going / Stop for today; Stop saves what was heard', (
+      t,
+    ) async {
+      repo = await repoWith(profile);
+      guide = ContractGuide();
+      await pumpRoom(t);
+      await t.tap(find.text('Check in'));
+      await t.pumpAndSettle();
+      await t.enterText(find.byType(TextField), '7 hours');
+      await t.testTextInput.receiveAction(TextInputAction.send);
+      await t.pumpAndSettle();
+      await t.enterText(find.byType(TextField), 'awful');
+      await t.testTextInput.receiveAction(TextInputAction.send);
+      await t.pumpAndSettle();
+      expect(find.textContaining('please call 911'), findsWidgets);
+      expect(find.text('Call 911'), findsNothing, reason: 'not the emergency pause');
+      expect(find.text('Keep going'), findsOneWidget);
+      expect(find.text('Stop for today'), findsOneWidget);
+      expect(repo.store.checkins, isEmpty);
+      await t.tap(find.text('Stop for today'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Looks right'));
+      await t.pumpAndSettle();
+      expect(repo.store.checkins, hasLength(1));
+      await t.tap(find.text('Back to my room'));
+      await t.pump();
+      expect(find.text('That’s okay. I saved what you told me.'), findsWidgets);
+      await t.pump(const Duration(milliseconds: 400)); // slide in, then the timer starts
+      await t.pump(const Duration(milliseconds: 2100));
+      await t.pumpAndSettle();
+      expect(
+        find.text('That’s okay. I saved what you told me.'),
+        findsNothing,
+        reason: 'short, so it never covers the next screen',
+      );
+    });
 
     testWidgets('skip is quick, and a skipped answer is never filled in', (t) async {
       repo = await repoWith(profile);

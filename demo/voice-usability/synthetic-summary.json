@@ -1,0 +1,47 @@
+{
+  "synthetic": true,
+  "real_participants": 0,
+  "real_sessions": 0,
+  "real_provider_measurements": false,
+  "purpose": "Demo-only illustration of the issue #13 recording format; not usability evidence.",
+  "personas": [
+    {
+      "id": "DEMO-01",
+      "fictional_age": 67,
+      "scripted_setup": "Default voice/text path",
+      "simulated_ease_1_to_5": 4
+    },
+    {
+      "id": "DEMO-02",
+      "fictional_age": 72,
+      "scripted_setup": "Scripted repeat request and hearing-aid persona",
+      "simulated_ease_1_to_5": 4
+    },
+    {
+      "id": "DEMO-03",
+      "fictional_age": 76,
+      "scripted_setup": "Scripted quiet voice and recognition errors",
+      "simulated_ease_1_to_5": 3
+    },
+    {
+      "id": "DEMO-04",
+      "fictional_age": 80,
+      "scripted_setup": "Scripted switch to typing and denied microphone",
+      "simulated_ease_1_to_5": 5
+    },
+    {
+      "id": "DEMO-05",
+      "fictional_age": 85,
+      "scripted_setup": "Scripted accented-voice recognition ambiguity",
+      "simulated_ease_1_to_5": 4
+    }
+  ],
+  "totals": {
+    "simulated_tasks": 35,
+    "alone": 30,
+    "with_hint": 3,
+    "failed": 2,
+    "simulated_ease_mean": 4.0
+  },
+  "interpretation": "These values demonstrate reporting and triage only. They do not establish voice accuracy, accessibility, user acceptance, native permission behavior or the real participant pass bar."
+}
