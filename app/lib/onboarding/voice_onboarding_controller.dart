@@ -462,6 +462,15 @@ class VoiceOnboardingController extends ChangeNotifier {
     await _button('reply', text: 'go back');
   }
 
+  /// The conversation is paused because something urgent was said.
+  bool get emergency => turn?.emergency == true;
+
+  /// Continue after the pause: the server repeats the same question.
+  Future<void> continueAfterEmergency() async {
+    if (!emergency) return;
+    await _button('resume');
+  }
+
   /// Stops the mascot talking.
   Future<void> stopSpeaking() => _stopSpeech();
 

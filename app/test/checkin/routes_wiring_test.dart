@@ -4,6 +4,7 @@ import 'package:lifesim/agentic_routes.dart';
 import 'package:lifesim/checkin/check_in_entry.dart';
 import 'package:lifesim/checkin/checkin_screen.dart' show CheckInScreen;
 import 'package:lifesim/checkin/consents.dart';
+import 'package:lifesim/health/health_sample.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/twin/twin_repository.dart';
@@ -14,6 +15,7 @@ import 'package:lifesim/voice/fakes.dart';
 
 import '../support/app_fonts.dart';
 import '../support/fake_change_client.dart';
+import '../health_screen_test.dart' show FakeReader;
 import 'daily_checkin_test.dart' show profile;
 import 'readback_flow_test.dart' show ContractGuide;
 
@@ -224,5 +226,19 @@ void main() {
     await t.tap(find.text('Band settings'));
     await t.pumpAndSettle();
     expect(find.text('Recorded demo'), findsWidgets);
+  });
+
+  test('Apple Health samples are read for a check-in only once Apple Health is connected', () async {
+    final sample = HealthSample(
+      type: 'STEPS',
+      start: DateTime(2026, 10, 23),
+      end: DateTime(2026, 10, 23, 1),
+      value: 100,
+    );
+    var connected = false;
+    final read = connectedHealthSamples(FakeReader([sample]), () => connected, now: () => DateTime(2026, 10, 24));
+    expect(await read(), isEmpty);
+    connected = true;
+    expect(await read(), [sample]);
   });
 }

@@ -11,6 +11,7 @@ import 'checkin/consent_screens.dart';
 import 'checkin/consents.dart';
 import 'checkin/my_data_screen.dart';
 import 'experiment/answers.dart';
+import 'health/health_reader.dart';
 import 'health/health_sample.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'experiment/experiment_screen.dart';
@@ -21,6 +22,15 @@ import 'experiment/wellness_screen.dart';
 import 'twin/twin_repository.dart';
 import 'ui/twin_appearance.dart';
 import 'voice/api_base.dart';
+
+/// The check-in's Apple Health read: the last 3 days, only once Apple Health is connected (the person has
+/// imported from it); otherwise nothing is read and Mochi asks.
+Future<List<HealthSample>> Function() connectedHealthSamples(
+  HealthReader reader,
+  bool Function() connected, {
+  DateTime Function()? now,
+}) =>
+    () async => connected() ? reader.read(now: (now ?? DateTime.now)(), days: 3) : const <HealthSample>[];
 
 /// Everything the agentic screens need from the app shell, in one place so `main.dart` stays small:
 /// the scope that lets any screen call `openCheckIn`, the Room's pills, and the routes behind them

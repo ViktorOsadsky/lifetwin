@@ -77,7 +77,20 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   late final ForecastClient _forecast =
       widget.forecastClient ?? OnDeviceForecastClient(_twin, modelInputs: () => _controller.modelInputs);
 
-  late final AgenticRoutes _agentic = widget.agentic ?? AgenticRoutes(look: _look, api: _api, voice: () => _controller, onDeleted: _afterDelete);
+  late final AgenticRoutes _agentic =
+      widget.agentic ??
+      AgenticRoutes(
+        look: _look,
+        api: _api,
+        voice: () => _controller,
+        onDeleted: _afterDelete,
+        healthSamples: connectedHealthSamples(
+          widget.healthReader ?? HealthReader(),
+          () =>
+              _healthKeys.isNotEmpty ||
+              (_agentic.repo?.history().any((e) => e.source == HistorySource.appleHealth) ?? false),
+        ),
+      );
 
   /// "Delete my data" wiped the phone: forget what this session held in memory too.
   void _afterDelete() => setState(() {

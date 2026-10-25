@@ -52,6 +52,27 @@ Future<void> choose(WidgetTester t, String voiceLabel, {bool aiHelper = false}) 
 }
 
 void main() {
+  testWidgets('an emergency pauses calmly: Call 911 is a tap, Continue sends resume and asks the question again', (
+    t,
+  ) async {
+    final r = Rig();
+    await r.pump(t);
+    await choose(t, "No, I'll type");
+    await t.enterText(find.byType(TextField), 'I have chest pain');
+    await t.testTextInput.receiveAction(TextInputAction.send);
+    await t.pumpAndSettle();
+    expect(r.c.emergency, isTrue);
+    expect(find.text('Call 911'), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing, reason: 'nothing else to answer during the pause');
+    await t.tap(find.text('Continue'));
+    await t.pumpAndSettle();
+    expect(r.guide.calls.last['action'], 'resume');
+    expect(r.c.emergency, isFalse);
+    expect(find.text('Call 911'), findsNothing);
+    expect(find.text('How old are you?'), findsWidgets);
+  });
+
   testWidgets('a double tap on a voice answer does not also answer the AI-helper question', (t) async {
     for (final voice in ["Yes, I'll talk", "No, I'll type"]) {
       await t.pumpWidget(const SizedBox()); // a fresh screen each time

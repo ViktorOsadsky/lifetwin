@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../checkin/emergency_card.dart';
 import '../forecast/profile_labels.dart';
 import '../health/readback.dart' show usesImperial;
 import '../ui/swoosh_route.dart';
@@ -589,6 +590,17 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   bool get _showsTypingBox => c.typing && c.phase != VoicePhase.done && (!c.confirming || c.correcting);
 
   Widget _talk(SwooshFrame frame, double windowOpacity) {
+    if (c.emergency) {
+      // The calm pause: nothing is saved, no progress, no other buttons. Call 911 is a tap, never automatic.
+      return _page(
+        frame: frame,
+        windowOpacity: windowOpacity,
+        line: EmergencyCard.apology,
+        crowded: true,
+        story: const [],
+        controls: [EmergencyCard(onContinue: c.continueAfterEmergency, picksUpAt: c.mascotLine)],
+      );
+    }
     final keyboard = _keyboard;
     final busy = c.phase == VoicePhase.interpreting;
     final line = c.mascotLine.isEmpty ? (busy ? 'One moment…' : '') : c.mascotLine;
