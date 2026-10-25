@@ -181,6 +181,16 @@ class ChatCompletionsExtractor:
         return bool(self._base_url and self._api_key and self._model)
 
     async def extract(self, text: str, field: ProfileField) -> ExtractionResult:
+        content = await self.complete_json(
+            _instructions(field), text, ExtractionResult.model_json_schema()
+        )
+        try:
+            return ExtractionResult.model_validate_json(content)
+        except ValueError as exc:
+            raise ExtractionUnavailable() from exc
+
+    async def complete_json(self, instructions: str, text: str, schema: dict) -> str:
+        """One structured reply as raw JSON text; the caller validates and grounds it."""
         if not self.configured:
             raise ExtractionUnavailable()
         payload = {
@@ -189,18 +199,14 @@ class ChatCompletionsExtractor:
             "messages": [
                 {
                     "role": "system",
-                    "content": _instructions(field)
+                    "content": instructions
                     + " Reply with only a JSON object matching the supplied schema.",
                 },
                 {"role": "user", "content": text},
             ],
             "response_format": {
                 "type": "json_schema",
-                "json_schema": {
-                    "name": "health_evidence",
-                    "strict": False,
-                    "schema": ExtractionResult.model_json_schema(),
-                },
+                "json_schema": {"name": "health_evidence", "strict": False, "schema": schema},
             },
         }
         if self._reasoning_effort:
@@ -234,7 +240,7 @@ class ChatCompletionsExtractor:
                 or not isinstance(content, str)
             ):
                 raise ExtractionUnavailable()
-            return ExtractionResult.model_validate_json(content)
+            return content
         except (
             httpx.HTTPError,
             ValueError,

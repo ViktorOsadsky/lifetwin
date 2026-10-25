@@ -25,6 +25,8 @@ from lifetwin.core.models import (
     HealthProfile,
     SensitivityRequest,
 )
+from lifetwin.documents import DocumentService
+from lifetwin.documents import router as documents_router
 from lifetwin.onboarding import ChatCompletionsExtractor, ConversationService, OpenAIExtractor
 from lifetwin.onboarding import router as onboarding_router
 from lifetwin.onboarding.probes import MAX_PROBES
@@ -59,6 +61,7 @@ FIELD_WORDS = {
     "alcohol_drinks_yesterday": "yesterday's drinks",
     "wellbeing": "how you feel",
     "local_date": "date",
+    "outside_ai_consent": "AI helper choice",
     "memory_consent": "memory",
 }
 
@@ -67,6 +70,8 @@ def invalid_input_message(exc: RequestValidationError) -> str:
     errors = exc.errors()
     if any(list(error.get("loc", []))[-1:] == ["voice_consent"] for error in errors):
         return "Please agree to use your voice first."
+    if any("pages" in list(error.get("loc", [])) for error in errors):
+        return "That document has too many pages or too much text. Please choose up to 10 pages."
     if any(BP_ORDER_MESSAGE in str(error.get("msg", "")) for error in errors):
         return BP_ORDER_MESSAGE
     names = []
@@ -149,6 +154,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         personalizer=personalizer,
         max_probes=1 if settings.onboarding_demo else MAX_PROBES,
     )
+    # Documents: the deterministic parser always; Muse only when enabled, configured
+    # (Chat Completions) and the person agreed in the request.
+    conversation_extractor = application.state.conversation_service.extractor
+    application.state.document_service = DocumentService(
+        conversation_extractor if settings.llm_provider == "chat_completions" else None,
+        muse_enabled=settings.document_muse_enabled,
+        timeout_seconds=settings.provider_timeout_seconds,
+    )
     # Check-ins are guided only and stateless: the caller sends the previous answers.
     application.state.checkin_service = CheckinService()
     # Changing a saved answer is a stateless talk with Mochi: the caller sends the profile.
@@ -224,6 +237,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "prediction": prediction_state,
             "voice": "available" if voice_configured(settings) else "unavailable",
             "health_data_storage": "none",
+            "documents": "text_extraction",
             # The app's consent text names this provider; consent is per provider.
             "personalize": {
                 "provider": personalizer.name,
@@ -296,6 +310,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         responses={**BODY_ERRORS, **_described({409: "Invalid change transition"})},
     )
     application.include_router(advisor_router, prefix="/api", responses=BODY_ERRORS)
+    application.include_router(documents_router, prefix="/api", responses=BODY_ERRORS)
     application.include_router(recommendations_router, prefix="/api", responses=BODY_ERRORS)
     application.include_router(
         coach_router,

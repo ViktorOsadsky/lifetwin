@@ -3,6 +3,9 @@ import UIKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  /// On-device document text recognition (channel "lifetwin/documents").
+  private var documentScanner: DocumentScanner?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -15,6 +18,9 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "LifeTwinProtectedStore") {
       let channel = FlutterMethodChannel(name: "lifetwin/protected_store", binaryMessenger: registrar.messenger())
       channel.setMethodCallHandler(ProtectedStore.handle)
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DocumentScanner") {
+      documentScanner = DocumentScanner.register(with: registrar.messenger())
     }
   }
 }

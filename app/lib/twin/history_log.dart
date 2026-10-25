@@ -15,7 +15,7 @@ abstract final class HistoryKind {
   /// Wristband estimates confirmed after a read-back.
   static const wristbandImport = 'wristband_import';
 
-  /// Reserved for document-upload confirmations (not built yet).
+  /// Values the person confirmed one by one from an uploaded document.
   static const document = 'document';
 
   /// A confirmed correction to a past day's answer, linked to the entry it corrects.

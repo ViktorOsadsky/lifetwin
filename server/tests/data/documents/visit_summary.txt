@@ -1,0 +1,65 @@
+RIVERBEND FAMILY MEDICINE
+400 Cedar Park Dr, Suite 2
+Fairhaven, OH 44099
+Te1 (555) 010-2200    Fax (555) 010-2201
+AFTER VISIT SUMMARY
+Patient: Harold Testman
+DOB: 04/12/1951    Sex: M
+MRN 00482913
+12 Elmwood Ln
+Fairhaven, OH 44099
+Phone: (555) 010-2233
+Email: h.testman@example.com
+PCP: Dr. Alma Fenwick
+Date of service: 09/14/2026
+Visit type: Follow-up, established patient
+Reason for visit
+Diabetes and blood pressure check
+Vitals
+BP 138/86    Pulse 72    Temp 98.1 F
+Height    5' 6"
+Weight    182 lb
+Previous weight 190 lb at last visit
+Lost 8 lb since last visit
+Visit notes
+Mr. Testman reports he walks 20 minutes most days and has no chest pain.
+He checks his blood pressure at home and brings his log.
+He denies shortness of breath.
+Social History
+Former smoker, quit 2009
+Alcohol: 1 drink per week
+Family History
+Mother: type 2 diabetes; Father: stroke, HTN
+Results reviewed
+Hemoglobin A1c    7.1 % on 09/02/2026
+LDL Cholesterol    128 mg/dL
+Glucose, fasting    131 mg/dL
+Page 1 of 2
+<<<PAGE>>>
+Patient: Harold Testman    DOB 04/12/1951    MRN 00482913
+RIVERBEND FAMILY MEDICINE - AFTER VISIT SUMMARY
+Assessment and Plan
+1. Type 2 diabetes mellitus without complications (E11.9)
+2. Essential hypertension (I10)
+3. Hyperlipidemia
+Plan
+Continue metformin 500 mg twice daily with meals.
+Continue lisinopril 10 mg daily for blood pressure.
+Goal weight 170 lb by January.
+Elevated BP reading today, recheck in 2 weeks.
+Order lipid panel and A1c in 3 months.
+Problem List
+Type 2 diabetes mellitus
+Essential hypertension
+Hyperlipidemia
+Immunizations
+Influenza vaccine given today.
+Patient Instructions
+Check your feet every day.
+Take your medicines with food.
+Bring all pill bottles to your next visit.
+Call (555) 010-2200 for chest pain or fainting.
+Follow up in 3 months.
+Signed: Dr. Alma Fenwick
+Printed 09/15/2026
+Page 2 of 2

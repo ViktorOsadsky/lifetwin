@@ -237,7 +237,11 @@ class TwinRepository extends ChangeNotifier {
       _atomically(() async {
         final band = source == HistorySource.wristband;
         await _record(
-          kind: band ? HistoryKind.wristbandImport : HistoryKind.healthImport,
+          kind: band
+              ? HistoryKind.wristbandImport
+              : source == HistorySource.document
+              ? HistoryKind.document
+              : HistoryKind.healthImport,
           source: source,
           items: [
             for (final e in values.entries)

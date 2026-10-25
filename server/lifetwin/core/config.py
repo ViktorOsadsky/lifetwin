@@ -52,6 +52,13 @@ class Settings(BaseSettings):
     max_body_bytes: int = Field(
         default=32768, ge=128, le=1048576, validation_alias="API_MAX_BODY_BYTES"
     )
+    # Recognised text of up to 10 document pages (POST /api/documents/extract only).
+    max_document_body_bytes: int = Field(
+        default=393216, ge=1024, le=1048576, validation_alias="API_MAX_DOCUMENT_BODY_BYTES"
+    )
+    # Muse may read identifier-stripped document text only when this is on AND the person
+    # agreed. Off by default pending the owner's ruling (docs/document-upload.md).
+    document_muse_enabled: bool = True
     rate_limit_per_minute: int = Field(
         default=60, ge=1, le=10000, validation_alias="API_RATE_LIMIT_PER_MINUTE"
     )

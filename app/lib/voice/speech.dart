@@ -99,13 +99,15 @@ abstract class ConversationGuide {
   /// [action] is one of start, reply, confirm, correct, skip, cancel, import.
   /// [values] carries already-confirmed answers for import (e.g. Apple Health).
   /// [aiHelper] is the person's consent for the server's AI helper to read replies.
+  /// [importSource] names where imported values came from: `apple_health` (default) or `document`.
   Future<GuideTurn> turn({
     required String action,
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
-    Map<String, num>? values,
+    Map<String, Object>? values,
     bool aiHelper = false,
+    String? importSource,
   });
 }
 

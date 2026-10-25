@@ -34,6 +34,7 @@ class RoomScreen extends StatefulWidget {
     this.outlook,
     this.hasProfile = false,
     this.onUseHealth,
+    this.onUploadDocument,
   });
 
   /// Cosmetic look only; never part of the health profile.
@@ -53,6 +54,9 @@ class RoomScreen extends StatefulWidget {
 
   /// "Use my Apple Health": the Health import. Null (no pill) once Health data is confirmed.
   final VoidCallback? onUseHealth;
+
+  /// "Upload a document": health-document upload, offered at entry beside Apple Health.
+  final VoidCallback? onUploadDocument;
 
   static const talkFirst = "Let's talk first, so I can make your forecast.";
 
@@ -121,6 +125,12 @@ class _RoomScreenState extends State<RoomScreen> {
     if (_healthLock?.isActive ?? false) return;
     _healthLock = Timer(const Duration(milliseconds: 700), () {});
     widget.onUseHealth?.call();
+  }
+
+  void _uploadDocument() {
+    if (_healthLock?.isActive ?? false) return;
+    _healthLock = Timer(const Duration(milliseconds: 700), () {});
+    widget.onUploadDocument?.call();
   }
 
   /// Fortune and the outlook card: with no finished conversation nothing opens and the
@@ -223,6 +233,12 @@ class _RoomScreenState extends State<RoomScreen> {
                                         children: [
                                           StatusPill(label: _sim.status, icon: Icons.circle),
                                           if (widget.onUseHealth != null) _HealthPill(onTap: _useHealth),
+                                          if (widget.onUploadDocument != null)
+                                            _HealthPill(
+                                              onTap: _uploadDocument,
+                                              label: 'Upload a document',
+                                              icon: Icons.description_outlined,
+                                            ),
                                         ],
                                       ),
                                       const SizedBox(height: 10),
@@ -603,15 +619,22 @@ class _DockItem extends StatelessWidget {
 
 /// "Use my Apple Health", compact: a plain heart (never Apple's Health app icon) and one
 /// line that shrinks rather than wraps. At least 48 pt tall.
+/// An entry pill beside the status line: "Use my Apple Health" or "Upload a document".
 class _HealthPill extends StatelessWidget {
-  const _HealthPill({required this.onTap});
+  const _HealthPill({
+    required this.onTap,
+    this.label = 'Use my Apple Health',
+    this.icon = Icons.favorite_border_rounded,
+  });
   final VoidCallback onTap;
+  final String label;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Use my Apple Health',
+      label: label,
       excludeSemantics: true,
       onTap: onTap,
       child: GestureDetector(
@@ -629,10 +652,10 @@ class _HealthPill extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.favorite_border_rounded, size: 24, color: LtColors.ink),
+              Icon(icon, size: 24, color: LtColors.ink),
               const SizedBox(width: 8),
               Flexible(
-                child: _OneLine('Use my Apple Health', style: LtText.body(weight: FontWeight.w700)),
+                child: _OneLine(label, style: LtText.body(weight: FontWeight.w700)),
               ),
             ],
           ),

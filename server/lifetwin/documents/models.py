@@ -1,0 +1,97 @@
+"""Health-document extraction contract (docs/document-upload.md).
+
+The phone recognises the text on the device and sends only that text. The server
+returns candidate values the person must confirm one by one; nothing is stored.
+"""
+
+from typing import Annotated, Literal
+
+from pydantic import Field
+
+from lifetwin.core.models import SCHEMA_VERSION, ApiModel
+
+MAX_PAGES = 10
+MAX_PAGE_CHARS = 12000
+
+# Model inputs use the survival model's own input names; the app maps them onto
+# the profile it confirms (diabetes_diagnosed -> profile "diabetes").
+ModelInputField = Literal[
+    "height_cm", "weight_kg", "smoking_status", "diabetes_diagnosed", "hypertension_diagnosed"
+]
+# Shown to the person for information only; never a model input.
+InformationField = Literal["blood_pressure", "hba1c", "ldl_cholesterol"]
+DocumentField = Literal[
+    "height_cm",
+    "weight_kg",
+    "smoking_status",
+    "diabetes_diagnosed",
+    "hypertension_diagnosed",
+    "blood_pressure",
+    "hba1c",
+    "ldl_cholesterol",
+]
+MODEL_INPUTS: frozenset[str] = frozenset(ModelInputField.__args__)
+
+Notice = Literal[
+    # Lines about another person (spouse, family history) were left out.
+    "other_person_skipped",
+    # More than one patient's records: nothing is offered from this document.
+    "multiple_patients",
+    # The same field had different values on the same date: neither is offered.
+    "conflicting_values",
+    # Most of the text is not English; only English documents are read for now.
+    "language_not_supported",
+    # Some text looked garbled (blur, handwriting); those lines were skipped.
+    "partly_unreadable",
+]
+
+
+class DocumentExtractRequest(ApiModel):
+    # Recognised text, one string per page or photo, in order. Never the image.
+    pages: list[Annotated[str, Field(max_length=MAX_PAGE_CHARS)]] = Field(
+        min_length=1, max_length=MAX_PAGES
+    )
+    # Only an explicit true allows Muse by Meta to read the (identifier-stripped)
+    # text; the person must have been told and agreed on the phone.
+    outside_ai_consent: bool = False
+
+
+class DocumentCandidate(ApiModel):
+    field: DocumentField
+    use: Literal["model_input", "information"]
+    # height_cm/weight_kg: number in cm/kg; smoking_status: never/former/current;
+    # *_diagnosed: only ever true; blood_pressure: "128/82"; labs: number.
+    value: float | bool | str
+    unit: Literal["cm", "kg", "mmHg", "%", "mg/dL", "mmol/L"] | None = None
+    # ISO date of the reading, or of the document when the line has none.
+    date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    date_basis: Literal["line", "document"] | None = None
+    # The identifier-stripped line the value came from, for the read-back.
+    source_text: str = Field(min_length=1, max_length=300)
+    page: int = Field(ge=1, le=MAX_PAGES)
+    # The heading the line sat under ("Vitals", "Assessment"), if any.
+    section: str | None = Field(default=None, max_length=60)
+    confidence: Literal["high", "medium", "low"]
+    method: Literal["parser", "muse"] = "parser"
+
+
+class DocumentExtractResponse(ApiModel):
+    schema_version: Literal["1.0"] = SCHEMA_VERSION
+    status: Literal["found", "nothing_found", "unreadable"]
+    candidates: list[DocumentCandidate] = Field(default_factory=list, max_length=40)
+    notices: list[Notice] = Field(default_factory=list, max_length=5)
+    # How many identifiers (names, MRN, birth date, address, phone...) were removed.
+    identifiers_removed: int = Field(ge=0)
+    # not_requested: the parser was enough, or Muse is off for documents.
+    # consent_required: Muse could read the messy lines if the person agrees.
+    provider_status: Literal["not_requested", "consent_required", "used", "unavailable"] = (
+        "not_requested"
+    )
+    limitations: list[str] = Field(
+        default_factory=lambda: [
+            "Every value is a suggestion until the person confirms it.",
+            "Nothing from the document is stored. The text is discarded after this response.",
+            "A missing diagnosis in a document does not mean the person does not have it.",
+        ],
+        max_length=5,
+    )
