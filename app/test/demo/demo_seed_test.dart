@@ -128,37 +128,37 @@ void main() {
         );
         final first = repo.model.assessModel(toModelProfile(rosaProfile));
         expect(first.available, isTrue);
-        expect(first.percentByYear[5]!, closeTo(96.92, 0.01));
+        expect(first.percentByYear[5]!, closeTo(96.98, 0.01));
         // The centred health score (positive = healthier, 0 = the middle of women 59–69 in
         // the survey).
-        expect(first.healthScore!, closeTo(0.5024, 0.0005));
-        expect(first.ageGroupPercentile!, closeTo(78.57, 0.01));
+        expect(first.healthScore!, closeTo(0.5263, 0.0005));
+        expect(first.ageGroupPercentile!, closeTo(80.16, 0.01));
         expect(first.healthGroupLabel, 'women 59–69');
-        expect(first.rawLogRelativeHazard!, closeTo(-0.0375, 0.005));
+        expect(first.rawLogRelativeHazard!, closeTo(-0.0588, 0.005));
         final seeded = repo.healthScoreHistory().first;
-        expect(seeded.score!, closeTo(0.5024, 0.0005));
+        expect(seeded.score!, closeTo(0.5263, 0.0005));
       },
     );
 
     test('Rosa\'s lifespan: the yearly projection (proof of concept)', () {
-      // Her onboarding snapshot crosses 50% at 98.9 (75% at 87.4, 25% at 108.9): 2061.
+      // With Cox v3, her onboarding snapshot crosses 50% at 99.1 (75% at 87.6, 25% at 109.0): 2061.
       final first = repo.model.assessModel(toModelProfile(rosaProfile));
       final e = LifespanEstimate.forProfile(first.profileUsed, currentYear: 2026, lab: repo.model.projection)!;
       expect(e.status, LifespanStatus.available);
-      expect(e.expectedAge, closeTo(98.93, 0.005));
-      expect(e.p25Age, closeTo(87.39, 0.005));
-      expect(e.p75Age, closeTo(108.89, 0.005));
+      expect(e.expectedAge, closeTo(99.09, 0.005));
+      expect(e.p25Age, closeTo(87.58, 0.005));
+      expect(e.p75Age, closeTo(109.00, 0.005));
       expect(e.headline, contains('about 99'));
-      expect(e.expectedYear, 2061); // 2026 + round(98.93 - 64)
+      expect(e.expectedYear, 2061); // 2026 + round(99.09 - 64)
       expect((e.p25OpenEnded, e.openEnded, e.p75OpenEnded), (false, false, false));
-      // After the seeded weeks her curve is still above 25% (25.5%) at 110, the lab's last
+      // After the seeded weeks her curve is still above 25% (25.7%) at 110, the lab's last
       // age: the 75th-percentile age is open-ended, "110+". She still gets an estimate.
       final now = repo.lifespanEstimate!;
       expect(now.status, LifespanStatus.available);
-      expect(now.expectedAge, closeTo(100.21, 0.005));
-      expect(now.p25Age, closeTo(88.51, 0.005));
+      expect(now.expectedAge, closeTo(100.32, 0.005));
+      expect(now.p25Age, closeTo(88.66, 0.005));
       expect((now.p75Age, now.p75OpenEnded, now.openEnded), (110.0, true, false));
-      expect(now.expectedYear, 2062); // 2026 + round(100.21 - 64)
+      expect(now.expectedYear, 2062); // 2026 + round(100.32 - 64)
       expect(now.headline, contains('110+'));
     });
 

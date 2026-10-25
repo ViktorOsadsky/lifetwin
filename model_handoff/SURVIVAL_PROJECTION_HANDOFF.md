@@ -1,6 +1,6 @@
 # LifeTwin neural rate and lifespan projection handoff
 
-**Delivery:** Local Flutter package in `lifetwin_on_device/` for iOS app integration. No shared schema, server route, or app screen changed. No model was retrained. The guidance-card and avatar-state API was removed from this handoff package at the user's request.
+**Delivery:** Local Flutter package in `lifetwin_on_device/` for iOS app integration. The handoff and the app's vendored package now use the previously evaluated Cox BMI35 v3 refit; the dense neural model is unchanged. The package API, server route, and app screen contract did not change. The guidance-card and avatar-state API was removed from this handoff package at the user's request.
 
 ## What the prototype calculates
 
@@ -17,9 +17,9 @@ The Dart API can enable extrapolation to age 110 to see where either curve cross
 
 ## App integration boundary
 
-In `app/pubspec.yaml`, add the local `lifetwin_on_device` path dependency as shown in [the package README](lifetwin_on_device/README.md). Load once with `loadLifeTwinProjectionLab()`. Call `assess(confirmedProfile, includeExtrapolation: false)` to get `neural_hazard`, `current_cox`, `annual`, and `five_year`. Handle non-`available` status by showing the returned message and collecting/correcting inputs, not by inserting healthy defaults. An explicitly labeled lab mode can enable extrapolation for the hackathon demo.
+For a new Flutter consumer, add the local `lifetwin_on_device` path dependency as shown in [the package README](lifetwin_on_device/README.md). The current app already depends on its vendored copy in `app/packages/lifetwin_on_device/`. Load once with `loadLifeTwinProjectionLab()`. Call `assess(confirmedProfile, includeExtrapolation: false)` to get `neural_hazard`, `current_cox`, `annual`, and `five_year`. Handle non-`available` status by showing the returned message and collecting/correcting inputs. An explicitly labeled lab mode can enable extrapolation for the hackathon demo.
 
-The current app intake lacks distinct moderate/vigorous recreational minutes, diagnosed hypertension, self-rated general health, and awake sitting minutes. Its generic exercise total, BP readings, and skipped answers cannot be silently converted. Track B/C must add confirmed questions and map `sex` and smoking categories to the survey codes. Calculate BMI from confirmed height and weight. The existing `app/lib/forecast/forecast_client.dart` and `app/lib/main.dart` still use the HTTP forecast path; this handoff does not switch them.
+The app now vendors this Cox release in `app/packages/lifetwin_on_device/` and uses its own confirmed-input mapping. The model still requires all eleven inputs; skipped answers and blood-pressure readings cannot be silently converted into diagnoses. The app's one-time lifespan reveal is a separate, unvalidated proof-of-concept layer built from this package and a U.S. life table.
 
 The avatar can reflect an explicit experiment choice or simple non-medical expression, but should not change shape or apparent illness based on the neural hazard ratio. The “if inputs stay fixed” control should keep hypothetical inputs separate from the confirmed profile. An edit to an experimental copy is an association test, not evidence that changing a habit causes the plotted benefit.
 

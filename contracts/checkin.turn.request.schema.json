@@ -106,6 +106,9 @@
           "default": null,
           "title": "Current Field"
         },
+        "early": {
+          "$ref": "#/$defs/CheckinValues"
+        },
         "from_health": {
           "default": false,
           "title": "From Health",

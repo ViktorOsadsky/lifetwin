@@ -35,6 +35,9 @@ class CheckinState(ApiModel):
     previous: CheckinValues = Field(default_factory=CheckinValues)
     confirmed: CheckinValues = Field(default_factory=CheckinValues)
     pending: CheckinValues = Field(default_factory=CheckinValues)
+    # Weekly only: answers said early, beside another answer. Each is read back when its
+    # own question comes up, which is then not asked.
+    early: CheckinValues = Field(default_factory=CheckinValues)
     skipped_fields: list[CheckinField] = Field(default_factory=list, max_length=9)
     # "I don't know": left out, distinct from skipped, not asked again this check-in.
     unknown_fields: list[CheckinField] = Field(default_factory=list, max_length=9)

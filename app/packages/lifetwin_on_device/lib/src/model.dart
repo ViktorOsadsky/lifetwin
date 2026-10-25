@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 /// Frozen Cox model exported from the validated LifeTwin Python model.
 class LifeTwinModel {
-  LifeTwinModel._(this.spec, this._reference)
+  LifeTwinModel._(this.spec, this._reference, this._highBmiKnot)
     : _coefficients = (spec['coefficients'] as List)
           .map((e) => (e as num).toDouble())
           .toList(),
@@ -16,6 +16,7 @@ class LifeTwinModel {
 
   final Map<String, dynamic> spec;
   final Float64List _reference;
+  final double _highBmiKnot;
   final List<double> _coefficients;
   final List<double> _center;
   final List<double> _baseline;
@@ -25,6 +26,8 @@ class LifeTwinModel {
     Uint8List referenceBytes,
   ) {
     final columns = (spec['encoded_features'] as List).length;
+    final bmiFeature = (spec['encoded_features'] as List)[2].toString();
+    final bmiKnot = RegExp(r'^bmi_above(\d+)$').firstMatch(bmiFeature);
     final coefficients = spec['coefficients'] as List;
     final center = spec['feature_center'] as List;
     final baseline = spec['baseline_survival'] as List;
@@ -32,6 +35,7 @@ class LifeTwinModel {
     final neighborCount = spec['neighbor_count'] as int;
     final neighborCutoff = spec['neighbor_distance_cutoff'] as num;
     if (columns != 17 ||
+        bmiKnot == null ||
         coefficients.length != columns ||
         center.length != columns ||
         baseline.length != horizons.length ||
@@ -50,7 +54,11 @@ class LifeTwinModel {
       if (!reference[i].isFinite)
         throw const FormatException('Invalid support reference');
     }
-    final model = LifeTwinModel._(spec, reference);
+    final model = LifeTwinModel._(
+      spec,
+      reference,
+      double.parse(bmiKnot.group(1)!),
+    );
     if (model._coefficients.any((v) => !v.isFinite) ||
         model._center.any((v) => !v.isFinite) ||
         model._baseline.any((v) => !v.isFinite || v <= 0 || v > 1)) {
@@ -130,7 +138,7 @@ class LifeTwinModel {
     return [
       (age - 55) / 10,
       math.max(23 - bmi, 0) / 5,
-      math.max(bmi - 27, 0) / 5,
+      math.max(bmi - _highBmiKnot, 0) / 5,
       math.max(7 - sleep, 0).toDouble(),
       math.max(sleep - 8, 0).toDouble(),
       math.log(1 + p['vigorous_recreation_min_week']!) / math.log(76),
@@ -296,7 +304,7 @@ class LifeTwinModel {
     final warnings = <String>[];
     if (changes.any({'bmi', 'sleep_hours', 'sedentary_min_day'}.contains)) {
       warnings.add(
-        'BMI, sleep and sitting profile contrasts do not estimate intervention effects; the high-BMI fitted slope is near zero and slightly inverse.',
+        'BMI, sleep and sitting profile contrasts do not estimate intervention effects. The high-BMI association is not a causal weight-change benefit.',
       );
     }
     return {

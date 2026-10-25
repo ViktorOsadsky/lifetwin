@@ -37,6 +37,12 @@ void main() {
       close(probabilities[year]!, (expected[year] as num).toDouble());
     }
   }
+  final bmiProfile = Map<String, dynamic>.from(golden.first['profile'] as Map);
+  final at35 = model.experimentalConditionalSurvival({...bmiProfile, 'bmi': 35}, 5);
+  final at50 = model.experimentalConditionalSurvival({...bmiProfile, 'bmi': 50}, 5);
+  if (!(at50 < at35)) {
+    throw StateError('Cox high-BMI direction regressed');
+  }
   final fixture = 'test/fixtures/';
   final snapshot = engine.assess(readObject('${fixture}snapshot_request.json'));
   final expectedSnapshot = readObject('${fixture}snapshot_response.json');

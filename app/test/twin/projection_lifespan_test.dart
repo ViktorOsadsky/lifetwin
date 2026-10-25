@@ -66,7 +66,7 @@ void main() {
           female: x[8] == 1,
           s: s,
           profile: {
-            'bmi': x[1] > 0 ? 23 - 5 * x[1] : (x[2] > 0 ? 27 + 5 * x[2] : 25.0),
+            'bmi': x[1] > 0 ? 23 - 5 * x[1] : (x[2] > 0 ? 35 + 5 * x[2] : 25.0),
             'sleep_hours': x[3] > 0 ? 7 - x[3] : (x[4] > 0 ? 8 + x[4] : 7.5),
             'vigorous_recreation_min_week': math.exp(x[5] * math.log(76)) - 1,
             'moderate_recreation_min_week': math.exp(x[6] * math.log(151)) - 1,
@@ -266,7 +266,7 @@ void main() {
     });
 
     test('open-ended: a curve above 25% (or 50%) at 110 reports 110 with its flag', () {
-      // Rosa after her seeded weeks: 25.5% at 110.
+      // Rosa after her seeded weeks: about 25.7% at 110 with Cox v3.
       final healthy = {...rosa(), 'sleep_hours': 6.9, 'sedentary_min_day': 420.0, 'moderate_recreation_min_week': 120.0};
       final e = LifespanEstimate.forProfile(healthy, currentYear: 2026, lab: model.projection)!;
       expect(e.annualCurve.last.age, 110);
@@ -508,14 +508,14 @@ void main() {
   });
 
   group('score history engine tag', () {
-    test('points carry engine cox_centered_v1 and the score; untagged, cox_v1 and cox_index_v1 points are left out', () async {
+    test('points carry the current Cox engine and older scales are left out', () async {
       final backend = MemoryBackend();
       final repo = TwinRepository(model: model, store: await TwinStore.open(backend));
       await repo.saveConversationProfile(Map<String, dynamic>.from(fullProfile));
       final doc = jsonDecode(backend.text!) as Map<String, dynamic>;
       final stored = (doc['health_score'] as List).cast<Map<String, dynamic>>();
       expect(stored, isNotEmpty);
-      expect(stored.every((p) => p['engine'] == 'cox_centered_v1'), isTrue);
+      expect(stored.every((p) => p['engine'] == healthScoreEngine), isTrue);
       expect(stored.last['centered_score'], repo.healthScore);
       expect(stored.last['score'], repo.rawLogRelativeHazard);
 

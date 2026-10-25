@@ -48,6 +48,7 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
   bool _refreshWithoutPrevious = false;
   final _choices = <String, String>{};
   bool _choiceOpen = false;
+  static const _notForMe = 'Not for me';
   bool get _canChoose => !_busy && !_refreshWithoutPrevious;
   static final _choiceStyle = OutlinedButton.styleFrom(
     foregroundColor: LtColors.ink,
@@ -93,7 +94,10 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
           _plan = next;
           _refreshWithoutPrevious = false;
           for (final choice in feedback ?? <Map<String, dynamic>>[]) {
-            _choices[choice['item_id'] as String] = choice['status'] as String;
+            _choices[choice['item_id']
+                as String] = choice['reason'] == _notForMe
+                ? 'not_for_me'
+                : choice['status'] as String;
           }
         });
       }
@@ -370,6 +374,7 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
                 'accepted' => 'On your plan',
                 'done' => 'Done',
                 'not_done' => 'Not done · Thanks for telling me',
+                'not_for_me' => '✓ Not for me · Swapped for something else',
                 'dismissed' => 'Skipped',
                 _ => 'Your change is saved',
               }, style: LtText.body(weight: FontWeight.w700)),
@@ -397,6 +402,28 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
               style: _choiceStyle,
               onPressed: !_canChoose ? null : () => _edit(item),
               child: const WholeWordText('Change'),
+            ),
+            Semantics(
+              button: true,
+              excludeSemantics: true,
+              enabled: _canChoose,
+              label: 'Not for me: swap ${item['title']} for something else.',
+              child: OutlinedButton.icon(
+                style: _choiceStyle,
+                onPressed: !_canChoose
+                    ? null
+                    : () => _refresh([
+                        {
+                          'item_id': item['id'],
+                          'status': 'not_done',
+                          'reason': _notForMe,
+                        },
+                      ]),
+                icon: _choices[item['id']] == 'not_for_me'
+                    ? const Icon(Icons.check_rounded, size: 18)
+                    : const SizedBox.shrink(),
+                label: const WholeWordText(_notForMe),
+              ),
             ),
           ],
         ),

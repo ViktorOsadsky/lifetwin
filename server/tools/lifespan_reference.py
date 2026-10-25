@@ -112,15 +112,19 @@ def risk_columns(model: dict) -> list[int]:
     return [i for i, name in enumerate(names) if name not in EXCLUDED_FEATURES]
 
 
-def encode_risk(profile: dict) -> list[float]:
+def encode_risk(profile: dict, model: dict) -> list[float]:
     """The model's encoding (lib/src/model.dart _encode) minus age_decade and female."""
     bmi = float(profile["bmi"])
+    high_bmi_name = model["encoded_features"][2]
+    if not high_bmi_name.startswith("bmi_above"):
+        raise ValueError("Unexpected high-BMI feature; review lifespan_reference.py")
+    high_bmi_knot = float(high_bmi_name.removeprefix("bmi_above"))
     sleep = float(profile["sleep_hours"])
     smoking = profile["smoking_status"]
     health = profile["general_health"]
     return [
         max(23 - bmi, 0) / 5,
-        max(bmi - 27, 0) / 5,
+        max(bmi - high_bmi_knot, 0) / 5,
         float(max(7 - sleep, 0)),
         float(max(sleep - 8, 0)),
         math.log(1 + float(profile["vigorous_recreation_min_week"])) / math.log(76),
@@ -314,7 +318,7 @@ def log_hazard_ratio(inputs: Inputs, profile: dict, adjusted: bool = True) -> fl
     check_profile(profile)
     sex = SEXES[profile["sex_nhanes"]]
     age = float(profile["age"])
-    score = risk_score(encode_risk(profile), inputs.coefficients)
+    score = risk_score(encode_risk(profile, inputs.model), inputs.coefficients)
     lhr = score - reference_score(inputs.reference[sex], age)
     if adjusted:
         lhr += inputs.band_log_adjustment[sex][band_index(age)]

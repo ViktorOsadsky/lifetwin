@@ -56,7 +56,7 @@ void main() {
       }
     });
 
-    test('the bundled copy is the sensitivity commit 65acf39 output for this model', () {
+    test('the bundled sensitivity ranking matches the current Cox model', () {
       final json = jsonDecode(File('assets/model/model-sensitivity.json').readAsStringSync()) as Map;
       expect(json['model_version'], model.modelVersion);
       expect(json['causal_interpretation'], isFalse);
@@ -105,7 +105,7 @@ void main() {
       final weight = e.lever(LeverId.weightKg);
       expect(weight.supported, isFalse);
       expect(weight.reason, LeverReason.weightNotALever);
-      expect(weight.caveat, contains('not evidence that gaining weight helps'));
+      expect(weight.caveat, contains('Neither association establishes the benefit of changing weight'));
       e.set(LeverId.weightKg, 80);
       expect(e.lever(LeverId.weightKg).value, 91.875);
       expect(e.result.status, 'no_change');
@@ -221,10 +221,11 @@ void main() {
     });
 
     test('an alternative outside the model support shows the package status and no number', () {
-      // Found by scanning: 40, BMI 20, 4 h sleep, smoker, poor health with diabetes and high
-      // blood pressure; 300 min of hard exercise leaves the training profiles.
+      // Found by scanning: 45, BMI 20, 4 h sleep, 15 h sitting, smoker, poor health with diabetes and
+      // high blood pressure; with the BMI35 model, 300 min of hard exercise leaves the
+      // neighbour support (the neighbour distance cutoff tightened to 2.749).
       final e = experimentFor({
-        'age': 40,
+        'age': 45,
         'sex': 'male',
         'height_cm': 175.0,
         'weight_kg': 61.25,
@@ -235,7 +236,7 @@ void main() {
         'general_health': 'poor',
         'vigorous_recreation_min_week': 0,
         'moderate_recreation_min_week': 0,
-        'sedentary_min_day': 480,
+        'sedentary_min_day': 900,
       });
       expect(e.current.available, isTrue);
       e.set(LeverId.vigorous, 300);
