@@ -7,6 +7,7 @@ import 'package:record/record.dart' hide IosAudioCategory;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'cartesia_wire.dart';
+import 'heard_gate.dart';
 import 'speech.dart';
 import 'voice_log.dart';
 import 'voice_token.dart';
@@ -185,12 +186,7 @@ class CartesiaSpeechOutput implements SpeechOutput {
     }
   }
 
-  Future<void> _speakOnce(
-    String text,
-    String id, {
-    required bool forceNewToken,
-    void Function()? onAudio,
-  }) async {
+  Future<void> _speakOnce(String text, String id, {required bool forceNewToken, void Function()? onAudio}) async {
     final clock = Stopwatch()..start();
     final token = await tokens.get(forceNew: forceNewToken);
     voiceLog('tts', 'token', '+${clock.elapsedMilliseconds}ms${forceNewToken ? ' new' : ''}');
@@ -260,7 +256,11 @@ class CartesiaSpeechOutput implements SpeechOutput {
           ..add(audio.takeBytes());
         _hasLast = true;
         await Future.any([_player.finish(), done.future]);
-        voiceLog('tts', 'played', '+${clock.elapsedMilliseconds}ms audio=${audioMs}ms${done.isCompleted ? ' stopped' : ''}');
+        voiceLog(
+          'tts',
+          'played',
+          '+${clock.elapsedMilliseconds}ms audio=${audioMs}ms${done.isCompleted ? ' stopped' : ''}',
+        );
       }
     } catch (e) {
       voiceLog('tts', 'error', '$e');
@@ -334,6 +334,10 @@ class CartesiaSpeechInput implements SpeechInput {
   StreamSubscription<dynamic>? _msgSub;
   final _chunks = ChunkBuffer();
   var _pause = PauseDetector();
+  var _gate = HeardGate();
+
+  /// The caption last handed to the caller, so an unchanged one never restarts its wait.
+  String _shown = '';
   final _early = <Uint8List>[];
   bool _ready = false;
   final _finals = <String>[];
@@ -354,6 +358,14 @@ class CartesiaSpeechInput implements SpeechInput {
   }
 
   String get _caption => CartesiaWire.joinTranscript(_finals, _partial);
+
+  /// Hands the caller the gated caption, only when it changed (see [HeardGate]).
+  void _showCaption() {
+    final shown = _gate.caption(_caption);
+    if (shown == _shown) return;
+    _shown = shown;
+    _onCaption?.call(shown);
+  }
 
   @override
   Future<bool> hasPermission() => _recorder.hasPermission();
@@ -377,13 +389,19 @@ class CartesiaSpeechInput implements SpeechInput {
     _error = null;
     _ready = false;
     _pause = PauseDetector();
+    _gate = HeardGate();
+    _shown = '';
     _early.clear();
     _micStarts++;
     // The mic starts before the token and the socket, so the first words are not lost:
     // the screen already says "listening". Audio waits in [_early] until the socket is open.
     final stream = await _recorder.startStream(
-      // Apple's voice processing (echo cancel + noise suppression) favors the voice
-      // close to the phone over other people talking in the room; gain helps soft voices.
+      // On iOS, record_ios 2.1 turns `echoCancel` into AVAudioEngine's
+      // `inputNode.setVoiceProcessingEnabled(true)`: Apple's voice-processing I/O (echo
+      // cancel and noise suppression together; `noiseSuppress` itself is unused there) on a
+      // playAndRecord session with defaultToSpeaker. `autoGain` is its AGC. It favors the
+      // voice close to the phone. Voice Isolation, the strongest filter for other voices, is
+      // the person's choice in the system Mic Mode menu (see mic_modes.dart).
       const RecordConfig(
         encoder: AudioEncoder.pcm16bits,
         sampleRate: 16000,
@@ -430,7 +448,8 @@ class CartesiaSpeechInput implements SpeechInput {
   }
 
   void _onMic(Uint8List data) {
-    for (final c in _chunks.add(data)) {
+    for (final raw in _chunks.add(data)) {
+      final c = _gate.audio(raw);
       final ch = _channel;
       final paused = _pause.add(c);
       if (_ready && ch != null) {
@@ -452,14 +471,17 @@ class CartesiaSpeechInput implements SpeechInput {
       (m) {
         if (m is! String) return;
         switch (CartesiaWire.parseStt(m)) {
-          case SttTranscript(:final text, :final isFinal):
-            if (isFinal) {
+          case SttTranscript(:final text, :final isFinal, :final confidence):
+            if (!_gate.keep(confidence)) {
+              voiceLog('stt', 'gated', 'low_confidence $confidence ${isFinal ? 'final' : 'partial'}');
+              if (isFinal) _partial = '';
+            } else if (isFinal) {
               if (text.isNotEmpty) _finals.add(text);
               _partial = '';
             } else {
               _partial = text;
             }
-            _onCaption?.call(_caption);
+            _showCaption();
           case SttFlushed():
             // Stop waits only for the flush it asked for: the first reply after it. Replies
             // to pause finalizes before Stop find nobody waiting.
@@ -517,11 +539,15 @@ class CartesiaSpeechInput implements SpeechInput {
         ch.sink.add(CartesiaWire.sttClose);
       } catch (_) {}
     }
-    final text = _caption;
+    final heard = _caption;
+    final text = _gate.caption(heard);
     final error = _error;
     voiceLog('stt', 'finished', '${text.length} chars${error != null ? ' error=$error' : ''}');
+    if (text.isEmpty && heard.isNotEmpty) {
+      voiceLog('stt', 'gated', '${heardForLog(heard)} ${_gate.voiced ? 'no_words' : 'too_little_voice'}');
+    }
     await _teardown();
-    if (text.isEmpty && error != null) {
+    if (heard.isEmpty && error != null) {
       _forceNewToken = true;
       throw VoiceFailure(error);
     }

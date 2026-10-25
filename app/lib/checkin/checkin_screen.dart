@@ -131,6 +131,27 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
     // VoiceOver reads Mochi's words; the microphone then opens with a tap, never by itself.
     c.screenReader = MediaQuery.accessibleNavigationOf(context);
     _route = ModalRoute.of(context);
+    _onTopChanged();
+  }
+
+  /// Another screen or sheet on top (an idea, a document, a dialog) closes the microphone
+  /// as leaving does, so words said there never answer the question below; back on top,
+  /// hands-free listens again by itself.
+  bool? _onTop;
+  void _onTopChanged() {
+    final onTop = _route?.isCurrent ?? true;
+    final was = _onTop;
+    _onTop = onTop;
+    if (was == null || was == onTop) return;
+    // After this frame: the controller's listeners rebuild, which must not happen mid-build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _onTop != onTop || !identical(c.mayListen, _mayListen)) return;
+      if (!onTop) {
+        c.pauseVoice();
+      } else if (_mayListenNow()) {
+        c.resumeVoice();
+      }
+    });
   }
 
   /// Leaving LifeTwin (home screen, another app, a call) closes the microphone and stops
@@ -337,6 +358,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
         ),
         WholeWordText(weekly ? 'A few minutes' : 'About 1 minute', style: LtText.body(color: LtColors.secondary)),
         const SizedBox(height: 8),
+        if (c.savedNumber case final saved?) ...[SavedMark(number: saved, word: 'done'), const SizedBox(height: 8)],
         Semantics(
           liveRegion: true,
           child: Container(
@@ -398,7 +420,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
         ],
         if (_voiceUi && !c.typing && c.voiceUsable) ...[
           const SizedBox(height: 10),
-          c.screenReader ? const VoiceOverInfo() : const ListeningNote(),
+          c.screenReader ? const VoiceOverInfo() : ListeningNote(noiseLink: c.phase == CheckinPhase.listening),
         ],
         if (c.notice != null) ...[
           const SizedBox(height: 8),
