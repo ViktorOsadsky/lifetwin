@@ -58,7 +58,7 @@ The ordering of levers in log-hazard terms is fixed by the coefficients and the 
 
 ## 2. Method
 
-**Profiles.** The package ships `support_reference.f64.gz`, the 2,000 encoded NHANES training profiles used by the support check. The script decodes each one back to raw inputs, which gives the training data's real joint distribution of age, sex, BMI, sleep, smoking, diagnoses, health rating and activity. There are no invented combinations. The encoding is exactly invertible except in two flat regions:
+**Profiles.** The package ships `support_reference.f64`, the 2,000 encoded NHANES training profiles used by the support check. The script decodes each one back to raw inputs, which gives the training data's real joint distribution of age, sex, BMI, sleep, smoking, diagnoses, health rating and activity. There are no invented combinations. The encoding is exactly invertible except in two flat regions:
 
 - BMI from 23 to 27 is imputed uniformly at random.
 - Sleep from 7 to 8 h is imputed as 7 or 8, since NHANES 2007–2012 sleep is whole hours.
@@ -277,7 +277,7 @@ There is no interaction in the log hazard. On the pp scale, effects grow with ba
 The ranking is a **prior for ordering** what to offer. For each person:
 
 1. Skip levers that don't apply to them, such as quitting for a non-smoker or sleep changes for someone already at 7–8 h.
-2. Compute their own number with `LifeTwinEngine.compare()` before showing anything.
+2. Compute their own number with `LifeTwinModel.compare()` before showing anything.
 3. Re-run `compare()` on the combined profile for multi-change experiments.
 
 Show the result as "Modeled difference between profiles", never as years gained.

@@ -1,83 +1,81 @@
-# LifeTwin on-device Flutter package
+# LifeTwin on-device survival models
 
-This package runs the trained LifeTwin Cox model **inside the Flutter app on iOS**. The app bundle contains `model.json` (learned coefficients and baseline survival) and `support_reference.f64.gz` (encoded training reference vectors for the model's input-support check). Inference uses Dart only. There is no Python interpreter, HTTP request, backend process, internet connection, TensorFlow, Core ML, or TFLite at runtime.
+This Flutter package bundles two frozen, separate models and runs their math locally in Dart:
 
-## Add it to the iOS Flutter app
+1. **Dense neural Cox network:** emits a log relative hazard score and a hazard ratio versus a fixed reference profile (age 55, male NHANES category, BMI 27, seven hours sleep, 150 moderate recreational minutes, 360 sitting minutes/day, never smoker, no reported diabetes or hypertension, self-rated health "good"). A ratio of `2` means twice that reference profile's modeled instantaneous hazard; it is **not** a probability, a health score, or a time until death. Only compare ratios computed with this exact model version and reference.
+2. **Penalized Cox model:** emits supported cumulative survival percentages at years 1–5 for a complete, supported profile age 35–79. It also powers two explicitly experimental age-stepping curves. Its probabilities are **not** calculated from the neural score. Keep the model names and versions visible separately.
 
-Copy the whole `lifetwin_on_device` folder into your Flutter repository, for example `packages/lifetwin_on_device/`. In the app's `pubspec.yaml`:
+The package no longer generates wellness guidance, habit cards, or avatar states. Its public API is `LifeTwinModel`, `NeuralHazardModel`, and `LifeTwinProjectionLab`.
+
+## Run the web tester
+
+From `model_handoff/projection_lab`:
+
+```powershell
+flutter pub get
+flutter run -d chrome
+```
+
+If Chrome is unavailable, use `flutter run -d web-server` and open its local URL, or `flutter build web` followed by a static HTTP server for `build/web`. The tester and the iOS package use the same Dart model code. The browser performs inference locally; it has no inference API.
+
+## Integrate into the iOS Flutter app
+
+From `app/pubspec.yaml`, add:
 
 ```yaml
 dependencies:
-  flutter:
-    sdk: flutter
   lifetwin_on_device:
-    path: packages/lifetwin_on_device
+    path: ../model_handoff/lifetwin_on_device
 ```
 
-Then run `flutter pub get`. The package's own `pubspec.yaml` declares the two model assets, so Flutter embeds them automatically in the built application. No iOS permissions or network entitlement are needed for model inference. See [Flutter's package asset documentation](https://docs.flutter.dev/ui/assets/assets-and-images#assets-in-package-dependencies).
-
-Load the model **once**, such as during app startup or on first opening the LifeTwin screen:
+Then load once and call with an explicitly confirmed, complete profile:
 
 ```dart
-import 'package:lifetwin_on_device/lifetwin_on_device.dart';
-
-final model = await loadLifeTwinModel();
-final twin = LifeTwinEngine(model);
-
-final assessment = twin.assess({
-  'profile': {
-    'age': 45,
-    'sex_nhanes': 1,
-    'height_cm': 175,
-    'weight_kg': 76.6,
-    'smoking_status': 0,
-    'diabetes_diagnosed': 0,
-    'hypertension_diagnosed': 0,
-    'general_health': 2,
-    'sleep_hours': 7,
-    'vigorous_recreation_min_week': 60,
-    'moderate_recreation_min_week': 120,
-    'sedentary_min_day': 360,
-  },
-});
-
-final survival = assessment['survival'] as Map<String, dynamic>;
-if (survival['status'] == 'available') {
-  final percentages = survival['survival_percent_by_year'] as Map<String, double>;
-  // Show cumulative survival through each year, labeled
-  // "Modeled survival of similar people".
-  final yearFive = percentages['5'];
+final lab = await loadLifeTwinProjectionLab();
+final result = lab.assess(confirmedProfile, includeExtrapolation: false);
+if (result['status'] == 'available') {
+  final neural = result['neural_hazard'] as Map;
+  final cox = result['current_cox'] as Map;
+  final annual = result['annual'] as Map;
+  final fiveYear = result['five_year'] as Map;
+  // Use neural['relative_hazard_vs_reference'] as a labeled comparison.
+  // Use cox['survival_percent_by_year'] for validated 1–5 year display.
+  // Show annual/fiveYear only as experimental projection views.
 }
-final cards = assessment['wellness_cards'] as List;
-final avatar = assessment['avatar'] as Map<String, dynamic>;
 ```
 
-The API intentionally uses JSON-shaped maps so existing form and local storage data can be passed directly. `LifeTwinModel.predict(profile)` is available if the screen needs only the survival curve. `LifeTwinEngine.compare({'current_profile': ..., 'alternative_profile': ...})` returns an observational difference in percentage points, with `causal_interpretation: false`.
+Required numeric fields: `age` (completed years), `bmi`, `sleep_hours`, `vigorous_recreation_min_week`, `moderate_recreation_min_week`, and `sedentary_min_day`. Required survey-coded fields: `sex_nhanes` (1 male, 2 female), `smoking_status` (0 never, 1 former, 2 current), `diabetes_diagnosed` and `hypertension_diagnosed` (0/1), and `general_health` (1 excellent through 5 poor). The package does not fill missing inputs. Height and weight can be used to calculate BMI in the app after explicit confirmation. The app's single `exercise_minutes_weekly` field cannot be split into vigorous and moderate recreational activity without asking; blood-pressure readings cannot establish a diagnosis. See [the handoff](../SURVIVAL_PROJECTION_HANDOFF.md) for the app field gap.
 
-## Daily and weekly updates
+## Projection definitions
 
-For daily logs, call `twin.assess` with `profile`, `as_of_date` (`YYYY-MM-DD`), and `daily_logs`. Provide 7, 14, 21, or 28 complete consecutive days ending the day before `as_of_date`. Each row needs `date`, `workday`, `sleep_hours`, `vigorous_recreation_min`, `moderate_recreation_min`, and `sedentary_min_day`. See [daily fixture](test/fixtures/daily_request.json).
+For both methods, begin at 100% survival at current age, hold all inputs except age fixed, and multiply conditional Cox survival values:
 
-For weekly summaries, use `weekly_summaries` instead: 1–4 completed, consecutive Monday–Sunday weeks, each with `week_start` and the four behavior fields. See [weekly fixture](test/fixtures/weekly_request.json). Recent logs replace the sleep, recreation, and awake sitting values in `profile`; onboarding and medical-history answers still come from the person. Reassess when a complete window is available and preserve `profile_used` and `input_provenance` in the app UI.
+- **Yearly:** at assessment age `a`, use the Cox model's `S(1 | age=a)` for the next year. At age `a+1`, reassess and multiply the new one-year survival, repeating to the chosen maximum age.
+- **Five-year blocks:** at age `a`, use `S(1..5 | age=a)` within the block. At age `a+5`, reassess and multiply the next block, repeating. The output has one plotted point per year.
 
-## UI rules
+`annual.points` and `five_year.points` contain `{age, survival_percent, extrapolated}`. `median_crossing_age` is the interpolated age where the chained curve first crosses 50%, or null if not reached. This is a **median threshold of an unvalidated simulation**, not mean life expectancy or a personal death age. `median_crossing_extrapolated` flags a crossing using an age input above 79.
 
-- Show the annual percentages only when `survival.status == 'available'`. Ages 35–79 and complete, supported profiles are required. For `missing_inputs`, `unsupported_age`, or `unsupported_profile`, show the status message and no number.
-- Use `avatar.strengths` and `avatar.opportunities` for avatar state. Show `wellness_cards` with their `source_url` beside the avatar. These cards are public-health guidance; they are not derived from the mortality model's coefficients.
-- Label the curve **"Modeled survival of similar people"** and a comparison **"Modeled difference between profiles"**. Do not turn a five-year curve into a date of death or a number of years gained.
-- Catch `FormatException` from malformed logs or values and ask the user to correct the input. Do not fill missing fields with healthy defaults.
-- Keep user health records in the app's chosen local storage. This package does not save, transmit, or synchronize them.
+`includeExtrapolation: false` stops when the next assessment age would exceed 79. The five-year method can end after age 80 because a supported age-79 baseline has a five-year horizon. With `includeExtrapolation: true`, the package mechanically extends the age term to age 110, marks every segment assessed after age 79 as `extrapolated`, and **does not claim validation there**. Neither repeated method has been evaluated as a lifelong dynamic survival model. Diagnoses, habits, and self-rated health are unrealistically fixed under the "keep this up" scenario.
 
-This is a snapshot model from one survey assessment per person. Daily or weekly updates change the summary profile supplied to that model; the model was not trained as a longitudinal wearable model and does not estimate the causal benefit of a lifestyle change. The [model card](MODEL_CARD.md) describes validation, calibration, and limits.
+The 50% crossing is *not* the mean expected lifetime. A survival model's mean lifetime requires the integral of a supported survival curve through the full tail; this artifact provides neither that horizon nor a validated tail model. Do not convert these curves into guaranteed years gained or causal benefits.
 
-## Verify
+## Artifacts and checks
+
+`assets/neural_model.json` contains the exported dense network weights and preprocessing parameters from `output/models/temporal_deepsurv_35_79` in the parent research workspace. `../export_neural.py` regenerates the JSON and `test/neural_golden.json` from the original Keras and joblib files; TensorFlow is not needed on device. The Cox `assets/model.json` and raw `support_reference.f64` are the existing trained model and its input-support reference. They are about 0.33 MB combined. The former gzip reference was replaced by raw bytes to support Flutter web without `dart:io`.
 
 From this package directory:
 
 ```powershell
 flutter pub get
-flutter test
 dart tool/check.dart
+flutter test
+flutter analyze
 ```
 
-The Flutter test checks real package asset loading. The pure Dart checker compares three exported golden profiles against the original Python model and exercises daily/weekly mapping and support checks. `flutter test` passes on the available Windows Flutter SDK; a physical iOS build requires a macOS/Xcode environment.
+The checker compares frozen Cox outputs and neural outputs against Python exports, checks the first five projected points against the current Cox curve, and asserts monotonicity, extrapolation labels, and missing-input behavior. An iOS device build still requires macOS/Xcode.
+
+## Model limits and references
+
+The Cox model has temporal NHANES validation only at years 1–5; the neural hazard benchmark has a small discrimination advantage with an uncertainty interval spanning zero and has inverse associations for some BMI and sleep profile comparisons. See [the model card](MODEL_CARD.md). A higher neural hazard ratio means higher modeled hazard, not necessarily worse present-day health, and changing a feature is not a proven intervention benefit. The two long-range projections are for a hackathon proof of concept and need proper out-of-sample longitudinal validation before being presented as a personal lifespan estimate.
+
+Methodological background: the [R survival package documentation](https://web.mit.edu/r/current/lib/R/library/survival/html/survfit.coxph.html) explains that a time-varying covariate path must be specified for Cox survival curves and that such predictions can be nonsensical if specified poorly. The [lifelines time-varying Cox documentation](https://lifelines.readthedocs.io/en/latest/Time%20varying%20survival%20regression.html) describes a separately fitted time-varying model; this package has not fitted one.

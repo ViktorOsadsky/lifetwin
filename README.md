@@ -9,6 +9,7 @@ The repo contains the Flutter game shell, voice/typing onboarding, Apple Health 
 - [Backend status and remaining work](docs/backend-status.md): current functionality, audit findings/fixes, verification and a prioritized backend-only backlog.
 - [Voice with Cartesia](docs/voice-cartesia.md): what Cartesia does in LifeTwin, setup, responsible use and known limitations.
 - [Backend run guide](server/README.md): working endpoints, blank-key startup, limits, tests, the survival forecast route, and deliberately empty compare/sensitivity routes.
+- [On-device survival handoff](model_handoff/SURVIVAL_PROJECTION_HANDOFF.md): frozen neural hazard output, Cox age-stepping experiments, local Flutter web tester, and integration limits.
 - [Shared API contracts](contracts/README.md): generated schemas, fixtures and offline/live checks for Flutter integration.
 - [Master implementation guide](MASTER_PLAN.md): current product decisions, sensitivity search, research/planning, experimental twin, contracts, and delivery gates.
 - [Team splitting document](docs/team-plan.md): track owners and sync points; [track briefs and iOS workflow](docs/README.md).
