@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -69,6 +70,22 @@ String contextOf(FakeSocket s) => (jsonDecode(s.texts.last) as Map)['context_id'
 
 void speakingTests() {
   group('speaking', () {
+    test('playback feed errors reach the normal voice failure path without an unhandled stream error', () async {
+      final server = TokenServer();
+      final sockets = Sockets();
+      final out = CartesiaSpeechOutput(tokens: server.provider, player: FailingPlayer(), connect: sockets.connect);
+      final result = expectLater(out.speak('Hello'), throwsA(isA<VoiceFailure>()));
+      await pumpEventQueue();
+      for (var attempt = 0; attempt < 2; attempt++) {
+        final socket = sockets.last;
+        socket.reply({'context_id': contextOf(socket), 'data': base64Encode(loudChunk())});
+        await pumpEventQueue();
+      }
+      await result;
+      expect(server.mints, 2, reason: 'The existing retry remains bounded to one remint.');
+      expect(sockets.made.every((s) => s.sink.closed), isTrue);
+    });
+
     test('the player sets up while the socket opens, not after', () async {
       final server = TokenServer();
       final sockets = Sockets(autoOpen: false);
@@ -87,6 +104,11 @@ void speakingTests() {
       expect(player.calls, ['stop', 'begin', 'feed', 'finish']);
     });
   });
+}
+
+class FailingPlayer extends FakePlayer {
+  @override
+  Future<void> feed(Uint8List pcm) async => throw StateError('Playback refused');
 }
 
 /// Short stand-ins for the real limits, so the tests run in real time.
