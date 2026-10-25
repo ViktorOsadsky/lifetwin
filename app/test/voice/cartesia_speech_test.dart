@@ -12,6 +12,7 @@ void main() {
   drainTests();
   speakingTests();
   hangTests();
+  stopTests();
 
   group('listening', () {
     late TokenServer server;
@@ -181,6 +182,46 @@ void hangTests() {
       expect(dropped, isA<VoiceFailure>());
       expect(rec.recording, false);
       expect(await input.finish(), '');
+    });
+  });
+}
+
+void stopTests() {
+  group('Stop', () {
+    Future<(FakeSocket, CartesiaSpeechInput, FakeRecorder)> listening() async {
+      final rec = FakeRecorder();
+      final sockets = Sockets();
+      final input = CartesiaSpeechInput(tokens: TokenServer().provider, recorder: rec, connect: sockets.connect);
+      await input.start((_) {});
+      return (sockets.last, input, rec);
+    }
+
+    test('waits for the reply to its own finalize, not for a pause finalize still owed', () async {
+      final (socket, input, rec) = await listening();
+      rec.mic.add(loudChunk(0)); // quiet, then speech, then a pause: a pause finalize is sent
+      rec.mic.add(loudChunk());
+      for (var i = 0; i < 6; i++) {
+        rec.mic.add(loudChunk(0));
+      }
+      await pumpEventQueue();
+      expect(socket.texts.where((t) => t == 'finalize'), hasLength(1));
+      socket.reply({'type': 'transcript', 'text': 'I am 70', 'is_final': true});
+      final watch = Stopwatch()..start();
+      final finishing = input.finish();
+      await pumpEventQueue();
+      expect(socket.texts.where((t) => t == 'finalize'), hasLength(2));
+      socket.reply({'type': 'flush_done'}); // one reply; the pause's never comes
+      final text = await finishing;
+      expect(watch.elapsedMilliseconds, lessThan(500));
+      expect(text, 'I am 70');
+    });
+
+    test('gives up after about 1 s when no reply comes', () async {
+      expect(stopFlushLimit, const Duration(seconds: 1));
+      final (_, input, _) = await listening();
+      final watch = Stopwatch()..start();
+      await input.finish();
+      expect(watch.elapsedMilliseconds, inInclusiveRange(900, 1600));
     });
   });
 }

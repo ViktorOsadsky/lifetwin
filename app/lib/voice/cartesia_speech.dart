@@ -15,6 +15,9 @@ typedef SocketConnector = WebSocketChannel Function(Uri uri);
 /// A voice socket that has not opened by then has failed.
 const socketReadyLimit = Duration(seconds: 3);
 
+/// How long Stop waits for the reply to its own "finalize" before using the words it has.
+const stopFlushLimit = Duration(seconds: 1);
+
 /// Speech that sends no audio for this long is over (or has failed, if none came at all).
 const ttsSilenceLimit = Duration(seconds: 4);
 
@@ -308,7 +311,6 @@ class CartesiaSpeechInput implements SpeechInput {
   StreamSubscription<dynamic>? _msgSub;
   final _chunks = ChunkBuffer();
   var _pause = PauseDetector();
-  int _flushesOwed = 0;
   final _early = <Uint8List>[];
   bool _ready = false;
   final _finals = <String>[];
@@ -351,7 +353,6 @@ class CartesiaSpeechInput implements SpeechInput {
     _error = null;
     _ready = false;
     _pause = PauseDetector();
-    _flushesOwed = 0;
     _early.clear();
     _micStarts++;
     // The mic starts before the token and the socket, so the first words are not lost:
@@ -407,8 +408,7 @@ class CartesiaSpeechInput implements SpeechInput {
       if (_ready && ch != null) {
         ch.sink.add(c);
         if (paused) {
-          _flushesOwed++;
-          ch.sink.add(CartesiaWire.sttFinalize);
+          ch.sink.add(CartesiaWire.sttFinalize); // its reply is not awaited by anyone
         }
       } else {
         _early.add(c);
@@ -433,9 +433,9 @@ class CartesiaSpeechInput implements SpeechInput {
             }
             _onCaption?.call(_caption);
           case SttFlushed():
-            // Pauses also ask for a flush; Stop waits for the last one owed.
-            if (_flushesOwed > 0) _flushesOwed--;
-            if (_flushesOwed == 0) _endFlush();
+            // Stop waits only for the flush it asked for: the first reply after it. Replies
+            // to pause finalizes before Stop find nobody waiting.
+            _endFlush();
           case SttError(:final message):
             _error = message;
             _endFlush();
@@ -481,10 +481,9 @@ class CartesiaSpeechInput implements SpeechInput {
     final tail = _chunks.flush();
     if (_ready) {
       if (tail != null) ch.sink.add(tail);
-      _flushed = Completer<void>();
-      _flushesOwed++;
+      final flushed = _flushed = Completer<void>();
       ch.sink.add(CartesiaWire.sttFinalize);
-      await _flushed!.future.timeout(const Duration(seconds: 3), onTimeout: () {});
+      await flushed.future.timeout(stopFlushLimit, onTimeout: () {});
       try {
         ch.sink.add(CartesiaWire.sttClose);
       } catch (_) {}
