@@ -518,10 +518,10 @@ def test_a_note_naming_vitamin_d_can_be_quoted():
         "A daily multivitamin or more fiber is common; ask your pharmacist before starting.",
     ],
 )
-def test_a_gentle_well_known_supplement_with_a_doctor_pointer_is_spoken(line):
+def test_an_unrelated_supplement_with_a_doctor_pointer_still_falls_back(line):
     provider = Provider(line)
     body = post(make_client(provider), {"smoking_status": "current"}, consent={"muse": True})
-    assert body["phrased_by"] == "muse", body["recommendations"][0]["message"]
+    assert body["phrased_by"] == "templates", body["recommendations"][0]["message"]
 
 
 @pytest.mark.parametrize(

@@ -2,16 +2,15 @@
 
 Without consent for the active provider (or without a configured provider) nothing
 is sent and the deterministic wording is used. The provider receives the person's
-answers and own words (never a name or contact details), and may only rephrase:
-it never decides or changes a saved value.
+answers and own words (never a name or contact details), and selects from
+server-authored wording choices: it never decides or changes a saved value. Arbitrary prose falls back to templates.
 """
 
 import asyncio
-import json
 
 from lifetwin.onboarding.models import HabitNote, Recommendation
 from lifetwin.personalize.providers import Personalizer, PhrasingUnavailable
-from lifetwin.personalize.safety import safe_line
+from lifetwin.personalize.safety import grounded_line, wording_choices
 
 RULES = (
     "You write short lines for Mochi, a kind bear who talks with adults aged 65 and over. "
@@ -21,14 +20,15 @@ RULES = (
     "never mention weight loss. Plain, warm, everyday words. "
 )
 SUGGESTIONS = RULES + (
-    'Rewrite each item\'s "draft" so it sounds personal, using the person\'s "said" words '
-    "where they fit. Keep every number from the draft and add none. At most 40 words "
-    'each. Reply with JSON: {"lines": [one string per item, in order]}.'
+    "Select one complete entry from each item's approved_wordings, verbatim. "
+    "These are the only permitted lines: do not add, combine, omit or rewrite words. "
+    "For an item with no approved_wordings return null; its template stays unchanged. "
+    'Reply with JSON: {"lines": [one selected string or null per item, in order]}.'
 )
 QUESTION = RULES + (
-    'Rephrase "line" as one friendly question that asks exactly the same thing, '
-    'optionally echoing "said". At most 30 words, ending with "?". '
-    'Reply with JSON: {"line": "..."}.'
+    "Select one complete entry from approved_wordings, verbatim. "
+    "Do not add, combine, omit or rewrite words, even to echo the person's words. "
+    'Reply with JSON: {"line": "one selected question"}.'
 )
 
 
@@ -57,13 +57,22 @@ async def phrase_recommendations(
     """(recommendations, whether any line came from the provider)."""
     if not recommendations:
         return recommendations, False
+    # Note slots can contain free text. Preserve their existing deterministic
+    # rendering, but never promote that text into trusted provider-copy choices.
+    choices = tuple(
+        () if any(key.startswith("note:") for key in rec.based_on) else wording_choices(rec.message)
+        for rec in recommendations
+    )
+    if not any(choices):
+        return recommendations, False
     items = []
-    for rec in recommendations:
+    for rec, approved in zip(recommendations, choices, strict=True):
         fields = [name for name in rec.based_on if not name.startswith("note:")]
         topics = {name.split(":", 1)[1] for name in rec.based_on if name.startswith("note:")}
         items.append(
             {
                 "draft": rec.message,
+                "approved_wordings": list(approved),
                 "answers": _profile_facts(profile, fields),
                 "said": _note_words([note for note in notes if note.topic in topics]),
             }
@@ -77,9 +86,10 @@ async def phrase_recommendations(
     if not isinstance(lines, list) or len(lines) != len(recommendations):
         return recommendations, False
     out, used = [], False
-    for rec, item, line in zip(recommendations, items, lines, strict=True):
-        if safe_line(line, json.dumps(item, ensure_ascii=False)):
-            out.append(rec.model_copy(update={"message": line.strip()}))
+    for rec, approved, line in zip(recommendations, choices, lines, strict=True):
+        canonical = grounded_line(line, approved)
+        if canonical is not None:
+            out.append(rec.model_copy(update={"message": canonical}))
             used = True
         else:
             out.append(rec)  # the template, unchanged
@@ -90,13 +100,15 @@ async def phrase_question(
     personalizer: Personalizer, line: str, said: str | None, timeout: float = 6
 ) -> str | None:
     """A rephrased question, or None to keep Mochi's own."""
-    facts = {"line": line, **({"said": said} if said else {})}
+    choices = wording_choices(line, question=True, max_length=200)
+    if not choices:
+        return None
+    facts = {"line": line, "approved_wordings": list(choices), **({"said": said} if said else {})}
     try:
         async with asyncio.timeout(timeout):
             reply = await personalizer.phrase(QUESTION, facts)
     except (PhrasingUnavailable, TimeoutError):
         return None
     text = reply.get("line") if isinstance(reply, dict) else None
-    if not safe_line(text, json.dumps(facts, ensure_ascii=False), max_length=200):
-        return None
-    return text.strip() if text.strip().endswith("?") else None
+    canonical = grounded_line(text, choices, max_length=200)
+    return canonical if canonical is not None and canonical.endswith("?") else None

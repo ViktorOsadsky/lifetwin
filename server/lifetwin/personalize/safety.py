@@ -1,66 +1,58 @@
-"""Every outside-AI line is checked before Mochi says it; a failed check uses the template.
+"""Bound outside-AI copy to complete, server-authored wording choices.
 
-The check refuses medical claims and advice (years gained, dates and time words,
-diagnoses, medicines, doses, supplements other than a gentle, doctor-checked mention, promises), weight and diet words, percentages,
-links, and any number (digits or words) the facts do not hold.
+A word/number denylist cannot establish the meaning of arbitrary prose. The
+recommendation and question paths therefore accept only an exact choice derived
+from their trusted draft, and publish that canonical string rather than provider
+text. Facts, habit notes and provider replies never define additional choices.
+This bounds provider edits; it does not certify the underlying draft clinically.
 """
 
-import re
-
-BLOCKED = re.compile(
-    r"\b(?:years?|life ?span|life expectancy|live longer|longevity|death|die|dying|date|"
-    r"diagnos\w*|prescri\w*|medicat\w*|medicine\w*|pills?|tablets?|doses?|dosage|dosing|"
-    r"mg|mcg|milligrams?|iu|fish oil|omega|turmeric|"
-    r"curcumin|melatonin|magnesium|zinc|calcium|iron|probiotics?|collagen|ginkgo|ginseng|"
-    r"coq ?10|glucosamine|biotin|b ?12|herbal|cure\w*|treat\w*|heals?|guarantee\w*|promise\w*|definitely will|"
-    r"will (?:add|give you|make you live|prevent|reverse|fix)|prevents?|reverses?|"
-    r"stop taking|start taking|increase your|decrease your|percent|percentage|"
-    r"chance of|risk of dying|as an ai|language model|weigh\w*|pounds?|lbs?|kilos?|kg|"
-    r"slim\w*|shed\w*|fat|obes\w*|bmi|diet\w*|calories|creatine|elderberry|echinacea|cbd|"
-    r"ashwagandha|protein (?:powders?|shakes?|bars?)|garlic pills?|st john's wort|"
-    r"energy (?:drinks?|shots?)|pre[- ]?workout|caffeine\w*|stimulants?|"
-    r"(?:add|adds|adding|gain)\w* (?:\w+ ){0,3}to your life|will feel|"
-    r"belly|tummy|waist\w*|los(?:e|ing) (?:a (?:bit|little) of |some )?weight|"
-    r"january|february|march|april|may|june|july|august|september|october|november|"
-    r"december|monday|tuesday|wednesday|thursday|friday|saturday|sunday|spring|summer|"
-    r"autumn|winter|tomorrow|next (?:week|month)|by the end)\b"
-    r"|%|https?://|www\.",
-    re.I,
-)
-# A gentle mention of a well-known, low-risk supplement is fine, with no dose or brand and a
-# pointer to the doctor or pharmacist. Any other supplement or vitamin is blocked.
-GENTLE_SUPPLEMENT = re.compile(r"\b(?:vitamin d|multi ?vitamin|fib(?:er|re))\b", re.I)
-ANY_SUPPLEMENT = re.compile(r"\b(?:supplements?|vitamins?|multi ?vitamins?)\b", re.I)
-DOCTOR_POINTER = re.compile(
-    r"\b(?:check|ask|talk|speak)\w*\b[^.]{0,30}\b(?:doctor|pharmacist)\b", re.I
-)
-NUMBER_WORDS = re.compile(
-    r"\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|"
-    r"fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|"
-    r"sixty|seventy|eighty|ninety|hundred|thousand|dozen|half|twice|double|triple)\b",
-    re.I,
-)
+from collections.abc import Sequence
 
 
-def _numbers(text: str) -> set[str]:
-    return set(re.findall(r"\d+(?:\.\d+)?", text))
+def wording_choices(
+    draft: str, *, question: bool = False, max_length: int = 400
+) -> tuple[str, ...]:
+    """Keep the whole trusted draft; vary only reviewed, neutral encouragement.
+
+    Callers must pass the deterministic server draft, never arbitrary user or
+    provider text. No synonym substitution, sentence removal or action change is
+    allowed. Oversized/multiline drafts simply keep deterministic wording.
+    """
+    if not draft or draft != draft.strip() or "\n" in draft or "\r" in draft:
+        return ()
+    if question:
+        candidates = (draft, f"Take your time. {draft}", f"When you're ready: {draft}")
+    else:
+        candidates = (draft, f"{draft} We can go at your pace.", f"{draft} There's no rush.")
+    return tuple(text for text in candidates if len(text) <= max_length)
 
 
-def safe_line(line: object, facts_text: str, *, max_length: int = 400) -> bool:
-    """Short, plain, no blocked words, and every number already in the facts."""
-    if not isinstance(line, str):
-        return False
-    line = line.strip()
-    if not line or len(line) > max_length or "\n" in line:
-        return False
-    if BLOCKED.search(line):
-        return False
-    if ANY_SUPPLEMENT.search(GENTLE_SUPPLEMENT.sub(" ", line)):
-        return False
-    if GENTLE_SUPPLEMENT.search(line) and not DOCTOR_POINTER.search(line):
-        return False
-    if _numbers(line) - _numbers(facts_text):
-        return False
-    # Spelled-out numbers count too: only those the facts already hold.
-    said = {word.lower() for word in NUMBER_WORDS.findall(line)}
-    return said <= {word.lower() for word in NUMBER_WORDS.findall(facts_text)}
+def grounded_line(
+    line: object, trusted_choices: Sequence[str], *, max_length: int = 400
+) -> str | None:
+    """Return the matched canonical choice, or None for deterministic fallback.
+
+    Only outer ASCII spaces may differ. Full-string equality rejects extra claims,
+    reordered/mixed sentences, hidden controls, confusables and Unicode rewrites
+    unless those exact characters already belong to the trusted server choice.
+    Do not normalize, strip controls or fuzzy-match untrusted text into acceptance.
+    """
+    if not isinstance(line, str) or not line or len(line) > max_length:
+        return None
+    if isinstance(trusted_choices, str):
+        return None  # a facts blob is not a list of approved lines
+    candidate = line.strip(" ")
+    return next((text for text in trusted_choices if candidate == text), None)
+
+
+def safe_line(line: object, draft: str, *, question: bool = False, max_length: int = 400) -> bool:
+    """Whether a line matches a bounded choice for this trusted server draft."""
+    return (
+        grounded_line(
+            line,
+            wording_choices(draft, question=question, max_length=max_length),
+            max_length=max_length,
+        )
+        is not None
+    )
