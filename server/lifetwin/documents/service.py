@@ -77,11 +77,21 @@ MUSE_INSTRUCTIONS = (
 
 
 class DocumentService:
-    def __init__(self, extractor=None, *, muse_enabled: bool = False, timeout_seconds: float = 12):
+    def __init__(
+        self,
+        extractor=None,
+        *,
+        muse_enabled: bool = False,
+        timeout_seconds: float = 12,
+        pdf_reader=None,
+    ):
         # The selected outside-AI adapter (Muse over Chat Completions, or Claude), or None.
         # Used only when enabled and the person agreed for that provider. It gets the
         # words only, never the photo.
         self.extractor = extractor
+        # DOCUMENT_PROVIDER=claude: Claude reads a whole PDF, with the person's yes for it
+        # (POST /api/documents/read, lifetwin.documents.pdf). None: the phone reads PDFs.
+        self.pdf_reader = pdf_reader
         self.provider = getattr(extractor, "provider", "muse")
         self.muse_enabled = muse_enabled
         self.timeout = timeout_seconds

@@ -32,9 +32,13 @@ class TodayWithMochiCard extends StatefulWidget {
     this.ideas,
     this.openUrl = defaultOpenUrl,
     this.acceptance,
+    this.initialPlan,
   });
 
   final CoachClient client;
+
+  /// The last plan this run saw: shown at once while the fresh one is fetched.
+  final DailyPlan? initialPlan;
   final Map<String, dynamic> Function() confirmedContext;
   final VoidCallback onOpen;
   final Future<void> Function()? beforeFirstPlan;
@@ -66,6 +70,7 @@ class TodayWithMochiCard extends StatefulWidget {
 class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
   DailyPlan? _plan;
   bool _loading = true;
+  bool _disposed = false;
   bool _failed = false;
   bool _busy = false;
   final _chosen = <String, String>{};
@@ -73,9 +78,14 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
   @override
   void initState() {
     super.initState();
+    _plan = widget.initialPlan;
     _load();
-    // Today's idea for the second line: from the day's cache, or one call.
-    widget.ideas?.hub.ensureToday();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -85,9 +95,12 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
       widget.onPlan?.call(plan);
       if (mounted) setState(() => _plan = plan);
     } catch (_) {
-      if (mounted) setState(() => _failed = true);
+      if (mounted && _plan == null) setState(() => _failed = true);
     } finally {
       if (mounted) setState(() => _loading = false);
+      // Today's idea for the second line (the day's cache, or one call) comes after the plan, so it never
+      // competes with the plan for the server or delays it.
+      if (!_disposed) widget.ideas?.hub.ensureToday();
     }
   }
 
@@ -294,7 +307,7 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
               ),
             ),
             const SizedBox(height: 8),
-            if (_loading)
+            if (_loading && plan == null)
               WholeWordText(todayFallbackLine, style: LtText.body())
             else if (!showRows)
               WholeWordText(
