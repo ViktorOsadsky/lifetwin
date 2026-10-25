@@ -247,6 +247,28 @@ void main() {
     port = FakePort();
   });
 
+  test('a controller that does not own the shared speech input leaves it alive for the next check-in', () async {
+    CheckinController shared() => CheckinController(
+      guide: guide,
+      input: input,
+      output: output,
+      ownsSpeech: false,
+      store: store,
+      clock: () => now,
+    );
+    final first = shared();
+    expect(await first.start(), isTrue);
+    first.dispose();
+    expect(input.disposals, 0);
+    final second = shared();
+    expect(await second.start(), isTrue);
+    expect(second.mascotLine, 'How did you sleep last night?');
+    second.dispose();
+    expect(input.disposals, 0);
+    make().dispose();
+    expect(input.disposals, 1, reason: 'an owner still disposes its own input');
+  });
+
   test('starts with a plan from the stored days and speaks the question', () async {
     final c = make();
     expect(await c.start(), isTrue);

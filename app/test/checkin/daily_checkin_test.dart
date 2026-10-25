@@ -182,6 +182,14 @@ void main() {
       await t.tap(find.text('Back to my room'));
       await t.pump();
       expect(find.text('That’s okay. I saved what you told me.'), findsWidgets);
+      await t.pump(const Duration(milliseconds: 400)); // slide in, then the timer starts
+      await t.pump(const Duration(milliseconds: 2100));
+      await t.pumpAndSettle();
+      expect(
+        find.text('That’s okay. I saved what you told me.'),
+        findsNothing,
+        reason: 'short, so it never covers the next screen',
+      );
     });
 
     testWidgets('skip is quick, and a skipped answer is never filled in', (t) async {
