@@ -28,12 +28,53 @@ class CustomizeScreen extends StatefulWidget {
 
 enum _Tab {
   hats('Hats', Icons.face_retouching_natural),
+  tops('Tops', Icons.checkroom_rounded),
+  glasses('Glasses', Icons.visibility_outlined),
+  fur('Fur', Icons.pets_rounded),
+  helpers('Helpers', Icons.accessibility_new_rounded),
   room('Room', Icons.chair_outlined);
 
   const _Tab(this.label, this.icon);
   final String label;
   final IconData icon;
 }
+
+typedef _Soon = ({String label, IconData? icon, Color? swatch});
+
+/// Drawn in the Customize design (cosmetics/index.json) but with no sprite art yet:
+/// shown as "Coming soon" slots that can't be chosen.
+const _comingSoon = <_Tab, List<_Soon>>{
+  _Tab.hats: [
+    (label: 'Beanie', icon: Icons.ac_unit_rounded, swatch: null),
+    (label: 'Sun hat', icon: Icons.wb_sunny_outlined, swatch: null),
+    (label: 'Cap', icon: Icons.sports_baseball_outlined, swatch: null),
+    (label: 'Visor', icon: Icons.light_mode_outlined, swatch: null),
+  ],
+  _Tab.tops: [
+    (label: 'Cal tee', icon: Icons.checkroom_rounded, swatch: null),
+    (label: 'Cosy cardigan', icon: Icons.dry_cleaning_outlined, swatch: null),
+    (label: 'Hoodie', icon: Icons.checkroom_outlined, swatch: null),
+    (label: 'Rain jacket', icon: Icons.umbrella_outlined, swatch: null),
+    (label: 'Knit scarf', icon: Icons.waves_rounded, swatch: null),
+  ],
+  _Tab.glasses: [
+    (label: 'Reading glasses', icon: Icons.menu_book_outlined, swatch: null),
+    (label: 'Sunglasses', icon: Icons.wb_sunny_outlined, swatch: null),
+    (label: 'Bifocals', icon: Icons.visibility_outlined, swatch: null),
+  ],
+  _Tab.fur: [
+    (label: 'Honey', icon: null, swatch: Color(0xFFD9A066)),
+    (label: 'Cocoa', icon: null, swatch: Color(0xFF7B4A2E)),
+    (label: 'Cream', icon: null, swatch: Color(0xFFF3E3C3)),
+    (label: 'Panda', icon: null, swatch: Color(0xFF2E2A2A)),
+    (label: 'Cinnamon', icon: null, swatch: Color(0xFFB5652E)),
+  ],
+  _Tab.helpers: [
+    (label: 'Hearing aids', icon: Icons.hearing_outlined, swatch: null),
+    (label: 'Walking cane', icon: Icons.accessibility_new_rounded, swatch: null),
+    (label: 'Step counter', icon: Icons.watch_outlined, swatch: null),
+  ],
+};
 
 class _CustomizeScreenState extends State<CustomizeScreen> {
   late TwinAppearance _draft = widget.appearance.value;
@@ -108,7 +149,11 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
               const SizedBox(height: 12),
               _tabs(),
               const SizedBox(height: 12),
-              if (_tab == _Tab.hats) _hats() else _rooms(),
+              switch (_tab) {
+                _Tab.hats => _hats(),
+                _Tab.room => _rooms(),
+                _ => _soonTiles(_tab),
+              },
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -233,39 +278,81 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
   }
 
   Widget _hats() {
-    return Semantics(
-      label: 'Hats',
-      container: true,
-      child: Wrap(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          label: 'Hats',
+          container: true,
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 12,
+            runSpacing: 10,
+            children: [
+              _Tile(
+                label: 'Cal hat',
+                selected: _draft.look == TwinLook.calHat,
+                tilt: -1,
+                art: Image.asset(calHatAsset, width: 52, height: 52, excludeFromSemantics: true),
+                onTap: () => setState(() => _draft = _draft.copyWith(look: TwinLook.calHat)),
+              ),
+              _Tile(
+                label: 'Stanford hat',
+                selected: _draft.look == TwinLook.stanfordHat,
+                tilt: 1,
+                art: Image.asset(stanfordHatAsset, width: 52, height: 52, excludeFromSemantics: true),
+                onTap: () => setState(() => _draft = _draft.copyWith(look: TwinLook.stanfordHat)),
+              ),
+              _Tile(
+                label: 'No hat',
+                selected: _draft.look == TwinLook.plain,
+                tilt: -1,
+                art: const Icon(Icons.do_not_disturb_alt_rounded, size: 40, color: LtColors.ink),
+                onTap: () => setState(() => _draft = _draft.copyWith(look: TwinLook.plain)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _soonTiles(_Tab.hats),
+      ],
+    );
+  }
+
+  Widget _soonTiles(_Tab tab) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      WholeWordText('Coming soon', style: LtText.body(size: 19, weight: FontWeight.w700)),
+      const SizedBox(height: 4),
+      WholeWordText("Still being drawn. You can pick these once they're ready.", style: LtText.body()),
+      const SizedBox(height: 10),
+      Wrap(
         alignment: WrapAlignment.center,
         spacing: 12,
         runSpacing: 10,
         children: [
-          _Tile(
-            label: 'Cal hat',
-            selected: _draft.look == TwinLook.calHat,
-            tilt: -1,
-            art: Image.asset(calHatAsset, width: 52, height: 52, excludeFromSemantics: true),
-            onTap: () => setState(() => _draft = _draft.copyWith(look: TwinLook.calHat)),
-          ),
-          _Tile(
-            label: 'Stanford hat',
-            selected: _draft.look == TwinLook.stanfordHat,
-            tilt: 1,
-            art: Image.asset(stanfordHatAsset, width: 52, height: 52, excludeFromSemantics: true),
-            onTap: () => setState(() => _draft = _draft.copyWith(look: TwinLook.stanfordHat)),
-          ),
-          _Tile(
-            label: 'No hat',
-            selected: _draft.look == TwinLook.plain,
-            tilt: -1,
-            art: const Icon(Icons.do_not_disturb_alt_rounded, size: 40, color: LtColors.ink),
-            onTap: () => setState(() => _draft = _draft.copyWith(look: TwinLook.plain)),
-          ),
+          for (final item in _comingSoon[tab]!)
+            _Tile(
+              label: item.label,
+              selected: false,
+              tilt: 0,
+              art: item.swatch == null
+                  ? Icon(item.icon, size: 36, color: LtColors.control)
+                  : Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: item.swatch,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: LtColors.control),
+                      ),
+                    ),
+              onTap: null,
+            ),
         ],
       ),
-    );
-  }
+    ],
+  );
 
   Widget _rooms() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -387,7 +474,7 @@ class _Thumb extends StatelessWidget {
   );
 }
 
-/// A die-cut tile used as a radio. Null [onTap] means not available yet.
+/// A die-cut tile used as a radio. Null [onTap] means coming soon (no art yet).
 class _Tile extends StatelessWidget {
   const _Tile({
     required this.label,
@@ -411,7 +498,7 @@ class _Tile extends StatelessWidget {
       checked: selected,
       button: true,
       enabled: available,
-      label: available ? label : '$label, not available yet',
+      label: available ? label : '$label, coming soon',
       excludeSemantics: true,
       onTap: onTap,
       child: GestureDetector(

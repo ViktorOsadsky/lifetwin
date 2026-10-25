@@ -259,6 +259,13 @@ void main() {
       expect(jsonEncode(b), isNot(contains('"featured"')));
     });
 
+    test('more than 50 hidden in a day sends the latest 50 (the server takes at most 50)', () async {
+      final r = await repo();
+      final hidden = [for (var i = 0; i < 60; i++) 'idea-$i'];
+      final b = recommendationsRequestBody(r, excludedIds: hidden);
+      expect(b['excluded_ids'], hidden.sublist(10));
+    });
+
     test('the kind picks the pose, with a stand fallback', () {
       expect(ideaPose('walk'), TwinPose.walkSide);
       expect(ideaPose('social'), TwinPose.walkSide);
@@ -652,14 +659,8 @@ void main() {
       await a.ideasHub.ensureToday();
       final look = ValueNotifier(const TwinAppearance(name: 'Mochi'));
       addTearDown(look.dispose);
-      Widget room() => RoomScreen(
-        appearance: look,
-        hasProfile: true,
-        onTalk: () {},
-        onCustomize: () {},
-        onFortune: () async {},
-        ideas: a.ideasAccess,
-      );
+      Widget room() =>
+          RoomScreen(appearance: look, hasProfile: true, onTalk: () {}, onCustomize: () {}, ideas: a.ideasAccess);
       await pumpIn(t, room());
       await t.pump(const Duration(milliseconds: 300));
       expect(find.text('See ideas ›'), findsOneWidget);
@@ -696,14 +697,7 @@ void main() {
       addTearDown(look.dispose);
       await pumpIn(
         t,
-        RoomScreen(
-          appearance: look,
-          hasProfile: true,
-          onTalk: () {},
-          onCustomize: () {},
-          onFortune: () async {},
-          ideas: a.ideasAccess,
-        ),
+        RoomScreen(appearance: look, hasProfile: true, onTalk: () {}, onCustomize: () {}, ideas: a.ideasAccess),
         scale: 1.5,
       );
       await t.pump(const Duration(milliseconds: 300));
@@ -757,13 +751,7 @@ void main() {
               ideas: () => access,
               child: child!,
             ),
-            home: RoomScreen(
-              appearance: look,
-              hasProfile: true,
-              onTalk: () {},
-              onCustomize: () {},
-              onFortune: () async {},
-            ),
+            home: RoomScreen(appearance: look, hasProfile: true, onTalk: () {}, onCustomize: () {}),
           ),
         );
         await t.pump();
@@ -944,13 +932,7 @@ void main() {
               ideas: () => access,
               child: child!,
             ),
-            home: RoomScreen(
-              appearance: look,
-              hasProfile: true,
-              onTalk: () {},
-              onCustomize: () {},
-              onFortune: () async {},
-            ),
+            home: RoomScreen(appearance: look, hasProfile: true, onTalk: () {}, onCustomize: () {}),
           ),
         );
         await t.pump();

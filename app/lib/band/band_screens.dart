@@ -10,6 +10,7 @@ import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart' hide TwinMood;
 import '../widgets/whole_word_text.dart';
+import 'band_ble.dart';
 import 'band_charts.dart';
 import 'band_data.dart';
 import 'band_service.dart';
@@ -46,7 +47,7 @@ class BandPairScreen extends StatefulWidget {
   State<BandPairScreen> createState() => _BandPairScreenState();
 }
 
-enum _Step { before, searching, found, trouble, paired }
+enum _Step { before, searching, linking, found, trouble, paired }
 
 class _BandPairScreenState extends State<BandPairScreen> {
   _Step _step = _Step.before;
@@ -75,7 +76,22 @@ class _BandPairScreenState extends State<BandPairScreen> {
     widget.onSeeToday();
   }
 
-  Future<void> _pair(BandDevice d) async {
+  String? _positionNote;
+
+  Future<void> _savePosition(bool standing) async {
+    final ok = await widget.store.client.savePosition(standing: standing);
+    if (!mounted) return;
+    setState(
+      () => _positionNote = !ok
+          ? 'Mochi couldn’t reach the band. Try again.'
+          : standing
+          ? 'Stand up straight. In about 5 seconds the band saves it: hold still 3 more seconds.'
+          : 'Sit down as usual. In about 5 seconds the band saves it: hold still 3 more seconds.',
+    );
+  }
+
+    Future<void> _pair(BandDevice d) async {
+    setState(() => _step = _Step.linking);
     final ok = await widget.store.pair(d);
     if (!mounted) return;
     setState(() => _step = ok ? _Step.paired : _Step.trouble);
@@ -86,6 +102,7 @@ class _BandPairScreenState extends State<BandPairScreen> {
     final (bubble, title, state) = switch (_step) {
       _Step.before => ('Put the band on your leg, then turn it on.', 'Find your band', steadyTwin),
       _Step.searching => ('Looking…', 'Find your band', curiousTwin),
+      _Step.linking => ('Linking…', 'Pair your band', curiousTwin),
       _Step.found => ('Found your band!', 'Pair your band', steadyTwin),
       _Step.trouble => ('Hmm, I can’t see it yet.', 'Can’t find your band', steadyTwin),
       _Step.paired => ('Yay, we’re linked!', 'Band paired', _proud),
@@ -126,15 +143,20 @@ class _BandPairScreenState extends State<BandPairScreen> {
         return [
           WholeWordText('Mochi uses Bluetooth to find your band.', style: LtText.body()),
           const SizedBox(height: 8),
-          WholeWordText('Strap it around your leg, just above the ankle.', style: LtText.body()),
+          WholeWordText(
+            'Slip it into your front trouser pocket so it rests against your thigh, or strap it snugly around your thigh. Wear it the same way every day.',
+            style: LtText.body(),
+          ),
           const SizedBox(height: 8),
           WholeWordText(
-            'Live pairing isn’t available in this version yet. Try a recorded demo band, or import a file from your band.',
+            'No band yet? Try a recorded demo band, or import a file from your band.',
             style: LtText.body(weight: FontWeight.w700),
           ),
         ];
       case _Step.searching:
         return [NoNumberBox(icon: Icons.bluetooth_searching_rounded, title: 'Looking for your band…')];
+      case _Step.linking:
+        return [NoNumberBox(icon: Icons.bluetooth_connected_rounded, title: 'Reading your band…')];
       case _Step.found:
         return [
           for (final d in _found)
@@ -175,6 +197,10 @@ class _BandPairScreenState extends State<BandPairScreen> {
       case _Step.trouble:
         final off = _bt == BluetoothState.off, denied = _bt == BluetoothState.notAllowed;
         return [
+          if (widget.store.pairProblem case final problem?) ...[
+            WholeWordText(problem, style: LtText.body(weight: FontWeight.w700)),
+            const SizedBox(height: 8),
+          ],
           _Check(
             label: off ? 'Bluetooth is off' : (denied ? 'Bluetooth not allowed' : 'Bluetooth is on'),
             ok: _bt == BluetoothState.on,
@@ -202,6 +228,20 @@ class _BandPairScreenState extends State<BandPairScreen> {
                 ],
               ),
             ),
+          // The band tells sitting from standing only after both positions are saved (control 05/06).
+          if (widget.store.client case BleBandClient(info: final info?) when !info.positionsSaved) ...[
+            const SizedBox(height: 8),
+            WholeWordText(
+              'So Mochi can tell sitting from standing, save both positions once:',
+              style: LtText.body(weight: FontWeight.w700),
+            ),
+            for (final (standing, label) in const [(true, 'Save standing position'), (false, 'Save sitting position')])
+              TextButton(
+                onPressed: () => _savePosition(standing),
+                child: Text(label, style: LtText.body(weight: FontWeight.w700)),
+              ),
+            if (_positionNote case final note?) WholeWordText(note, style: LtText.body(color: LtColors.secondary)),
+          ],
         ];
     }
   }
@@ -241,6 +281,7 @@ class _BandPairScreenState extends State<BandPairScreen> {
           ),
         ]);
       case _Step.searching:
+      case _Step.linking:
         return const SizedBox.shrink();
       case _Step.found:
         return const SizedBox.shrink();
@@ -556,7 +597,7 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 0, 12),
             child: WholeWordText(
-              'The band is worn on your leg. It counts your steps and sees whether you are sitting '
+              'The band rests against your thigh, in a front trouser pocket or strapped on. It counts your steps and sees whether you are sitting '
               'or lying, standing, or walking. It does not see your heart or what you are doing. '
               'Every number is an estimate.${widget.store.demo ? ' These days are demo data.' : ''}',
               style: LtText.body(color: LtColors.secondary),

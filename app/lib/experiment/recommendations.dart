@@ -208,7 +208,8 @@ Map<String, dynamic> recommendationsRequestBody(
     if (context['document_context'] != null) 'document_context': context['document_context'],
     'outside_ai_consent': context['outside_ai_consent'],
     'local_date': ?localDate,
-    if (excludedIds.isNotEmpty) 'excluded_ids': excludedIds,
+    // The server takes at most 50; the hub hides the older ones itself.
+    if (excludedIds.isNotEmpty) 'excluded_ids': excludedIds.skip(excludedIds.length > 50 ? excludedIds.length - 50 : 0).toList(),
   };
 }
 

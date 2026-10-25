@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lifesim/experiment/ideas_hub.dart';
+import 'package:lifesim/experiment/recommendations.dart';
 import 'package:lifesim/forecast/forecast_client.dart';
 import 'package:lifesim/forecast/fortune_ceremony_screen.dart';
 import 'package:lifesim/health/health_sample.dart';
@@ -28,7 +31,9 @@ import 'package:lifesim/voice/fakes.dart';
 import 'forecast_screen_test.dart' show FakeForecastClient, supportedJson;
 import 'support/assessments.dart';
 import 'support/settings_hub.dart';
+
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
+
 import 'health_screen_test.dart' show FakeReader;
 
 VoiceOnboardingController fakeController() =>
@@ -75,15 +80,17 @@ Finder image(String asset) =>
 
 TwinPose twinPose(WidgetTester t) => t.widget<TwinSprite>(find.byType(TwinSprite)).pose;
 
+final roomShotKey = GlobalKey();
+
 Future<ValueNotifier<TwinAppearance>> pumpRoom(
   WidgetTester t, {
   TwinAppearance look = const TwinAppearance(),
   bool reduced = false,
-  Future<void> Function()? onFortune,
   ValueNotifier<Forecast?>? outlook,
   Size size = const Size(390, 844),
   double textScale = 1,
   bool hasProfile = true,
+  IdeasAccess? ideas,
 }) async {
   setPhone(t, size);
   final notifier = ValueNotifier(look);
@@ -92,13 +99,16 @@ Future<ValueNotifier<TwinAppearance>> pumpRoom(
     MaterialApp(
       home: MediaQuery(
         data: MediaQueryData(size: size, disableAnimations: reduced, textScaler: TextScaler.linear(textScale)),
-        child: RoomScreen(
-          appearance: notifier,
-          onTalk: () {},
-          onCustomize: () {},
-          onFortune: onFortune ?? () async {},
-          outlook: outlook,
-          hasProfile: hasProfile,
+        child: RepaintBoundary(
+          key: roomShotKey,
+          child: RoomScreen(
+            appearance: notifier,
+            onTalk: () {},
+            onCustomize: () {},
+            outlook: outlook,
+            hasProfile: hasProfile,
+            ideas: ideas,
+          ),
         ),
       ),
     ),
@@ -176,9 +186,9 @@ void main() {
     expect(bgAt >= 0 && bgAt < twinAt, isTrue, reason: 'bg, then the twin');
     expect(find.bySemanticsLabel('Twin name: My twin'), findsOneWidget);
     expect(status('Hanging out'), findsOneWidget);
-    expect(find.text('Ask the ball'), findsOneWidget); // no forecast yet: no number
+    expect(find.text('Talk with Mochi to see it'), findsOneWidget); // no forecast yet: no number
     expect(find.textContaining('in 100'), findsNothing);
-    for (final label in ['Customize', 'Talk', 'Fortune']) {
+    for (final label in ['Customize', 'Talk', 'Ideas']) {
       expect(find.text(label), findsOneWidget);
     }
     // The old Exercise / Eat / Sleep row is gone: they are in the activity pill's chooser.
@@ -193,7 +203,7 @@ void main() {
     final outlook = ValueNotifier<Forecast?>(null);
     addTearDown(outlook.dispose);
     await pumpRoom(t, outlook: outlook);
-    expect(find.text('Ask the ball'), findsOneWidget);
+    expect(find.text('Talk with Mochi to see it'), findsOneWidget);
     outlook.value = forecastFrom(availableAssessment(const {1: 0.99, 2: 0.97, 3: 0.95, 4: 0.93, 5: 0.9080}));
     await t.pump();
     expect(find.text('about 91 in 100'), findsOneWidget);
@@ -269,42 +279,15 @@ void main() {
     expect(twinPose(t), isNot(TwinPose.jump));
   });
 
-  testWidgets('Fortune walks to the shelf, holds the ball, then opens the ceremony', (t) async {
-    var opened = 0;
-    await pumpRoom(t, onFortune: () async => opened++);
-    await t.tap(find.text('Fortune'));
-    await t.pump();
-    expect(status('Off to the shelf'), findsOneWidget);
-    await pumpUntil(t, status('The ball glows!'));
-    expect(twinPose(t), TwinPose.holdBall);
-    expect(image(roomLayout.shelfEmpty.asset), findsOneWidget); // the ball left the shelf
-    for (var i = 0; i < 400 && opened == 0; i++) {
-      await t.pump(const Duration(milliseconds: 50));
-    }
-    expect(opened, 1);
-    await frames(t, 2);
-    expect(image(roomLayout.shelfEmpty.asset), findsNothing); // the ball is back
-  });
-
-  testWidgets('Fortune or the outlook card with no finished talk: the twin asks to talk first', (t) async {
-    var opened = 0;
-    await pumpRoom(t, hasProfile: false, onFortune: () async => opened++);
-    await t.tap(find.text('Fortune'));
-    await t.pump();
-    expect(find.text(RoomScreen.talkFirst), findsOneWidget);
-    expect(status('Off to the shelf'), findsNothing);
-    await t.tap(find.text('Ask the ball'));
-    await frames(t, 3);
-    expect(opened, 0);
-  });
-
   testWidgets('Home has no Apple Health or upload pills; Settings and History are pinned icons', (t) async {
     await pumpRoom(t);
     expect(find.text('Use my Apple Health'), findsNothing);
     expect(find.text('Upload a document'), findsNothing);
   });
 
-  testWidgets('the Settings row imports nothing when the import is not taken (an answer is still being checked)', (t) async {
+  testWidgets('the Settings row imports nothing when the import is not taken (an answer is still being checked)', (
+    t,
+  ) async {
     setPhone(t);
     final now = DateTime.now();
     final c = fakeController();
@@ -316,7 +299,9 @@ void main() {
         value: 68,
       ),
     ]);
-    await t.pumpWidget(LifeTwinApp(controller: c, healthReader: reader, twin: Future.value(await memoryRepo(roomModel))));
+    await t.pumpWidget(
+      LifeTwinApp(controller: c, healthReader: reader, twin: Future.value(await memoryRepo(roomModel))),
+    );
     await t.pump();
     await t.pump();
     await t.tap(find.text('Talk'));
@@ -362,7 +347,9 @@ void main() {
         value: 68,
       ),
     ]);
-    await t.pumpWidget(LifeTwinApp(controller: c, healthReader: reader, twin: Future.value(await memoryRepo(roomModel))));
+    await t.pumpWidget(
+      LifeTwinApp(controller: c, healthReader: reader, twin: Future.value(await memoryRepo(roomModel))),
+    );
     await t.pump();
     await t.pump();
     await openSettingsRow(t, 'Apple Health');
@@ -458,7 +445,7 @@ void main() {
       return (c, forecast);
     }
 
-    testWidgets('Continue opens the fortune; Back returns to the Room, whose quiet estimate link still works', (t) async {
+    testWidgets('Continue opens the fortune; Back returns to the Room, which has no way to ask again', (t) async {
       final (_, forecast) = await start(t);
       expect(forecast.calls, hasLength(1));
       await t.tap(find.bySemanticsLabel('Back'));
@@ -466,15 +453,11 @@ void main() {
       expect(find.byType(RoomScreen), findsOneWidget);
       expect(find.text('Getting to know you'), findsOneWidget);
       expect(find.text('about 88 in 100'), findsNothing);
-      forecast.answers.add(forecastFrom(supportedJson()));
       await t.ensureVisible(find.text('Your estimate'));
       await t.tap(find.text('Your estimate'));
-      await pumpUntil(t, find.byType(FortuneCeremonyScreen));
       await t.pumpAndSettle();
-      await t.tap(find.text('Ask the ball'));
-      await t.pumpAndSettle();
-      expect(forecast.calls, hasLength(2));
-      expect(forecast.calls.last, {'age': 70});
+      expect(find.byType(FortuneCeremonyScreen), findsNothing);
+      expect(forecast.calls, hasLength(1));
     });
 
     testWidgets('"Go back to my answers" opens the conversation, where Go back can change one', (t) async {
@@ -491,11 +474,7 @@ void main() {
       // Left unfinished: the Room no longer offers a forecast from the older answers.
       Navigator.of(t.element(find.byType(VoiceOnboardingScreen))).pop();
       await t.pumpAndSettle();
-      await t.ensureVisible(find.text('Your estimate'));
-      await t.tap(find.text('Your estimate'));
-      await t.pump();
-      expect(find.text(RoomScreen.talkFirst), findsOneWidget);
-      await frames(t, 3);
+      expect(find.byType(FortuneCeremonyScreen), findsNothing);
       expect(forecast.calls, hasLength(1));
     });
   });
@@ -560,7 +539,7 @@ void main() {
       MaterialApp(
         home: MediaQuery(
           data: const MediaQueryData(size: Size(375, 667), textScaler: TextScaler.linear(1.3)),
-          child: RoomScreen(appearance: look, onTalk: () {}, onCustomize: () {}, onFortune: () async {}),
+          child: RoomScreen(appearance: look, onTalk: () {}, onCustomize: () {}),
         ),
       ),
     );
@@ -586,24 +565,16 @@ void main() {
       final sim = RoomSim(layout: roomLayout, reduced: reduced);
       final kinds = <RoomFxKind>{};
       void seen() => kinds.addAll(sim.fx.map((p) => p.kind));
-      final glows = <double>{};
       sim.tapTwin();
       run(sim, 1, seen);
       for (final a in [RoomAction.exercise, RoomAction.eat]) {
         sim.startAction(a);
         run(sim, 12, seen);
       }
-      sim.startAction(RoomAction.fortune);
-      run(sim, 10, () {
-        seen();
-        if (sim.glow > 0) glows.add((sim.glow * 100).roundToDouble());
-      });
       if (reduced) {
         expect(kinds, isEmpty);
-        expect(glows, {50}, reason: 'a steady glow, no pulses');
       } else {
         expect(kinds, {RoomFxKind.sparkle, RoomFxKind.drop});
-        expect(glows.reduce((a, b) => a > b ? a : b), greaterThan(90), reason: 'the ball pulses');
       }
       sim.dispose();
     }
@@ -685,7 +656,7 @@ void main() {
 
   testWidgets('button labels never break inside a word (test font, 390 wide)', (t) async {
     await pumpRoom(t);
-    for (final label in ['Customize', 'Fortune']) {
+    for (final label in ['Customize', 'Ideas']) {
       expectOneLine(t, label, checkFloor: false);
     }
   });
@@ -751,10 +722,49 @@ void main() {
 
     testWidgets('Exercise and Customize fit one line at 17 px on a 390 phone', (t) async {
       await pumpRoom(t);
-      for (final label in ['Customize', 'Fortune']) {
+      for (final label in ['Customize', 'Ideas']) {
         expectOneLine(t, label);
         expect(t.getRect(find.text(label)).height, closeTo(17 * 1.35, 0.5), reason: '$label is not scaled down');
       }
+    });
+
+    testWidgets('dock: Customize, Talk, Ideas in order; sides equal, Talk centred, no wrapping, Ideas opens', (t) async {
+      final hub = IdeasHub(source: _NoIdeas());
+      addTearDown(hub.dispose);
+      final opened = <String>[];
+      final access = IdeasAccess(
+        hub: hub,
+        openIdea: (c, i) {},
+        openList: (c, {required origin, levers}) => opened.add(origin),
+      );
+      for (final (size, scale) in [
+        (const Size(390, 844), 1.0),
+        (const Size(390, 844), 2.0),
+        (const Size(320, 640), 1.0),
+      ]) {
+        await pumpRoom(t, size: size, textScale: scale, ideas: access);
+        final c = t.getRect(find.text('Customize')), tk = t.getRect(find.text('Talk')), i = t.getRect(find.text('Ideas'));
+        expect(c.center.dx < tk.center.dx && tk.center.dx < i.center.dx, isTrue, reason: 'order at $size x$scale');
+        final cItem = t.getRect(find.ancestor(of: find.text('Customize'), matching: find.byType(ConstrainedBox)).first);
+        final iItem = t.getRect(find.ancestor(of: find.text('Ideas'), matching: find.byType(ConstrainedBox)).first);
+        expect(cItem.width, closeTo(iItem.width, 0.5), reason: 'equal sides at $size x$scale');
+        final dock = t.getRect(find.byType(Sheet).last);
+        final talkBtn = t.getRect(find.byType(LipButton));
+        expect((talkBtn.center.dx - dock.center.dx).abs(), lessThanOrEqualTo(1), reason: 'Talk centred at $size x$scale');
+        expect(iItem.height, greaterThanOrEqualTo(56));
+        for (final label in ['Customize', 'Ideas']) {
+          final para = t.renderObject<RenderParagraph>(find.text(label));
+          expect(t.widget<Text>(find.text(label)).maxLines, 1);
+          final lineH = para.text.style!.fontSize! * para.textScaler.scale(1) * para.text.style!.height!;
+          expect(para.size.height, lessThan(lineH * 1.5), reason: '$label on one line at $size x$scale');
+        }
+        expect(find.bySemanticsLabel('Ideas'), findsOneWidget);
+        expect(t.takeException(), isNull);
+      }
+      await pumpRoom(t, ideas: access);
+      await t.tap(find.text('Ideas'));
+      expect(opened, ['room']);
+      await shotRoom(t, 'room_dock_after');
     });
 
     testWidgets('375 x 667: the twin stays clear of the dock during Exercise', (t) async {
@@ -776,10 +786,32 @@ void main() {
 
     testWidgets('labels stay on one line at 15 px or more on 375 x 667 with 1.3x text', (t) async {
       await pumpRoom(t, size: const Size(375, 667), textScale: 1.3);
-      for (final label in ['Customize', 'Fortune']) {
+      for (final label in ['Customize', 'Ideas']) {
         expectOneLine(t, label);
       }
       expect(t.takeException(), isNull);
     });
+  });
+}
+
+class _NoIdeas implements RecommendationsSource {
+  @override
+  Future<List<Recommendation>> load() async => const [];
+}
+
+Future<void> shotRoom(WidgetTester t, String name) async {
+  final dir = Platform.environment['EVIDENCE_DIR'];
+  if (dir == null) return;
+  await t.runAsync(() async {
+    final c = t.element(find.byType(Scaffold).first);
+    await precacheImage(AssetImage(roomLayout.bgAsset), c);
+  });
+  await t.pump(const Duration(milliseconds: 400));
+  await t.runAsync(() async {
+    Directory(dir).createSync(recursive: true);
+    final b = roomShotKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final img = await b.toImage(pixelRatio: 2);
+    final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+    File('$dir/$name.png').writeAsBytesSync(bytes!.buffer.asUint8List());
   });
 }

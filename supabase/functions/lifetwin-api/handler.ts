@@ -177,6 +177,22 @@ export function createHandler(load: Loader) {
                 text_extraction: true,
                 pdf: documentInfo(config),
               },
+              // Who reads and words conversation turns (owner ruling 2026-10-25).
+              conversation: {
+                ...providerInfo({
+                  ...config,
+                  PERSONALIZE_PROVIDER: (config.CONVERSATION_PROVIDER ||
+                      (config.ANTHROPIC_API_KEY ? "claude" : "muse")) ===
+                      "claude"
+                    ? "claude"
+                    : "muse",
+                }),
+                routes: [
+                  "/api/onboarding/turn",
+                  "/api/checkin/turn",
+                  "/api/change/turn",
+                ],
+              },
               personalize: info,
               coach: {
                 endpoint: "/api/coach/plan",

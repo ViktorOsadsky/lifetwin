@@ -1,27 +1,30 @@
 import 'package:http/http.dart' as http;
 
+import 'backend_config.dart';
+
 /// Public Supabase legacy anon JWT. Provider keys and service-role credentials
 /// must never be supplied in app build defines.
-const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+String get supabaseAnonKey => BackendConfig.current.anonKey;
 
 /// Optional exact HTTPS function base(s), separated by commas. When absent,
 /// matching LifeTwin function URLs are taken from API_BASE_URL.
-const supabaseGatewayUrl = String.fromEnvironment('SUPABASE_GATEWAY_URL');
-const _configuredApiBases = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: 'http://localhost:8000',
-);
+String get supabaseGatewayUrl => BackendConfig.current.gatewayUrl;
 
 /// Adds public gateway authentication only within a configured function path.
 /// Direct/local Python requests and unrelated destinations remain unchanged.
 class BackendHttpClient extends http.BaseClient {
   BackendHttpClient({
     http.Client? inner,
-    this.anonKey = supabaseAnonKey,
-    String gatewayUrls = supabaseGatewayUrl,
-    String apiUrls = _configuredApiBases,
+    String? anonKey,
+    String? gatewayUrls,
+    String? apiUrls,
   }) : _inner = inner ?? http.Client(),
-       _gateways = _gatewayBases(gatewayUrls.isEmpty ? apiUrls : gatewayUrls);
+       anonKey = anonKey ?? supabaseAnonKey,
+       _gateways = _gatewayBases(
+         (gatewayUrls ?? supabaseGatewayUrl).isEmpty
+             ? apiUrls ?? BackendConfig.current.apiUrl
+             : gatewayUrls ?? supabaseGatewayUrl,
+       );
 
   final http.Client _inner;
   final String anonKey;

@@ -561,7 +561,6 @@ void main() {
           appearance: ValueNotifier(const TwinAppearance()),
           onTalk: () {},
           onCustomize: () {},
-          onFortune: () async {},
           extraPills: roomPills(
             repository: repo,
             onExperiment: () => tried++,

@@ -28,7 +28,7 @@ import 'room_sim.dart';
 ///
 /// Around the room: the `{ Name }` banner and the outlook card at the top;
 /// the status line, the activity row (Exercise · Eat · Sleep) and the dock
-/// (Customize · Talk · Fortune) at the bottom. The room is told how much
+/// (Customize · Talk) at the bottom. The room is told how much
 /// the UI covers, so on short screens it slides up and keeps the mat clear.
 class RoomScreen extends StatefulWidget {
   const RoomScreen({
@@ -36,7 +36,6 @@ class RoomScreen extends StatefulWidget {
     required this.appearance,
     required this.onTalk,
     required this.onCustomize,
-    required this.onFortune,
     this.outlook,
     this.hasProfile = false,
     this.wellness,
@@ -64,9 +63,6 @@ class RoomScreen extends StatefulWidget {
   final ValueListenable<TwinAppearance> appearance;
   final VoidCallback onTalk;
   final VoidCallback onCustomize;
-
-  /// Opens the fortune ceremony; completes when the person is back.
-  final Future<void> Function() onFortune;
 
   /// The last real forecast, if any. Nothing is shown that it doesn't hold.
   final ValueListenable<Forecast?>? outlook;
@@ -101,14 +97,12 @@ class RoomScreen extends StatefulWidget {
   /// "What moves it" on the Home card.
   final VoidCallback? onDrivers;
 
-  static const talkFirst = "Let's talk first, so I can make your forecast.";
-
   @override
   State<RoomScreen> createState() => _RoomScreenState();
 }
 
 class _RoomScreenState extends State<RoomScreen> {
-  late final RoomSim _sim = RoomSim(layout: roomLayout)..onFortune = _openFortune;
+  late final RoomSim _sim = RoomSim(layout: roomLayout);
   final _topKey = GlobalKey();
   final _bottomKey = GlobalKey();
   EdgeInsets _clear = EdgeInsets.zero;
@@ -196,14 +190,6 @@ class _RoomScreenState extends State<RoomScreen> {
     });
   }
 
-  /// Shown after Fortune (or the outlook card) is pressed before there is a profile.
-  bool _needTalk = false;
-
-  Future<void> _openFortune() async {
-    await widget.onFortune();
-    if (mounted) _sim.fortuneDone();
-  }
-
   /// A second press of the same action within 0.7 s (a double tap, a tremor) is ignored:
   /// pressing an action again stops it, so a double tap would undo the first tap.
   Timer? _pressLock;
@@ -220,7 +206,7 @@ class _RoomScreenState extends State<RoomScreen> {
   /// The activity pill's chooser: "What should Mochi do?" Walk (let it roam), Exercise, Eat, Sleep. Each
   /// goes through the same [_press] path the old row used, so the bed tuck, climb and get-up are unchanged.
   Future<void> _chooseActivity() async {
-    final current = _sim.inBed ? RoomAction.sleep : (_sim.action == RoomAction.fortune ? null : _sim.action);
+    final current = _sim.inBed ? RoomAction.sleep : _sim.action;
     final picked = await showModalBottomSheet<RoomAction?>(
       context: context,
       useSafeArea: true,
@@ -233,25 +219,14 @@ class _RoomScreenState extends State<RoomScreen> {
     if (!mounted) return;
     if (picked != null) {
       if (_sim.action != picked) _press(picked);
-    } else if (_sim.action != null && _sim.action != RoomAction.fortune) {
+    } else if (_sim.action != null) {
       _press(_sim.action!); // Walk: stop what it is doing; Mochi roams again
-    }
-  }
-
-  /// Fortune and the outlook card: with no finished conversation nothing opens and the
-  /// twin says why, as on main.
-  void _fortune() {
-    if (widget.hasProfile) {
-      _press(RoomAction.fortune);
-    } else {
-      setState(() => _needTalk = true);
     }
   }
 
   @override
   void didUpdateWidget(RoomScreen old) {
     super.didUpdateWidget(old);
-    if (widget.hasProfile && _needTalk) _needTalk = false;
     if (old.ideas?.hub != widget.ideas?.hub) {
       old.ideas?.hub.removeListener(_maybeShowToday);
       widget.ideas?.hub.addListener(_maybeShowToday);
@@ -339,10 +314,9 @@ class _RoomScreenState extends State<RoomScreen> {
                                 ),
                             ],
                             card: widget.wellness == null
-                                ? _OutlookCard(outlook: widget.outlook, onTap: _fortune)
+                                ? _OutlookCard(outlook: widget.outlook)
                                 : CollapsibleHealthScore(
                                     snapshot: widget.wellness!,
-                                    onEstimate: _fortune,
                                     onDrivers: widget.onDrivers,
                                     stateLine: widget.stateLine,
                                     onAnswerMissing: widget.onAnswerMissing,
@@ -361,15 +335,6 @@ class _RoomScreenState extends State<RoomScreen> {
                                     children: [
                                       // With the Today row, Check in lives inside it (compact); otherwise its own bar.
                                       if (widget.today == null) const CheckInEntry(),
-                                      if (_needTalk && !widget.hasProfile) ...[
-                                        const Bubble(
-                                          text: RoomScreen.talkFirst,
-                                          fontSize: 21,
-                                          tail: BubbleTail.none,
-                                          liveRegion: true,
-                                        ),
-                                        const SizedBox(height: 10),
-                                      ],
                                       if (widget.today != null) ...[
                                         KeyedSubtree(key: _todayKey, child: widget.today!),
                                         const SizedBox(height: 6),
@@ -397,7 +362,8 @@ class _RoomScreenState extends State<RoomScreen> {
                                         frame: f,
                                         onTalk: widget.onTalk,
                                         onCustomize: widget.onCustomize,
-                                        onFortune: _fortune,
+                                        // Same way in as Mochi's bubble; like it, nothing until the phone's data has loaded.
+                                        onIdeas: () => widget.ideas?.openList(context, origin: 'room'),
                                       ),
                                     ],
                                   ),
@@ -528,9 +494,8 @@ class _TopBar extends StatelessWidget {
 /// "Your 5-yr look": the real number when there is a forecast, otherwise an
 /// invitation. Never an invented number.
 class _OutlookCard extends StatelessWidget {
-  const _OutlookCard({required this.outlook, required this.onTap});
+  const _OutlookCard({required this.outlook});
   final ValueListenable<Forecast?>? outlook;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -542,50 +507,40 @@ class _OutlookCard extends StatelessWidget {
   Widget _card(Forecast? f) {
     final has = f != null && f.supported;
     final years = has ? f.maxHorizonYears : 5;
-    final line = has ? 'about ${f.outOf100(years)} in 100' : 'Ask the ball';
+    final line = has ? 'about ${f.outOf100(years)} in 100' : 'Talk with Mochi to see it';
     final card = Semantics(
-      button: true,
       label: 'Your $years-year look: $line${has ? '. ${TwinAssessment.survivalTitle}' : ''}',
       excludeSemantics: true,
-      onTap: onTap,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 56),
-          padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
-          decoration: BoxDecoration(
-            color: LtColors.paper,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: LtColors.container, width: LtBorders.container),
-            boxShadow: LtShadows.soft,
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 40,
-                child: has
-                    ? BearHeadArray(
-                        filled: f.outOf100(years),
-                        filledColor: LtColors.ink,
-                        emptyColor: LtColors.container,
-                      )
-                    : const Icon(Icons.auto_awesome_rounded, color: LtColors.ink, size: 28),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 56),
+        padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
+        decoration: BoxDecoration(
+          color: LtColors.paper,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: LtColors.container, width: LtBorders.container),
+          boxShadow: LtShadows.soft,
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 40,
+              child: has
+                  ? BearHeadArray(filled: f.outOf100(years), filledColor: LtColors.ink, emptyColor: LtColors.container)
+                  : const Icon(Icons.auto_awesome_rounded, color: LtColors.ink, size: 28),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  WholeWordText('Your $years-yr look', style: LtText.body()),
+                  WholeWordText(line, style: LtText.display(19)),
+                  if (has) WholeWordText(TwinAssessment.survivalTitle, style: LtText.body(size: 15)),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    WholeWordText('Your $years-yr look', style: LtText.body()),
-                    WholeWordText(line, style: LtText.display(19)),
-                    if (has) WholeWordText(TwinAssessment.survivalTitle, style: LtText.body(size: 15)),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -637,25 +592,24 @@ class _OneLine extends StatelessWidget {
 /// Exercise · Eat · Sleep: compact toggles above the dock. Each gets the
 /// width its label needs, and the spare width is shared out evenly.
 class _Dock extends StatelessWidget {
-  const _Dock({required this.frame, required this.onTalk, required this.onCustomize, required this.onFortune});
+  const _Dock({required this.frame, required this.onTalk, required this.onCustomize, required this.onIdeas});
   final SwooshRoomFrame frame;
   final VoidCallback onTalk;
   final VoidCallback onCustomize;
-  final VoidCallback onFortune;
-
+  final VoidCallback onIdeas;
   @override
   Widget build(BuildContext context) {
     // Talk keeps the width it needs (padding, icon, gap, label, borders);
-    // Customize and Fortune share the rest, so their labels stay on one line.
+    // Customize and Ideas share the rest equally, so Talk sits in the exact centre.
     final talkW = 40 + 32 + 10 + _labelWidth(context, 'Talk', LtText.display(26)) + LtBorders.control * 2 + 4;
     return Sheet(
       padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
       child: LayoutBuilder(
         builder: (context, box) {
-          // Never squeeze Customize or Fortune under the 15 px floor: Talk gives way first.
+          // Never squeeze the side labels under the 15 px floor: Talk gives way first.
           final body = LtText.body(weight: FontWeight.w700);
-          final side = math.max(_labelWidth(context, 'Customize', body), _labelWidth(context, 'Fortune', body));
-          final talk = math.max(120.0, math.min(talkW, box.maxWidth - 2 * side * _labelFloor(context)));
+          final side = math.max(_labelWidth(context, 'Customize', body), _labelWidth(context, 'Ideas', body));
+          final talk = math.max(120.0, math.min(talkW, box.maxWidth - side * _labelFloor(context)));
           return Row(
             children: [
               Expanded(
@@ -693,12 +647,13 @@ class _Dock extends StatelessWidget {
               ),
               Expanded(
                 child: _DockItem(
-                  label: 'Fortune',
-                  icon: Icons.auto_awesome_rounded,
-                  face: LtColors.night,
-                  lip: const Color(0xFF0F1430),
-                  iconColor: LtColors.gold,
-                  onTap: onFortune,
+                  label: 'Ideas',
+                  hint: 'Ideas for you',
+                  icon: Icons.lightbulb_outline_rounded,
+                  face: LtColors.mint,
+                  lip: LtColors.mintLip,
+                  iconColor: LtColors.ink,
+                  onTap: onIdeas,
                 ),
               ),
             ],
@@ -717,9 +672,11 @@ class _DockItem extends StatelessWidget {
     required this.lip,
     required this.iconColor,
     required this.onTap,
+    this.hint,
   });
 
   final String label;
+  final String? hint;
   final IconData icon;
   final Color face;
   final Color lip;
@@ -731,6 +688,7 @@ class _DockItem extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
+      hint: hint,
       excludeSemantics: true,
       onTap: onTap,
       child: GestureDetector(

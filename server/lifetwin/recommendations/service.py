@@ -125,6 +125,8 @@ class Person:
         )
         self.weather = bool(re.search(r"\b(?:weather|rain\w*|cold|hot|snow\w*|ice|icy)\b", text))
         age = profile.age
+        # No vigorous pick for anyone under 18 (an unknown age keeps the ideas for all ages).
+        self.no_vigorous = age is not None and age < 18
         self.band = (
             None
             if age is None or age < 18
@@ -139,6 +141,8 @@ class Person:
 def eligible(idea: Idea, person: Person) -> bool:
     """Never an idea a limitation rules out, the wrong age band, or a missing interest."""
     if idea.id in person.excluded or person.limits & set(idea.avoid):
+        return False
+    if person.no_vigorous and idea.lever == "vigorous_plus_60":
         return False
     if idea.needs and not person.interests & set(idea.interests):
         return False

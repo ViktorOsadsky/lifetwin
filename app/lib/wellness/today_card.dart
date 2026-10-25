@@ -67,7 +67,7 @@ class TodayWithMochiCard extends StatefulWidget {
   State<TodayWithMochiCard> createState() => _TodayWithMochiCardState();
 }
 
-class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
+class _TodayWithMochiCardState extends State<TodayWithMochiCard> with WidgetsBindingObserver {
   DailyPlan? _plan;
   bool _loading = true;
   bool _disposed = false;
@@ -78,6 +78,7 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _plan = widget.initialPlan;
     _load();
   }
@@ -85,7 +86,25 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
   @override
   void dispose() {
     _disposed = true;
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Back in the app on a later day (Home stays mounted for days): yesterday's plan is not today's, so
+  /// it is dropped and today's is asked for, never revised from yesterday's.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || _loading || _busy) return;
+    final plan = _plan;
+    final today = widget.confirmedContext()['local_date'];
+    if (plan == null || today is! String || plan.json['local_date'] == today) return;
+    setState(() {
+      _plan = null;
+      _chosen.clear();
+      _failed = false;
+      _loading = true;
+    });
+    _load();
   }
 
   Future<void> _load() async {

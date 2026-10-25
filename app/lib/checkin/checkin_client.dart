@@ -26,6 +26,10 @@ class CheckinTurn {
   /// Something urgent was said: the check-in is paused on the same question. Show the
   /// "Call 911" button (the person taps it) and Continue.
   bool get emergency => raw['emergency'] == true;
+
+  /// The heard reply was most likely someone else talking: nothing was recorded and the same
+  /// question is still open (see offTopicLine in voice/speech.dart).
+  bool get offTopic => raw['off_topic'] == true;
   String get phase => (state['phase'] as String?) ?? 'asking';
   bool get isConfirming => phase == 'confirming';
   String get kind => '${state['kind']}';

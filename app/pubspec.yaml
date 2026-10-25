@@ -49,6 +49,7 @@ dependencies:
   timezone: ^0.11.2
   flutter_timezone: ^5.1.1
   shared_preferences: ^2.5.6
+  flutter_blue_plus: 2.3.13
 
 dev_dependencies:
   flutter_test:
@@ -79,6 +80,7 @@ flutter:
   # Flutter finds the 2.0x/ and 3.0x/ variants itself, so only the 1x
   # folders are listed.
   assets:
+    - assets/config/          # optional local public backend.json
     - assets/twin/            # manifest.json
     - assets/twin/bear/base/
     - assets/twin/bear/pose/

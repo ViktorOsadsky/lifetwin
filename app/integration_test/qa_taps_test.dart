@@ -162,16 +162,6 @@ void main() {
     await doubleTapText(t, 'Back', finder: roundButton('Back'));
     await pumpFor(t, const Duration(seconds: 1));
     check(find.byType(RoomScreen).evaluate().isNotEmpty, 'Back double tap: not on the Room');
-    await doubleTapText(t, 'Fortune');
-    await waitFor(t, find.byType(FortuneCeremonyScreen), seconds: 20); // the twin walks to the shelf first
-    await pumpFor(t, const Duration(seconds: 2));
-    check(
-      find.byType(FortuneCeremonyScreen, skipOffstage: false).evaluate().length == 1,
-      'two ceremonies from the Room',
-    );
-    await doubleTapText(t, 'Ask the ball');
-    await pumpFor(t, const Duration(seconds: 4)); // the ball glows for 2.4 s first
-    check(find.byType(ForecastScreen, skipOffstage: false).evaluate().length == 1, 'two forecasts from the Room');
     check(await qaCount('/api/predict') == 0, 'Room forecast: ${await qaCount('/api/predict')} predictions');
     expect(problems, isEmpty);
   });

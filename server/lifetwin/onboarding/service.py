@@ -18,6 +18,8 @@ from datetime import date
 from fastapi import HTTPException
 
 from lifetwin.core.models import HealthProfile
+from lifetwin.core.quantities import contradicts
+from lifetwin.onboarding.computed import checked_values
 from lifetwin.onboarding.habits import blood_pressure_reading, merge, read_notes
 from lifetwin.onboarding.intents import (
     EMERGENCY_MESSAGE,
@@ -201,6 +203,8 @@ ASK_ONLY_UNKNOWN = "That's okay. Your estimate needs this one, so I'll offer it 
 ASK_ONLY_DONE = "Thank you, that's all I needed. Tap Continue to see your estimate."
 SKIPPED = "No problem. We'll skip that. "
 NOT_CAUGHT = "Sorry, I didn't catch that."
+# Said when Claude judged the words background speech (the app may say it in its own voice).
+OFF_TOPIC = "Sorry, I think I heard someone else. Could you say that again? "
 # Only a hesitation or the start of a cut-off sentence ("and also", "um so"): nothing was
 # answered, so there is nothing to apologise for. Or the reply was only about someone else.
 TAKE_YOUR_TIME = "Take your time."
@@ -493,9 +497,24 @@ class ConversationService:
 
     async def turn(self, request: TurnRequest) -> TurnResponse:
         response = await self._turn(request)
-        if consented(request.outside_ai_consent, self.personalizer) and not response.emergency:
+        if consented(request.outside_ai_consent, self.personalizer) and not (
+            response.emergency or response.off_topic
+        ):
             response = await self._phrase(response)
         return response
+
+    def _helper_consented(self, request: TurnRequest) -> bool:
+        """The AI helper's yes; Claude also needs the person's yes for Claude itself.
+
+        Owner ruling (2026-10-25): a turn without ``outside_ai_consent.claude`` never
+        reaches Claude. The rules answer instead; no other provider is tried.
+        """
+        if not request.provider_consent:
+            return False
+        provider = getattr(self.extractor, "provider", None)
+        if provider == "claude":
+            return request.outside_ai_consent.get("claude") is True
+        return True
 
     async def _phrase(self, response: TurnResponse) -> TurnResponse:
         """With consent: the provider may phrase the next question or the suggestions."""
@@ -1182,6 +1201,9 @@ class ConversationService:
                 state.habit_notes = merge(state.habit_notes, notes)
         if not candidates:
             candidates = _safe(parse_reply, text, target, today=today, strict=voice) or {}
+        if target in candidates and _safe(contradicts, text, target):
+            # "About 2 hours a week" to the nightly sleep question: asked again, never stored.
+            candidates = {k: v for k, v in candidates.items() if k != target}
         if target == "vigorous_recreation_min_week" and asking:
             candidates = self._health_split(state, candidates)
         if target not in BP_FIELDS and candidates.keys() & BP_FIELDS:
@@ -1246,13 +1268,35 @@ class ConversationService:
         if not candidates and asking and not hint:
             candidates = self._elsewhere(state, text, target, today, voice)
         if not candidates and configured and not hint:
-            if request.provider_consent:
+            if self._helper_consented(request):
                 try:
                     async with asyncio.timeout(self.timeout):
                         extraction = await self.extractor.extract(text, target)
                     candidates = (
                         _safe(grounded_candidates, text, extraction, target, today=today) or {}
                     )
+                    # Claude's arithmetic, re-checked by the deterministic reader.
+                    candidates = (
+                        _safe(checked_values, text, extraction, target, candidates) or candidates
+                    )
+                    if target in candidates and _safe(contradicts, text, target):
+                        # After the model too: "2 hours a week" is no night's sleep.
+                        candidates = {k: v for k, v in candidates.items() if k != target}
+                    if (
+                        extraction.off_topic
+                        and not candidates
+                        and getattr(self.extractor, "provider", None) == "claude"
+                    ):
+                        # TV, the radio or someone else talking: the question stays open.
+                        ask = (
+                            self._question(state, target, plain=True)
+                            if target in BY_FIELD
+                            else QUESTIONS[target]
+                        )
+                        heard_else = respond(OFF_TOPIC + ask)
+                        heard_else.off_topic = True
+                        heard_else.provider_status = "used"
+                        return heard_else
                     # The helper answered; finding no usable value is not an outage.
                     provider_status = "used"
                     if candidates:

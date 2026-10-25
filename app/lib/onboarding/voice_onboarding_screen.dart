@@ -381,6 +381,27 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     super.didChangeDependencies();
     c.screenReader = MediaQuery.accessibleNavigationOf(context);
     _route = ModalRoute.of(context);
+    _onTopChanged();
+  }
+
+  /// Another screen or sheet on top (an idea, a document, a dialog) closes the microphone
+  /// as leaving does, so words said there never answer the question below; back on top,
+  /// hands-free listens again by itself.
+  bool? _onTop;
+  void _onTopChanged() {
+    final onTop = _route?.isCurrent ?? true;
+    final was = _onTop;
+    _onTop = onTop;
+    if (was == null || was == onTop) return;
+    // After this frame: the controller's listeners rebuild, which must not happen mid-build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _onTop != onTop || !identical(c.mayListen, _mayListen)) return;
+      if (!onTop) {
+        c.pauseVoice();
+      } else if (_mayListenNow()) {
+        c.resumeVoice();
+      }
+    });
   }
 
   @override
@@ -826,11 +847,12 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     w,
     title: 'Let an AI helper read hard answers?',
     offerImport: true,
+    // Names the conversation provider from /api/capabilities (Claude today).
     body:
-        "If I can't understand an answer, an AI service can read your words. "
-        "It's off unless you say yes. You can change this in Settings.",
+        "If I can't understand an answer, ${widget.aiProvider?.helper.displayName ?? 'an AI service'} "
+        "can read your words. It's off unless you say yes. You can change this in Settings.",
     buttons: [
-      if (widget.aiProvider?.trainingLine case final line?) TrainingLine(line),
+      if (widget.aiProvider?.helper.trainingLine case final line?) TrainingLine(line),
       LipButton(
         label: 'Yes, turn it on',
         icon: Icons.check_rounded,
@@ -901,6 +923,10 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
               child: LinkButton(label: 'Go back', icon: Icons.undo_rounded, onTap: _goBack),
             ),
           ),
+        if (c.savedNumber case final saved? when !keyboard) ...[
+          _pad(SavedMark(number: saved)),
+          const SizedBox(height: 8),
+        ],
         if (n != null && !keyboard) ...[
           _pad(StepProgress(step: n, total: c.questionTotal)),
           const SizedBox(height: 12),
@@ -946,7 +972,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
                 ],
                 if (!c.typing) ...[
                   const SizedBox(height: 10),
-                  _pad(c.screenReader ? const VoiceOverInfo() : const ListeningNote()),
+                  _pad(c.screenReader ? const VoiceOverInfo() : ListeningNote(noiseLink: listening)),
                 ],
               ],
             ),
