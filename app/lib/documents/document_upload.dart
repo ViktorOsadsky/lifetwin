@@ -142,16 +142,9 @@ class DocumentImportResult {
   final List<String> toAsk;
 
   /// Confirmed answers in the conversation profile's names, for the `import` action.
-  /// hypertension_diagnosed has no profile field yet, so it is not here (see [onPhoneOnly]).
   Map<String, Object> get profileValues => {
     for (final c in confirmed) ?_profileKey[c.field]: c.value,
   };
-
-  /// Confirmed model inputs the profile contract cannot carry yet.
-  List<DocumentCandidate> get onPhoneOnly => [
-    for (final c in confirmed)
-      if (c.modelInput && !_profileKey.containsKey(c.field)) c,
-  ];
 
   /// Confirmed information notes (blood pressure readings, A1c, LDL): never model inputs.
   List<DocumentCandidate> get notes => [
@@ -163,6 +156,7 @@ class DocumentImportResult {
     'height_cm': 'height_cm',
     'weight_kg': 'weight_kg',
     'smoking_status': 'smoking_status',
+    'hypertension_diagnosed': 'hypertension_diagnosed',
     // Only ever true from a document; absence never becomes false.
     'diabetes_diagnosed': 'diabetes',
   };

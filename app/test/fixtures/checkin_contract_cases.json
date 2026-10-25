@@ -1,0 +1,210 @@
+{
+ "$comment": "Check-in contract cases copied unchanged from contracts/fixtures/cases.json on branch codex/d-twin-checkins at 92779c9. Re-copy when the contract changes.",
+ "cases": [
+  {
+   "name": "checkin-daily-start",
+   "method": "POST",
+   "path": "/api/checkin/start",
+   "request_schema": "checkin.start.request.schema.json",
+   "request": {
+    "kind": "daily",
+    "local_date": "2026-10-21",
+    "previous": {
+     "sleep_hours_last_night": 7
+    }
+   },
+   "status": 200,
+   "response_schema": "checkin.schema.json",
+   "response_subset": {
+    "complete": false,
+    "guide_mode": "guided",
+    "provider_status": "not_configured",
+    "message": "Hi, it's Mochi! Time for our little daily check-in. It's just a few quick questions, and you can skip any of them. Last time you slept 7 hours. How many hours did you sleep last night?",
+    "state": {
+     "kind": "daily",
+     "phase": "asking",
+     "current_field": "sleep_hours_last_night",
+     "questions": [
+      "sleep_hours_last_night",
+      "exercise_minutes_today",
+      "wellbeing"
+     ]
+    }
+   }
+  },
+  {
+   "name": "checkin-weekly-confirm",
+   "method": "POST",
+   "path": "/api/checkin/turn",
+   "request_schema": "checkin.turn.request.schema.json",
+   "request": {
+    "action": "reply",
+    "text": "yes",
+    "state": {
+     "kind": "weekly",
+     "phase": "confirming",
+     "questions": [
+      "sleep_hours",
+      "exercise_minutes_weekly",
+      "alcohol_drinks_weekly",
+      "smoking_status",
+      "weight_kg",
+      "systolic_bp",
+      "wellbeing"
+     ],
+     "current_field": "sleep_hours",
+     "pending": {
+      "sleep_hours": 7
+     }
+    }
+   },
+   "status": 200,
+   "response_schema": "checkin.schema.json",
+   "response_subset": {
+    "complete": false,
+    "state": {
+     "phase": "asking",
+     "current_field": "exercise_minutes_weekly",
+     "confirmed": {
+      "sleep_hours": 7.0
+     },
+     "pending": {
+      "sleep_hours": null
+     }
+    }
+   }
+  },
+  {
+   "name": "checkin-emergency-pause",
+   "method": "POST",
+   "path": "/api/checkin/turn",
+   "request_schema": "checkin.turn.request.schema.json",
+   "request": {
+    "action": "reply",
+    "text": "not great, I have chest pain",
+    "state": {
+     "kind": "daily",
+     "phase": "asking",
+     "questions": [
+      "sleep_hours_last_night",
+      "exercise_minutes_today",
+      "wellbeing"
+     ],
+     "current_field": "wellbeing",
+     "skipped_fields": [
+      "sleep_hours_last_night",
+      "exercise_minutes_today"
+     ]
+    }
+   },
+   "status": 200,
+   "response_schema": "checkin.schema.json",
+   "response_subset": {
+    "emergency": true,
+    "complete": false,
+    "message": "I'm sorry you're going through that. If you need help right now, please call 911. We can carry on whenever you're ready.",
+    "mascot_events": {
+     "$each": {
+      "state": "concerned"
+     }
+    },
+    "state": {
+     "phase": "asking",
+     "current_field": "wellbeing",
+     "pending": {
+      "wellbeing": null
+     }
+    }
+   }
+  },
+  {
+   "name": "checkin-resume-after-pause",
+   "method": "POST",
+   "path": "/api/checkin/turn",
+   "request_schema": "checkin.turn.request.schema.json",
+   "request": {
+    "action": "resume",
+    "state": {
+     "kind": "daily",
+     "phase": "asking",
+     "questions": [
+      "sleep_hours_last_night",
+      "exercise_minutes_today",
+      "wellbeing"
+     ],
+     "current_field": "wellbeing",
+     "skipped_fields": [
+      "sleep_hours_last_night",
+      "exercise_minutes_today"
+     ]
+    }
+   },
+   "status": 200,
+   "response_schema": "checkin.schema.json",
+   "response_subset": {
+    "emergency": false,
+    "message": "Okay, let's carry on. And how are you feeling today: good, okay, or not great?",
+    "state": {
+     "phase": "asking",
+     "current_field": "wellbeing"
+    }
+   }
+  },
+  {
+   "name": "checkin-weekly-profile-update",
+   "method": "POST",
+   "path": "/api/checkin/turn",
+   "request_schema": "checkin.turn.request.schema.json",
+   "request": {
+    "action": "confirm",
+    "state": {
+     "kind": "weekly",
+     "phase": "confirming",
+     "questions": [
+      "sleep_hours",
+      "exercise_minutes_weekly",
+      "alcohol_drinks_weekly",
+      "smoking_status",
+      "weight_kg",
+      "systolic_bp",
+      "wellbeing"
+     ],
+     "current_field": "wellbeing",
+     "confirmed": {
+      "sleep_hours": 6,
+      "exercise_minutes_weekly": 90,
+      "weight_kg": 71.67
+     },
+     "pending": {
+      "wellbeing": "good"
+     },
+     "skipped_fields": [
+      "alcohol_drinks_weekly",
+      "smoking_status",
+      "systolic_bp",
+      "diastolic_bp"
+     ]
+    }
+   },
+   "status": 200,
+   "response_schema": "checkin.schema.json",
+   "response_subset": {
+    "complete": true,
+    "state": {
+     "phase": "ready",
+     "confirmed": {
+      "wellbeing": "good"
+     }
+    },
+    "profile_update": {
+     "sleep_hours": 6.0,
+     "exercise_minutes_weekly": 90,
+     "weight_kg": 71.67,
+     "alcohol_drinks_weekly": null,
+     "systolic_bp": null,
+     "age": null
+    }
+   }
+  }
+ ]
+}

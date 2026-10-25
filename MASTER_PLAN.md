@@ -15,22 +15,24 @@ New explicit user decisions take precedence. Otherwise this guide resolves the d
 | --- | --- |
 | Naming | Repository/product working name: LifeTwin. The original spec calls the project LifeSim; keep existing API/model identifiers until a deliberate migration. |
 | App | Flutter/Dart, with iOS testing through Xcode as specified in the team plan. The earlier Next.js/web stack is superseded. |
-| Backend | Python; FastAPI is the implementation default from the spec. The server owns model inference, research, and LLM credentials. |
+| Backend | Python/FastAPI owns server inference, research and provider credentials. A separate Dart Cox package supports on-device inference; use one explicit model boundary per result. |
 | Experience | Mostly full-screen pet-game UI, inspired by Talking Tom: an expressive mascot, customizable digital twin, SVG art and LottieFiles animations. The mascot conversation replaces traditional health-input onboarding screens. |
-| Conversation | Voice-first health questions with an equally capable text mode. An LLM conversation guide (“Muse” in the user's description; exact model/provider is a proposed choice) collects structured answers. Voice implementation/provider is deliberately deferred. |
-| Longevity output | The mascot reveals the user's outlook through a magic-ball fortune scene. Show supported survival probabilities and curves as an uncertain forecast; never fabricate an exact individual date of death (spec §15). |
+| Intake | Offer health-document upload immediately, alongside Apple Health import and mascot-led voice/text. Extract candidate fields, confirm them, then ask only for missing required inputs. Upload is planned; Cartesia voice and Apple Health paths already exist. |
+| Longevity output | Magic-ball reveal, supported annual survival curve, model-grounded drivers and scenario differences. Explain what changes the outlook beyond a single five-year percentage. No exact death year, arbitrary curve cutoff or unsupported life-expectancy estimate (spec §15). |
 | Quiz | Challenging food-choice and situational questions. Wrong answers immediately make the twin look sicker in game state; explanations and recovery opportunities teach the user. Quiz penalties never alter real health inputs or model predictions. |
 | Optimization direction | Improve survival probability at a supported horizon. If a validated longevity summary is added later, improve it toward a longer life: a later date, not an earlier one. |
-| Recommendations | Model sensitivity identifies scenarios to investigate. Evidence and feasibility determine which suggestions become a plan. Supplement discovery is optional research, not a model-proven longevity intervention. |
+| Recommendations | A daily health-planning agent is the target: incorporate confirmed updates and feedback, research feasible actions, and revise a short daily schedule with reasons. Model sensitivity is one input; reminders and score calculations alone do not fulfill this requirement. Supplement discovery remains optional and unmodeled. |
 | Delivery | Short branches, PRs, then merges to `main`. Direct pushes to `main` are superseded by the user's PR requirement. |
 
-See [the prospective tech stack](docs/tech-stack.md) for concrete package/provider defaults, confirmed versus proposed choices, and deferred voice decisions. See [the PRD reconciliation](docs/prd-reconciliation.md) for updates to the original spec.
+See [the prospective tech stack](docs/tech-stack.md) for package/provider defaults and pending upload/planner choices; use the voice guide for the implemented Cartesia path. See [the PRD reconciliation](docs/prd-reconciliation.md) for updates to the original spec.
 
 ## Current repository state
 
-The [non-prediction Python backend](server/README.md) and [shared contracts](contracts/README.md) now exist: guided text/transcript intake with confirmation, optional LLM extraction adapter, cited curated educational plans with bounded research adapter, and reviewed quiz delivery. Provider credentials remain blank. The latest user request explicitly defers **all prediction implementation**, including training, model loading, survival curves, comparison math and sensitivity scanning; those route shells return HTTP 501 with null prediction/model fields and no fake estimates. No Flutter app, voice provider, trained model, cloud deployment, or iOS helper script is implemented yet. Earlier `contracts/stub_server.py` commands remain planned and are replaced for current backend work by the run guide.
+As of the October 24 reconciliation, `main` contains a Flutter game shell with voice/typing onboarding and Apple Health import, Cartesia token/client integration, a Python backend with confirmed intake, curated cited plans and reviewed quizzes, and stateless daily/weekly check-in endpoints. Check-in endpoints are not yet connected to the app; daily answers are history only, while confirmed weekly answers produce a `profile_update`. See [the backend run guide](server/README.md), [voice notes](docs/voice-cartesia.md), [Apple Health boundary](docs/apple-health.md), and [contracts](contracts/README.md). Code availability does not establish live-provider or device validation.
 
-The full predictive/game vision below remains a future roadmap. Existing raw profile ranges validate inputs only, not model eligibility. Quiz effects are game-only; educational plans have null/unmodeled effects. Do not treat this foundation as a completed longevity product.
+Prediction implementation has since progressed beyond the earlier deferral: `/api/predict` serves a root DeepSurv artifact when installed; a separate [on-device Cox package](model_handoff/lifetwin_on_device/README.md) provides annual years 1–5 survival, comparison and supported-window reassessment. The [Cox model card](model_handoff/lifetwin_on_device/MODEL_CARD.md) restricts its display to complete, supported profiles ages 35–79. These are distinct models/boundaries; do not mix their outputs, eligibility rules or versions. Server compare/sensitivity routes remain 501, while an [offline Cox sensitivity analysis](docs/model-sensitivity.md) exists. The original backend audit is a dated snapshot, not a current feature inventory.
+
+Health-document upload/extraction and a scheduled autonomous daily planner remain proposed. This documentation change does not implement them, change contracts or select a new prediction engine. The original `projectspec.md` remains preserved; the [October 23 meeting decisions](docs/meetings/2026-10-23-product-refinement.md) refine its product vision through this guide and the reconciliation.
 
 The skill pack contains prior research about other product ideas. Reuse relevant tools and instructions, but do not treat RecallDesk, commerce, or finance examples as this app's product requirements. Do not claim that a fixture or helper script is the LifeTwin application.
 
@@ -38,13 +40,13 @@ The skill pack contains prior research about other product ideas. Reuse relevant
 
 Build one connected experience:
 
-1. **Meet the mascot and your twin.** Start in the game room, choose appearance/accessories, and talk with the mascot about health and habits. Reply aloud or type in the same conversation; no traditional multi-page intake form. Cosmetic choices never affect predictions.
-2. **Hear your fortune.** The mascot consults a magic ball and reveals the model-backed longevity outlook. Keep supported horizons, uncertainty, and a real survival curve accessible from the scene. No invented countdown or exact personal death date.
-3. **Explore the levers.** The server evaluates small, bounded increases and decreases in eligible inputs. Show which changes produce higher or lower modeled survival and how much, including flat or uncertain results.
-4. **Research a plan.** An agent reads credible web sources for the promising directions, separates evidence from model associations, and produces a short, practical plan. It may research supplements or products when relevant; these are optional and cannot be credited with numerical model benefits without a supported model input and evidence.
-5. **Try it on your twin.** In an experimental sandbox, edit supported health inputs or apply a plan's explicit scenario assumptions. Compare the baseline and experimental curves and twin states. A plan's completion does not imply a particular physiological change.
-6. **Choose a real-world next step.** Let the user select or dismiss a plan item. Keep the baseline unchanged until the user explicitly records new real-world measurements.
-7. **Play the quiz.** Answer challenging food and everyday-situation questions. Wrong answers produce an immediate, reversible sick reaction in the twin; correct answers and review help it recover. The feedback teaches game concepts without asserting that the user's real health changed.
+1. **Meet the mascot and bring your data.** Offer health-document upload at entry, with Apple Health import and voice/text alternatives. Use a default twin so customization never blocks the first useful result. Confirm extracted values and ask only for missing required information; avoid a long questionnaire.
+2. **Understand your outlook.** The magic-ball scene reveals supported survival probabilities over time, the model's relevant drivers and limitations. Annual values stop at the selected model's supported horizon. A high five-year value alone is not the whole experience; never invent a death year or exaggerate a small difference.
+3. **Explore the levers.** Try supported lifestyle scenarios on a separate twin. Explain the actual signed percentage-point differences, including flat, uncertain and unsupported results; do not translate them into years gained.
+4. **Get a practical daily plan.** The agent combines confirmed context, goals, constraints and cited evidence into a short schedule the user can accept, edit or dismiss. Model associations may inform investigation; unsupported actions have no numerical longevity benefit.
+5. **Log what really happened.** Record activity, sleep and how the user feels through a brief check-in. An animation acknowledges the report, while a hypothetical exercise session stays only in the experiment. Daily history is distinct from a confirmed profile update.
+6. **Return to an adapted plan.** In the target opt-in daily loop, the agent reviews new confirmed context and completion feedback, revises the next plan and explains what changed. A missed day is unknown, not zero activity. Any forecast reassessment uses the selected model's supported input window; one workout does not imply an overnight survival or physiological improvement.
+7. **Play and customize.** Appearance and quizzes remain engaging activities. Wrong quiz answers affect only reversible game health, never confirmed inputs, the daily health plan or medical predictions.
 
 The emotional goal is curiosity and encouragement. Avoid death countdowns, frightening consequences, body shaming, or visual claims that a heavier/lighter avatar is inherently healthier. The twin illustrates the scenario; it is not a medical scan or a forecast of the user's future appearance.
 
@@ -52,11 +54,11 @@ The emotional goal is curiosity and encouragement. Avoid death countdowns, frigh
 
 | Screen | Required behavior |
 | --- | --- |
-| Game room / mascot conversation | Mascot-led health questions, voice/text toggle, captions, listen/thinking/speaking reactions, answer confirmation and progress. Keep setup brief; the spec's 60-second goal is a usability target, not a reason to rush speech. |
+| Game room / mascot conversation | Immediate upload/import choices and voice/text alternative; confirmation summary, missing-field follow-ups, captions and correction. Measure time to first useful result against the spec's 60-second usability target without rushing consent or confirmation. |
 | Twin studio | Customize skin/hair/clothes/accessories independently of the health profile; provide a useful default so customization never blocks simulation. |
 | Magic-ball fortune | Mascot performs the reveal using the validated baseline. A readable summary and optional detail panel show the curve, supported horizon, and limitations. |
 | Experiment / compare | Editable clone of the profile, validated controls, overlaid baseline/scenario curves, signed percentage-point deltas, reset, and an explicit “apply to experiment” action. |
-| Plan / advisor | Ranked suggestions, evidence links, feasible next steps, optional product research, and model-versus-evidence distinctions. |
+| Plan / advisor | Short daily schedule with evidence, accept/edit/dismiss controls, completion check-in and explanation of revisions. Distinguish observations, experiments, model associations and proposed actions. |
 | Quiz arena | Challenging questions with answer choices, immediate sick/recovery animation, explanation, retry/review and independent game-health meter. |
 
 Create an original, reusable SVG family: layered avatar parts, heart/lungs/activity/sleep/nutrition illustrations, accessories, navigation icons, loading/empty/error states, and milestone reactions. Begin with a small complete set and expand it after the flow works. Use shared palette, stroke, corner, and expression conventions; keep an asset manifest with purpose and license/provenance. Flutter's SVG renderer must support each asset's features. Supply semantic labels, adequate contrast, text alternatives to chart colors, and reduced-motion behavior. Do not use real health records in screenshots or demos.
@@ -65,15 +67,37 @@ Compose these as game modes in one character-centered world, with large touch ta
 
 ## Mascot conversation and fortune
 
-The same conversational flow must work with voice and text. The LLM asks one clear question at a time, extracts candidate fields into the versioned profile schema, and asks follow-ups for ambiguous answers or units. “About 170” is not enough to decide height versus weight or pounds versus kilograms. A reply may answer several fields, but only explicitly provided values may enter the draft.
+After optional upload/import and confirmation, the same conversational follow-up flow must work with voice and text. The LLM asks one clear question at a time, extracts candidate fields into the versioned profile schema, and asks follow-ups for ambiguous answers or units. “About 170” is not enough to decide height versus weight or pounds versus kilograms. A reply may answer several fields, but only explicitly provided values may enter the draft.
 
 Show captions and a compact editable summary; ask the user to confirm extracted health values before submitting them for inference. Corrections replace the relevant draft values and invalidate stale results. Let the user skip optional questions or say “I don't know”; never infer a diagnosis from casual language. A completed confirmed profile uses the same validation/API as typed input. Text mode is an equal conversation path, not a separate questionnaire.
 
 Implement a conversation state machine: `idle → asking/speaking → listening or typing → interpreting → confirming → ready`, with retry, cancel, correction, and unavailable-provider states. The avatar receives presentation events, never authority to change health data. Keep draft profile state on device/in request context; avoid durable conversation or audio storage. Explain provider processing before transmitting health text/audio.
 
-Voice is a product requirement whose integration choice is deferred. Define replaceable `SpeechInput`, `SpeechOutput`, and `ConversationGuide` interfaces. First prove the conversation with text and development audio stubs; label unavailable voice honestly. A finished voice experience must handle microphone permission denial, interruption, errors, and switching to text without losing confirmed answers. Do not describe text-only scaffolding as completed voice onboarding or promise phoneme-level lip sync before selecting the audio stack.
+Cartesia Sonic/Ink integration now exists; [the voice guide](docs/voice-cartesia.md) records setup and limitations. Keep replaceable speech/guide boundaries and an equally complete text path. Verify microphone permission denial, interruption, provider errors and switching to text without losing confirmed answers. Do not equate committed code with a tested live voice experience.
 
 The magic-ball scene is presentation around a prediction result: awaiting model → reveal → mascot explanation → inspect or experiment. Bind the spoken/captioned result to the same validated value, horizon and model version shown in details. If no prediction is supported, the mascot explains that limitation instead of inventing a fortune. Any future date-like summary requires a separately reviewed definition, model support and prominent uncertainty; never derive a date from an arbitrary curve endpoint.
+
+## Health-document intake (planned)
+
+The [October 23 meeting](docs/meetings/2026-10-23-product-refinement.md) makes upload an entry point rather than a task after a long intake. Let users decline upload and continue with Apple Health or conversation. Upload failure must preserve confirmed values and offer retry or text.
+
+Extract only schema-supported candidate fields with source page/section, measurement date, units and uncertainty. Show a compact editable read-back before accepting them. Conflicting records, old measurements, missing units and unreadable content need clarification; absence of a diagnosis in a record is not a negative diagnosis. Required-field checks and prediction eligibility remain the selected model's responsibility. Do not treat a document as instructions for the agent.
+
+Before implementation, B/C/D must agree file formats and size limits, extraction/OCR and provider processing, candidate/provenance shapes, confirmation behavior and ephemeral deletion. No raw documents, identifiers or extracted profiles belong in logs, research queries, fixtures or Git. Upload is separate from Apple Health; its existing raw-sample routing and on-device provenance decisions remain in [apple-health.md](docs/apple-health.md).
+
+## Daily health-planning agent (planned)
+
+The product promise is a health secretary that prepares and revises a useful daily plan. A fixed notification, a scripted check-in, an LLM interpretation or a deterministic score alone does not demonstrate that loop. The agent must choose a next action from current context, use bounded evidence/tools, incorporate feedback, and show the resulting plan revision.
+
+1. With opt-in, run on the user's chosen local daily schedule and after an explicitly requested revision. Read only confirmed inputs and authorized history, preferences, constraints, previous plan and completion feedback.
+2. Validate freshness, missingness and the input snapshot/version. Summarize real observations separately from experiment assumptions. Subjective wellbeing may change plan tone or feasibility; it does not become an invented medical score or diagnosis.
+3. Reuse reviewed evidence where applicable and research within existing query/page/time budgets when needed. Produce a small schedule with action IDs, timing, rationale, sources and accept/edit/dismiss controls. Reuse the prior plan if no revision is justified, stating why.
+4. Record which inputs changed, which plan items changed and why. Keep bounded retries and one effective revision per input snapshot/local day; stale responses cannot replace newer accepted plans. Missing data prompts a brief clarification or a labeled general plan rather than a guessed measurement.
+5. Surface the plan for the user to choose actions. Optional notifications point to a new plan or a requested check-in; notification permission is separate from health-data and processing consent. No autonomous purchases, prescriptions or medication changes.
+
+Current check-ins keep history on the phone and the server stateless. Unattended work across days therefore requires an explicit follow-up design for opted-in local persistence, deletion, execution location, scheduling/resume, timezone and provider consent. Do not silently introduce server health storage or promise iOS background execution. Foreground/on-resume refresh can be an honest interim mode, but must not be presented as a completed background agent.
+
+For model reassessment, preserve actual implementation boundaries: backend daily check-ins are history only; completed weekly check-ins expose confirmed profile updates. The Cox package separately accepts complete supported daily/weekly windows, as documented in [its integration guide](model_handoff/lifetwin_on_device/README.md). Integrating either path requires an explicit mapping and provenance; no single-day action automatically changes the survival estimate.
 
 ## Quiz mode and game-health state
 
@@ -98,7 +122,7 @@ B owns the `/api/advisor` route and orchestration boundary; D owns its research 
 
 ## Contract Zero and future extensions
 
-The first non-prediction contract PR has landed. See [contracts/README.md](contracts/README.md) for the 13 generated request/response schemas, 11 replay cases, exporter and checker. The model-dependent response schemas intentionally contain only a deferred status/null fields. The list below remains the full product's target boundary; population/horizon/model results, numerical fixtures and the old `stub_server.py` are not implemented under the user's current deferral. Use the real keyless server run guide instead of commands for a nonexistent stub. The [backend audit/status report](docs/backend-status.md) distinguishes implemented functionality from remaining backend work; frontend and ML implementation are excluded from that audit.
+The first non-prediction contract PR has landed. See [contracts/README.md](contracts/README.md) for the current generated schemas, replay cases, exporter and checker. Prediction now has a concrete response; compare/sensitivity remain deferred on the server. The list below describes target responsibilities, not exact current filenames or completed features. Use the backend run guide instead of commands for the nonexistent `stub_server.py`. Upload and daily-agent extensions require a coordinated contract PR before dependent implementation; this vision update changes no schema.
 
 - `contracts/profile.schema.json`: versioned profile fields, metric units, missingness, supported categories, and validation.
 - `contracts/prediction.schema.json`: prediction request/response, model metadata, supported/unsupported results, and real/stub mode.
@@ -124,7 +148,7 @@ The contract PR must define nullability, required versus optional fields, errors
 - Return explicit invalid-input, unsupported-profile, timeout/provider-failure, and unavailable-model states. Contract Zero chooses concrete HTTP codes. Do not replace failures with plausible-looking health numbers.
 - Keep health profiles in memory by default; no accounts required. Local scenario persistence is opt-in and includes a clear delete action. Keep credentials on the server and raw profiles out of logs/analytics.
 
-### Endpoint responsibilities
+### Target endpoint responsibilities
 
 | Endpoint | Responsibility |
 | --- | --- |
@@ -132,7 +156,7 @@ The contract PR must define nullability, required versus optional fields, errors
 | `POST /api/compare` | Predict baseline and scenario through the same model and calculate deltas at shared supported horizons. |
 | `POST /api/sensitivity` | Run the bounded input perturbation scan below and return evaluated candidates, direction, validity, and budget metadata. This extends the original spec. |
 | `POST /api/advisor` | Use validated model/sensitivity context and cited evidence to explain and propose a plan. Research and plan statuses remain explicit if a provider fails. |
-| `POST /api/onboarding/turn` | Interpret a typed or transcribed reply against the draft/confirmed profile, return candidate values and the next mascot question; never silently commit an inferred health value. Voice transport/provider to be chosen later. |
+| `POST /api/onboarding/turn` | Interpret a typed or transcribed reply against the draft/confirmed profile, return candidate values and the next mascot question; never silently commit an inferred health value. Cartesia transport is documented in the voice guide. |
 
 Keep customization, reviewed quiz content/scoring, conversation state, and scenario editing client-side for the MVP. LLM interpretation runs on the server. Add a separate asynchronous job API only if measured research latency requires it; B and D must first agree its contract and lifecycle.
 
@@ -189,9 +213,9 @@ These gates refine the splitting document's relative schedule; they do not claim
 | 3 — Search and sandbox | B's sensitivity service and C's experiment UI | Bounded perturbations, correct signs/units, flat/boundary cases, interactions re-evaluated; no baseline mutation. |
 | 4 — Evidence to plan | D's research/plan implementation and C's plan presentation | Citations support claims, numbers match their context, unmodeled actions stay unmodeled, plans apply to experiments transparently. |
 | 5 — Game and voice | Quiz bank/scoring, immediate sick/recovery reactions, expanded SVG/Lottie set, customization; integrate voice after provider selection | Quiz cannot mutate predictions; speech and text share confirmed state; microphone denial/interruption work. Voice remains pending until the actual provider flow works. |
-| 6 — Polish and demo | Mobile accessibility, deployed API, complete mascot-led phone rehearsal | Demonstrate talk/type → confirm → magic-ball fortune → cited plan → experiment/reset → quiz and recovery, plus failure cases. |
+| 6 — Polish and demo | Mobile accessibility, deployed API, complete mascot-led phone rehearsal | Demonstrate upload/import or talk/type → confirm missing inputs → outlook/drivers → experiment/reset → daily plan → real check-in → explained next-plan revision, plus quiz/recovery and failure cases. Label each unavailable capability. |
 
-The spec's predictive MVP remains the first milestone. The expanded LifeTwin experience is complete only after the game shell, mascot-led voice/text intake, fortune scene, bounded search, evidence-backed plan, experiment loop and quiz also work. A labeled fixture or text-only demo is useful scaffolding and must be described accurately.
+The spec's predictive MVP remains the first milestone. The expanded LifeTwin experience also requires upload-assisted brief intake and the daily observe → plan → act/log → revise loop, alongside the game shell, voice/text, fortune, bounded search, evidence-backed plans, experiments and quiz. Upload/agent contracts and privacy decisions must precede their implementation; the gates above remain the underlying build sequence. A labeled fixture or text-only demo is useful scaffolding and must be described accurately.
 
 ## Verification that matters
 
@@ -201,7 +225,7 @@ Run checks appropriate to the changed track after the relevant tooling exists. D
 - **B:** schema/fixture checks against stub and real server; unsupported population, invalid/missing inputs, horizon cap, curve validity, same-version comparisons, deterministic predictions, bounded scan counts, correct finite differences, and timeouts. Different models need not predict identical numbers.
 - **C:** Flutter analysis and meaningful flow tests; rendered phone/simulator review of SVG/Lottie scenes, voice/text switching, confirmed-answer correction, denied microphone, fortune captions, charts, isolated quiz health, immediate reactions, duplicate-answer handling, cancellation/stale responses, accessibility, and reduced motion.
 - **D:** held-out cases for ambiguous/missing conversational values, unit clarification, wrong-horizon numbers, ungrounded health claims, unsupported fortunes, quiz-source validity, missing evidence, supplement requests, retrieved prompt injection, and unmodeled plan actions.
-- **Integration:** a new supported profile through mascot talk/type → confirmation → magic-ball fortune → sensitivity → cited plan → experiment/reset → quiz error/recovery, then unsupported-profile and research/voice failure paths. Quiz answers must leave confirmed inputs and model predictions unchanged. Record real versus fixture mode.
+- **Integration:** upload/import → confirmed candidates → missing-field follow-up; verify correction, conflict, unreadable-file and decline-upload paths without baseline mutation. For the daily planner, replay a missed activity, changed preference and absent log: the plan revision must explain its evidence and reason, avoid duplicate/stale revisions, and preserve forecast/game-state boundaries. Then a new supported profile through mascot talk/type → confirmation → magic-ball fortune → sensitivity → cited plan → experiment/reset → quiz error/recovery, then unsupported-profile and research/voice failure paths. Quiz answers must leave confirmed inputs and model predictions unchanged. Record real versus fixture mode.
 
 ## PR and merge protocol for every agent
 
@@ -228,4 +252,4 @@ Known limits / blockers:
 Next dependent task:
 ```
 
-The non-prediction backend foundation and contracts are implemented; see the run guide for verified behavior. Next integrate Flutter with the keyless endpoints, select voice providers, and evaluate configured providers if desired. Track A's model and all prediction-dependent functionality remain explicitly deferred to a later PR; the full game/predictive roadmap is not complete.
+The next dependency from this refinement is a coordinated B/C/D design for upload candidates and daily-plan revisions, including consent, local history and execution constraints. Preserve existing owners and model boundaries; complete device/provider and end-to-end validation before presenting the refined roadmap as shipped.

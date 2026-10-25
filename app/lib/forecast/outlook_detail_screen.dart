@@ -4,12 +4,13 @@ import '../health/readback.dart' show usesImperial;
 import '../ui/theme.dart';
 import '../widgets/whole_word_text.dart';
 import '../ui/widgets/widgets.dart';
+import '../twin/twin_model.dart' show TwinAssessment;
 import 'forecast_client.dart';
 import 'profile_labels.dart';
 
-/// V-9 "See what shaped it": the person's own curve from the response, the
-/// confirmed answers with their source, what the model assumed
-/// (`filled_in`), and the limits. Every number comes from the response.
+/// V-9 "See what shaped it": the person's own curve from the on-device model, the
+/// confirmed answers with their source, and the limits. Every number comes from the
+/// model; nothing is filled in.
 class OutlookDetailScreen extends StatelessWidget {
   const OutlookDetailScreen({
     super.key,
@@ -55,6 +56,7 @@ class OutlookDetailScreen extends StatelessWidget {
             ),
           ),
           _Section(
+            title: TwinAssessment.survivalTitle,
             children: [
               SurvivalCurve(curve: f.curve, markers: f.survival, maxYears: years),
               const SizedBox(height: 8),
@@ -75,11 +77,6 @@ class OutlookDetailScreen extends StatelessWidget {
                 ),
             ],
           ),
-          if (f.filledIn.isNotEmpty)
-            _Section(
-              title: 'We assumed',
-              children: [for (final label in f.filledIn) _Assumed(label: label, onAddAnswer: onAddAnswer)],
-            ),
           _Section(
             title: 'Limits',
             children: [
@@ -185,60 +182,4 @@ class _Row extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Assumed extends StatelessWidget {
-  const _Assumed({required this.label, required this.onAddAnswer});
-  final String label;
-  final VoidCallback onAddAnswer;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = label.isEmpty ? label : label[0].toUpperCase() + label.substring(1);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 2),
-      decoration: ShapeDecoration(shape: _DashedBorder(color: LtColors.cream.withValues(alpha: 0.5))),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          WholeWordText(text, style: LtText.body(color: LtColors.cream)),
-          LinkButton(label: 'Add an answer', icon: Icons.add_rounded, color: LtColors.gold, onTap: onAddAnswer),
-        ],
-      ),
-    );
-  }
-}
-
-/// A dashed 1.5px rounded outline ("we assumed", not confirmed).
-class _DashedBorder extends ShapeBorder {
-  const _DashedBorder({required this.color});
-  final Color color;
-
-  @override
-  EdgeInsetsGeometry get dimensions => EdgeInsets.zero;
-
-  RRect _rrect(Rect rect) => RRect.fromRectAndRadius(rect.deflate(0.75), const Radius.circular(18));
-
-  @override
-  Path getInnerPath(Rect rect, {TextDirection? textDirection}) => Path()..addRRect(_rrect(rect));
-
-  @override
-  Path getOuterPath(Rect rect, {TextDirection? textDirection}) => Path()..addRRect(_rrect(rect));
-
-  @override
-  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    for (final m in (Path()..addRRect(_rrect(rect))).computeMetrics()) {
-      for (double d = 0; d < m.length; d += 10) {
-        canvas.drawPath(m.extractPath(d, (d + 6).clamp(0, m.length)), paint);
-      }
-    }
-  }
-
-  @override
-  ShapeBorder scale(double t) => this;
 }

@@ -1,7 +1,8 @@
 // QA: changing answers. "No, change it", "go back", "change my age to 71", "start over"
-// against "yes, start over", skipping every question (blood pressure included), and the
+// against "yes, start over", skipping every question, and the
 // AI-helper offer, consent and Settings switch. A wrong value may never be saved.
 //   flutter test integration_test/qa_corrections_test.dart -d <sim> --dart-define=API_BASE_URL=http://127.0.0.1:8051
+// Run against a server with an LLM key for the AI-helper test (a keyless server never offers it).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -23,7 +24,7 @@ void main() {
     await startTyped(t);
     await say(t, '45', 'you are 45');
     await tapText(t, 'No, change it');
-    await waitFor(t, find.text('Okay. What is the right answer?'));
+    await waitFor(t, find.textContaining('What is the right answer'));
     await say(t, '47', 'you are 47');
     expect(ctl(t).confirmedProfile['age'], isNull);
     // "go back" typed as the correction is understood, not read as a value.
@@ -33,36 +34,36 @@ void main() {
     expect(ctl(t).confirmedProfile['age'], isNull);
     await tapText(t, 'No, change it');
     await say(t, 'change my age to 71', 'you are 71');
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     expect(ctl(t).confirmedProfile['age'], 71);
     // Later, from another question.
     await say(t, 'change my age to 72', 'you are 72');
     expect(ctl(t).confirmedProfile['age'], 71, reason: 'not saved before Yes');
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     expect(ctl(t).confirmedProfile['age'], 72);
   });
 
   testWidgets('"go back" typed and the Go back link reopen; "keep it" keeps the answer', (t) async {
     await startTyped(t);
     await say(t, '71', 'you are 71');
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     await say(t, 'go back', 'go back to your age');
     expect(ctl(t).questionNumber, 1);
-    await say(t, 'keep it', 'What sex');
+    await say(t, 'keep it', sexQuestion);
     expect(ctl(t).confirmedProfile['age'], 71);
     await hideKeyboard(t);
     await tapText(t, 'Go back');
     await waitFor(t, find.textContaining('go back to your age'));
     await settled(t);
     await say(t, '70', 'you are 70');
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     expect(ctl(t).confirmedProfile['age'], 70);
   });
 
   testWidgets('"start over" only asks; "yes, start over" clears everything', (t) async {
     await startTyped(t);
     await say(t, '71', 'you are 71');
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     await say(t, 'start over', 'start again');
     expect(ctl(t).confirmedProfile['age'], 71, reason: '"start over" alone must not clear');
     await say(t, 'yes, start over', 'cleared your answers');
@@ -75,21 +76,42 @@ void main() {
     await say(t, 'start over', 'start again');
     expect(ctl(t).confirming, isTrue);
     expect(ctl(t).confirmedProfile['age'], isNull);
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     expect(ctl(t).confirmedProfile['age'], 68);
   });
 
-  testWidgets('every question can be skipped, blood pressure included, and Continue follows', (t) async {
+  testWidgets('every question can be skipped, and Continue follows', (t) async {
     await startTyped(t);
     final seen = <String>{};
-    for (var i = 0; i < 14 && find.text('Continue').evaluate().isEmpty; i++) {
+    for (var i = 0; i < 16 && find.text('Continue').evaluate().isEmpty; i++) {
+      // Apple Health is offered after age, sex and smoking; it is not a question to skip.
+      if (find.textContaining(healthOffer).evaluate().isNotEmpty) {
+        await declineHealth(t);
+        continue;
+      }
       seen.add('${ctl(t).state?['current_field']}');
       await tapText(t, 'Skip this question');
       await pumpFor(t, const Duration(milliseconds: 600));
       await settled(t);
       expect(ctl(t).notice, isNull, reason: 'skip refused at ${ctl(t).state?['current_field']}');
     }
-    expect(seen, containsAll(['age', 'sex', 'systolic_bp']));
+    expect(
+      seen,
+      containsAll([
+        'age',
+        'sex',
+        'smoking_status',
+        'height_cm',
+        'weight_kg',
+        'sleep_hours',
+        'general_health',
+        'hypertension_diagnosed',
+        'diabetes',
+        'sedentary_min_day',
+        'moderate_recreation_min_week',
+        'vigorous_recreation_min_week',
+      ]),
+    );
     await waitFor(t, find.text('Continue'));
     expect(ctl(t).confirmedProfile.values.whereType<Object>(), isEmpty);
     await tapText(t, 'Continue');
@@ -98,19 +120,26 @@ void main() {
     expect(find.textContaining('still living'), findsNothing);
   });
 
-  testWidgets('typed "skip" at blood pressure, and a lone top number is not saved as both', (t) async {
+  testWidgets('a blood pressure reading is not saved as a diagnosis, and typed "skip" finishes', (t) async {
     await startTyped(t);
-    await answerAll(t, fullIntake.sublist(0, 9));
-    await waitFor(t, find.textContaining('blood pressure'));
-    await typeSend(t, '130');
-    // Either a follow-up for the bottom number or a read-back; never a saved guess.
+    await answerAll(t, fullIntake.sublist(0, 8));
+    await waitFor(t, find.textContaining(bloodPressureQuestion));
+    // Blood pressure readings are no longer asked. One offered anyway is kept as context,
+    // never saved as a value or as "a doctor told me".
+    await typeSend(t, '130 over 85');
+    await waitFor(t, find.textContaining("isn't the same as a diagnosis"));
+    expect(ctl(t).confirmedProfile['hypertension_diagnosed'], isNull);
     expect(ctl(t).confirmedProfile['systolic_bp'], isNull);
     expect(ctl(t).confirmedProfile['diastolic_bp'], isNull);
-    if (ctl(t).confirming) {
-      await tapText(t, 'No, change it');
-    }
+    expect(ctl(t).state?['current_field'], 'hypertension_diagnosed', reason: 'the diagnosis is asked once more');
     await typeSend(t, 'skip');
+    for (var i = 0; i < 8 && find.text('Continue').evaluate().isEmpty; i++) {
+      await tapText(t, 'Skip this question');
+      await pumpFor(t, const Duration(milliseconds: 600));
+      await settled(t);
+    }
     await waitFor(t, find.text('Continue'));
+    expect(ctl(t).confirmedProfile['hypertension_diagnosed'], isNull);
     expect(ctl(t).confirmedProfile['systolic_bp'], isNull);
   });
 
@@ -125,7 +154,7 @@ void main() {
     expect(find.text('Yes, let the AI helper read it'), findsNothing);
     // Whatever the helper made of it, nothing is saved without a Yes.
     expect(ctl(t).confirmedProfile['age'], isNull);
-    if (ctl(t).confirming) await yes(t, 'What sex');
+    if (ctl(t).confirming) await yes(t, sexQuestion);
     await hideKeyboard(t);
     await tapText(t, 'Settings');
     await waitFor(t, find.text('AI helper'));

@@ -87,24 +87,73 @@ void main() {
     expect(p['systolic_bp'], 128);
     expect(p['diastolic_bp'], 82);
     await say(t, '71', 'you are 71');
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     await tapText(t, 'Female');
     await waitFor(t, find.textContaining('female at birth'));
     await settled(t);
-    await yes(t, 'Do you smoke'); // height, weight, sleep and exercise are not asked
+    await yes(t, smokingQuestion);
     await tapText(t, 'I never smoked');
     await waitFor(t, find.textContaining('never smoked'));
     await settled(t);
-    await yes(t, 'alcoholic drinks');
-    await say(t, 'none', "don't drink");
-    await yes(t, 'diabetes');
+    // Height, weight and sleep are not asked, and neither is the Apple Health offer: the
+    // readings were already added. The next question is general health.
+    await yes(t, healthQuestion);
+    expect(find.textContaining(healthOffer), findsNothing);
+    await say(t, 'good', 'your health is good');
+    await yes(t, bloodPressureQuestion); // the reading is not a diagnosis, so this is still asked
+    await say(t, 'no', 'not told you that you have high blood pressure');
+    await yes(t, diabetesQuestion);
     await tapText(t, 'No');
     await waitFor(t, find.textContaining('not told you'));
     await settled(t);
-    await yes(t, 'All done'); // blood pressure came from Health
+    await yes(t, sittingQuestion);
+    await say(t, '6 hours', 'sit 6 hours a day');
+    // Apple Health's weekly total is 150 minutes: only the harder part is asked, and the rest
+    // is read back as lighter activity.
+    await yes(t, harderQuestion);
+    expect(find.textContaining('Apple Health shows about'), findsOneWidget);
+    await say(t, 'none', 'no harder exercise');
+    await yes(t, 'All done');
+    expect(ctl(t).confirmedProfile['moderate_recreation_min_week'], 150);
+    expect(ctl(t).confirmedProfile['vigorous_recreation_min_week'], 0);
     await tapText(t, 'Continue');
     await askTheBall(t);
-    await waitFor(t, find.textContaining('were still living 5 years later'));
+    // Every model input is known now, so the phone shows a number.
+    await waitFor(t, find.textContaining(forecastNumber));
+  });
+
+  // Fails today on a real app gap: the app ignores the server's client_action
+  // "open_health_import" and shows "Use my Apple Health" only on question 1
+  // (voice_onboarding_screen.dart, `c.questionNumber == 1`) or once done, so after "yes" to the
+  // offer there is no way to open the Health screen.
+  testWidgets('the Apple Health offer after age, sex and smoking: yes, then the readings fill the gaps', (t) async {
+    await startTyped(t, app: LifeTwinApp(healthReader: FakeReader(readings(DateTime.now()))));
+    await say(t, '71', 'you are 71');
+    await yes(t, sexQuestion);
+    await tapText(t, 'Female');
+    await waitFor(t, find.textContaining('female at birth'));
+    await settled(t);
+    await yes(t, smokingQuestion);
+    await tapText(t, 'I never smoked');
+    await waitFor(t, find.textContaining('never smoked'));
+    await settled(t);
+    await yes(t, healthOffer);
+    expect(ctl(t).state?['phase'], 'offering');
+    await say(t, 'yes please', 'Check each reading in Apple Health');
+    expect(ctl(t).state?['phase'], 'offering', reason: 'still waiting for the readings');
+    await openHealth(t, 'Use my Apple Health');
+    await checkAll(t);
+    await waitFor(t, find.textContaining('from Apple Health'));
+    await settled(t);
+    expect(ctl(t).notice, isNull);
+    final p = ctl(t).confirmedProfile;
+    expect((p['height_cm'] as num).round(), 165);
+    expect((p['weight_kg'] as num).round(), 68);
+    expect(p['sleep_hours'], 7);
+    expect(p['exercise_minutes_weekly'], 150);
+    // Only what is still missing is asked: general health comes next, not height.
+    await waitFor(t, find.textContaining(healthQuestion));
+    expect(find.textContaining(heightQuestion), findsNothing);
   });
 
   testWidgets('a reading marked wrong is asked; none found says so; Health again after done', (t) async {
@@ -116,13 +165,17 @@ void main() {
     await settled(t);
     expect(ctl(t).confirmedProfile['height_cm'], isNull);
     await say(t, '71', 'you are 71');
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     await tapText(t, 'Male');
     await waitFor(t, find.textContaining('male at birth'));
     await settled(t);
-    await yes(t, 'How tall');
+    await yes(t, smokingQuestion);
+    await tapText(t, 'I never smoked');
+    await waitFor(t, find.textContaining('never smoked'));
+    await settled(t);
+    await yes(t, heightQuestion); // asked after all: the reading was marked wrong
     await say(t, '5 foot 6', '5 feet 6 inches');
-    await yes(t, 'Do you smoke');
+    await yes(t, healthQuestion);
     for (var i = 0; i < 6 && find.text('Continue').evaluate().isEmpty; i++) {
       await tapText(t, 'Skip this question');
       await pumpFor(t, const Duration(milliseconds: 600));

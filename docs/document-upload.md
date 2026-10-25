@@ -258,14 +258,11 @@ pickers are native sheets and were not driven by the test.
 
 ## Not done yet, and open questions
 
-- Labelling document-confirmed values with their source in the forecast, as Apple Health values are.
+- Showing the "Document" source label in the forecast screens (the source is recorded: `recordImport(..., source: 'document')` and a `document` history entry).
 - Storing confirmed information notes (blood pressure, A1c, LDL) on the phone, once local history exists.
 
 - **Ruled:** document text may go to Muse with the person's consent (owner, 2026-10-24). Muse's retention terms are
   still unverified; the consent copy must not claim any retention promise until they are checked.
-- **Tier-1:** `hypertension_diagnosed` has no field in `HealthProfile` (the server's model leaves it missing). A
-  confirmed value is returned by `DocumentImportResult.onPhoneOnly` but is not used yet. The profile contract has to
-  add it first.
 - **Tier-1:** should confirmed information notes (blood pressure, labs) be kept in on-phone history, and for how long?
 - The server must run behind TLS in deployment, since the text crosses the network.
 - On-device validation: the real photo library, Files and document camera, with real paper documents and older

@@ -197,9 +197,8 @@ void main() {
       c.answer(true); // blood pressure note
       expect(c.done, isTrue);
       final r = c.result;
-      expect(r.profileValues, {'diabetes': true});
+      expect(r.profileValues, {'diabetes': true, 'hypertension_diagnosed': true});
       expect(r.toAsk, ['weight_kg']);
-      expect(r.onPhoneOnly.map((c) => c.field), ['hypertension_diagnosed']);
       expect(r.notes.map((c) => c.field), ['blood_pressure']);
     });
 

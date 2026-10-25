@@ -1,10 +1,11 @@
 # LifeTwin working docs
 
-Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent implementation guide, and [AGENTS.md](../AGENTS.md) for PR/merge rules. [`projectspec.md`](../projectspec.md) remains the original modeling and privacy specification. Updated product/stack decisions are recorded in [prd-reconciliation.md](prd-reconciliation.md); the original spec is preserved. See the [backend run guide](../server/README.md) and [implemented contracts](../contracts/README.md) for current non-prediction functionality. Flutter, audio, model and iOS helper paths remain future work.
+Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent implementation guide, and [AGENTS.md](../AGENTS.md) for PR/merge rules. [`projectspec.md`](../projectspec.md) remains the original modeling and privacy specification. Updated product/stack decisions are recorded in [prd-reconciliation.md](prd-reconciliation.md); the original spec is preserved. See the [backend run guide](../server/README.md) and [implemented contracts](../contracts/README.md) for implementation details. The master guide distinguishes the existing app/voice/model/check-in work from planned document upload and autonomous daily planning.
 
 | Doc | For |
 |---|---|
-| [backend-status.md](backend-status.md) | Audited backend functionality, concrete fixes, verification and prioritized remaining backend tasks; excludes frontend/ML implementation |
+| [meetings/2026-10-23-product-refinement.md](meetings/2026-10-23-product-refinement.md) | October 23 source notes, refined promise, decisions, open questions and acceptance criteria |
+| [backend-status.md](backend-status.md) | Historical October 23 backend audit; newer feature boundaries are in the master guide and backend run guide |
 | [MASTER_PLAN.md](../MASTER_PLAN.md) | Mascot-led game vision, voice/text intake, fortune, quiz, sensitivity, plans, experiment loop and delivery gates |
 | [tech-stack.md](tech-stack.md) | Confirmed Flutter/LottieFiles plus proposed packages, model/API, LLM/research, deployment and deferred voice |
 | [prd-reconciliation.md](prd-reconciliation.md) | Where each master-doc section lives, and every place a team decision changes it |

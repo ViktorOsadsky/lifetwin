@@ -1,31 +1,47 @@
-"""Explicit candidate/confirmation transitions for text and final transcripts."""
+"""Explicit candidate/confirmation transitions for text and final transcripts.
+
+Conversation v2 keeps every v1 rule (read-back before saving, corrections, the chatter
+filter, other people's values refused, conversation controls, the emergency line) and
+adds: a goal state (the model inputs still missing) that picks the next topic from
+what the person just said, "I don't know" recorded as unknown, one simpler question
+for some unknowns, Apple Health offered early, up to three habit follow-ups, one turn
+of small talk, varied wording, and suggestions when the intake is complete.
+"""
 
 import asyncio
 import logging
 import re
+import secrets
 from collections.abc import Callable
 from datetime import date
 
 from fastapi import HTTPException
 
 from lifetwin.core.models import HealthProfile
+from lifetwin.onboarding.habits import blood_pressure_reading, merge, read_notes
 from lifetwin.onboarding.intents import (
     EMERGENCY_MESSAGE,
     RESUME_LEAD,
+    _on_topic,
     asks_back,
     clean_reply,
     control_intent,
+    dont_know,
     emergency,
     focus,
+    hedged_answer,
     keeps_answer,
     read_back_reply,
     resumes,
 )
 from lifetwin.onboarding.intents import phrase as words_of
+from lifetwin.onboarding.model_inputs import character_hints, model_inputs
 from lifetwin.onboarding.models import (
     FIELDS,
     ConversationState,
+    HabitNote,
     MascotEvent,
+    Recommendation,
     TurnRequest,
     TurnResponse,
 )
@@ -34,18 +50,68 @@ from lifetwin.onboarding.parsing import (
     BP_ORDER_MESSAGE,
     EXAMPLES,
     FRIENDLY_LABELS,
+    NO_WORDS,
     QUESTION_EXAMPLE_VALUES,
     QUESTIONS,
+    UNKNOWN_WORDS,
+    YES_WORDS,
+    _canonical,
+    _doubtful,
+    _others,
     approximate,
     birth_year_ages,
     clarify,
     corrects,
     grounded_candidates,
+    health_either,
     is_skip,
     normalize_text,
     parse_reply,
+    parse_value,
 )
+from lifetwin.onboarding.probes import BY_ID as PROBES
+from lifetwin.onboarding.probes import MAX_PROBES
+from lifetwin.onboarding.probes import choose as choose_probe
 from lifetwin.onboarding.providers import ExtractionUnavailable, Extractor
+from lifetwin.onboarding.script import (
+    ACKS,
+    ASKED,
+    BP_READING,
+    BY_FIELD,
+    ESTIMATE_NOTE,
+    FLIP,
+    GREETING,
+    HEALTH_DECLINED,
+    HEALTH_FIELDS,
+    HEALTH_OFFER,
+    HEALTH_OFFER_REPLIES,
+    HEALTH_OPEN,
+    HEALTH_STEP,
+    HEALTH_WORDS,
+    HOW_ARE_YOU,
+    LATER,
+    MEMORY_ASK,
+    MEMORY_NO,
+    MEMORY_REPLIES,
+    MEMORY_WHY,
+    MEMORY_YES,
+    ORDER,
+    PROBE_OPTIONAL,
+    PROBE_SKIPPED,
+    PROBE_THANKS,
+    SITTING_SHARES,
+    SMALL_TALK,
+    STEER_BACK,
+    STEER_LEADS,
+    STEERS,
+    SUPPLEMENT_REPLY,
+    UNKNOWN_ACKS,
+    UNKNOWN_FIRST,
+    pick,
+)
+from lifetwin.personalize.providers import Personalizer
+from lifetwin.personalize.service import consented, phrase_question, phrase_recommendations
+from lifetwin.recommendations.service import suggest
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +143,13 @@ SMOKING_WORDS = {
     "current": "smoke now",
     "unknown": "are not sure about smoking",
 }
+HEALTH_RATINGS = {
+    "excellent": "excellent",
+    "very_good": "very good",
+    "good": "good",
+    "fair": "fair",
+    "poor": "poor",
+}
 
 
 # Lead-ins for replies about the conversation itself; the prompt follows unchanged.
@@ -99,6 +172,19 @@ WHAT_NOW = re.compile(
     r"what happens next|what do i do next|is that it|are we done|am i done|that's it then)"
 )
 THANKS = re.compile(r"\b(?:thanks|thank you|thank u|ty|cheers|much obliged)\b", re.I)
+HOW_ARE_YOU_ASKED = re.compile(
+    r"^(?:and |so |well |oh )?(?:how (?:are|r) (?:you|u)|how's it going|how are things|"
+    r"how have you been|how about you|and you)(?: (?:doing|today|mochi|yourself|dear))*$"
+)
+SUPPLEMENTS = re.compile(
+    r"\b(?:supplements?|vitamins?|multi ?vitamins?|fish oil|omega ?3s?|turmeric|curcumin|"
+    r"melatonin|coq ?10|ginkgo|ginseng|probiotics?|collagen|magnesium|zinc|glucosamine|"
+    r"biotin|b ?12|iron (?:pills?|tablets?)|calcium (?:pills?|tablets?)|herbal (?:pills?|remed\w*))\b"
+)
+ASKING = re.compile(
+    r"\?|^(?:should|do|can|could|would|is|are|what|which|how)\b|\b(?:should i|do i need|"
+    r"is it (?:good|ok|okay|safe)|what about|recommend|suggest)\b"
+)
 PRIVATE_NOTE = (
     "Your answers stay on your phone. LifeTwin's server uses them for your forecast "
     "but doesn't keep them. Nothing is saved until you say yes."
@@ -109,34 +195,39 @@ WHY_NOTE = (
 )
 HELPER_NOTE = "The AI helper reads an answer only if you say it's okay."
 SKIP_NOTE = 'If you\'d rather not answer, just say "skip".'
-# A plain explanation of each question, with an example answer.
-HELP: dict[str, str] = {
-    "age": "I'm asking how many years old you are today. For example, say \"I'm 72\". "
-    "You can also tell me the year you were born.",
-    "sex": "I'm asking whether you were born female or male, because health numbers differ "
-    'between the two. Just say "female" or "male".',
-    "height_cm": "I'm asking how tall you are, standing without shoes. For example, "
-    '"5 feet 10 inches" or "178 cm". A close guess is fine.',
-    "weight_kg": 'I\'m asking how much you weigh. For example, "160 pounds" or "72 kg". '
-    "A close guess is fine. I'll read it back to you.",
-    "sleep_hours": "I'm asking how many hours you sleep on a usual night. For example, "
-    '"7 hours", or "from 11 at night to 6 in the morning".',
-    "exercise_minutes_weekly": "I'm asking how many minutes you move on purpose in a whole "
-    "week, like walking, swimming or gardening. For example, a 30-minute walk 5 days a week "
-    'is "150 minutes". If you don\'t exercise, say "none".',
-    "smoking_status": 'I\'m asking about smoking cigarettes. Say "never" if you never smoked, '
-    '"I quit" if you smoked in the past, or "I smoke" if you smoke now.',
-    "alcohol_drinks_weekly": "I'm asking how many drinks of beer, wine or liquor you have in "
-    'a usual week. One beer or one glass of wine is one drink. For example, "3 drinks", or '
-    '"none".',
-    "diabetes": "I'm asking if a doctor has ever told you that you have diabetes, also called "
-    'high blood sugar. Say "yes", "no", or "I don\'t know".',
-    "systolic_bp": "I'm asking for your blood pressure: the two numbers a blood pressure cuff "
-    'shows, the bigger one first. For example, "120 over 80". If you don\'t know it, say '
-    '"I don\'t know".',
-    "diastolic_bp": "I'm asking for the bottom, smaller number of your blood pressure. For "
-    'example, the 80 in "120 over 80". If you don\'t know it, say "I don\'t know".',
-}
+HELP: dict[str, str] = {question.field: question.help for question in BY_FIELD.values()}
+# Replies that end a habit follow-up without a note.
+MOVE_ON = re.compile(
+    r"(?:(?:let's|lets|can we|could we) )?(?:just )?(?:move on|keep going|go on|carry on|skip(?: it| that)?)"
+    r"|next(?: question)?|pass|no|nope|nah|no thanks|not really|nothing|none|"
+    r"(?:i'd|i would) (?:rather|prefer) not(?: say| talk about it| answer)?|rather not(?: say)?|"
+    r"prefer not to (?:say|answer)|i don't want to (?:say|talk about it)|never mind"
+)
+YES_REPLY = re.compile(
+    r"^(?:yes|yeah|yep|yup|yea|ya|aye|sure|certainly|definitely|absolutely|of course|ok|okay|please|why not|go ahead|let's do it|that would be (?:great|nice|lovely)|"
+    r"that'd be (?:great|nice|lovely)|sounds good|use (?:it|apple health|the health app))"
+    r"(?:[\s,!.]+(?:please|thanks|thank you|use (?:it|apple health|the health app)|"
+    r"that would be (?:great|nice|lovely)|let's do it|sure))*$"
+)
+MEMORY_YES_REPLY = re.compile(
+    r"^(?:yes|yeah|sure|of course|okay|ok|please do|go ahead|that's fine|that's okay|"
+    r"that would be nice|that'd be nice|sounds good|fine|alright|all right|i don't mind|"
+    r"i don't mind at all)(?:[\s,!.]+(?:please|thanks|thank you|remember|you can|go ahead|"
+    r"that's fine|sure|of course|please do))*$|^(?:yes |sure |please )?remember(?: it| them| that)?(?: please)?$|^yes remember$"
+)
+MEMORY_NO_REPLY = re.compile(
+    r"^(?:no|nope|nah|no thanks|no thank you|i'd rather not|i would rather not|rather not|"
+    r"please don't|don't|i don't want (?:that|you to)|not really|better not|no no|"
+    r"just the answers|only my answers|no just the answers)(?:[\s,!.]+(?:thanks|thank you|please|"
+    r"just the answers|don't remember|please don't|i'd rather not))*$|^(?:please )?don't remember(?: anything| it| that)?$"
+)
+NO_REPLY = re.compile(
+    r"^(?:no|nope|nah|no thanks|no thank you|not now|not today|maybe later|later|skip|"
+    r"skip it|i'd rather not|rather not|i'd rather just answer|just ask me|i don't use it|"
+    r"i don't have (?:it|an iphone|apple health|that)|i don't have an apple watch|"
+    r"i don't know how|i don't use apple health)(?:[\s,!.]+(?:thanks|thank you|please|"
+    r"just ask me|i'd rather just answer|i'll just tell you))*$"
+)
 
 
 ESTIMATED = {
@@ -145,6 +236,9 @@ ESTIMATED = {
     "sleep_hours",
     "exercise_minutes_weekly",
     "alcohol_drinks_weekly",
+    "sedentary_min_day",
+    "moderate_recreation_min_week",
+    "vigorous_recreation_min_week",
 }
 
 
@@ -160,6 +254,14 @@ def _about(value: float, shown: str) -> str:
 
 def _count(value: float, unit: str) -> str:
     return "none" if value == 0 else f"{_plain(value)} {unit}{'' if value == 1 else 's'}"
+
+
+def _duration(minutes: float) -> str:
+    """ "90 minutes", "2 hours": the unit people use for that amount."""
+    if minutes and minutes % 60 == 0:
+        hours = minutes / 60
+        return f"{_plain(hours)} hour{'' if hours == 1 else 's'}"
+    return _count(minutes, "minute")
 
 
 def _both(metric: str, imperial: str, metric_exact: bool, imperial_exact: bool) -> str:
@@ -211,6 +313,11 @@ def _facts(values: dict, about: set[str] = frozenset()) -> list[str]:
             "diabetes": lambda v: "yes" if v else "no",
             "systolic_bp": str,
             "diastolic_bp": str,
+            "general_health": HEALTH_RATINGS.get,
+            "hypertension_diagnosed": lambda v: "yes" if v else "no",
+            "sedentary_min_day": _duration,
+            "moderate_recreation_min_week": _duration,
+            "vigorous_recreation_min_week": _duration,
         }[field](value)
         if field in about and field in ESTIMATED and not shown.startswith("about "):
             shown = "about " + shown
@@ -235,14 +342,40 @@ def _facts(values: dict, about: set[str] = frozenset()) -> list[str]:
                 ),
                 "systolic_bp": f"your top blood pressure number is {shown}",
                 "diastolic_bp": f"your bottom blood pressure number is {shown}",
+                "general_health": f"your health is {shown}",
+                "hypertension_diagnosed": (
+                    "a doctor has told you that you have high blood pressure"
+                    if value
+                    else "a doctor has not told you that you have high blood pressure"
+                ),
+                "sedentary_min_day": f"you sit {shown} a day",
+                "moderate_recreation_min_week": (
+                    "no lighter activity" if value == 0 else f"{shown} of lighter activity a week"
+                ),
+                "vigorous_recreation_min_week": (
+                    "no harder exercise" if value == 0 else f"{shown} of harder exercise a week"
+                ),
             }[field]
         )
     return parts
 
 
 def heard(values: dict, about: set[str] = frozenset()) -> str:
-    """One "I heard ..." sentence per answer."""
-    return " ".join(f"I heard {fact}." for fact in _facts(values, about))
+    """One "I heard ..." sentence for everything being read back."""
+    facts = _facts(values, about)
+    if len(facts) > 1:
+        facts = [", ".join(facts[:-1]) + (", and " if len(facts) > 2 else " and ") + facts[-1]]
+    return " ".join(f"I heard {fact}." for fact in facts)
+
+
+def _lower_first(text: str) -> str:
+    return text[:1].lower() + text[1:] if text[:2] != "I " else text
+
+
+def _flip(clause: str) -> str:
+    """ "I walk my dog every morning" -> "you walk your dog every morning"."""
+    words = re.split(r"(\W+)", clause)
+    return "".join(FLIP.get(word.lower(), word) for word in words)
 
 
 class ConversationService:
@@ -252,13 +385,63 @@ class ConversationService:
         *,
         timeout_seconds: float = 6,
         clock: Callable[[], date] = date.today,
+        seed: Callable[[], int] | None = None,
+        personalizer: Personalizer | None = None,
+        max_probes: int = MAX_PROBES,
     ):
         self.extractor = extractor
+        # The habit follow-ups per onboarding: 1 in the short demo (ONBOARDING_DEMO=1).
+        self.max_probes = max(0, min(max_probes, MAX_PROBES))
+        # Outside-AI wording (opt-in per provider); never used to read or decide values.
+        self.personalizer = personalizer
         self.timeout = max(0.1, min(timeout_seconds, 10.0))
         # Birth dates are read against today; tests inject a fixed day.
         self.clock = clock
+        # Each session's wording seed; tests may fix it (0 is the canonical wording).
+        self.seed = seed or (lambda: secrets.randbelow(2**31 - 1) + 1)
 
     async def turn(self, request: TurnRequest) -> TurnResponse:
+        response = await self._turn(request)
+        if consented(request.outside_ai_consent, self.personalizer) and not response.emergency:
+            response = await self._phrase(response)
+        return response
+
+    async def _phrase(self, response: TurnResponse) -> TurnResponse:
+        """With consent: the provider may phrase the next question or the suggestions."""
+        state, update = response.state, {}
+        if response.recommendations:
+            recs, used = await phrase_recommendations(
+                self.personalizer,
+                response.recommendations,
+                state.confirmed_profile.model_dump(),
+                state.habit_notes,
+            )
+            if used:
+                message = response.message.replace(
+                    response.recommendations[0].message, recs[0].message
+                )
+                update = {"recommendations": recs, "message": message}
+        elif state.phase == "asking" and state.current_field in BY_FIELD:
+            question = self._question(state, state.current_field, plain=True)
+            if response.message.endswith(question):
+                said = state.steer_lead if state.steer_field == state.current_field else None
+                line = await phrase_question(self.personalizer, question, said)
+                if line:
+                    update = {"message": response.message[: -len(question)] + line}
+        if not update:
+            return response
+        message = update.get("message", response.message)[:1500]
+        events = [event.model_copy(update={"caption": message}) for event in response.mascot_events]
+        return response.model_copy(
+            update={
+                **update,
+                "message": message,
+                "mascot_events": events,
+                "phrased_by": self.personalizer.name,
+            }
+        )
+
+    async def _turn(self, request: TurnRequest) -> TurnResponse:
         state = request.state.model_copy(deep=True)
         mode = "guided"
         configured = self.extractor is not None and self.extractor.configured
@@ -266,7 +449,15 @@ class ConversationService:
         action = request.action
         # Fillers, stutters and transcript punctuation go first; meaning stays.
         text = clean_reply(normalize_text(request.text or ""))
+        raw_text = text
         today = self.clock()
+        # Checked on the whole reply, before chatter is filtered: "I have chest pain.
+        # Female." must pause, not answer the question.
+        urgent_reply = action in {"reply", "correct"} and emergency(text)
+        was_small_talk = state.small_talk
+        if not urgent_reply:
+            state.small_talk = False
+        was_ready = state.phase == "ready"
         # Ink also transcribes other people in the room: only a voice transcript is
         # held to "someone else's number beside yours is asked about".
         voice = request.input_mode == "transcript"
@@ -285,30 +476,72 @@ class ConversationService:
         )
         if action == "reply" and heard_for and state.phase in {"asking", "confirming"}:
             # Room chatter around the answer goes before anything else reads it.
-            text = focus(text, heard_for, transcript=voice, confirming=state.phase == "confirming")
+            text = focus(
+                text,
+                heard_for,
+                transcript=voice,
+                confirming=state.phase == "confirming",
+                # Other open questions: "I'm 72, female" keeps "female" for the sex question.
+                also=tuple(f for f in ASKED if f != heard_for and state.phase == "asking"),
+            )
 
-        def respond(message: str, hint: str | None = None, urgent: bool = False) -> TurnResponse:
+        def respond(
+            message: str,
+            hint: str | None = None,
+            urgent: bool = False,
+            client_action: str | None = None,
+        ) -> TurnResponse:
+            if state.memory_consent is False:
+                state.habit_notes = []  # nothing is kept for storage without consent
+            if state.phase != "probing":
+                state.current_probe = None
             reaction = {
                 "idle": "idle",
+                "remembering": "asking",
                 "asking": "asking",
+                "offering": "asking",
+                "probing": "asking",
                 "confirming": "confirming",
                 "ready": "celebrating",
                 "cancelled": "idle",
             }[state.phase]
+            recommendations: list[Recommendation] = []
+            if state.phase == "ready" and not was_ready and not urgent:
+                notes = state.habit_notes if state.memory_consent is not False else []
+                recommendations = _safe(suggest, state.confirmed_profile, notes) or []
+                if recommendations and message.endswith(DONE_LEAD):
+                    # One idea is spoken; all of them are on the next screen.
+                    more = " More ideas are on the next screen." if len(recommendations) > 1 else ""
+                    message = (
+                        message[: -len(DONE_LEAD)]
+                        + "All done, thank you! One idea for you: "
+                        + recommendations[0].message
+                        + more
+                    )
             return TurnResponse(
                 state=state,
-                message=message,
+                message=message[:1500],
                 guide_mode=mode,
                 provider_status=provider_status,
                 complete=state.phase == "ready",
                 mascot_events=[
-                    MascotEvent(state="concerned" if urgent else reaction, caption=message)
+                    MascotEvent(state="concerned" if urgent else reaction, caption=message[:1500])
                 ],
                 speech_hint=hint,
                 emergency=urgent,
+                quick_replies=[] if urgent else self._quick_replies(state),
+                client_action=client_action,
+                model_inputs=model_inputs(
+                    state.confirmed_profile,
+                    state.unknown_fields,
+                    state.skipped_fields,
+                    state.estimated_fields,
+                ),
+                character_hints=character_hints(state.confirmed_profile, state.habit_notes),
+                recommendations=recommendations,
             )
 
-        if action in {"reply", "correct"} and emergency(text):
+        if urgent_reply:
             # Nothing else happens this turn: no value, no next question, no cheer.
             return respond(EMERGENCY_MESSAGE, urgent=True)
 
@@ -320,21 +553,63 @@ class ConversationService:
             )
         if action == "start":
             if state.phase in {"cancelled", "idle"}:
-                state.pending_profile = HealthProfile()
-                self._advance(state)
-            return respond(
-                "Hi, I'm your guide. You can talk or type, and you can skip any question. "
-                + self._prompt(state)
-            )
+                state = ConversationState(seed=self.seed(), phase="remembering")
+            return respond(GREETING + self._prompt(state))
         if state.phase in {"idle", "cancelled"}:
             self._invalid("Please start the conversation first.")
+        if action in {"reply", "skip"} and state.phase == "remembering":
+            intent = control_intent(text) if action == "reply" else None
+            # Politeness kept: "please do" is a yes here.
+            plain = " ".join(re.sub(r"[^\w'\s]", " ", text.lower()).split())
+            if intent and intent.kind in {"why", "private", "help"}:
+                return respond(MEMORY_WHY + MEMORY_ASK)
+            if intent is None or intent.kind == "skip":
+                if (
+                    action == "reply"
+                    and YES_REPLY.fullmatch(plain)
+                    or MEMORY_YES_REPLY.fullmatch(plain)
+                ):
+                    state.memory_consent = True
+                    self._advance(state)
+                    return respond(MEMORY_YES + " " + self._prompt(state))
+                if (
+                    action == "skip"
+                    or NO_REPLY.fullmatch(plain)
+                    or MEMORY_NO_REPLY.fullmatch(plain)
+                ):
+                    state.memory_consent = False
+                    self._advance(state)
+                    return respond(MEMORY_NO + " " + self._prompt(state))
+                return respond(NOT_CAUGHT + ' Just say "yes" or "no". ' + MEMORY_ASK)
+        if action == "reply" and state.phase == "probing":
+            intent = control_intent(text)
+            if intent is None or intent.kind in {"skip", "ask"}:
+                return respond(self._probe_reply(state, raw_text))
+        if action == "skip" and state.phase == "probing":
+            return respond(self._end_probe(state, pick(PROBE_SKIPPED, state.seed, "skip")))
         if action == "resume" or (action == "reply" and resumes(text)):
             # "Continue" after a pause: the same question or read-back again.
             return respond(RESUME_LEAD + self._prompt(state))
+        if action == "reply" and state.phase == "offering":
+            intent = control_intent(text)
+            if intent is None or intent.kind == "skip":
+                plain = words_of(text)
+                if YES_REPLY.fullmatch(plain):
+                    return respond(HEALTH_OPEN, client_action="open_health_import")
+                if (intent and intent.kind == "skip") or NO_REPLY.fullmatch(plain):
+                    return respond(self._decline_health(state))
+                return respond(NOT_CAUGHT + " " + self._prompt(state))
+        if action == "skip" and state.phase == "offering":
+            return respond(self._decline_health(state))
         read_back = None  # how a reply to a read-back is read, when not left to the reply
         if action == "reply" and state.phase == "ready" and WHAT_NOW.fullmatch(words_of(text)):
             return respond(DONE_LEAD)
         if action == "reply":
+            if HOW_ARE_YOU_ASKED.fullmatch(words_of(text)):
+                return respond(HOW_ARE_YOU + " " + self._prompt(state))
+            if SUPPLEMENTS.search(words_of(text)) and ASKING.search(text.lower()):
+                # Mochi never suggests a supplement: one fixed reply, then back.
+                return respond(SUPPLEMENT_REPLY + " " + self._prompt(state))
             intent = control_intent(text)
             kind = intent.kind if intent else None
             if kind in {"repeat", "slower", "louder"}:
@@ -352,7 +627,7 @@ class ConversationService:
                 return respond(QUESTION_BACK_LEAD + self._prompt(state))
             if kind in {"restart", "restart_confirmed"}:
                 answers = state.model_dump(include={"confirmed_profile", "pending_profile"})
-                if not state.skipped_fields and not any(
+                if not (state.skipped_fields or state.unknown_fields) and not any(
                     value is not None for profile in answers.values() for value in profile.values()
                 ):
                     return respond(
@@ -360,7 +635,7 @@ class ConversationService:
                         + self._prompt(state)
                     )
                 if kind == "restart_confirmed":
-                    state = ConversationState(pending_profile=HealthProfile())
+                    state = ConversationState(seed=state.seed, memory_consent=state.memory_consent)
                     self._advance(state)
                     return respond(
                         "Okay, let's start over. I cleared your answers. " + self._prompt(state)
@@ -372,6 +647,23 @@ class ConversationService:
                 if state.phase == "ready":
                     return respond("There are no questions left. " + self._prompt(state))
                 text = "skip"
+            if kind == "jump":
+                field = self._topic(state, intent.field)
+                if state.phase == "confirming" and field in state.pending_profile.model_dump(
+                    exclude_none=True
+                ):
+                    read_back = "no"
+                else:
+                    note = self._unsaved_note(state)
+                    if self._saved(state, field):
+                        return respond(note + self._reopen(state, field))
+                    state.pending_profile = HealthProfile()
+                    state.pending_estimate = None
+                    state.current_probe = None
+                    state.phase, state.current_field = "asking", field
+                    state.proxy_field = None
+                    lead = f"Sure, let's talk about your {self._label(field)}. "
+                    return respond(note + lead + self._question(state, field))
             if kind == "back":
                 pending_fields = list(state.pending_profile.model_dump(exclude_none=True))
                 field = intent.field
@@ -382,26 +674,18 @@ class ConversationService:
                     else:
                         read_back = "no"
                 else:
-                    note = ""
-                    if state.phase == "confirming":
-                        # Unsaved answers are asked again later; saved ones never change here.
-                        note = (
-                            "I haven't saved your "
-                            + " and ".join(
-                                dict.fromkeys(self._label(name) for name in pending_fields)
-                            )
-                            + " answer yet, so I'll ask again later. "
-                        )
+                    note = self._unsaved_note(state)
                     field = field or self._previous(state)
                     if field is None:
                         return respond(
                             "This is the first question, so there's nothing to go back to. "
                             + self._prompt(state)
                         )
+                    state.current_probe = None
                     message = note + self._reopen(state, field)
                     if intent.rest:
                         # "Change my age to 47": the new answer is read back as usual.
-                        answered = await self.turn(
+                        answered = await self._turn(
                             TurnRequest(
                                 action="reply",
                                 state=state,
@@ -417,21 +701,22 @@ class ConversationService:
         if action == "reply" and state.phase == "confirming":
             # Only an unmistakable yes confirms; a no never does, and a correction
             # replaces only the answer being read back.
-            heard, rest = (read_back, "") if read_back else read_back_reply(text)
+            heard_, rest = (read_back, "") if read_back else read_back_reply(text)
             if read_back == "correction":
                 rest = text
             pending = state.pending_profile.model_dump(exclude_none=True)
-            if heard == "yes_value":
+            if heard_ == "yes_value":
                 # "Yes, 46" to "Age: 46" confirms; "yes, 47" is a question, not a yes.
                 asked = "systolic_bp" if list(pending) == BOTH_BP else next(iter(pending))
                 said = _safe(parse_reply, rest, asked, today=today) or {}
-                heard = "yes" if said == pending else "unsure"
-            if heard == "yes":
+                heard_ = "yes" if said == pending else "unsure"
+            if heard_ == "yes":
                 action = "confirm"
-            elif heard == "unsure":
+            elif heard_ == "unsure":
                 return respond(UNSURE_LEAD + self._prompt(state))
-            elif heard == "no":
+            elif heard_ == "no":
                 pending_fields = list(pending)
+                state.pending_estimate = None
                 if len(pending_fields) == 1:
                     field = pending_fields[0]
                     return respond(
@@ -445,41 +730,46 @@ class ConversationService:
                     'Please say its name and the right answer, like "my weight is 150 pounds".'
                 )
             else:
-                text = rest if heard == "correction" else text
+                text = rest if heard_ == "correction" else text
                 action, from_read_back = "correct", True
         if action == "confirm":
             if state.phase != "confirming":
                 self._invalid("There is nothing to confirm right now.")
             additions = state.pending_profile.model_dump(exclude_none=True)
-            merged = state.confirmed_profile.model_dump()
-            merged.update(additions)
-            state.confirmed_profile = HealthProfile.model_validate(merged)
-            state.pending_profile = HealthProfile()
-            state.skipped_fields = [
-                field for field in state.skipped_fields if field not in additions
-            ]
-            self._advance(state)
-            return respond("Got it. " + self._prompt(state))
+            self._save(state, additions)
+            if state.pending_estimate and state.proxy_field in additions:
+                field = state.proxy_field
+                if field not in state.estimated_fields:
+                    state.estimated_fields.append(field)
+                if state.memory_consent is not False:
+                    topic = {
+                        "sedentary_min_day": "sitting",
+                        "general_health": "health",
+                        "sleep_hours": "sleep",
+                    }.get(field, "exercise")
+                    estimate = HabitNote(
+                        topic=topic, estimate_for=field, estimate=state.pending_estimate
+                    )
+                    # Estimates are their own notes, beside what the person told Mochi.
+                    state.habit_notes = [*state.habit_notes, estimate][-10:]
+            state.pending_estimate = None
+            state.proxy_field = None
+            ack = pick(ACKS, state.seed, "ack", len(self._settled(state)))
+            return respond(self._after_answer(state, set(additions), ack))
         if action == "import":
             if state.phase == "confirming":
                 self._invalid(CONFIRM_FIRST)
             asked = state.current_field
             additions = request.values.model_dump(exclude_none=True)
-            merged = state.confirmed_profile.model_dump()
-            merged.update(additions)
-            state.confirmed_profile = HealthProfile.model_validate(merged)
-            state.skipped_fields = [
-                field for field in state.skipped_fields if field not in additions
-            ]
-            self._advance(state)
+            state.health_offered = True
+            state.current_probe = None
+            self._save(state, additions)
+            follow_up = self._after_answer(state, set(additions), "")
             # Stay on the question the person was answering if it is still open,
             # rather than jumping back to an earlier one.
-            if (
-                asked
-                and getattr(state.confirmed_profile, asked) is None
-                and asked not in state.skipped_fields
-            ):
+            if asked and self._open(state, asked) and state.phase != "probing":
                 state.current_field, state.phase = asked, "asking"
+                follow_up = self._prompt(state)
             names = list(dict.fromkeys(self._label(name) for name in additions))
             named = ", ".join(names[:-1]) + " and " + names[-1] if len(names) > 1 else names[0]
             # Asking the same question again without saying why feels like being stuck.
@@ -490,9 +780,15 @@ class ConversationService:
                 if asked and state.current_field == asked
                 else ""
             )
-            source = "your document" if document else "Apple Health"
+            source = (
+                "your document"
+                if document
+                else "your wristband"
+                if request.import_source == "wristband"
+                else "Apple Health"
+            )
             return respond(
-                f"Thank you. I added your {named} from {source}. " + missing + self._prompt(state)
+                f"Thank you. I added your {named} from {source}. " + missing + follow_up.strip()
             )
         if action == "skip":
             target = request.field or state.current_field
@@ -517,6 +813,12 @@ class ConversationService:
             self._invalid("We're all done. You can still change an answer if you like.")
         if state.phase == "confirming" and action != "correct":
             self._invalid(CONFIRM_FIRST)
+        if (
+            state.phase in {"offering", "probing", "remembering"}
+            and action == "correct"
+            and not request.field
+        ):
+            self._invalid("Please pick which answer you want to change.")
         target = request.field or state.current_field
         if action == "correct" and state.phase == "confirming" and request.field is None:
             pending_fields = list(state.pending_profile.model_dump(exclude_none=True))
@@ -536,11 +838,14 @@ class ConversationService:
             self._invalid("Please pick which answer you want to change.")
         asking = action == "reply" and state.phase == "asking"
         reopened = asking and self._saved(state, target)
-        if reopened and (keeps_answer(text) or is_skip(text, target)):
+        declined = is_skip(text, target) or (
+            not asking and words_of(text) in UNKNOWN_WORDS and target != "smoking_status"
+        )
+        if reopened and (keeps_answer(text) or declined or dont_know(text)):
             # A question reopened by "go back": "keep it" or "skip" leaves the saved answer.
             self._advance(state)
             return respond("Okay, I kept your answer. " + self._prompt(state))
-        if is_skip(text, target):
+        if declined:
             if action == "correct":
                 if request.field and getattr(state.confirmed_profile, target) is not None:
                     # An explicitly chosen saved answer may be withdrawn to blank;
@@ -561,7 +866,64 @@ class ConversationService:
             self._skip(state, target)
             self._advance(state)
             return respond(SKIPPED + self._prompt(state))
-        candidates = _safe(parse_reply, text, target, today=today, strict=voice) or {}
+        hedged = False
+        estimate = None
+        candidates: dict = {}
+        if asking:
+            if state.proxy_field == target:
+                # The plain words: "okay, I suppose" keeps its "okay" here.
+                proxied = self._proxy_answer(state, target, request.text or text)
+                if proxied == "unknown":
+                    return respond(self._unknown(state, target))
+                if proxied == "yes":
+                    state.proxy_field = None
+                    return respond("Lovely. " + self._question(state, target, plain=True))
+                if proxied:
+                    candidates, estimate = proxied
+            rest = None if candidates else hedged_answer(text)
+            if rest:
+                found = _safe(parse_reply, rest, target, today=today, strict=voice) or {}
+                if found:
+                    text, hedged, candidates = rest, True, found
+            if (
+                not candidates
+                and dont_know(text)
+                and not (_safe(parse_reply, text, target, today=today, strict=voice) or {})
+            ):
+                if (
+                    target in BY_FIELD
+                    and BY_FIELD[target].proxy
+                    and target not in (state.proxies_asked)
+                ):
+                    state.proxy_field = target
+                    state.proxies_asked.append(target)
+                    return respond(self._prompt(state))
+                return respond(self._unknown(state, target))
+        if asking and not from_read_back and state.memory_consent is not False:
+            notes = (
+                []
+                if _safe(_others, raw_text)
+                else (_safe(read_notes, raw_text, asked=target) or [])
+            )
+            if notes:
+                state.habit_notes = merge(state.habit_notes, notes)
+        if not candidates:
+            candidates = _safe(parse_reply, text, target, today=today, strict=voice) or {}
+        if target == "vigorous_recreation_min_week" and asking:
+            candidates = self._health_split(state, candidates)
+        if target not in BP_FIELDS and candidates.keys() & BP_FIELDS:
+            # Onboarding asks for a diagnosis, not numbers: a reading said in passing is
+            # kept as context in the habit notes and never saved as a value.
+            reading = _safe(blood_pressure_reading, text)
+            mine = _safe(_others, raw_text) is False
+            if (
+                reading
+                and mine
+                and state.memory_consent is not False
+                and target != "hypertension_diagnosed"
+            ):
+                state.habit_notes = merge(state.habit_notes, [reading])
+            candidates = {k: v for k, v in candidates.items() if k not in BP_FIELDS}
         phrase = " ".join(text.lower().replace(",", " ").rstrip(".!?").split())
         # Only a fresh answer can mean the question's example: "no, that's right" during
         # a read-back is not a yes to "5 feet 10 inches".
@@ -587,6 +949,27 @@ class ConversationService:
                     f"Is {likely} right?"
                 )
         hint = None if candidates else _safe(clarify, text, target, today=today)
+        if not candidates and not hint and target == "general_health":
+            hint = _safe(health_either, text)
+        if not candidates and asking and target == "hypertension_diagnosed":
+            reading = (
+                None
+                if _safe(_others, raw_text) is not False
+                else (_safe(blood_pressure_reading, text))
+            )
+            if reading:
+                said_before = any(note.reading for note in state.habit_notes) or (
+                    "hypertension_diagnosed" in state.proxies_asked
+                )
+                if not said_before:
+                    state.proxies_asked.append("hypertension_diagnosed")
+                if state.memory_consent is not False:
+                    state.habit_notes = merge(state.habit_notes, [reading])
+                if said_before:
+                    return respond(self._unknown(state, target))
+                return respond(
+                    BP_READING.format(reading=reading.reading) + _lower_first(QUESTIONS[target])
+                )
         if not candidates and configured and not hint:
             if request.provider_consent:
                 try:
@@ -636,6 +1019,24 @@ class ConversationService:
             # A bottom number alone can only be checked against a known top number.
             candidates, mode = {}, "guided"
         if not candidates:
+            if (
+                asking
+                and not hint
+                and not was_small_talk
+                and provider_status != "consent_required"
+                and self._small_talk(raw_text, target)
+            ):
+                state.small_talk = True
+                back = pick(STEER_BACK, state.seed, "back", len(self._settled(state)))
+                self._steer(state, raw_text, target, set())
+                if state.steer_lead and state.steer_field != target:
+                    # "I walk my dog every morning" said to the sitting question: kept for
+                    # the activity question, which comes next.
+                    later = pick(LATER, state.seed, "later", state.steer_field)
+                    question = ConversationService._question(state, target, plain=True)
+                    return respond(f"{state.steer_lead} {later} {back}{_lower_first(question)}")
+                lead = pick(SMALL_TALK, state.seed, "chat", len(self._settled(state)))
+                return respond(f"{lead} {back}{_lower_first(self._prompt(state))}")
             notice = ""
             if provider_status == "consent_required":
                 notice = "I couldn't read that. You can let the AI helper try. "
@@ -643,7 +1044,13 @@ class ConversationService:
                 notice = "The AI helper isn't available right now, but we can keep going. "
             hint = BOTH_BP_MESSAGE if lone_bottom else hint
             lead = hint or ("" if notice and provider_status == "consent_required" else NOT_CAUGHT)
-            ask = self._prompt(state) if state.phase == "confirming" else QUESTIONS[target]
+            ask = (
+                self._prompt(state)
+                if state.phase == "confirming"
+                else self._question(state, target, plain=True)
+                if target in BY_FIELD
+                else QUESTIONS[target]
+            )
             if hint and state.phase != "confirming":
                 ask = ""
             return respond(notice + (lead + " " if lead else "") + ask)
@@ -662,13 +1069,317 @@ class ConversationService:
                 BP_ORDER_MESSAGE
                 + (" " + self._prompt(state) if state.phase == "confirming" else "")
             )
+        too_long = self._over_a_day(state, pending)
+        if too_long:
+            return respond(too_long)
+        if asking:
+            self._steer(state, raw_text, target, set(pending))
         state.pending_profile = HealthProfile.model_validate(pending)
         state.phase = "confirming"
         state.current_field = next(iter(pending)) if len(pending) == 1 else None
+        state.pending_estimate = estimate
         if birth_note and len(pending) == 1:
             return respond(birth_note)
         # A middle of a range ("7 or 8 hours") is read back as "about".
-        return respond(self._prompt(state, about=set(candidates) if approximate(text) else set()))
+        about = set(candidates) if (hedged or estimate or _safe(approximate, text)) else set()
+        return respond(self._prompt(state, about=about))
+
+    # -- answers, unknowns and estimates ---------------------------------------------
+
+    def _save(self, state: ConversationState, additions: dict) -> None:
+        merged = state.confirmed_profile.model_dump()
+        merged.update(additions)
+        state.confirmed_profile = HealthProfile.model_validate(merged)
+        state.pending_profile = HealthProfile()
+        for name in ("skipped_fields", "unknown_fields", "estimated_fields"):
+            setattr(state, name, [f for f in getattr(state, name) if f not in additions])
+        if state.steer_field in additions:
+            state.steer_field = state.steer_lead = None
+
+    def _after_answer(self, state: ConversationState, just: set[str], ack: str) -> str:
+        """The next line after a saved answer: a habit follow-up, or the next topic."""
+        probe = (
+            None
+            if state.memory_consent is False
+            else choose_probe(
+                state.confirmed_profile,
+                just,
+                self._settled(state),
+                state.probes_asked,
+                state.habit_notes,
+                self.max_probes,
+            )
+        )
+        if probe:
+            state.phase, state.current_field = "probing", None
+            state.current_probe = probe.id
+            state.probes_asked.append(probe.id)
+            return ack + " " + self._prompt(state)
+        self._advance(state)
+        return ack + " " + self._prompt(state)
+
+    def _probe_reply(self, state: ConversationState, text: str) -> str:
+        probe = PROBES[state.current_probe]
+        if MOVE_ON.fullmatch(words_of(text)):
+            return self._end_probe(state, pick(PROBE_SKIPPED, state.seed, "skip", probe.id))
+        notes = [] if _safe(_others, text) else (_safe(read_notes, text, topic=probe.topic) or [])
+        if notes:
+            state.habit_notes = merge(state.habit_notes, notes)
+        mine = next((note for note in notes if note.topic == probe.topic), None)
+        return self._end_probe(state, self._probe_thanks(state, mine))
+
+    def _end_probe(self, state: ConversationState, lead: str) -> str:
+        state.current_probe = None
+        self._advance(state)
+        return lead + " " + self._prompt(state)
+
+    @staticmethod
+    def _probe_thanks(state: ConversationState, note: HabitNote | None) -> str:
+        """A short, kind echo of their own words; never a value read back."""
+        if note is None:
+            return pick(PROBE_THANKS, state.seed, "thanks")
+        if note.barrier:
+            return f"I'm sorry about the {note.barrier}. Thank you for telling me."
+        if note.topic == "exercise" and note.kind:
+            company = f" with your {note.with_}" if note.with_ and note.with_ != "alone" else ""
+            return f"{note.kind[:1].upper()}{note.kind[1:]}{company}, that sounds lovely."
+        if note.topic == "smoking" and note.tried_quitting == "yes":
+            return "Thank you for sharing that. Trying to quit takes courage."
+        if note.topic == "health" and note.feeling in {"worried", "not great", "down", "tired"}:
+            return "Thank you for telling me. That's a lot to carry."
+        if note.topic == "health" and note.feeling in {"good", "great", "lucky", "grateful"}:
+            return "I'm glad to hear it."
+        if note.topic == "sitting" and note.kind:
+            return f"Got it, mostly {note.kind.replace('tv', 'TV')}."
+        return pick(PROBE_THANKS, state.seed, "thanks")
+
+    def _unknown(self, state: ConversationState, field: str) -> str:
+        """Recorded as unknown, never asked again this session; the model gives no number."""
+        first = not state.unknown_fields
+        names = BOTH_BP if field == "systolic_bp" else [field]
+        for name in names:
+            if name not in state.unknown_fields and getattr(state.confirmed_profile, name) is None:
+                state.unknown_fields.append(name)
+        state.skipped_fields = [f for f in state.skipped_fields if f not in names]
+        state.proxy_field = None
+        ack = pick(UNKNOWN_ACKS, state.seed, "unknown", field)
+        self._advance(state)
+        return ack + (UNKNOWN_FIRST if first else "") + " " + self._prompt(state)
+
+    @staticmethod
+    def _proxy_answer(state: ConversationState, field: str, text: str):
+        """The simpler question's answer: (values, what they said) for an estimate,
+        "yes" (then ask the real question), "unknown", or None (read it normally)."""
+        plain = words_of(text)
+        if dont_know(text) or plain in UNKNOWN_WORDS:
+            return "unknown"
+        # Someone else, doubt or a number: read normally, which asks again if unsure.
+        if re.search(r"\d", plain) or _safe(_others, text) is not False:
+            return None
+        estimate = field in {"sedentary_min_day", "general_health"}
+        if estimate and _safe(_doubtful, _canonical(plain)) is not False:
+            return None  # an estimate needs a plain answer; "no, not really" is still a no
+        if field == "sedentary_min_day":
+            if re.search(r"\b(?:not|never)\b|n't\b", plain) and not re.search(
+                r"\bnot much\b", plain
+            ):
+                return None
+            sleep = state.confirmed_profile.sleep_hours or 8
+            for pattern, share, said in SITTING_SHARES:
+                if re.search(pattern, plain):
+                    hours = int((24 - min(max(sleep, 4), 12)) * share + 0.5)
+                    return {field: hours * 60}, said
+            return None
+        if field == "general_health":
+            for pattern, rating, said in HEALTH_WORDS:
+                if re.search(pattern, plain):
+                    # "I'm not fine": a negation is only safe in "not so good".
+                    if rating != "fair" and re.search(r"\b(?:not|never)\b|n't\b", plain):
+                        return None
+                    return {field: rating}, said
+            return None
+        if field in {"moderate_recreation_min_week", "vigorous_recreation_min_week"}:
+            no = re.search(NO_WORDS, plain) or re.search(r"\b(?:hardly|rarely|seldom)\b", plain)
+            yes = re.search(YES_WORDS, plain) or re.search(r"\b(?:i do|sometimes|a bit)\b", plain)
+            if no and not yes:
+                return {field: 0}, None
+            return "yes" if yes and not no else None
+        if field == "sleep_hours":
+            values = parse_value("sleep_hours", text)
+            return (values, "from bedtime to waking") if values else None
+        return None
+
+    @staticmethod
+    def _health_split(state: ConversationState, candidates: dict) -> dict:
+        """With Apple Health's weekly total, harder exercise leaves the rest as lighter."""
+        total = state.confirmed_profile.exercise_minutes_weekly
+        vigorous = candidates.get("vigorous_recreation_min_week")
+        if (
+            total is None
+            or vigorous is None
+            or vigorous > total
+            or state.confirmed_profile.moderate_recreation_min_week is not None
+            or "moderate_recreation_min_week" in candidates
+        ):
+            return candidates
+        return {**candidates, "moderate_recreation_min_week": total - vigorous}
+
+    @staticmethod
+    def _over_a_day(state: ConversationState, pending: dict) -> str | None:
+        sleep = pending.get("sleep_hours", state.confirmed_profile.sleep_hours)
+        sitting = pending.get("sedentary_min_day", state.confirmed_profile.sedentary_min_day)
+        if sleep is not None and sitting is not None and sleep * 60 + sitting > 1440:
+            return (
+                "That plus your sleep comes to more than a whole day. About how many hours "
+                "are you sitting while you're awake?"
+            )
+        return None
+
+    def _decline_health(self, state: ConversationState) -> str:
+        state.health_offered = True
+        self._advance(state)
+        return pick(HEALTH_DECLINED, state.seed, "health") + " " + self._prompt(state)
+
+    @staticmethod
+    def _small_talk(text: str, field: str) -> bool:
+        """A friendly aside with nothing for the question: one kind turn, then back."""
+        words = words_of(text).split()
+        if len(words) < 3 or re.search(r"\d", text) or "?" in text or dont_know(text):
+            return False
+        return not _on_topic(text, field, False)
+
+    # -- steering ----------------------------------------------------------------
+
+    def _open(self, state: ConversationState, field: str) -> bool:
+        return (
+            getattr(state.confirmed_profile, field) is None
+            and field not in state.skipped_fields
+            and field not in state.unknown_fields
+        )
+
+    def _settled(self, state: ConversationState) -> set[str]:
+        return {field for field in FIELDS if not self._open(state, field)}
+
+    def _topic(self, state: ConversationState, field: str) -> str:
+        """The question a named topic opens: activity goes to the part still open."""
+        if field == "moderate_recreation_min_week" and not self._open(state, field):
+            if self._open(state, "vigorous_recreation_min_week"):
+                return "vigorous_recreation_min_week"
+        return field
+
+    def _steer(self, state: ConversationState, text: str, asked: str, answered: set[str]) -> None:
+        """Remember a topic the person brought up beside their answer, with their words."""
+        for clause in re.split(r"[.!?;,]|\bbut\b|\band\b", text):
+            for cue, field in STEERS:
+                if not re.search(cue, clause, re.I):
+                    continue
+                field = self._topic(state, field)
+                if field == asked or field in answered or not self._open(state, field):
+                    continue
+                said = re.sub(
+                    r"^\W*(?:and|but|so|though|also|oh)\b\s*", "", clause.strip(), flags=re.I
+                )
+                said = re.sub(r"\s+(?:though|too|as well|anyway)$", "", said, flags=re.I).strip()
+                if not said or len(said) > 120:
+                    continue
+                lead = pick(STEER_LEADS, state.seed, "steer", field)
+                state.steer_field = field
+                state.steer_lead = lead.format(said=_flip(said))
+                return
+
+    # -- order, prompts and read-backs -------------------------------------------------
+
+    def _advance(self, state: ConversationState) -> None:
+        state.current_probe = None
+        if state.steer_field and not self._open(state, state.steer_field):
+            state.steer_field = state.steer_lead = None
+        if state.steer_field:
+            state.current_field, state.phase = state.steer_field, "asking"
+            return
+        for step in ORDER:
+            if step == HEALTH_STEP:
+                if not state.health_offered and any(
+                    self._open(state, field) for field in HEALTH_FIELDS[:3]
+                ):
+                    state.current_field, state.phase = None, "offering"
+                    return
+                continue
+            if not self._open(state, step):
+                continue
+            if (
+                step == "moderate_recreation_min_week"
+                and state.confirmed_profile.exercise_minutes_weekly is not None
+                and self._open(state, "vigorous_recreation_min_week")
+            ):
+                step = "vigorous_recreation_min_week"  # Health's total: ask the harder part first
+            state.current_field, state.phase = step, "asking"
+            return
+        state.current_field, state.phase = None, "ready"
+
+    @staticmethod
+    def _question(state: ConversationState, field: str, plain: bool = False) -> str:
+        question = BY_FIELD[field]
+        if state.proxy_field == field and question.proxy and not plain:
+            return question.proxy
+        total = state.confirmed_profile.exercise_minutes_weekly
+        if (
+            question.with_health
+            and total is not None
+            and state.confirmed_profile.moderate_recreation_min_week is None
+        ):
+            return question.with_health.format(total=_duration(total))
+        text = pick(question.ask, state.seed, "ask", field)
+        if state.steer_lead and state.steer_field == field and not plain:
+            return f"{state.steer_lead} {text}"
+        return text
+
+    @staticmethod
+    def _prompt(state: ConversationState, about: set[str] | None = None) -> str:
+        if state.phase == "confirming":
+            pending = state.pending_profile.model_dump(exclude_none=True)
+            note = ESTIMATE_NOTE if state.pending_estimate else ""
+            return heard(pending, about or set()) + note + " Is that right?"
+        if state.phase == "ready":
+            return DONE_LEAD
+        if state.phase == "offering":
+            return HEALTH_OFFER
+        if state.phase == "remembering":
+            return MEMORY_ASK
+        if state.phase == "probing":
+            probe = PROBES[state.current_probe]
+            optional = PROBE_OPTIONAL if len(state.probes_asked) <= 1 else ""
+            return pick(probe.ask, state.seed, "probe", probe.id) + optional
+        if state.current_field in BY_FIELD:
+            return ConversationService._question(state, state.current_field)
+        return QUESTIONS[state.current_field]
+
+    @staticmethod
+    def _quick_replies(state: ConversationState) -> list[str]:
+        if state.phase == "confirming":
+            return ["Yes", "No"]
+        if state.phase == "offering":
+            return list(HEALTH_OFFER_REPLIES)
+        if state.phase == "remembering":
+            return list(MEMORY_REPLIES)
+        if state.phase == "probing":
+            return ["Let's move on"]
+        if state.phase == "asking" and state.current_field in BY_FIELD:
+            question = BY_FIELD[state.current_field]
+            if state.proxy_field == state.current_field and question.proxy_replies:
+                return list(question.proxy_replies)
+            return list(question.quick_replies)
+        return []
+
+    def _unsaved_note(self, state: ConversationState) -> str:
+        pending_fields = list(state.pending_profile.model_dump(exclude_none=True))
+        if state.phase != "confirming" or not pending_fields:
+            return ""
+        # Unsaved answers are asked again later; saved ones never change here.
+        return (
+            "I haven't saved your "
+            + " and ".join(dict.fromkeys(self._label(name) for name in pending_fields))
+            + " answer yet, so I'll ask again later. "
+        )
 
     @staticmethod
     def _saved(state: ConversationState, field: str) -> bool:
@@ -679,16 +1390,13 @@ class ConversationService:
     def _label(field: str) -> str:
         return "blood pressure" if field in BP_FIELDS else FRIENDLY_LABELS[field]
 
-    @staticmethod
-    def _previous(state: ConversationState) -> str | None:
+    def _previous(self, state: ConversationState) -> str | None:
         """The answered question before this one ("go back"), or the last one when done."""
-        answered = [
-            field
-            for field in FIELDS
-            if getattr(state.confirmed_profile, field) is not None or field in state.skipped_fields
-        ]
-        if state.phase == "asking":
-            answered = [f for f in answered if FIELDS.index(f) < FIELDS.index(state.current_field)]
+        steps = [*ASKED, *(f for f in FIELDS if f not in ASKED)]
+        answered = [field for field in steps if not self._open(state, field)]
+        if state.phase == "asking" and state.current_field in steps:
+            here = steps.index(state.current_field)
+            answered = [f for f in answered if steps.index(f) < here]
         if not answered:
             return None
         field = answered[-1]
@@ -696,7 +1404,10 @@ class ConversationService:
 
     def _reopen(self, state: ConversationState, field: str) -> str:
         """Ask a question again; its saved answer stays until a new one is confirmed."""
+        state.current_probe = None
         state.pending_profile = HealthProfile()
+        state.pending_estimate = None
+        state.proxy_field = None
         state.phase, state.current_field = "asking", field
         names = BOTH_BP if field == "systolic_bp" else [field]
         saved = {
@@ -711,7 +1422,7 @@ class ConversationService:
                 + QUESTIONS[field]
                 + ' If that was right, say "keep it".'
             )
-        if field in state.skipped_fields:
+        if field in state.skipped_fields or field in state.unknown_fields:
             return (
                 f"Okay, let's go back to your {label}. You skipped it before. " + QUESTIONS[field]
             )
@@ -730,6 +1441,16 @@ class ConversationService:
                 "We're all done. To change an answer, say what to change, like \"change my "
                 'weight". To clear everything and begin again, say "start over".'
             )
+        if state.phase == "offering":
+            return (
+                "Apple Health may already know your height, weight, sleep and activity. "
+                'Say "yes" to fill them in from it, or "no" and I\'ll ask you.'
+            )
+        if state.phase == "probing":
+            return (
+                "I'm just getting to know your habits, so I can make better suggestions. "
+                'Tell me in your own words, or say "let\'s move on".'
+            )
         return HELP[state.current_field] + " " + SKIP_NOTE
 
     @staticmethod
@@ -739,34 +1460,13 @@ class ConversationService:
         for name in fields:
             if name not in state.skipped_fields and getattr(state.confirmed_profile, name) is None:
                 state.skipped_fields.append(name)
+        state.proxy_field = None
 
     @staticmethod
     def _bp_ordered(state: ConversationState, pending: dict) -> bool:
         systolic = pending.get("systolic_bp", state.confirmed_profile.systolic_bp)
         diastolic = pending.get("diastolic_bp", state.confirmed_profile.diastolic_bp)
         return systolic is None or diastolic is None or systolic > diastolic
-
-    @staticmethod
-    def _advance(state: ConversationState) -> None:
-        state.current_field = next(
-            (
-                field
-                for field in FIELDS
-                if getattr(state.confirmed_profile, field) is None
-                and field not in state.skipped_fields
-            ),
-            None,
-        )
-        state.phase = "asking" if state.current_field else "ready"
-
-    @staticmethod
-    def _prompt(state: ConversationState, about: set[str] | None = None) -> str:
-        if state.phase == "confirming":
-            pending = state.pending_profile.model_dump(exclude_none=True)
-            return heard(pending, about or set()) + " Is that right?"
-        if state.phase == "ready":
-            return DONE_LEAD
-        return QUESTIONS[state.current_field]
 
     @staticmethod
     def _invalid(message: str):

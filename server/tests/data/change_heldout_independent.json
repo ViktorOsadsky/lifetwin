@@ -1,0 +1,716 @@
+{
+ "about": "Independent held-out set for Mochi change conversations, written without seeing the implementation.",
+ "base_profile": {
+  "age": 72,
+  "sex": "female",
+  "height_cm": 165.1,
+  "weight_kg": 72.5748,
+  "sleep_hours": 6,
+  "exercise_minutes_weekly": 60,
+  "smoking_status": "former",
+  "alcohol_drinks_weekly": 3,
+  "diabetes": false,
+  "systolic_bp": 130,
+  "diastolic_bp": 80
+ },
+ "cases": [
+  {
+   "field": "weight_kg",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "Oh, I'm down to one fifty-five now."
+   ],
+   "expected": {
+    "weight_kg": 70.3068
+   },
+   "why": "chosen weight number words"
+  },
+  {
+   "field": "weight_kg",
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "um a buck fifty-two i think the scale at the clinic said that"
+   ],
+   "expected": {
+    "weight_kg": 68.946
+   },
+   "why": "slang buck fifty-two"
+  },
+  {
+   "field": "weight_kg",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I weigh 172 these days, too many of my daughter's cookies."
+   ],
+   "expected": {
+    "weight_kg": 78.0179
+   },
+   "why": "bare weight over 90 as pounds"
+  },
+  {
+   "field": "weight_kg",
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "one sixty... no wait, one sixty-five, sorry"
+   ],
+   "expected": {
+    "weight_kg": 74.8427
+   },
+   "why": "self-correction weight"
+  },
+  {
+   "field": "weight_kg",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "My husband weighs 200 pounds, he's the one who needs to diet."
+   ],
+   "expected": {},
+   "why": "someone else's weight"
+  },
+  {
+   "field": "weight_kg",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I want to weigh 130 by Christmas, that's my goal."
+   ],
+   "expected": {},
+   "why": "goal weight"
+  },
+  {
+   "field": "weight_kg",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "Oh gosh, I don't know, I haven't stepped on that scale in ages."
+   ],
+   "expected": {},
+   "why": "dont know weight"
+  },
+  {
+   "field": "weight_kg",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I'm a hundred and twenty pounds now, my pants don't fit at all."
+   ],
+   "expected": {
+    "weight_kg": 54.4311
+   },
+   "why": "big jump saved after double-check"
+  },
+  {
+   "field": "height_cm",
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "i'm five foot four now the doctor measured me and said i've shrunk"
+   ],
+   "expected": {
+    "height_cm": 162.56
+   },
+   "why": "height shrunk feet inches"
+  },
+  {
+   "field": "sleep_hours",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I get about seven hours now, the new mattress helps."
+   ],
+   "expected": {
+    "sleep_hours": 7
+   },
+   "why": "sleep seven"
+  },
+  {
+   "field": "sleep_hours",
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "maybe five and a half, i wake up at four every morning with the birds"
+   ],
+   "expected": {
+    "sleep_hours": 5.5
+   },
+   "why": "sleep five and a half"
+  },
+  {
+   "field": "sleep_hours",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "Same as before."
+   ],
+   "expected": {},
+   "why": "same as before sleep"
+  },
+  {
+   "field": "exercise_minutes_weekly",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I walk thirty minutes, five days a week, around the mall."
+   ],
+   "expected": {
+    "exercise_minutes_weekly": 150
+   },
+   "why": "exercise product of minutes and days"
+  },
+  {
+   "field": "exercise_minutes_weekly",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "Zero. I stopped going to the pool when my knee went."
+   ],
+   "expected": {
+    "exercise_minutes_weekly": 0
+   },
+   "why": "exercise zero"
+  },
+  {
+   "field": "smoking_status",
+   "profile": {
+    "smoking_status": "current"
+   },
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "i quit smoking in march, haven't touched one since"
+   ],
+   "expected": {
+    "smoking_status": "former"
+   },
+   "why": "quit smoking current to former"
+  },
+  {
+   "field": "smoking_status",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "Well, I've started smoking again, a cigarette or two a day since the funeral."
+   ],
+   "expected": {
+    "smoking_status": "current"
+   },
+   "why": "relapse"
+  },
+  {
+   "field": "smoking_status",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "Never mind, it's fine as it is."
+   ],
+   "expected": {},
+   "why": "never mind smoking"
+  },
+  {
+   "field": "alcohol_drinks_weekly",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "A glass of wine with dinner on Fridays and Sundays, so two."
+   ],
+   "expected": {
+    "alcohol_drinks_weekly": 2
+   },
+   "why": "alcohol two"
+  },
+  {
+   "field": "alcohol_drinks_weekly",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I gave up drinking altogether, my doctor insisted."
+   ],
+   "expected": {
+    "alcohol_drinks_weekly": 0
+   },
+   "why": "alcohol none"
+  },
+  {
+   "field": "diabetes",
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "my doctor told me last month that i have diabetes"
+   ],
+   "expected": {
+    "diabetes": true
+   },
+   "why": "diabetes added"
+  },
+  {
+   "field": "diabetes",
+   "profile": {
+    "diabetes": true
+   },
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "The doctor says I never had it, the first lab was a mistake."
+   ],
+   "expected": {
+    "diabetes": false
+   },
+   "why": "diabetes corrected to false"
+  },
+  {
+   "field": "diabetes",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "My sugar's been high and the nurse said borderline."
+   ],
+   "expected": {},
+   "why": "borderline not diabetes"
+  },
+  {
+   "field": "systolic_bp",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "It's one forty over ninety lately."
+   ],
+   "expected": {
+    "systolic_bp": 140,
+    "diastolic_bp": 90
+   },
+   "why": "bp reading"
+  },
+  {
+   "field": "systolic_bp",
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "it was one twenty-two over seventy-eight at the pharmacy yesterday"
+   ],
+   "expected": {
+    "systolic_bp": 122,
+    "diastolic_bp": 78
+   },
+   "why": "bp pharmacy"
+  },
+  {
+   "field": "age",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I just turned seventy-three on Tuesday."
+   ],
+   "expected": {
+    "age": 73
+   },
+   "why": "birthday"
+  },
+  {
+   "field": "age",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I'm eighty."
+   ],
+   "expected": {},
+   "why": "age jump refused"
+  },
+  {
+   "field": "sex",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "Actually put me down as male."
+   ],
+   "expected": {},
+   "why": "sex locked"
+  },
+  {
+   "field": "sex",
+   "profile": {
+    "sex": null
+   },
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I'm a woman, of course."
+   ],
+   "expected": {
+    "sex": "female"
+   },
+   "why": "sex fill when blank"
+  },
+  {
+   "field": "weight_kg",
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I have chest pain right now, down the left arm."
+   ],
+   "expected": {},
+   "why": "emergency chest pain on weight",
+   "emergency": true
+  },
+  {
+   "field": "systolic_bp",
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "i can't breathe i need help"
+   ],
+   "expected": {},
+   "why": "emergency can't breathe",
+   "emergency": true
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I lost some weight, my slacks are loose.",
+    "One forty-eight, I think, this morning."
+   ],
+   "expected": {
+    "weight_kg": 67.1317
+   },
+   "why": "free lost weight two-turn"
+  },
+  {
+   "field": null,
+   "profile": {
+    "smoking_status": "current"
+   },
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "i quit smoking",
+    "a couple of months ago"
+   ],
+   "expected": {
+    "smoking_status": "former"
+   },
+   "why": "free quit smoking"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "My doctor said I have high blood pressure now.",
+    "She wrote down one fifty over ninety-five."
+   ],
+   "expected": {
+    "systolic_bp": 150,
+    "diastolic_bp": 95
+   },
+   "why": "free high bp two-turn"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "I've been sleeping better lately.",
+    "probably seven hours, give or take"
+   ],
+   "expected": {
+    "sleep_hours": 7
+   },
+   "why": "free sleeping better two-turn"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "i put on a few pounds over the holidays",
+    "its one seventy now"
+   ],
+   "expected": {
+    "weight_kg": 77.1107
+   },
+   "why": "free gained two-turn"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "The doctor said I'm diabetic now, type two."
+   ],
+   "expected": {
+    "diabetes": true
+   },
+   "why": "free diabetes diagnosed"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "The doctor says I'm prediabetic."
+   ],
+   "expected": {},
+   "why": "prediabetic"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "My sugar is a little high."
+   ],
+   "expected": {},
+   "why": "sugar high"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I joined the senior center and do water aerobics forty-five minutes twice a week."
+   ],
+   "expected": {
+    "exercise_minutes_weekly": 90
+   },
+   "why": "free exercise"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "i cut back on the wine, just one glass a week now"
+   ],
+   "expected": {
+    "alcohol_drinks_weekly": 1
+   },
+   "why": "free alcohol cut"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I've shrunk, they measured me at five foot two."
+   ],
+   "expected": {
+    "height_cm": 157.48
+   },
+   "why": "free height"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "It was my birthday yesterday, I'm seventy-three now."
+   ],
+   "expected": {
+    "age": 73
+   },
+   "why": "free birthday"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I'm seventy-five."
+   ],
+   "expected": {},
+   "why": "free age jump refused"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "Put me down as a man, would you?"
+   ],
+   "expected": {},
+   "why": "free sex change refused"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "Never mind, I don't want to change anything."
+   ],
+   "expected": {},
+   "why": "free never mind"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "My husband just got a pacemaker, and he weighs 200 now."
+   ],
+   "expected": {},
+   "why": "free husband weight"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "uh the tv is on... i'm a hundred fifty-eight pounds, Harold turn that down"
+   ],
+   "expected": {
+    "weight_kg": 71.6676
+   },
+   "why": "free chatter weight"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I used to weigh 200 pounds back in the nineties."
+   ],
+   "expected": {},
+   "why": "old weight"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I'm trying to get down to 130 pounds."
+   ],
+   "expected": {},
+   "why": "free goal weight"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I have chest pain right now."
+   ],
+   "expected": {},
+   "why": "free emergency chest pain",
+   "emergency": true
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "i just want to die"
+   ],
+   "expected": {},
+   "why": "free emergency wants to die",
+   "emergency": true
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "transcript",
+   "turns": [
+    "my blood pressure at the drugstore was one eighteen over seventy-six"
+   ],
+   "expected": {
+    "systolic_bp": 118,
+    "diastolic_bp": 76
+   },
+   "why": "free bp"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I stopped drinking after my surgery."
+   ],
+   "expected": {
+    "alcohol_drinks_weekly": 0
+   },
+   "why": "free stopped drinking"
+  },
+  {
+   "field": null,
+   "profile": {},
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "I started smoking again, maybe five a day."
+   ],
+   "expected": {
+    "smoking_status": "current"
+   },
+   "why": "free relapse"
+  },
+  {
+   "field": null,
+   "profile": {
+    "diabetes": true
+   },
+   "consent": false,
+   "mode": "text",
+   "turns": [
+    "Turns out I don't have diabetes, the retest came back normal."
+   ],
+   "expected": {
+    "diabetes": false
+   },
+   "why": "free diabetes removed"
+  }
+ ]
+}
