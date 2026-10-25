@@ -224,17 +224,35 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- consent -----------------------------------------------------------
 
-  /// After "Delete my data": forget the conversation and the choices made in it, so the next Talk starts fresh.
-  void resetConversation() => _set(() {
-    turn = null;
-    _firstLine = true;
-    correcting = false;
-    askingVoice = false;
-    aiHelper = false;
-    notice = null;
-    caption = '';
-    mascotLine = '';
-  });
+  /// After "Delete my data": back to a never-opened conversation, as on a fresh install: the
+  /// voice question comes first again, nothing is heard or said, and no choice is remembered.
+  void resetConversation() {
+    _speechGen++;
+    _stopListenClock();
+    _endOfTurnTimer?.cancel();
+    unawaited(input.cancel().catchError((Object _) {}));
+    unawaited(output.stop().catchError((Object _) {}));
+    _set(() {
+      turn = null;
+      phase = VoicePhase.consent;
+      typing = false;
+      voiceUsable = true;
+      _firstLine = true;
+      _openedAt = null;
+      _retry = null;
+      _lastReply = null;
+      _nudged = false;
+      _drops = 0;
+      _paused = false;
+      _spokeMascotLine = false;
+      correcting = false;
+      askingVoice = false;
+      aiHelper = false;
+      notice = null;
+      caption = '';
+      mascotLine = '';
+    });
+  }
 
   Future<void> answerConsent(bool yes, {bool aiHelper = false}) async {
     if (phase != VoicePhase.consent || _busy) return;
