@@ -30,6 +30,11 @@ class RecommendationRequest(ApiModel):
     # The phone's calendar day, e.g. "2026-10-24". Ideas rotate by day: the same day
     # always shows the same ideas. Missing: the server's today.
     local_date: LocalDate | None = None
+    # Catalog idea ids the person set aside ("not for me"); never shown again in this
+    # response, not as an idea, an alternative or the featured one.
+    excluded_ids: list[Annotated[str, Field(min_length=1, max_length=60)]] = Field(
+        default_factory=list, max_length=50
+    )
 
 
 class LeverRanking(ApiModel):
