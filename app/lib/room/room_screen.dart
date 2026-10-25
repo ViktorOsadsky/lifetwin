@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../checkin/check_in_entry.dart';
 import '../experiment/room_pills.dart';
-import '../twin/twin_model.dart' show extrapolationCaveat;
+import '../twin/twin_model.dart' show TwinAssessment, extrapolationCaveat;
 import '../forecast/forecast_client.dart';
 import '../ui/swoosh_route.dart';
 import '../ui/theme.dart';
@@ -331,7 +331,7 @@ class _OutlookCard extends StatelessWidget {
     final line = has ? 'about ${f.outOf100(years)} in 100' : 'Ask the ball';
     final card = Semantics(
       button: true,
-      label: 'Your $years-year look: $line',
+      label: 'Your $years-year look: $line${has ? '. ${TwinAssessment.survivalTitle}' : ''}',
       excludeSemantics: true,
       onTap: onTap,
       child: GestureDetector(
@@ -366,6 +366,7 @@ class _OutlookCard extends StatelessWidget {
                   children: [
                     WholeWordText('Your $years-yr look', style: LtText.body()),
                     WholeWordText(line, style: LtText.display(19)),
+                    if (has) WholeWordText(TwinAssessment.survivalTitle, style: LtText.body(size: 15)),
                   ],
                 ),
               ),
