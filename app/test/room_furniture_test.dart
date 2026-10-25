@@ -41,6 +41,13 @@ void runChecked(RoomSim sim, int steps, {double dt = 0.05, void Function(int i)?
 }
 
 void main() {
+  test('the sleep spot sits inside the mattress, toward the pillows', () {
+    final bed = layout.footprints['bed']!, spot = layout.spots['bed']!;
+    // The sleeping sprite spans about 0.7 m along x and 0.5 m along z.
+    expect(bed.deflate(0.4).contains(spot), isTrue);
+    expect(spot.dx, greaterThan(bed.center.dx), reason: 'toward the pillows, on the right');
+  });
+
   test('the padded footprints come from the prototype and contain the true ones', () {
     expect(layout.footprints.keys, containsAll(['bed', 'table', 'plant']));
     expect(layout.obstacles.length, layout.footprints.length);
