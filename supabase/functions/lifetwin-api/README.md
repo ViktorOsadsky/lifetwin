@@ -90,9 +90,10 @@ flutter run --dart-define-from-file=../.env.deploy/flutter.json
 ```
 
 For plain `flutter run`, copy this **public-only** JSON file to
-`app/assets/config/backend.json` once. Startup loads that gitignored asset before
-creating API clients. Explicit `API_BASE_URL` build defines override it. Never
-bundle private server configuration, provider keys or service-role credentials.
+`app/assets/config/backend.json` once. Startup loads that gitignored asset
+before creating API clients. Explicit `API_BASE_URL` build defines override it.
+Never bundle private server configuration, provider keys or service-role
+credentials.
 
 ```sh
 cd supabase/functions/lifetwin-api
