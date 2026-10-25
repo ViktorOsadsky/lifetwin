@@ -67,8 +67,12 @@ class CheckInScope extends InheritedWidget {
     this.openUrl = defaultOpenUrl,
     this.now,
     this.todayPlan,
+    this.handsFree = false,
     required super.child,
   });
+
+  /// Voice check-ins listen by themselves whenever Mochi isn't speaking (the app sets this).
+  final bool handsFree;
 
   final TwinRepository repository;
 
@@ -119,6 +123,7 @@ Future<void> openCheckIn(BuildContext context, {required CheckInKind kind}) {
     healthSamples: scope.healthSamples,
     clock: scope.now,
     voiceUsable: scope.voiceUsable?.call() ?? false,
+    handsFree: scope.handsFree,
   );
   return Navigator.of(context)
       .push<void>(

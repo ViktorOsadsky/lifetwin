@@ -7,8 +7,18 @@ import 'dart:async';
 /// the microphone closes after [voiceQuietClose] of quiet. Once a word has been heard, what
 /// was said is sent after [voiceEndOfTurn] with the transcript unchanged and no new partials.
 /// A tap still sends at once.
+///
+/// Hands-free (the app's voice mode, VoiceOver off): quiet never closes the microphone.
+/// After [voiceNudgeAfter] of quiet Mochi nudges once, and the recognizer is restarted out of
+/// sight every [voiceSessionRestart] so the phone's session limit (about a minute) never shows.
 const voiceQuietClose = Duration(seconds: 8);
 const voiceEndOfTurn = Duration(milliseconds: 2500);
+const voiceNudgeAfter = Duration(seconds: 20);
+const voiceSessionRestart = Duration(seconds: 50);
+
+/// Hands-free: the first prompt's audio has this long to start. Otherwise its words stay on
+/// screen and the microphone opens, rather than leaving dead air.
+const voiceFirstAudioLimit = Duration(milliseconds: 1500);
 
 /// Voice cannot be used right now (server says off, no token, provider down).
 /// The app falls back to typing.
@@ -33,9 +43,9 @@ class VoiceFailure implements Exception {
 }
 
 abstract class SpeechOutput {
-  /// Speaks [text]. Completes when speech finished or was stopped.
-  /// Throws [VoiceUnavailableException] or [VoiceFailure].
-  Future<void> speak(String text);
+  /// Speaks [text]. Completes when speech finished or was stopped. [onAudio] is called once,
+  /// when the first audio is played. Throws [VoiceUnavailableException] or [VoiceFailure].
+  Future<void> speak(String text, {void Function()? onAudio});
 
   /// Stops speech right now (cancels the request and playback).
   Future<void> stop();

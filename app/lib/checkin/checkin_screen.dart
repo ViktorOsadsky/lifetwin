@@ -76,7 +76,7 @@ class CheckInScreen extends StatefulWidget {
   State<CheckInScreen> createState() => _CheckInScreenState();
 }
 
-class _CheckInScreenState extends State<CheckInScreen> {
+class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserver {
   final _text = TextEditingController();
   TwinAssessment? _before;
   bool _nothing = false;
@@ -85,10 +85,21 @@ class _CheckInScreenState extends State<CheckInScreen> {
   CheckinController get c => widget.controller;
   bool get weekly => widget.kind == CheckInKind.weekly;
 
+  /// Hands-free may open the microphone only while this screen is the top route and the
+  /// app is in front.
+  ModalRoute<Object?>? _route;
+  late final bool Function() _mayListen = _mayListenNow;
+  bool _mayListenNow() {
+    final s = WidgetsBinding.instance.lifecycleState;
+    return mounted && (_route?.isCurrent ?? true) && (s == null || s == AppLifecycleState.resumed);
+  }
+
   @override
   void initState() {
     super.initState();
     _before = widget.repository.current;
+    c.mayListen = _mayListen;
+    WidgetsBinding.instance.addObserver(this);
     c.start(kind: widget.kind.name).then((ok) {
       if (mounted) {
         setState(() {
@@ -100,7 +111,32 @@ class _CheckInScreenState extends State<CheckInScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // VoiceOver reads Mochi's words; the microphone then opens with a tap, never by itself.
+    c.screenReader = MediaQuery.accessibleNavigationOf(context);
+    _route = ModalRoute.of(context);
+  }
+
+  /// Leaving LifeTwin (home screen, another app, a call) closes the microphone and stops
+  /// speech; back in front, hands-free listens again if this check-in is still the top screen.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Every way out passes through hidden (before paused); the way back passes it after paused.
+    if (state == AppLifecycleState.hidden && _lifecycle != AppLifecycleState.paused) c.pauseVoice();
+    if (state == AppLifecycleState.resumed) c.resumeVoice();
+    _lifecycle = state;
+  }
+
+  AppLifecycleState? _lifecycle;
+
+  @override
   void dispose() {
+    if (identical(c.mayListen, _mayListen)) {
+      c.mayListen = () => false;
+      c.pauseVoice();
+    }
+    WidgetsBinding.instance.removeObserver(this);
     _text.dispose();
     super.dispose();
   }
@@ -444,9 +480,18 @@ class _CheckInScreenState extends State<CheckInScreen> {
               Row(
                 children: [
                   Expanded(
+                    // Hands-free it only shows what is happening (a tap still sends at once, or
+                    // cuts Mochi short); "Tap to talk" is left for VoiceOver and after a problem.
                     child: LipButton(
-                      label: c.phase == CheckinPhase.listening ? 'Tap when done' : 'Tap to talk',
-                      icon: Icons.mic_none_rounded,
+                      label: switch (c.phase) {
+                        CheckinPhase.listening => c.continuous ? 'Listening…' : 'Tap when done',
+                        CheckinPhase.speaking when c.continuous => 'Mochi is talking…',
+                        CheckinPhase.interpreting when c.continuous => 'One moment…',
+                        _ => 'Tap to talk',
+                      },
+                      icon: c.phase == CheckinPhase.listening && c.continuous
+                          ? Icons.graphic_eq_rounded
+                          : Icons.mic_none_rounded,
                       fontSize: 24,
                       onTap: c.phase == CheckinPhase.listening ? c.stopTalk : c.startTalk,
                     ),

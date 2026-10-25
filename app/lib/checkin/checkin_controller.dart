@@ -6,6 +6,7 @@ import '../health/health_sample.dart';
 import '../onboarding/voice_onboarding_controller.dart'
     show
         emptyTranscriptNotice,
+        listeningNudge,
         micDeniedNotice,
         noNetworkNotice,
         speakTroubleNotice,
@@ -66,6 +67,7 @@ class CheckinController extends ChangeNotifier {
     DateTime Function()? clock,
     this.voiceUsable = true,
     this.ownsSpeech = true,
+    this.handsFree = false,
   }) : _clock = clock ?? DateTime.now,
        typing = !voiceUsable;
 
@@ -75,6 +77,14 @@ class CheckinController extends ChangeNotifier {
 
   /// False when [input] and [output] are the app-wide ones shared with later check-ins: dispose leaves them alone.
   final bool ownsSpeech;
+
+  /// Voice is one continuous session: whenever Mochi is not speaking the microphone listens,
+  /// and quiet never closes it (as in the onboarding conversation). Off with VoiceOver.
+  final bool handsFree;
+
+  /// Set by the screen: whether the microphone may open by itself now (top route, app in
+  /// front). Null: no screen asks (controller tests).
+  bool Function()? mayListen;
   final CheckinStore store;
   final CheckinScheduler scheduler;
 
@@ -143,6 +153,19 @@ class CheckinController extends ChangeNotifier {
   int _silentSeconds = 0;
   int _speechGen = 0;
 
+  bool _nudged = false;
+  int _drops = 0;
+  static const _dropRestarts = 3;
+  bool _paused = false;
+  bool _firstLine = true;
+  Stopwatch? _openedAt;
+  static const firstAudioLimit = voiceFirstAudioLimit;
+  static const nudgeAfter = voiceNudgeAfter;
+  static const sessionRestart = voiceSessionRestart;
+
+  /// Hands-free is on now (VoiceOver uses a single tap instead).
+  bool get continuous => handsFree && !screenReader;
+
   /// A yes/no is open: the one read-back at the end ([finalReadback]), a check question
   /// about one unusual answer ([checkQuestion]), or (weekly) the read-back of one answer.
   bool get confirming => turn?.isConfirming ?? false;
@@ -178,7 +201,7 @@ class CheckinController extends ChangeNotifier {
 
   /// Seconds until the microphone closes by itself, shown only near the end.
   int? get listenSecondsLeft {
-    if (phase != CheckinPhase.listening || _listenClock == null) return null;
+    if (phase != CheckinPhase.listening || _listenClock == null || continuous) return null;
     final left = listenLimit.inSeconds - _listenedSeconds;
     return left <= 10 ? left : null;
   }
@@ -217,7 +240,10 @@ class CheckinController extends ChangeNotifier {
   /// Health; it does nothing when there is nothing left to ask today.
   Future<bool> start({String kind = 'quick'}) async {
     if (_busy || phase != CheckinPhase.notStarted) return false;
-    if (voiceUsable) _warmUp(); // the token is ready by the time Mochi first speaks
+    if (voiceUsable) {
+      _warmUp(); // the token is ready by the time Mochi first speaks
+      _openedAt = Stopwatch()..start();
+    }
     final now = _clock();
     final today = isoDay(dayOf(now));
     final history = await store.checkins();
@@ -277,14 +303,14 @@ class CheckinController extends ChangeNotifier {
 
   // ---- talking -----------------------------------------------------------
 
-  Future<void> startTalk() {
+  Future<void> startTalk({bool auto = false}) {
     if (_starting != null) return _starting!;
     if (typing || !voiceUsable || _busy) return Future.value();
     if (phase != CheckinPhase.idle && phase != CheckinPhase.speaking) return Future.value();
-    return _starting = _startTalk().whenComplete(() => _starting = null);
+    return _starting = _startTalk(auto: auto).whenComplete(() => _starting = null);
   }
 
-  Future<void> _startTalk() async {
+  Future<void> _startTalk({bool auto = false}) async {
     if (phase == CheckinPhase.speaking) {
       _speechGen++;
       await _stopOutput();
@@ -292,9 +318,41 @@ class CheckinController extends ChangeNotifier {
     _set(() {
       phase = CheckinPhase.listening;
       caption = '';
-      notice = null;
+      if (!auto) notice = null;
       _retry = null;
     });
+    await _openMic();
+  }
+
+  /// Hands-free: opens the microphone when nothing else is going on. Never while Mochi
+  /// speaks; not after a failed request (Try again stays), in an emergency pause, while
+  /// Mochi's care question waits for "Keep going" or "Stop for today", or once done. The
+  /// phone's microphone permission is asked by the first listen; a no switches to typing.
+  void _listenAgain() {
+    if (!continuous || _disposed || _paused || _busy || typing || !voiceUsable) return;
+    final t = turn;
+    if (t == null || t.complete || emergency || careQuestionOpen || _retry != null) return;
+    if (phase != CheckinPhase.idle) return;
+    if (!(mayListen?.call() ?? true)) return;
+    unawaited(startTalk(auto: true));
+  }
+
+  /// The screen went out of sight (left, background, a call): the mic closes, speech stops.
+  Future<void> pauseVoice() async {
+    _paused = true;
+    _stopListenClock(); // at once, so nothing keeps ticking after the screen is gone
+    await cancelTalk();
+    await _stopSpeech();
+    if (!_paused) _listenAgain(); // back in sight meanwhile
+  }
+
+  /// The screen is in sight again: hands-free listens again by itself.
+  void resumeVoice() {
+    _paused = false;
+    _listenAgain();
+  }
+
+  Future<void> _openMic() async {
     try {
       if (!await input.hasPermission()) throw const MicDeniedException();
       if (phase != CheckinPhase.listening) return;
@@ -305,7 +363,7 @@ class CheckinController extends ChangeNotifier {
             _armEndOfTurn(text);
           }, onDropped: (_) => _inputDropped())
           .timeout(_micStartLimit);
-      if (phase == CheckinPhase.listening) _startListenClock();
+      if (phase == CheckinPhase.listening && !_paused) _startListenClock();
     } on MicDeniedException {
       _set(() {
         phase = CheckinPhase.idle;
@@ -338,6 +396,11 @@ class CheckinController extends ChangeNotifier {
   void _inputDropped() {
     if (phase != CheckinPhase.listening) return;
     _stopListenClock();
+    if (continuous && !_paused && caption.trim().isEmpty && _drops < _dropRestarts) {
+      _drops++;
+      _restartMic(stopFirst: false);
+      return;
+    }
     _set(() {
       phase = CheckinPhase.idle;
       notice = voiceTroubleNotice;
@@ -352,6 +415,23 @@ class CheckinController extends ChangeNotifier {
       if (phase != CheckinPhase.listening) return _stopListenClock();
       _listenedSeconds++;
       _silentSeconds++;
+      if (continuous && caption.trim().isEmpty) {
+        if (!_nudged && _silentSeconds >= nudgeAfter.inSeconds) {
+          _stopListenClock();
+          unawaited(_nudge());
+        } else if (_listenedSeconds >= sessionRestart.inSeconds) {
+          _stopListenClock();
+          _restartMic();
+        }
+        return;
+      }
+      if (continuous) {
+        if (_listenedSeconds >= listenLimit.inSeconds) {
+          _stopListenClock();
+          unawaited(stopTalk());
+        }
+        return;
+      }
       if (_silentSeconds >= silenceLimit.inSeconds || _listenedSeconds >= listenLimit.inSeconds) {
         _stopListenClock();
         unawaited(stopTalk());
@@ -368,9 +448,36 @@ class CheckinController extends ChangeNotifier {
     _endOfTurnTimer = null;
   }
 
+  /// Hands-free: a fresh recognizer session while the screen keeps saying "Listening".
+  void _restartMic({bool stopFirst = true}) {
+    if (_starting != null || _disposed) return;
+    Future<void> again() async {
+      if (stopFirst) {
+        try {
+          await input.cancel().timeout(_quickLimit);
+        } catch (_) {}
+      }
+      if (phase == CheckinPhase.listening && !_disposed) await _openMic();
+    }
+
+    _starting = again().whenComplete(() => _starting = null);
+  }
+
+  /// Hands-free, after a long quiet: "Take your time, I'm listening." once, then listening again.
+  Future<void> _nudge() async {
+    _nudged = true;
+    try {
+      await input.cancel().timeout(_quickLimit);
+    } catch (_) {}
+    if (phase != CheckinPhase.listening || _disposed) return;
+    _set(() => phase = CheckinPhase.idle);
+    if (await _speak(listeningNudge)) _listenAgain();
+  }
+
   /// Every caption (a new partial or final) restarts the end-of-turn wait, once a word is heard.
   void _armEndOfTurn(String text) {
     if (_disposed || text.trim().isEmpty) return;
+    _drops = 0;
     _endOfTurnTimer?.cancel();
     _endOfTurnTimer = Timer(endOfTurn, () {
       _endOfTurnTimer = null;
@@ -404,9 +511,9 @@ class CheckinController extends ChangeNotifier {
     if (text.isEmpty) {
       _set(() {
         phase = CheckinPhase.idle;
-        notice = emptyTranscriptNotice;
+        if (!continuous) notice = emptyTranscriptNotice; // hands-free simply keeps listening
       });
-      return;
+      return _listenAgain();
     }
     _set(() => caption = text);
     await _reply(text, fromTranscript: true);
@@ -414,7 +521,10 @@ class CheckinController extends ChangeNotifier {
 
   /// Closes the microphone and drops what was heard.
   Future<void> cancelTalk() async {
-    await _starting;
+    // A listen that began meanwhile is waited for too, so no microphone is left open.
+    while (_starting != null) {
+      await _starting;
+    }
     if (phase != CheckinPhase.listening) return;
     _stopListenClock();
     try {
@@ -454,14 +564,15 @@ class CheckinController extends ChangeNotifier {
   /// "No, let me fix it": the next answer is sent as `"no, <answer>"` and replaces the one
   /// read back (at the end: "no, my sleep was 6 hours" changes that answer). Sends nothing.
   Future<void> change() async {
-    if (_busy || !(confirming || confirmingHealth) || (phase != CheckinPhase.idle && phase != CheckinPhase.speaking)) {
-      return;
-    }
+    if (_busy || !(confirming || confirmingHealth)) return;
+    if (phase == CheckinPhase.listening) await cancelTalk();
+    if (phase != CheckinPhase.idle && phase != CheckinPhase.speaking) return;
     await _stopSpeech();
     _set(() {
       correcting = true;
       notice = null;
     });
+    _listenAgain(); // hands-free: say what to change
   }
 
   /// Back to Yes / No without changing anything.
@@ -485,7 +596,11 @@ class CheckinController extends ChangeNotifier {
   /// Stops the check-in. Nothing is saved.
   Future<void> cancel() => _button('cancel');
 
-  Future<void> stopSpeaking() => _stopSpeech();
+  /// Stops Mochi talking. Hands-free, the microphone then opens.
+  Future<void> stopSpeaking() async {
+    await _stopSpeech();
+    _listenAgain();
+  }
 
   Future<void> retry() async {
     final r = _retry;
@@ -501,12 +616,13 @@ class CheckinController extends ChangeNotifier {
       await _stopSpeech();
     }
     _set(() => typing = value);
+    if (!value) _listenAgain(); // back to voice: hands-free listens again
   }
 
   Future<void> hearAgain() async {
     if (!canHearAgain) return;
     if (phase == CheckinPhase.listening) await cancelTalk();
-    await _speak(mascotLine, replay: output.canReplay);
+    if (await _speak(mascotLine, replay: output.canReplay)) _listenAgain();
   }
 
   // ---- reminders -----------------------------------------------------------
@@ -564,6 +680,7 @@ class CheckinController extends ChangeNotifier {
 
   Future<void> _send(Future<CheckinTurn> Function() request) async {
     if (_busy) return;
+    if (phase == CheckinPhase.listening) await cancelTalk(); // never wait on the server with the mic open
     _busy = true;
     _tryVoiceAgain();
     _set(() {
@@ -593,6 +710,8 @@ class CheckinController extends ChangeNotifier {
     _set(() {
       if (_voiceBack) _voiceIn();
       correcting = false;
+      if (t.currentField != turn?.currentField || t.phase != turn?.phase) _nudged = false;
+      _drops = 0;
       turn = t;
       emergency = t.emergency;
       mascotLine = t.message;
@@ -600,7 +719,11 @@ class CheckinController extends ChangeNotifier {
     });
     if (t.complete) await _finish(t);
     _busy = false;
-    if (!typing && voiceUsable && !screenReader) await _speak(t.message);
+    // Nothing is said while the screen is out of sight.
+    if (typing || !voiceUsable || screenReader || _paused) return;
+    final first = _firstLine;
+    _firstLine = false;
+    if (await _speak(t.message, first: first)) _listenAgain();
   }
 
   /// Saves the finished check-in once, then plans reminders and the progress line.
@@ -692,11 +815,40 @@ class CheckinController extends ChangeNotifier {
   CheckinPhase get _restingPhase =>
       (turn?.complete ?? false) || turn?.phase == 'cancelled' ? CheckinPhase.done : CheckinPhase.idle;
 
-  Future<void> _speak(String line, {bool replay = false}) async {
+  /// True when the line ran to its end (or, the first line, gave up waiting for audio)
+  /// and nothing else took over meanwhile: hands-free may listen next.
+  Future<bool> _speak(String line, {bool replay = false, bool first = false}) async {
     final gen = ++_speechGen;
     _set(() => phase = CheckinPhase.speaking);
+    // The first line: no audio within [firstAudioLimit] leaves its words on screen and listens.
+    final late = Completer<void>();
+    var heard = false;
+    Timer? wait;
+    void onAudio() {
+      if (heard) return;
+      heard = true;
+      wait?.cancel();
+      final at = _openedAt;
+      _openedAt = null;
+      if (at != null) debugPrint('LifeTwin voice: first audio ${at.elapsedMilliseconds} ms after the check-in opened');
+    }
+
+    if (first && continuous) {
+      wait = Timer(firstAudioLimit, () {
+        if (heard || gen != _speechGen || _disposed) return;
+        debugPrint('LifeTwin voice: no audio ${firstAudioLimit.inMilliseconds} ms after the first line came; listening instead');
+        _openedAt = null;
+        late.complete();
+      });
+    }
     try {
-      await (replay ? output.replay() : output.speak(spokenText(line))).timeout(_speakLimit);
+      final speech = replay ? output.replay() : output.speak(spokenText(line), onAudio: onAudio);
+      await Future.any([speech, late.future]).timeout(_speakLimit);
+      if (late.isCompleted) {
+        await _stopOutput();
+        if (gen == _speechGen && phase == CheckinPhase.speaking) _set(() => phase = _restingPhase);
+        return gen == _speechGen;
+      }
     } on VoiceUnavailableException {
       if (gen == _speechGen) {
         _set(() {
@@ -706,8 +858,11 @@ class CheckinController extends ChangeNotifier {
       }
     } catch (_) {
       if (gen == _speechGen) _set(() => notice = speakTroubleNotice);
+    } finally {
+      wait?.cancel();
     }
     if (gen == _speechGen && phase == CheckinPhase.speaking) _set(() => phase = _restingPhase);
+    return gen == _speechGen;
   }
 
   static Set<String> _topicsOf(List<String> fields) => {

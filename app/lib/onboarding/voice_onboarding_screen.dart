@@ -100,6 +100,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   void _chooseVoice(bool voice) {
     _aiLock?.cancel();
     _aiLock = Timer(secondTapGuard, () {});
+    // Voice was agreed to: get it ready while the second question is read.
+    if (voice) c.prepareVoice();
     setState(() => _voiceChoice = voice);
   }
 
@@ -156,6 +158,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     if (c.phase == VoicePhase.consent) {
       setState(() => _importAfterConsent = true);
     } else {
+      // The microphone closes before the sheet opens; it listens again once the sheet is gone.
+      c.cancelTalk();
       _fasterSheet();
     }
   }
@@ -251,7 +255,13 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           ),
         ),
       ),
-    );
+    ).whenComplete(_sheetClosed);
+  }
+
+  /// A sheet over the conversation closed: hands-free listens again (unless the Health or
+  /// document screen is now on top; its answers start the next turn).
+  void _sheetClosed() {
+    if (mounted) c.resumeVoice();
   }
 
   /// "Added N things from Apple Health": a quiet note, gone after 6 s (8 s with large text).
@@ -287,8 +297,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   /// However the screen is left (Home, swipe-back), the microphone closes and speech stops.
   void _left(bool didPop, Object? result) {
     if (!didPop) return;
-    c.cancelTalk();
-    c.stopSpeaking();
+    c.pauseVoice();
   }
 
   void _skip() {
@@ -303,12 +312,26 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
 
   VoiceOnboardingController get c => widget.controller;
 
+  /// Hands-free may open the microphone only while this screen is the top route and the
+  /// app is in front.
+  ModalRoute<Object?>? _route;
+  late final bool Function() _mayListen = _mayListenNow;
+  bool _mayListenNow() {
+    final s = WidgetsBinding.instance.lifecycleState;
+    return mounted && (_route?.isCurrent ?? true) && (s == null || s == AppLifecycleState.resumed);
+  }
+
   @override
   void initState() {
     super.initState();
     c.addListener(_changed);
     c.addListener(_importChanged);
+    c.mayListen = _mayListen;
     WidgetsBinding.instance.addObserver(this);
+    // Back on this screen (say, from the Room) mid-conversation: listening again.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) c.resumeVoice();
+    });
   }
 
   /// The keyboard going up or down (or a rotation) resizes the story: once it settles,
@@ -325,15 +348,17 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
 
   /// Leaving LifeTwin (home screen, another app, a call) closes the microphone and stops
   /// speech: nothing is heard or said while the app is not on screen, and words heard so
-  /// far are dropped, not sent. Coming back shows the same question, ready to answer.
+  /// far are dropped, not sent. Coming back shows the same question; hands-free listens
+  /// again by itself, if this conversation is still the top screen.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Every way out passes through hidden (before paused), so this runs once.
-    if (state == AppLifecycleState.hidden) {
-      c.cancelTalk();
-      c.stopSpeaking();
-    }
+    // Every way out passes through hidden (before paused); the way back passes it after paused.
+    if (state == AppLifecycleState.hidden && _lifecycle != AppLifecycleState.paused) c.pauseVoice();
+    if (state == AppLifecycleState.resumed) c.resumeVoice();
+    _lifecycle = state;
   }
+
+  AppLifecycleState? _lifecycle;
 
   @override
   void didUpdateWidget(VoiceOnboardingScreen old) {
@@ -341,6 +366,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     if (old.controller != c) {
       old.controller.removeListener(_changed);
       c.addListener(_changed);
+      if (identical(old.controller.mayListen, _mayListen)) old.controller.mayListen = null;
+      c.mayListen = _mayListen;
     }
   }
 
@@ -348,10 +375,16 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   void didChangeDependencies() {
     super.didChangeDependencies();
     c.screenReader = MediaQuery.accessibleNavigationOf(context);
+    _route = ModalRoute.of(context);
   }
 
   @override
   void dispose() {
+    // The conversation outlives this screen: nothing may open the microphone by itself now.
+    if (identical(c.mayListen, _mayListen)) {
+      c.mayListen = () => false;
+      c.pauseVoice();
+    }
     c.removeListener(_changed);
     c.removeListener(_importChanged);
     _noteTimer?.cancel();
@@ -785,7 +818,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     final links = c.phase != VoicePhase.done && !keyboard;
     final voiceLine = c.phase == VoicePhase.speaking
         ? _speaking()
-        : c.canHearAgain && !listening
+        : c.canHearAgain && (!listening || c.continuous)
         ? LinkButton(label: 'Hear it again', icon: Icons.volume_up_rounded, onTap: c.hearAgain)
         : null;
     final goBack = !keyboard && c.canGoBack;
@@ -1048,6 +1081,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   );
 
   void _openSettings() {
+    c.cancelTalk();
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -1107,7 +1141,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           },
         ),
       ),
-    );
+    ).whenComplete(_sheetClosed);
   }
 
   /// Two per row when they fit, one per row when the text is large.
@@ -1314,11 +1348,13 @@ class _TalkButtonState extends State<TalkButton> {
             crossAxisAlignment: big ? CrossAxisAlignment.center : CrossAxisAlignment.start,
             children: [
               WholeWordText('Listening…', style: LtText.display(26)),
-              WholeWordText(
-                'tap when done${left == null ? '' : ' ($left s left)'}',
-                textAlign: big ? TextAlign.center : TextAlign.start,
-                style: LtText.body(size: 18, weight: FontWeight.w700),
-              ),
+              // Hands-free sends by itself after a pause, so there is nothing to tap.
+              if (!c.continuous)
+                WholeWordText(
+                  'tap when done${left == null ? '' : ' ($left s left)'}',
+                  textAlign: big ? TextAlign.center : TextAlign.start,
+                  style: LtText.body(size: 18, weight: FontWeight.w700),
+                ),
             ],
           ),
         ),
@@ -1387,9 +1423,15 @@ class _TalkButtonState extends State<TalkButton> {
     return Semantics(
       button: true,
       enabled: !busy,
-      label: busy ? label : (listening ? 'Stop listening' : (opening ? 'Talk or type' : 'Talk')),
+      label: busy
+          ? label
+          : (listening ? (c.continuous ? 'Listening' : 'Stop listening') : (opening ? 'Talk or type' : 'Talk')),
       value: listening ? 'Listening' : 'Not listening',
-      hint: busy ? null : (listening ? 'Double tap when you are done' : 'Double tap, then speak'),
+      hint: busy
+          ? null
+          : (listening
+                ? (c.continuous ? 'Just talk. Double tap to send now' : 'Double tap when you are done')
+                : 'Double tap, then speak'),
       excludeSemantics: true,
       onTap: busy ? null : () => listening ? c.stopTalk() : c.startTalk(),
       customSemanticsActions: opening ? {const CustomSemanticsAction(label: 'Type instead'): () => c.setTyping(true)} : null,

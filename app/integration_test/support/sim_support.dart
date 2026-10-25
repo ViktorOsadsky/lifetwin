@@ -99,7 +99,7 @@ class MutedOutput implements SpeechOutput {
   final spoken = <String>[];
 
   @override
-  Future<void> speak(String text) async => spoken.add(text);
+  Future<void> speak(String text, {void Function()? onAudio}) async => spoken.add(text);
 
   @override
   Future<void> stop() async {}

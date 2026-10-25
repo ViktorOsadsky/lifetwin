@@ -39,15 +39,28 @@ const documentWaitNotice = 'Please answer Yes or No first. Then you can add the 
 const documentNoneNotice = "No answers from your document were added, so I'll keep asking you. That's okay.";
 const healthRejectedPrefix = "I couldn't add your Apple Health answers. ";
 
+/// Hands-free: said once after a long quiet; then Mochi just keeps listening.
+const listeningNudge = "Take your time, I'm listening.";
+
 /// Runs the conversation loop. The server decides what happens; this class only
 /// holds the caller-owned state, moves audio in and out, and keeps answers safe
 /// when voice fails.
 class VoiceOnboardingController extends ChangeNotifier {
-  VoiceOnboardingController({required this.guide, required this.input, required this.output});
+  VoiceOnboardingController({required this.guide, required this.input, required this.output, this.handsFree = false});
 
   final ConversationGuide guide;
   final SpeechInput input;
   final SpeechOutput output;
+
+  /// Voice mode is one continuous session, as in a phone call: whenever Mochi is not
+  /// speaking, the microphone listens, and quiet never closes it. Typing pauses it until
+  /// the person goes back to voice. Off (tap to talk) with VoiceOver on, and in tests that
+  /// don't ask for it.
+  final bool handsFree;
+
+  /// Set by the screen: whether the microphone may open by itself now (the conversation is
+  /// the top route and the app is in front). Null: no screen asks (controller tests).
+  bool Function()? mayListen;
 
   VoicePhase phase = VoicePhase.consent;
 
@@ -114,6 +127,23 @@ class VoiceOnboardingController extends ChangeNotifier {
   int _listenedSeconds = 0;
   int _silentSeconds = 0;
 
+  /// Hands-free: the one nudge for this question was said.
+  bool _nudged = false;
+
+  /// Hands-free: connections lost in a row before anything was heard (restarted out of sight).
+  int _drops = 0;
+  static const _dropRestarts = 3;
+
+  /// The screen is out of sight (left, or the app is in the background): nothing opens by itself.
+  bool _paused = false;
+
+  /// The conversation's first line has not been spoken yet; timed from [_openedAt].
+  bool _firstLine = true;
+  Stopwatch? _openedAt;
+  static const firstAudioLimit = voiceFirstAudioLimit;
+  static const nudgeAfter = voiceNudgeAfter;
+  static const sessionRestart = voiceSessionRestart;
+
   /// Nothing the microphone, the speaker or the network does may keep the
   /// screen waiting for ever: every wait ends, and the person can carry on.
   static const _micStartLimit = Duration(seconds: 10);
@@ -150,9 +180,12 @@ class VoiceOnboardingController extends ChangeNotifier {
   bool get canRetry => _retry != null;
   bool get canHearAgain => voiceUsable && mascotLine.isNotEmpty && !typing && phase != VoicePhase.interpreting;
 
+  /// Hands-free is on now: the microphone opens by itself (VoiceOver uses a single tap instead).
+  bool get continuous => handsFree && !screenReader;
+
   /// Seconds until the microphone closes by itself, shown only near the end.
   int? get listenSecondsLeft {
-    if (phase != VoicePhase.listening || _listenClock == null) return null;
+    if (phase != VoicePhase.listening || _listenClock == null || continuous) return null;
     final left = listenLimit.inSeconds - _listenedSeconds;
     return left <= 10 ? left : null;
   }
@@ -194,6 +227,7 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// After "Delete my data": forget the conversation and the choices made in it, so the next Talk starts fresh.
   void resetConversation() => _set(() {
     turn = null;
+    _firstLine = true;
     correcting = false;
     askingVoice = false;
     aiHelper = false;
@@ -209,9 +243,16 @@ class VoiceOnboardingController extends ChangeNotifier {
       typing = !yes;
       this.aiHelper = aiHelper;
     });
-    if (yes) _warmUp(); // the token is ready by the time the first question is spoken
+    if (yes) {
+      _warmUp(); // the token is ready by the time the first question is spoken
+      _openedAt = Stopwatch()..start();
+    }
     await _send('start');
   }
+
+  /// "Yes, I'll talk" on the first consent question: voice was agreed to, so the token is
+  /// fetched while the second question is read, and the first line need not wait for it.
+  void prepareVoice() => _warmUp();
 
   /// Turns the AI helper on or off. Turning it on right after an answer that
   /// needed it sends that same answer again, so the person doesn't repeat it.
@@ -220,6 +261,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     final resend = on && helperWouldHelp ? _lastReply : null;
     _set(() => aiHelper = on);
     if (resend != null) {
+      if (phase == VoicePhase.listening) await cancelTalk();
       await _stopSpeech();
       await _send('reply', text: resend.$1, fromTranscript: resend.$2);
     }
@@ -272,12 +314,15 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (values.isEmpty) {
       // Once every question is answered there is nothing left to "keep asking".
       if (turn?.complete != true) _set(() => notice = none);
+      _listenAgain();
       return false;
     }
     if (confirming) {
       _set(() => notice = wait);
+      _listenAgain();
       return false;
     }
+    if (phase == VoicePhase.listening) await cancelTalk();
     await _stopSpeech();
     final before = turn;
     await _send('import', values: values, importSource: source);
@@ -292,15 +337,15 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// The microphone is still opening (permission or connecting): a release now is not "send".
   bool get micStarting => _starting != null;
 
-  Future<void> startTalk() {
+  Future<void> startTalk({bool auto = false}) {
     // Ignore a second press while we are already starting, listening or waiting.
     if (_starting != null) return _starting!;
     if (typing || !voiceUsable) return Future.value();
     if (phase != VoicePhase.idle && phase != VoicePhase.speaking) return Future.value();
-    return _starting = _startTalk().whenComplete(() => _starting = null);
+    return _starting = _startTalk(auto: auto).whenComplete(() => _starting = null);
   }
 
-  Future<void> _startTalk() async {
+  Future<void> _startTalk({bool auto = false}) async {
     if (phase == VoicePhase.speaking) {
       _speechGen++;
       await _stopOutput();
@@ -308,9 +353,43 @@ class VoiceOnboardingController extends ChangeNotifier {
     _set(() {
       phase = VoicePhase.listening;
       caption = '';
-      notice = null;
+      // Opening by itself keeps a notice on screen (say, the server's reason) until the next answer.
+      if (!auto) notice = null;
       _retry = null;
     });
+    await _openMic();
+  }
+
+  /// Hands-free: opens the microphone when nothing else is going on (Mochi finished speaking,
+  /// back to voice, back on screen). Never while Mochi speaks, so the loudspeaker is not heard.
+  /// Not after a failed request (its Try again stays), in an emergency pause, once done, or
+  /// before both the voice consent and the phone's microphone permission were given (the
+  /// permission is asked by the first listen itself, and a no switches to typing for good).
+  void _listenAgain() {
+    if (!continuous || _disposed || _paused || _busy || typing || !voiceUsable || askingVoice) return;
+    final t = turn;
+    if (t == null || t.complete || t.emergency || _retry != null || phase != VoicePhase.idle) return;
+    if (!(mayListen?.call() ?? true)) return;
+    unawaited(startTalk(auto: true));
+  }
+
+  /// The screen went out of sight (left, the app went to the background, a call): the
+  /// microphone closes, words heard so far are dropped, and speech stops.
+  Future<void> pauseVoice() async {
+    _paused = true;
+    _stopListenClock(); // at once, so nothing keeps ticking after the screen is gone
+    await cancelTalk();
+    await _stopSpeech();
+    if (!_paused) _listenAgain(); // back in sight meanwhile
+  }
+
+  /// The screen is in sight again: hands-free listens again by itself.
+  void resumeVoice() {
+    _paused = false;
+    _listenAgain();
+  }
+
+  Future<void> _openMic() async {
     try {
       // The system's "Allow microphone?" question waits for the person, however long they
       // take to read it; only connecting afterwards is held to the start limit.
@@ -323,7 +402,7 @@ class VoiceOnboardingController extends ChangeNotifier {
             _armEndOfTurn(text);
           }, onDropped: (_) => _inputDropped())
           .timeout(_micStartLimit);
-      if (phase == VoicePhase.listening) _startListenClock();
+      if (phase == VoicePhase.listening && !_paused) _startListenClock();
     } on MicDeniedException {
       _set(() {
         phase = VoicePhase.idle;
@@ -354,9 +433,15 @@ class VoiceOnboardingController extends ChangeNotifier {
   }
 
   /// The connection was lost while listening. The input has already stopped the mic.
+  /// Hands-free, before anything was heard, the recognizer is simply started again.
   void _inputDropped() {
     if (phase != VoicePhase.listening) return;
     _stopListenClock();
+    if (continuous && !_paused && caption.trim().isEmpty && _drops < _dropRestarts) {
+      _drops++;
+      _restartMic(stopFirst: false);
+      return;
+    }
     _set(() {
       phase = VoicePhase.idle;
       notice = voiceTroubleNotice;
@@ -371,6 +456,25 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (phase != VoicePhase.listening) return _stopListenClock();
       _listenedSeconds++;
       _silentSeconds++;
+      if (continuous && caption.trim().isEmpty) {
+        // Quiet never closes a hands-free microphone: one nudge, then the recognizer restarts
+        // before the phone's session limit.
+        if (!_nudged && _silentSeconds >= nudgeAfter.inSeconds) {
+          _stopListenClock();
+          unawaited(_nudge());
+        } else if (_listenedSeconds >= sessionRestart.inSeconds) {
+          _stopListenClock();
+          _restartMic();
+        }
+        return;
+      }
+      if (continuous) {
+        if (_listenedSeconds >= listenLimit.inSeconds) {
+          _stopListenClock();
+          unawaited(stopTalk());
+        }
+        return;
+      }
       if (_silentSeconds >= silenceLimit.inSeconds || _listenedSeconds >= listenLimit.inSeconds) {
         _stopListenClock();
         unawaited(stopTalk());
@@ -387,9 +491,36 @@ class VoiceOnboardingController extends ChangeNotifier {
     _endOfTurnTimer = null;
   }
 
+  /// Hands-free: a fresh recognizer session while the screen keeps saying "Listening".
+  void _restartMic({bool stopFirst = true}) {
+    if (_starting != null || _disposed) return;
+    Future<void> again() async {
+      if (stopFirst) {
+        try {
+          await input.cancel().timeout(_quickLimit);
+        } catch (_) {}
+      }
+      if (phase == VoicePhase.listening && !_disposed) await _openMic();
+    }
+
+    _starting = again().whenComplete(() => _starting = null);
+  }
+
+  /// Hands-free, after a long quiet: "Take your time, I'm listening." once, then listening again.
+  Future<void> _nudge() async {
+    _nudged = true;
+    try {
+      await input.cancel().timeout(_quickLimit);
+    } catch (_) {}
+    if (phase != VoicePhase.listening || _disposed) return;
+    _set(() => phase = VoicePhase.idle);
+    if (await _speak(listeningNudge, mascotLine: false)) _listenAgain();
+  }
+
   /// Every caption (a new partial or final) restarts the end-of-turn wait, once a word is heard.
   void _armEndOfTurn(String text) {
     if (_disposed || text.trim().isEmpty) return;
+    _drops = 0;
     _endOfTurnTimer?.cancel();
     _endOfTurnTimer = Timer(endOfTurn, () {
       _endOfTurnTimer = null;
@@ -421,6 +552,14 @@ class VoiceOnboardingController extends ChangeNotifier {
       return;
     }
     if (text.isEmpty) {
+      if (continuous) {
+        // Nothing to send: hands-free simply keeps listening.
+        _set(() {
+          phase = VoicePhase.idle;
+          caption = '';
+        });
+        return _listenAgain();
+      }
       _set(() {
         phase = VoicePhase.idle;
         caption = '';
@@ -435,7 +574,10 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   /// Closes the microphone and throws away what was heard.
   Future<void> cancelTalk() async {
-    await _starting;
+    // A listen that began meanwhile is waited for too, so no microphone is left open.
+    while (_starting != null) {
+      await _starting;
+    }
     if (phase != VoicePhase.listening) return;
     _stopListenClock();
     try {
@@ -486,12 +628,15 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   Future<void> confirm() => _button('confirm');
   Future<void> change() async {
-    if (_busy || !confirming || (phase != VoicePhase.idle && phase != VoicePhase.speaking)) return;
+    if (_busy || !confirming) return;
+    if (phase == VoicePhase.listening) await cancelTalk();
+    if (phase != VoicePhase.idle && phase != VoicePhase.speaking) return;
     await _stopSpeech();
     _set(() {
       correcting = true;
       notice = null;
     });
+    _listenAgain(); // hands-free: say the right answer
   }
 
   /// Goes back to Yes / No without changing anything.
@@ -513,8 +658,11 @@ class VoiceOnboardingController extends ChangeNotifier {
     await _button('resume');
   }
 
-  /// Stops the mascot talking.
-  Future<void> stopSpeaking() => _stopSpeech();
+  /// Stops the mascot talking. Hands-free, the microphone then opens.
+  Future<void> stopSpeaking() async {
+    await _stopSpeech();
+    _listenAgain();
+  }
 
   Future<void> _button(String action, {String? text}) async {
     if (_busy) return;
@@ -546,6 +694,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (!_busy && phase == VoicePhase.interpreting) _set(() => phase = VoicePhase.idle);
     }
     _set(() => typing = value);
+    if (!value) _listenAgain(); // back to voice: hands-free listens again
   }
 
   /// The answer to "Talk with me?" when asked after starting by typing.
@@ -559,14 +708,17 @@ class VoiceOnboardingController extends ChangeNotifier {
         _clearOutage();
       }
     });
-    if (yes) _warmUp();
+    if (yes) {
+      _warmUp();
+      _listenAgain();
+    }
   }
 
   Future<void> hearAgain() async {
     if (!canHearAgain) return;
     if (phase == VoicePhase.listening) await cancelTalk();
     final line = mascotLine;
-    await _speak(line, replay: output.canReplay && _spokeMascotLine);
+    if (await _speak(line, replay: output.canReplay && _spokeMascotLine)) _listenAgain();
   }
 
   // ---- server turn -----------------------------------------------------------
@@ -584,6 +736,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       // yet: the server would refuse it. Anything sent, Try again included, starts instead.
       return _send('start');
     }
+    if (phase == VoicePhase.listening) await cancelTalk(); // never wait on the server with the mic open
     _busy = true;
     _tryVoiceAgain();
     if (action == 'reply' && text != null) _lastReply = (text, fromTranscript);
@@ -631,6 +784,8 @@ class VoiceOnboardingController extends ChangeNotifier {
     _set(() {
       if (_voiceBack) _voiceIn();
       correcting = false;
+      if (t.state['current_field'] != turn?.state['current_field'] || t.phase != turn?.phase) _nudged = false;
+      _drops = 0;
       turn = t;
       mascotLine = t.message;
       phase = t.complete ? VoicePhase.done : VoicePhase.idle;
@@ -641,7 +796,11 @@ class VoiceOnboardingController extends ChangeNotifier {
       _pendingHealth = null;
       return _send('import', values: pending, importSource: _pendingSource);
     }
-    if (!typing && voiceUsable && !screenReader) await _speak(t.message);
+    // Nothing is said while the screen is out of sight; back on screen, it listens.
+    if (typing || !voiceUsable || screenReader || _paused) return;
+    final first = _firstLine;
+    _firstLine = false;
+    if (await _speak(t.message, first: first)) _listenAgain();
   }
 
   // ---- voice outage ----------------------------------------------------------
@@ -712,12 +871,44 @@ class VoiceOnboardingController extends ChangeNotifier {
     await _speak(text, mascotLine: false);
   }
 
-  Future<void> _speak(String line, {bool replay = false, bool mascotLine = true}) async {
+  /// True when the line ran to its end (or, the first line, gave up waiting for audio)
+  /// and nothing else took over meanwhile: hands-free may listen next.
+  Future<bool> _speak(String line, {bool replay = false, bool mascotLine = true, bool first = false}) async {
     final gen = ++_speechGen;
     _spokeMascotLine = mascotLine;
     _set(() => phase = VoicePhase.speaking);
+    // The first line: if no audio has started within [firstAudioLimit], its words are on
+    // screen, so speech stops and the microphone opens instead of leaving dead air.
+    final late = Completer<void>();
+    var heard = false;
+    Timer? wait;
+    void onAudio() {
+      if (heard) return;
+      heard = true;
+      wait?.cancel();
+      final at = _openedAt;
+      _openedAt = null;
+      if (at != null) debugPrint('LifeTwin voice: first audio ${at.elapsedMilliseconds} ms after the conversation opened');
+    }
+
+    if (first && continuous) {
+      wait = Timer(firstAudioLimit, () {
+        if (heard || gen != _speechGen || _disposed) return;
+        debugPrint('LifeTwin voice: no audio ${firstAudioLimit.inMilliseconds} ms after the first line came; listening instead');
+        _openedAt = null;
+        late.complete();
+      });
+    }
     try {
-      await (replay ? output.replay() : output.speak(spokenText(line))).timeout(_speakLimit);
+      final speech = replay ? output.replay() : output.speak(spokenText(line), onAudio: onAudio);
+      await Future.any([speech, late.future]).timeout(_speakLimit);
+      if (late.isCompleted) {
+        await _stopOutput();
+        if (gen == _speechGen && phase == VoicePhase.speaking) {
+          _set(() => phase = turn?.complete == true ? VoicePhase.done : VoicePhase.idle);
+        }
+        return gen == _speechGen;
+      }
     } on VoiceUnavailableException {
       // A notice that could not be said aloud is still on screen; replacing it (say, "can't
       // reach LifeTwin" with "couldn't say that") would hide what went wrong.
@@ -729,10 +920,13 @@ class VoiceOnboardingController extends ChangeNotifier {
       }
     } catch (_) {
       if (gen == _speechGen && mascotLine) _set(() => notice = speakTroubleNotice);
+    } finally {
+      wait?.cancel();
     }
     if (gen == _speechGen && phase == VoicePhase.speaking) {
       _set(() => phase = turn?.complete == true ? VoicePhase.done : VoicePhase.idle);
     }
+    return gen == _speechGen;
   }
 
   @override
