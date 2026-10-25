@@ -1,0 +1,1130 @@
+{
+ "about": "Held-out split, cut-off and multi-fact answers across onboarding and the daily, quick and weekly check-ins. Written before any change for them and scored with tests/split_answers_eval.py. Turns: the question asked and what the person said; a read-back is confirmed after each reply. expect: answers that must be saved (cm, kg, minutes); unknown: recorded as I don't know; ends_on: the question open at the end; quiet: turns that must not say they didn't catch it.",
+ "cases": [
+  {
+   "id": "o01",
+   "kind": "onboarding",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "age",
+     "say": "I'm 64 and I"
+    },
+    {
+     "asked": "sex",
+     "say": "weigh about 146"
+    }
+   ],
+   "expect": {
+    "age": 64,
+    "weight_kg": 66.2
+   },
+   "ends_on": "sex",
+   "quiet": [
+    0
+   ]
+  },
+  {
+   "id": "o02",
+   "kind": "onboarding",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "age",
+     "say": "I'm 64 and I"
+    },
+    {
+     "asked": "sex",
+     "say": "am a woman"
+    }
+   ],
+   "expect": {
+    "age": 64,
+    "sex": "female"
+   },
+   "quiet": [
+    0
+   ]
+  },
+  {
+   "id": "o03",
+   "kind": "onboarding",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "age",
+     "say": "I'm 64, I'm a"
+    },
+    {
+     "asked": "sex",
+     "say": "woman and I've never smoked"
+    }
+   ],
+   "expect": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never"
+   }
+  },
+  {
+   "id": "o04",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never"
+   },
+   "turns": [
+    {
+     "asked": "height_cm",
+     "say": "about five foot four and"
+    },
+    {
+     "asked": "weight_kg",
+     "say": "a hundred and forty six pounds"
+    }
+   ],
+   "expect": {
+    "height_cm": 162.6,
+    "weight_kg": 66.2
+   }
+  },
+  {
+   "id": "o05",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never",
+    "height_cm": 162.6
+   },
+   "turns": [
+    {
+     "asked": "weight_kg",
+     "say": "I weigh about 146 and I"
+    },
+    {
+     "asked": "sleep_hours",
+     "say": "sleep around seven hours"
+    }
+   ],
+   "expect": {
+    "weight_kg": 66.2,
+    "sleep_hours": 7
+   }
+  },
+  {
+   "id": "o06",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64
+   },
+   "turns": [
+    {
+     "asked": "sex",
+     "say": "and I never smoked"
+    }
+   ],
+   "expect": {
+    "smoking_status": "never"
+   },
+   "ends_on": "sex"
+  },
+  {
+   "id": "o07",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64
+   },
+   "turns": [
+    {
+     "asked": "smoking_status",
+     "say": "I'm a woman"
+    }
+   ],
+   "expect": {
+    "sex": "female"
+   },
+   "ends_on": "smoking_status"
+  },
+  {
+   "id": "o08",
+   "kind": "onboarding",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "age",
+     "say": "and also"
+    }
+   ],
+   "expect": {},
+   "ends_on": "age",
+   "quiet": [
+    0
+   ]
+  },
+  {
+   "id": "o09",
+   "kind": "onboarding",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "age",
+     "say": "um so"
+    }
+   ],
+   "expect": {},
+   "ends_on": "age",
+   "quiet": [
+    0
+   ]
+  },
+  {
+   "id": "o10",
+   "kind": "onboarding",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "age",
+     "say": "I'm 64"
+    },
+    {
+     "asked": "sex",
+     "say": "and also"
+    }
+   ],
+   "expect": {
+    "age": 64
+   },
+   "ends_on": "sex",
+   "quiet": [
+    1
+   ]
+  },
+  {
+   "id": "o11",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never"
+   },
+   "turns": [
+    {
+     "asked": "height_cm",
+     "say": "5'4, 66 kilos"
+    }
+   ],
+   "expect": {
+    "height_cm": 162.6,
+    "weight_kg": 66
+   }
+  },
+  {
+   "id": "o12",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never"
+   },
+   "turns": [
+    {
+     "asked": "height_cm",
+     "say": "one sixty two centimeters and 146 pounds"
+    }
+   ],
+   "expect": {
+    "height_cm": 162,
+    "weight_kg": 66.2
+   }
+  },
+  {
+   "id": "o13",
+   "kind": "onboarding",
+   "setup": {
+    "age": 50,
+    "sex": "male",
+    "smoking_status": "never"
+   },
+   "turns": [
+    {
+     "asked": "height_cm",
+     "say": "six foot one, 190 pounds"
+    }
+   ],
+   "expect": {
+    "height_cm": 185.4,
+    "weight_kg": 86.2
+   }
+  },
+  {
+   "id": "o14",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female"
+   },
+   "turns": [
+    {
+     "asked": "smoking_status",
+     "say": "never, oh and I'm actually 65"
+    }
+   ],
+   "expect": {
+    "smoking_status": "never",
+    "age": 65
+   }
+  },
+  {
+   "id": "o15",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never",
+    "height_cm": 162.6,
+    "weight_kg": 66.2
+   },
+   "turns": [
+    {
+     "asked": "sleep_hours",
+     "say": "about 7 hours, and I weigh 150 pounds, not 146"
+    }
+   ],
+   "expect": {
+    "sleep_hours": 7,
+    "weight_kg": 68
+   }
+  },
+  {
+   "id": "o16",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never",
+    "height_cm": 162.6,
+    "weight_kg": 66.2
+   },
+   "turns": [
+    {
+     "asked": "sleep_hours",
+     "say": "7 hours and I'd say my health is good"
+    }
+   ],
+   "expect": {
+    "sleep_hours": 7,
+    "general_health": "good"
+   }
+  },
+  {
+   "id": "o17",
+   "kind": "onboarding",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "age",
+     "say": "64, and I have high blood pressure"
+    }
+   ],
+   "expect": {
+    "age": 64,
+    "hypertension_diagnosed": true
+   }
+  },
+  {
+   "id": "o18",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female"
+   },
+   "turns": [
+    {
+     "asked": "smoking_status",
+     "say": "my husband smokes"
+    }
+   ],
+   "expect": {},
+   "ends_on": "smoking_status",
+   "quiet": [
+    0
+   ]
+  },
+  {
+   "id": "o19",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female"
+   },
+   "turns": [
+    {
+     "asked": "smoking_status",
+     "say": "my husband smokes but I never have"
+    }
+   ],
+   "expect": {
+    "smoking_status": "never"
+   }
+  },
+  {
+   "id": "o20",
+   "kind": "onboarding",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "age",
+     "say": "my wife is 62"
+    }
+   ],
+   "expect": {},
+   "ends_on": "age"
+  },
+  {
+   "id": "o21",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never",
+    "height_cm": 162.6
+   },
+   "turns": [
+    {
+     "asked": "weight_kg",
+     "say": "my husband weighs 200 pounds, I'm about 150"
+    }
+   ],
+   "expect": {
+    "weight_kg": 68
+   }
+  },
+  {
+   "id": "o22",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never"
+   },
+   "turns": [
+    {
+     "asked": "weight_kg",
+     "say": "I don't know my weight but I'm 5'4"
+    }
+   ],
+   "expect": {
+    "height_cm": 162.6
+   },
+   "unknown": [
+    "weight_kg"
+   ]
+  },
+  {
+   "id": "o23",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never"
+   },
+   "turns": [
+    {
+     "asked": "height_cm",
+     "say": "not sure, I weigh 146 pounds"
+    }
+   ],
+   "expect": {
+    "weight_kg": 66.2
+   },
+   "unknown": [
+    "height_cm"
+   ]
+  },
+  {
+   "id": "o24",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64
+   },
+   "turns": [
+    {
+     "asked": "sex",
+     "say": "about 7"
+    }
+   ],
+   "expect": {},
+   "ends_on": "sex"
+  },
+  {
+   "id": "o25",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never",
+    "height_cm": 162.6,
+    "weight_kg": 66.2
+   },
+   "turns": [
+    {
+     "asked": "sleep_hours",
+     "say": "about 7"
+    }
+   ],
+   "expect": {
+    "sleep_hours": 7
+   }
+  },
+  {
+   "id": "o26",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never",
+    "height_cm": 162.6,
+    "weight_kg": 66.2,
+    "sleep_hours": 7
+   },
+   "turns": [
+    {
+     "asked": "general_health",
+     "say": "about 7"
+    }
+   ],
+   "expect": {},
+   "ends_on": "general_health"
+  },
+  {
+   "id": "o27",
+   "kind": "onboarding",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "age",
+     "say": "I'm 64, a woman, about five foot four and 146 pounds, and I never smoked"
+    }
+   ],
+   "expect": {
+    "age": 64,
+    "sex": "female",
+    "height_cm": 162.6,
+    "weight_kg": 66.2,
+    "smoking_status": "never"
+   }
+  },
+  {
+   "id": "o28",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never",
+    "height_cm": 162.6
+   },
+   "turns": [
+    {
+     "asked": "weight_kg",
+     "say": "I weigh 146 and I sleep 7 hours"
+    }
+   ],
+   "expect": {
+    "weight_kg": 66.2,
+    "sleep_hours": 7
+   },
+   "ends_on": "general_health"
+  },
+  {
+   "id": "o29",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never",
+    "height_cm": 162.6
+   },
+   "turns": [
+    {
+     "asked": "weight_kg",
+     "say": "I weigh a hundred and"
+    },
+    {
+     "asked": "sleep_hours",
+     "say": "forty six pounds"
+    }
+   ],
+   "expect": {}
+  },
+  {
+   "id": "o30",
+   "kind": "onboarding",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "age",
+     "say": "I'm 64 and my"
+    },
+    {
+     "asked": "sex",
+     "say": "weight is 146 pounds"
+    }
+   ],
+   "expect": {
+    "age": 64,
+    "weight_kg": 66.2
+   }
+  },
+  {
+   "id": "o31",
+   "kind": "onboarding",
+   "setup": {
+    "sex": "female"
+   },
+   "turns": [
+    {
+     "asked": "smoking_status",
+     "say": "I used to smoke, quit ten years ago, and I'm 64"
+    }
+   ],
+   "expect": {
+    "smoking_status": "former",
+    "age": 64
+   }
+  },
+  {
+   "id": "o32",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "smoking_status": "never"
+   },
+   "turns": [
+    {
+     "asked": "sex",
+     "say": "female, and I don't know my height"
+    }
+   ],
+   "expect": {
+    "sex": "female"
+   },
+   "unknown": [
+    "height_cm"
+   ]
+  },
+  {
+   "id": "o33",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never"
+   },
+   "turns": [
+    {
+     "asked": "height_cm",
+     "say": "5'4. Actually I'm 65 not 64"
+    }
+   ],
+   "expect": {
+    "height_cm": 162.6,
+    "age": 65
+   }
+  },
+  {
+   "id": "o34",
+   "kind": "onboarding",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "age",
+     "say": "I'm 64, my husband is 70"
+    }
+   ],
+   "expect": {
+    "age": 64
+   }
+  },
+  {
+   "id": "o35",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never",
+    "height_cm": 162.6,
+    "weight_kg": 66.2
+   },
+   "turns": [
+    {
+     "asked": "sleep_hours",
+     "say": "I sleep 7 hours but my husband sleeps 5"
+    }
+   ],
+   "expect": {
+    "sleep_hours": 7
+   }
+  },
+  {
+   "id": "o36",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female",
+    "smoking_status": "never",
+    "height_cm": 162.6
+   },
+   "turns": [
+    {
+     "asked": "weight_kg",
+     "say": "146, um so"
+    }
+   ],
+   "expect": {
+    "weight_kg": 66.2
+   }
+  },
+  {
+   "id": "o37",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64
+   },
+   "turns": [
+    {
+     "asked": "sex",
+     "say": "female and"
+    }
+   ],
+   "expect": {
+    "sex": "female"
+   }
+  },
+  {
+   "id": "o38",
+   "kind": "onboarding",
+   "setup": {
+    "age": 64,
+    "sex": "female"
+   },
+   "turns": [
+    {
+     "asked": "smoking_status",
+     "say": "never smoked, and also"
+    }
+   ],
+   "expect": {
+    "smoking_status": "never"
+   }
+  },
+  {
+   "id": "q01",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "about 6 hours, and I did a 30 minute HIIT class and walked 20 minutes"
+    }
+   ],
+   "expect": {
+    "sleep_hours_last_night": 6,
+    "vigorous_recreation_min": 30,
+    "moderate_recreation_min": 20
+   }
+  },
+  {
+   "id": "q02",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "I slept about six hours and"
+    },
+    {
+     "asked": "vigorous_recreation_min",
+     "say": "then I walked for 20 minutes"
+    }
+   ],
+   "expect": {
+    "sleep_hours_last_night": 6,
+    "moderate_recreation_min": 20
+   },
+   "quiet": [
+    0
+   ]
+  },
+  {
+   "id": "q03",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "about 6 hours but then I"
+    },
+    {
+     "asked": "vigorous_recreation_min",
+     "say": "did a hard 30 minute run"
+    }
+   ],
+   "expect": {
+    "sleep_hours_last_night": 6,
+    "vigorous_recreation_min": 30
+   }
+  },
+  {
+   "id": "q04",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "and also"
+    }
+   ],
+   "expect": {},
+   "ends_on": "sleep_hours_last_night",
+   "quiet": [
+    0
+   ]
+  },
+  {
+   "id": "q05",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "um so"
+    }
+   ],
+   "expect": {},
+   "ends_on": "sleep_hours_last_night",
+   "quiet": [
+    0
+   ]
+  },
+  {
+   "id": "q06",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "vigorous_recreation_min",
+     "say": "my husband did a 30 minute run"
+    }
+   ],
+   "expect": {},
+   "ends_on": "vigorous_recreation_min"
+  },
+  {
+   "id": "q07",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "vigorous_recreation_min",
+     "say": "my husband ran, I walked 20 minutes"
+    }
+   ],
+   "expect": {
+    "moderate_recreation_min": 20
+   }
+  },
+  {
+   "id": "q08",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "not sure about sleep, but I walked 20 minutes"
+    }
+   ],
+   "expect": {
+    "moderate_recreation_min": 20
+   },
+   "unknown": [
+    "sleep_hours_last_night"
+   ]
+  },
+  {
+   "id": "q09",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "about 6 hours"
+    },
+    {
+     "asked": "vigorous_recreation_min",
+     "say": "nothing, I didn't do any exercise"
+    },
+    {
+     "asked": "sedentary_min_day",
+     "say": "about 5 hours, oh and I actually slept 7"
+    }
+   ],
+   "expect": {
+    "sleep_hours_last_night": 7,
+    "vigorous_recreation_min": 0,
+    "moderate_recreation_min": 0,
+    "sedentary_min_day": 300
+   }
+  },
+  {
+   "id": "q10",
+   "kind": "quick",
+   "setup": {
+    "sleep_hours_last_night": 7
+   },
+   "turns": [
+    {
+     "asked": "vigorous_recreation_min",
+     "say": "a 45 minute run and I walked for an hour"
+    }
+   ],
+   "expect": {
+    "vigorous_recreation_min": 45,
+    "moderate_recreation_min": 60
+   }
+  },
+  {
+   "id": "q11",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "7 hours, and I sat about 8 hours"
+    }
+   ],
+   "expect": {
+    "sleep_hours_last_night": 7,
+    "sedentary_min_day": 480
+   },
+   "ends_on": "vigorous_recreation_min"
+  },
+  {
+   "id": "q12",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "about 7"
+    }
+   ],
+   "expect": {
+    "sleep_hours_last_night": 7
+   }
+  },
+  {
+   "id": "q13",
+   "kind": "quick",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "7 hours"
+    },
+    {
+     "asked": "vigorous_recreation_min",
+     "say": "and I sat about 9 hours"
+    }
+   ],
+   "expect": {
+    "sleep_hours_last_night": 7,
+    "sedentary_min_day": 540
+   },
+   "ends_on": "vigorous_recreation_min"
+  },
+  {
+   "id": "d01",
+   "kind": "daily",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "about 7 hours and 30 minutes of walking"
+    }
+   ],
+   "expect": {
+    "sleep_hours_last_night": 7,
+    "exercise_minutes_today": 30
+   }
+  },
+  {
+   "id": "d02",
+   "kind": "daily",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "I slept about 7 and"
+    },
+    {
+     "asked": "exercise_minutes_today",
+     "say": "a half hour walk"
+    }
+   ],
+   "expect": {
+    "sleep_hours_last_night": 7,
+    "exercise_minutes_today": 30
+   },
+   "quiet": [
+    0
+   ]
+  },
+  {
+   "id": "d03",
+   "kind": "daily",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "exercise_minutes_today",
+     "say": "and also"
+    }
+   ],
+   "expect": {},
+   "ends_on": "exercise_minutes_today",
+   "quiet": [
+    0
+   ]
+  },
+  {
+   "id": "d04",
+   "kind": "daily",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "wellbeing",
+     "say": "about 7"
+    }
+   ],
+   "expect": {},
+   "ends_on": "wellbeing"
+  },
+  {
+   "id": "d05",
+   "kind": "daily",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "exercise_minutes_today",
+     "say": "my wife went for a walk"
+    }
+   ],
+   "expect": {},
+   "ends_on": "exercise_minutes_today"
+  },
+  {
+   "id": "d06",
+   "kind": "daily",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "can't remember, but I feel pretty good"
+    }
+   ],
+   "expect": {
+    "wellbeing": "good"
+   },
+   "unknown": [
+    "sleep_hours_last_night"
+   ]
+  },
+  {
+   "id": "d07",
+   "kind": "daily",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours_last_night",
+     "say": "about 7 hours"
+    },
+    {
+     "asked": "exercise_minutes_today",
+     "say": "um so"
+    }
+   ],
+   "expect": {
+    "sleep_hours_last_night": 7
+   },
+   "ends_on": "exercise_minutes_today",
+   "quiet": [
+    1
+   ]
+  },
+  {
+   "id": "w01",
+   "kind": "weekly",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours",
+     "say": "about 7 hours and I weigh 150 pounds"
+    }
+   ],
+   "expect": {
+    "sleep_hours": 7,
+    "weight_kg": 68
+   }
+  },
+  {
+   "id": "w02",
+   "kind": "weekly",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "alcohol_drinks_weekly",
+     "say": "about 3 drinks, and I don't smoke"
+    }
+   ],
+   "expect": {
+    "alcohol_drinks_weekly": 3,
+    "smoking_status": "never"
+   }
+  },
+  {
+   "id": "w03",
+   "kind": "weekly",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "weight_kg",
+     "say": "my husband smokes"
+    }
+   ],
+   "expect": {},
+   "ends_on": "weight_kg"
+  },
+  {
+   "id": "w04",
+   "kind": "weekly",
+   "setup": {},
+   "turns": [
+    {
+     "asked": "sleep_hours",
+     "say": "about 7 hours and"
+    },
+    {
+     "asked": "vigorous_recreation_min_week",
+     "say": "um so"
+    }
+   ],
+   "expect": {
+    "sleep_hours": 7
+   },
+   "quiet": [
+    1
+   ]
+  }
+ ]
+}
