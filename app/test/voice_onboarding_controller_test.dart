@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/voice/fakes.dart';
@@ -14,6 +15,76 @@ class Rig {
 }
 
 void main() {
+  group('end of turn', () {
+    /// Consent given and listening, inside [fa].
+    Rig listening(FakeAsync fa) {
+      final r = Rig();
+      r.c.answerConsent(true);
+      fa.flushMicrotasks();
+      r.c.startTalk();
+      fa.flushMicrotasks();
+      expect(r.c.phase, VoicePhase.listening);
+      return r;
+    }
+
+    test('the limits live in one place', () {
+      expect(voiceEndOfTurn, const Duration(milliseconds: 2500));
+      expect(voiceQuietClose, const Duration(seconds: 8));
+      expect(VoiceOnboardingController.endOfTurn, voiceEndOfTurn);
+      expect(VoiceOnboardingController.silenceLimit, voiceQuietClose);
+    });
+
+    test('after words: no send at 2.4 s of quiet, sent at 2.5 s', () {
+      fakeAsync((fa) {
+        final r = listening(fa);
+        r.input.onCaption!('I am 70');
+        fa.elapse(const Duration(milliseconds: 2400));
+        expect(r.input.finishes, 0);
+        expect(r.c.phase, VoicePhase.listening);
+        fa.elapse(const Duration(milliseconds: 100));
+        expect(r.input.finishes, 1);
+        expect(r.guide.calls.last['fromTranscript'], true);
+      });
+    });
+
+    test('a new partial restarts the wait, even with the same words', () {
+      fakeAsync((fa) {
+        final r = listening(fa);
+        r.input.onCaption!('I am');
+        fa.elapse(const Duration(seconds: 2));
+        r.input.onCaption!('I am');
+        fa.elapse(const Duration(milliseconds: 2400));
+        expect(r.input.finishes, 0);
+        fa.elapse(const Duration(milliseconds: 100));
+        expect(r.input.finishes, 1);
+      });
+    });
+
+    test('before the first word only the 8 s close applies', () {
+      fakeAsync((fa) {
+        final r = listening(fa);
+        r.input.onCaption!(''); // nothing heard yet
+        fa.elapse(const Duration(milliseconds: 7900));
+        expect(r.input.finishes, 0);
+        expect(r.c.phase, VoicePhase.listening);
+        fa.elapse(const Duration(milliseconds: 100));
+        expect(r.input.finishes, 1);
+      });
+    });
+
+    test('a tap still sends at once', () {
+      fakeAsync((fa) {
+        final r = listening(fa);
+        r.input.onCaption!('I am 70');
+        r.c.stopTalk();
+        fa.flushMicrotasks();
+        expect(r.input.finishes, 1);
+        fa.elapse(const Duration(seconds: 5));
+        expect(r.input.finishes, 1, reason: 'the end-of-turn wait was dropped');
+      });
+    });
+  });
+
   test('happy path: consent, ask, talk, confirm, done', () async {
     final r = Rig();
     await r.c.answerConsent(true);

@@ -123,7 +123,9 @@ class CheckinController extends ChangeNotifier {
   /// Good weeks so far and check-in days this week, after this check-in is saved.
   WeekProgress? progress;
 
-  static const silenceLimit = Duration(seconds: 8);
+  static const silenceLimit = voiceQuietClose; // before the first word
+  static const endOfTurn = voiceEndOfTurn; // after a word: send once this quiet
+  Timer? _endOfTurnTimer;
   static const listenLimit = Duration(seconds: 30);
   static const _micStartLimit = Duration(seconds: 10);
   static const _micFinishLimit = Duration(seconds: 20);
@@ -300,6 +302,7 @@ class CheckinController extends ChangeNotifier {
           .start((text) {
             if (text != caption) _silentSeconds = 0;
             _set(() => caption = text);
+            _armEndOfTurn(text);
           }, onDropped: (_) => _inputDropped())
           .timeout(_micStartLimit);
       if (phase == CheckinPhase.listening) _startListenClock();
@@ -361,6 +364,18 @@ class CheckinController extends ChangeNotifier {
   void _stopListenClock() {
     _listenClock?.cancel();
     _listenClock = null;
+    _endOfTurnTimer?.cancel();
+    _endOfTurnTimer = null;
+  }
+
+  /// Every caption (a new partial or final) restarts the end-of-turn wait, once a word is heard.
+  void _armEndOfTurn(String text) {
+    if (text.trim().isEmpty) return;
+    _endOfTurnTimer?.cancel();
+    _endOfTurnTimer = Timer(endOfTurn, () {
+      _endOfTurnTimer = null;
+      if (phase == CheckinPhase.listening) unawaited(stopTalk());
+    });
   }
 
   /// Closes the microphone and sends what was heard.

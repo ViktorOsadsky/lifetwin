@@ -106,7 +106,9 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   /// The microphone closes by itself after this long with no new words, or
   /// after [listenLimit] in all, so it is never left open by mistake.
-  static const silenceLimit = Duration(seconds: 8);
+  static const silenceLimit = voiceQuietClose; // before the first word
+  static const endOfTurn = voiceEndOfTurn; // after a word: send once this quiet
+  Timer? _endOfTurnTimer;
   static const listenLimit = Duration(seconds: 30);
   Timer? _listenClock;
   int _listenedSeconds = 0;
@@ -315,6 +317,7 @@ class VoiceOnboardingController extends ChangeNotifier {
           .start((text) {
             if (text != caption) _silentSeconds = 0;
             _set(() => caption = text);
+            _armEndOfTurn(text);
           }, onDropped: (_) => _inputDropped())
           .timeout(_micStartLimit);
       if (phase == VoicePhase.listening) _startListenClock();
@@ -377,6 +380,18 @@ class VoiceOnboardingController extends ChangeNotifier {
   void _stopListenClock() {
     _listenClock?.cancel();
     _listenClock = null;
+    _endOfTurnTimer?.cancel();
+    _endOfTurnTimer = null;
+  }
+
+  /// Every caption (a new partial or final) restarts the end-of-turn wait, once a word is heard.
+  void _armEndOfTurn(String text) {
+    if (text.trim().isEmpty) return;
+    _endOfTurnTimer?.cancel();
+    _endOfTurnTimer = Timer(endOfTurn, () {
+      _endOfTurnTimer = null;
+      if (phase == VoicePhase.listening) unawaited(stopTalk());
+    });
   }
 
   /// Closes the microphone and sends what was heard.

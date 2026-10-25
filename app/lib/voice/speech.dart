@@ -3,6 +3,13 @@ import 'dart:async';
 /// Voice is only input/output around the server-run conversation.
 /// Everything the UI knows about voice goes through these interfaces.
 
+/// End of turn while listening, for onboarding and check-ins alike. Before any word is heard,
+/// the microphone closes after [voiceQuietClose] of quiet. Once a word has been heard, what
+/// was said is sent after [voiceEndOfTurn] with the transcript unchanged and no new partials.
+/// A tap still sends at once.
+const voiceQuietClose = Duration(seconds: 8);
+const voiceEndOfTurn = Duration(milliseconds: 2500);
+
 /// Voice cannot be used right now (server says off, no token, provider down).
 /// The app falls back to typing.
 class VoiceUnavailableException implements Exception {
