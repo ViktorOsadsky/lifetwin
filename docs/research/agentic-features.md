@@ -34,6 +34,7 @@ Timing: Devpost lists submission for the morning of Oct 25 ([event snapshot](../
 - **The server is stateless and nothing persists on the app yet.** `app/lib` has no file, Keychain or database writes, and PR #43 has the client resend previous answers. The memory store is therefore new work. Nothing has to be migrated.
 - **The server already routes Muse through `LLM_BASE_URL=https://api.meta.ai/v1`, `muse-spark-1.3`.** Meta's model page says standard mode content "is not used to train Meta models"; the `-contributor` variants may be. It gives no retention period ([Meta models](https://dev.meta.ai/docs/models)). Muse Spark 1.3 has a 1,048,576-token context, so context size is never the constraint; minimisation is.
 - **Existing rules apply as they stand.** No causal claims; no death dates or "years gained"; supplements get no invented benefit (AGENTS.md, MASTER_PLAN "Research and plan generation"); the 911 emergency line exists (PR #43); keys stay on the server; raw profiles stay out of logs.
+  - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [docs/lifespan-estimate.md](../lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else.
 
 ---
 
