@@ -186,17 +186,25 @@ void main() {
     expect(a.percentByYear, isEmpty);
   });
 
-  test('under 30 or over 85: no number', () {
-    for (final age in [29, 86]) {
+  test('over 85: no number', () {
+    for (final age in [86]) {
       final a = model.assess({...appProfileFor(_golden0()), 'age': age});
       expect(a.status, 'unsupported_age');
-      expect(a.message, 'Annual estimates support ages 30–85 only.');
+      expect(a.message, 'Annual estimates support ages 18–85 only.');
       expect(a.percentByYear, isEmpty);
     }
   });
 
-  test('30–34 and 80–85 give a number flagged extrapolated, with the caveat', () {
-    for (final age in [30, 34, 80, 85]) {
+  test('under 18: under_age, no number', () {
+    final a = model.assess({...appProfileFor(_golden0()), 'age': 17});
+    expect(a.status, 'under_age');
+    expect(a.message, underAgeMessage);
+    expect(a.percentByYear, isEmpty);
+    expect(a.healthScoreStatus, HealthScoreStatus.underAge);
+  });
+
+  test('18–34 and 80–85 give a number flagged extrapolated, with the caveat', () {
+    for (final age in [18, 25, 30, 34, 80, 85]) {
       final a = model.assess({...appProfileFor(_golden0()), 'age': age});
       expect(a.status, 'available', reason: 'age $age');
       expect(a.extrapolated, isTrue);
