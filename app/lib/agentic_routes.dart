@@ -30,14 +30,20 @@ class AgenticRoutes {
     CheckinGuide? guide,
     ChangeClient? changeClient,
     this.healthSamples,
-  }) : guide = guide ?? HttpCheckinClient(base: api),
+    // ignore: prefer_initializing_formals
+  }) : _guide = guide,
+       _api = api,
        changeClient = changeClient ?? HttpChangeClient(base: api);
 
   final ValueListenable<TwinAppearance> look;
 
   /// The onboarding conversation, for its speech input and output and the person's choice of voice.
   final VoiceOnboardingController Function() voice;
-  final CheckinGuide guide;
+  final CheckinGuide? _guide;
+  final ApiBase _api;
+
+  /// The check-in server; it is told the profile's age so Mochi's examples fit.
+  late final CheckinGuide guide = _guide ?? HttpCheckinClient(base: _api, age: () => repo?.profile['age']);
   final ChangeClient changeClient;
 
   /// Apple Health samples already allowed by the person; null when Health is not connected.

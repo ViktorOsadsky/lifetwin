@@ -15,6 +15,7 @@ import '../support/app_fonts.dart';
 import 'package:lifesim/voice/fakes.dart';
 
 import '../checkin_controller_test.dart' show FakeCheckinGuide;
+import 'readback_flow_test.dart' show ContractGuide;
 
 const profile = {
   'age': 55,
@@ -51,7 +52,7 @@ void main() {
 
   group('the Room entry and the quick check-in, end to end', () {
     late TwinRepository repo;
-    late FakeCheckinGuide guide;
+    late dynamic guide;
     final opened = <Uri>[];
 
     Future<void> pumpRoom(WidgetTester t) async {
@@ -118,31 +119,29 @@ void main() {
       'tapping it opens the flow; a tapped answer needs no confirm; finishing records it ONCE and marks it done',
       (t) async {
         repo = await repoWith(profile);
+        guide = ContractGuide();
         await pumpRoom(t);
         await t.tap(find.text('Check in'));
         await t.pumpAndSettle();
         expect(find.textContaining('How did you sleep last night?'), findsWidgets);
         expect(find.text('Skip'), findsOneWidget);
-        // Typed answers are read back, as the server asks.
         await t.enterText(find.byType(TextField), '7 hours');
         await t.testTextInput.receiveAction(TextInputAction.send);
         await t.pumpAndSettle();
-        expect(find.text('Yes'), findsOneWidget);
-        expect(find.text('Not quite'), findsOneWidget);
-        await t.tap(find.text('Yes'));
-        await t.pumpAndSettle();
-        expect(repo.store.checkins, isEmpty, reason: 'nothing is saved before the check-in finishes');
-        // A tapped answer is the answer: no Yes / Not quite to press.
-        expect(find.text('About 6 hours'), findsOneWidget);
+        // One read-back at the end, not one per answer.
+        expect(find.text('Yes'), findsNothing);
+        expect(find.text('Not quite'), findsNothing);
+        expect(repo.store.checkins, isEmpty);
         await t.tap(find.text('About 6 hours'));
         await t.pumpAndSettle();
-        expect(find.text('Not quite'), findsNothing);
-        expect(find.text('Yes'), findsNothing);
+        expect(find.text('Looks right'), findsOneWidget);
+        expect(repo.store.checkins, isEmpty, reason: 'nothing is saved before the yes');
+        await t.tap(find.text('Looks right'));
+        await t.pumpAndSettle();
         // Finished: recorded exactly once.
         expect(repo.store.checkins, hasLength(1));
         expect(repo.store.checkins.single.kind, 'quick');
         expect(repo.history().where((e) => e.kind == HistoryKind.quick), hasLength(1));
-        expect(guide.calls.where((c) => c['action'] == 'confirm'), hasLength(2));
         expect(find.text('Back to my room'), findsOneWidget);
         await t.tap(find.text('Back to my room'));
         await t.pumpAndSettle();

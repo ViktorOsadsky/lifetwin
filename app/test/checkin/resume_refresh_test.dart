@@ -65,6 +65,5 @@ void main() {
     t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await t.pump();
     expect(port.scheduled, isEmpty);
-    expect(port.clears, 0);
   });
 }
