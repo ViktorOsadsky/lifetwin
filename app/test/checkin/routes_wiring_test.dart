@@ -197,4 +197,32 @@ void main() {
     await t.pumpAndSettle();
     expect(find.byType(CheckInScreen), findsOneWidget);
   });
+
+  testWidgets('the band: Room pill -> pair screen -> recorded demo -> panel -> settings; delete unpairs', (t) async {
+    await pump(t);
+    await t.pumpWidget(
+      MaterialApp(
+        theme: lifeTwinTheme(),
+        builder: routes.wrap,
+        home: Builder(
+          builder: (c) => Scaffold(body: Column(children: routes.pills(c))),
+        ),
+      ),
+    );
+    expect(find.text('Add band'), findsOneWidget);
+    await t.tap(find.text('Add band'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Find my band'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Try again'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Try a recorded demo').first);
+    await t.pumpAndSettle();
+    expect(routes.band.demo, isTrue);
+    expect(find.textContaining('Recorded demo'), findsWidgets);
+    await t.ensureVisible(find.text('Band settings'));
+    await t.tap(find.text('Band settings'));
+    await t.pumpAndSettle();
+    expect(find.text('Recorded demo'), findsWidgets);
+  });
 }

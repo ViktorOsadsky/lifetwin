@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'band/band_screens.dart';
+import 'band/band_service.dart';
+import 'band/band_store.dart';
 import 'checkin/change_chat.dart';
 import 'checkin/check_in.dart';
 import 'checkin/checkin_client.dart';
@@ -34,12 +37,14 @@ class AgenticRoutes {
     ChangeClient? changeClient,
     this.healthSamples,
     CapabilitiesClient? capabilities,
+    BandClient? bandClient,
     this.onDeleted,
     // ignore: prefer_initializing_formals
   }) : _guide = guide,
        _api = api,
        changeClient = changeClient ?? HttpChangeClient(base: api),
-       capabilities = capabilities ?? HttpCapabilitiesClient(base: api);
+       capabilities = capabilities ?? HttpCapabilitiesClient(base: api),
+       _bandClient = bandClient ?? StubBandClient();
 
   final ValueListenable<TwinAppearance> look;
 
@@ -55,6 +60,7 @@ class AgenticRoutes {
   /// Apple Health samples already allowed by the person; null when Health is not connected.
   final Future<List<HealthSample>> Function()? healthSamples;
   final CapabilitiesClient capabilities;
+  final BandClient _bandClient;
 
   /// Called after "Delete my data" has wiped the phone, so the app shell forgets what it held in memory.
   final VoidCallback? onDeleted;
@@ -62,6 +68,10 @@ class AgenticRoutes {
 
   /// The AI consents; created once the repository has loaded.
   ConsentStore? consents;
+
+  /// The wristband (recorded demo only until a Bluetooth plugin exists) and what it suggests.
+  late final BandStore band = BandStore(_bandClient);
+  BandService? bandService;
   Future<AiProvider?>? _provider;
 
   /// The outside AI provider from `/api/capabilities` (asked once; null when none is set up).
@@ -71,6 +81,7 @@ class AgenticRoutes {
   void attach(TwinRepository r) {
     repo = r;
     consents ??= ConsentStore(r);
+    bandService ??= BandService(repository: r);
     // The forecast follows what the check-ins and the stored days say.
     r.refresh();
   }
@@ -96,13 +107,71 @@ class AgenticRoutes {
   }
 
   /// The Room's pills ("Still learning N", "What I see", "Try a change").
-  List<Widget> pills(BuildContext context) => roomPills(
-    repository: repo,
-    onExperiment: () => experiment(context),
-    onStillLearning: () => stillLearning(context),
-    onWellness: () => wellness(context),
-    onMyData: () => myData(context),
-  );
+  List<Widget> pills(BuildContext context) => [
+    ...roomPills(
+      repository: repo,
+      onExperiment: () => experiment(context),
+      onStillLearning: () => stillLearning(context),
+      onWellness: () => wellness(context),
+      onMyData: () => myData(context),
+    ),
+    if (repo != null) BandPill(store: band, onTap: () => bandFlow(context)),
+  ];
+
+  /// Wristband: pair (or try the recorded demo) -> panel -> weekly suggestion -> read-back, and settings.
+  void bandFlow(BuildContext context) {
+    final r = repo, svc = bandService;
+    if (r == null || svc == null) return;
+    final nav = Navigator.of(context);
+    void panel(NavigatorState n, {bool replace = false}) {
+      final route = MaterialPageRoute<void>(
+        builder: (page) => BandPanelScreen(
+          store: band,
+          service: svc,
+          onBack: () => Navigator.of(page).pop(),
+          onSettings: () => Navigator.of(page).push(
+            MaterialPageRoute<void>(
+              builder: (s) => BandSettingsScreen(store: band, onBack: () => Navigator.of(s).pop()),
+            ),
+          ),
+          onUseSuggestion: (suggestion) => Navigator.of(page).push(
+            MaterialPageRoute<void>(
+              builder: (s) => BandSuggestScreen(
+                service: svc,
+                store: band,
+                suggestion: suggestion,
+                appearance: look.value,
+                onBack: () => Navigator.of(s).pop(),
+                onUse: () => Navigator.of(s).pushReplacement(
+                  MaterialPageRoute<void>(
+                    builder: (b) => BandReadbackScreen(
+                      service: svc,
+                      suggestion: suggestion,
+                      appearance: look.value,
+                      onClose: () => Navigator.of(b).pop(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      replace ? n.pushReplacement(route) : n.push(route);
+    }
+
+    if (band.paired || band.demo) return panel(nav);
+    nav.push(
+      MaterialPageRoute<void>(
+        builder: (page) => BandPairScreen(
+          store: band,
+          appearance: look.value,
+          onClose: () => Navigator.of(page).pop(),
+          onSeeToday: () => panel(Navigator.of(page), replace: true),
+        ),
+      ),
+    );
+  }
 
   /// "Tell Mochi" and "Change": a short talk with Mochi about one saved answer (`/api/change/start` with
   /// `field`) or "What would you like to update?" (no field). Saves only after "Yes, save".
@@ -135,6 +204,7 @@ class AgenticRoutes {
           onWeeklyCheckIn: () => weeklyCheckIn(page),
           onReminders: () => reminders(page),
           onDeleted: () {
+            band.unpair().ignore();
             onDeleted?.call();
             Navigator.of(page).popUntil((route) => route.isFirst);
           },
