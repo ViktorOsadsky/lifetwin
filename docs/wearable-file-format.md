@@ -11,10 +11,10 @@ Accept UTF-8 JSON (`.json` or `.lifetwinband`), bounded to 5 MiB per delivery, a
 | Field | Meaning and validation |
 |---|---|
 | `schema` | Exactly `lifetwin.band_day.v0` |
-| `date`, `timezone_offset_minutes` | Actual `YYYY-MM-DD` calendar date and integer offset −840 to +840; retain the recorded date rather than the phone's current zone |
-| `generated_at` | Valid ISO timestamp with an explicit offset; this is export time, not a reconstructed observation timestamp |
+| `date`, `timezone_offset_minutes` | Actual `YYYY-MM-DD` calendar date and integer offset −840 to +840; retain the recorded date. At import it must not be after the phone's local today (the store clock is injectable) |
+| `generated_at` | Valid ISO timestamp with an explicit offset; must not be before the last covered minute on the report date, interpreted with `timezone_offset_minutes`. The export offset may differ from the record offset |
 | `device` | Bounded `mount` and `firmware` strings, positive integer `record_format`; preserve `thigh_pocket` as supplied rather than relabeling the hardware as wrist mounted |
-| `coverage` | Integer `minutes_recorded`, `wear_minutes` (0–1440), boolean `valid_day`, and first/last `HH:MM` within one date |
+| `coverage` | Integer `minutes_recorded`, `wear_minutes` (0–1440), boolean `valid_day`, and first/last `HH:MM` within one date. Recorded minutes cannot exceed the inclusive first-to-last span |
 | `minutes` | Integer counts for `sitting_or_lying`, `standing`, `walking_light`, `walking_moderate`, `running_vigorous`, `other_posture`, `not_worn`, `positions_not_saved` |
 | `moderate_vigorous_minutes` | Must equal `walking_moderate + running_vigorous`; separate classes remain available |
 | `steps`, `sit_to_stand_transitions`, `longest_sitting_minutes` | Bounded nonnegative daily counters; sensor estimates, without clinical interpretation |
@@ -23,6 +23,10 @@ Accept UTF-8 JSON (`.json` or `.lifetwinband`), bounded to 5 MiB per delivery, a
 | `synthetic_demo` | Optional app/demo annotation; `true` forces the entire import into recorded-demo mode |
 
 All category counts must sum to recorded minutes. Recorded minutes must equal wear plus non-wear. Classified posture plus `positions_not_saved` must equal wear. Each hourly category sum must be at most 60; hourly category/step totals must match the daily totals, with hourly walking equal to daily light plus moderate walking. Reject malformed dates, offsets, types, fractions, inconsistent flags/totals, missing fields, unsupported schemas and duplicate hours. Validation errors never echo health records or device metadata.
+
+Chronology uses inclusive minute buckets: `00:00` through `23:59` covers at most 1440 minutes and `08:00` through `08:30` at most 31. Gaps may remain unknown. A partial-day export may end at its actual last covered minute and be generated then; no end-of-day or midnight timestamp is required. Export and coverage timestamps are compared as instants after applying their own offsets, including across UTC date boundaries. The v0 offset is fixed for that report; it does not reconstruct daylight-saving transitions.
+
+The store reads its injected clock once per delivery and converts it to the phone's local calendar day. Future recorded dates are rejected even if their report offset differs from the phone's zone; accepted dates are not shifted into that zone. Entire deliveries validate before mutation, including explicit replacements: a future or inconsistent report leaves existing reports, live minutes and `lastSynced` unchanged. Failures contain generic reasons, never health values, recorded dates or device identifiers. The [chronology regression handoff](handoffs/band-file-chronology.md) records the follow-up to merged [#122](https://github.com/ViktorOsadsky/lifetwin/pull/122), which closed [#114](https://github.com/ViktorOsadsky/lifetwin/issues/114).
 
 The app also accepts a **local wrapper**, `{"schema":"lifetwin.band_days.v0","days":[...]}`, holding 1–14 complete daily reports. This is not a claim that firmware emits bundles. Duplicate dates in a delivery are rejected even when offsets differ. Different recorded dates around midnight/travel remain separate. The v0 daily format cannot disambiguate repeated daylight-saving hours or recover minute order; do not fabricate that detail.
 
