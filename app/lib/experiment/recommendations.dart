@@ -206,7 +206,8 @@ Map<String, dynamic> recommendationsRequestBody(
     'habit_notes': notes.skip(notes.length > 10 ? notes.length - 10 : 0).toList(),
     'outside_ai_consent': context['outside_ai_consent'],
     'local_date': ?localDate,
-    if (excludedIds.isNotEmpty) 'excluded_ids': excludedIds,
+    // The server takes at most 50; the hub hides the older ones itself.
+    if (excludedIds.isNotEmpty) 'excluded_ids': excludedIds.skip(excludedIds.length > 50 ? excludedIds.length - 50 : 0).toList(),
   };
 }
 

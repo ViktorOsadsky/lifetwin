@@ -110,7 +110,60 @@ class TwinStore extends ChangeNotifier {
         // An unreadable file is not guessed at; it is replaced on the next save.
       }
     }
-    return TwinStore._(b, doc);
+    return TwinStore._(b, doc).._dropUnreadable();
+  }
+
+  /// A file that parses but has a part of the wrong shape (a broken or older write) must not
+  /// stop LifeTwin opening. Each part that cannot be read is dropped (a list keeps its
+  /// readable entries); the rest is kept, and the file is replaced on the next save.
+  void _dropUnreadable() {
+    final reads = <String, void Function()>{
+      'profile': () => profile,
+      'profile_meta': () => profileMeta,
+      'twin': () => twin,
+      'ideas': () => ideasState,
+      'outside_ai_consent': () => [outsideAiConsent, outsideAiProvider],
+      'checkin_settings': () => checkinSettings,
+      'first_joined': () {
+        final day = firstJoined;
+        if (day != null) shiftDay(day, 0);
+      },
+    };
+    for (final e in reads.entries) {
+      try {
+        e.value();
+      } catch (_) {
+        _doc.remove(e.key);
+      }
+    }
+    final rows = <String, void Function(Map<String, dynamic>)>{
+      'checkins': (j) => shiftDay(CheckinEntry.fromJson(j).date, 0),
+      'daily_logs': (j) => shiftDay(DayLog.fromJson(j).date, 0),
+      'history': HistoryEntry.fromJson,
+      'health_score': HealthScorePoint.fromJson,
+      'habit_notes': (_) {},
+    };
+    for (final e in rows.entries) {
+      final raw = _doc[e.key];
+      if (raw == null) continue;
+      if (raw is! List) {
+        _doc.remove(e.key);
+        continue;
+      }
+      _doc[e.key] = [
+        for (final r in raw)
+          if (r is Map && _reads(() => e.value(Map<String, dynamic>.from(r)))) r,
+      ];
+    }
+  }
+
+  static bool _reads(void Function() read) {
+    try {
+      read();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Map<String, dynamic> get profile => Map<String, dynamic>.from(_doc['profile'] as Map? ?? const {});

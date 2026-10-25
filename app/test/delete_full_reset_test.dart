@@ -13,6 +13,8 @@ import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/ui/twin_appearance.dart';
 import 'package:lifesim/voice/fakes.dart';
+import 'package:lifesim/wellness/home_panel.dart' show CollapsibleHealthScore;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'checkin_controller_test.dart' show FakePort;
 import 'forecast_screen_test.dart' show FakeForecastClient, supportedJson;
@@ -214,6 +216,18 @@ void main() {
     await repo.deleteMyData();
     expect(backend.text, isNull);
     expect(repo.current, isNull);
+  });
+
+  testWidgets('no phone preference survives the reset (the health score folded away)', (t) async {
+    SharedPreferences.setMockInitialValues({});
+    await pumpApp(t);
+    await onboard(t);
+    await seedEverything();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(CollapsibleHealthScore.prefsKey, true);
+    await deleteMyData(t);
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    expect(prefs.getKeys(), isEmpty);
   });
 
   testWidgets('after the reset onboarding runs again from the start, with nothing pre-filled or skipped', (t) async {

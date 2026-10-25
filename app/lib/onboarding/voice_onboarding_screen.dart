@@ -381,6 +381,27 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     super.didChangeDependencies();
     c.screenReader = MediaQuery.accessibleNavigationOf(context);
     _route = ModalRoute.of(context);
+    _onTopChanged();
+  }
+
+  /// Another screen or sheet on top (an idea, a document, a dialog) closes the microphone
+  /// as leaving does, so words said there never answer the question below; back on top,
+  /// hands-free listens again by itself.
+  bool? _onTop;
+  void _onTopChanged() {
+    final onTop = _route?.isCurrent ?? true;
+    final was = _onTop;
+    _onTop = onTop;
+    if (was == null || was == onTop) return;
+    // After this frame: the controller's listeners rebuild, which must not happen mid-build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _onTop != onTop || !identical(c.mayListen, _mayListen)) return;
+      if (!onTop) {
+        c.pauseVoice();
+      } else if (_mayListenNow()) {
+        c.resumeVoice();
+      }
+    });
   }
 
   @override
