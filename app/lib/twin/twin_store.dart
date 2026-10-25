@@ -85,6 +85,7 @@ class MemoryBackend implements StoreBackend {
 /// - [memoryConsent]: the conversation's `memory_consent`; habit notes are kept only while true.
 /// - [outsideAiConsent]: the person's yes to outside-AI wording, for one provider; off by default.
 /// - [lifespanRevealSeen]: the one-time lifespan reveal was shown; a UI flag, not health data.
+/// - [lastPlan]: the coach's latest daily plan and its local date, the base for the next revision.
 ///
 /// Reads are public. Writes are private to this library, so the only write paths are the
 /// [TwinRepository] methods the owner allows (see lib/README-model.md, "Who may write").
@@ -130,6 +131,10 @@ class TwinStore extends ChangeNotifier {
   bool get memoryConsent => _doc['memory_consent'] == true;
   bool get lifespanRevealSeen => _doc['lifespan_reveal_seen'] == true;
 
+  /// Ideas for you, kept for the day on the phone: the last good answer (`date`, `response`), the ideas
+  /// hidden today (`hidden_date`, `hidden_ids`) and the day Mochi's bubble last showed (`bubble_date`).
+  Map<String, dynamic> get ideasState => Map<String, dynamic>.from(_doc['ideas'] as Map? ?? const {});
+
   /// The local date (`YYYY-MM-DD`) onboarding was first completed; set once. The weekly
   /// check-in opens 7 days after it. A date, not health data.
   /// When the pending "Remind me later" notification fires (local wall time, ISO), if any.
@@ -139,6 +144,10 @@ class TwinStore extends ChangeNotifier {
   }
 
   String? get firstJoined => _doc['first_joined'] as String?;
+
+  /// The coach's latest daily plan (`{date, plan}`, the local date it was given on), if any.
+  Map<String, dynamic>? get lastPlan =>
+      _doc['last_plan'] is Map ? Map<String, dynamic>.from(_doc['last_plan'] as Map) : null;
 
   /// The person's yes to outside-AI wording, and the provider it was given for
   /// (`{provider, on}`); off when absent.
@@ -190,6 +199,8 @@ class TwinStore extends ChangeNotifier {
 
   Future<void> _saveTwin(Map<String, dynamic> look) => _save('twin', look);
 
+  Future<void> _saveIdeasState(Map<String, dynamic> state) => _save('ideas', state);
+
   Future<void> _setRemindLater(String? at) async {
     if (at != null || remindLater != null) await _save('remind_later', at ?? '');
   }
@@ -197,6 +208,9 @@ class TwinStore extends ChangeNotifier {
   Future<void> _setFirstJoined(String day) => _save('first_joined', day);
 
   Future<void> _setLifespanRevealSeen() => _save('lifespan_reveal_seen', true);
+
+  Future<void> _setLastPlan(String date, Map<String, dynamic> plan) =>
+      _save('last_plan', {'date': date, 'plan': plan});
 
   /// Turning memory off deletes the stored habit notes.
   Future<void> _setMemoryConsent(bool consent) async {

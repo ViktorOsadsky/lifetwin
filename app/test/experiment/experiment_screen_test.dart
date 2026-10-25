@@ -4,9 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/experiment/experiment_screen.dart';
-import 'package:lifesim/experiment/ideas_screen.dart';
 import 'package:lifesim/experiment/lever_copy.dart';
-import 'package:lifesim/experiment/recommendations.dart';
 import 'package:lifesim/experiment/room_pills.dart';
 import 'package:lifesim/experiment/result_display.dart';
 import 'package:lifesim/experiment/side_by_side_screen.dart';
@@ -584,59 +582,6 @@ void main() {
       await t.tap(find.text('What I see'));
       await t.tap(find.text('Try a change'));
       expect((cards, tried), (1, 1));
-    });
-  });
-
-  group('ideas (Y-11, Y-14), behind a flag', () {
-    testWidgets('Mochi\'s own words; the source sheet has the engine text verbatim; quotes only with memory on', (
-      t,
-    ) async {
-      final repo = await repoWith(older);
-      await repo.applyMemoryConsent(true);
-      await repo.addHabitNote({'topic': 'exercise', 'text': 'I walk the dog after dinner'});
-      final ideas = await StubRecommendations(repo).load();
-      expect(ideas, isNotEmpty);
-      final activity = ideas.firstWhere((i) => i.wellnessCardId == 'activity');
-      expect(activity.habitNoteQuote, 'I walk the dog after dinner');
-      await pumpApp(
-        t,
-        IdeasScreen(
-          appearance: const TwinAppearance(),
-          ideas: ideas,
-          cards: repo.wellnessCards,
-          memoryOn: true,
-          onBack: () {},
-          onTry: (_) {},
-          open: fakeOpen,
-        ),
-      );
-      expect(find.text('Notebook on'), findsOneWidget);
-      expect(find.textContaining('You said: “I walk the dog after dinner”'), findsOneWidget);
-      final card = repo.wellnessCards.firstWhere((c) => c.id == 'activity');
-      expect(find.text(card.message), findsNothing); // not on the card, only in the source sheet
-      await t.ensureVisible(find.text('CDC: ${card.title}'));
-      await t.pump();
-      await t.tap(find.text('CDC: ${card.title}'));
-      await t.pumpAndSettle();
-      expect(find.text(card.message), findsOneWidget); // verbatim, in the source sheet
-      await t.tap(find.text('Close'));
-      await t.pumpAndSettle();
-      // Memory off: nothing is quoted and the row explains memory.
-      await pumpApp(
-        t,
-        IdeasScreen(
-          appearance: const TwinAppearance(),
-          ideas: ideas,
-          cards: repo.wellnessCards,
-          memoryOn: false,
-          onBack: () {},
-          onTry: (_) {},
-          onMemory: () {},
-          open: fakeOpen,
-        ),
-      );
-      expect(find.textContaining('You said'), findsNothing);
-      expect(find.text('Ideas that fit your day?'), findsOneWidget);
     });
   });
 

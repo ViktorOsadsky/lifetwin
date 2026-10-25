@@ -61,6 +61,9 @@ class CheckinTurn {
   bool get offersHealthValue =>
       phase == 'asking' && fromHealth && currentField != null && (state['suggested'] as Map?)?[currentField] != null;
 
+  /// `open_ideas` after "what should I do?": the app shows today's idea.
+  String? get clientAction => raw['client_action'] as String?;
+
   /// `slower` or `louder`, when the person asked for it.
   String? get speechHint => raw['speech_hint'] as String?;
 

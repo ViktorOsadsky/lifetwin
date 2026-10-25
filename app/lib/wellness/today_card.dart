@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../experiment/ideas_hub.dart';
 import '../experiment/widgets/source_link.dart';
 import '../ui/theme.dart';
 import '../widgets/whole_word_text.dart';
@@ -28,11 +29,16 @@ class TodayWithMochiCard extends StatefulWidget {
     this.condensed = false,
     this.trailing,
     this.onIdeas,
+    this.ideas,
     this.openUrl = defaultOpenUrl,
     this.acceptance,
+    this.initialPlan,
   });
 
   final CoachClient client;
+
+  /// The last plan this run saw: shown at once while the fresh one is fetched.
+  final DailyPlan? initialPlan;
   final Map<String, dynamic> Function() confirmedContext;
   final VoidCallback onOpen;
   final Future<void> Function()? beforeFirstPlan;
@@ -53,6 +59,10 @@ class TodayWithMochiCard extends StatefulWidget {
   /// "More ideas ›" (full card only; Home's compact card stays one short row). Null hides it (under 18).
   final VoidCallback? onIdeas;
 
+  /// Home's compact card: a second line, "Today's idea: {title} ›", opening that idea. Null (under 18)
+  /// or no featured idea: no line.
+  final IdeasAccess? ideas;
+
   @override
   State<TodayWithMochiCard> createState() => _TodayWithMochiCardState();
 }
@@ -60,6 +70,7 @@ class TodayWithMochiCard extends StatefulWidget {
 class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
   DailyPlan? _plan;
   bool _loading = true;
+  bool _disposed = false;
   bool _failed = false;
   bool _busy = false;
   final _chosen = <String, String>{};
@@ -67,7 +78,14 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
   @override
   void initState() {
     super.initState();
+    _plan = widget.initialPlan;
     _load();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -77,9 +95,12 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
       widget.onPlan?.call(plan);
       if (mounted) setState(() => _plan = plan);
     } catch (_) {
-      if (mounted) setState(() => _failed = true);
+      if (mounted && _plan == null) setState(() => _failed = true);
     } finally {
       if (mounted) setState(() => _loading = false);
+      // Today's idea for the second line (the day's cache, or one call) comes after the plan, so it never
+      // competes with the plan for the server or delays it.
+      if (!_disposed) widget.ideas?.hub.ensureToday();
     }
   }
 
@@ -226,26 +247,37 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
         label: 'Today with Mochi',
         child: WellnessCard(
           padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
-          child: InkWell(
-            onTap: widget.onOpen,
-            child: largeText
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      summary,
-                      const SizedBox(height: 8),
-                      Align(alignment: Alignment.centerRight, child: trailing),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Expanded(child: summary),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8, right: 6),
-                        child: trailing,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              InkWell(
+                onTap: widget.onOpen,
+                child: largeText
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          summary,
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: trailing,
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(child: summary),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8, right: 6),
+                            child: trailing,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+              ),
+              if (widget.ideas case final access?)
+                _IdeaLine(access: access, large: largeText),
+            ],
           ),
         ),
       );
@@ -275,7 +307,7 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
               ),
             ),
             const SizedBox(height: 8),
-            if (_loading)
+            if (_loading && plan == null)
               WholeWordText(todayFallbackLine, style: LtText.body())
             else if (!showRows)
               WholeWordText(
@@ -418,17 +450,100 @@ class _Row extends StatelessWidget {
   }
 }
 
+/// Home's second line on the compact Today card: "💡 Today's idea: {title} ›". It opens that idea's
+/// detail. A 48 pt target, one line (it wraps only at very large text); nothing when there is no idea.
+class _IdeaLine extends StatelessWidget {
+  const _IdeaLine({required this.access, required this.large});
+  final IdeasAccess access;
+  final bool large;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: access.hub,
+    builder: (context, _) {
+      final idea = access.hub.featured;
+      if (idea == null) return const SizedBox.shrink();
+      void open() => access.openIdea(context, idea);
+      return Semantics(
+        button: true,
+        label: 'Today’s idea: ${idea.title}',
+        excludeSemantics: true,
+        onTap: open,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Divider(height: 1, thickness: 1, color: LtColors.creamLip),
+            InkWell(
+              onTap: open,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.lightbulb_outline_rounded,
+                      size: 22,
+                      color: LtColors.ink,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Today’s idea: ',
+                              style: LtText.body(size: 17),
+                            ),
+                            TextSpan(
+                              text: idea.title,
+                              style: LtText.body(
+                                size: 17,
+                                weight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        maxLines: large ? null : 1,
+                        overflow: large
+                            ? TextOverflow.clip
+                            : TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 40,
+                      height: 48,
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        color: LtColors.ink,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
 /// "More ideas ›": opens Ideas for you. A 48pt target.
 class MoreIdeasLink extends StatelessWidget {
-  const MoreIdeasLink({super.key, required this.onTap});
+  const MoreIdeasLink({
+    super.key,
+    required this.onTap,
+    this.label = 'More ideas',
+  });
   final VoidCallback onTap;
+  final String label;
 
   @override
   Widget build(BuildContext context) => Align(
     alignment: Alignment.centerLeft,
     child: Semantics(
       button: true,
-      label: 'More ideas',
+      label: label,
       excludeSemantics: true,
       onTap: onTap,
       child: GestureDetector(
@@ -440,7 +555,7 @@ class MoreIdeasLink extends StatelessWidget {
             alignment: Alignment.centerLeft,
             widthFactor: 1,
             child: Text(
-              'More ideas ›',
+              '$label ›',
               style: LtText.body(weight: FontWeight.w700).copyWith(
                 decoration: TextDecoration.underline,
                 decorationThickness: 2,

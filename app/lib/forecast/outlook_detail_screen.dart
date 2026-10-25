@@ -18,11 +18,13 @@ class OutlookDetailScreen extends StatelessWidget {
     required this.profile,
     required this.onAddAnswer,
     this.healthKeys = const {},
+    this.documentKeys = const {},
   });
 
   final Forecast forecast;
   final Map<String, dynamic> profile;
   final Set<String> healthKeys;
+  final Set<String> documentKeys;
   final VoidCallback onAddAnswer;
 
   @override
@@ -72,8 +74,14 @@ class OutlookDetailScreen extends StatelessWidget {
                   label: label,
                   source: healthKeys.contains(key) || (key == 'systolic_bp' && healthKeys.contains('diastolic_bp'))
                       ? 'Apple Health'
+                      : documentKeys.contains(key)
+                      ? 'From a document'
                       : 'you told me',
-                  health: healthKeys.contains(key),
+                  icon: healthKeys.contains(key)
+                      ? Icons.favorite_border_rounded
+                      : documentKeys.contains(key)
+                      ? Icons.description_outlined
+                      : Icons.chat_bubble_outline_rounded,
                 ),
             ],
           ),
@@ -141,10 +149,10 @@ class _Section extends StatelessWidget {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({required this.label, required this.source, required this.health});
+  const _Row({required this.label, required this.source, required this.icon});
   final String label;
   final String source;
-  final bool health;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +178,7 @@ class _Row extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                health ? Icons.favorite_border_rounded : Icons.chat_bubble_outline_rounded,
+                icon,
                 size: 20,
                 color: LtColors.gold,
               ),
