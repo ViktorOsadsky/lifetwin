@@ -2,6 +2,7 @@
 
 import json
 from copy import deepcopy
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -232,3 +233,36 @@ def test_scoring_vectors_match_reference_reducer():
     for case in data["cases"]:
         expected = [step["expect"] for step in case["steps"]]
         assert list(replay(case, bank)) == expected, case["name"]
+
+
+@pytest.mark.parametrize("topic", ["sleep", "habits"])
+def test_additive_topics_are_valid_filters_before_content_arrives(client, topic):
+    response = client.get("/api/quiz/questions", params={"topic": topic})
+    assert response.status_code == 200
+    assert response.json()["questions"] == []
+
+
+@pytest.mark.parametrize("host", ["www.nhlbi.nih.gov", "www.nia.nih.gov"])
+def test_nih_citations_require_an_exact_reviewed_institute_host(host):
+    from lifetwin.quiz.models import QuizSource
+
+    source = QuizSource(
+        title="Reviewed NIH guidance",
+        publisher="NIH",
+        url=f"https://{host}/health/sleep",
+        accessed_on=date(2026, 10, 24),
+    )
+    assert source.publisher == "NIH"
+    for unsafe in [
+        f"http://{host}/health/sleep",
+        f"https://{host}.example.com/health/sleep",
+        f"https://{host}/health/sleep?redirect=https://example.com",
+        f"https://{host}/health/sleep#fragment",
+        f"https://user@{host}/health/sleep",
+        "https://unreviewed.nih.gov/health/sleep",
+        "https://www.cdc.gov/sleep/about/index.html",
+    ]:
+        with pytest.raises(ValidationError):
+            source.model_validate({**source.model_dump(), "url": unsafe})
+    with pytest.raises(ValidationError):
+        source.model_validate({**source.model_dump(), "publisher": "CDC"})
