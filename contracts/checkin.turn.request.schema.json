@@ -897,6 +897,19 @@
       "title": "Input Mode",
       "type": "string"
     },
+    "outside_ai_consent": {
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "propertyNames": {
+        "enum": [
+          "claude",
+          "muse"
+        ]
+      },
+      "title": "Outside Ai Consent",
+      "type": "object"
+    },
     "state": {
       "$ref": "#/$defs/CheckinState"
     },

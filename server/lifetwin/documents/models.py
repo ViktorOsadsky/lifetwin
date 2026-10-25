@@ -51,9 +51,11 @@ class DocumentExtractRequest(ApiModel):
     pages: list[Annotated[str, Field(max_length=MAX_PAGE_CHARS)]] = Field(
         min_length=1, max_length=MAX_PAGES
     )
-    # Only an explicit true allows Muse by Meta to read the (identifier-stripped)
-    # text; the person must have been told and agreed on the phone.
-    outside_ai_consent: bool = False
+    # The person's yes, for this document, to the active outside-AI provider reading the
+    # (identifier-stripped) text; they must have been told and agreed on the phone.
+    # Per provider: {"claude": true} or {"muse": true}. A bare true is the older app's
+    # yes to Muse by Meta and never covers another provider.
+    outside_ai_consent: bool | dict[Literal["claude", "muse"], bool] = False
 
 
 class DocumentCandidate(ApiModel):
@@ -72,7 +74,8 @@ class DocumentCandidate(ApiModel):
     # The heading the line sat under ("Vitals", "Assessment"), if any.
     section: str | None = Field(default=None, max_length=60)
     confidence: Literal["high", "medium", "low"]
-    method: Literal["parser", "muse"] = "parser"
+    # parser, or the outside-AI provider that pointed at the line (with consent).
+    method: Literal["parser", "muse", "claude"] = "parser"
 
 
 class DocumentExtractResponse(ApiModel):
