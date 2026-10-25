@@ -48,22 +48,6 @@ Map<String, dynamic> emptyDay({String date = '2026-10-24'}) {
   return day;
 }
 
-/// A strict expected failure (like pytest's xfail): the body must FAIL today. When the
-/// bug is fixed it passes, this test fails, and the wrapper should be removed.
-void knownBug(String name, String reason, dynamic Function() body) {
-  test('BUG (xfail) $name: $reason', () async {
-    var failed = false;
-    try {
-      await body();
-    } on TestFailure {
-      failed = true;
-    }
-    if (!failed) {
-      fail('XPASS: the bug looks fixed; remove knownBug for "$name"');
-    }
-  });
-}
-
 void rejects(Uint8List input, {String? why}) {
   expect(
     () => parseBandFile(input),
@@ -359,15 +343,11 @@ void main() {
   });
 
   group('coverage must be physically possible', () {
-    knownBug(
-      'recorded minutes beyond the first-to-last window',
-      '720 recorded minutes inside an 08:00-08:30 window is accepted',
-      () {
-        final data = sample();
-        data['coverage']['last_minute'] = '08:30';
-        rejects(bytes(data));
-      },
-    );
+    test('recorded minutes beyond the first-to-last window', () {
+      final data = sample();
+      data['coverage']['last_minute'] = '08:30';
+      rejects(bytes(data));
+    });
   });
 
   group('dates in the future and the import store', () {
@@ -382,36 +362,27 @@ void main() {
       store.dispose();
     });
 
-    knownBug(
-      'a day dated after the phone\'s today is refused',
-      'a report dated 2026-10-30 is imported on 2026-10-24',
-      () {
-        final future = sample()..['date'] = '2026-10-30';
-        expect(
-          () => intake.importBytes([bytes(future)]),
-          throwsA(isA<BandFileFailure>()),
-        );
-        expect(store.fileReports, isEmpty);
-      },
-    );
+    test('a day dated after the phone\'s today is refused', () {
+      final future = sample()..['date'] = '2026-10-30';
+      expect(
+        () => intake.importBytes([bytes(future)]),
+        throwsA(isA<BandFileFailure>()),
+      );
+      expect(store.fileReports, isEmpty);
+    });
 
-    knownBug(
-      'a day dated years ahead is refused and changes nothing',
-      'a report dated 2099-01-01 is imported and sets lastSynced',
-      () {
-        final future = sample()..['date'] = '2099-01-01';
-        expect(
-          () => intake.importBytes([bytes(future)]),
-          throwsA(isA<BandFileFailure>()),
-        );
-        expect(store.hasImportedFile, isFalse);
-        expect(store.lastSynced, isNull);
-      },
-    );
+    test('a day dated years ahead is refused and changes nothing', () {
+      final future = sample()..['date'] = '2099-01-01';
+      expect(
+        () => intake.importBytes([bytes(future)]),
+        throwsA(isA<BandFileFailure>()),
+      );
+      expect(store.hasImportedFile, isFalse);
+      expect(store.lastSynced, isNull);
+    });
 
-    knownBug(
+    test(
       'a whole delivery is refused when only one of its days is in the future',
-      'a delivery with a December day is imported',
       () {
         final future = sample()..['date'] = '2026-12-01';
         expect(
@@ -422,17 +393,13 @@ void main() {
       },
     );
 
-    knownBug(
-      'the export time cannot be before the day it reports on',
-      'generated_at the day before the report date is accepted',
-      () {
-        final data = sample()..['generated_at'] = '2026-10-23T23:59:00-07:00';
-        expect(
-          () => intake.importBytes([bytes(data)]),
-          throwsA(isA<BandFileFailure>()),
-        );
-      },
-    );
+    test('the export time cannot be before the day it reports on', () {
+      final data = sample()..['generated_at'] = '2026-10-23T23:59:00-07:00';
+      expect(
+        () => intake.importBytes([bytes(data)]),
+        throwsA(isA<BandFileFailure>()),
+      );
+    });
 
     test('a past day outside the seven-day window imports but never counts toward the week', () {
       intake.importBytes([bytes(sample()..['date'] = '2026-09-01')]);

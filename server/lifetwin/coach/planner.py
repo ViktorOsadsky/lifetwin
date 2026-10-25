@@ -56,6 +56,12 @@ from lifetwin.coach.safety import (
 from lifetwin.onboarding.intents import EMERGENCY_MESSAGE
 from lifetwin.recommendations.levers import MIN_ADULT_AGE, UNDER_AGE
 
+# "Not for me" (the card's button) or the same said in words: a swap, not a retry.
+NOT_FOR_ME = re.compile(
+    r"\bnot for me\b|\bnot my thing\b|\b(?:don'?t|do not) (?:really )?(?:like|enjoy|want)\b|\bhate\b",
+    re.I,
+)
+
 LEVER_SOURCE = "docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z)"
 LEVER_ORDER = (
     "quit_smoking",
@@ -802,6 +808,11 @@ class Planner:
                 change = "swapped"
                 why = f"You said the weather got in the way, so today it's {activity.title.lower()}, indoors."
                 rule = "not_done, weather: swap to an indoor item"
+            elif status == "not_done" and NOT_FOR_ME.search(reason):
+                activity, note, minutes = fresh({prev_act.id})
+                change = "swapped"
+                why = f"You said {old} isn't for you, so today it's {activity.title.lower()}."
+                rule = "not_done, not for me: swap to the next allowed item"
             elif status == "not_done":
                 change, rule = "kept", "not_done: keep, no step up"
                 why = f"No rush. I kept {old} the same for today."

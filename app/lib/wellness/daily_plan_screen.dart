@@ -100,6 +100,10 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
             409 =>
               'Your plan has moved on. Refresh it before sending this choice.',
             429 => 'A lot is happening. Give it a moment, then try again.',
+            final code? when code >= 400 && code < 500 =>
+              _plan == null
+                  ? 'Mochi couldn’t make today’s plan from what’s saved. Please try again later.'
+                  : 'Mochi couldn’t make today’s plan from what’s saved. Please try again later. Your saved plan is still here.',
             _ =>
               _plan == null
                   ? 'The planner needs a moment. Try again.'
