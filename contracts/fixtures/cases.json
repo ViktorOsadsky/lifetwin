@@ -2516,5 +2516,168 @@
       "emergency": false,
       "mood": "concerned"
     }
+  },
+  {
+    "name": "recommendations-effect-and-experiment-fields",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 60,
+        "smoking_status": "current",
+        "sleep_hours": 8,
+        "sedentary_min_day": 120,
+        "moderate_recreation_min_week": 200,
+        "vigorous_recreation_min_week": 0
+      }
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "recommendations": {
+        "$each": {
+          "effect_note": "Modeled difference for people like you, not a promise.",
+          "source_domain": "cdc.gov",
+          "causal_interpretation": false
+        }
+      }
+    }
+  },
+  {
+    "name": "recommendations-guideline-only-has-no-effect",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 60,
+        "smoking_status": "never",
+        "sleep_hours": 8,
+        "sedentary_min_day": 120,
+        "moderate_recreation_min_week": 300,
+        "vigorous_recreation_min_week": 100
+      }
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "recommendations": {
+        "$each": {
+          "lever": "keep_it_up",
+          "effect": null,
+          "experiment_lever": null,
+          "experiment_target": null,
+          "why_short": "You are already active, so keep doing what works for you.",
+          "source_domain": "cdc.gov"
+        }
+      }
+    }
+  },
+  {
+    "name": "checkin-weekly-care-reply-on-low-mood",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "state": {
+        "kind": "weekly",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours",
+          "vigorous_recreation_min_week",
+          "moderate_recreation_min_week",
+          "sedentary_min_day",
+          "alcohol_drinks_weekly",
+          "smoking_status",
+          "weight_kg",
+          "systolic_bp",
+          "wellbeing"
+        ],
+        "current_field": "wellbeing",
+        "confirmed": {
+          "sleep_hours": 6,
+          "vigorous_recreation_min_week": 30,
+          "moderate_recreation_min_week": 90,
+          "sedentary_min_day": 360,
+          "smoking_status": "never",
+          "weight_kg": 71.67
+        },
+        "skipped_fields": [
+          "alcohol_drinks_weekly",
+          "systolic_bp",
+          "diastolic_bp"
+        ]
+      },
+      "text": "not great"
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": false,
+      "emergency": false,
+      "state": {
+        "phase": "confirming",
+        "current_field": "wellbeing",
+        "care_line_shown": true,
+        "care_question_open": true
+      },
+      "profile_update": {}
+    }
+  },
+  {
+    "name": "checkin-weekly-care-keep-going",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "keep going",
+      "state": {
+        "kind": "weekly",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours",
+          "vigorous_recreation_min_week",
+          "moderate_recreation_min_week",
+          "sedentary_min_day",
+          "alcohol_drinks_weekly",
+          "smoking_status",
+          "weight_kg",
+          "systolic_bp",
+          "wellbeing"
+        ],
+        "current_field": "wellbeing",
+        "confirmed": {
+          "sleep_hours": 6,
+          "vigorous_recreation_min_week": 30,
+          "moderate_recreation_min_week": 90,
+          "sedentary_min_day": 360,
+          "smoking_status": "never",
+          "weight_kg": 71.67
+        },
+        "skipped_fields": [
+          "alcohol_drinks_weekly",
+          "systolic_bp",
+          "diastolic_bp"
+        ],
+        "care_line_shown": true,
+        "care_question_open": true
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "complete": false,
+      "emergency": false,
+      "state": {
+        "current_field": "wellbeing",
+        "care_line_shown": true,
+        "care_question_open": false
+      }
+    }
   }
 ]

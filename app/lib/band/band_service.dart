@@ -2,10 +2,39 @@ import 'package:flutter/foundation.dart';
 
 import '../twin/twin_repository.dart';
 import 'band_data.dart';
+import 'band_sitting.dart';
 
 /// The field the band suggests, in the person's own words: "Moderate, like brisk walks".
 const bandField = 'moderate_recreation_min_week';
 const bandFieldLabel = 'Moderate, like brisk walks';
+const bandSittingField = 'sedentary_min_day';
+
+/// An observed day's awake sitting, offered as a usual-day answer only after
+/// explicit read-back. This is independent of the existing activity suggestion.
+class BandSittingSuggestion {
+  const BandSittingSuggestion._({
+    required this.estimate,
+    required this.current,
+    required this.date,
+    required this.awakeMinutes,
+    required this.demo,
+  });
+  final int estimate;
+  final num? current;
+  final DateTime date;
+  final int awakeMinutes;
+  final bool demo;
+  static const demoLabel = 'Demo data';
+  String get sourceLabel => demo ? demoLabel : 'From your band';
+  String get question =>
+      '${demo ? '$demoLabel. ' : ''}The recording counted $estimate minutes sitting while awake '
+      'on ${date.toIso8601String().substring(0, 10)}. '
+      'Is that typical for you? Save $estimate minutes as your usual daily sitting?';
+  static const how =
+      'Counts only explicitly classified sitting while awake in a complete waking-day recording. '
+      'Sleep, lying, unknown posture and missing wear are not assumed to be sitting. '
+      'A sensor estimate; one day does not establish your usual day.';
+}
 
 /// What the band offers once a week (H-6, H-7, H-7v).
 class BandSuggestion {
@@ -53,24 +82,90 @@ class BandSuggestion {
 ///   ruling). It goes through `TwinRepository.saveConversationProfile` like any confirmed answer.
 /// - "Not now" dismisses it until next week. A band answer is never sent to an outside AI provider.
 class BandService extends ChangeNotifier {
-  BandService({required this.repository, DateTime Function()? now}) : _now = now ?? DateTime.now;
+  BandService({required this.repository, DateTime Function()? now})
+    : _now = now ?? DateTime.now;
 
   final TwinRepository repository;
   final DateTime Function() _now;
 
   DateTime? _dismissedAt;
   DateTime? _offeredAt;
+  DateTime? _sittingDismissedAt;
+  DateTime? _sittingAcceptedAt;
+
+  /// Measured data needs [live]; the built-in labelled demo additionally needs
+  /// an explicit [demo] opt-in. Imported v0 files cannot supply this recording.
+  /// Showing an offer never changes the confirmed profile or model.
+  BandSittingSuggestion? suggestSitting(
+    BandSittingRecording recording, {
+    required bool live,
+    bool demo = false,
+  }) {
+    if (recording.demo ? (!demo || live) : (!live || demo)) return null;
+    final estimate = recording.sittingMinutesPerDay;
+    // Existing shared profile entry range, not a physiological threshold.
+    if (estimate == null || estimate > 1439) return null;
+    if (_inCooldown(_sittingDismissedAt) || _inCooldown(_sittingAcceptedAt)) {
+      return null;
+    }
+    final saved = repository.profile[bandSittingField];
+    final current = saved is num && saved.isFinite ? saved : null;
+    if (estimate == current) return null;
+    return BandSittingSuggestion._(
+      estimate: estimate,
+      current: current,
+      date: recording.date,
+      awakeMinutes: recording.awakeMinutes,
+      demo: recording.demo,
+    );
+  }
+
+  /// Uses the existing seven-day band offer cooldown, independently of activity.
+  void dismissSitting() => _sittingDismissedAt = _now();
+  void keepSitting() => dismissSitting();
+
+  /// Call only after the person confirms the dated count as their usual day.
+  /// A replacement number explicitly supplied by the person has Mochi provenance.
+  Future<void> confirmSitting(
+    BandSittingSuggestion suggestion, {
+    int? minutes,
+  }) async {
+    final value = minutes ?? suggestion.estimate;
+    if (value < 0 || value > 1439) {
+      throw const BandSittingFailure(
+        'Daily sitting must be between 0 and 1439 minutes.',
+      );
+    }
+    if (repository.profile[bandSittingField] != suggestion.current) {
+      throw const BandSittingFailure(
+        'Your saved sitting changed. Review a new suggestion.',
+      );
+    }
+    await repository.saveConversationProfile(
+      {bandSittingField: value},
+      kind: HistoryKind.mochiChange,
+      sources: {if (minutes == null) bandSittingField: HistorySource.wristband},
+    );
+    _sittingAcceptedAt = _now();
+  }
 
   /// Minutes a week the person last saved through the band offer, for the panel's saved line.
   int? savedMinutes;
 
   /// The suggestion for [week], or null. [live] is false for the recorded demo; [demo] allows ONE labelled
   /// suggestion from it (only when nothing live or imported is in play).
-  BandSuggestion? suggest(BandWeek week, {required bool live, bool demo = false}) {
+  BandSuggestion? suggest(
+    BandWeek week, {
+    required bool live,
+    bool demo = false,
+  }) {
     if (!(live || demo) || !week.hasEstimate) return null;
     final saved = repository.profile[bandField];
     if (saved is! num) return null;
-    if (_inCooldown(_dismissedAt) || _inCooldown(_offeredAt, acceptedOnly: true)) return null;
+    if (_inCooldown(_dismissedAt) ||
+        _inCooldown(_offeredAt, acceptedOnly: true)) {
+      return null;
+    }
     final est = week.estimateMinutesPerWeek!;
     if (est == saved.round()) return null;
     return BandSuggestion(
