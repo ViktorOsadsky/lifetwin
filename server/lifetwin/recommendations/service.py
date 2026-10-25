@@ -20,7 +20,7 @@ from lifetwin.onboarding.model_inputs import character_hints
 from lifetwin.onboarding.models import HabitNote, Recommendation
 from lifetwin.personalize.providers import Personalizer
 from lifetwin.personalize.service import consented, phrase_recommendations
-from lifetwin.recommendations.levers import LEVER_ORDER, MODEL_VERSION
+from lifetwin.recommendations.levers import LEVER_ORDER, MODEL_VERSION, effect_category
 from lifetwin.recommendations.models import (
     LeverRanking,
     RecommendationRequest,
@@ -263,7 +263,8 @@ def suggest(profile: HealthProfile, notes: list[HabitNote]) -> list[Recommendati
         build = BUILDERS.get(lever)
         rec = build(profile, notes) if build else None
         if rec:
-            found.append(rec)
+            effect = effect_category(rec.lever, profile.age, profile.sex)
+            found.append(rec.model_copy(update={"effect": effect}))
     # Encouragement goes last: changes first, praise after.
     found.sort(key=lambda rec: rec.lever == "keep_it_up")
     return found[:3]

@@ -92,6 +92,30 @@
           "title": "Causal Interpretation",
           "type": "boolean"
         },
+        "effect": {
+          "anyOf": [
+            {
+              "enum": [
+                "big",
+                "some",
+                "small",
+                "tiny"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effect"
+        },
+        "effect_note": {
+          "const": "Modeled difference for people like you, not a promise.",
+          "default": "Modeled difference for people like you, not a promise.",
+          "title": "Effect Note",
+          "type": "string"
+        },
         "id": {
           "maxLength": 60,
           "minLength": 1,
@@ -150,6 +174,8 @@
         "wellness_card",
         "source_title",
         "source_url",
+        "effect",
+        "effect_note",
         "causal_interpretation"
       ],
       "title": "Recommendation",
