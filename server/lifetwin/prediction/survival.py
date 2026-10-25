@@ -9,6 +9,7 @@ import csv
 import hashlib
 import io
 import json
+import logging
 import math
 import zipfile
 from dataclasses import dataclass
@@ -237,4 +238,9 @@ def load_model(directory: str) -> SurvivalModel | None:
     try:
         return SurvivalModel.load(directory.strip() or DEFAULT_MODEL_DIR)
     except ArtifactsMissing:
+        return None
+    except Exception as exc:  # noqa: BLE001 - a broken artifact must not stop the server
+        # A truncated copy, a pointer file or a library mismatch: prediction stays
+        # deferred (501, /ready says so) while onboarding and check-ins keep working.
+        logging.getLogger(__name__).error("model artifacts unreadable: %s", type(exc).__name__)
         return None
