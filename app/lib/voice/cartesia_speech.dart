@@ -235,6 +235,9 @@ class CartesiaSpeechInput implements SpeechInput {
   bool _forceNewToken = false;
   void Function(String)? _onCaption;
 
+  /// Bumped by every teardown, so a start that was cancelled while waiting stops there.
+  int _gen = 0;
+
   void _endFlush() {
     final f = _flushed;
     if (f != null && !f.isCompleted) f.complete();
@@ -252,9 +255,9 @@ class CartesiaSpeechInput implements SpeechInput {
   @override
   Future<void> start(void Function(String text) onCaption) async {
     await _teardown();
+    final gen = _gen;
     if (!await _recorder.hasPermission()) throw const MicDeniedException();
-    final token = await tokens.get(forceNew: _forceNewToken); // may throw VoiceUnavailableException
-    _forceNewToken = false;
+    if (gen != _gen) return; // cancelled meanwhile
     _onCaption = onCaption;
     _finals.clear();
     _partial = '';
@@ -263,6 +266,53 @@ class CartesiaSpeechInput implements SpeechInput {
     _pause = PauseDetector();
     _flushesOwed = 0;
     _early.clear();
+    // The mic starts before the token and the socket, so the first words are not lost:
+    // the screen already says "listening". Audio waits in [_early] until the socket is open.
+    final stream = await _recorder.startStream(
+      // Apple's voice processing (echo cancel + noise suppression) favors the voice
+      // close to the phone over other people talking in the room; gain helps soft voices.
+      const RecordConfig(
+        encoder: AudioEncoder.pcm16bits,
+        sampleRate: 16000,
+        numChannels: 1,
+        echoCancel: true,
+        noiseSuppress: true,
+        autoGain: true,
+      ),
+    );
+    if (gen != _gen) {
+      await _recorder.cancel();
+      return;
+    }
+    _micSub = stream.listen(_onMic);
+    try {
+      final token = await tokens.get(forceNew: _forceNewToken); // may throw VoiceUnavailableException
+      if (gen != _gen) return; // cancelled meanwhile; cancel() stopped the mic
+      _forceNewToken = false;
+      _open(token);
+    } catch (_) {
+      if (gen == _gen) await cancel();
+      rethrow;
+    }
+  }
+
+  void _onMic(Uint8List data) {
+    for (final c in _chunks.add(data)) {
+      final ch = _channel;
+      final paused = _pause.add(c);
+      if (_ready && ch != null) {
+        ch.sink.add(c);
+        if (paused) {
+          _flushesOwed++;
+          ch.sink.add(CartesiaWire.sttFinalize);
+        }
+      } else {
+        _early.add(c);
+      }
+    }
+  }
+
+  void _open(VoiceToken token) {
     final ch = _channel = _connect(CartesiaWire.sttUri(token));
     _msgSub = ch.stream.listen(
       (m) {
@@ -295,31 +345,10 @@ class CartesiaSpeechInput implements SpeechInput {
         _endFlush();
       },
     );
-    // Start the mic first so the first words are not lost while the socket connects.
-    final stream = await _recorder.startStream(
-      // Apple's voice processing (echo cancel + noise suppression) favors the voice
-      // close to the phone over other people talking in the room; gain helps soft voices.
-      const RecordConfig(
-        encoder: AudioEncoder.pcm16bits,
-        sampleRate: 16000,
-        numChannels: 1,
-        echoCancel: true,
-        noiseSuppress: true,
-        autoGain: true,
-      ),
-    );
-    _micSub = stream.listen((data) {
-      for (final c in _chunks.add(data)) {
-        _ready ? ch.sink.add(c) : _early.add(c);
-        if (_pause.add(c) && _ready) {
-          _flushesOwed++;
-          ch.sink.add(CartesiaWire.sttFinalize);
-        }
-      }
-    });
     unawaited(
       ch.ready.then(
         (_) {
+          if (!identical(_channel, ch)) return;
           _ready = true;
           for (final c in _early) {
             ch.sink.add(c);
@@ -337,7 +366,10 @@ class CartesiaSpeechInput implements SpeechInput {
   @override
   Future<String> finish() async {
     final ch = _channel;
-    if (ch == null) return '';
+    if (ch == null) {
+      await cancel(); // never connected: just close the mic
+      return '';
+    }
     await _recorder.stop();
     await _micSub?.cancel();
     _micSub = null;
@@ -369,6 +401,7 @@ class CartesiaSpeechInput implements SpeechInput {
   }
 
   Future<void> _teardown() async {
+    _gen++; // a start still waiting for the token or the mic gives up
     await _micSub?.cancel();
     _micSub = null;
     await _msgSub?.cancel();
