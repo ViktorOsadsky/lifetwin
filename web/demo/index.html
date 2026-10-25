@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Try to Trick Pip · LifeTwin</title>
+  <meta name="description" content="Type any everyday answer. Pip checks it with you before keeping anything.">
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="../shared/art.css">
+  <link rel="stylesheet" href="booth.css">
+  <script type="module" src="booth.js"></script>
+</head>
+<body class="tier-good" data-mode="loading" data-scene="talk">
+  <header class="top">
+    <a class="brand" href="../">LifeTwin</a>
+    <h1 class="title">Try to trick Pip</h1>
+    <p class="sub">Answer any way you like. Pip checks before it keeps.</p>
+    <dl class="score" aria-label="Score">
+      <div><dt>Understood</dt><dd id="s-understood">0</dd></div>
+      <div><dt>Asked again</dt><dd id="s-again">0</dd></div>
+      <div class="score-key"><dt>Kept without your yes</dt><dd id="s-unasked">0</dd></div>
+    </dl>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="scene" id="scene"></div>
+    <div class="actor twin" id="twin"></div>
+    <div class="actor pip" id="pip"></div>
+    <div class="actor ball" id="ball" hidden></div>
+
+    <div class="bubble you" id="you-bubble" hidden></div>
+    <section class="bubble pip-says" id="pip-bubble" aria-live="polite">
+      <p class="lead" id="pip-lead"></p>
+      <p class="ask" id="pip-ask">One moment…</p>
+      <div class="heard" id="heard" hidden>
+        <span class="heard-said" id="heard-said"></span>
+        <span class="heard-arrow" aria-hidden="true"></span>
+        <span class="heard-value" id="heard-value"></span>
+      </div>
+      <div class="actions" id="pip-actions"></div>
+    </section>
+
+    <section class="panel" id="panel" hidden></section>
+
+    <div class="attract" id="attract" hidden>
+      <p>Press any key to play</p>
+    </div>
+  </main>
+
+  <section class="answers" aria-label="Your answers">
+    <h2 class="answers-title">Your answers</h2>
+    <ol class="slots" id="slots"></ol>
+  </section>
+
+  <form class="say" id="say" autocomplete="off">
+    <div class="hints" id="hints" aria-label="Try saying"></div>
+    <div class="say-row">
+      <label class="sr-only" for="say-input">Your answer</label>
+      <input id="say-input" name="text" maxlength="200" placeholder="Type an answer, any way you like" enterkeyhint="send" spellcheck="false">
+      <button class="send" type="submit" id="say-send">Send</button>
+    </div>
+    <p class="privacy">Don't type real details. Nothing is stored.</p>
+  </form>
+
+  <nav class="steps" aria-label="Demo steps">
+    <button type="button" data-go="talk" aria-current="step">Talk</button>
+    <button type="button" data-go="fortune">Fortune</button>
+    <button type="button" data-go="quiz">Quiz</button>
+    <button type="button" class="restart" id="restart">Start over</button>
+    <span class="mode" id="mode-badge"></span>
+  </nav>
+
+  <dialog class="why" id="why">
+    <form method="dialog">
+      <h2>About these numbers</h2>
+      <p>The outlook model isn't connected yet, so these are example numbers, not yours.</p>
+      <p>When it is, numbers will show links found in research data, not proven causes.</p>
+      <button class="send" value="close">Got it</button>
+    </form>
+  </dialog>
+</body>
+</html>

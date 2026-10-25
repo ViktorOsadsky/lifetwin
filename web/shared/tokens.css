@@ -1,0 +1,115 @@
+/* LifeTwin web tokens. Source of truth: docs/design-brief.md section 2 and
+   app/lib/theme/lt_colors.dart + lt_scene.dart. Do not add colours here. */
+
+@font-face {
+  font-family: "Bricolage";
+  src: url("fonts/BricolageGrotesque-Variable.ttf") format("truetype");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DMSans";
+  src: url("fonts/DMSans-Variable.ttf") format("truetype");
+  font-weight: 100 1000;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Registered so a tier change can crossfade the whole habitat (700ms). */
+@property --scene-sky-top        { syntax: "<color>"; inherits: true; initial-value: #5AA9FF; }
+@property --scene-sky-bottom     { syntax: "<color>"; inherits: true; initial-value: #CFF5E3; }
+@property --scene-ground         { syntax: "<color>"; inherits: true; initial-value: #8FE0B4; }
+@property --scene-foliage        { syntax: "<color>"; inherits: true; initial-value: #34D399; }
+@property --scene-foliage-deep   { syntax: "<color>"; inherits: true; initial-value: #0E9F6E; }
+@property --scene-light          { syntax: "<color>"; inherits: true; initial-value: #FFD66B; }
+@property --scene-contact-shadow { syntax: "<color>"; inherits: true; initial-value: #0E9F6E; }
+
+:root {
+  /* Colour */
+  --surface: #FFFFFF;
+  --ground: #F4F8FF;
+  --ink: #0E1B3D;
+  --ink-2: #4A5878;
+  --line: #E3EAF5;
+  --blue-700: #1D4ED8;
+  --blue-600: #2563EB;
+  --blue-400: #5AA9FF;
+  --blue-100: #DCEBFF;
+  --green-700: #047857;
+  --green-600: #0E9F6E;
+  --green-400: #34D399;
+  --green-100: #D3F7E6;
+  --baseline: #7A879F;
+  --sun: #FFD66B;
+  --lavender-100: #ECEBFA;
+
+  /* Sheet surface: tinted from the page ground, not stark white (7b.3). */
+  --sheet: color-mix(in srgb, var(--surface) 50%, var(--ground));
+
+  /* Shape */
+  --r-sheet: 28px;
+  --r-card: 24px;
+  --r-small: 12px;
+
+  /* Spacing */
+  --s4: 4px;
+  --s8: 8px;
+  --s12: 12px;
+  --s16: 16px;
+  --s20: 20px;
+  --s24: 24px;
+  --s32: 32px;
+  --s40: 40px;
+
+  /* Shadows: no zero-offset glows. */
+  --shadow-card: 0 8px 24px color-mix(in srgb, var(--ink) 8%, transparent);
+  --shadow-sheet: 0 -4px 24px color-mix(in srgb, var(--ink) 10%, transparent);
+
+  /* Type */
+  --font-display: "Bricolage", ui-rounded, system-ui, sans-serif;
+  --font-body: "DMSans", system-ui, sans-serif;
+
+  /* Motion (playful archetype: quick, soft overshoot). */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-back: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Scene palettes per vitality tier. Default is thriving. */
+:root,
+.tier-thriving {
+  --scene-sky-top: #5AA9FF;
+  --scene-sky-bottom: #CFF5E3;
+  --scene-ground: #8FE0B4;
+  --scene-foliage: #34D399;
+  --scene-foliage-deep: #0E9F6E;
+  --scene-light: #FFD66B;
+  --scene-contact-shadow: #0E9F6E;
+}
+.tier-good {
+  --scene-sky-top: #8EC5FF;
+  --scene-sky-bottom: #E3F7EE;
+  --scene-ground: #BFEBD2;
+  --scene-foliage: #6FD9A8;
+  --scene-foliage-deep: #2FA57A;
+  --scene-light: #FFE7A3;
+  --scene-contact-shadow: #2FA57A;
+}
+.tier-steady {
+  --scene-sky-top: #CFE3FF;
+  --scene-sky-bottom: #F4F8FF;
+  --scene-ground: #DCEDE4;
+  --scene-foliage: #A9DCC3;
+  --scene-foliage-deep: #6DB394;
+  --scene-light: #FFF1C9;
+  --scene-contact-shadow: #6DB394;
+}
+.tier-resting {
+  --scene-sky-top: #DCDAF5;
+  --scene-sky-bottom: #F4F8FF;
+  --scene-ground: #E6E8F2;
+  --scene-foliage: #C3CCE0;
+  --scene-foliage-deep: #8E9AB8;
+  --scene-light: #F4EFE0;
+  --scene-contact-shadow: #8E9AB8;
+}

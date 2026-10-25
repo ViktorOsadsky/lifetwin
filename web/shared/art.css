@@ -1,0 +1,75 @@
+/* Animations for art.js. Playful archetype: soft ease-out, small overshoot.
+   Ambient loops are slow; reactions are 300-900ms. All off under
+   prefers-reduced-motion (art stays fully resolved and legible). */
+
+.lt-svg { display: block; overflow: visible; }
+/* The habitat is full-bleed: its edge-bleed scenery is trimmed at the frame. */
+.lt-svg.lt-habitat { overflow: hidden; }
+
+/* Crossfade the habitat between tiers (700ms, easeOutCubic). */
+.lt-habitat {
+  transition:
+    --scene-sky-top 0.7s cubic-bezier(0.215, 0.61, 0.355, 1),
+    --scene-sky-bottom 0.7s cubic-bezier(0.215, 0.61, 0.355, 1),
+    --scene-ground 0.7s cubic-bezier(0.215, 0.61, 0.355, 1),
+    --scene-foliage 0.7s cubic-bezier(0.215, 0.61, 0.355, 1),
+    --scene-foliage-deep 0.7s cubic-bezier(0.215, 0.61, 0.355, 1),
+    --scene-light 0.7s cubic-bezier(0.215, 0.61, 0.355, 1),
+    --scene-contact-shadow 0.7s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+/* Idle float: Twin, Pip and the ball all breathe. */
+.lt-bob { animation: lt-bob 3.4s ease-in-out infinite; }
+.lt-pip .lt-bob { animation-duration: 2.6s; animation-name: lt-float; }
+.lt-mood-tired .lt-bob { animation-duration: 5.2s; }
+.lt-mood-sick .lt-bob { animation: lt-shiver 1.8s ease-in-out infinite; }
+.lt-state-celebrating .lt-bob { animation: lt-hop 0.9s var(--ease-back, cubic-bezier(0.175, 0.885, 0.32, 1.275)) infinite; }
+.lt-state-speaking .lt-bob { animation-duration: 1.6s; }
+
+/* Blink: eyes close for a beat every few seconds. */
+.lt-blink { transform-box: fill-box; transform-origin: center; animation: lt-blink 5.5s infinite; }
+
+/* Sprout sways from its base; the sick one droops and sways slower. */
+.lt-sprout { animation: lt-sway 3.8s ease-in-out infinite; }
+.lt-droop { animation-name: lt-droop; animation-duration: 4.6s; }
+
+/* Thermometer wobble: a playful sniffle, never grim. */
+.lt-sniffle { animation: lt-sniffle 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 0% 100%; }
+
+/* Sparkles and think dots twinkle in turn. */
+.lt-sparkle { animation: lt-twinkle 2.2s ease-in-out infinite; }
+.lt-think { animation: lt-think 1.6s ease-in-out infinite; }
+.lt-late { animation-delay: 0.5s; }
+.lt-later { animation-delay: 1s; }
+
+/* Listening rings, speaking mouth. */
+.lt-ring { animation: lt-ring 1.6s ease-in-out infinite; }
+.lt-talk { transform-box: fill-box; transform-origin: center; animation: lt-talk 0.5s ease-in-out infinite; }
+
+/* Magic ball breathes its glow in proportion to --glow. */
+.lt-glow { animation: lt-glow 2.8s ease-in-out infinite; }
+
+/* Habitat: drifting particles, slow sun halo. */
+.lt-drift { opacity: 0; animation: lt-drift 9s linear infinite; }
+.lt-sun { animation: lt-sun 6s ease-in-out infinite; }
+
+@keyframes lt-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+@keyframes lt-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes lt-hop { 0%, 100% { transform: translateY(0); } 35% { transform: translateY(-9px); } 55% { transform: translateY(0); } 70% { transform: translateY(-3px); } }
+@keyframes lt-shiver { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-1px); } 75% { transform: translateX(1px); } }
+@keyframes lt-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+@keyframes lt-sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg); } }
+@keyframes lt-droop { 0%, 100% { transform: rotate(3deg); } 50% { transform: rotate(9deg); } }
+@keyframes lt-sniffle { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-6deg); } }
+@keyframes lt-twinkle { 0%, 100% { transform: scale(0.8); opacity: 0.75; } 50% { transform: scale(1.12); opacity: 1; } }
+@keyframes lt-think { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+@keyframes lt-ring { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@keyframes lt-talk { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.55); } }
+@keyframes lt-glow { 0%, 100% { fill-opacity: 0; } 50% { fill-opacity: calc(var(--glow, 0) * 0.18); } }
+@keyframes lt-drift { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 0.9; } 80% { opacity: 0.9; } 100% { opacity: 0; transform: translateY(var(--rise, -30px)); } }
+@keyframes lt-sun { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lt-svg, .lt-svg * { animation: none !important; transition: none !important; }
+  .lt-drift { opacity: 0.7; }
+}
