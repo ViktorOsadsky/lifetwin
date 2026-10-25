@@ -47,24 +47,52 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('Customize hides what has no art: no "coming soon", only real tabs and tiles', (t) async {
+  testWidgets('Customize shows the designed clothes without art as "Coming soon" slots that cannot be picked', (t) async {
     setPhone(t);
+    final semantics = t.ensureSemantics();
     final look = ValueNotifier(const TwinAppearance());
     addTearDown(look.dispose);
     await t.pumpWidget(MaterialApp(home: CustomizeScreen(appearance: look, onDone: () {})));
-    expect(find.textContaining('coming soon', findRichText: true), findsNothing);
-    for (final gone in ['Tops', 'Glasses', 'Fur', 'Aids', 'Beanie', 'Sun hat', 'Cap', 'Visor']) {
-      expect(find.text(gone), findsNothing, reason: gone);
-    }
+    // Hats: the real choices, then the coming-soon ones.
     expect(find.text('Cal hat'), findsOneWidget);
     expect(find.text('No hat'), findsOneWidget);
+    expect(find.text('Coming soon'), findsOneWidget);
+    for (final soon in ['Beanie', 'Sun hat', 'Cap', 'Visor']) {
+      expect(find.text(soon), findsOneWidget, reason: soon);
+    }
+    expect(find.bySemanticsLabel('Beanie, coming soon'), findsOneWidget);
+    await t.ensureVisible(find.text('Beanie'));
+    await t.tap(find.text('Beanie'));
+    await t.pump();
+    expect(find.bySemanticsLabel('Cal hat'), findsOneWidget); // still the only real hat choice
+    for (final (tab, items) in [
+      ('Tops', ['Cal tee', 'Cosy cardigan', 'Hoodie', 'Rain jacket', 'Knit scarf']),
+      ('Glasses', ['Reading glasses', 'Sunglasses', 'Bifocals']),
+      ('Fur', ['Honey', 'Cocoa', 'Cream', 'Panda', 'Cinnamon']),
+      ('Helpers', ['Hearing aids', 'Walking cane', 'Step counter']),
+    ]) {
+      await t.ensureVisible(find.text(tab));
+      await t.tap(find.text(tab));
+      await t.pumpAndSettle();
+      expect(find.text('Coming soon'), findsOneWidget, reason: tab);
+      for (final item in items) {
+        expect(find.text(item), findsOneWidget, reason: '$tab: $item');
+      }
+    }
+    await t.ensureVisible(find.text('Room'));
     await t.tap(find.text('Room'));
     await t.pumpAndSettle();
-    expect(find.textContaining('coming soon', findRichText: true), findsNothing);
+    expect(find.text('Coming soon'), findsNothing);
     for (final tile in ['Cozy', 'Morning', 'Twilight']) {
       expect(find.text(tile), findsOneWidget);
     }
+    // Nothing coming soon was saved into the look.
+    await t.ensureVisible(find.text('Save look'));
+    await t.tap(find.text('Save look'));
+    await t.pump();
+    expect(look.value, const TwinAppearance());
     expect(t.takeException(), isNull);
+    semantics.dispose();
   });
 
   testWidgets('Customize never touches the health profile, the conversation or the forecast', (t) async {
