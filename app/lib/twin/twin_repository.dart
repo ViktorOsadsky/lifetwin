@@ -93,6 +93,28 @@ class TwinRepository extends ChangeNotifier {
   /// The confirmed profile on the phone.
   Map<String, dynamic> get profile => store.profile;
 
+  /// The health score: the model's `log_relative_hazard_score` as is (lower is lower
+  /// modelled risk, 0 is the average survey participant; includes age and sex). Null
+  /// unless the model gave a number; see [healthScoreStatus].
+  double? get healthScore => _current?.healthScore;
+
+  /// Why [healthScore] has or lacks a number; null before a profile.
+  HealthScoreStatus? get healthScoreStatus => _current?.healthScoreStatus;
+
+  /// The model's message when there is no number (null otherwise).
+  String? get healthScoreMessage => _current?.message;
+
+  /// The score history between [from] and [to] (local dates, inclusive; open-ended when
+  /// null), oldest first. Appended whenever an assessment is made after a Mochi
+  /// conversation, a check-in that feeds the forecast, a day correction or an import.
+  List<HealthScorePoint> healthScoreHistory({DateTime? from, DateTime? to}) {
+    final lo = from == null ? null : isoDate(from), hi = to == null ? null : isoDate(to);
+    return [
+      for (final p in store.healthScorePoints)
+        if ((lo == null || p.date.compareTo(lo) >= 0) && (hi == null || p.date.compareTo(hi) <= 0)) p,
+    ];
+  }
+
   /// The package's guidance cards for the current assessment, with `source_url`.
   List<WellnessCard> get wellnessCards => _current?.wellnessCards ?? const [];
 
@@ -221,6 +243,7 @@ class TwinRepository extends ChangeNotifier {
     await _recordReading({for (final k in merge.changed) k: merge.profile[k]}, fallback);
     final a = assess(null, modelInputs);
     _current = a;
+    await _recordHealthScore(a);
     notifyListeners();
     return a;
   });
@@ -249,6 +272,7 @@ class TwinRepository extends ChangeNotifier {
                 HistoryItem(field: e.key, value: e.value, source: source, estimated: estimated || band),
           ],
         );
+        if (_current != null) await _recordHealthScore(_current!);
         notifyListeners();
       });
 
@@ -345,7 +369,11 @@ class TwinRepository extends ChangeNotifier {
       // A weekly answer is a fresh measurement even when unchanged; a refused value is not one.
       await _recordReading(record.answers, HistorySource.said);
     }
-    _refresh();
+    final a = _refresh();
+    // Only a check-in that feeds the forecast (day rows, a weekly summary, a profile change).
+    if (outcome.dayLogParts.isNotEmpty || outcome.weeklySummary != null || outcome.changedFields.isNotEmpty) {
+      await _recordHealthScore(a);
+    }
     return outcome;
   });
 
@@ -392,7 +420,7 @@ class TwinRepository extends ChangeNotifier {
       corrects: original.$1.id,
     );
     if (logInput) {
-      _refresh();
+      await _recordHealthScore(_refresh());
     } else {
       notifyListeners();
     }
@@ -583,6 +611,16 @@ class TwinRepository extends ChangeNotifier {
     await store._addHistory(entry);
     return entry;
   }
+
+  /// Appends the score the model gave for [a] (also when it gave none, with its status).
+  Future<void> _recordHealthScore(TwinAssessment a) => store._addHealthScore(
+    HealthScorePoint(
+      at: _clock(),
+      score: a.healthScore,
+      status: a.healthScoreStatus,
+      modelVersion: a.modelVersion.isEmpty ? model.modelVersion : a.modelVersion,
+    ),
+  );
 
   /// A confirmed blood pressure reading in [values] becomes its own dated entry, with
   /// only the numbers that pass the profile's checks.

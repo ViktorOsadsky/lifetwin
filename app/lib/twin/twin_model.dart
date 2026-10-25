@@ -59,6 +59,23 @@ class TwinAssessment {
   /// rough guide and carry [extrapolationCaveat].
   bool get extrapolated => raw['extrapolated'] == true;
 
+  /// The model owner's own number, `log_relative_hazard_score`, exactly as the model
+  /// gives it (for ages 30–34 and 80–85, the same extrapolated score the forecast uses).
+  /// Lower is lower modelled risk, 0 is the average survey participant, and it includes
+  /// the age and sex terms. Null unless the model gave a number; never filled in.
+  double? get healthScore {
+    final s = survival['log_relative_hazard_score'];
+    return available && s is num ? s.toDouble() : null;
+  }
+
+  HealthScoreStatus get healthScoreStatus => switch (status) {
+    'available' => extrapolated ? HealthScoreStatus.extrapolated : HealthScoreStatus.available,
+    'missing_inputs' => HealthScoreStatus.missingInputs,
+    'unsupported_age' => HealthScoreStatus.unsupportedAge,
+    'unsupported_profile' => HealthScoreStatus.unsupportedProfile,
+    _ => HealthScoreStatus.invalidInput,
+  };
+
   /// `steady`, `explore_changes` or `needs_input`.
   String get wellnessState => avatar['wellness_state'] as String? ?? 'needs_input';
 
@@ -79,6 +96,28 @@ class TwinAssessment {
       for (final e in m.entries)
         if (int.tryParse('${e.key}') != null && e.value is num) int.parse('${e.key}'): (e.value as num).toDouble(),
   };
+}
+
+/// Why the health score has, or lacks, a number. `extrapolated` has a number (age 30–34
+/// or 80–85, a rough guide); the others have none. `invalidInput` is the app's own status
+/// for a value the package refused.
+enum HealthScoreStatus {
+  available('available'),
+  extrapolated('extrapolated'),
+  missingInputs('missing_inputs'),
+  unsupportedAge('unsupported_age'),
+  unsupportedProfile('unsupported_profile'),
+  invalidInput('invalid_input');
+
+  const HealthScoreStatus(this.wire);
+
+  /// The name stored in the score history.
+  final String wire;
+
+  bool get hasScore => this == available || this == extrapolated;
+
+  static HealthScoreStatus fromWire(Object? v) =>
+      values.firstWhere((s) => s.wire == v, orElse: () => invalidInput);
 }
 
 /// A public-health guidance card from the package, shown beside the twin with its

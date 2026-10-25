@@ -36,6 +36,21 @@ What the UI sees for these ages:
 
 Under 30 or over 85 there is no number: `unsupported_age` with "Annual estimates support ages 30–85 only." The wellness cards don't change, because the package's guidance only changes at ages 18, 61 and 65, which neither anchor crosses.
 
+## Health score
+
+The app's health score is the model owner's own number: `log_relative_hazard_score` from `LifeTwinModel.predict()`, used as is (no rescaling, no sign flip, no bands, no 0–100 mapping). It is Σ(encoded input − centre) × coefficient, the log relative hazard against the average survey participant, so it **includes the age and sex terms**. In practice it runs about −3 to +3. **Lower is better** (lower modelled risk); 0 is the average survey participant.
+
+| API | Meaning |
+|---|---|
+| `TwinAssessment.healthScore` / `TwinRepository.healthScore` | `double?`; null unless the model gave a number. Never filled with defaults |
+| `healthScoreStatus` (`HealthScoreStatus?`) | `available`, `extrapolated`, `missingInputs`, `unsupportedAge`, `unsupportedProfile` (and the app's own `invalidInput`); null on the repository before a profile |
+| `healthScoreMessage` | The model's message when there is no number |
+| `healthScoreHistory({from, to})` | `List<HealthScorePoint>` oldest first: `(at, date, score, status, modelVersion)` |
+
+Availability: same as the forecast. Ages 35–79 are `available`; 30–34 and 80–85 are `extrapolated` and carry the same extrapolated score the forecast uses (the age term moved to the real age, see above), so show `extrapolationCaveat`. Missing inputs, ages under 30 or over 85, and unsupported profiles give null with the matching status.
+
+History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it.
+
 ## Profile mapping (`profile_mapping.dart`)
 
 The app keeps the confirmed profile under the field names of `server/lifetwin/core/models.py`. `toModelProfile()` maps it to the package's 11 inputs.

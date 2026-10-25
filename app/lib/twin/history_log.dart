@@ -3,6 +3,8 @@
 /// appended as it happens and never edited. Read it with `TwinRepository.history()`.
 library;
 
+import 'twin_model.dart' show HealthScoreStatus, isoDate;
+
 /// Entry kinds.
 abstract final class HistoryKind {
   static const quick = 'quick';
@@ -26,6 +28,36 @@ abstract final class HistoryKind {
   static const reading = 'reading';
 
   static const checkins = {quick, daily, weekly};
+}
+
+/// One point of the health score's trend: the score the model gave after an event that
+/// changed its inputs. Appended on the phone, never edited. [score] is null when the model
+/// gave no number ([status] says why).
+class HealthScorePoint {
+  const HealthScorePoint({required this.at, required this.score, required this.status, required this.modelVersion});
+
+  factory HealthScorePoint.fromJson(Map<String, dynamic> j) => HealthScorePoint(
+    at: DateTime.tryParse('${j['at']}') ?? DateTime.fromMillisecondsSinceEpoch(0),
+    score: (j['score'] as num?)?.toDouble(),
+    status: HealthScoreStatus.fromWire(j['status']),
+    modelVersion: '${j['model_version'] ?? ''}',
+  );
+
+  final DateTime at;
+  final double? score;
+  final HealthScoreStatus status;
+  final String modelVersion;
+
+  /// The local date, YYYY-MM-DD.
+  String get date => isoDate(at);
+
+  Map<String, dynamic> toJson() => {
+    'at': at.toIso8601String(),
+    'date': date,
+    'score': score,
+    'status': status.wire,
+    'model_version': modelVersion,
+  };
 }
 
 /// Where a confirmed value came from (per value: profile metadata and history items).

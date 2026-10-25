@@ -123,6 +123,7 @@ class TwinStore extends ChangeNotifier {
   List<CheckinEntry> get checkins => [for (final c in _list('checkins')) CheckinEntry.fromJson(c)];
   List<DayLog> get dayLogs => [for (final r in _list('daily_logs')) DayLog.fromJson(r)];
   List<HistoryEntry> get historyEntries => [for (final e in _list('history')) HistoryEntry.fromJson(e)];
+  List<HealthScorePoint> get healthScorePoints => [for (final p in _list('health_score')) HealthScorePoint.fromJson(p)];
   List<Map<String, dynamic>> get habitNotes => _list('habit_notes');
   Map<String, dynamic>? get twin => _doc['twin'] == null ? null : Map<String, dynamic>.from(_doc['twin'] as Map);
   bool get memoryConsent => _doc['memory_consent'] == true;
@@ -161,6 +162,9 @@ class TwinStore extends ChangeNotifier {
 
   /// Appends one history entry. Entries are never edited or removed (except by Delete my data).
   Future<void> _addHistory(HistoryEntry e) => _save('history', [..._list('history'), e.toJson()]);
+
+  /// Appends one health score point. Points are never edited or removed (except by Delete my data).
+  Future<void> _addHealthScore(HealthScorePoint p) => _save('health_score', [..._list('health_score'), p.toJson()]);
 
   Future<void> _saveCheckinSettings(CheckinSettings s) => _save('checkin_settings', s.toJson());
 
