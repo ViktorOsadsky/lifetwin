@@ -220,11 +220,6 @@ def test_a_note_mentioning_a_supplement_never_reaches_the_plan(client):
     assert not SUPPLEMENT_ADVICE.search(spoken), spoken
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: /api/checkin/turn daily records wellbeing=good from 'a good protein powder' "
-    "while asking about sleep, and answers 'Glad to hear it.'",
-)
 def test_an_off_topic_ask_with_the_word_good_is_not_taken_as_a_mood_answer(client):
     state = checkin_state(client, "daily", "sleep_hours_last_night")
     out = checkin_reply(client, state, "recommend a good protein powder")
