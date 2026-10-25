@@ -35,6 +35,7 @@ class _QuizScreenState extends State<QuizScreen> {
   String? _selected;
   int _index = 0;
   int _round = 0;
+  int _page = 0;
   late List<QuizQuestion> _questions;
 
   @override
@@ -115,7 +116,7 @@ class _QuizScreenState extends State<QuizScreen> {
       if (!didPop) _leave();
     },
     child: WellnessPage(
-      key: ValueKey('quiz-$_started-$_index-$_practice'),
+      key: ValueKey('quiz-$_started-$_index-$_practice-$_checked-$_page'),
       title: 'Quick quiz',
       onBack: _leave,
       children: [
@@ -291,7 +292,13 @@ class _QuizScreenState extends State<QuizScreen> {
                 Text(q.explanation, style: LtText.body()),
                 ..._sources(q),
                 if (wrong && !recovered)
-                  LipButton(label: 'Got it', onTap: () => game.review(q)),
+                  LipButton(
+                    label: 'Got it',
+                    onTap: () {
+                      game.review(q);
+                      setState(() => _page++);
+                    },
+                  ),
               ],
             ],
           ),

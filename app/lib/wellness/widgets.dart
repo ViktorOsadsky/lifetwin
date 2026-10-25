@@ -81,41 +81,65 @@ class MochiMessage extends StatelessWidget {
     required this.message,
     this.appearance = const TwinAppearance(),
     this.pose = TwinPose.wave,
+    this.compact = false,
   });
   final String message;
   final TwinAppearance appearance;
   final TwinPose pose;
+  final bool compact;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 18),
-    child: Column(
-      children: [
-        SizedBox(
-          height: 190,
-          child: PlateWindow(
-            name: appearance.name ?? 'Mochi',
-            plate: PlateScene(
-              asset: ScenePlate.customize.asset,
-              focus: const Offset(0.5, 0.48),
-              focusTarget: const Offset(0.3, 0.9),
-              twinBuilder: (feet, scale, box) => plantTwin(
-                feet,
-                TwinSprite(appearance: appearance, pose: pose, height: 145),
+  Widget build(BuildContext context) => compact
+      ? Padding(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TwinSprite(appearance: appearance, pose: pose, height: 72),
+              Expanded(
+                child: Bubble(
+                  text: message,
+                  tail: BubbleTail.left,
+                  fontSize: 22,
+                  liveRegion: true,
+                ),
               ),
-            ),
+            ],
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 8, 0),
-          child: Bubble(
-            text: message,
-            tail: BubbleTail.left,
-            fontSize: 22,
-            liveRegion: true,
+        )
+      : Padding(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 190,
+                child: PlateWindow(
+                  name: appearance.name ?? 'Mochi',
+                  plate: PlateScene(
+                    asset: ScenePlate.customize.asset,
+                    focus: const Offset(0.5, 0.48),
+                    focusTarget: const Offset(0.3, 0.9),
+                    twinBuilder: (feet, scale, box) => plantTwin(
+                      feet,
+                      TwinSprite(
+                        appearance: appearance,
+                        pose: pose,
+                        height: 145,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 8, 0),
+                child: Bubble(
+                  text: message,
+                  tail: BubbleTail.left,
+                  fontSize: 22,
+                  liveRegion: true,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
-    ),
-  );
+        );
 }

@@ -44,6 +44,11 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
   final _choices = <String, String>{};
   bool _choiceOpen = false;
   bool get _canChoose => !_busy && !_refreshWithoutPrevious;
+  static final _choiceStyle = OutlinedButton.styleFrom(
+    foregroundColor: LtColors.ink,
+    minimumSize: const Size(48, 48),
+    side: const BorderSide(color: LtColors.control, width: 2),
+  );
 
   @override
   void initState() {
@@ -223,7 +228,10 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
         ),
       if (_plan case final plan?) ...[
         if (!plan.paused)
-          const MochiMessage(message: 'A few small things for today.'),
+          const MochiMessage(
+            message: 'A few small things for today.',
+            compact: true,
+          ),
         if (plan.json['reused_previous'] == true)
           const WellnessCard(
             child: WholeWordText(
@@ -367,6 +375,7 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
               ('Skip', 'dismissed'),
             ])
               OutlinedButton(
+                style: _choiceStyle,
                 onPressed: !_canChoose
                     ? null
                     : () => _refresh([
@@ -375,6 +384,7 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
                 child: WholeWordText(label),
               ),
             OutlinedButton(
+              style: _choiceStyle,
               onPressed: !_canChoose ? null : () => _edit(item),
               child: const WholeWordText('Change'),
             ),
@@ -390,6 +400,7 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
           runSpacing: 8,
           children: [
             OutlinedButton(
+              style: _choiceStyle,
               onPressed: !_canChoose
                   ? null
                   : () => _refresh([
@@ -398,6 +409,7 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
               child: const WholeWordText('Done'),
             ),
             OutlinedButton(
+              style: _choiceStyle,
               onPressed: !_canChoose ? null : () => _notDone(item),
               child: const WholeWordText('Not done'),
             ),

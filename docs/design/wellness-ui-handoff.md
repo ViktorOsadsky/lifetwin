@@ -36,7 +36,7 @@ The plan UI supports Yes/Change/Skip, Yes to all, Done/Not done with optional re
 
 ## Handoff record
 
-Branch / PR / merge status: `codex/c-wellness-screens`; draft PR for review, not merged.
+Branch / PR / merge status: `codex/c-wellness-screens`; [draft PR #60](https://github.com/ViktorOsadsky/lifetwin/pull/60), not merged.
 
 Changed files: `app/lib/wellness/`, `app/lib/quiz/`, bundled reviewed quiz content, Room/Home/Customize integration, relevant widget tests, and the master/team-plan documentation.
 
@@ -47,7 +47,7 @@ Checks run and results:
 - `flutter analyze`: no issues in the temporary validation copy.
 - Full `flutter test`: 268 passed. After strict coach parsing was tightened, the four coach tests passed again.
 - `git diff --check`: passed. Bundled quiz content matches the reviewed server bank.
-- Actual Flutter widget renders were inspected with the app fonts and images: Home and quiz at 390×844, Settings at 320×693 with 2× text. A Home card that obscured the bear was compacted; Settings labels now keep words intact.
+- Actual Flutter widget renders were inspected with the app fonts and images: Home, quiz, plan, populated History and document consent at 390×844; Settings at 320×693 with 2× text. A Home card that obscured the bear was compacted; Settings labels now keep words intact. Plan choices use readable ink and at least 48-point targets; a widget check verifies the text contrast is at least 4.5:1. Quiz confirmation and recovery return the viewport to Mochi’s response.
 - Local SDK is Flutter 3.47.0 / Dart 3.13.0; the repo requires Dart ^3.13.7 and CI pins Flutter 3.47.8. Only the temporary copy’s SDK constraint was lowered to run local checks. The repository constraint is unchanged. Its schema test used the original repository contract path in that temporary copy. CI remains the check on the pinned SDK.
 - No backend behavior changed; no live provider, iOS OCR, physical device, notification or VoiceOver checks were run.
 

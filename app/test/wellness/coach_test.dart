@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lifesim/voice/api_base.dart';
+import 'package:lifesim/ui/theme.dart';
 import 'package:lifesim/wellness/coach_client.dart';
 import 'package:lifesim/wellness/daily_plan_screen.dart';
 
@@ -178,6 +179,18 @@ void main() {
         ),
       );
       await reveal(t, find.text('Yes'));
+      final yes = find.widgetWithText(OutlinedButton, 'Yes');
+      expect(t.getSize(yes).height, greaterThanOrEqualTo(48));
+      final color = t
+          .widget<OutlinedButton>(yes)
+          .style!
+          .foregroundColor!
+          .resolve({})!;
+      expect(
+        (LtColors.paper.computeLuminance() + .05) /
+            (color.computeLuminance() + .05),
+        greaterThanOrEqualTo(4.5),
+      );
       await t.tap(find.text('Yes'));
       await t.pumpAndSettle();
       expect(find.text('On your plan'), findsNothing);
