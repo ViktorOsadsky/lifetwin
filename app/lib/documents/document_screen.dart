@@ -10,6 +10,7 @@ import '../wellness/widgets.dart';
 import 'document_extract.dart';
 import 'document_ocr.dart';
 import 'document_upload.dart';
+import 'pdf_consent_sheet.dart';
 
 /// Painted upload flow backed by the shared OCR and confirmation engine.
 class DocumentUploadScreen extends StatefulWidget {
@@ -46,6 +47,9 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
   /// The person said yes: the PDF itself went to [_pdfReader], so "stays on your phone" is not said.
   bool _sendingPdf = false;
+
+  /// The current document is a PDF (not a photo or scan): "the photo" is never said about it.
+  bool _isPdf = false;
   DocumentConfirmation? _confirm;
   bool _locked = false;
   bool _finished = false;
@@ -65,7 +69,10 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
   Future<void> _read(DocumentSource source) async {
     final request = ++_request;
-    setState(() => _step = _Step.reading);
+    setState(() {
+      _isPdf = source == DocumentSource.pdf;
+      _step = _Step.reading;
+    });
     final reading = await widget.service.read(source);
     if (request == _request) _show(reading);
   }
@@ -74,7 +81,10 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
   /// document. Otherwise the PDF is read on this phone exactly as before.
   Future<void> _choosePdf() async {
     final request = ++_request;
-    setState(() => _step = _Step.reading);
+    setState(() {
+      _isPdf = true;
+      _step = _Step.reading;
+    });
     final reader = await widget.service.pdfProvider();
     if (request != _request) return;
     if (reader == null) return _read(DocumentSource.pdf);
@@ -85,6 +95,11 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
       _pdfReader = reader;
       _step = _Step.pdfConsent;
     });
+    // ignore: use_build_context_synchronously
+    final answer = await showPdfConsentSheet(context, reader);
+    if (request != _request || !mounted) return;
+    if (answer == null) return _stop(); // dismissed: nothing read, nothing sent
+    _pdfAnswer(answer);
   }
 
   Future<void> _pdfAnswer(bool yes) async {
@@ -92,6 +107,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
     if (reader == null) return;
     final request = ++_request;
     setState(() {
+      _isPdf = true;
       _sendingPdf = yes;
       _step = _Step.reading;
     });
@@ -172,9 +188,11 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
         ],
       ),
       _Step.reading => _page(
-        'Reading your document…',
+        _sendingPdf ? '${_pdfReader?.displayName ?? 'It'} is reading your PDF…' : 'Reading your document…',
         _sendingPdf
-            ? '${_pdfReader?.displayName ?? 'It'} is reading your document. One moment.'
+            ? 'One moment.'
+            : _isPdf
+            ? 'One moment. Reading it on this phone.'
             : 'One moment. Your photo stays on your phone.',
         [('Stop reading', _stop)],
         busy: true,
@@ -183,19 +201,13 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
         ('Try another document', () => setState(() => _step = _Step.intro)),
         ('Tell me instead', _finish),
       ]),
-      // The per-document consent sheet for a whole PDF (minimal; the design session owns the look).
-      _Step.pdfConsent => _page(
-        'Send this whole document?',
-        '${_pdfReader!.displayName} will read this whole document to find your numbers. It may see other details in it too.',
-        [
-          ('Yes, send it', () => _pdfAnswer(true)),
-          ('No, read it on this phone', () => _pdfAnswer(false)),
-        ],
-        back: _stop,
-      ),
+      // Behind the PDF consent sheet (shown from _choosePdf): the intro stays put.
+      _Step.pdfConsent => _page('Upload a health document?', 'Choose how to read your PDF.', const []),
       _Step.muse => _page(
         'Some lines were hard to read',
-        '${widget.provider!.displayName} can help find your numbers. It gets the words, never the photo. Just this document.',
+        _isPdf
+            ? '${widget.provider!.displayName} can help find your numbers. It gets the words, never the file. Just this document.'
+            : '${widget.provider!.displayName} can help find your numbers. It gets the words, never the photo. Just this document.',
         [
           ('Yes, just this document', () => _museAnswer(true)),
           ('No thanks', () => _museAnswer(false)),

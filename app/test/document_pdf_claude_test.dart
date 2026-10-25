@@ -10,7 +10,9 @@ import 'package:lifesim/documents/document_extract.dart';
 import 'package:lifesim/documents/document_ocr.dart';
 import 'package:lifesim/documents/document_screen.dart';
 import 'package:lifesim/documents/document_upload.dart';
+import 'package:lifesim/ui/widgets/widgets.dart' show LipSurface;
 import 'package:lifesim/voice/api_base.dart';
+import 'package:lifesim/checkin/consents.dart' show AiProvider;
 
 /// Synthetic, fake-patient text, as Vision would return it.
 const visitText =
@@ -21,8 +23,10 @@ const visitText =
 const visitDoc = RecognisedDocument(pages: [visitText], pageCount: 1);
 final pdfBytes = Uint8List.fromList(utf8.encode('%PDF-1.4 synthetic test bytes'));
 
+const sheetTitle = 'Send this PDF to Claude by Anthropic?';
 const sheetText =
-    'Claude by Anthropic will read this whole document to find your numbers. It may see other details in it too.';
+    'Claude by Anthropic will read this whole document to find your numbers. It may see other details in it too. Just this document.';
+const sentLine = 'What’s sent: the whole PDF. We don’t add your name or contact details.';
 
 /// Records which on-device paths ran.
 class FakeOcr implements DocumentOcr, PdfPicker {
@@ -57,11 +61,20 @@ class FakeText implements DocumentExtractor {
   }
 }
 
+class _ConsentText implements DocumentExtractor {
+  _ConsentText(this.answer);
+  final DocumentExtraction answer;
+  @override
+  Future<DocumentExtraction> extract(List<String> pages, {Map<String, bool> outsideAiConsent = const {}}) async =>
+      answer;
+}
+
 class FakePdfReader implements PdfDocumentReader {
   FakePdfReader(this.provider, {this.answer});
   final PdfReaderInfo? provider;
   Map<String, dynamic>? answer;
   final sent = <(Uint8List, Map<String, bool>)>[];
+  Completer<void>? gate;
 
   @override
   Future<PdfReaderInfo?> info() async => provider;
@@ -69,6 +82,7 @@ class FakePdfReader implements PdfDocumentReader {
   @override
   Future<DocumentExtraction> readPdf(Uint8List pdf, {required Map<String, bool> outsideAiConsent}) async {
     sent.add((pdf, outsideAiConsent));
+    await gate?.future;
     final a = answer;
     if (a == null) throw const DocumentExtractUnavailable();
     return DocumentExtraction.fromJson(a);
@@ -206,7 +220,9 @@ void main() {
 
     testWidgets('the sheet appears when Claude reads documents, and yes sends the PDF', (t) async {
       final (ocr, text, reader) = await open(t, answer: found('claude', providerStatus: 'used'));
+      expect(find.text(sheetTitle), findsOneWidget);
       expect(find.text(sheetText), findsOneWidget);
+      expect(find.text(sentLine), findsOneWidget);
       expect(find.text('Yes, send it'), findsOneWidget);
       expect(find.text('No, read it on this phone'), findsOneWidget);
       expect(reader.sent, isEmpty); // nothing goes before the yes
@@ -224,11 +240,13 @@ void main() {
 
     testWidgets('the provider name comes from the server', (t) async {
       await open(t, provider: const PdfReaderInfo(id: 'other', displayName: 'Some Reader'));
+      expect(find.text('Send this PDF to Some Reader?'), findsOneWidget);
       expect(
-        find.text('Some Reader will read this whole document to find your numbers. It may see other details in it too.'),
+        find.text('Some Reader will read this whole document to find your numbers. It may see other details in it too. Just this document.'),
         findsOneWidget,
       );
       expect(find.textContaining('Claude'), findsNothing);
+      expect(find.textContaining('improve its AI'), findsNothing);
     });
 
     testWidgets('no keeps it on the phone: recognised there, only text is sent', (t) async {
@@ -303,7 +321,138 @@ void main() {
       expect(t.takeException(), isNull);
     });
 
-    testWidgets('going back drops the picked PDF', (t) async {
+    testWidgets('a training line shows only when the capabilities say the provider may train', (t) async {
+      await open(
+        t,
+        provider: const PdfReaderInfo(id: 'x', displayName: 'Some Reader', company: 'Acme', mayTrainOnContent: true),
+      );
+      expect(find.text('Acme may use what you share to improve its AI.'), findsOneWidget);
+    });
+
+    testWidgets('the sheet has no overflow at 320 wide and 1.6x text, and buttons are 48pt or more', (t) async {
+      t.view.physicalSize = const Size(320, 640);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      final ocr = FakeOcr();
+      await t.pumpWidget(
+        MaterialApp(
+          builder: (c, child) =>
+              MediaQuery(data: MediaQuery.of(c).copyWith(textScaler: const TextScaler.linear(1.6)), child: child!),
+          home: DocumentUploadScreen(
+            service: DocumentUploadService(
+              ocr: ocr,
+              extractor: FakeText(),
+              pdfPicker: ocr,
+              pdfReader: FakePdfReader(claude),
+            ),
+            onDone: (_) {},
+          ),
+        ),
+      );
+      await tap(t, 'Choose a PDF');
+      expect(find.text(sheetTitle), findsOneWidget);
+      expect(t.takeException(), isNull);
+      await t.ensureVisible(find.text('No, read it on this phone'));
+      await t.pumpAndSettle();
+      for (final label in ['Yes, send it', 'No, read it on this phone']) {
+        expect(t.getSize(find.ancestor(of: find.text(label), matching: find.byType(LipSurface)).first).height,
+            greaterThanOrEqualTo(48));
+      }
+      expect(t.takeException(), isNull);
+    });
+
+    testWidgets('the reading screen after yes names the provider and says PDF', (t) async {
+      final (_, _, reader) = await open(t, answer: found('claude', providerStatus: 'used'));
+      reader.gate = Completer<void>();
+      await t.tap(find.text('Yes, send it'));
+      await t.pump(const Duration(milliseconds: 100));
+      expect(find.text('Claude by Anthropic is reading your PDF…'), findsOneWidget);
+      expect(find.textContaining('photo'), findsNothing);
+      reader.gate!.complete();
+      await t.pumpAndSettle();
+    });
+
+    testWidgets('the sheet is bound to documents.pdf capabilities: configured false means no sheet', (t) async {
+      setPhone(t);
+      Map<String, dynamic> caps(bool configured) => {
+        'documents': {
+          'pdf': {'provider': 'claude', 'display_name': 'Claude by Anthropic', 'company': 'Anthropic', 'configured': configured},
+        },
+      };
+      for (final configured in [true, false]) {
+        final ocr = FakeOcr();
+        final text = FakeText();
+        final requests = <http.Request>[];
+        final client = MockClient((r) async {
+          requests.add(r);
+          return http.Response(jsonEncode(caps(configured)), 200);
+        });
+        await t.pumpWidget(
+          MaterialApp(
+            key: UniqueKey(),
+            home: DocumentUploadScreen(
+              service: DocumentUploadService(
+                ocr: ocr,
+                extractor: text,
+                pdfPicker: ocr,
+                pdfReader: HttpPdfDocumentReader(client: client, base: ApiBase('http://test', client)),
+              ),
+              onDone: (_) {},
+            ),
+          ),
+        );
+        await tap(t, 'Choose a PDF');
+        expect(find.text(sheetTitle), configured ? findsOneWidget : findsNothing);
+        expect(requests.where((r) => r.url.path == '/api/documents/read'), isEmpty);
+        if (!configured) expect(ocr.scanned, [DocumentSource.pdf]);
+      }
+    });
+
+    testWidgets('photo copy keeps "never the photo"; the PDF path never says it', (t) async {
+      final provider = AiProvider.fromCapabilities({
+        'personalize': {'provider': 'claude', 'display_name': 'Claude by Anthropic', 'configured': true},
+      });
+      final consentText = DocumentExtraction.fromJson({
+        ...found('parser'),
+        'status': 'nothing_found',
+        'candidates': <Object>[],
+        'provider_status': 'consent_required',
+      });
+      Future<void> run(WidgetTester t, String choose, {PdfReaderInfo? reader}) async {
+        setPhone(t);
+        final ocr = FakeOcr();
+        await t.pumpWidget(
+          MaterialApp(
+            key: UniqueKey(),
+            home: DocumentUploadScreen(
+              provider: provider,
+              service: DocumentUploadService(
+                ocr: ocr,
+                extractor: _ConsentText(consentText),
+                pdfPicker: ocr,
+                pdfReader: FakePdfReader(reader),
+              ),
+              onDone: (_) {},
+            ),
+          ),
+        );
+        await tap(t, choose);
+      }
+
+      await run(t, 'Choose a photo');
+      expect(find.textContaining('never the photo'), findsOneWidget);
+      // PDF read on the phone (no PDF provider), then the words-only question.
+      await run(t, 'Choose a PDF');
+      expect(find.textContaining('never the photo'), findsNothing);
+      expect(find.textContaining('never the file'), findsOneWidget);
+      // PDF sheet, then "No": same.
+      await run(t, 'Choose a PDF', reader: claude);
+      expect(find.textContaining('photo'), findsNothing);
+      await tap(t, 'No, read it on this phone');
+      expect(find.textContaining('never the photo'), findsNothing);
+    });
+
+    testWidgets('dismissing the sheet drops the picked PDF', (t) async {
       setPhone(t);
       final ocr = FakeOcr();
       final service = DocumentUploadService(
@@ -315,7 +464,8 @@ void main() {
       await t.pumpWidget(MaterialApp(home: DocumentUploadScreen(service: service, onDone: (_) {})));
       await tap(t, 'Choose a PDF');
       expect(service.holdingPdf, isTrue);
-      await tap(t, 'Go back');
+      await t.tapAt(const Offset(10, 10)); // the scrim
+      await t.pumpAndSettle();
       expect(service.holdingPdf, isFalse);
       expect(find.text('Upload a health document?'), findsOneWidget);
     });

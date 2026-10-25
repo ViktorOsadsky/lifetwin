@@ -10,7 +10,7 @@ const _guard = Duration(milliseconds: 700);
 // Hands-free must not keep listening under another screen: words said there would be
 // sent as an answer to the question hidden below.
 void main() {
-  testWidgets('a screen pushed over the conversation closes the mic; back on top it listens again', (t) async {
+  Future<(VoiceOnboardingController, FakeSpeechInput)> listening(WidgetTester t) async {
     t.view.physicalSize = const Size(390, 844);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -29,6 +29,11 @@ void main() {
     expect(c.phase, VoicePhase.listening);
     expect(input.listening, isTrue);
 
+    return (c, input);
+  }
+
+  testWidgets('a screen pushed over the conversation closes the mic; back on top it listens again', (t) async {
+    final (c, input) = await listening(t);
     final nav = Navigator.of(t.element(find.byType(VoiceOnboardingScreen)));
     nav.push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('On top'))));
     await t.pump();
@@ -42,5 +47,21 @@ void main() {
     await t.pump();
     await t.pump(const Duration(milliseconds: 400));
     expect(input.listening, isTrue);
+  });
+
+  testWidgets('a mic the person turned off stays off when the screen on top goes', (t) async {
+    final (c, input) = await listening(t);
+    await c.turnMicOff();
+    await t.pump(const Duration(milliseconds: 100));
+    expect(input.listening, isFalse);
+    final nav = Navigator.of(t.element(find.byType(VoiceOnboardingScreen)));
+    nav.push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('On top'))));
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 400));
+    nav.pop();
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 400));
+    expect(c.micOff, isTrue);
+    expect(input.listening, isFalse);
   });
 }

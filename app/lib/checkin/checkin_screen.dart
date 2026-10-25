@@ -209,9 +209,10 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
   VoiceLook get _look {
     if (c.typing || !c.voiceUsable) return VoiceLook.typing;
     return switch (c.phase) {
-      CheckinPhase.listening => VoiceLook.listening,
+      CheckinPhase.listening when !c.micOff => VoiceLook.listening,
       CheckinPhase.speaking => VoiceLook.speaking,
       CheckinPhase.interpreting => VoiceLook.thinking,
+      _ when c.micOff && c.voiceUsable && !c.screenReader => VoiceLook.micOff,
       CheckinPhase.idle => c.screenReader ? VoiceLook.waiting : VoiceLook.between,
       _ => VoiceLook.typing,
     };
@@ -505,7 +506,9 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
                 children: [
                   const Icon(Icons.lightbulb_outline_rounded, size: 22, color: LtColors.ink),
                   const SizedBox(width: 6),
-                  Expanded(child: Text('Mochi has an idea for today', style: LtText.body(weight: FontWeight.w700))),
+                  Expanded(
+                    child: Text('Mochi has an idea for today', style: LtText.body(weight: FontWeight.w700)),
+                  ),
                 ],
               ),
             ),
@@ -673,6 +676,17 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
                       hint: 'Double tap, then speak',
                       onTap: c.phase == CheckinPhase.idle ? () => c.startTalk() : null,
                     ),
+                  if (!c.screenReader && (c.micOff || c.phase == CheckinPhase.listening)) ...[
+                    LipButton(
+                      key: const ValueKey('mic-toggle'),
+                      label: c.micOff ? 'Turn on mic' : 'Turn off mic',
+                      icon: c.micOff ? Icons.mic_rounded : Icons.mic_off_rounded,
+                      kind: LipKind.secondary,
+                      height: 72,
+                      onTap: c.micOff ? c.turnMicOn : c.turnMicOff,
+                    ),
+                    const SizedBox(height: 4),
+                  ],
                   Center(
                     child: LinkButton(
                       label: 'Type instead',

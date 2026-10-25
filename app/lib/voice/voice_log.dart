@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'backend_http_client.dart';
+
 /// Debug-only hands-free event log (`[hf] <time> <source> <event> <detail>`), for finding
 /// where a voice session stops being continuous on a real phone. Nothing is logged in a
 /// release build. Heard words are logged only in a build for the voice harness
@@ -34,7 +36,7 @@ void voiceLog(String source, String name, [String detail = '']) {
   // One at a time, so the harness log keeps the order.
   _posting = _posting.then((_) async {
     try {
-      await (_client ??= http.Client())
+      await (_client ??= BackendHttpClient())
           .post(
             Uri.parse('$voiceHarnessUrl/log'),
             headers: {'content-type': 'application/json'},

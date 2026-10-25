@@ -184,6 +184,15 @@ class TwinStore extends ChangeNotifier {
   bool get memoryConsent => _doc['memory_consent'] == true;
   bool get lifespanRevealSeen => _doc['lifespan_reveal_seen'] == true;
 
+  /// Local guest entry only, not an account or consent. Existing installs with saved
+  /// data continue directly to their twin; this optional field requires no migration.
+  bool get guestEntryAccepted =>
+      _doc['guest_entry_accepted'] == true ||
+      hasProfile ||
+      twin != null ||
+      checkins.isNotEmpty ||
+      historyEntries.isNotEmpty;
+
   /// Ideas for you, kept for the day on the phone: the last good answer (`date`, `response`), the ideas
   /// hidden today (`hidden_date`, `hidden_ids`) and the day Mochi's bubble last showed (`bubble_date`).
   Map<String, dynamic> get ideasState => Map<String, dynamic>.from(_doc['ideas'] as Map? ?? const {});
@@ -251,6 +260,8 @@ class TwinStore extends ChangeNotifier {
   ]);
 
   Future<void> _saveTwin(Map<String, dynamic> look) => _save('twin', look);
+
+  Future<void> _acceptGuestEntry() => _save('guest_entry_accepted', true);
 
   Future<void> _saveIdeasState(Map<String, dynamic> state) => _save('ideas', state);
 

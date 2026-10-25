@@ -160,6 +160,11 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// The screen is out of sight (left, or the app is in the background): nothing opens by itself.
   bool _paused = false;
 
+  /// The person closed the microphone (separate from [_paused], so coming back on screen never
+  /// reopens it). Nothing opens it by itself until [turnMicOn].
+  bool _micOff = false;
+  bool get micOff => _micOff;
+
   /// The conversation's first line has not been spoken yet; timed from [_openedAt].
   bool _firstLine = true;
   Stopwatch? _openedAt;
@@ -292,6 +297,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _startFailures = 0;
       _spokeMascotLine = false;
       _paused = false;
+      _micOff = false;
       _retry = null;
       _lastReply = null;
       _pendingHealth = null;
@@ -467,6 +473,8 @@ class VoiceOnboardingController extends ChangeNotifier {
     final t = turn;
     final why = _paused
         ? 'paused'
+        : _micOff
+        ? 'mic_off'
         : _busy
         ? 'busy'
         : typing
@@ -501,6 +509,27 @@ class VoiceOnboardingController extends ChangeNotifier {
     await _stopSpeech();
     if (!_currentConversation(gen)) return;
     if (!_paused) _listenAgain(); // back in sight meanwhile
+  }
+
+  /// "Turn off mic": words already heard go as the answer right away (as at the end-of-turn
+  /// silence); with none, the microphone just closes. It then stays off until [turnMicOn].
+  Future<void> turnMicOff() async {
+    if (_micOff || _disposed) return;
+    _set(() => _micOff = true);
+    _hf('mic_off');
+    _startRetry?.cancel();
+    _startRetry = null;
+    if (phase != VoicePhase.listening && _starting == null) return;
+    if (caption.trim().isNotEmpty) return stopTalk();
+    await cancelTalk();
+  }
+
+  /// "Turn on mic": hands-free listens again by itself.
+  void turnMicOn() {
+    if (!_micOff) return;
+    _set(() => _micOff = false);
+    _hf('mic_on');
+    _listenAgain();
   }
 
   /// The screen is in sight again: hands-free listens again by itself.

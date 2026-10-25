@@ -652,6 +652,34 @@
       "title": "DaySummary",
       "type": "object"
     },
+    "DocumentContext": {
+      "additionalProperties": false,
+      "description": "What the person confirmed from health documents, kept on the phone with no expiry\nuntil Delete my data (owner ruling 2026-10-25). The phone sends it only with memory\nconsent. Informational: it is never a model input, never ranks or changes a plan,\nand is never sent to a provider.",
+      "properties": {
+        "diagnoses": {
+          "items": {
+            "enum": [
+              "diabetes",
+              "hypertension"
+            ],
+            "type": "string"
+          },
+          "maxItems": 2,
+          "title": "Diagnoses",
+          "type": "array"
+        },
+        "readings": {
+          "items": {
+            "$ref": "#/$defs/Reading"
+          },
+          "maxItems": 40,
+          "title": "Readings",
+          "type": "array"
+        }
+      },
+      "title": "DocumentContext",
+      "type": "object"
+    },
     "ItemFeedback": {
       "additionalProperties": false,
       "properties": {
@@ -964,6 +992,17 @@
       "maxItems": 28,
       "title": "Checkins",
       "type": "array"
+    },
+    "document_context": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DocumentContext"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "feedback": {
       "anyOf": [

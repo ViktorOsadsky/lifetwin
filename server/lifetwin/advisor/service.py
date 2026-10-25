@@ -80,12 +80,6 @@ async def build_plan(
         "When we check websites, we only open the same trusted pages for everyone. "
         "We never send your health details. What we find online cannot change your tips.",
     ]
-    if request.profile is not None and request.profile.age is not None:
-        if request.profile.age < 18:
-            limitations.append(
-                "We do not set age-based goals for young people. A parent, guardian, or "
-                "pediatric care team can help choose activities that suit a young person."
-            )
     return AdvisorResponse(
         mascot_message="Let's pick one small step! These ideas come from trusted health "
         "websites. You choose what fits your life.",

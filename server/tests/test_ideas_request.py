@@ -9,7 +9,7 @@ from lifetwin.checkin.models import CheckinStartRequest, CheckinTurnRequest
 from lifetwin.checkin.service import CheckinService
 from lifetwin.onboarding.intents import asks_for_ideas
 from lifetwin.onboarding.script import SUPPLEMENT_REPLY
-from lifetwin.onboarding.service import IDEAS_LATER, IDEAS_LEAD
+from lifetwin.onboarding.service import IDEAS_LEAD
 
 SERVICE = CheckinService(clock=lambda: date(2026, 10, 24))
 
@@ -109,22 +109,20 @@ def test_onboarding_opens_ideas_with_age_known(text):
     assert not reply["emergency"]
 
 
-def test_onboarding_before_age_is_known_keeps_going_without_action():
+def test_onboarding_before_age_is_known_still_opens_ideas():
     d = Dialogue()
     d.say("Sure")
-    before = d.state
     reply = d.say("any ideas?")
-    assert reply.get("client_action") is None
-    assert reply["message"].startswith(IDEAS_LATER)
-    assert reply["state"] == before
+    assert reply["client_action"] == "open_ideas"
+    assert reply["message"].startswith(IDEAS_LEAD)
 
 
-def test_onboarding_under_18_has_no_action():
+def test_onboarding_under_18_opens_ideas_like_everyone():
     d = adult()
     d.state["confirmed_profile"]["age"] = 15
     reply = d.say("any ideas?")
-    assert reply.get("client_action") is None
-    assert IDEAS_LEAD not in reply["message"]
+    assert reply["client_action"] == "open_ideas"
+    assert reply["message"].startswith(IDEAS_LEAD)
 
 
 @pytest.mark.parametrize(
