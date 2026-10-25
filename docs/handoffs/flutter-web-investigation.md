@@ -100,7 +100,7 @@ establish a restriction on this independently authorized connection.
 | Supabase origin | Only `https://lifetwin-tau.vercel.app` added to `LIFETWIN_CORS_ORIGINS`, retaining existing provider keys and model configuration |
 | CORS probes | OPTIONS 204 and capabilities 200 return `Access-Control-Allow-Origin: https://lifetwin-tau.vercel.app` |
 | Served-byte checks | Index, bootstrap, `main.dart.js` and model reference exactly match the tested release files |
-| Browser acceptance | Guest entry → typing → AI opt-out → memory decline → live backend age question verified. No browser error/warning logs in this flow. Voice and optional AI processing were declined; full intake/confirmation acceptance remains separate. |
+| Browser acceptance | Guest entry → typing → AI opt-out → memory decline → synthetic age `65` → server readback “I heard you are 65. Is that right?” → Yes → “Question 1 saved” verified. Browser error/warning logs were empty. Voice and optional AI processing were declined; the full 12-question flow, voice and PDF upload were not accepted by this test. |
 
 The canonical alias was already public; **no deployment protection or access
 settings were changed**. The team alias remains protected. Preview aliases have
@@ -117,6 +117,12 @@ split into eight ordered parts of at most 6 MB, then uploaded with `upload_file`
 ```sh
 mkdir -p public && cat release.part-* | tar -xz -C public
 ```
+
+Vercel MCP build events confirmed that all eight archive parts and `vercel.json`
+were downloaded, the build completed in 994 ms, and deployment completed. The
+public canonical alias required no access-setting change; its protected team
+alias was left unchanged. No remaining deployment approval or access blocker is
+claimed for this completed release.
 
 The archive parts contain only compiled files; they are not committed. This
 Vercel build does not run Flutter or install app dependencies: Flutter compilation
@@ -177,7 +183,7 @@ PR / merge state: foundation [#236](https://github.com/ViktorOsadsky/lifetwin/pu
 merged at `a6bfa44`; the deployment is `READY`. This deployment-record update is a
 separate documentation PR pending merge.
 Contracts / model versions affected: none. Model assets are byte-unchanged.
-Next dependency: complete live typed intake/confirmation acceptance, implement honest
+Next dependency: complete the remaining typed intake flow, implement honest
 platform capability gates and browser PDF input (plus PCM if voice is required),
 then complete a synthetic upload → confirm → forecast → experiment → quiz
 walkthrough on the canonical URL. Existing track owners remain unchanged.
