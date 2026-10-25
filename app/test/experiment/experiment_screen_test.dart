@@ -585,7 +585,11 @@ void main() {
     });
   });
 
-  group('ideas (Y-11, Y-14)', () {
+  group('ideas (Y-11, Y-14), behind a flag', () {
+    test('the flag is off until /api/recommendations lands', () {
+      expect(recommendationsEnabled, isFalse);
+    });
+
     testWidgets('Mochi\'s own words; the source sheet has the engine text verbatim; quotes only with memory on', (
       t,
     ) async {

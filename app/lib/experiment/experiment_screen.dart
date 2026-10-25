@@ -33,7 +33,6 @@ class ExperimentScreen extends StatefulWidget {
     required this.appearance,
     this.onBack,
     this.onTellMochi,
-    this.onIdeas,
     this.openUrl = defaultOpenUrl,
   });
 
@@ -44,9 +43,6 @@ class ExperimentScreen extends StatefulWidget {
   /// "Tell Mochi" and "Change": opens the change conversation (`/api/change/start`), with the
   /// profile `field` when one answer is being changed, or none ("What would you like to update?").
   final void Function(String? field)? onTellMochi;
-
-  /// "Ideas for you": Mochi's suggestions (`/api/recommendations`). Hidden when null.
-  final VoidCallback? onIdeas;
   final OpenUrl openUrl;
 
   @override
@@ -188,15 +184,6 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
                   ),
                   const SizedBox(height: 8),
                 ],
-                if (widget.onIdeas != null)
-                  LipButton(
-                    label: 'Ideas for you',
-                    icon: Icons.lightbulb_outline_rounded,
-                    kind: LipKind.secondary,
-                    height: 56,
-                    fontSize: 20,
-                    onTap: widget.onIdeas,
-                  ),
               ],
             ),
           ),

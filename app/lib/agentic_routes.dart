@@ -15,8 +15,6 @@ import 'health/health_reader.dart';
 import 'health/health_sample.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'experiment/experiment_screen.dart';
-import 'experiment/ideas_screen.dart';
-import 'experiment/recommendations.dart';
 import 'experiment/room_pills.dart';
 import 'experiment/still_learning_screen.dart';
 import 'experiment/weight_screen.dart';
@@ -50,7 +48,6 @@ class AgenticRoutes {
     this.healthSamples,
     CapabilitiesClient? capabilities,
     BandClient? bandClient,
-    this.recommendations,
     this.onDeleted,
     // ignore: prefer_initializing_formals
   }) : _guide = guide,
@@ -74,9 +71,6 @@ class AgenticRoutes {
   final Future<List<HealthSample>> Function()? healthSamples;
   final CapabilitiesClient capabilities;
   final BandClient _bandClient;
-
-  /// Tests pass a fake source (given the provider id when Personal suggestions are on).
-  final RecommendationsSource Function(String? provider)? recommendations;
 
   /// Called after "Delete my data" has wiped the phone, so the app shell forgets what it held in memory.
   final VoidCallback? onDeleted;
@@ -322,45 +316,6 @@ class AgenticRoutes {
             Navigator.of(c).pop();
             changeWithMochi(context, field);
           },
-          onIdeas: () => ideas(c),
-        ),
-      ),
-    );
-  }
-
-  /// "Ideas for you": asks the outside-AI consent first (once), then Mochi's suggestions.
-  /// Without a yes they are worded by Mochi alone and nothing goes to an outside AI.
-  Future<void> ideas(BuildContext context) async {
-    final r = repo;
-    if (r == null) return;
-    final allowed = await ensureOutsideAiConsent(context);
-    if (!context.mounted) return;
-    final provider = allowed ? (await this.provider())?.id : null;
-    if (!context.mounted) return;
-    final source =
-        recommendations?.call(provider) ?? HttpRecommendations(repository: r, base: _api, outsideAiProvider: provider);
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (page) => FutureBuilder<List<Recommendation>>(
-          future: source.load(),
-          builder: (_, snap) => !snap.hasData
-              ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-              : ListenableBuilder(
-                  listenable: r,
-                  builder: (_, _) => IdeasScreen(
-                    appearance: look.value,
-                    ideas: snap.data!,
-                    cards: r.wellnessCards,
-                    memoryOn: r.store.memoryConsent,
-                    onBack: () => Navigator.of(page).pop(),
-                    onMemory: () => memoryChoice(page),
-                    // The lever is one tap away in the Experiment.
-                    onTry: (_) {
-                      Navigator.of(page).pop();
-                      experiment(context);
-                    },
-                  ),
-                ),
         ),
       ),
     );
