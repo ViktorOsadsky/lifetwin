@@ -11,6 +11,11 @@ import 'heard_gate.dart';
 import 'speech.dart';
 import 'voice_log.dart';
 import 'voice_token.dart';
+import 'pcm_player.dart';
+import 'browser_pcm_stub.dart'
+    if (dart.library.js_interop) 'browser_pcm_web.dart' as browser_pcm;
+
+export 'pcm_player.dart' show PcmPlayer;
 
 typedef SocketConnector = WebSocketChannel Function(Uri uri);
 
@@ -32,18 +37,6 @@ int _micStarts = 0;
 String _newContextId() {
   final r = Random.secure();
   return List.generate(16, (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
-}
-
-/// Streaming PCM16 mono playback.
-abstract class PcmPlayer {
-  Future<void> begin(int sampleRate);
-  Future<void> feed(Uint8List pcm);
-
-  /// Completes when everything fed has been played.
-  Future<void> finish();
-
-  /// Drops queued audio now.
-  Future<void> stop();
 }
 
 /// Whether everything fed has played. Remembers a drain that came before anyone waited,
@@ -151,7 +144,7 @@ class CartesiaSpeechOutput implements SpeechOutput {
     SocketConnector? connect,
     this.readyLimit = socketReadyLimit,
     this.silenceLimit = ttsSilenceLimit,
-  }) : _player = player ?? FlutterPcmSoundPlayer(),
+  }) : _player = player ?? browser_pcm.createBrowserPcmPlayer() ?? FlutterPcmSoundPlayer(),
        _connect = connect ?? _defaultConnect;
 
   final VoiceTokenProvider tokens;
@@ -227,7 +220,11 @@ class CartesiaSpeechOutput implements SpeechOutput {
                 onAudio = null;
                 if (first != null) voiceLog('tts', 'audio', '+${clock.elapsedMilliseconds}ms');
                 first?.call();
-                await _player.feed(pcm);
+                try {
+                  await _player.feed(pcm);
+                } catch (error) {
+                  if (!finished.isCompleted) finished.completeError(error);
+                }
               }
             case TtsDone():
               voiceLog('tts', 'stream_done', '+${clock.elapsedMilliseconds}ms');
