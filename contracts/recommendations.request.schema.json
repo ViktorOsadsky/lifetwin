@@ -552,6 +552,19 @@
       "title": "Habit Notes",
       "type": "array"
     },
+    "local_date": {
+      "anyOf": [
+        {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Local Date"
+    },
     "outside_ai_consent": {
       "additionalProperties": {
         "type": "boolean"

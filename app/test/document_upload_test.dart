@@ -122,7 +122,7 @@ void main() {
       ]);
       expect(server.bodies.single.keys.toSet(), {'pages', 'outside_ai_consent'});
       expect(server.bodies.single['pages'], [visitText]);
-      expect(server.bodies.single['outside_ai_consent'], false);
+      expect(server.bodies.single['outside_ai_consent'], isEmpty);
       expect(service.holdingText, isFalse);
     });
 
@@ -152,18 +152,18 @@ void main() {
       final server = FakeServer(
         (body) => ok({
           ...foundBody,
-          'candidates': body['outside_ai_consent'] == true ? foundBody['candidates'] : <Object>[],
-          'status': body['outside_ai_consent'] == true ? 'found' : 'nothing_found',
-          'provider_status': body['outside_ai_consent'] == true ? 'used' : 'consent_required',
+          'candidates': (body['outside_ai_consent'] as Map).isNotEmpty ? foundBody['candidates'] : <Object>[],
+          'status': (body['outside_ai_consent'] as Map).isNotEmpty ? 'found' : 'nothing_found',
+          'provider_status': (body['outside_ai_consent'] as Map).isNotEmpty ? 'used' : 'consent_required',
         }),
       );
       final service = serviceWith(FakeOcr(visitDoc), server);
       final first = await service.read(DocumentSource.photos);
       expect(first.museCouldHelp, isTrue);
       expect(service.holdingText, isTrue, reason: 'kept in memory for the question only');
-      final second = await service.retryWithMuse();
+      final second = await service.retryWithMuse('claude');
       expect(second.status, DocumentReadStatus.found);
-      expect(server.bodies.map((b) => b['outside_ai_consent']), [false, true]);
+      expect(server.bodies.map((b) => b['outside_ai_consent']), [<String, dynamic>{}, {'claude': true}]);
       expect(server.bodies.last['pages'], server.bodies.first['pages']);
       expect(service.holdingText, isFalse);
     });
@@ -385,7 +385,26 @@ void main() {
       expect(find.textContaining('Muse'), findsNothing);
       await tap(t, 'No thanks');
       expect(find.text("I didn't find any answers in it"), findsOneWidget);
-      expect(server.bodies.map((b) => b['outside_ai_consent']), [false]);
+      expect(server.bodies.map((b) => b['outside_ai_consent']), [<String, dynamic>{}]);
+    });
+
+    testWidgets('yes sends consent for the displayed provider only, keyed by its id', (t) async {
+      setPhone(t);
+      final server = FakeServer(
+        (body) => (body['outside_ai_consent'] as Map).isEmpty ? ok(consentBody) : ok(foundBody),
+      );
+      final provider = AiProvider.fromCapabilities({
+        'personalize': {'provider': 'claude', 'display_name': 'Claude by Anthropic', 'configured': true},
+      });
+      await t.pumpWidget(
+        MaterialApp(
+          home: DocumentUploadScreen(service: serviceWith(FakeOcr(visitDoc), server), provider: provider, onDone: (_) {}),
+        ),
+      );
+      await tap(t, 'Choose a photo');
+      await tap(t, 'Yes, just this document');
+      expect(server.bodies.map((b) => b['outside_ai_consent']), [<String, dynamic>{}, {'claude': true}]);
+      expect(server.bodies.any((b) => b['outside_ai_consent'] == true), isFalse);
     });
 
     testWidgets('no provider configured: the question is hidden and the text is dropped', (t) async {

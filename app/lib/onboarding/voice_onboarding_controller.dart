@@ -162,6 +162,9 @@ class VoiceOnboardingController extends ChangeNotifier {
   static const _speakLimit = Duration(seconds: 60);
   static const _turnLimit = Duration(seconds: 30);
   int _speechGen = 0;
+  int _conversationGen = 0;
+  Future<void>? _resetAudio;
+  bool _currentConversation(int gen) => !_disposed && gen == _conversationGen;
   Future<void>? _starting;
   Future<void> Function()? _retry;
   (String, bool)? _lastReply;
@@ -237,19 +240,58 @@ class VoiceOnboardingController extends ChangeNotifier {
   // ---- consent -----------------------------------------------------------
 
   /// After "Delete my data": forget the conversation and the choices made in it, so the next Talk starts fresh.
-  void resetConversation() => _set(() {
-    turn = null;
-    _firstLine = true;
-    correcting = false;
-    askingVoice = false;
-    aiHelper = false;
-    notice = null;
-    caption = '';
-    mascotLine = '';
-  });
+  void resetConversation() {
+    // Invalidate work before stopping audio: an old guide/recognizer completion
+    // must never restore deleted answers, retries or captions in the new session.
+    _conversationGen++;
+    _speechGen++;
+    _stopListenClock();
+    _openedAt?.stop();
+    _openedAt = null;
+    _starting = null;
+    // A second reset must also wait for any earlier bounded audio teardown.
+    final previousCleanup = _resetAudio;
+    _resetAudio = Future.wait([?previousCleanup, _cancelInput(), _stopOutput()]).then((_) {});
+    _set(() {
+      turn = null;
+      phase = VoicePhase.consent;
+      typing = false;
+      voiceUsable = true;
+      _busy = false;
+      _firstLine = true;
+      _nudged = false;
+      _drops = 0;
+      _startFailures = 0;
+      _spokeMascotLine = false;
+      _paused = false;
+      _retry = null;
+      _lastReply = null;
+      _pendingHealth = null;
+      _pendingSource = 'apple_health';
+      lastImport = null;
+      _voiceOutage = false;
+      _voiceBack = false;
+      _recovering = null;
+      correcting = false;
+      askingVoice = false;
+      aiHelper = false;
+      notice = null;
+      caption = '';
+      mascotLine = '';
+    });
+  }
+
+  Future<void> _cancelInput() async {
+    try {
+      await input.cancel().timeout(_quickLimit);
+    } catch (_) {}
+  }
 
   Future<void> answerConsent(bool yes, {bool aiHelper = false}) async {
     if (phase != VoicePhase.consent || _busy) return;
+    final gen = _conversationGen;
+    if (_resetAudio case final cleanup?) await cleanup;
+    if (!_currentConversation(gen) || phase != VoicePhase.consent || _busy) return;
     _set(() {
       voiceUsable = yes;
       typing = !yes;
@@ -269,12 +311,15 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// Turns the AI helper on or off. Turning it on right after an answer that
   /// needed it sends that same answer again, so the person doesn't repeat it.
   Future<void> setAiHelper(bool on) async {
+    final gen = _conversationGen;
     if (on == aiHelper || _busy) return;
     final resend = on && helperWouldHelp ? _lastReply : null;
     _set(() => aiHelper = on);
     if (resend != null) {
       if (phase == VoicePhase.listening) await cancelTalk();
+      if (!_currentConversation(gen)) return;
       await _stopSpeech();
+      if (!_currentConversation(gen)) return;
       await _send('reply', text: resend.$1, fromTranscript: resend.$2);
     }
   }
@@ -315,6 +360,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     required String none,
     required String wait,
   }) async {
+    final gen = _conversationGen;
     if (turn == null) {
       if (values.isEmpty) return false;
       _pendingHealth = {...?_pendingHealth, ...values};
@@ -335,9 +381,12 @@ class VoiceOnboardingController extends ChangeNotifier {
       return false;
     }
     if (phase == VoicePhase.listening) await cancelTalk();
+    if (!_currentConversation(gen)) return false;
     await _stopSpeech();
+    if (!_currentConversation(gen)) return false;
     final before = turn;
     await _send('import', values: values, importSource: source);
+    if (!_currentConversation(gen)) return false;
     final taken = notice == null && !identical(turn, before);
     if (taken) _set(() => lastImport = (count: values.length, source: source));
     return taken;
@@ -354,13 +403,21 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (_starting != null) return _starting!;
     if (typing || !voiceUsable) return Future.value();
     if (phase != VoicePhase.idle && phase != VoicePhase.speaking) return Future.value();
-    return _starting = _startTalk(auto: auto).whenComplete(() => _starting = null);
+    final starting = _startTalk(auto: auto);
+    _starting = starting;
+    return starting.whenComplete(() {
+      if (identical(_starting, starting)) _starting = null;
+    });
   }
 
   Future<void> _startTalk({bool auto = false}) async {
+    final gen = _conversationGen;
+    if (_resetAudio case final cleanup?) await cleanup;
+    if (!_currentConversation(gen)) return;
     if (phase == VoicePhase.speaking) {
       _speechGen++;
       await _stopOutput();
+      if (!_currentConversation(gen)) return;
     }
     _set(() {
       phase = VoicePhase.listening;
@@ -408,10 +465,13 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// The screen went out of sight (left, the app went to the background, a call): the
   /// microphone closes, words heard so far are dropped, and speech stops.
   Future<void> pauseVoice() async {
+    final gen = _conversationGen;
     _paused = true;
     _stopListenClock(); // at once, so nothing keeps ticking after the screen is gone
     await cancelTalk();
+    if (!_currentConversation(gen)) return;
     await _stopSpeech();
+    if (!_currentConversation(gen)) return;
     if (!_paused) _listenAgain(); // back in sight meanwhile
   }
 
@@ -422,27 +482,36 @@ class VoiceOnboardingController extends ChangeNotifier {
   }
 
   Future<void> _openMic() async {
+    final gen = _conversationGen;
     try {
       // The system's "Allow microphone?" question waits for the person, however long they
       // take to read it; only connecting afterwards is held to the start limit.
       if (!await input.hasPermission()) throw const MicDeniedException();
-      if (phase != VoicePhase.listening) return; // cancelled (or the app left) meanwhile
+      if (!_currentConversation(gen) || phase != VoicePhase.listening) return; // cancelled (or the app left) meanwhile
       await input
-          .start((text) {
-            if (text != caption) {
-              _silentSeconds = 0;
-              _hf('partial', heardForLog(text));
-            }
-            _set(() => caption = text);
-            _armEndOfTurn(text);
-          }, onDropped: (e) => _inputDropped(e))
+          .start(
+            (text) {
+              if (!_currentConversation(gen) || phase != VoicePhase.listening) return;
+              if (text != caption) {
+                _silentSeconds = 0;
+                _hf('partial', heardForLog(text));
+              }
+              _set(() => caption = text);
+              _armEndOfTurn(text);
+            },
+            onDropped: (e) {
+              if (_currentConversation(gen)) _inputDropped(e);
+            },
+          )
           .timeout(_micStartLimit);
+      if (!_currentConversation(gen)) return;
       if (phase == VoicePhase.listening && !_paused) {
         _hf('mic_open');
         _startFailures = 0;
         _startListenClock();
       }
     } on MicDeniedException {
+      if (!_currentConversation(gen)) return;
       _hf('error', 'mic_denied');
       _set(() {
         phase = VoicePhase.idle;
@@ -451,6 +520,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       });
       await _speakNotice(micDeniedNotice);
     } on VoiceUnavailableException catch (e) {
+      if (!_currentConversation(gen)) return;
       _hf('error', 'mic_start ${e.reason}');
       _set(() {
         phase = VoicePhase.idle;
@@ -462,12 +532,14 @@ class VoiceOnboardingController extends ChangeNotifier {
       try {
         await input.cancel().timeout(_quickLimit); // a start that never answered must not leave the mic on
       } catch (_) {}
+      if (!_currentConversation(gen)) return;
       if (_retryStart()) return;
       _set(() {
         phase = VoicePhase.idle;
         notice = voiceTroubleNotice;
       });
     } catch (e) {
+      if (!_currentConversation(gen)) return;
       _hf('error', 'mic_start $e');
       if (_retryStart()) return;
       _set(() {
@@ -485,9 +557,10 @@ class VoiceOnboardingController extends ChangeNotifier {
     _startFailures++;
     _hf('recognizer_restart', 'after_start_error $_startFailures');
     _startRetry?.cancel();
+    final gen = _conversationGen;
     _startRetry = Timer(Duration(seconds: _startFailures), () {
       _startRetry = null;
-      if (phase == VoicePhase.listening && !_paused && !_disposed) _restartMic(stopFirst: false);
+      if (_currentConversation(gen) && phase == VoicePhase.listening && !_paused) _restartMic(stopFirst: false);
     });
     return true;
   }
@@ -571,26 +644,33 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// Hands-free: a fresh recognizer session while the screen keeps saying "Listening".
   void _restartMic({bool stopFirst = true}) {
     if (_starting != null || _disposed) return;
+    final gen = _conversationGen;
     Future<void> again() async {
       if (stopFirst) {
         try {
           await input.cancel().timeout(_quickLimit);
         } catch (_) {}
       }
-      if (phase == VoicePhase.listening && !_disposed) await _openMic();
+      if (_currentConversation(gen) && phase == VoicePhase.listening) await _openMic();
     }
 
-    _starting = again().whenComplete(() => _starting = null);
+    final starting = again();
+    _starting = starting;
+    starting.whenComplete(() {
+      if (identical(_starting, starting)) _starting = null;
+    });
   }
 
   /// Hands-free, after a long quiet: "Take your time, I'm listening." once, then listening again.
   Future<void> _nudge() async {
+    final gen = _conversationGen;
     _nudged = true;
     _hf('nudge', 'quiet ${_silentSeconds}s');
     _hf('mic_close', 'nudge');
     try {
       await input.cancel().timeout(_quickLimit);
     } catch (_) {}
+    if (!_currentConversation(gen)) return;
     if (phase != VoicePhase.listening || _disposed) return;
     _set(() => phase = VoicePhase.idle);
     if (await _speak(listeningNudge, mascotLine: false)) _listenAgain();
@@ -612,7 +692,9 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   /// Closes the microphone and sends what was heard.
   Future<void> stopTalk() async {
+    final gen = _conversationGen;
     await _starting;
+    if (!_currentConversation(gen)) return;
     if (phase != VoicePhase.listening) return;
     _stopListenClock();
     _hf('mic_close', 'finish');
@@ -620,8 +702,10 @@ class VoiceOnboardingController extends ChangeNotifier {
     String text;
     try {
       text = (await input.finish().timeout(_micFinishLimit)).trim();
+      if (!_currentConversation(gen)) return;
       _hf('final', heardForLog(text));
     } on VoiceUnavailableException {
+      if (!_currentConversation(gen)) return;
       _hf('error', 'finish voice_unavailable');
       _set(() {
         phase = VoicePhase.idle;
@@ -630,6 +714,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       });
       return;
     } catch (e) {
+      if (!_currentConversation(gen)) return;
       _hf('error', 'finish $e');
       final heard = caption.trim();
       if (continuous && !_paused) {
@@ -667,9 +752,11 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   /// Closes the microphone and throws away what was heard.
   Future<void> cancelTalk() async {
+    final gen = _conversationGen;
     // A listen that began meanwhile is waited for too, so no microphone is left open.
     while (_starting != null) {
       await _starting;
+      if (!_currentConversation(gen)) return;
     }
     if (phase != VoicePhase.listening) return;
     _stopListenClock();
@@ -677,6 +764,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     try {
       await input.cancel().timeout(_quickLimit);
     } catch (_) {}
+    if (!_currentConversation(gen)) return;
     _set(() {
       phase = VoicePhase.idle;
       caption = '';
@@ -686,10 +774,12 @@ class VoiceOnboardingController extends ChangeNotifier {
   // ---- typing and buttons ---------------------------------------------------
 
   Future<void> submitTyped(String text) async {
+    final gen = _conversationGen;
     final t = text.trim();
     if (t.isEmpty || _busy) return;
     if (phase != VoicePhase.idle && phase != VoicePhase.speaking) return;
     await _stopSpeech();
+    if (!_currentConversation(gen)) return;
     _set(() => caption = t);
     await _send('reply', text: t);
   }
@@ -715,17 +805,22 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// A tapped quick answer: stops the mascot or the microphone, then sends the
   /// same words a person would say.
   Future<void> submitQuick(String text) async {
+    final gen = _conversationGen;
     if (_busy || phase == VoicePhase.interpreting) return;
     if (phase == VoicePhase.listening) await cancelTalk();
+    if (!_currentConversation(gen)) return;
     await submitTyped(text);
   }
 
   Future<void> confirm() => _button('confirm');
   Future<void> change() async {
+    final gen = _conversationGen;
     if (_busy || !confirming) return;
     if (phase == VoicePhase.listening) await cancelTalk();
+    if (!_currentConversation(gen)) return;
     if (phase != VoicePhase.idle && phase != VoicePhase.speaking) return;
     await _stopSpeech();
+    if (!_currentConversation(gen)) return;
     _set(() {
       correcting = true;
       notice = null;
@@ -759,10 +854,13 @@ class VoiceOnboardingController extends ChangeNotifier {
   }
 
   Future<void> _button(String action, {String? text}) async {
+    final gen = _conversationGen;
     if (_busy) return;
     if (phase == VoicePhase.listening) await cancelTalk();
+    if (!_currentConversation(gen)) return;
     if (phase != VoicePhase.idle && phase != VoicePhase.speaking && phase != VoicePhase.done) return;
     await _stopSpeech();
+    if (!_currentConversation(gen)) return;
     await _send(action, text: text);
   }
 
@@ -774,6 +872,7 @@ class VoiceOnboardingController extends ChangeNotifier {
   }
 
   Future<void> setTyping(bool value) async {
+    final gen = _conversationGen;
     if (value == typing) return;
     if (!value && !voiceUsable) {
       // Voice was never agreed to (or stopped working): ask before any talking.
@@ -783,7 +882,9 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (!value) _warmUp();
     if (value) {
       if (phase == VoicePhase.listening) await cancelTalk();
+      if (!_currentConversation(gen)) return;
       await _stopSpeech();
+      if (!_currentConversation(gen)) return;
       // A microphone that never answered must not leave the field switched off.
       if (!_busy && phase == VoicePhase.interpreting) _set(() => phase = VoicePhase.idle);
     }
@@ -809,8 +910,10 @@ class VoiceOnboardingController extends ChangeNotifier {
   }
 
   Future<void> hearAgain() async {
+    final gen = _conversationGen;
     if (!canHearAgain) return;
     if (phase == VoicePhase.listening) await cancelTalk();
+    if (!_currentConversation(gen)) return;
     final line = mascotLine;
     if (await _speak(line, replay: output.canReplay && _spokeMascotLine)) _listenAgain();
   }
@@ -824,6 +927,8 @@ class VoiceOnboardingController extends ChangeNotifier {
     Map<String, Object>? values,
     String? importSource,
   }) async {
+    final gen = _conversationGen;
+    if (!_currentConversation(gen)) return;
     if (_busy) return;
     if (turn == null && action != 'start') {
       // The first question never arrived (e.g. no network), so there is nothing to answer
@@ -831,6 +936,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       return _send('start');
     }
     if (phase == VoicePhase.listening) await cancelTalk(); // never wait on the server with the mic open
+    if (!_currentConversation(gen)) return;
     _busy = true;
     _tryVoiceAgain();
     if (action == 'reply' && text != null) _lastReply = (text, fromTranscript);
@@ -857,6 +963,7 @@ class VoiceOnboardingController extends ChangeNotifier {
           )
           .timeout(_turnLimit);
     } on GuideRejected catch (e) {
+      if (!_currentConversation(gen)) return;
       // The server explained what is wrong; show its words. Nothing was changed.
       _hf('error', 'turn rejected');
       _busy = false;
@@ -866,17 +973,22 @@ class VoiceOnboardingController extends ChangeNotifier {
       });
       return;
     } catch (e) {
+      if (!_currentConversation(gen)) return;
       _hf('error', 'turn $e');
       _busy = false;
       _set(() {
         phase = VoicePhase.idle;
         notice = e is GuideTooBusy ? e.message : noNetworkNotice;
-        _retry = () =>
-            _send(action, text: text, fromTranscript: fromTranscript, values: values, importSource: importSource);
+        _retry = () async {
+          if (_currentConversation(gen)) {
+            await _send(action, text: text, fromTranscript: fromTranscript, values: values, importSource: importSource);
+          }
+        };
       });
       if (!typing) await _speakNotice(notice!);
       return;
     }
+    if (!_currentConversation(gen)) return;
     _busy = false;
     _hf('turn', 'field=${t.state['current_field']} phase=${t.phase} complete=${t.complete}');
     _set(() {
@@ -923,10 +1035,15 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   void _tryVoiceAgain() {
     if (!_voiceOutage || _voiceBack || _recovering != null || _disposed) return;
+    final gen = _conversationGen;
     _recovering = input
         .warmUp()
-        .then((_) => _voiceBack = _voiceOutage, onError: (Object _) => false)
-        .whenComplete(() => _recovering = null);
+        .then((_) {
+          if (_currentConversation(gen)) _voiceBack = _voiceOutage;
+        }, onError: (Object _) {})
+        .whenComplete(() {
+          if (_currentConversation(gen)) _recovering = null;
+        });
   }
 
   /// Voice works again: back to talking, as before the outage. Call inside [_set].
@@ -955,9 +1072,11 @@ class VoiceOnboardingController extends ChangeNotifier {
   }
 
   Future<void> _stopSpeech() async {
+    final gen = _conversationGen;
     if (phase == VoicePhase.speaking) {
       _speechGen++;
       await _stopOutput();
+      if (!_currentConversation(gen)) return;
       _set(() => phase = turn?.complete == true ? VoicePhase.done : VoicePhase.idle);
     }
   }
@@ -982,7 +1101,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     var heard = false;
     Timer? wait;
     void onAudio() {
-      if (heard) return;
+      if (heard || gen != _speechGen || _disposed) return;
       heard = true;
       wait?.cancel();
       final at = _openedAt;
@@ -1002,6 +1121,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       final speech = replay ? output.replay() : output.speak(spokenText(line), onAudio: onAudio);
       await Future.any([speech, late.future]).timeout(_speakLimit);
       if (late.isCompleted) {
+        if (gen != _speechGen || _disposed) return false;
         await _stopOutput();
         _hf('tts_end', 'gave_up_first');
         if (gen == _speechGen && phase == VoicePhase.speaking) {
@@ -1035,6 +1155,8 @@ class VoiceOnboardingController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _conversationGen++;
+    _speechGen++;
     _stopListenClock();
     input.dispose();
     output.dispose();
