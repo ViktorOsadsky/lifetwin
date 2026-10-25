@@ -44,6 +44,7 @@ class RoomScreen extends StatefulWidget {
     this.extraPills = const [],
     this.onDrivers,
     this.onSettings,
+    this.onBand,
     this.today,
     this.stateLine,
   });
@@ -72,6 +73,9 @@ class RoomScreen extends StatefulWidget {
 
   /// The pinned Settings icon in the header (Apple Health, documents, privacy and the rest live there).
   final VoidCallback? onSettings;
+
+  /// The pinned "Add band" icon in the header (the wristband flow).
+  final VoidCallback? onBand;
 
   /// Home's one "Today with Mochi" slot, under the check-in button.
   final Widget? today;
@@ -211,6 +215,8 @@ class _RoomScreenState extends State<RoomScreen> {
                               builder: (context, look, _) => NameBanner(name: look.name),
                             ),
                             actions: [
+                              if (widget.onBand != null)
+                                _HeaderIcon(icon: Icons.watch_outlined, label: 'Add band', onTap: widget.onBand!),
                               if (widget.onHistory != null)
                                 _HeaderIcon(icon: Icons.history_rounded, label: 'My history', onTap: widget.onHistory!),
                               if (widget.onSettings != null)

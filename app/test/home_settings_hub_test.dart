@@ -62,6 +62,7 @@ void main() {
       expect(find.text(gone), findsNothing, reason: gone);
     }
     expect(find.byTooltip('Settings'), findsOneWidget);
+    expect(find.byTooltip('Add band'), findsOneWidget);
     expect(find.byTooltip('My history'), findsOneWidget);
   });
 
