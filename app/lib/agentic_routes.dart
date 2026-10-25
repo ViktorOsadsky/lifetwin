@@ -56,15 +56,18 @@ class AgenticRoutes {
     final r = repo;
     if (r == null) return child!;
     final v = voice();
-    return CheckInScope(
+    return ResumeRefresh(
       repository: r,
-      guide: guide,
-      speechInput: v.input,
-      speechOutput: v.output,
-      voiceUsable: () => v.voiceUsable,
-      healthSamples: healthSamples,
-      appearance: look,
-      child: child!,
+      child: CheckInScope(
+        repository: r,
+        guide: guide,
+        speechInput: v.input,
+        speechOutput: v.output,
+        voiceUsable: () => v.voiceUsable,
+        healthSamples: healthSamples,
+        appearance: look,
+        child: child!,
+      ),
     );
   }
 
@@ -169,4 +172,48 @@ class AgenticRoutes {
       ),
     );
   }
+}
+
+/// Keeps the forecast, the due check-in and the planned reminders current: when the app comes back
+/// to the foreground (the date may have moved on, so a daily window ends on a different day and today's
+/// check-in is due again) it calls `repo.refresh()` and plans the reminders again.
+class ResumeRefresh extends StatefulWidget {
+  const ResumeRefresh({super.key, required this.repository, required this.child, this.now});
+  final TwinRepository repository;
+  final Widget child;
+
+  /// The clock for reminders (tests set it).
+  final DateTime Function()? now;
+
+  @override
+  State<ResumeRefresh> createState() => _ResumeRefreshState();
+}
+
+class _ResumeRefreshState extends State<ResumeRefresh> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    final repo = widget.repository;
+    repo.refresh();
+    final reminders = repo.reminders;
+    final settings = repo.checkinSettings;
+    if (reminders != null && settings.remindersOn) {
+      reminders.reschedule(settings, localNow: (widget.now ?? DateTime.now)(), history: repo.store.checkins).ignore();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
