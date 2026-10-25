@@ -350,7 +350,7 @@
       "anyOf": [
         {
           "maximum": 120,
-          "minimum": 18,
+          "minimum": 1,
           "type": "integer"
         },
         {

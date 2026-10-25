@@ -10,6 +10,7 @@ import '../wellness/widgets.dart';
 import 'document_extract.dart';
 import 'document_ocr.dart';
 import 'document_upload.dart';
+import 'pdf_consent_sheet.dart';
 
 /// Painted upload flow backed by the shared OCR and confirmation engine.
 class DocumentUploadScreen extends StatefulWidget {
@@ -37,11 +38,18 @@ class DocumentUploadScreen extends StatefulWidget {
   State<DocumentUploadScreen> createState() => _DocumentUploadScreenState();
 }
 
-enum _Step { intro, reading, failed, muse, aboutYou, confirm, done }
+enum _Step { intro, reading, failed, pdfConsent, muse, aboutYou, confirm, done }
 
 class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
   _Step _step = _Step.intro;
   DocumentReading? _reading;
+  PdfReaderInfo? _pdfReader;
+
+  /// The person said yes: the PDF itself went to [_pdfReader], so "stays on your phone" is not said.
+  bool _sendingPdf = false;
+
+  /// The current document is a PDF (not a photo or scan): "the photo" is never said about it.
+  bool _isPdf = false;
   DocumentConfirmation? _confirm;
   bool _locked = false;
   bool _finished = false;
@@ -54,14 +62,56 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
   @override
   void dispose() {
+    _request++; // a read still on its way is dropped: no picker opens after leaving
     widget.service.discard();
     super.dispose();
   }
 
   Future<void> _read(DocumentSource source) async {
     final request = ++_request;
-    setState(() => _step = _Step.reading);
+    setState(() {
+      _isPdf = source == DocumentSource.pdf;
+      _step = _Step.reading;
+    });
     final reading = await widget.service.read(source);
+    if (request == _request) _show(reading);
+  }
+
+  /// "Choose a PDF": when the server names a provider that reads whole PDFs, ask first, per
+  /// document. Otherwise the PDF is read on this phone exactly as before.
+  Future<void> _choosePdf() async {
+    final request = ++_request;
+    setState(() {
+      _isPdf = true;
+      _step = _Step.reading;
+    });
+    final reader = await widget.service.pdfProvider();
+    if (request != _request) return;
+    if (reader == null) return _read(DocumentSource.pdf);
+    final early = await widget.service.pickPdf(reader);
+    if (request != _request) return;
+    if (early != null) return _show(early);
+    setState(() {
+      _pdfReader = reader;
+      _step = _Step.pdfConsent;
+    });
+    // ignore: use_build_context_synchronously
+    final answer = await showPdfConsentSheet(context, reader);
+    if (request != _request || !mounted) return;
+    if (answer == null) return _stop(); // dismissed: nothing read, nothing sent
+    _pdfAnswer(answer);
+  }
+
+  Future<void> _pdfAnswer(bool yes) async {
+    final reader = _pdfReader;
+    if (reader == null) return;
+    final request = ++_request;
+    setState(() {
+      _isPdf = true;
+      _sendingPdf = yes;
+      _step = _Step.reading;
+    });
+    final reading = yes ? await widget.service.sendPdf(reader.id) : await widget.service.readPdfOnPhone();
     if (request == _request) _show(reading);
   }
 
@@ -85,6 +135,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
     }
     setState(() {
       _reading = r;
+      _sendingPdf = false;
       if (r.status == DocumentReadStatus.cancelled) {
         _step = _Step.intro;
       } else if (r.museCouldHelp &&
@@ -111,7 +162,10 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
   void _stop() {
     _request++;
     widget.service.discard();
-    setState(() => _step = _Step.intro);
+    setState(() {
+      _sendingPdf = false;
+      _step = _Step.intro;
+    });
   }
 
   void _finish() {
@@ -129,13 +183,17 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
         [
           ('Scan a paper', () => _read(DocumentSource.camera)),
           ('Choose a photo', () => _read(DocumentSource.photos)),
-          ('Choose a PDF', () => _read(DocumentSource.pdf)),
+          ('Choose a PDF', _choosePdf),
           ("No thanks, I'll tell you instead", _finish),
         ],
       ),
       _Step.reading => _page(
-        'Reading your document…',
-        'One moment. Your photo stays on your phone.',
+        _sendingPdf ? '${_pdfReader?.displayName ?? 'It'} is reading your PDF…' : 'Reading your document…',
+        _sendingPdf
+            ? 'One moment.'
+            : _isPdf
+            ? 'One moment. Reading it on this phone.'
+            : 'One moment. Your photo stays on your phone.',
         [('Stop reading', _stop)],
         busy: true,
       ),
@@ -143,9 +201,13 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
         ('Try another document', () => setState(() => _step = _Step.intro)),
         ('Tell me instead', _finish),
       ]),
+      // Behind the PDF consent sheet (shown from _choosePdf): the intro stays put.
+      _Step.pdfConsent => _page('Upload a health document?', 'Choose how to read your PDF.', const []),
       _Step.muse => _page(
         'Some lines were hard to read',
-        '${widget.provider!.displayName} can help find your numbers. It gets the words, never the photo. Just this document.',
+        _isPdf
+            ? '${widget.provider!.displayName} can help find your numbers. It gets the words, never the file. Just this document.'
+            : '${widget.provider!.displayName} can help find your numbers. It gets the words, never the photo. Just this document.',
         [
           ('Yes, just this document', () => _museAnswer(true)),
           ('No thanks', () => _museAnswer(false)),
@@ -333,8 +395,14 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 }
 
 /// The real service: Vision on the phone, the LifeTwin server for the text.
-DocumentUploadService liveDocumentService({DocumentExtractor? extractor}) =>
-    DocumentUploadService(
-      ocr: const ChannelDocumentOcr(),
-      extractor: extractor ?? HttpDocumentExtractor(),
-    );
+/// PDFs go whole to the documents provider only when `/api/capabilities` names one and the
+/// person says yes for that document; it uses the same server address as [extractor].
+DocumentUploadService liveDocumentService({DocumentExtractor? extractor}) {
+  final text = extractor ?? HttpDocumentExtractor();
+  return DocumentUploadService(
+    ocr: const ChannelDocumentOcr(),
+    extractor: text,
+    pdfPicker: const ChannelDocumentOcr(),
+    pdfReader: HttpPdfDocumentReader(base: text is HttpDocumentExtractor ? text.base : null),
+  );
+}

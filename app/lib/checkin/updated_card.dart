@@ -15,12 +15,15 @@ import 'outlook_change.dart';
 /// The one-decimal figures sit behind "Exact numbers". With no number for either week it shows
 /// "No number yet" and what is still needed. "Linked, not proven." and "Why?" are always there.
 class OutlookChangeCard extends StatefulWidget {
-  const OutlookChangeCard({super.key, required this.change, this.onTellMochi});
+  const OutlookChangeCard({super.key, required this.change, this.onTellMochi, this.answerLabel});
 
   final OutlookChange change;
 
-  /// "Tell Mochi", in the no-number state.
+  /// The action in the no-number state ("Answer N more questions" when answers are missing).
   final VoidCallback? onTellMochi;
+
+  /// Its label; "Tell Mochi" when null.
+  final String? answerLabel;
 
   @override
   State<OutlookChangeCard> createState() => _OutlookChangeCardState();
@@ -42,7 +45,7 @@ class _OutlookChangeCardState extends State<OutlookChangeCard> {
             const SizedBox(height: 10),
             TextButton(
               onPressed: widget.onTellMochi,
-              child: Text('Tell Mochi', style: LtText.body(weight: FontWeight.w700)),
+              child: Text(widget.answerLabel ?? 'Tell Mochi', style: LtText.body(weight: FontWeight.w700)),
             ),
           ],
         ],

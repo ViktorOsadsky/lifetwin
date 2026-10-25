@@ -1,19 +1,44 @@
 """Stateless recommendations: the client sends the confirmed profile and habit notes."""
 
-from typing import Literal
+from datetime import date
+from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import AfterValidator, Field
 
+from lifetwin.coach.models import DocumentContext
 from lifetwin.core.models import ApiModel, HealthProfile
 from lifetwin.onboarding.models import CharacterHints, HabitNote, Recommendation
+
+
+def _real_date(value: str | None) -> str | None:
+    if value is not None:
+        try:
+            date.fromisoformat(value)
+        except ValueError as exc:
+            raise ValueError("Dates must be real calendar days, like 2026-10-24") from exc
+    return value
+
+
+LocalDate = Annotated[str, Field(pattern=r"^\d{4}-\d{2}-\d{2}$"), AfterValidator(_real_date)]
 
 
 class RecommendationRequest(ApiModel):
     profile: HealthProfile
     habit_notes: list[HabitNote] = Field(default_factory=list, max_length=10)
+    # Document readings and diagnoses kept as long-term context (memory consent only).
+    # Informational: accepted, never a model input, never sent to a provider.
+    document_context: DocumentContext | None = None
     # Per-provider opt-in for outside-AI wording, e.g. {"claude": true}. Consent for one
     # provider never covers another. Without it, Mochi's own templates are used.
     outside_ai_consent: dict[Literal["claude", "muse"], bool] = Field(default_factory=dict)
+    # The phone's calendar day, e.g. "2026-10-24". Ideas rotate by day: the same day
+    # always shows the same ideas. Missing: the server's today.
+    local_date: LocalDate | None = None
+    # Catalog idea ids the person set aside ("not for me"); never shown again in this
+    # response, not as an idea, an alternative or the featured one.
+    excluded_ids: list[Annotated[str, Field(min_length=1, max_length=60)]] = Field(
+        default_factory=list, max_length=50
+    )
 
 
 class LeverRanking(ApiModel):
@@ -25,10 +50,14 @@ class LeverRanking(ApiModel):
 class RecommendationResponse(ApiModel):
     schema_version: Literal["1.0"] = "1.0"
     # "not_enough_information": nothing confirmed yet that a suggestion could rest on.
+    # "under_age" is no longer sent (under-18s are treated normally); still accepted.
     status: Literal["ok", "not_enough_information", "under_age"]
     # Mochi's spoken lines: a short lead-in, then each suggestion.
     message: str = Field(min_length=1, max_length=1500)
     recommendations: list[Recommendation] = Field(max_length=3)
+    # Today's one featured idea: the id of the first non-encouragement recommendation
+    # (or the first one), stable for the whole local day. Null unless status is "ok".
+    featured: str | None = None
     # Model input fields still empty, in lever-ranking order; only when status is
     # "not_enough_information", otherwise empty.
     missing_inputs: list[str] = Field(default_factory=list, max_length=10)

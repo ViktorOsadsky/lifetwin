@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../onboarding/missing_answers.dart';
 import '../twin/twin_model.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
@@ -24,8 +25,17 @@ class StillLearningScreen extends StatefulWidget {
     required this.known,
     required this.onBack,
     this.onTellMochi,
+    this.onAnswerMissing,
+    this.questionCount,
     this.almostReady = false,
   });
+
+  /// The questions [onAnswerMissing] asks (height and weight are two); the missing inputs when null.
+  final int? questionCount;
+
+  /// "Answer N more questions": Mochi asks only the missing answers. When set and something is
+  /// missing, it is the dock's one primary action (instead of the open "Tell Mochi").
+  final VoidCallback? onAnswerMissing;
 
   final TwinAppearance appearance;
 
@@ -61,12 +71,19 @@ class _StillLearningScreenState extends State<StillLearningScreen> {
       backLabel: almost ? 'Back to Experiment' : 'Back to room',
       dock: Padding(
         padding: EdgeInsets.fromLTRB(16, 12, 16, 14 + MediaQuery.paddingOf(context).bottom),
-        child: LipButton(
-          label: ExperimentCopy.tellMochi,
-          icon: Icons.mic_none_rounded,
-          fontSize: 24,
-          onTap: widget.onTellMochi == null ? null : () => widget.onTellMochi!(null),
-        ),
+        child: n > 0 && widget.onAnswerMissing != null
+            ? LipButton(
+                label: answerMoreLabel(widget.questionCount ?? n),
+                icon: Icons.mic_none_rounded,
+                fontSize: 24,
+                onTap: widget.onAnswerMissing,
+              )
+            : LipButton(
+                label: ExperimentCopy.tellMochi,
+                icon: Icons.mic_none_rounded,
+                fontSize: 24,
+                onTap: widget.onTellMochi == null ? null : () => widget.onTellMochi!(null),
+              ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

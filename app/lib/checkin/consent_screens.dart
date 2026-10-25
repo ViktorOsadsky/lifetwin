@@ -33,10 +33,12 @@ class SavedOnPhoneNote extends StatelessWidget {
           children: [
             const Icon(Icons.smartphone_rounded, size: 20, color: LtColors.ink),
             const SizedBox(width: 6),
-            Text(
-              savedOnPhone,
-              style: LtText.body(weight: FontWeight.w700)
-                  .copyWith(decoration: TextDecoration.underline, decorationThickness: 2),
+            Flexible(
+              child: Text(
+                savedOnPhone,
+                style: LtText.body(weight: FontWeight.w700)
+                    .copyWith(decoration: TextDecoration.underline, decorationThickness: 2),
+              ),
             ),
             const SizedBox(width: 4),
             const Icon(Icons.info_outline_rounded, size: 18, color: LtColors.ink),
@@ -348,14 +350,16 @@ class AiSettingsScreen extends StatelessWidget {
           children: [
             WholeWordText('Off unless you turn it on.', style: LtText.body(color: LtColors.secondary)),
             const SizedBox(height: 10),
+            // The AI helper reads conversation answers: the server's `conversation` provider
+            // (Claude today), which may differ from Personal suggestions'.
             _SwitchRow(
               icon: Icons.mic_none_rounded,
               title: 'AI helper',
-              sub: name == null
+              sub: p == null
                   ? 'Only reads answers Mochi didn’t understand'
-                  : 'Only reads answers Mochi didn’t understand · Sends to $name',
+                  : 'Only reads answers Mochi didn’t understand · Sends to ${p.helper.displayName}',
               value: consents.aiHelper,
-              enabled: p != null && p.configured,
+              enabled: p != null && p.helper.configured,
               onChanged: consents.setAiHelper,
             ),
             const SizedBox(height: 10),

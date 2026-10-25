@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'api_base.dart';
+import 'backend_http_client.dart';
 import 'speech.dart';
 
 /// Short-lived Cartesia access token plus the settings the server chose.
@@ -75,7 +76,7 @@ class VoiceTokenProvider {
     DateTime Function()? now,
     this.refreshBefore = const Duration(seconds: 60),
     this.keepWarmFor = const Duration(minutes: 5),
-  }) : _client = client ?? http.Client(),
+  }) : _client = client ?? BackendHttpClient(),
        base = base ?? ApiBase(baseUrl ?? apiBaseUrl, client),
        _now = now ?? DateTime.now;
 

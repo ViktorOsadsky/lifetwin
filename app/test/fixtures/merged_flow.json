@@ -125,11 +125,14 @@
    ],
    "memory_consent": true,
    "seed": 0,
-   "small_talk": false
+   "small_talk": false,
+   "ask_only": null,
+   "missing_offered": true
   },
-  "message": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen.",
+  "message": "Got it. All done, thank you! One idea for you: You said you walk. Make a playlist of upbeat songs and match your steps to the beat for a song or two, then cool off with a slower one. More ideas are on the next screen.",
   "guide_mode": "guided",
   "provider_status": "not_configured",
+  "off_topic": false,
   "voice_status": "deferred",
   "speech_hint": null,
   "emergency": false,
@@ -140,7 +143,7 @@
   "mascot_events": [
    {
     "state": "celebrating",
-    "caption": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen."
+    "caption": "Got it. All done, thank you! One idea for you: You said you walk. Make a playlist of upbeat songs and match your steps to the beat for a song or two, then cool off with a slower one. More ideas are on the next screen."
    }
   ],
   "complete": true,
@@ -174,10 +177,10 @@
   "phrased_by": "templates",
   "recommendations": [
    {
-    "id": "vigorous_plus_60",
+    "id": "pace_beat",
     "lever": "vigorous_plus_60",
-    "title": "Pick up the pace",
-    "message": "You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150.",
+    "title": "Walk to the beat",
+    "message": "You said you walk. Make a playlist of upbeat songs and match your steps to the beat for a song or two, then cool off with a slower one.",
     "based_on": [
      "moderate_recreation_min_week",
      "vigorous_recreation_min_week",
@@ -190,15 +193,84 @@
     "effect_note": "Modeled difference for people like you, not a promise.",
     "experiment_lever": "vigorous_recreation_min_week",
     "experiment_target": 60,
-    "why_short": "A faster pace for part of your walk is a simple next step.",
+    "why_short": "A quick beat makes a faster pace feel easy.",
     "source_domain": "cdc.gov",
-    "causal_interpretation": false
+    "kind": "walk",
+    "causal_interpretation": false,
+    "alternatives": [
+     {
+      "id": "pace_brisk_friend",
+      "lever": "vigorous_plus_60",
+      "title": "Brisk walks with friends",
+      "message": "You said you walk. Walk with a friend at a pace where you can talk but not sing. You'll keep each other going a bit faster than you'd go alone.",
+      "based_on": [
+       "moderate_recreation_min_week",
+       "vigorous_recreation_min_week",
+       "note:exercise"
+      ],
+      "wellness_card": "activity",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": "some",
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "vigorous_recreation_min_week",
+      "experiment_target": 60,
+      "why_short": "A walking partner helps you keep a brisker pace.",
+      "source_domain": "cdc.gov",
+      "kind": "social",
+      "causal_interpretation": false
+     },
+     {
+      "id": "pace_hill",
+      "lever": "vigorous_plus_60",
+      "title": "Find a hill",
+      "message": "You said you walk. Add a hill or a slope to your usual route and climb it at a steady push. Walking uphill turns an easy walk into a livelier one.",
+      "based_on": [
+       "moderate_recreation_min_week",
+       "vigorous_recreation_min_week",
+       "note:exercise"
+      ],
+      "wellness_card": "activity",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": "some",
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "vigorous_recreation_min_week",
+      "experiment_target": 60,
+      "why_short": "A hill adds effort to your usual walk.",
+      "source_domain": "cdc.gov",
+      "kind": "walk",
+      "causal_interpretation": false
+     },
+     {
+      "id": "pace_lampposts",
+      "lever": "vigorous_plus_60",
+      "title": "Lamppost intervals",
+      "message": "You said you walk. On your next walk, pick up the pace between two lampposts, then ease off for the next two, and keep swapping. Brisk bits that leave you a little out of breath count double.",
+      "based_on": [
+       "moderate_recreation_min_week",
+       "vigorous_recreation_min_week",
+       "note:exercise"
+      ],
+      "wellness_card": "activity",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": "some",
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "vigorous_recreation_min_week",
+      "experiment_target": 60,
+      "why_short": "Faster stretches are a simple next step for walkers.",
+      "source_domain": "cdc.gov",
+      "kind": "walk",
+      "causal_interpretation": false
+     }
+    ]
    },
    {
-    "id": "short_sleep_plus_1h",
+    "id": "sleep_active_day",
     "lever": "short_sleep_plus_1h",
-    "title": "A bit more sleep",
-    "message": "You said you go to bed around 11. Going to bed a little earlier could help you get closer to the 7 hours CDC suggests for adults.",
+    "title": "Move in the daytime",
+    "message": "You said you go to bed around 11. Being active during the day, like a walk in the afternoon, can make it easier to fall asleep at night. Just finish brisk exercise a few hours before bed.",
     "based_on": [
      "sleep_hours",
      "note:sleep"
@@ -206,19 +278,85 @@
     "wellness_card": "sleep",
     "source_title": "CDC: About sleep",
     "source_url": "https://www.cdc.gov/sleep/about/index.html",
-    "effect": "small",
+    "effect": null,
     "effect_note": "Modeled difference for people like you, not a promise.",
     "experiment_lever": "sleep_hours",
     "experiment_target": 7.5,
-    "why_short": "A regular bedtime leaves room for the sleep adults are advised to get.",
+    "why_short": "Daytime activity can make it easier to fall asleep.",
     "source_domain": "cdc.gov",
-    "causal_interpretation": false
+    "kind": "walk",
+    "causal_interpretation": false,
+    "alternatives": [
+     {
+      "id": "sleep_bedtime_alarm",
+      "lever": "short_sleep_plus_1h",
+      "title": "A bedtime alarm",
+      "message": "You said you go to bed around 11. Set an alarm for bedtime, not just for waking. When it goes off, start winding down, even if it's in the middle of a show.",
+      "based_on": [
+       "sleep_hours",
+       "note:sleep"
+      ],
+      "wellness_card": "sleep",
+      "source_title": "CDC: About sleep",
+      "source_url": "https://www.cdc.gov/sleep/about/index.html",
+      "effect": "small",
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sleep_hours",
+      "experiment_target": 7.5,
+      "why_short": "A reminder at bedtime helps you keep a regular schedule.",
+      "source_domain": "cdc.gov",
+      "kind": "sleep",
+      "causal_interpretation": false
+     },
+     {
+      "id": "sleep_morning_light",
+      "lever": "short_sleep_plus_1h",
+      "title": "Morning daylight",
+      "message": "You said you go to bed around 11. Get outside into daylight soon after you wake, even for a few minutes with your coffee on the porch or on a short stroll. Morning light helps set your body clock.",
+      "based_on": [
+       "sleep_hours",
+       "note:sleep"
+      ],
+      "wellness_card": "sleep",
+      "source_title": "CDC: About sleep",
+      "source_url": "https://www.cdc.gov/sleep/about/index.html",
+      "effect": null,
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sleep_hours",
+      "experiment_target": 7.5,
+      "why_short": "Morning light helps set your body clock.",
+      "source_domain": "cdc.gov",
+      "kind": "walk",
+      "causal_interpretation": false
+     },
+     {
+      "id": "sleep_screens_off",
+      "lever": "short_sleep_plus_1h",
+      "title": "Screens off early",
+      "message": "You said you go to bed around 11. Put phones, laptops and the TV away about half an hour before bed, and charge your phone outside the bedroom if you can.",
+      "based_on": [
+       "sleep_hours",
+       "note:sleep"
+      ],
+      "wellness_card": "sleep",
+      "source_title": "CDC: About sleep",
+      "source_url": "https://www.cdc.gov/sleep/about/index.html",
+      "effect": null,
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sleep_hours",
+      "experiment_target": 7.5,
+      "why_short": "Screens off before bed make it easier to drift off.",
+      "source_domain": "cdc.gov",
+      "kind": "sleep",
+      "causal_interpretation": false
+     }
+    ]
    },
    {
-    "id": "sitting_minus_60_realistic",
+    "id": "sit_shift_reach",
     "lever": "sitting_minus_60_realistic",
-    "title": "Sit a little less",
-    "message": "You said a lot of your sitting is watching TV. You could stand up and move around during the ads. Moving more and sitting less is good advice for everyone.",
+    "title": "Shift and reach",
+    "message": "Every hour, change position, sit up tall, and reach both arms overhead and out to the sides a few times. Small moves break up long spells of stillness.",
     "based_on": [
      "sedentary_min_day",
      "note:sitting"
@@ -226,13 +364,79 @@
     "wellness_card": "sitting",
     "source_title": "CDC: Physical activity for adults",
     "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
-    "effect": "small",
+    "effect": null,
     "effect_note": "Modeled difference for people like you, not a promise.",
     "experiment_lever": "sedentary_min_day",
     "experiment_target": 360,
-    "why_short": "Standing and moving a bit more often breaks up long sitting.",
+    "why_short": "Small moves in your seat break up stillness.",
     "source_domain": "cdc.gov",
-    "causal_interpretation": false
+    "kind": "stretch",
+    "causal_interpretation": false,
+    "alternatives": [
+     {
+      "id": "sit_tv_stretch",
+      "lever": "sitting_minus_60_realistic",
+      "title": "A show-time stretch",
+      "message": "During each show, do a few seated stretches: stretch and flex your feet, circle your ankles and roll your shoulders.",
+      "based_on": [
+       "sedentary_min_day",
+       "note:sitting"
+      ],
+      "wellness_card": "sitting",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": null,
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sedentary_min_day",
+      "experiment_target": 360,
+      "why_short": "Moving in your seat breaks up long sitting.",
+      "source_domain": "cdc.gov",
+      "kind": "stretch",
+      "causal_interpretation": false
+     },
+     {
+      "id": "sit_ad_breaks",
+      "lever": "sitting_minus_60_realistic",
+      "title": "Stand for the ads",
+      "message": "Each time the ads come on, stand up and move around the room until your show is back. Over an evening, it adds up.",
+      "based_on": [
+       "sedentary_min_day",
+       "note:sitting"
+      ],
+      "wellness_card": "sitting",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": "small",
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sedentary_min_day",
+      "experiment_target": 360,
+      "why_short": "Standing for each ad break breaks up long sitting.",
+      "source_domain": "cdc.gov",
+      "kind": "stand",
+      "causal_interpretation": false
+     },
+     {
+      "id": "sit_remote_away",
+      "lever": "sitting_minus_60_realistic",
+      "title": "Remote across the room",
+      "message": "Keep the TV remote across the room, so changing the channel means a few steps each time.",
+      "based_on": [
+       "sedentary_min_day",
+       "note:sitting"
+      ],
+      "wellness_card": "sitting",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": "small",
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sedentary_min_day",
+      "experiment_target": 360,
+      "why_short": "A few extra steps each time break up long sitting.",
+      "source_domain": "cdc.gov",
+      "kind": "stand",
+      "causal_interpretation": false
+     }
+    ]
    }
   ],
   "limitations": [
@@ -297,11 +501,14 @@
    "habit_notes": [],
    "memory_consent": false,
    "seed": 0,
-   "small_talk": false
+   "small_talk": false,
+   "ask_only": null,
+   "missing_offered": true
   },
-  "message": "Got it. All done, thank you! One idea for you: You said you're active. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen.",
+  "message": "Got it. All done, thank you! One idea for you: You said you're active. Make a playlist of upbeat songs and match your steps to the beat for a song or two, then cool off with a slower one. More ideas are on the next screen.",
   "guide_mode": "guided",
   "provider_status": "not_configured",
+  "off_topic": false,
   "voice_status": "deferred",
   "speech_hint": null,
   "emergency": false,
@@ -312,7 +519,7 @@
   "mascot_events": [
    {
     "state": "celebrating",
-    "caption": "Got it. All done, thank you! One idea for you: You said you're active. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen."
+    "caption": "Got it. All done, thank you! One idea for you: You said you're active. Make a playlist of upbeat songs and match your steps to the beat for a song or two, then cool off with a slower one. More ideas are on the next screen."
    }
   ],
   "complete": true,
@@ -346,10 +553,10 @@
   "phrased_by": "templates",
   "recommendations": [
    {
-    "id": "vigorous_plus_60",
+    "id": "pace_beat",
     "lever": "vigorous_plus_60",
-    "title": "Pick up the pace",
-    "message": "You said you're active. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150.",
+    "title": "Walk to the beat",
+    "message": "You said you're active. Make a playlist of upbeat songs and match your steps to the beat for a song or two, then cool off with a slower one.",
     "based_on": [
      "moderate_recreation_min_week",
      "vigorous_recreation_min_week"
@@ -361,34 +568,163 @@
     "effect_note": "Modeled difference for people like you, not a promise.",
     "experiment_lever": "vigorous_recreation_min_week",
     "experiment_target": 60,
-    "why_short": "A faster pace for part of your walk is a simple next step.",
+    "why_short": "A quick beat makes a faster pace feel easy.",
     "source_domain": "cdc.gov",
-    "causal_interpretation": false
+    "kind": "walk",
+    "causal_interpretation": false,
+    "alternatives": [
+     {
+      "id": "pace_brisk_friend",
+      "lever": "vigorous_plus_60",
+      "title": "Brisk walks with friends",
+      "message": "You said you're active. Walk with a friend at a pace where you can talk but not sing. You'll keep each other going a bit faster than you'd go alone.",
+      "based_on": [
+       "moderate_recreation_min_week",
+       "vigorous_recreation_min_week"
+      ],
+      "wellness_card": "activity",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": "some",
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "vigorous_recreation_min_week",
+      "experiment_target": 60,
+      "why_short": "A walking partner helps you keep a brisker pace.",
+      "source_domain": "cdc.gov",
+      "kind": "social",
+      "causal_interpretation": false
+     },
+     {
+      "id": "pace_dance",
+      "lever": "vigorous_plus_60",
+      "title": "Dance it up",
+      "message": "You said you're active. Put on a fast song and dance hard enough that you're breathing quicker. A few songs in a row makes a great workout.",
+      "based_on": [
+       "moderate_recreation_min_week",
+       "vigorous_recreation_min_week"
+      ],
+      "wellness_card": "activity",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": "some",
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "vigorous_recreation_min_week",
+      "experiment_target": 60,
+      "why_short": "Fast songs turn dancing into a lively workout.",
+      "source_domain": "cdc.gov",
+      "kind": "dance",
+      "causal_interpretation": false
+     },
+     {
+      "id": "pace_hill",
+      "lever": "vigorous_plus_60",
+      "title": "Find a hill",
+      "message": "You said you're active. Add a hill or a slope to your usual route and climb it at a steady push. Walking uphill turns an easy walk into a livelier one.",
+      "based_on": [
+       "moderate_recreation_min_week",
+       "vigorous_recreation_min_week"
+      ],
+      "wellness_card": "activity",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": "some",
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "vigorous_recreation_min_week",
+      "experiment_target": 60,
+      "why_short": "A hill adds effort to your usual walk.",
+      "source_domain": "cdc.gov",
+      "kind": "walk",
+      "causal_interpretation": false
+     }
+    ]
    },
    {
-    "id": "short_sleep_plus_1h",
+    "id": "sleep_screens_off",
     "lever": "short_sleep_plus_1h",
-    "title": "A bit more sleep",
-    "message": "You could try a regular bedtime that leaves room for 7 hours, which CDC suggests for adults.",
+    "title": "Screens off early",
+    "message": "Put phones, laptops and the TV away about half an hour before bed, and charge your phone outside the bedroom if you can.",
     "based_on": [
      "sleep_hours"
     ],
     "wellness_card": "sleep",
     "source_title": "CDC: About sleep",
     "source_url": "https://www.cdc.gov/sleep/about/index.html",
-    "effect": "small",
+    "effect": null,
     "effect_note": "Modeled difference for people like you, not a promise.",
     "experiment_lever": "sleep_hours",
     "experiment_target": 7.5,
-    "why_short": "A regular bedtime leaves room for the sleep adults are advised to get.",
+    "why_short": "Screens off before bed make it easier to drift off.",
     "source_domain": "cdc.gov",
-    "causal_interpretation": false
+    "kind": "sleep",
+    "causal_interpretation": false,
+    "alternatives": [
+     {
+      "id": "sleep_wind_down",
+      "lever": "short_sleep_plus_1h",
+      "title": "A wind-down ritual",
+      "message": "Give yourself a half-hour wind-down before bed: dim the lights, have a warm shower, read a few pages or play some quiet music. The same routine each night tells your body it's time to sleep.",
+      "based_on": [
+       "sleep_hours"
+      ],
+      "wellness_card": "sleep",
+      "source_title": "CDC: About sleep",
+      "source_url": "https://www.cdc.gov/sleep/about/index.html",
+      "effect": null,
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sleep_hours",
+      "experiment_target": 7.5,
+      "why_short": "A calm routine tells your body it's bedtime.",
+      "source_domain": "cdc.gov",
+      "kind": "sleep",
+      "causal_interpretation": false
+     },
+     {
+      "id": "sleep_worry_list",
+      "lever": "short_sleep_plus_1h",
+      "title": "Park your worries",
+      "message": "If your mind races at night, write down what's on it before bed, with one small next step for each. Then it's on paper, not on repeat.",
+      "based_on": [
+       "sleep_hours"
+      ],
+      "wellness_card": "sleep",
+      "source_title": "CDC: About sleep",
+      "source_url": "https://www.cdc.gov/sleep/about/index.html",
+      "effect": null,
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sleep_hours",
+      "experiment_target": 7.5,
+      "why_short": "Writing worries down can quiet a busy mind at bedtime.",
+      "source_domain": "cdc.gov",
+      "kind": "sleep",
+      "causal_interpretation": false
+     },
+     {
+      "id": "sleep_active_day",
+      "lever": "short_sleep_plus_1h",
+      "title": "Move in the daytime",
+      "message": "Being active during the day, like a walk in the afternoon, can make it easier to fall asleep at night. Just finish brisk exercise a few hours before bed.",
+      "based_on": [
+       "sleep_hours"
+      ],
+      "wellness_card": "sleep",
+      "source_title": "CDC: About sleep",
+      "source_url": "https://www.cdc.gov/sleep/about/index.html",
+      "effect": null,
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sleep_hours",
+      "experiment_target": 7.5,
+      "why_short": "Daytime activity can make it easier to fall asleep.",
+      "source_domain": "cdc.gov",
+      "kind": "walk",
+      "causal_interpretation": false
+     }
+    ]
    },
    {
-    "id": "sitting_minus_60_realistic",
+    "id": "sit_phone_pace",
     "lever": "sitting_minus_60_realistic",
-    "title": "Sit a little less",
-    "message": "You could try standing up and moving for a few minutes every hour. Moving more and sitting less is good advice for everyone.",
+    "title": "Pace during phone calls",
+    "message": "Whenever the phone rings, stand up and walk around while you talk. Long chats become easy movement.",
     "based_on": [
      "sedentary_min_day"
     ],
@@ -399,9 +735,72 @@
     "effect_note": "Modeled difference for people like you, not a promise.",
     "experiment_lever": "sedentary_min_day",
     "experiment_target": 360,
-    "why_short": "Standing and moving a bit more often breaks up long sitting.",
+    "why_short": "Moving while you talk turns sitting time into moving time.",
     "source_domain": "cdc.gov",
-    "causal_interpretation": false
+    "kind": "walk",
+    "causal_interpretation": false,
+    "alternatives": [
+     {
+      "id": "sit_puzzle_walk",
+      "lever": "sitting_minus_60_realistic",
+      "title": "A walk between puzzles",
+      "message": "Between puzzles or games, get up for a short walk around the house or out to the garden and back.",
+      "based_on": [
+       "sedentary_min_day"
+      ],
+      "wellness_card": "sitting",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": "small",
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sedentary_min_day",
+      "experiment_target": 360,
+      "why_short": "A short walk between puzzles breaks up long sitting.",
+      "source_domain": "cdc.gov",
+      "kind": "walk",
+      "causal_interpretation": false
+     },
+     {
+      "id": "sit_remote_away",
+      "lever": "sitting_minus_60_realistic",
+      "title": "Remote across the room",
+      "message": "Keep the TV remote across the room, so changing the channel means a few steps each time.",
+      "based_on": [
+       "sedentary_min_day"
+      ],
+      "wellness_card": "sitting",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": "small",
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sedentary_min_day",
+      "experiment_target": 360,
+      "why_short": "A few extra steps each time break up long sitting.",
+      "source_domain": "cdc.gov",
+      "kind": "stand",
+      "causal_interpretation": false
+     },
+     {
+      "id": "sit_shift_reach",
+      "lever": "sitting_minus_60_realistic",
+      "title": "Shift and reach",
+      "message": "Every hour, change position, sit up tall, and reach both arms overhead and out to the sides a few times. Small moves break up long spells of stillness.",
+      "based_on": [
+       "sedentary_min_day"
+      ],
+      "wellness_card": "sitting",
+      "source_title": "CDC: Physical activity for adults",
+      "source_url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+      "effect": null,
+      "effect_note": "Modeled difference for people like you, not a promise.",
+      "experiment_lever": "sedentary_min_day",
+      "experiment_target": 360,
+      "why_short": "Small moves in your seat break up stillness.",
+      "source_domain": "cdc.gov",
+      "kind": "stretch",
+      "causal_interpretation": false
+     }
+    ]
    }
   ],
   "limitations": [
@@ -539,8 +938,10 @@
    "message": "All saved. Nice work taking a minute for yourself today!",
    "guide_mode": "guided",
    "provider_status": "not_configured",
+   "off_topic": false,
    "voice_status": "deferred",
    "speech_hint": null,
+   "client_action": null,
    "emergency": false,
    "profile_update": {
     "age": null,
@@ -714,8 +1115,10 @@
    "message": "All saved. Nice work taking a minute for yourself today!",
    "guide_mode": "guided",
    "provider_status": "not_configured",
+   "off_topic": false,
    "voice_status": "deferred",
    "speech_hint": null,
+   "client_action": null,
    "emergency": false,
    "profile_update": {
     "age": null,
@@ -889,8 +1292,10 @@
    "message": "All saved. Nice work taking a minute for yourself today!",
    "guide_mode": "guided",
    "provider_status": "not_configured",
+   "off_topic": false,
    "voice_status": "deferred",
    "speech_hint": null,
+   "client_action": null,
    "emergency": false,
    "profile_update": {
     "age": null,
@@ -1064,8 +1469,10 @@
    "message": "All saved. Nice work taking a minute for yourself today!",
    "guide_mode": "guided",
    "provider_status": "not_configured",
+   "off_topic": false,
    "voice_status": "deferred",
    "speech_hint": null,
+   "client_action": null,
    "emergency": false,
    "profile_update": {
     "age": null,
@@ -1239,8 +1646,10 @@
    "message": "All saved. Nice work taking a minute for yourself today!",
    "guide_mode": "guided",
    "provider_status": "not_configured",
+   "off_topic": false,
    "voice_status": "deferred",
    "speech_hint": null,
+   "client_action": null,
    "emergency": false,
    "profile_update": {
     "age": null,
@@ -1414,8 +1823,10 @@
    "message": "All saved. Nice work taking a minute for yourself today!",
    "guide_mode": "guided",
    "provider_status": "not_configured",
+   "off_topic": false,
    "voice_status": "deferred",
    "speech_hint": null,
+   "client_action": null,
    "emergency": false,
    "profile_update": {
     "age": null,
@@ -1589,8 +2000,10 @@
    "message": "All saved. Nice work taking a minute for yourself today!",
    "guide_mode": "guided",
    "provider_status": "not_configured",
+   "off_topic": false,
    "voice_status": "deferred",
    "speech_hint": null,
+   "client_action": null,
    "emergency": false,
    "profile_update": {
     "age": null,
@@ -1770,8 +2183,10 @@
   "message": "Got it. That's everything for this week. Thank you, it's always nice to catch up! I'll check in again next week.",
   "guide_mode": "guided",
   "provider_status": "not_configured",
+  "off_topic": false,
   "voice_status": "deferred",
   "speech_hint": null,
+  "client_action": null,
   "emergency": false,
   "profile_update": {
    "age": null,
@@ -1936,8 +2351,10 @@
   "message": "Thank you for telling me. I hope tomorrow feels a little better. See you then.",
   "guide_mode": "guided",
   "provider_status": "not_configured",
+  "off_topic": false,
   "voice_status": "deferred",
   "speech_hint": null,
+  "client_action": null,
   "emergency": false,
   "profile_update": {
    "age": null,

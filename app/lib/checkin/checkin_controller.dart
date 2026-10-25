@@ -14,6 +14,7 @@ import '../onboarding/voice_onboarding_controller.dart'
         voiceTroubleNotice;
 import '../voice/speech.dart';
 import '../voice/spoken_text.dart';
+import '../voice/voice_log.dart';
 import 'checkin_client.dart';
 import 'checkin_models.dart';
 import 'checkin_reminders.dart';
@@ -62,6 +63,7 @@ class CheckinController extends ChangeNotifier {
     required this.store,
     this.scheduler = const CheckinScheduler(),
     this.reminders,
+    this.replanReminders,
     this.healthSamples,
     this.onFinished,
     DateTime Function()? clock,
@@ -91,6 +93,11 @@ class CheckinController extends ChangeNotifier {
   /// Plans reminders after each check-in, and offers them once after the first one.
   final CheckinReminders? reminders;
 
+  /// Plans the reminders with everything the phone knows (the join date the weekly reminder
+  /// needs, a pending "Remind me later"): `TwinRepository.replanReminders`. Without it, they
+  /// are planned from [store]'s settings and check-ins alone, with no weekly reminder.
+  final Future<void> Function()? replanReminders;
+
   /// Apple Health samples already allowed by the person (sleep, exercise minutes), for
   /// one-tap "Looks right?" read-backs. Null when Apple Health isn't connected.
   final Future<List<HealthSample>> Function()? healthSamples;
@@ -113,7 +120,29 @@ class CheckinController extends ChangeNotifier {
   /// VoiceOver already reads Mochi's words aloud, so Mochi doesn't speak them again.
   bool screenReader = false;
 
+  /// The one current question is the server's: [turn]'s `current_field`. Everything the
+  /// client does is checked against it.
   CheckinTurn? turn;
+
+  /// "Question N done": the number of the question just answered. Set the moment the answer
+  /// is sent (typed, spoken or tapped), before the reply, and kept beside the next question
+  /// until the next answer. Cleared when the reply asks that same question again (not
+  /// understood, a check question, Go back) or the request failed.
+  int? savedNumber;
+
+  /// The question being answered while its reply is on its way: already counted as done.
+  String? _sending;
+
+  /// Bumped whenever the open question changes hands: an answer is sent, a turn arrives, or
+  /// heard words are dropped (Type instead, leaving). Voice work begun under an older token,
+  /// a late caption, an end-of-turn timer, a recognizer still finishing or a dropped
+  /// connection with words, belongs to a question that is no longer open, and is dropped.
+  int _turnToken = 0;
+  bool _stale(int token) => token != _turnToken;
+
+  /// The turn whose line Mochi last said to the end. Its audio is what a replay plays, so a
+  /// line that came while typing or out of sight is said fresh, never an older one replayed.
+  CheckinTurn? _saidTurn;
   String mascotLine = '';
   String caption = '';
 
@@ -154,9 +183,35 @@ class CheckinController extends ChangeNotifier {
   int _speechGen = 0;
 
   bool _nudged = false;
+
+  /// "I think I heard someone else" was said for this question (server `off_topic`).
+  bool _offTopicSaid = false;
+  bool _nudging = false;
+
+  /// Read-only, for the voice indicator: the nudge was said for this question.
+  bool get nudged => _nudged;
+
+  /// Read-only, for the voice indicator: the nudge is being spoken now (the microphone is closed).
+  bool get nudgeSpeaking => _nudging;
+
+  /// Hands-free: connections lost in a row before anything was heard (restarted out of sight).
+  /// A listen that stays up for [_healthyListen] starts the count again, so a recognizer
+  /// that ends now and then during a long quiet is always restarted.
   int _drops = 0;
   static const _dropRestarts = 3;
+  static const _healthyListen = 10; // seconds
+
+  /// Hands-free: a microphone that failed to open (socket, token, recorder) is tried again,
+  /// still "Listening", after 1 s, 2 s, then 3 s. Only then does the trouble notice show.
+  int _startFailures = 0;
+  static const _startRetries = 3;
+  Timer? _startRetry;
   bool _paused = false;
+
+  /// The person closed the microphone (separate from [_paused], so coming back on screen never
+  /// reopens it). Nothing opens it by itself until [turnMicOn].
+  bool _micOff = false;
+  bool get micOff => _micOff;
   bool _firstLine = true;
   Stopwatch? _openedAt;
   static const firstAudioLimit = voiceFirstAudioLimit;
@@ -195,7 +250,7 @@ class CheckinController extends ChangeNotifier {
     final t = turn;
     if (t == null || t.complete) return null;
     final asked = _topicsOf(t.questions);
-    final done = _topicsOf(t.doneFields.toList());
+    final done = _topicsOf([...t.doneFields, ?_sending]);
     return ((done.length + 1).clamp(1, asked.length), asked.length);
   }
 
@@ -234,6 +289,8 @@ class CheckinController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
+  void _hf(String name, [String detail = '']) => voiceLog('chk', name, detail);
+
   // ---- starting ----------------------------------------------------------
 
   /// Starts a check-in. For `quick`, the plan comes from the stored days and Apple
@@ -254,6 +311,7 @@ class CheckinController extends ChangeNotifier {
       plan = scheduler.due(localNow: now, history: history, days: days, health: await _health()).quick;
       if (plan == null) return false;
     }
+    _micOff = false;
     this.kind = kind;
     localDate = today;
     final previous = _previous(kind, history, days);
@@ -328,12 +386,40 @@ class CheckinController extends ChangeNotifier {
   /// speaks; not after a failed request (Try again stays), in an emergency pause, while
   /// Mochi's care question waits for "Keep going" or "Stop for today", or once done. The
   /// phone's microphone permission is asked by the first listen; a no switches to typing.
-  void _listenAgain() {
-    if (!continuous || _disposed || _paused || _busy || typing || !voiceUsable) return;
+  ///
+  /// [sayFirst] (back in sight, back to voice): a question Mochi has not said to the end yet,
+  /// say, one that came while typing or out of sight, is said once first. Never an older one.
+  void _listenAgain({bool sayFirst = false}) {
+    if (!continuous || _disposed) return;
     final t = turn;
-    if (t == null || t.complete || emergency || careQuestionOpen || _retry != null) return;
-    if (phase != CheckinPhase.idle) return;
-    if (!(mayListen?.call() ?? true)) return;
+    final why = _paused
+        ? 'paused'
+        : _micOff
+        ? 'mic_off'
+        : _busy
+        ? 'busy'
+        : typing
+        ? 'typing'
+        : !voiceUsable
+        ? 'voice_off'
+        : t == null || t.complete
+        ? 'no_question'
+        : emergency
+        ? 'emergency'
+        : careQuestionOpen
+        ? 'care_question'
+        : _retry != null
+        ? 'retry_shown'
+        : phase != CheckinPhase.idle
+        ? 'phase_${phase.name}'
+        : !(mayListen?.call() ?? true)
+        ? 'not_on_screen'
+        : null;
+    if (why != null) return _hf('listen_skip', why);
+    if (sayFirst && !identical(_saidTurn, t) && mascotLine.isNotEmpty) {
+      unawaited(hearAgain());
+      return;
+    }
     unawaited(startTalk(auto: true));
   }
 
@@ -346,45 +432,81 @@ class CheckinController extends ChangeNotifier {
     if (!_paused) _listenAgain(); // back in sight meanwhile
   }
 
+  /// "Turn off mic": words already heard go as the answer right away (as at the end-of-turn
+  /// silence); with none, the microphone just closes. It then stays off until [turnMicOn].
+  Future<void> turnMicOff() async {
+    if (_micOff || _disposed) return;
+    _set(() => _micOff = true);
+    _hf('mic_off');
+    _startRetry?.cancel();
+    _startRetry = null;
+    if (phase != CheckinPhase.listening && _starting == null) return;
+    if (caption.trim().isNotEmpty) return stopTalk();
+    await cancelTalk();
+  }
+
+  /// "Turn on mic": hands-free listens again by itself.
+  void turnMicOn() {
+    if (!_micOff) return;
+    _set(() => _micOff = false);
+    _hf('mic_on');
+    _listenAgain(sayFirst: true); // a question that came while it was off is said once first
+  }
+
   /// The screen is in sight again: hands-free listens again by itself.
   void resumeVoice() {
     _paused = false;
-    _listenAgain();
+    _listenAgain(sayFirst: true);
   }
 
   Future<void> _openMic() async {
+    final token = _turnToken;
     try {
       if (!await input.hasPermission()) throw const MicDeniedException();
       if (phase != CheckinPhase.listening) return;
       await input
           .start((text) {
-            if (text != caption) _silentSeconds = 0;
+            if (_disposed || _stale(token) || phase != CheckinPhase.listening) return; // a closed listen's late words
+            if (text != caption) {
+              _silentSeconds = 0;
+              _hf('partial', heardForLog(text));
+            }
             _set(() => caption = text);
             _armEndOfTurn(text);
-          }, onDropped: (_) => _inputDropped())
+          }, onDropped: (e) => _stale(token) ? null : _inputDropped(e))
           .timeout(_micStartLimit);
-      if (phase == CheckinPhase.listening && !_paused) _startListenClock();
+      if (phase == CheckinPhase.listening && !_paused) {
+        _hf('mic_open');
+        _startFailures = 0;
+        _startListenClock();
+      }
     } on MicDeniedException {
+      _hf('error', 'mic_denied');
       _set(() {
         phase = CheckinPhase.idle;
         typing = true;
         notice = micDeniedNotice;
       });
-    } on VoiceUnavailableException {
+    } on VoiceUnavailableException catch (e) {
+      _hf('error', 'mic_start ${e.reason}');
       _set(() {
         phase = CheckinPhase.idle;
         typing = true;
         _voiceOut();
       });
     } on TimeoutException {
+      _hf('error', 'mic_start timeout');
+      try {
+        await input.cancel().timeout(_quickLimit); // a start that never answered must not leave the mic on
+      } catch (_) {}
+      if (_retryStart()) return;
       _set(() {
         phase = CheckinPhase.idle;
         notice = voiceTroubleNotice;
       });
-      try {
-        await input.cancel().timeout(_quickLimit); // a start that never answered must not leave the mic on
-      } catch (_) {}
-    } catch (_) {
+    } catch (e) {
+      _hf('error', 'mic_start $e');
+      if (_retryStart()) return;
       _set(() {
         phase = CheckinPhase.idle;
         notice = voiceTroubleNotice;
@@ -392,15 +514,41 @@ class CheckinController extends ChangeNotifier {
     }
   }
 
+  /// Hands-free: a microphone that failed to open is opened again a little later, out of
+  /// sight. False when it is not hands-free now or the retries are used up.
+  bool _retryStart() {
+    if (!continuous || _paused || _disposed || phase != CheckinPhase.listening) return false;
+    if (_startFailures >= _startRetries) return false;
+    _startFailures++;
+    _hf('recognizer_restart', 'after_start_error $_startFailures');
+    _startRetry?.cancel();
+    _startRetry = Timer(Duration(seconds: _startFailures), () {
+      _startRetry = null;
+      if (phase == CheckinPhase.listening && !_paused && !_disposed) _restartMic(stopFirst: false);
+    });
+    return true;
+  }
+
   /// The connection was lost while listening. The input has already stopped the mic.
-  void _inputDropped() {
+  void _inputDropped(Object error) {
+    _hf('dropped', '$error phase=${phase.name} heard=${caption.trim().isNotEmpty} drops=$_drops');
     if (phase != CheckinPhase.listening) return;
     _stopListenClock();
-    if (continuous && !_paused && caption.trim().isEmpty && _drops < _dropRestarts) {
+    final heard = caption.trim();
+    if (continuous && !_paused && heard.isEmpty && _drops < _dropRestarts) {
       _drops++;
+      _hf('recognizer_restart', 'after_drop');
       _restartMic(stopFirst: false);
       return;
     }
+    if (continuous && !_paused && heard.isNotEmpty) {
+      // Words were heard before the connection went: they are the answer, as after a pause.
+      _hf('mic_close', 'dropped_send');
+      _set(() => phase = CheckinPhase.idle);
+      unawaited(_reply(heard, fromTranscript: true));
+      return;
+    }
+    _hf('mic_close', 'dropped');
     _set(() {
       phase = CheckinPhase.idle;
       notice = voiceTroubleNotice;
@@ -415,12 +563,14 @@ class CheckinController extends ChangeNotifier {
       if (phase != CheckinPhase.listening) return _stopListenClock();
       _listenedSeconds++;
       _silentSeconds++;
+      if (_listenedSeconds >= _healthyListen) _drops = 0;
       if (continuous && caption.trim().isEmpty) {
         if (!_nudged && _silentSeconds >= nudgeAfter.inSeconds) {
           _stopListenClock();
           unawaited(_nudge());
         } else if (_listenedSeconds >= sessionRestart.inSeconds) {
           _stopListenClock();
+          _hf('recognizer_restart', 'session ${_listenedSeconds}s');
           _restartMic();
         }
         return;
@@ -428,12 +578,14 @@ class CheckinController extends ChangeNotifier {
       if (continuous) {
         if (_listenedSeconds >= listenLimit.inSeconds) {
           _stopListenClock();
+          _hf('mic_close', 'listen_limit');
           unawaited(stopTalk());
         }
         return;
       }
       if (_silentSeconds >= silenceLimit.inSeconds || _listenedSeconds >= listenLimit.inSeconds) {
         _stopListenClock();
+        _hf('mic_close', _silentSeconds >= silenceLimit.inSeconds ? 'quiet' : 'listen_limit');
         unawaited(stopTalk());
       } else if (listenSecondsLeft != null) {
         _set(() {});
@@ -444,6 +596,8 @@ class CheckinController extends ChangeNotifier {
   void _stopListenClock() {
     _listenClock?.cancel();
     _listenClock = null;
+    _startRetry?.cancel();
+    _startRetry = null;
     _endOfTurnTimer?.cancel();
     _endOfTurnTimer = null;
   }
@@ -463,15 +617,22 @@ class CheckinController extends ChangeNotifier {
     _starting = again().whenComplete(() => _starting = null);
   }
 
-  /// Hands-free, after a long quiet: "Take your time, I'm listening." once, then listening again.
+  /// Hands-free, after a long quiet: "Take your time. I'm still listening." once, then listening again.
   Future<void> _nudge() async {
     _nudged = true;
+    _hf('nudge', 'quiet ${_silentSeconds}s');
+    _hf('mic_close', 'nudge');
     try {
       await input.cancel().timeout(_quickLimit);
     } catch (_) {}
     if (phase != CheckinPhase.listening || _disposed) return;
-    _set(() => phase = CheckinPhase.idle);
-    if (await _speak(listeningNudge)) _listenAgain();
+    _set(() {
+      phase = CheckinPhase.idle;
+      _nudging = true;
+    });
+    final said = await _speak(listeningNudge);
+    _set(() => _nudging = false);
+    if (said) _listenAgain();
   }
 
   /// Every caption (a new partial or final) restarts the end-of-turn wait, once a word is heard.
@@ -479,9 +640,13 @@ class CheckinController extends ChangeNotifier {
     if (_disposed || text.trim().isEmpty) return;
     _drops = 0;
     _endOfTurnTimer?.cancel();
+    final token = _turnToken;
     _endOfTurnTimer = Timer(endOfTurn, () {
       _endOfTurnTimer = null;
-      if (!_disposed && phase == CheckinPhase.listening) unawaited(stopTalk());
+      if (!_disposed && !_stale(token) && phase == CheckinPhase.listening) {
+        _hf('end_of_turn');
+        unawaited(stopTalk());
+      }
     });
   }
 
@@ -489,19 +654,42 @@ class CheckinController extends ChangeNotifier {
   Future<void> stopTalk() async {
     await _starting;
     if (phase != CheckinPhase.listening) return;
+    final token = _turnToken;
+    // Heard for another question meanwhile (typed, tapped, Type instead): dropped, never sent.
+    bool superseded() {
+      if (_disposed) return true;
+      if (!_stale(token)) return false;
+      _hf('stale_drop', 'finish');
+      return true;
+    }
+
     _stopListenClock();
+    _hf('mic_close', 'finish');
     _set(() => phase = CheckinPhase.interpreting);
     String text;
     try {
       text = (await input.finish().timeout(_micFinishLimit)).trim();
+      if (superseded()) return;
+      _hf('final', heardForLog(text));
     } on VoiceUnavailableException {
+      if (superseded()) return;
+      _hf('error', 'finish voice_unavailable');
       _set(() {
         phase = CheckinPhase.idle;
         typing = true;
         _voiceOut();
       });
       return;
-    } catch (_) {
+    } catch (e) {
+      if (superseded()) return;
+      _hf('error', 'finish $e');
+      final heard = caption.trim();
+      if (continuous && !_paused) {
+        // Hands-free: what was heard is still the answer; with nothing heard it just listens on.
+        _set(() => phase = CheckinPhase.idle);
+        if (heard.isNotEmpty) return _reply(heard, fromTranscript: true);
+        return _listenAgain();
+      }
       _set(() {
         phase = CheckinPhase.idle;
         notice = voiceTroubleNotice;
@@ -526,7 +714,9 @@ class CheckinController extends ChangeNotifier {
       await _starting;
     }
     if (phase != CheckinPhase.listening) return;
+    _turnToken++; // what was heard is dropped, and any late word of it too
     _stopListenClock();
+    _hf('mic_close', 'cancel');
     try {
       await input.cancel().timeout(_quickLimit);
     } catch (_) {}
@@ -614,15 +804,28 @@ class CheckinController extends ChangeNotifier {
     if (value) {
       if (phase == CheckinPhase.listening) await cancelTalk();
       await _stopSpeech();
+      // A microphone still finishing: its words are dropped (the person types instead), and
+      // the field is not left switched off.
+      if (!_busy && phase == CheckinPhase.interpreting) {
+        _turnToken++;
+        _set(() => phase = _restingPhase);
+      }
     }
     _set(() => typing = value);
-    if (!value) _listenAgain(); // back to voice: hands-free listens again
+    if (!value) {
+      // Back to voice (owner): a question Mochi already said is not read again, the mic just
+      // listens; one not said yet (it came while typing) is said once first. Once done,
+      // nothing is said or heard; while a reply is on its way, the reply is said instead.
+      // "Hear it again" is the way to replay.
+      _listenAgain(sayFirst: true);
+    }
   }
 
   Future<void> hearAgain() async {
     if (!canHearAgain) return;
     if (phase == CheckinPhase.listening) await cancelTalk();
-    if (await _speak(mascotLine, replay: output.canReplay)) _listenAgain();
+    // The speaker's last audio is replayed only when it is this very question.
+    if (await _speak(mascotLine, replay: output.canReplay && identical(_saidTurn, turn))) _listenAgain();
   }
 
   // ---- reminders -----------------------------------------------------------
@@ -642,6 +845,7 @@ class CheckinController extends ChangeNotifier {
         minute: minute,
       );
       await store.saveSettings(next);
+      if (next.remindersOn) await replanReminders?.call();
     } finally {
       _busy = false;
       _set(() => offerReminder = false);
@@ -664,7 +868,27 @@ class CheckinController extends ChangeNotifier {
     if (phase == CheckinPhase.done && action != 'reply') return;
     await _stopSpeech();
     final state = turn!.state;
-    await _send(() => guide.turn(action: action, state: state, text: text).timeout(_turnLimit));
+    await _send(
+      () => guide.turn(action: action, state: state, text: text).timeout(_turnLimit),
+      answering: _answering(action, text),
+    );
+  }
+
+  /// The open question this action answers (typed, spoken, tapped, skipped or confirmed),
+  /// or null when it answers none (start, resume, cancel, Go back, the final read-back).
+  String? _answering(String action, String? text) {
+    final t = turn;
+    final field = t?.currentField;
+    if (t == null || field == null || t.complete || emergency) return null;
+    if (t.phase != 'asking' && t.phase != 'confirming') return null;
+    if (!const {'reply', 'skip', 'confirm'}.contains(action) || text == 'go back') return null;
+    return field;
+  }
+
+  /// The request failed or was refused: the question is open again. Call inside [_set].
+  void _unmark() {
+    _sending = null;
+    savedNumber = null;
   }
 
   Future<void> _reply(String text, {bool fromTranscript = false}) async {
@@ -673,54 +897,85 @@ class CheckinController extends ChangeNotifier {
     // After "No, let me fix it", a reply is the right answer for the read-back; the
     // server reads "no, <answer>" as a correction.
     final words = (confirming || confirmingHealth) && correcting ? 'no, $text' : text;
+    _hf('send', 'reply ${heardForLog(words)}');
     await _send(
       () => guide.turn(action: 'reply', state: state, text: words, fromTranscript: fromTranscript).timeout(_turnLimit),
+      answering: _answering('reply', text),
     );
   }
 
-  Future<void> _send(Future<CheckinTurn> Function() request) async {
+  Future<void> _send(Future<CheckinTurn> Function() request, {String? answering}) async {
     if (_busy) return;
     if (phase == CheckinPhase.listening) await cancelTalk(); // never wait on the server with the mic open
     _busy = true;
     _tryVoiceAgain();
+    // An answer for the open question: it is marked done now, and anything still heard or
+    // timed for that question is dropped.
+    _turnToken++;
+    final number = answering == null ? null : questionNumber?.$1;
     _set(() {
       phase = CheckinPhase.interpreting;
       notice = null;
       _retry = null;
+      _sending = answering;
+      savedNumber = number;
     });
     final CheckinTurn t;
     try {
       t = await request();
     } on GuideRejected catch (e) {
+      _hf('error', 'turn rejected');
       _busy = false;
       _set(() {
+        _unmark();
         phase = turn == null ? CheckinPhase.notStarted : (turn!.complete ? CheckinPhase.done : CheckinPhase.idle);
         notice = e.message;
       });
       return;
     } catch (e) {
+      _hf('error', 'turn $e');
       _busy = false;
       _set(() {
+        _unmark();
         phase = turn == null ? CheckinPhase.notStarted : CheckinPhase.idle;
         notice = e is GuideTooBusy ? e.message : noNetworkNotice;
-        _retry = () => _send(request);
+        _retry = () => _send(request, answering: answering);
       });
       return;
     }
+    _hf('turn', 'field=${t.currentField} phase=${t.phase} complete=${t.complete}${t.offTopic ? ' off_topic' : ''}');
     _set(() {
       if (_voiceBack) _voiceIn();
       correcting = false;
-      if (t.currentField != turn?.currentField || t.phase != turn?.phase) _nudged = false;
+      if (t.currentField != turn?.currentField || t.phase != turn?.phase) {
+        _nudged = false;
+        _offTopicSaid = false;
+      }
       _drops = 0;
+      // The answer stays marked only if the reply took it; the same question asked again
+      // (not understood, a check question, Go back) is open again.
+      final sent = _sending;
+      _sending = null;
+      if (sent != null && (t.currentField == sent || !t.doneFields.contains(sent))) savedNumber = null;
+      _turnToken++;
       turn = t;
       emergency = t.emergency;
-      mascotLine = t.message;
+      // Someone else was heard: the question on screen stays, and the screen says why.
+      if (!t.offTopic || mascotLine.isEmpty) mascotLine = t.message;
+      if (t.offTopic) notice = offTopicLine;
       phase = t.complete || t.phase == 'cancelled' ? CheckinPhase.done : CheckinPhase.idle;
     });
     if (t.complete) await _finish(t);
     _busy = false;
+    final sayOffTopic = t.offTopic && !_offTopicSaid;
+    if (t.offTopic) _offTopicSaid = true;
     // Nothing is said while the screen is out of sight.
     if (typing || !voiceUsable || screenReader || _paused) return;
+    if (t.offTopic) {
+      // Asked once per question; after that it just listens again, so a TV never loops it.
+      if (!sayOffTopic || await _speak(offTopicLine)) _listenAgain();
+      return;
+    }
     final first = _firstLine;
     _firstLine = false;
     if (await _speak(t.message, first: first)) _listenAgain();
@@ -748,7 +1003,10 @@ class CheckinController extends ChangeNotifier {
     final r = reminders;
     if (r != null) {
       try {
-        if (settings.remindersOn) await r.reschedule(settings, localNow: _clock(), history: history);
+        if (settings.remindersOn) {
+          final replan = replanReminders;
+          replan == null ? await r.reschedule(settings, localNow: _clock(), history: history) : await replan();
+        }
       } catch (_) {} // a reminder that can't be planned never blocks the check-in
     }
     _set(() {
@@ -819,6 +1077,11 @@ class CheckinController extends ChangeNotifier {
   /// and nothing else took over meanwhile: hands-free may listen next.
   Future<bool> _speak(String line, {bool replay = false, bool first = false}) async {
     final gen = ++_speechGen;
+    // The speaker's last audio becomes this line: a replay is right only once it was said to
+    // the end, and only for this turn (the nudge is not a turn's line).
+    final saying = line == mascotLine ? turn : null;
+    _saidTurn = null;
+    _hf('tts_start', '${first ? 'first' : 'line'}${replay ? ' replay' : ''}');
     _set(() => phase = CheckinPhase.speaking);
     // The first line: no audio within [firstAudioLimit] leaves its words on screen and listens.
     final late = Completer<void>();
@@ -830,13 +1093,13 @@ class CheckinController extends ChangeNotifier {
       wait?.cancel();
       final at = _openedAt;
       _openedAt = null;
-      if (at != null) debugPrint('LifeTwin voice: first audio ${at.elapsedMilliseconds} ms after the check-in opened');
+      _hf('first_audio', at == null ? '' : 'opened+${at.elapsedMilliseconds}ms');
     }
 
     if (first && continuous) {
       wait = Timer(firstAudioLimit, () {
         if (heard || gen != _speechGen || _disposed) return;
-        debugPrint('LifeTwin voice: no audio ${firstAudioLimit.inMilliseconds} ms after the first line came; listening instead');
+        _hf('error', 'no audio ${firstAudioLimit.inMilliseconds} ms after the first line came; listening instead');
         _openedAt = null;
         late.complete();
       });
@@ -846,17 +1109,23 @@ class CheckinController extends ChangeNotifier {
       await Future.any([speech, late.future]).timeout(_speakLimit);
       if (late.isCompleted) {
         await _stopOutput();
+        _hf('tts_end', 'gave_up_first');
+        if (gen == _speechGen) _saidTurn = saying; // on screen, and not said again
         if (gen == _speechGen && phase == CheckinPhase.speaking) _set(() => phase = _restingPhase);
         return gen == _speechGen;
       }
+      _hf('tts_end', gen == _speechGen ? 'done' : 'stopped');
+      if (gen == _speechGen) _saidTurn = saying;
     } on VoiceUnavailableException {
+      _hf('tts_end', 'error voice_unavailable');
       if (gen == _speechGen) {
         _set(() {
           typing = true;
           _voiceOut();
         });
       }
-    } catch (_) {
+    } catch (e) {
+      _hf('tts_end', 'error $e');
       if (gen == _speechGen) _set(() => notice = speakTroubleNotice);
     } finally {
       wait?.cancel();

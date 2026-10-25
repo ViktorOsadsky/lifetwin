@@ -31,6 +31,18 @@ void main() {
     }
   });
 
+  test('the Stanford hat has its own poses on the same canvas as the Cal hat', () {
+    for (final type in TwinType.values) {
+      for (final pose in TwinPose.values) {
+        final stanford = twinAsset(type, TwinLook.stanfordHat, pose), cal = twinAsset(type, TwinLook.calHat, pose);
+        expect(stanford, 'assets/twin/${type.name}/pose_stanford/${pose.slug}.png');
+        expect(twinSpriteSize1x[stanford], twinSpriteSize1x[cal]);
+        expect(twinFeetAnchor(type, TwinLook.stanfordHat, pose), twinFeetAnchor(type, TwinLook.calHat, pose));
+      }
+    }
+    expect(twinDescription(TwinType.bear, TwinLook.stanfordHat), 'Your bear twin in the Stanford hat');
+  });
+
   testWidgets('every sprite the code names is bundled and matches the manifest', (t) async {
     final manifest = await t.runAsync(() => rootBundle.loadString('assets/twin/manifest.json'));
     final entries = {
@@ -61,6 +73,23 @@ void main() {
     await t.pump();
     final sprite = t.widget<TwinSprite>(find.byType(TwinSprite));
     expect(sprite.appearance.sprite(sprite.pose), 'assets/twin/bear/pose_nohat/stand.png');
+  });
+
+  testWidgets('Customize: choosing the Stanford hat shows it and Save look keeps it', (t) async {
+    setPhone(t);
+    final look = ValueNotifier(const TwinAppearance());
+    addTearDown(look.dispose);
+    await t.pumpWidget(MaterialApp(home: CustomizeScreen(appearance: look, onDone: () {})));
+    await t.tap(find.text('Stanford hat'));
+    await t.pump();
+    final sprite = t.widget<TwinSprite>(find.byType(TwinSprite));
+    expect(sprite.appearance.sprite(sprite.pose), 'assets/twin/bear/pose_stanford/stand.png');
+    await t.ensureVisible(find.text('Save look'));
+    await t.tap(find.text('Save look'));
+    await t.pump();
+    expect(look.value.look, TwinLook.stanfordHat);
+    final hat = await t.runAsync(() => rootBundle.load(stanfordHatAsset));
+    expect(hat!.lengthInBytes, greaterThan(1000));
   });
 
   testWidgets('the Lottie files load', (t) async {

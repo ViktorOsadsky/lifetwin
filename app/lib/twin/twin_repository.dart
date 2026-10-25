@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import '../checkin/checkin_models.dart' show CheckinSettings, DayLog, shiftDay;
+import '../checkin/checkin_models.dart' show CheckinSettings, DayLog, isoDay, shiftDay, weeklyOpen, weeklyOpensLine;
 import '../checkin/checkin_reminders.dart' show CheckinReminders;
 import '../checkin/checkin_store.dart' show mergeDayLogs;
 import '../checkin/daily_logs.dart' show weekProgress;
@@ -35,8 +35,9 @@ part 'twin_store.dart';
 /// - [applyCheckin]: a finished check-in (weekly `profile_update`, quick `daily_logs`);
 /// - [applyDayCorrection]: a past day's answer corrected through a confirmed Mochi read-back;
 /// - [applyMemoryConsent] / [addHabitNote]: habit notes, only with `memory_consent`;
-/// - [saveTwinLook], [saveCheckinSettings] and [markLifespanRevealSeen]: preferences, not
+/// - [saveTwinLook], [saveCheckinSettings], [continueAsGuest] and [markLifespanRevealSeen]: preferences, not
 ///   health data;
+/// - [saveTodayPlan]: the coach's latest daily plan, so its next revision has a base after a relaunch;
 /// - [deleteMyData].
 /// Experiments ([experiment]) are hypothetical and never write. Every health write also
 /// appends its [HistoryEntry], so [history] shows what happened as it happened.
@@ -79,7 +80,8 @@ class TwinRepository extends ChangeNotifier {
       reminders: reminders,
       clock: clock,
     );
-    // App start: plan the coming week's reminders again (a week away ends their plan).
+    // Older profiles get their join date now; then plan the coming week's reminders again.
+    if (repo.store.hasProfile) await repo._ensureFirstJoined();
     await repo.replanReminders();
     return repo;
   }
@@ -121,7 +123,6 @@ class TwinRepository extends ChangeNotifier {
   int? get ageGroupWidth => _current?.ageGroupWidth;
   bool? get ageGroupNearestBand => _current?.ageGroupNearestBand;
 
-
   /// The one-time lifespan reveal (owner override 2026-10-24): a rough, proof-of-concept
   /// age and YEAR (never a date) from the current profile: the model owner's yearly Cox
   /// projection blended with the life table at the seams (Rough guide where the life table
@@ -131,12 +132,34 @@ class TwinRepository extends ChangeNotifier {
   LifespanEstimate? get lifespanEstimate {
     final a = _current;
     if (a == null || a.rawLogRelativeHazard == null) return null;
+    if (a.roughMissing) {
+      // Rough (1 or 2 answers missing): the same marginalised hazard as the score.
+      final fill = a.raw['rough_fill'], shift = a.raw['rough_shift'];
+      if (fill is! Map || shift is! double) return null;
+      return LifespanEstimate.forProfile(
+        {...a.profileUsed, ...Map<String, dynamic>.from(fill)},
+        currentYear: _clock().year,
+        lab: model.projection,
+        logHazardShift: shift,
+      );
+    }
     return LifespanEstimate.forProfile(a.profileUsed, currentYear: _clock().year, lab: model.projection);
   }
+
+  /// The model inputs still missing (package names, e.g. `vigorous_recreation_min_week`); empty
+  /// before a profile and when nothing is missing. With 1 or 2 the score is rough
+  /// ([HealthScoreStatus.roughMissing]); with more there is none.
+  List<String> get missingInputs => _current?.missingInputs ?? const [];
+  int get missingCount => missingInputs.length;
 
   /// True once the person has seen the lifespan reveal; the UI then de-emphasises it.
   /// Persisted; [deleteMyData] clears it.
   bool get lifespanRevealSeen => store.lifespanRevealSeen;
+
+  /// Ideas for you, kept for the day (see [TwinStore.ideasState]); [deleteMyData] clears it.
+  Map<String, dynamic> get ideasState => store.ideasState;
+
+  Future<void> saveIdeasState(Map<String, dynamic> state) => store._saveIdeasState(state);
 
   /// Records that the lifespan reveal was shown.
   Future<void> markLifespanRevealSeen() async {
@@ -144,6 +167,17 @@ class TwinRepository extends ChangeNotifier {
     await store._setLifespanRevealSeen();
     notifyListeners();
   }
+
+  /// The coach's latest plan given today (local date), as its JSON; null when none was given today.
+  /// Persisted, so "what changed" survives a relaunch; [deleteMyData] clears it.
+  Map<String, dynamic>? get todayPlan {
+    final kept = store.lastPlan;
+    final plan = kept?['plan'];
+    return kept?['date'] == isoDay(dayOf(_clock())) && plan is Map ? Map<String, dynamic>.from(plan) : null;
+  }
+
+  /// Keeps [plan] (a `DailyPlan`'s JSON) as today's latest plan.
+  Future<void> saveTodayPlan(Map<String, dynamic> plan) => store._setLastPlan(isoDay(dayOf(_clock())), plan);
 
   /// Why [healthScore] has or lacks a number; null before a profile.
   HealthScoreStatus? get healthScoreStatus => _current?.healthScoreStatus;
@@ -253,6 +287,7 @@ class TwinRepository extends ChangeNotifier {
     Map<String, String> sources = const {},
     Set<String> estimated = const {},
   }) => _atomically(() async {
+    await _ensureFirstJoined();
     final before = store.profile;
     final merge = mergeConfirmed(before, confirmed);
     if (merge.refused.isNotEmpty) debugPrint('Refused profile fields: ${merge.refused}');
@@ -533,6 +568,13 @@ class TwinRepository extends ChangeNotifier {
   /// The twin's cosmetic look (`type`, `look`, `name`); never part of the health profile.
   Future<void> saveTwinLook(Map<String, dynamic> look) => store._saveTwin(look);
 
+  /// Remembers local guest entry without creating an account or granting AI, memory,
+  /// microphone or health-data consent. Delete my data removes this preference too.
+  Future<void> continueAsGuest() async {
+    await store._acceptGuestEntry();
+    notifyListeners();
+  }
+
   /// The person's consent to outside-AI wording (owner ruling: Muse is on, but only after
   /// this yes). Stored on the phone; off by default and after Delete my data. It covers
   /// only [outsideAiProvider]: consent for one provider never covers another.
@@ -560,10 +602,61 @@ class TwinRepository extends ChangeNotifier {
     final r = reminders;
     if (r == null) return const [];
     try {
-      return await r.reschedule(checkinSettings, localNow: _clock(), history: store.checkins);
+      final now = _clock();
+      final later = DateTime.tryParse(store.remindLater ?? '');
+      // A remind-later that has fired or passed is done; one still ahead survives the replan.
+      if (store.remindLater != null && (later == null || !later.isAfter(now))) await store._setRemindLater(null);
+      return await r.reschedule(
+        checkinSettings,
+        localNow: now,
+        history: store.checkins,
+        firstJoined: firstJoined,
+        remindLaterAt: later,
+      );
     } catch (e) {
       debugPrint('Reminders could not be planned: $e');
       return const [];
+    }
+  }
+
+  /// The local date onboarding was first completed (null before a profile). A profile saved
+  /// before this was kept reads as its earliest history or check-in date, else today.
+  String? get firstJoined {
+    final kept = store.firstJoined;
+    if (kept != null || !store.hasProfile) return kept;
+    final dates = [
+      for (final e in store.historyEntries) isoDay(dayOf(e.at)),
+      for (final c in store.checkins) c.date,
+    ]..sort();
+    return dates.isEmpty ? isoDay(dayOf(_clock())) : dates.first;
+  }
+
+  Future<void> _ensureFirstJoined() async {
+    if (store.firstJoined != null) return;
+    final joined = store.hasProfile ? firstJoined : isoDay(dayOf(_clock()));
+    if (joined != null) await store._setFirstJoined(joined);
+  }
+
+  /// Is the weekly check-in available now? Not until 7 full days after joining.
+  bool get weeklyAvailable => weeklyOpen(today: isoDay(dayOf(_clock())), firstJoined: firstJoined);
+
+  /// The gentle line shown where the weekly check-in would be, or null once it is open.
+  String? get weeklyGateLine {
+    final joined = firstJoined;
+    return joined == null || weeklyAvailable ? null : weeklyOpensLine(joined);
+  }
+
+  /// "Remind me later" on the plan: one extra reminder a couple of hours from now (reminders are on),
+  /// kept out of quiet hours. Remembered in the store so a refresh doesn't wipe it.
+  Future<void> remindLater() async {
+    final r = reminders;
+    if (r == null) return;
+    try {
+      final s = checkinSettings;
+      final at = await r.remindLater(_clock(), hour: s.reminderHour, minute: s.reminderMinute);
+      await store._setRemindLater(at.toIso8601String());
+    } catch (e) {
+      debugPrint('Reminder could not be planned: $e');
     }
   }
 
@@ -583,6 +676,7 @@ class TwinRepository extends ChangeNotifier {
       history: store.checkins,
       hour: hour,
       minute: minute,
+      firstJoined: firstJoined,
     );
     await saveCheckinSettings(next);
   }
@@ -770,8 +864,7 @@ class TwinRepository extends ChangeNotifier {
 
   List<HistoryItem> _documentReadingItems(DocumentCandidate c) {
     final date = c.date == null ? null : isoDate(c.date!);
-    HistoryItem item(String f, Object v) =>
-        HistoryItem(field: f, value: v, source: HistorySource.document, date: date);
+    HistoryItem item(String f, Object v) => HistoryItem(field: f, value: v, source: HistorySource.document, date: date);
     final v = c.value;
     switch (c.field) {
       case 'blood_pressure':

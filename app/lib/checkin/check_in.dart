@@ -31,6 +31,7 @@ import '../voice/speech.dart';
 import 'checkin_client.dart';
 import 'checkin_controller.dart';
 import 'checkin_screen.dart';
+import '../experiment/ideas_hub.dart';
 import '../experiment/widgets/source_link.dart';
 
 /// `quick` is the 1-minute daily chat; `weekly` is the longer one.
@@ -67,9 +68,15 @@ class CheckInScope extends InheritedWidget {
     this.openUrl = defaultOpenUrl,
     this.now,
     this.todayPlan,
+    this.ideas,
     this.handsFree = false,
+    this.answerMissing,
     required super.child,
   });
+
+  /// "Answer N more questions" (`AgenticRoutes.answerMissing`), for the outlook card's "Still
+  /// needed". Null: no action is shown.
+  final Future<void> Function(BuildContext context)? answerMissing;
 
   /// Voice check-ins listen by themselves whenever Mochi isn't speaking (the app sets this).
   final bool handsFree;
@@ -95,6 +102,9 @@ class CheckInScope extends InheritedWidget {
   /// Encouragement and "Here's today's plan" on the finished check-in. Null: neither is shown.
   final TodayPlanHook? todayPlan;
 
+  /// "Mochi has an idea for today" on the finished daily check-in. Null: not shown (under 18).
+  final IdeasAccess? Function()? ideas;
+
   static CheckInScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<CheckInScope>();
     assert(scope != null, 'openCheckIn needs a CheckInScope above it');
@@ -106,6 +116,15 @@ class CheckInScope extends InheritedWidget {
   @override
   bool updateShouldNotify(CheckInScope old) =>
       repository != old.repository || guide != old.guide || appearance != old.appearance;
+}
+
+/// The check-in screens on the navigator now, so a reminder tapped during one doesn't stack another.
+final _openCheckIns = <Route<void>>{};
+
+/// A check-in screen is open (on top or under another screen).
+bool get checkInOpen {
+  _openCheckIns.removeWhere((r) => !r.isActive);
+  return _openCheckIns.isNotEmpty;
 }
 
 /// Starts a [kind] check-in and completes when the person is back out of it. Does nothing without a
@@ -120,27 +139,30 @@ Future<void> openCheckIn(BuildContext context, {required CheckInKind kind}) {
     ownsSpeech: false,
     store: TwinCheckinStore(scope.repository),
     reminders: scope.repository.reminders,
+    replanReminders: scope.repository.replanReminders,
     healthSamples: scope.healthSamples,
     clock: scope.now,
     voiceUsable: scope.voiceUsable?.call() ?? false,
     handsFree: scope.handsFree,
   );
-  return Navigator.of(context)
-      .push<void>(
-        MaterialPageRoute<void>(
-          builder: (route) => ValueListenableBuilder<TwinAppearance>(
-            valueListenable: scope.appearance,
-            builder: (_, look, _) => CheckInScreen(
-              controller: controller,
-              kind: kind,
-              repository: scope.repository,
-              appearance: look,
-              open: scope.openUrl,
-              todayPlan: scope.todayPlan,
-              onDone: () => Navigator.of(route).pop(),
-            ),
-          ),
-        ),
-      )
-      .whenComplete(controller.dispose);
+  final page = MaterialPageRoute<void>(
+    builder: (route) => ValueListenableBuilder<TwinAppearance>(
+      valueListenable: scope.appearance,
+      builder: (_, look, _) => CheckInScreen(
+        controller: controller,
+        kind: kind,
+        repository: scope.repository,
+        appearance: look,
+        open: scope.openUrl,
+        todayPlan: scope.todayPlan,
+        ideas: scope.ideas?.call(),
+        onDone: () => Navigator.of(route).pop(),
+      ),
+    ),
+  );
+  _openCheckIns.add(page);
+  return Navigator.of(context).push<void>(page).whenComplete(() {
+    _openCheckIns.remove(page);
+    controller.dispose();
+  });
 }

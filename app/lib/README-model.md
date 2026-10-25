@@ -161,7 +161,9 @@ This is the one object the UI and the check-in controller (`lib/checkin/`) shoul
 | `Future<void> applyMemoryConsent(bool)` | The conversation's `memory_consent`; false deletes stored habit notes |
 | `Future<bool> addHabitNote(Map note)` | Kept only with memory consent; returns false otherwise |
 | `Future<void> saveTwinLook(Map look)` | Cosmetic `{type, look, name}` only |
+| `Future<void> continueAsGuest()` / `store.guestEntryAccepted` | Local guest-entry preference only; no account, identity, AI or memory consent. Existing profiles, saved twins and history bypass first-launch entry. Delete my data clears it |
 | `bool lifespanRevealSeen` / `markLifespanRevealSeen()` | The one-time lifespan reveal was shown; a UI flag, not health data |
+| `Map? todayPlan` / `saveTodayPlan(Map plan)` | The coach's latest daily plan for today's local date, the base for its next revision after a relaunch |
 | `List<WellnessCard> wellnessCards` | The package's guidance cards for `current` |
 | `TwinState twinState()` | The character's state now |
 | `TwinExperiment? experiment()` | A fresh experiment from `current` |
@@ -180,7 +182,7 @@ The owner's rule is: "people shouldn't be able to edit their things unless they 
 3. `applyCheckin`, for a finished check-in: a weekly `profile_update`, a quick check-in's `daily_logs`.
 4. `applyDayCorrection`, for a past day's answer, from a confirmed Mochi read-back.
 5. `applyMemoryConsent` / `addHabitNote`, for habit notes, only with consent.
-6. `saveTwinLook`, `saveCheckinSettings` and `markLifespanRevealSeen`, which are preferences.
+6. `saveTwinLook`, `saveCheckinSettings`, `continueAsGuest` and `markLifespanRevealSeen`, which are preferences, and `saveTodayPlan`, the coach's latest plan.
 7. `deleteMyData`.
 
 Every health write appends its history entry at the same time, in one write to the file: if the write fails, nothing of that event is kept (memory is put back), so a retry never records a check-in twice. Experiment levers are hypothetical and never write to the profile.

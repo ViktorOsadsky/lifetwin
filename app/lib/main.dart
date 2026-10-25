@@ -13,12 +13,14 @@ import 'agentic_routes.dart';
 import 'documents/document_screen.dart';
 import 'documents/document_extract.dart';
 import 'documents/document_upload.dart';
+import 'entry/guest_login_screen.dart';
 import 'forecast/forecast_client.dart';
 import 'forecast/forecast_screen.dart';
 import 'forecast/fortune_ceremony_screen.dart';
 import 'health/health_reader.dart';
 import 'health/health_screen.dart';
 import 'health/health_summary.dart';
+import 'onboarding/onboarding_autostart.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'onboarding/voice_onboarding_screen.dart';
 import 'room/room_screen.dart';
@@ -32,15 +34,22 @@ import 'wellness/widgets.dart' show WellnessCard;
 import 'wellness/repository_adapter.dart';
 import 'wellness/history_screen.dart';
 import 'twin/twin_repository.dart';
+import 'ui/loading_screen.dart';
 import 'ui/swoosh_route.dart';
+import 'ui/widgets/home_button.dart' show HomeDepth;
 import 'ui/theme.dart';
 import 'ui/twin_appearance.dart';
 import 'ui/twin_assets.dart';
 import 'voice/cartesia_speech.dart';
 import 'voice/http_conversation_guide.dart';
 import 'voice/voice_token.dart';
+import 'voice/backend_config.dart';
 
-void main() => runApp(const LifeTwinApp());
+Future<void> main() async {
+  holdFirstFrameUntilMochi(WidgetsFlutterBinding.ensureInitialized());
+  BackendConfig.current = await BackendConfig.load();
+  runApp(const LifeTwinApp(autoStartOnboarding: true, showGuestEntry: true, loadingScreen: true));
+}
 
 /// The game shell: the Room is home; Talk opens the mascot conversation
 /// (with the Apple Health import), Fortune the magic ball, Customize the look.
@@ -56,6 +65,9 @@ class LifeTwinApp extends StatefulWidget {
     this.appearance,
     this.twin,
     this.agentic,
+    this.autoStartOnboarding = false,
+    this.showGuestEntry = false,
+    this.loadingScreen = false,
   });
 
   /// Tests pass a controller built from fakes.
@@ -69,6 +81,16 @@ class LifeTwinApp extends StatefulWidget {
 
   /// The agentic screens' shell (check-ins, Experiment, pills). Tests pass one with fake clients.
   final AgenticRoutes? agentic;
+
+  /// With no profile, the conversation opens by itself after a short Mochi wave (the real app; tests opt in).
+  final bool autoStartOnboarding;
+
+  /// Production starts with local guest entry. Tests of the game shell can skip it;
+  /// existing installs with saved data continue directly to their twin.
+  final bool showGuestEntry;
+
+  /// Mochi waves on lavender until the model and the store open (the real app; tests opt in).
+  final bool loadingScreen;
 
   /// Tests pass a fake; otherwise Apple Health.
   final HealthReader? healthReader;
@@ -86,6 +108,8 @@ class LifeTwinApp extends StatefulWidget {
 class _LifeTwinAppState extends State<LifeTwinApp> {
   // Start finding the server now, while the Room is on screen.
   late final ApiBase _api = ApiBase()..url().ignore();
+  // The loading screen stays up until the model and the store open (or fail to).
+  late bool _loading = widget.loadingScreen;
   late final VoiceOnboardingController _controller = widget.controller ?? _live(_api);
   // Loaded once, at startup.
   late final Future<TwinRepository> _twin =
@@ -115,6 +139,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// "Delete my data" wiped the phone: forget what this session held in memory too, so the app is
   /// as on a fresh install (the Room with no profile; Talk starts at the voice question).
   void _afterDelete() {
+    _autoStartSession++; // the conversation may start by itself again, once
     _look.removeListener(_saveLook); // the default look must not be written back to the phone
     _look.value = const TwinAppearance();
     _look.addListener(_saveLook);
@@ -126,6 +151,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     _agentic.provider().then((p) => _aiProvider = p, onError: (Object _) {});
     setState(() {
       _stored = null;
+      _guestSession = false;
       _saved = false;
       _healthKeys.clear();
       _healthValues.clear();
@@ -139,6 +165,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// The profile saved on the phone by an earlier session, once the store is open.
   Map<String, dynamic>? _stored;
   RepositoryWellness? _wellness;
+  bool _guestSession = false;
+  bool _storeUnavailable = false;
 
   /// Cosmetic only; never merged into the confirmed profile.
   late final ValueNotifier<TwinAppearance> _look = widget.appearance ?? ValueNotifier(const TwinAppearance());
@@ -240,6 +268,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       BandFileSession.instance.start().ignore();
     }
     _agentic.provider().then((p) => _aiProvider = p, onError: (Object _) {});
+    _twin.whenComplete(() {
+      if (mounted && _loading) setState(() => _loading = false);
+    }).ignore();
     _twin.then((repo) {
       if (!mounted) return;
       final look = repo.store.twin;
@@ -253,10 +284,20 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
         if (repo.store.hasProfile) _stored = repo.store.profile;
       });
       _syncOutlook();
-    }, onError: (Object e) => debugPrint('LifeTwin model or store did not load: $e'));
+    }, onError: (Object e) {
+      debugPrint('LifeTwin model or store did not load: $e');
+      if (mounted) setState(() => _storeUnavailable = true);
+    });
   }
 
   void _saveLook() => _wellness?.repository.saveTwinLook(_appearanceJson(_look.value)).ignore();
+
+  Future<void> _continueAsGuest() async {
+    final repo = _wellness?.repository;
+    if (repo == null) return;
+    await repo.continueAsGuest();
+    if (mounted) setState(() => _guestSession = true);
+  }
 
   void _history(BuildContext context) {
     final adapter = _wellness;
@@ -346,6 +387,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     super.dispose();
   }
 
+  /// Bumped by "Delete my data": re-arms the one automatic start of the conversation.
+  int _autoStartSession = 0;
+
   /// Set once onboarding is saved and the reminder offer is still due; shown on the first return to the Room.
   (BuildContext, TwinRepository)? _reminderOffer;
 
@@ -361,7 +405,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   }
 
   /// The conversation, swooshing up from the Room.
-  void _talk(BuildContext context) => SwooshRoute.push<void>(
+  void _talk(BuildContext context, {bool quick = false}) => (quick ? OnboardingAutoStart.fadeIn<void> : SwooshRoute.push<void>)(
     context,
     (talkContext) => VoiceOnboardingScreen(
       controller: _controller,
@@ -462,6 +506,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               profile: _profile ?? const {},
               appearance: _look.value,
               healthKeys: {..._healthKeys},
+              documentKeys: {..._documentValues.keys},
               onDrivers: () => _agentic.drivers(forecastContext),
               onPlayQuiz: () => _playQuiz(forecastContext),
               onResult: (f) {
@@ -493,6 +538,12 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               onAnswers: () {
                 _toRoom(forecastContext);
                 _talk(forecastContext);
+              },
+              // Answers missing: only those, then back on the Room with the score (never the
+              // whole intake again, never a loop).
+              onAnswerMissing: () {
+                _toRoom(forecastContext);
+                _agentic.answerMissing(context);
               },
             ),
             transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
@@ -532,7 +583,12 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               onBack: () => Navigator.of(c).pop(),
               entries: [
                 SettingsEntry(label: 'Change an answer', description: 'Tell Mochi what changed', open: () => _agentic.changeAnswer(c)),
-                SettingsEntry(label: 'Weekly check-in', description: 'A few questions about your week', open: () => _agentic.weeklyCheckIn(c)),
+                SettingsEntry(
+                  label: 'Weekly check-in',
+                  description: _wellness?.repository.weeklyGateLine ?? 'A few questions about your week',
+                  enabled: _wellness?.repository.weeklyAvailable ?? true,
+                  open: () => _agentic.weeklyCheckIn(c),
+                ),
                 SettingsEntry(label: 'Apple Health', description: 'Bring in values you check', open: () => _health(c)),
                 SettingsEntry(label: 'Health documents', description: 'Upload a visit summary or lab report', open: () => _agentic.healthDocuments(c)),
                 SettingsEntry(label: 'Try a change', description: 'Explore what could move your outlook', open: () => _agentic.experiment(c)),
@@ -567,15 +623,26 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       title: 'LifeTwin',
       debugShowCheckedModeBanner: false,
       theme: lifeTwinTheme(),
+      navigatorKey: _agentic.navigatorKey,
+      navigatorObservers: [HomeDepth.instance],
       builder: _agentic.wrap,
-      home: ListenableBuilder(
+      home: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _loading ? const LoadingScreen() : ListenableBuilder(
         listenable: Listenable.merge([_controller, _wellness]),
-        builder: (context, _) => RoomScreen(
+        builder: (context, _) => widget.showGuestEntry && !_guestSession &&
+            !(_wellness?.repository.store.guestEntryAccepted ?? false)
+          ? GuestLoginScreen(onContinue: _wellness == null ? null : _continueAsGuest, unavailable: _storeUnavailable)
+          : OnboardingAutoStart(
+          enabled: widget.autoStartOnboarding && _wellness != null && _profile == null,
+          session: _autoStartSession,
+          appearance: _look,
+          onStart: (c, {required quick}) => _talk(c, quick: quick),
+          child: RoomScreen(
           appearance: _look,
           hasProfile: _profile != null,
           onTalk: () => _talk(context),
           onCustomize: () => _customize(context),
-          onFortune: () => _ceremony(context),
           outlook: _outlook,
           // The seven days come from the phone repository.
           wellness: _wellness?.snapshot ?? const WellnessSnapshot(),
@@ -586,8 +653,10 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onBand: _wellness == null ? null : () => _agentic.bandFlow(context),
           onSettings: _wellness == null ? null : () => _settings(context),
           stateLine: _stillLearning(),
+          ideas: _agentic.ideasAccess,
+          onAnswerMissing: _wellness == null ? null : () => _agentic.answerMissing(context),
           // The whole card opens the plan; its own buttons (Why?, thumbs) win the tap.
-          today: _wellness == null || (_profile?['age'] as num? ?? 0) < 18
+          today: _wellness == null
               ? null
               : GestureDetector(
                   behavior: HitTestBehavior.translucent,
@@ -595,6 +664,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
                   child: _agentic.todayCard(context, onTalk: () => _talk(context), condensed: true, trailing: const CheckInEntry(compact: true)),
                 ),
         ),
+        ),
+      ),
       ),
     );
   }

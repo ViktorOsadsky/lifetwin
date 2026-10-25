@@ -25,7 +25,7 @@ import 'room_sim.dart';
 /// Swap point: a future room engine (for example Flame) replaces this widget
 /// and its projector; [RoomSim] and the screen around it stay the same.
 class RoomScene extends StatefulWidget {
-  const RoomScene({super.key, required this.sim, required this.appearance, this.clear = EdgeInsets.zero, this.twinState, this.onActivityTap});
+  const RoomScene({super.key, required this.sim, required this.appearance, this.clear = EdgeInsets.zero, this.twinState, this.onActivityTap, this.onTwinTap});
 
   final RoomSim sim;
   final TwinAppearance appearance;
@@ -35,6 +35,9 @@ class RoomScene extends StatefulWidget {
 
   /// Tapping the activity pill ("Walking"): opens the chooser for what the twin does. Null: not tappable.
   final VoidCallback? onActivityTap;
+
+  /// Told after the twin was tapped (it still hops): Home shows today's idea.
+  final VoidCallback? onTwinTap;
 
   /// How much of the screen the UI covers at the top and the bottom.
   final EdgeInsets clear;
@@ -123,9 +126,14 @@ double roomAlignmentY(RoomLayout layout, Size box, EdgeInsets clear) {
 const _sceneDrop = 16.0;
 
 const _eyes = [Offset(0.4123, 0.2959), Offset(0.6007, 0.2932)];
-const _standAssets = {'assets/twin/bear/pose/stand.png', 'assets/twin/bear/pose_nohat/stand.png'};
+final _standAssets = {for (final look in TwinLook.values) twinAsset(TwinType.bear, look)};
 
 class _RoomSceneState extends State<RoomScene> {
+  void _tapTwin() {
+    widget.sim.tapTwin();
+    widget.onTwinTap?.call();
+  }
+
   late final Ticker _ticker = Ticker(_tick);
   Duration _last = Duration.zero;
   Timer? _rest;
@@ -413,11 +421,11 @@ class _RoomSceneState extends State<RoomScene> {
           // Named, so VoiceOver never meets an unlabelled button.
           label: twinDescription(widget.appearance.type, widget.appearance.look),
           hint: sim.onBed ? 'Tap to wake' : 'Tap to hop, hold for dizzy',
-          onTap: sim.tapTwin,
+          onTap: _tapTwin,
           onLongPress: sim.longPressTwin,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: sim.tapTwin,
+            onTap: _tapTwin,
             onLongPress: sim.longPressTwin,
             child: Opacity(
               opacity: sim.opacity.clamp(0.0, 1.0),

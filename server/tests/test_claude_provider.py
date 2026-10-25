@@ -41,6 +41,7 @@ PROVIDER_ENV = (
     "OPENAI_API_KEY",
     "OPENAI_MODEL",
     "LLM_ALLOW_CONTRIBUTOR",
+    "CONVERSATION_PROVIDER",
 )
 REQUEST = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
 
@@ -109,7 +110,8 @@ def test_an_anthropic_key_makes_claude_the_default_when_providers_are_unset():
     assert isinstance(app.state.personalizer, ClaudePersonalizer)
     assert isinstance(app.state.conversation_service.extractor, AnthropicExtractor)
     assert app.state.document_service.provider == "claude"
-    assert app.state.checkin_service.personalizer is app.state.personalizer
+    # Conversation turns have their own Claude personalizer (CONVERSATION_PROVIDER).
+    assert app.state.checkin_service.personalizer.name == "claude"
 
 
 def test_explicit_env_selects_either_provider():
@@ -125,8 +127,17 @@ def test_explicit_env_selects_either_provider():
         LLM_MODEL="muse-model",
     )
     assert isinstance(app.state.personalizer, MusePersonalizer)
-    assert isinstance(app.state.conversation_service.extractor, ChatCompletionsExtractor)
+    # Owner ruling (2026-10-25): conversation turns still go to Claude.
+    assert isinstance(app.state.conversation_service.extractor, AnthropicExtractor)
     assert app.state.document_service.provider == "muse"
+    app = app_for(
+        ANTHROPIC_API_KEY="k",
+        LLM_PROVIDER="chat_completions",
+        LLM_API_KEY="m",
+        LLM_MODEL="muse-model",
+        CONVERSATION_PROVIDER="muse",
+    )
+    assert isinstance(app.state.conversation_service.extractor, ChatCompletionsExtractor)
     # Claude selected without a key: unconfigured, so nothing is ever sent.
     app = app_for(LLM_PROVIDER="anthropic", PERSONALIZE_PROVIDER="claude")
     assert app.state.personalizer.configured is False
@@ -257,9 +268,12 @@ async def test_a_slow_reply_falls_back_to_the_template():
 
 async def test_structured_reply_is_used_and_an_unsafe_line_falls_back():
     good = ClaudePersonalizer(
-        api_key="k", client=FakeClient(message('{"line": "And how tall are you, friend?"}'))
+        api_key="k", client=FakeClient(message('{"line": "Take your time. How tall are you?"}'))
     )
-    assert await phrase_question(good, "How tall are you?", None) == "And how tall are you, friend?"
+    assert (
+        await phrase_question(good, "How tall are you?", None)
+        == "Take your time. How tall are you?"
+    )
     unsafe = ClaudePersonalizer(
         api_key="k",
         client=FakeClient(message('{"line": "How tall are you? This adds years to your life?"}')),
@@ -309,27 +323,43 @@ CARE = (
 
 
 @pytest.mark.parametrize(
-    ("consent", "reply", "reworded"),
+    ("consent", "reply", "choice"),
     [
-        ({}, CARE, False),
-        ({"muse": True}, CARE, False),
-        ({"claude": True}, CARE, True),
-        ({"claude": True}, "I'm so sorry today feels awful. I'm right here with you.", False),
-        ({"claude": True}, CARE.replace("gently", "gently, maybe try a supplement"), False),
+        ({}, CARE, None),
+        ({"muse": True}, CARE, None),
+        ({"claude": True}, "approved:0", 0),
+        ({"claude": True}, "approved:1", 1),
+        ({"claude": True}, CARE, None),  # benign but unrecognized prose falls back
+        ({"claude": True}, "I'm so sorry today feels awful. I'm right here with you.", None),
+        ({"claude": True}, CARE.replace("gently", "gently, maybe try a supplement"), None),
     ],
 )
 def test_checkin_care_reply_is_reworded_only_with_claude_consent_and_the_safety_line(
-    consent, reply, reworded
+    consent, reply, choice
 ):
     app = app_for(ANTHROPIC_API_KEY="k")
     with TestClient(app) as client:
-        fake = _care_client(app, message(json.dumps({"line": reply})))
+        if choice is not None:
+
+            async def choose():
+                facts = json.loads(fake.calls[-1]["messages"][0]["content"])
+                return message(json.dumps({"line": facts["approved_wordings"][choice]}))
+
+            fake = _care_client(app, choose)
+        else:
+            fake = _care_client(app, message(json.dumps({"line": reply})))
         state = _wellbeing_state(client)
         body = {"action": "reply", "state": state, "text": "awful", "outside_ai_consent": consent}
+        baseline = client.post("/api/checkin/turn", json={**body, "outside_ai_consent": {}}).json()
         out = client.post("/api/checkin/turn", json=body).json()
+    assert out["state"] == baseline["state"]
     assert out["state"]["care_line_shown"] is True
     assert out["message"].count("911") == 1
-    assert out["message"].startswith(CARE) is reworded
+    if choice is None:
+        assert out["message"] == baseline["message"]
+    else:
+        facts = json.loads(fake.calls[0]["messages"][0]["content"])
+        assert out["message"].startswith(facts["approved_wordings"][choice])
     assert len(fake.calls) == (1 if consent.get("claude") else 0)
 
 

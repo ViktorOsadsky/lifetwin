@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../experiment/ideas_hub.dart';
 import '../experiment/widgets/source_link.dart';
 import '../ui/theme.dart';
 import '../widgets/whole_word_text.dart';
 import 'coach_client.dart';
+import 'plan_acceptance.dart';
 import 'widgets.dart';
 
 /// Mochi's line when there is no plan to show (loading, offline, or an error): the card is never empty.
@@ -27,10 +29,16 @@ class TodayWithMochiCard extends StatefulWidget {
     this.condensed = false,
     this.trailing,
     this.onIdeas,
+    this.ideas,
     this.openUrl = defaultOpenUrl,
+    this.acceptance,
+    this.initialPlan,
   });
 
   final CoachClient client;
+
+  /// The last plan this run saw: shown at once while the fresh one is fetched.
+  final DailyPlan? initialPlan;
   final Map<String, dynamic> Function() confirmedContext;
   final VoidCallback onOpen;
   final Future<void> Function()? beforeFirstPlan;
@@ -38,6 +46,9 @@ class TodayWithMochiCard extends StatefulWidget {
   /// Told each plan the coach gives (the first and every revision).
   final void Function(DailyPlan plan)? onPlan;
   final OpenUrl openUrl;
+
+  /// Items accepted on the plan screen: Home then reads "Today: 3 things planned ✓".
+  final PlanAcceptance? acceptance;
 
   /// One line for Home: "Today: brisk walk · protein · …", opening the plan on a tap.
   final bool condensed;
@@ -48,13 +59,18 @@ class TodayWithMochiCard extends StatefulWidget {
   /// "More ideas ›" (full card only; Home's compact card stays one short row). Null hides it (under 18).
   final VoidCallback? onIdeas;
 
+  /// Home's compact card: a second line, "Today's idea: {title} ›", opening that idea. Null (under 18)
+  /// or no featured idea: no line.
+  final IdeasAccess? ideas;
+
   @override
   State<TodayWithMochiCard> createState() => _TodayWithMochiCardState();
 }
 
-class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
+class _TodayWithMochiCardState extends State<TodayWithMochiCard> with WidgetsBindingObserver {
   DailyPlan? _plan;
   bool _loading = true;
+  bool _disposed = false;
   bool _failed = false;
   bool _busy = false;
   final _chosen = <String, String>{};
@@ -62,6 +78,32 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _plan = widget.initialPlan;
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Back in the app on a later day (Home stays mounted for days): yesterday's plan is not today's, so
+  /// it is dropped and today's is asked for, never revised from yesterday's.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || _loading || _busy) return;
+    final plan = _plan;
+    final today = widget.confirmedContext()['local_date'];
+    if (plan == null || today is! String || plan.json['local_date'] == today) return;
+    setState(() {
+      _plan = null;
+      _chosen.clear();
+      _failed = false;
+      _loading = true;
+    });
     _load();
   }
 
@@ -72,9 +114,12 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
       widget.onPlan?.call(plan);
       if (mounted) setState(() => _plan = plan);
     } catch (_) {
-      if (mounted) setState(() => _failed = true);
+      if (mounted && _plan == null) setState(() => _failed = true);
     } finally {
       if (mounted) setState(() => _loading = false);
+      // Today's idea for the second line (the day's cache, or one call) comes after the plan, so it never
+      // competes with the plan for the server or delays it.
+      if (!_disposed) widget.ideas?.hub.ensureToday();
     }
   }
 
@@ -165,7 +210,11 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => widget.acceptance == null
+      ? _card(context)
+      : ListenableBuilder(listenable: widget.acceptance!, builder: (context, _) => _card(context));
+
+  Widget _card(BuildContext context) {
     final plan = _plan;
     final slots = <(String, IconData, String)>[
       ('workout', Icons.directions_walk_rounded, 'Move'),
@@ -174,6 +223,8 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
       ('encourage', Icons.favorite_border_rounded, 'Mochi'),
     ];
     final encourage = _first('encourage');
+    final ids = widget.acceptance?.idsFor(plan?.json['local_date'] as String?) ?? const <String>{};
+    final acceptedCount = [for (final i in plan?.items ?? const <Map<String, dynamic>>[]) if (ids.contains(i['id'])) i].length;
     final showRows = plan != null && !plan.emergency && plan.items.isNotEmpty;
     if (widget.condensed) {
       final titles = [
@@ -181,7 +232,10 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
           if (showRows && _first(kind)?['title'] is String)
             (_first(kind)!['title'] as String).toLowerCase(),
       ];
-      final line = titles.isEmpty
+      final planned = acceptedCount;
+      final line = planned > 0
+          ? '$planned ${planned == 1 ? 'thing' : 'things'} planned ✓'
+          : titles.isEmpty
           ? (_failed || _loading
                 ? todayFallbackLine
                 : (encourage?['message'] as String? ?? todayFallbackLine))
@@ -191,7 +245,7 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
         TextSpan(
           children: [
             TextSpan(
-              text: titles.isEmpty ? 'Today with Mochi · ' : 'Today: ',
+              text: titles.isEmpty && planned == 0 ? 'Today with Mochi · ' : 'Today: ',
               style: LtText.body(size: 17, weight: FontWeight.w700),
             ),
             TextSpan(text: line, style: LtText.body(size: 17)),
@@ -212,26 +266,37 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
         label: 'Today with Mochi',
         child: WellnessCard(
           padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
-          child: InkWell(
-            onTap: widget.onOpen,
-            child: largeText
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      summary,
-                      const SizedBox(height: 8),
-                      Align(alignment: Alignment.centerRight, child: trailing),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Expanded(child: summary),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8, right: 6),
-                        child: trailing,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              InkWell(
+                onTap: widget.onOpen,
+                child: largeText
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          summary,
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: trailing,
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(child: summary),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8, right: 6),
+                            child: trailing,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+              ),
+              if (widget.ideas case final access?)
+                _IdeaLine(access: access, large: largeText),
+            ],
           ),
         ),
       );
@@ -261,7 +326,7 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
               ),
             ),
             const SizedBox(height: 8),
-            if (_loading)
+            if (_loading && plan == null)
               WholeWordText(todayFallbackLine, style: LtText.body())
             else if (!showRows)
               WholeWordText(
@@ -404,17 +469,100 @@ class _Row extends StatelessWidget {
   }
 }
 
+/// Home's second line on the compact Today card: "💡 Today's idea: {title} ›". It opens that idea's
+/// detail. A 48 pt target, one line (it wraps only at very large text); nothing when there is no idea.
+class _IdeaLine extends StatelessWidget {
+  const _IdeaLine({required this.access, required this.large});
+  final IdeasAccess access;
+  final bool large;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: access.hub,
+    builder: (context, _) {
+      final idea = access.hub.featured;
+      if (idea == null) return const SizedBox.shrink();
+      void open() => access.openIdea(context, idea);
+      return Semantics(
+        button: true,
+        label: 'Today’s idea: ${idea.title}',
+        excludeSemantics: true,
+        onTap: open,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Divider(height: 1, thickness: 1, color: LtColors.creamLip),
+            InkWell(
+              onTap: open,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.lightbulb_outline_rounded,
+                      size: 22,
+                      color: LtColors.ink,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Today’s idea: ',
+                              style: LtText.body(size: 17),
+                            ),
+                            TextSpan(
+                              text: idea.title,
+                              style: LtText.body(
+                                size: 17,
+                                weight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        maxLines: large ? null : 1,
+                        overflow: large
+                            ? TextOverflow.clip
+                            : TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 40,
+                      height: 48,
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        color: LtColors.ink,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
 /// "More ideas ›": opens Ideas for you. A 48pt target.
 class MoreIdeasLink extends StatelessWidget {
-  const MoreIdeasLink({super.key, required this.onTap});
+  const MoreIdeasLink({
+    super.key,
+    required this.onTap,
+    this.label = 'More ideas',
+  });
   final VoidCallback onTap;
+  final String label;
 
   @override
   Widget build(BuildContext context) => Align(
     alignment: Alignment.centerLeft,
     child: Semantics(
       button: true,
-      label: 'More ideas',
+      label: label,
       excludeSemantics: true,
       onTap: onTap,
       child: GestureDetector(
@@ -426,7 +574,7 @@ class MoreIdeasLink extends StatelessWidget {
             alignment: Alignment.centerLeft,
             widthFactor: 1,
             child: Text(
-              'More ideas ›',
+              '$label ›',
               style: LtText.body(weight: FontWeight.w700).copyWith(
                 decoration: TextDecoration.underline,
                 decorationThickness: 2,

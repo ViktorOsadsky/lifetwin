@@ -75,6 +75,31 @@ void main() {
     }
   });
 
+  testWidgets('See what shaped it labels a document-sourced value "From a document"', (t) async {
+    t.view.physicalSize = const Size(390, 844);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final client = FakeForecastClient()..answers.add(forecastFrom(profileCJson()));
+    await t.pumpWidget(
+      MaterialApp(
+        home: ForecastScreen(
+          client: client,
+          profile: profileC,
+          healthKeys: const {'height_cm'},
+          documentKeys: const {'weight_kg'},
+          onBack: () {},
+        ),
+      ),
+    );
+    await t.pumpAndSettle();
+    await t.ensureVisible(find.text('See what shaped it'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('See what shaped it'));
+    await t.pumpAndSettle();
+    expect(find.text('From a document'), findsOneWidget);
+    expect(find.text('Apple Health'), findsOneWidget);
+  });
+
   testWidgets('See what shaped it: the curve, confirmed answers with sources, the limits, nothing assumed', (t) async {
     await pumpForecast(t, forecastFrom(profileCJson()));
     await t.ensureVisible(find.text('See what shaped it'));

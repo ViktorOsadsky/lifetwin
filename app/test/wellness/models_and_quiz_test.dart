@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/quiz/quiz_game.dart';
 import 'package:lifesim/twin/twin_model.dart' show HealthScoreStatus;
@@ -121,11 +125,20 @@ void main() {
     expect(game.gameHealth, 100);
   });
 
+  test('the bundled bank is the server bank (server/tools/export_quiz_bank.py)', () async {
+    final server = jsonDecode(File('../server/lifetwin/quiz/content/questions.json').readAsStringSync()) as Map;
+    final asset = jsonDecode(await rootBundle.loadString('assets/quiz/questions.json')) as Map;
+    expect(asset['bank_version'], server['bank_version']);
+    expect(asset['total'], server['total']);
+    expect((asset['questions'] as List).length, (server['questions'] as List).length);
+    expect([for (final q in asset['questions'] as List) q['id']], [for (final q in server['questions'] as List) q['id']]);
+  });
+
   test(
     'all bundled questions are reviewed, load offline and stay bounded',
     () async {
       final questions = await loadReviewedQuiz();
-      expect(questions.length, 8);
+      expect(questions.length, 38);
       final game = QuizGame(questions);
       addTearDown(game.dispose);
       for (final q in questions) {

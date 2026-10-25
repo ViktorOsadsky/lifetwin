@@ -4,6 +4,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../experiment/ideas_hub.dart' show IdeasScope;
+import '../experiment/widgets/idea_scene.dart' show IdeasLinkRow;
+import '../onboarding/missing_answers.dart';
 import '../twin/twin_model.dart' show extrapolationCaveat;
 import '../widgets/whole_word_text.dart';
 
@@ -23,17 +26,22 @@ class HomeWellnessPanel extends StatelessWidget {
   const HomeWellnessPanel({
     super.key,
     required this.snapshot,
-    required this.onEstimate,
+    this.onEstimate,
     this.onHistory,
     this.onDrivers,
     this.stateLine,
     this.compact = false,
     this.onCollapse,
+    this.onAnswerMissing,
   });
   final bool compact;
 
   /// Collapses the card to the score chip (the chevron at the card's bottom right). Null: no collapse button.
   final VoidCallback? onCollapse;
+
+  /// "Answer N more questions" ([WellnessSnapshot.missingCount]): the one path back to the
+  /// missing answers, under a rough score or in place of the number. Hidden when null.
+  final VoidCallback? onAnswerMissing;
   final WellnessSnapshot snapshot;
   final VoidCallback? onHistory;
 
@@ -43,11 +51,11 @@ class HomeWellnessPanel extends StatelessWidget {
   /// A small state line under the card ("Still learning 2").
   final String? stateLine;
 
-  /// Opens the estimate (the chip).
-  final VoidCallback onEstimate;
+  /// Opens the estimate (the chip). Null: the chip is display only.
+  final VoidCallback? onEstimate;
 
   static const tagline = 'Feeling good now, and healthy years ahead.';
-  static const underAgeLine = 'Health tools start at 18. Until then, play, dress up and chat.';
+  static const underAgeLine = 'The health score is made for adults, ages 18 and over.';
 
   @override
   Widget build(BuildContext context) {
@@ -176,6 +184,8 @@ class HomeWellnessPanel extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: RoughGuideBadge(caveat: extrapolationCaveat),
             ),
+          if (snapshot.roughMissing && snapshot.missingCount > 0)
+            WholeWordText(roughMissingLabel(snapshot.missingCount), style: LtText.body(weight: FontWeight.w700)),
           if (score != null)
             Padding(
               padding: const EdgeInsets.only(right: 6, top: 4),
@@ -193,6 +203,17 @@ class HomeWellnessPanel extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: WholeWordText(HomeWellnessPanel.tagline, style: LtText.body()),
+            ),
+          if (onAnswerMissing != null && snapshot.missingCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 6, top: 6),
+              child: LipButton(
+                label: answerMoreLabel(snapshot.missingCount),
+                icon: Icons.mic_none_rounded,
+                height: 52,
+                fontSize: 19,
+                onTap: onAnswerMissing,
+              ),
             ),
           Padding(
             padding: const EdgeInsets.only(right: 6, top: 4),
@@ -241,16 +262,23 @@ class CollapsibleHealthScore extends StatefulWidget {
   const CollapsibleHealthScore({
     super.key,
     required this.snapshot,
-    required this.onEstimate,
+    this.onEstimate,
     this.onDrivers,
     this.stateLine,
+    this.onAnswerMissing,
   });
   final WellnessSnapshot snapshot;
-  final VoidCallback onEstimate;
+  final VoidCallback? onEstimate;
   final VoidCallback? onDrivers;
   final String? stateLine;
 
+  /// "Answer N more questions", in the expanded card (the collapsed chip shows "Rough guide").
+  final VoidCallback? onAnswerMissing;
+
   static const prefsKey = 'home_score_collapsed';
+
+  /// "Delete my data": the folded-away choice goes too, as on a fresh install.
+  static Future<void> forget() async => (await SharedPreferences.getInstance()).remove(prefsKey);
   static const duration = Duration(milliseconds: 200);
 
   @override
@@ -307,6 +335,7 @@ class _CollapsibleHealthScoreState extends State<CollapsibleHealthScore> {
       onDrivers: widget.onDrivers,
       stateLine: widget.stateLine,
       onCollapse: () => _set(true),
+      onAnswerMissing: widget.onAnswerMissing,
     );
     if (snap.underAge || score == null) return panel;
     final instant = MediaQuery.disableAnimationsOf(context) || _instant;
@@ -394,6 +423,10 @@ class _CollapsedScoreChip extends StatelessWidget {
             ),
           ),
           if (snapshot.roughGuide) const RoughGuideBadge(caveat: extrapolationCaveat),
+          // A rough score with answers missing: "Rough guide"; tapping it opens the card, where
+          // "Answer N more questions" is.
+          if (snapshot.roughMissing && snapshot.missingCount > 0)
+            RoughGuideBadge(caveat: roughMissingLabel(snapshot.missingCount), onTap: onTap, expanded: false),
         ],
       ),
     ),
@@ -471,6 +504,23 @@ Future<void> showHealthScoreSheet(BuildContext context, WellnessSnapshot snapsho
                 WholeWordText(healthScoreSheetNote, style: LtText.body()),
                 const SizedBox(height: 10),
                 WholeWordText(healthScoreSheetLinked, style: LtText.body(weight: FontWeight.w700)),
+                // A way into Ideas for you: only with today's ideas on hand (never under 18).
+                if (IdeasScope.maybeOf(context) case final access?)
+                  ListenableBuilder(
+                    listenable: access.hub,
+                    builder: (sheet, _) => (access.hub.response?.recommendations.isEmpty ?? true)
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: IdeasLinkRow(
+                              label: 'Ideas linked to a healthier score',
+                              onTap: () {
+                                Navigator.of(sheet).pop();
+                                access.openList(context, origin: 'score');
+                              },
+                            ),
+                          ),
+                  ),
                 const SizedBox(height: 16),
                 LipButton(
                   label: 'Got it',
@@ -492,15 +542,17 @@ Future<void> showHealthScoreSheet(BuildContext context, WellnessSnapshot snapsho
 class _EstimateChip extends StatelessWidget {
   const _EstimateChip({required this.lifespan, required this.onTap});
   final LifespanReveal? lifespan;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final l = lifespan;
     final label = l == null ? 'Your estimate' : l.yearText;
     return Semantics(
-      button: true,
-      label: l == null ? 'Your estimate. Open your estimate' : '${l.semantics} Open your estimate',
+      button: onTap != null,
+      label: l == null
+          ? (onTap == null ? 'Your estimate' : 'Your estimate. Open your estimate')
+          : (onTap == null ? l.semantics : '${l.semantics} Open your estimate'),
       excludeSemantics: true,
       onTap: onTap,
       child: InkWell(
@@ -524,7 +576,7 @@ class _EstimateChip extends StatelessWidget {
                   Flexible(
                     child: Text(label, style: LtText.body(weight: FontWeight.w700)),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: LtColors.ink),
+                  if (onTap != null) const Icon(Icons.chevron_right_rounded, color: LtColors.ink),
                 ],
               ),
             ),
@@ -655,6 +707,8 @@ class HealthScoreSummary extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: RoughGuideBadge(caveat: extrapolationCaveat),
           ),
+        if (snapshot.roughMissing && snapshot.missingCount > 0)
+          WholeWordText(roughMissingLabel(snapshot.missingCount), style: LtText.body(weight: FontWeight.w700)),
       ],
     );
   }

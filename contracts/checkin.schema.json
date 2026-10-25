@@ -263,7 +263,7 @@
             ],
             "type": "string"
           },
-          "maxItems": 9,
+          "maxItems": 10,
           "title": "Skipped Fields",
           "type": "array"
         },
@@ -307,7 +307,7 @@
             ],
             "type": "string"
           },
-          "maxItems": 9,
+          "maxItems": 10,
           "title": "Unknown Fields",
           "type": "array"
         }
@@ -1315,6 +1315,19 @@
       "title": "Accepted Input Modes",
       "type": "array"
     },
+    "client_action": {
+      "anyOf": [
+        {
+          "const": "open_ideas",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Client Action"
+    },
     "complete": {
       "title": "Complete",
       "type": "boolean"
@@ -1360,6 +1373,11 @@
       "minLength": 1,
       "title": "Message",
       "type": "string"
+    },
+    "off_topic": {
+      "default": false,
+      "title": "Off Topic",
+      "type": "boolean"
     },
     "profile_update": {
       "$ref": "#/$defs/HealthProfile"
@@ -1412,8 +1430,10 @@
     "message",
     "guide_mode",
     "provider_status",
+    "off_topic",
     "voice_status",
     "speech_hint",
+    "client_action",
     "emergency",
     "profile_update",
     "daily_logs",

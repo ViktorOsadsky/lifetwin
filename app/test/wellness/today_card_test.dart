@@ -126,6 +126,26 @@ void main() {
     ]);
   });
 
+  testWidgets('back after midnight: yesterday\'s plan is replaced by a fresh one, not revised', (t) async {
+    var day = '2026-10-24';
+    final tomorrow = DailyPlan.fromJson({...fourSlots(revision: 'r9').json, 'local_date': '2026-10-25'});
+    final coach = FakeCoach()..responses.addAll([fourSlots(), tomorrow]);
+    await pump(t, TodayWithMochiCard(client: coach, confirmedContext: () => {'local_date': day}, onOpen: () {}));
+    expect(coach.requests, hasLength(1));
+    // The same day: coming back does not ask again.
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await t.pumpAndSettle();
+    expect(coach.requests, hasLength(1));
+    day = '2026-10-25';
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await t.pumpAndSettle();
+    expect(coach.requests, hasLength(2));
+    final sent = coach.requests.last;
+    expect(sent['local_date'], '2026-10-25');
+    expect(sent.containsKey('previous_plan'), isFalse, reason: 'yesterday\'s plan is not today\'s base');
+  });
+
   testWidgets('an error or a slow server shows Mochi alone, never an empty card', (t) async {
     final coach = FakeCoach()..responses.add(const CoachFailure(null));
     await pump(t, TodayWithMochiCard(client: coach, confirmedContext: () => {}, onOpen: () {}));

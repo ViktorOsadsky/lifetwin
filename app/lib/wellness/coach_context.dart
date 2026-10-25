@@ -48,6 +48,10 @@ Map<String, dynamic> coachContext(TwinRepository repo, {DateTime? now}) {
       });
     }
   }
+  // Long-term context from health documents (owner ruling 2026-10-25): kept on the phone
+  // with no expiry until Delete my data, and sent only with memory consent, like habit
+  // notes. Informational: never a model input.
+  final documentContext = repo.store.memoryConsent ? _documentContext(repo, date) : null;
   const noteKeys = {
     'topic',
     'kind',
@@ -118,6 +122,7 @@ Map<String, dynamic> coachContext(TwinRepository repo, {DateTime? now}) {
         .skip(readings.length > 60 ? readings.length - 60 : 0)
         .toList(),
     'memory_consent': repo.store.memoryConsent,
+    'document_context': ?documentContext,
     if (repo.store.memoryConsent)
       'habit_notes': notes
           .skip(notes.length > 20 ? notes.length - 20 : 0)
@@ -129,5 +134,51 @@ Map<String, dynamic> coachContext(TwinRepository repo, {DateTime? now}) {
     'local_date': date,
     'local_time':
         '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+  };
+}
+
+/// Document readings (with date and unit) and diagnoses the person confirmed; null when
+/// there are none. Dates after [today] are left out.
+Map<String, dynamic>? _documentContext(TwinRepository repo, String today) {
+  const readingFields = {
+    'systolic_bp': ('systolic_bp', 'mmHg'),
+    'diastolic_bp': ('diastolic_bp', 'mmHg'),
+    'hba1c': ('a1c', '%'),
+    'ldl_cholesterol': ('ldl', 'mg/dL'),
+  };
+  final readings = <Map<String, dynamic>>[];
+  for (final entry in repo.readings().reversed) {
+    for (final item in entry.items) {
+      final field = readingFields[item.field];
+      final when = item.date ?? entry.date;
+      if (field == null ||
+          item.source != HistorySource.document ||
+          item.value is! num ||
+          when.compareTo(today) > 0) {
+        continue;
+      }
+      readings.add({
+        'field': field.$1,
+        'value': item.value,
+        'unit': field.$2,
+        'date': when,
+        'source': 'document',
+      });
+    }
+  }
+  final diagnoses = <String>{};
+  for (final entry in repo.history()) {
+    if (entry.kind != HistoryKind.document) continue;
+    for (final item in entry.items) {
+      if (item.value != true) continue;
+      if (item.field == 'diabetes') diagnoses.add('diabetes');
+      if (item.field == 'hypertension_diagnosed') diagnoses.add('hypertension');
+    }
+  }
+  if (readings.isEmpty && diagnoses.isEmpty) return null;
+  return {
+    // Newest first, so the 40 most recent are kept.
+    'readings': readings.take(40).toList(),
+    'diagnoses': diagnoses.toList(),
   };
 }

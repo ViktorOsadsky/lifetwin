@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../onboarding/missing_answers.dart';
 import '../ui/theme.dart';
 import '../widgets/whole_word_text.dart';
 import 'models.dart';
@@ -44,13 +45,16 @@ class LifespanBlock extends StatelessWidget {
             ],
           ),
           Semantics(
-            label: '${l.rangeText}. $lifespanCaption.',
+            label:
+                '${l.rangeText}. $lifespanCaption.${l.missingCount > 0 ? ' ${roughMissingLabel(l.missingCount)}.' : ''}',
             excludeSemantics: true,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 WholeWordText(l.rangeText, style: LtText.body(weight: FontWeight.w700)),
                 WholeWordText(lifespanCaption, style: LtText.body(color: LtColors.secondary)),
+                if (l.missingCount > 0)
+                  WholeWordText(roughMissingLabel(l.missingCount), style: LtText.body(weight: FontWeight.w700)),
               ],
             ),
           ),

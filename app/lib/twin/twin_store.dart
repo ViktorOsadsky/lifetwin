@@ -85,6 +85,7 @@ class MemoryBackend implements StoreBackend {
 /// - [memoryConsent]: the conversation's `memory_consent`; habit notes are kept only while true.
 /// - [outsideAiConsent]: the person's yes to outside-AI wording, for one provider; off by default.
 /// - [lifespanRevealSeen]: the one-time lifespan reveal was shown; a UI flag, not health data.
+/// - [lastPlan]: the coach's latest daily plan and its local date, the base for the next revision.
 ///
 /// Reads are public. Writes are private to this library, so the only write paths are the
 /// [TwinRepository] methods the owner allows (see lib/README-model.md, "Who may write").
@@ -109,7 +110,60 @@ class TwinStore extends ChangeNotifier {
         // An unreadable file is not guessed at; it is replaced on the next save.
       }
     }
-    return TwinStore._(b, doc);
+    return TwinStore._(b, doc).._dropUnreadable();
+  }
+
+  /// A file that parses but has a part of the wrong shape (a broken or older write) must not
+  /// stop LifeTwin opening. Each part that cannot be read is dropped (a list keeps its
+  /// readable entries); the rest is kept, and the file is replaced on the next save.
+  void _dropUnreadable() {
+    final reads = <String, void Function()>{
+      'profile': () => profile,
+      'profile_meta': () => profileMeta,
+      'twin': () => twin,
+      'ideas': () => ideasState,
+      'outside_ai_consent': () => [outsideAiConsent, outsideAiProvider],
+      'checkin_settings': () => checkinSettings,
+      'first_joined': () {
+        final day = firstJoined;
+        if (day != null) shiftDay(day, 0);
+      },
+    };
+    for (final e in reads.entries) {
+      try {
+        e.value();
+      } catch (_) {
+        _doc.remove(e.key);
+      }
+    }
+    final rows = <String, void Function(Map<String, dynamic>)>{
+      'checkins': (j) => shiftDay(CheckinEntry.fromJson(j).date, 0),
+      'daily_logs': (j) => shiftDay(DayLog.fromJson(j).date, 0),
+      'history': HistoryEntry.fromJson,
+      'health_score': HealthScorePoint.fromJson,
+      'habit_notes': (_) {},
+    };
+    for (final e in rows.entries) {
+      final raw = _doc[e.key];
+      if (raw == null) continue;
+      if (raw is! List) {
+        _doc.remove(e.key);
+        continue;
+      }
+      _doc[e.key] = [
+        for (final r in raw)
+          if (r is Map && _reads(() => e.value(Map<String, dynamic>.from(r)))) r,
+      ];
+    }
+  }
+
+  static bool _reads(void Function() read) {
+    try {
+      read();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Map<String, dynamic> get profile => Map<String, dynamic>.from(_doc['profile'] as Map? ?? const {});
@@ -129,6 +183,33 @@ class TwinStore extends ChangeNotifier {
   Map<String, dynamic>? get twin => _doc['twin'] == null ? null : Map<String, dynamic>.from(_doc['twin'] as Map);
   bool get memoryConsent => _doc['memory_consent'] == true;
   bool get lifespanRevealSeen => _doc['lifespan_reveal_seen'] == true;
+
+  /// Local guest entry only, not an account or consent. Existing installs with saved
+  /// data continue directly to their twin; this optional field requires no migration.
+  bool get guestEntryAccepted =>
+      _doc['guest_entry_accepted'] == true ||
+      hasProfile ||
+      twin != null ||
+      checkins.isNotEmpty ||
+      historyEntries.isNotEmpty;
+
+  /// Ideas for you, kept for the day on the phone: the last good answer (`date`, `response`), the ideas
+  /// hidden today (`hidden_date`, `hidden_ids`) and the day Mochi's bubble last showed (`bubble_date`).
+  Map<String, dynamic> get ideasState => Map<String, dynamic>.from(_doc['ideas'] as Map? ?? const {});
+
+  /// The local date (`YYYY-MM-DD`) onboarding was first completed; set once. The weekly
+  /// check-in opens 7 days after it. A date, not health data.
+  /// When the pending "Remind me later" notification fires (local wall time, ISO), if any.
+  String? get remindLater {
+    final v = _doc['remind_later'];
+    return v is String && v.isNotEmpty ? v : null;
+  }
+
+  String? get firstJoined => _doc['first_joined'] as String?;
+
+  /// The coach's latest daily plan (`{date, plan}`, the local date it was given on), if any.
+  Map<String, dynamic>? get lastPlan =>
+      _doc['last_plan'] is Map ? Map<String, dynamic>.from(_doc['last_plan'] as Map) : null;
 
   /// The person's yes to outside-AI wording, and the provider it was given for
   /// (`{provider, on}`); off when absent.
@@ -180,7 +261,20 @@ class TwinStore extends ChangeNotifier {
 
   Future<void> _saveTwin(Map<String, dynamic> look) => _save('twin', look);
 
+  Future<void> _acceptGuestEntry() => _save('guest_entry_accepted', true);
+
+  Future<void> _saveIdeasState(Map<String, dynamic> state) => _save('ideas', state);
+
+  Future<void> _setRemindLater(String? at) async {
+    if (at != null || remindLater != null) await _save('remind_later', at ?? '');
+  }
+
+  Future<void> _setFirstJoined(String day) => _save('first_joined', day);
+
   Future<void> _setLifespanRevealSeen() => _save('lifespan_reveal_seen', true);
+
+  Future<void> _setLastPlan(String date, Map<String, dynamic> plan) =>
+      _save('last_plan', {'date': date, 'plan': plan});
 
   /// Turning memory off deletes the stored habit notes.
   Future<void> _setMemoryConsent(bool consent) async {

@@ -97,10 +97,8 @@ void main() {
     await waitFor(t, find.text('Save look'));
     await look('01b-customize');
     await tapRound(t, 'Back to room');
-    await waitFor(t, find.text('Fortune'));
+    await waitFor(t, find.text('Talk'));
     await pumpFor(t, const Duration(milliseconds: 800)); // Customize slides away
-    await tapText(t, 'Fortune');
-    await look('02-room-talk-first');
     await tapText(t, 'Talk');
     await waitFor(t, find.text("No, I'll type"));
     await look('03-consent');
@@ -172,13 +170,6 @@ void main() {
     await pumpFor(t, const Duration(milliseconds: 600));
     await tapRound(t, 'Back to your look ahead');
     await waitFor(t, find.text('See what shaped it'));
-    // Back to the Room and the forecast again from the shelf.
-    await tapRound(t, 'Back');
-    await waitFor(t, find.text('Fortune'));
-    await pumpFor(t, const Duration(seconds: 4)); // the twin strolls back from the ceremony
-    await openFortune(t);
-    await waitFor(t, find.textContaining(forecastNumber));
-    await pumpFor(t, const Duration(seconds: 2));
     await t.scrollUntilVisible(find.text('Go back to my answers'), 300, scrollable: find.byType(Scrollable).first);
     await look('14-forecast-end');
 

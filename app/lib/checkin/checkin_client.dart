@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 import '../voice/speech.dart' show GuideFailure, GuideRejected, GuideTooBusy;
 import 'checkin_models.dart';
 
@@ -25,6 +26,10 @@ class CheckinTurn {
   /// Something urgent was said: the check-in is paused on the same question. Show the
   /// "Call 911" button (the person taps it) and Continue.
   bool get emergency => raw['emergency'] == true;
+
+  /// The heard reply was most likely someone else talking: nothing was recorded and the same
+  /// question is still open (see offTopicLine in voice/speech.dart).
+  bool get offTopic => raw['off_topic'] == true;
   String get phase => (state['phase'] as String?) ?? 'asking';
   bool get isConfirming => phase == 'confirming';
   String get kind => '${state['kind']}';
@@ -59,6 +64,9 @@ class CheckinTurn {
   /// `confirm` action, and any other answer replaces it.
   bool get offersHealthValue =>
       phase == 'asking' && fromHealth && currentField != null && (state['suggested'] as Map?)?[currentField] != null;
+
+  /// `open_ideas` after "what should I do?": the app shows today's idea.
+  String? get clientAction => raw['client_action'] as String?;
 
   /// `slower` or `louder`, when the person asked for it.
   String? get speechHint => raw['speech_hint'] as String?;
@@ -124,13 +132,13 @@ abstract class CheckinGuide {
 
 class HttpCheckinClient implements CheckinGuide {
   HttpCheckinClient({http.Client? client, ApiBase? base, this.age, this.aiConsent})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       base = base ?? ApiBase(apiBaseUrl, client);
 
   final http.Client _client;
   final ApiBase base;
 
-  /// The profile's age, sent with the start request so Mochi's everyday examples fit (optional; only 18 to 120).
+  /// The profile's age, sent with the start request so Mochi's everyday examples fit (optional; 1 to 120).
   final Object? Function()? age;
 
   /// The person's outside-AI consent for the current provider (e.g. `{"claude": true}`), sent with
@@ -148,7 +156,7 @@ class HttpCheckinClient implements CheckinGuide {
     'local_date': localDate,
     'previous': previous,
     if (quick != null) 'quick': quick.toJson(),
-    if (age?.call() case final num a when a >= 18 && a <= 120) 'age': a.round(),
+    if (age?.call() case final num a when a >= 1 && a <= 120) 'age': a.round(),
   });
 
   @override
