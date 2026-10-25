@@ -38,6 +38,37 @@ Without a Cartesia key, `/api/voice/token` returns 503 and the app switches to t
 
 ## Background noise and other voices
 
+### Browser playback
+
+Web builds select a Web Audio PCM player through a conditional import. Native
+builds retain `FlutterPcmSoundPlayer` and its existing audio-session behavior.
+The browser player converts Cartesia's mono PCM16 little-endian stream to float
+samples, retaining split sample bytes across chunks. It schedules one-shot
+sources against the audio context clock at the supplied sample rate; the browser
+resamples for its output device. Completion follows source `ended` events.
+Stop cancels queued sources and releases waiters; replay uses the existing
+in-memory Cartesia audio cache. The audio queue is bounded to 60 seconds.
+
+One audio context is shared per page. Pointer, click and keyboard gestures unlock
+it before asynchronous voice requests; unlocking alone plays no sound, accesses
+no microphone and sends no data. Existing voice consent still controls Cartesia
+traffic. If browser audio stays suspended, startup times out and the existing
+caption/typing fallback remains available. See [AudioContext resume](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/resume)
+and [scheduled audio sources](https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode/start).
+
+For a provider-free manual browser test, build from `app/`:
+
+```sh
+flutter build web --target tool/browser_pcm_smoke.dart \
+  --output build/browser-pcm-smoke --release --no-web-resources-cdn
+```
+
+Serve that output locally, click **Play test tone**, wait for **Playback finished**,
+then test Stop and playing again. This checks actual Web Audio but does not
+establish microphone, Cartesia-provider, Safari or iOS-browser acceptance.
+
+### Phone input filtering
+
 - **Phone front end.** The recorder (record_ios 2.1, `echoCancel: true`) turns on Apple's voice-processing I/O on the microphone (`setVoiceProcessingEnabled`: echo cancel and noise suppression; `autoGain` is its AGC) on a `playAndRecord` + `defaultToSpeaker` session. Mochi's voice plays on a separate `playback` session, set up again after every listen, so voice processing never quiets it. Nothing in the app ducks other audio; both sessions are non-mixable, so other apps' audio stops instead.
 - **Voice Isolation.** While the microphone is open, a "Reduce background noise" link under "Mochi listens only on this screen." opens the iPhone's Mic Mode menu (`AVCaptureDevice.showSystemUserInterface(.microphoneModes)`, channel `lifetwin/mic_mode`). iOS remembers the choice for the app. Voice Isolation is the strongest filter for a TV or other people.
 - **Gate** (`lib/voice/heard_gate.dart`, inside the STT input). The first 300 ms after the microphone opens, and sound already going when it opened (up to 1 s, until the first quiet moment), go to Ink as silence. A caption counts only after about 200 ms of voice-level audio and only with a real word: sound labels like `[noise]` and hesitations like "um" alone never start the end-of-turn wait. An unchanged caption does not restart that wait. A transcript piece with `confidence` under 0.4 is dropped; Ink's documented transcript has no confidence (only optional `words` timings), so that check is a no-op today. Hands-free, a turn is sent after 30 s even if new words keep coming.
