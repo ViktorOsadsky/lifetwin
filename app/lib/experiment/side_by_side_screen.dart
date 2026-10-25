@@ -62,6 +62,8 @@ class SideBySideScreen extends StatelessWidget {
           leverName: (id) => LeverCopy.of(id)?.full ?? 'This change',
           gainNote: counted == 1 ? 'from this change' : 'with all $counted changes',
           celebrate: true,
+          currentScore: whatIf.result.currentScore,
+          scoreDelta: whatIf.result.scoreDelta,
         ),
         if (strong != null) ...[const SizedBox(height: 14), strong],
         if (moved.isNotEmpty) ...[

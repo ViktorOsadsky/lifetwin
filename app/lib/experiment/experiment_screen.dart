@@ -184,6 +184,8 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
                 ? _together(counted)
                 : null,
             celebrate: true,
+            currentScore: exp.result.currentScore,
+            scoreDelta: exp.result.scoreDelta,
           ),
           if (widget.onIdeas != null) ...[
             const SizedBox(height: 14),
