@@ -23,6 +23,13 @@ import 'checkin/readback_flow_test.dart' show ContractGuide;
 import 'support/app_fonts.dart';
 import 'support/fake_change_client.dart';
 
+/// A bounded settle: the check-in's listening indicator animates forever, so pumpAndSettle would time out.
+Future<void> settle(WidgetTester t) async {
+  for (var i = 0; i < 8; i++) {
+    await t.pump(const Duration(milliseconds: 250));
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late TwinModelService model;
@@ -77,7 +84,7 @@ void main() {
   /// One level below the Room (Back already lands there), as My data is.
   Future<BuildContext> mid(WidgetTester t) async {
     routes.myData(room);
-    await t.pumpAndSettle();
+    await settle(t);
     return t.element(find.byType(MyDataScreen));
   }
 
@@ -116,17 +123,17 @@ void main() {
       final h = t.ensureSemantics();
       await pump(t);
       e.value(await mid(t));
-      await t.pumpAndSettle();
+      await settle(t);
       expect(find.byType(HomeButton), findsOneWidget);
       final box = t.getRect(find.bySemanticsLabel('Go to Home'));
       expect(box.width, greaterThanOrEqualTo(48));
       expect(box.height, greaterThanOrEqualTo(48));
       await t.tap(find.byType(HomeButton));
-      await t.pumpAndSettle();
+      await settle(t);
       // A conversation asks first; the others go straight home.
       if (find.text('Leave this conversation?').evaluate().isNotEmpty) {
         await t.tap(find.text('Leave'));
-        await t.pumpAndSettle();
+        await settle(t);
       }
       expect(find.text('room'), findsOneWidget);
       expect(find.byType(HomeButton), findsNothing);
@@ -138,12 +145,12 @@ void main() {
     await pump(t);
     expect(find.byType(HomeButton), findsNothing);
     routes.myData(room);
-    await t.pumpAndSettle();
+    await settle(t);
     expect(find.byType(HomeButton), findsNothing);
     Navigator.of(room).pop();
-    await t.pumpAndSettle();
+    await settle(t);
     routes.experiment(room);
-    await t.pumpAndSettle();
+    await settle(t);
     expect(find.byType(ExperimentScreen), findsOneWidget);
     expect(find.byType(HomeButton), findsNothing);
   });
@@ -151,7 +158,7 @@ void main() {
   testWidgets('Home is absent on the onboarding conversation, which opens one level down', (t) async {
     await pump(t);
     routes.weeklyCheckIn(room);
-    await t.pumpAndSettle();
+    await settle(t);
     expect(find.byType(CheckInScreen), findsOneWidget);
     expect(find.byType(HomeButton), findsNothing);
   });
@@ -159,19 +166,19 @@ void main() {
   testWidgets('mid-conversation, Home asks first: Keep going stays, Leave goes home', (t) async {
     await pump(t);
     routes.weeklyCheckIn(await mid(t));
-    await t.pumpAndSettle();
+    await settle(t);
     expect(find.byType(CheckInScreen), findsOneWidget);
     await t.tap(find.byType(HomeButton));
-    await t.pumpAndSettle();
+    await settle(t);
     expect(find.text('Leave this conversation?'), findsOneWidget);
     await t.tap(find.text('Keep going'));
-    await t.pumpAndSettle();
+    await settle(t);
     expect(find.byType(CheckInScreen), findsOneWidget);
     expect(find.text('Leave this conversation?'), findsNothing);
     await t.tap(find.byType(HomeButton));
-    await t.pumpAndSettle();
+    await settle(t);
     await t.tap(find.text('Leave'));
-    await t.pumpAndSettle();
+    await settle(t);
     expect(find.text('room'), findsOneWidget);
   });
 
@@ -197,7 +204,7 @@ void main() {
         expect(box.width, greaterThanOrEqualTo(48));
         if (scale >= 1.6) expect(find.text('Home'), findsNothing, reason: 'icon only');
         Navigator.of(t.element(find.byType(HomeButton))).pop();
-        await t.pumpAndSettle();
+        await settle(t);
       }
       h.dispose();
     });
