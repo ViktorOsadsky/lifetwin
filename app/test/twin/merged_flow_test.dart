@@ -573,6 +573,33 @@ void main() {
   });
 
   group('provenance', () {
+    test('confirmed Apple Health estimates retain per-field provenance in import and profile history', () async {
+      const field = 'moderate_recreation_min_week';
+      await repo.recordHealthImport({field: 90, 'height_cm': 163}, estimatedFields: {field});
+      expect(repo.profile, isEmpty, reason: 'An import history entry cannot confirm a profile');
+      final imported = {for (final item in repo.history().single.items) item.field: item};
+      expect(imported[field]!.estimated, isTrue);
+      expect(imported[field]!.source, HistorySource.appleHealth);
+      expect(imported['height_cm']!.estimated, isFalse);
+      final t = ready;
+      (t['state'] as Map)['estimated_fields'] = ['sedentary_min_day'];
+      await repo.saveOnboarding(
+        Map<String, dynamic>.from(t['state'] as Map),
+        sources: const {field: HistorySource.appleHealth, 'height_cm': HistorySource.appleHealth},
+        estimatedFields: {field},
+      );
+      expect(repo.provenance(field)!.source, HistorySource.appleHealth);
+      expect(repo.provenance(field)!.estimated, isTrue);
+      expect(repo.provenance('height_cm')!.estimated, isFalse);
+      expect(repo.provenance('sedentary_min_day')!.estimated, isTrue);
+      final saved = repo.history().firstWhere((entry) => entry.kind == HistoryKind.onboarding);
+      expect(saved.items.firstWhere((item) => item.field == field).estimated, isTrue);
+      // A subsequent spoken correction replaces the estimate provenance.
+      await repo.saveConversationProfile({field: 120}, kind: HistoryKind.mochiChange);
+      expect(repo.provenance(field)!.estimated, isFalse);
+      expect(repo.provenance(field)!.source, HistorySource.mochiChange);
+    });
+
     test('each confirmed value keeps its source; band and proxy values are estimates', () async {
       final t = ready;
       (t['state'] as Map)['estimated_fields'] = ['sedentary_min_day'];

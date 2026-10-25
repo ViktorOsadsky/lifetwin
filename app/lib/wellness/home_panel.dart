@@ -558,14 +558,16 @@ class ScoreScale extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        // OverflowBar also supports intrinsic sizing: this scale appears in the
+        // score explanation sheet as well as Home. Keep whole labels together
+        // and stack them before a narrow row can break words into letters.
+        OverflowBar(
+          alignment: MainAxisAlignment.spaceBetween,
+          spacing: 8,
+          overflowAlignment: OverflowBarAlignment.center,
           children: [
-            Flexible(child: Text('‹ Higher risk', style: LtText.body())),
-            Text('Average', style: LtText.body()),
-            Flexible(
-              child: Text('Better health ›', style: LtText.body(), textAlign: TextAlign.end),
-            ),
+            for (final label in ['‹ Higher risk', 'Average', 'Better health ›'])
+              IntrinsicWidth(child: Text(label, style: LtText.body())),
           ],
         ),
       ],

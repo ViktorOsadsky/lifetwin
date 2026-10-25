@@ -1,7 +1,7 @@
 # Apple Health activity handoff — October 24, 2026
 
-Track / task: C data/native adapter, #106. Numeric workout estimates implemented in the data API; UI/device
-acceptance remains. Sitting is unavailable. Do not claim measured minutes in zones.
+Track / task: C data/native adapter, #106. Numeric workout estimates are connected to the confirmation screen; real-source/device
+acceptance remains. The original adapter handoff below is retained as its historical validation record. Sitting is unavailable. Do not claim measured minutes in zones.
 
 Result and files changed: `app/lib/health/health_summary.dart` adds the three model fields, availability reasons and
 native estimate candidates with `isEstimate: true`. `health_reader.dart` exposes the real `readSummary()` path;
@@ -53,3 +53,29 @@ preserve legacy candidates and typed unavailable reasons. Source-linked method/A
 Next dependent task: Daniel switches the current generic HealthImportScreen data call to `readSummary()` while
 retaining explicit confirmation/rejection, then verifies real-source MET availability and the final read-back flow on
 his device. Root handles integration/QA #107; this data task does not claim end-to-end #106 acceptance.
+
+
+## Confirmation integration follow-up
+
+Branch: `codex/c-health-confirmation-flow`, based on `27c9736`; PR and merge state are recorded on #106.
+The existing Health screen now passes its generic samples to `readSummary()` and offers each native aggregate
+through the existing confirmation/rejection/undo flow. Native failures preserve generic suggestions. Missing
+buckets and unsupported sitting remain unanswered. No permission, model, native aggregation or server contract changes.
+
+Two additive local APIs retain source estimates: `saveOnboarding(estimatedFields: ...)` unions confirmed-source
+estimates with the server state's existing rough-answer fields; `recordHealthImport(estimatedFields: ...)` records
+per-field estimate flags. Main keeps these keys only while the confirmed value/source still matches the accepted
+Health candidate, clears replaced candidate flags, and clears them on deletion. Import history alone never changes
+the profile. A later changed spoken answer replaces the old source/estimate provenance.
+
+Validation and limitations: focused Flutter screen/summary/contract/offer/room/repository tests exercise channel
+fixtures, explicit recreational/usual-week read-back, reject/undo/confirm, no manufactured zeros, one aggregate query,
+actual Settings import history, estimate provenance and spoken replacement. Targeted analysis covers every changed
+Dart file. Validation uses `/private/tmp/lifetwin-health-106-validation/app` with the temporary Dart 3.13.0 floor only;
+shipping SDK/lockfiles remain unchanged. The first disposable-copy attempt had stale vendored model/test assets;
+a synchronized package and rebuilt test assets resolved that harness failure. No simulator/device or live HealthKit
+source is claimed by this integration. Final focused run: 105 tests passed before the added Settings regression; the final room suite passed all 37 tests
+(including that regression), for 106 unique focused tests. Targeted analysis reported no issues.
+
+Next dependency: Daniel verifies optional MET metadata on a real workout source and the connected screen on his
+iPhone. Keep #106 open for that evidence. #105's hardware classification/wake/coverage dependency is separate.
