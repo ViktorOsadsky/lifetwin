@@ -1,0 +1,122 @@
+{
+ "stand": {
+  "size": [
+   195,
+   395
+  ],
+  "feet_anchor": {
+   "x": 0.4974,
+   "y": 0.9797
+  },
+  "scale_method": "stand-height",
+  "scale": 0.263
+ },
+ "wave": {
+  "size": [
+   234,
+   403
+  ],
+  "feet_anchor": {
+   "x": 0.5406,
+   "y": 0.9801
+  },
+  "scale_method": "head-width",
+  "scale": 0.262
+ },
+ "walk_side": {
+  "size": [
+   195,
+   370
+  ],
+  "feet_anchor": {
+   "x": 0.5487,
+   "y": 0.9784
+  },
+  "scale_method": "head-width",
+  "scale": 0.269
+ },
+ "walk_front": {
+  "size": [
+   197,
+   379
+  ],
+  "feet_anchor": {
+   "x": 0.5685,
+   "y": 0.9789
+  },
+  "scale_method": "head-width",
+  "scale": 0.234
+ },
+ "walk_back": {
+  "size": [
+   196,
+   402
+  ],
+  "feet_anchor": {
+   "x": 0.625,
+   "y": 0.9801
+  },
+  "scale_method": "head-width",
+  "scale": 0.278
+ },
+ "sit": {
+  "size": [
+   247,
+   312
+  ],
+  "feet_anchor": {
+   "x": 0.498,
+   "y": 0.9744
+  },
+  "scale_method": "head-width",
+  "scale": 0.267
+ },
+ "jump": {
+  "size": [
+   282,
+   365
+  ],
+  "feet_anchor": {
+   "x": 0.5355,
+   "y": 0.9781
+  },
+  "scale_method": "head-width",
+  "scale": 0.274
+ },
+ "stretch": {
+  "size": [
+   239,
+   395
+  ],
+  "feet_anchor": {
+   "x": 0.5,
+   "y": 0.9797
+  },
+  "scale_method": "head-width",
+  "scale": 0.259
+ },
+ "eat": {
+  "size": [
+   195,
+   303
+  ],
+  "feet_anchor": {
+   "x": 0.5051,
+   "y": 0.9736
+  },
+  "scale_method": "head-width",
+  "scale": 0.227
+ },
+ "sleep": {
+  "size": [
+   377,
+   182
+  ],
+  "feet_anchor": {
+   "x": 0.6194,
+   "y": 0.956
+  },
+  "scale_method": "body-length",
+  "scale": 0.245
+ }
+}

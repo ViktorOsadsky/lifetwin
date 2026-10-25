@@ -1,0 +1,146 @@
+{
+ "wave": {
+  "size": [
+   229,
+   395
+  ],
+  "feet_anchor": {
+   "x": 0.5371,
+   "y": 0.9797
+  },
+  "scale": 0.785,
+  "sheet": "human_f_older_regular_A"
+ },
+ "walk_side": {
+  "size": [
+   204,
+   397
+  ],
+  "feet_anchor": {
+   "x": 0.5294,
+   "y": 0.9798
+  },
+  "scale": 0.785,
+  "sheet": "human_f_older_regular_A"
+ },
+ "sit": {
+  "size": [
+   203,
+   326
+  ],
+  "feet_anchor": {
+   "x": 0.4754,
+   "y": 0.9755
+  },
+  "scale": 0.785,
+  "sheet": "human_f_older_regular_A"
+ },
+ "jump": {
+  "size": [
+   253,
+   330
+  ],
+  "feet_anchor": {
+   "x": 0.5079,
+   "y": 0.9758
+  },
+  "scale": 0.785,
+  "sheet": "human_f_older_regular_A"
+ },
+ "sleep": {
+  "size": [
+   362,
+   199
+  ],
+  "feet_anchor": {
+   "x": 0.692,
+   "y": 0.9598
+  },
+  "scale": 0.785,
+  "sheet": "human_f_older_regular_A"
+ },
+ "eat": {
+  "size": [
+   222,
+   334
+  ],
+  "feet_anchor": {
+   "x": 0.5068,
+   "y": 0.976
+  },
+  "scale": 0.785,
+  "sheet": "human_f_older_regular_A"
+ },
+ "stretch": {
+  "size": [
+   194,
+   392
+  ],
+  "feet_anchor": {
+   "x": 0.5258,
+   "y": 0.9796
+  },
+  "scale": 0.785,
+  "sheet": "human_f_older_regular_A"
+ },
+ "concerned": {
+  "size": [
+   167,
+   395
+  ],
+  "feet_anchor": {
+   "x": 0.521,
+   "y": 0.9797
+  },
+  "scale": 0.567,
+  "sheet": "human_f_older_regular_B"
+ },
+ "listening": {
+  "size": [
+   169,
+   392
+  ],
+  "feet_anchor": {
+   "x": 0.6065,
+   "y": 0.9796
+  },
+  "scale": 0.567,
+  "sheet": "human_f_older_regular_B"
+ },
+ "thinking": {
+  "size": [
+   172,
+   417
+  ],
+  "feet_anchor": {
+   "x": 0.5378,
+   "y": 0.9808
+  },
+  "scale": 0.567,
+  "sheet": "human_f_older_regular_B"
+ },
+ "sleepy": {
+  "size": [
+   198,
+   413
+  ],
+  "feet_anchor": {
+   "x": 0.5076,
+   "y": 0.9806
+  },
+  "scale": 0.567,
+  "sheet": "human_f_older_regular_B"
+ },
+ "proud": {
+  "size": [
+   173,
+   416
+  ],
+  "feet_anchor": {
+   "x": 0.5607,
+   "y": 0.9808
+  },
+  "scale": 0.567,
+  "sheet": "human_f_older_regular_B"
+ }
+}

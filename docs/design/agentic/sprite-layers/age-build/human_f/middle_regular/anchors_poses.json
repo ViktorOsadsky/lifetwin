@@ -1,0 +1,146 @@
+{
+ "wave": {
+  "size": [
+   223,
+   396
+  ],
+  "feet_anchor": {
+   "x": 0.5516,
+   "y": 0.9798
+  },
+  "scale": 0.795,
+  "sheet": "human_f_middle_regular_A"
+ },
+ "walk_side": {
+  "size": [
+   204,
+   393
+  ],
+  "feet_anchor": {
+   "x": 0.549,
+   "y": 0.9796
+  },
+  "scale": 0.795,
+  "sheet": "human_f_middle_regular_A"
+ },
+ "sit": {
+  "size": [
+   206,
+   339
+  ],
+  "feet_anchor": {
+   "x": 0.4102,
+   "y": 0.9764
+  },
+  "scale": 0.795,
+  "sheet": "human_f_middle_regular_A"
+ },
+ "jump": {
+  "size": [
+   248,
+   382
+  ],
+  "feet_anchor": {
+   "x": 0.4536,
+   "y": 0.9791
+  },
+  "scale": 0.795,
+  "sheet": "human_f_middle_regular_A"
+ },
+ "sleep": {
+  "size": [
+   351,
+   208
+  ],
+  "feet_anchor": {
+   "x": 0.9174,
+   "y": 0.9615
+  },
+  "scale": 0.795,
+  "sheet": "human_f_middle_regular_A"
+ },
+ "eat": {
+  "size": [
+   213,
+   328
+  ],
+  "feet_anchor": {
+   "x": 0.4789,
+   "y": 0.9756
+  },
+  "scale": 0.795,
+  "sheet": "human_f_middle_regular_A"
+ },
+ "stretch": {
+  "size": [
+   190,
+   411
+  ],
+  "feet_anchor": {
+   "x": 0.5211,
+   "y": 0.9805
+  },
+  "scale": 0.795,
+  "sheet": "human_f_middle_regular_A"
+ },
+ "concerned": {
+  "size": [
+   176,
+   396
+  ],
+  "feet_anchor": {
+   "x": 0.4943,
+   "y": 0.9798
+  },
+  "scale": 0.545,
+  "sheet": "human_f_middle_regular_B"
+ },
+ "listening": {
+  "size": [
+   179,
+   392
+  ],
+  "feet_anchor": {
+   "x": 0.4804,
+   "y": 0.9796
+  },
+  "scale": 0.545,
+  "sheet": "human_f_middle_regular_B"
+ },
+ "thinking": {
+  "size": [
+   179,
+   408
+  ],
+  "feet_anchor": {
+   "x": 0.4916,
+   "y": 0.9804
+  },
+  "scale": 0.545,
+  "sheet": "human_f_middle_regular_B"
+ },
+ "sleepy": {
+  "size": [
+   200,
+   409
+  ],
+  "feet_anchor": {
+   "x": 0.485,
+   "y": 0.9804
+  },
+  "scale": 0.545,
+  "sheet": "human_f_middle_regular_B"
+ },
+ "proud": {
+  "size": [
+   182,
+   409
+  ],
+  "feet_anchor": {
+   "x": 0.4918,
+   "y": 0.9804
+  },
+  "scale": 0.545,
+  "sheet": "human_f_middle_regular_B"
+ }
+}

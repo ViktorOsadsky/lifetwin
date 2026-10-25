@@ -1,0 +1,140 @@
+<!doctype html>
+<!-- LifeTwin S screens (upload, Today's plan, drivers), v2 (round 2). Tokens and components match V and X. Twin sprites: sprites/v2, one scale per character (stand pose = 196px), feet on one baseline. -->
+<!-- Flutter: the page is a scroll view; back, Home and close controls and the dock are pinned outside it (device-test rule: they never scroll away); scroll content gets bottom padding = dock height + 16. Sections are flow layout with min-heights, never fixed heights, so 200% text grows. Only the plate window has a fixed height; the twin sits in a fixed 200px box. -->
+<!-- Large text (textScale > 1.3): Yes / Change / Skip and Done / Not done rows stack full width (min height 52, gap 10); reason chips and tags wrap; the Outlook year strip wraps 3 + 2 (cells at least 96px wide); two-button docks stack. -->
+<!-- Forgetting (coach contract memory_instruction; Z-22 pattern): calm, ink (#4A2F25) primary, never red. "Forget that" = ONE confirm; "Forget everything" = TWO (confirm, then final). Applies to what Mochi remembers (habit notes and the reasons used for plans), only when memory_consent is on. Answers, check-ins and history stay; those are deleted only through Delete my data (Z-22). -->
+<!-- One confirm. Forget it removes that single note (and stops plans using that reason); Mochi replies "Done. I've forgotten it." Swipe down or Keep it = cancel. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>S Forget that</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.scr{width:390px;position:relative;overflow:hidden;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#4A2F25;-webkit-font-smoothing:antialiased}
+.g-mint{background:radial-gradient(140% 70% at 50% 18%,#E3F5EC 0%,#D3EEE2 72%)}
+.g-lav{background:radial-gradient(140% 70% at 50% 18%,#F0ECFD 0%,#E6E0FA 72%)}
+.g-paper{background:radial-gradient(140% 70% at 50% 18%,#FFFBF3 0%,#F6EEE2 72%)}
+.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.pn{position:relative;box-sizing:border-box;border:1.5px solid #A88B7D;border-radius:28px;background:#FFFDF8;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.win{border-radius:30px}
+.pa{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border-radius:24px;overflow:hidden;background:#E9E2F8}
+.pa img.plate{position:absolute;display:block;object-fit:cover}
+.key{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(226,179,87,.7);border-radius:24px;pointer-events:none}
+.banner{position:absolute;left:50%;transform:translateX(-50%);height:44px;max-width:240px;box-sizing:border-box;padding:0 20px;display:flex;align-items:center;justify-content:center;gap:6px;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;white-space:nowrap;z-index:3}
+.banner .br{color:#B4532F}
+.btn{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:#4A2F25;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid #8C6B5D;background:#FFFDF8;padding:0;text-align:left;text-decoration:none}
+.btn.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.lip{background:#9FD9C3;box-shadow:inset 0 -3px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-cream{background:#FFFDF8;box-shadow:inset 0 -3px 0 rgba(233,223,208,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-ink{background:#4A2F25;color:#FFFDF8;border-color:#2E1C15;box-shadow:inset 0 -3px 0 rgba(0,0,0,.35),0 6px 16px rgba(74,47,37,.18)}
+.lip-teal{background:#24806A;color:#FFFDF8;border-color:#17594A;box-shadow:inset 0 -4px 0 rgba(10,60,48,.45),0 8px 18px rgba(36,128,106,.28)}
+.cta{width:100%;min-height:64px;border-radius:32px;font-size:24px}
+.cta2{width:100%;min-height:56px;border-radius:28px;font-size:20px}
+.link{border:0;background:transparent;box-shadow:none;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;font-weight:700;font-size:17px;min-height:48px;min-width:48px;padding:0 6px}
+.back{position:absolute;width:52px;height:52px;border-radius:26px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);z-index:2}
+.tail{position:absolute;width:20px;height:20px;background:#FFFDF8;border:1.5px solid #A88B7D;border-top-color:transparent;border-right-color:transparent;box-sizing:border-box}
+.bub{position:absolute;z-index:2;padding:12px 16px;border-radius:24px;white-space:nowrap}
+.bub p{margin:0;font-size:20px;line-height:1.18;position:relative}
+.sheet{margin-top:-14px;padding:16px 16px 18px;z-index:1}
+.card{margin-top:14px;padding:14px 14px 16px}
+.lab{font-size:17px;font-weight:700;margin:0;line-height:1.2}
+.sub{font-size:17px;line-height:1.3;color:#6B4E42;margin:0}
+.dots{display:flex;gap:8px;justify-content:center;align-items:center}
+.dot{width:12px;height:12px;border-radius:6px;border:2px solid #8C6B5D;box-sizing:border-box;background:#FFFDF8}
+.dot.done{background:#4A2F25;border-color:#4A2F25}
+.dot.now{width:30px;background:#9FD9C3;border-color:#7A5B4E}
+.ic{width:44px;height:44px;border-radius:22px;flex:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:2px solid #8C6B5D}
+.say{align-self:flex-end;max-width:286px;position:relative;box-sizing:border-box;background:#E3F5EC;border:1.5px solid #A88B7D;border-radius:22px 22px 6px 22px;padding:10px 16px;font-size:18px;line-height:1.3}
+.say small{display:block;font-size:17px;color:#6B4E42;margin-bottom:2px}
+.msay{align-self:flex-start;max-width:286px;box-sizing:border-box;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px 22px 22px 6px;padding:10px 16px;font-size:18px;line-height:1.3}
+.msay.now{border:2px solid #7A5B4E;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.fchip{display:flex;align-items:center;gap:12px;box-sizing:border-box;width:100%;min-height:60px;border:1.5px solid #A88B7D;border-radius:20px;background:#FBF7F0;padding:6px 14px 6px 10px;text-align:left}
+.fchip .t{flex:1;min-width:0}
+.fchip .t span{display:block;font-size:17px;line-height:1.2;color:#6B4E42}
+.fchip .t b{display:block;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;line-height:1.15;color:#4A2F25}
+.fchip .ed{width:48px;height:48px;border-radius:24px;flex:none;display:flex;align-items:center;justify-content:center;border:2px solid #8C6B5D;box-sizing:border-box;background:#FFFDF8}
+.fchip.unk{border-style:dashed;background:#FBF7F0;box-shadow:none}
+.src{display:inline-flex;align-items:center;gap:4px}
+.ans{min-height:52px;border-radius:26px;padding:0 18px;font-size:18px;font-weight:700;box-shadow:0 3px 10px rgba(74,47,37,.10);white-space:nowrap}
+.ans.on{background:#9FD9C3;border-color:#7A5B4E;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.ans.unk{border-style:dashed;box-shadow:none;background:#FBF7F0}
+.wrap{display:flex;flex-wrap:wrap;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 14px;border-radius:18px;background:#9FD9C3;border:2px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:19px;white-space:nowrap;box-sizing:border-box}
+.tag{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:16px;border:1.5px solid #A88B7D;background:#FFFDF8;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
+.tag.dash{border-style:dashed;border-color:#8C6B5D}
+.sw{width:64px;height:38px;border-radius:19px;flex:none;position:relative;box-sizing:border-box;border:2px solid #7A5B4E;background:#9FD9C3}
+.sw i{position:absolute;right:3px;top:3px;width:28px;height:28px;border-radius:14px;background:#FFFDF8;border:2px solid #7A5B4E;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.row{position:relative;display:flex;align-items:center;gap:12px;box-sizing:border-box;border:2px solid #8C6B5D;border-radius:22px;background:#FFFDF8;padding:8px 10px 8px 12px;box-shadow:0 3px 10px rgba(74,47,37,.10);width:100%;min-height:64px;text-align:left}
+.row .rt{flex:1;min-width:0}
+.row .rt b{display:block;font-size:18px;line-height:1.2}
+.row .rt span{display:block;font-size:17px;line-height:1.25;color:#6B4E42}
+.dock{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;background:#FFFDF8;border-top:1.5px solid #A88B7D;border-radius:28px 28px 0 0;box-shadow:0 -6px 16px rgba(74,47,37,.12),inset 0 1px 0 rgba(255,255,255,.75);padding:10px 16px 18px;z-index:5}
+.full .dock{position:relative;margin-top:16px}
+.bar{position:absolute;left:14px;right:14px;bottom:30px;z-index:5}
+.full .bar{position:relative;left:auto;right:auto;bottom:auto;margin:16px 14px 30px}
+.g-night{background:radial-gradient(140% 70% at 50% 22%,#1B2245 0%,#121731 72%);color:#FBF4EA}
+.pin{position:absolute;z-index:6}
+.hdr{position:absolute;left:0;right:0;top:0;z-index:6;box-sizing:border-box;padding:47px 14px 10px;display:flex;align-items:center;gap:12px;background:#FFFBF3;border-bottom:1.5px solid rgba(168,139,125,.45);box-shadow:0 4px 12px rgba(74,47,37,.08)}
+.hdr.mint{background:#E6F6EE}
+.hdr.lav{background:#F1EDFD}
+.hdr.night{background:#1B2245;border-bottom-color:rgba(251,244,234,.18);box-shadow:0 4px 14px rgba(4,6,20,.4);color:#FBF4EA}
+.hdr .back{position:static;flex:none}
+.srcc{display:inline-flex;align-items:center;min-height:48px;min-width:48px;text-decoration:none;flex:none}
+.srcc .v{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:18px;border:1.5px solid #A88B7D;background:#FFFDF8;font-size:17px;font-weight:700;color:#4A2F25;white-space:nowrap;box-sizing:border-box}
+.act{flex:1;min-height:52px;border-radius:26px;font-size:18px;font-weight:700;gap:6px;padding:0 10px;white-space:nowrap}
+.act.on{background:#9FD9C3;border-color:#7A5B4E}
+.item{margin-top:12px;padding:12px 14px 14px}
+.item .top{display:flex;align-items:flex-start;gap:12px}
+.item .tm{display:block;font-size:17px;font-weight:700;color:#6B4E42;line-height:1.2}
+.item .tx{display:block;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:21px;line-height:1.2;margin-top:2px}
+.ncard{position:relative;box-sizing:border-box;border-radius:28px;background:#1E2547;border:1.5px solid #0B0F26;box-shadow:0 8px 20px rgba(4,6,20,.45),inset 0 1px 0 rgba(255,255,255,.06);color:#FBF4EA;padding:16px 18px 18px}
+.ncard .nkey{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(232,182,76,.55);border-radius:22px;pointer-events:none}
+.ncard h2{position:relative;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;line-height:1.2;color:#E8B64C}
+.nlink{color:#E8B64C}
+.meter{display:flex;gap:4px;flex:none}
+.meter i{display:block;width:22px;height:12px;border-radius:6px;border:2px solid rgba(251,244,234,.55);box-sizing:border-box}
+.meter i.f{background:#9FD9C3;border-color:#9FD9C3}
+.rough{appearance:none;-webkit-appearance:none;margin:0;padding:0;border:0;background:transparent;font:inherit;cursor:pointer;display:inline-flex;align-items:center;min-height:48px;flex:none}
+.rough .v{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px 0 8px;border-radius:18px;background:#FDF1D8;color:#4A2F25;border:2px solid #8C6B5D;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
+.tl{position:relative;padding-left:62px}
+.tl:before{content:"";position:absolute;left:23px;top:30px;bottom:30px;width:3px;border-radius:2px;background:repeating-linear-gradient(#A88B7D 0 8px,transparent 8px 14px)}
+.tl .node{position:absolute;left:0;top:0}
+.tl:last-child:before{display:none}
+p{overflow-wrap:break-word}
+h1,h2{margin:0}
+</style>
+</helmet>
+<div class="scr g-mint" style="height: 844px">
+<div class="scroll" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow-y: auto; overflow-x: hidden"><div class="flow" style="padding: 77px 14px 16px; display: flex; flex-direction: column">
+<!-- mood: happy -> bear/hat/listening.png (listening while the person talks) --><!-- Twin pose: listening (sprites/v2/bear/hat/listening.png), scale 0.5921 from bear/hat/stand.png = 196px, feet anchor on the shared baseline -->
+<div class="pn win" style="height: 240px"><div class="pa"><img class="plate" src="/_blob/d16f2dd61c0d54c11b27c2e6626acc71" alt="" style="width: 460px; height: 690px; left: -118px; top: -146px"><div aria-hidden="true" style="position: absolute; left: -8px; top: 30px; width: 240px; height: 210px; background: radial-gradient(closest-side, rgba(255,227,176,.30), rgba(255,227,176,0))"></div><div aria-hidden="true" style="position: absolute; left: 42px; top: 211px; width: 140px; height: 18px; border-radius: 50%; background: rgba(74,47,37,.22); filter: blur(3px)"></div><div style="position: absolute; left: 12px; top: 20px; width: 200px; height: 200px; display: flex; align-items: flex-end; justify-content: center"><img src="/_blob/fd2c89a4672aa812148d4bfb877b4e81" alt="Mochi the bear listening" style="width: 136px; height: 205px; display: block; position: relative; left: 1px; top: 5px"></div></div><div class="key"></div>
+<div class="banner" style="top: -22px" aria-label="Twin name: Mochi"><span class="br">{</span><span>Mochi</span><span class="br">}</span></div>
+<div class="pn bub" style="right: 8px; top: 40px"><span class="tail" style="left: -10px; top: 26px; transform: rotate(45deg)"></span><p class="fd">Sure thing.</p></div>
+</div>
+<section class="pn sheet" style="">
+<div style="display: flex; flex-direction: column; gap: 10px"><div class="msay"><small style="display: block; font-size: 17px; color: #6B4E42; margin-bottom: 2px">Mochi</small>Seated moves today, since your knee hurt.</div><div class="say"><small>You said</small>&#8220;Forget that, please.&#8221;</div></div></section>
+</div></div>
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(46,28,21,.48); z-index: 7"></div>
+<section class="dock" role="dialog" aria-modal="true" aria-label="Forget this?" style="padding: 10px 18px 26px; border-radius: 30px 30px 0 0; z-index: 8">
+<div style="width: 44px; height: 5px; border-radius: 3px; background: #CDB8AB; margin: 0 auto 14px" aria-hidden="true"></div>
+<div style="display: flex; align-items: center; gap: 12px"><span class="ic" style="width: 52px; height: 52px; border-radius: 26px; background: #FBF7F0; border-color: #8C6B5D"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M8.5 19.5h11"/><path d="M4.5 15.5l9-9 5 5-8 8h-4z"/><path d="M9.5 10.5l5 5"/></svg></span><h2 class="fd" style="font-size: 28px; line-height: 1.15">Forget this?</h2></div>
+<div class="fchip" style="margin-top: 14px; min-height: 64px"><span class="ic" style="width: 44px; height: 44px; border-radius: 22px; background: #FFF4EF; border-color: #8C6B5D"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M5.5 3.5h9l4 4v13h-13z"/><path d="M14.5 3.5v4h4"/><path d="M8.5 12h7M8.5 15.5h5"/></svg></span><div class="t"><span>Mochi remembers</span><b style="font-size: 20px">Knee hurt on walks</b></div></div><p style="margin: 12px 0 0; font-size: 19px; line-height: 1.4">Mochi won&#8217;t use it again. Today&#8217;s plan stays.</p>
+<div style="margin-top: 16px"><button class="btn lip-ink fd cta" style=""><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFDF8" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M8.5 19.5h11"/><path d="M4.5 15.5l9-9 5 5-8 8h-4z"/><path d="M9.5 10.5l5 5"/></svg><span>Forget it</span></button></div>
+<div style="margin-top: 10px"><button class="btn lip-cream fd cta2" style=""><span>Keep it</span></button></div>
+</section>
+<a href="S-2-RoomEntry.dc.html" class="btn back pin" style="left: 30px; top: 97px; position: absolute" aria-label="Back"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M15 5l-7 7 7 7"/></svg></a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

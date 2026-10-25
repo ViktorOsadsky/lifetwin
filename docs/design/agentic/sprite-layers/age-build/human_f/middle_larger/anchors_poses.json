@@ -1,0 +1,146 @@
+{
+ "wave": {
+  "size": [
+   241,
+   397
+  ],
+  "feet_anchor": {
+   "x": 0.5228,
+   "y": 0.9798
+  },
+  "scale": 0.781,
+  "sheet": "human_f_middle_larger_A"
+ },
+ "walk_side": {
+  "size": [
+   224,
+   397
+  ],
+  "feet_anchor": {
+   "x": 0.5335,
+   "y": 0.9798
+  },
+  "scale": 0.781,
+  "sheet": "human_f_middle_larger_A"
+ },
+ "sit": {
+  "size": [
+   229,
+   335
+  ],
+  "feet_anchor": {
+   "x": 0.5066,
+   "y": 0.9761
+  },
+  "scale": 0.781,
+  "sheet": "human_f_middle_larger_A"
+ },
+ "jump": {
+  "size": [
+   270,
+   357
+  ],
+  "feet_anchor": {
+   "x": 0.4,
+   "y": 0.9776
+  },
+  "scale": 0.781,
+  "sheet": "human_f_middle_larger_A"
+ },
+ "sleep": {
+  "size": [
+   386,
+   202
+  ],
+  "feet_anchor": {
+   "x": 0.8018,
+   "y": 0.9604
+  },
+  "scale": 0.781,
+  "sheet": "human_f_middle_larger_A"
+ },
+ "eat": {
+  "size": [
+   236,
+   331
+  ],
+  "feet_anchor": {
+   "x": 0.5,
+   "y": 0.9758
+  },
+  "scale": 0.781,
+  "sheet": "human_f_middle_larger_A"
+ },
+ "stretch": {
+  "size": [
+   217,
+   391
+  ],
+  "feet_anchor": {
+   "x": 0.5323,
+   "y": 0.9795
+  },
+  "scale": 0.781,
+  "sheet": "human_f_middle_larger_A"
+ },
+ "concerned": {
+  "size": [
+   187,
+   395
+  ],
+  "feet_anchor": {
+   "x": 0.5107,
+   "y": 0.9797
+  },
+  "scale": 0.55,
+  "sheet": "human_f_middle_larger_B"
+ },
+ "listening": {
+  "size": [
+   194,
+   393
+  ],
+  "feet_anchor": {
+   "x": 0.5876,
+   "y": 0.9796
+  },
+  "scale": 0.55,
+  "sheet": "human_f_middle_larger_B"
+ },
+ "thinking": {
+  "size": [
+   187,
+   397
+  ],
+  "feet_anchor": {
+   "x": 0.5481,
+   "y": 0.9798
+  },
+  "scale": 0.55,
+  "sheet": "human_f_middle_larger_B"
+ },
+ "sleepy": {
+  "size": [
+   207,
+   398
+  ],
+  "feet_anchor": {
+   "x": 0.5,
+   "y": 0.9799
+  },
+  "scale": 0.55,
+  "sheet": "human_f_middle_larger_B"
+ },
+ "proud": {
+  "size": [
+   188,
+   397
+  ],
+  "feet_anchor": {
+   "x": 0.5293,
+   "y": 0.9798
+  },
+  "scale": 0.55,
+  "sheet": "human_f_middle_larger_B"
+ }
+}

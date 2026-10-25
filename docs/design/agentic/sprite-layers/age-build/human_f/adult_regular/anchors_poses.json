@@ -1,0 +1,146 @@
+{
+ "wave": {
+  "size": [
+   216,
+   397
+  ],
+  "feet_anchor": {
+   "x": 0.6227,
+   "y": 0.9798
+  },
+  "scale": 0.798,
+  "sheet": "human_f_adult_regular_A"
+ },
+ "walk_side": {
+  "size": [
+   194,
+   394
+  ],
+  "feet_anchor": {
+   "x": 0.5593,
+   "y": 0.9797
+  },
+  "scale": 0.798,
+  "sheet": "human_f_adult_regular_A"
+ },
+ "sit": {
+  "size": [
+   208,
+   316
+  ],
+  "feet_anchor": {
+   "x": 0.5024,
+   "y": 0.9747
+  },
+  "scale": 0.798,
+  "sheet": "human_f_adult_regular_A"
+ },
+ "jump": {
+  "size": [
+   243,
+   350
+  ],
+  "feet_anchor": {
+   "x": 0.4486,
+   "y": 0.9771
+  },
+  "scale": 0.798,
+  "sheet": "human_f_adult_regular_A"
+ },
+ "sleep": {
+  "size": [
+   357,
+   174
+  ],
+  "feet_anchor": {
+   "x": 0.7661,
+   "y": 0.954
+  },
+  "scale": 0.798,
+  "sheet": "human_f_adult_regular_A"
+ },
+ "eat": {
+  "size": [
+   196,
+   309
+  ],
+  "feet_anchor": {
+   "x": 0.4974,
+   "y": 0.9741
+  },
+  "scale": 0.798,
+  "sheet": "human_f_adult_regular_A"
+ },
+ "stretch": {
+  "size": [
+   175,
+   409
+  ],
+  "feet_anchor": {
+   "x": 0.4971,
+   "y": 0.9804
+  },
+  "scale": 0.798,
+  "sheet": "human_f_adult_regular_A"
+ },
+ "concerned": {
+  "size": [
+   177,
+   394
+  ],
+  "feet_anchor": {
+   "x": 0.4831,
+   "y": 0.9797
+  },
+  "scale": 0.576,
+  "sheet": "human_f_adult_regular_B"
+ },
+ "listening": {
+  "size": [
+   182,
+   392
+  ],
+  "feet_anchor": {
+   "x": 0.533,
+   "y": 0.9796
+  },
+  "scale": 0.576,
+  "sheet": "human_f_adult_regular_B"
+ },
+ "thinking": {
+  "size": [
+   178,
+   400
+  ],
+  "feet_anchor": {
+   "x": 0.5365,
+   "y": 0.98
+  },
+  "scale": 0.576,
+  "sheet": "human_f_adult_regular_B"
+ },
+ "sleepy": {
+  "size": [
+   205,
+   402
+  ],
+  "feet_anchor": {
+   "x": 0.4659,
+   "y": 0.9801
+  },
+  "scale": 0.576,
+  "sheet": "human_f_adult_regular_B"
+ },
+ "proud": {
+  "size": [
+   178,
+   402
+  ],
+  "feet_anchor": {
+   "x": 0.5787,
+   "y": 0.9801
+  },
+  "scale": 0.576,
+  "sheet": "human_f_adult_regular_B"
+ }
+}

@@ -1,0 +1,216 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "straw_hat",
+ "category": "hat",
+ "label": "Sun hat",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "hat_under",
+   "slot": "hat_under",
+   "bone": "head",
+   "z": 45,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 55,
+    "y": 150,
+    "w": 541,
+    "h": 99
+   },
+   "vector": "hat_under.svg",
+   "painted": "hat_under.p.png"
+  },
+  {
+   "name": "hat_front",
+   "slot": "hat_front",
+   "bone": "head",
+   "z": 70,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 55,
+    "y": 72,
+    "w": 541,
+    "h": 198
+   },
+   "vector": "hat_front.svg",
+   "painted": "hat_front.p.png"
+  },
+  {
+   "name": "ear_over",
+   "slot": "hat_ear_over",
+   "bone": "head",
+   "z": 72,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 128,
+    "y": 58,
+    "w": 382,
+    "h": 98
+   },
+   "vector": "ear_over.svg",
+   "painted": "ear_over.p.png",
+   "note": "the ears, cut from the rig head part along a soft round arc, drawn over hat_front (rig request: a hat-supplied ear-over clip)"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "default",
+ "colourable": {
+  "straw": {
+   "key": "#e2bf7a",
+   "tones": {
+    "hi": "#efd7a8",
+    "lt": "#e9ca90",
+    "base": "#e2bf7a",
+    "sh": "#af936c",
+    "dk": "#836d56",
+    "ink": "#624d38"
+   }
+  },
+  "ribbon": {
+   "key": "#7fa36a",
+   "tones": {
+    "hi": "#bac8a0",
+    "lt": "#9eb584",
+    "base": "#7fa36a",
+    "sh": "#677f60",
+    "dk": "#4f5e4e",
+    "ink": "#414433"
+   }
+  },
+  "underside": {
+   "key": "#c19d62",
+   "tones": {
+    "hi": "#dec59c",
+    "lt": "#d0b07e",
+    "base": "#c19d62",
+    "sh": "#977a5b",
+    "dk": "#725b4a",
+    "ink": "#574231"
+   }
+  }
+ },
+ "material": "straw",
+ "notes": [
+  "Gardening straw hat; the Customize \"Sun hat\" tile maps here. Daisy + bow on the wearer's left."
+ ],
+ "fit": {
+  "frame": "canonical Cal hat (rig hat_front/hd == v2 hatcomp canonical placement)",
+  "anchor": [
+   320,
+   191
+  ],
+  "band_bottom": [
+   [
+    148,
+    224
+   ],
+   [
+    200,
+    207
+   ],
+   [
+    245,
+    198
+   ],
+   [
+    320,
+    191
+   ],
+   [
+    395,
+    196
+   ],
+   [
+    440,
+    205
+   ],
+   [
+    492,
+    222
+   ]
+  ],
+  "front_max_over_eyes": [
+   [
+    150,
+    269
+   ],
+   [
+    170,
+    262
+   ],
+   [
+    200,
+    254
+   ],
+   [
+    245,
+    244
+   ],
+   [
+    320,
+    238
+   ],
+   [
+    395,
+    244
+   ],
+   [
+    440,
+    252
+   ],
+   [
+    470,
+    259
+   ],
+   [
+    490,
+    277
+   ]
+  ],
+  "ref_head": {
+   "width_at_band": 396,
+   "crown_top_y": 105
+  },
+  "per_head_scale": "for an age/build head variant: s = head_width / 396, about anchor, then move anchor to the variant crown-base centre",
+  "v2_sprites": "rig px -> v2 hat-stand px: x = (x_rig - 49) / 2.5 + 3, y = (y_rig - 45) / 2.5 + 3; then apply hatc/bear_match.json per pose like the canonical hat"
+ },
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side",
+   "back"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head"
+ }
+}
