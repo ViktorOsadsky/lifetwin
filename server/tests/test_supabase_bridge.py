@@ -107,7 +107,7 @@ def test_provider_file_filters_non_edge_settings_and_rejects_public_tokens(tmp_p
         f"LLM_API_KEY={SECRET}\nAPI_GATEWAY_TOKEN=obsolete\nSUPABASE_SERVICE_ROLE_KEY=never-copy\nMODEL_ARTIFACT_PATH=/tmp/model\n",
     )
     assert bridge.provision_values(path) == {"LLM_API_KEY": SECRET}
-    assert len(bridge.SETTING_NAMES) == 22
+    assert len(bridge.SETTING_NAMES) == 23
 
 
 @pytest.mark.parametrize("cors_name", ["CORS_ORIGINS", "LIFETWIN_CORS_ORIGINS"])
@@ -314,9 +314,10 @@ def test_runtime_provisioner_and_database_pdf_allowlists_agree():
     runtime = (repository / "supabase/functions/lifetwin-api/settings.ts").read_text()
     runtime_array = runtime.split("export const SETTING_NAMES = [", 1)[1].split("] as const", 1)[0]
     runtime_names = set(re.findall(r'"([A-Z][A-Z0-9_]+)"', runtime_array))
-    migrations = list((repository / "supabase/migrations").glob("*pdf_provider_config.sql"))
-    assert len(migrations) == 1
-    migration = migrations[0].read_text()
+    # The latest migration that replaces the provisioning function holds the allowlist.
+    migrations = sorted((repository / "supabase/migrations").glob("*_provider_config.sql"))
+    assert len(migrations) >= 1
+    migration = migrations[-1].read_text()
     sql_array = migration.split("all(array[", 1)[1].split("])", 1)[0]
     database_names = set(re.findall(r"'([A-Z][A-Z0-9_]+)'", sql_array))
     assert runtime_names == database_names == bridge.SETTING_NAMES

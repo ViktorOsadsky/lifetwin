@@ -70,7 +70,8 @@ connection, extracts its credential, or falls back to a direct session.
 
 Apply the repository's `20261025082417_lifetwin_backend_credentials.sql` migration before
 first provisioning, and the subsequent `lifetwin_pdf_provider_config` migration
-before provisioning PDF provider settings. This helper deliberately does not
+before provisioning PDF provider settings, then `lifetwin_conversation_provider_config`
+before provisioning `CONVERSATION_PROVIDER`. This helper deliberately does not
 create or migrate schema.
 To replace the server configuration using a complete protected file:
 
