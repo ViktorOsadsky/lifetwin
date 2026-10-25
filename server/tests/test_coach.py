@@ -513,7 +513,36 @@ def test_not_for_me_swaps_the_activity():
         assert ref(workout(day2)) != ref(workout(day1)), reason
         change = next(c for c in day2["changes"] if c["item_id"] == "move")
         assert change["change"] == "swapped" and "isn't for you" in change["explanation"]
-    # Without that reason a missed item is still kept (see the test above).
+
+
+@pytest.mark.parametrize(
+    ("reason", "expect"), [("No time", "shorter"), ("Too cold and rainy", "swapped")]
+)
+def test_not_done_reason_still_revises_after_a_same_day_swap(reason, expect):
+    # The phone sequence: plan -> Skip (workout swapped to swimming, 20 min) -> Not done + reason.
+    # A phraser that rewrites the workout line without its number must not hide the change.
+    prof = {"age": 50, "exercise_minutes_weekly": 60}
+    consent = {"muse": True}
+    muse = FakeMuse("replace_line", "Swim at a steady pace, resting at the wall whenever you like.")
+    client, _ = make_client(muse)
+    day = "2026-10-20"
+    plan = post(client, {"profile": prof, "local_date": day, "outside_ai_consent": consent})
+    skip = [{"item_id": "move", "status": "dismissed"}]
+    skipped = post(client, next_day(plan, day, skip, profile=prof, outside_ai_consent=consent))
+    swapped = workout(skipped)
+    assert (swapped["catalog_id"], swapped["minutes"]) == ("swim_laps", 20)
+    feedback = [{"item_id": "move", "status": "not_done", "reason": reason}]
+    revised = post(
+        client, next_day(skipped, day, feedback, profile=prof, outside_ai_consent=consent)
+    )
+    change = next(c for c in revised["changes"] if c["item_id"] == "move")
+    assert change["change"] == expect, change
+    after = workout(revised)
+    if expect == "shorter":
+        assert after["minutes"] == 15 and "15 minutes" in after["message"]
+        assert (after["title"], after["message"]) != (swapped["title"], swapped["message"])
+    else:
+        assert after["catalog_id"] != "swim_laps" and cat.ACTIVITIES[after["catalog_id"]].indoor
 
 
 def test_changed_preference_is_kept():
