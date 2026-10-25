@@ -2916,7 +2916,11 @@ def parse_reply(
     if any(_others(part) and re.search(COMPARED_TO, _canonical(part)) for part in parts):
         return {}
     dropped = bool(own) and len(own) < len(parts) and not labeled
-    if strict and dropped and any(re.search(r"\d", _canonical(part)) for part in parts if _others(part)):
+    if (
+        strict
+        and dropped
+        and any(re.search(r"\d", _canonical(part)) for part in parts if _others(part))
+    ):
         return {}  # a voice transcript can't tell whose number it heard
     parts = own if dropped else parts
     several = len(parts) > 1

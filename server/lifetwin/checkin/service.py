@@ -81,6 +81,7 @@ from lifetwin.onboarding.intents import (
     read_back_reply,
     resumes,
     same_as_before,
+    unknown_beside_answer,
 )
 from lifetwin.onboarding.intents import phrase as words_of
 from lifetwin.onboarding.models import MascotEvent
@@ -263,6 +264,13 @@ FIX_LEAD = re.compile(
     r"^\W*(?:(?:oh|no|sorry|um+|uh+)\W+)*"
     r"(?:go back|back up|actually|i meant|i mean|correction|oops|wait|hang on|hold on)\b"
     r"[\s,.;:!-]*"
+)
+# An answer followed by a correction of something said earlier: "5 hours, oh and actually I
+# slept 7".
+LATE_FIX = re.compile(
+    r"(?P<head>[^,;.]+)[,;.]\s*(?:(?:and|oh|um+|uh+|i|i'm)\W+)*"
+    r"(?P<tail>(?:actually|i meant|correction|oops)\b.*)$",
+    re.I | re.S,
 )
 # How much in one day looks unusual enough to check once, gently, before it's kept.
 UNUSUAL = {
@@ -697,6 +705,27 @@ class CheckinService:
                 text = "skip"
             if kind == "jump":
                 kind = "back"  # check-ins have a fixed script: a named topic reopens it
+            late = LATE_FIX.match(text) if kind is None and state.phase == "asking" else None
+            if (
+                late
+                and _deferred(state)
+                and not is_filler(late["head"])
+                # It must name what it corrects ("I slept 7"), not just doubt the answer.
+                and any(re.search(cue, normalize_text(late["tail"])) for cue in TOPIC_CUES.values())
+            ):
+                # "About 5 hours, oh and I actually slept 7": the answer is heard first, then
+                # the earlier one is corrected.
+                answered = self.turn(
+                    CheckinTurnRequest(
+                        action="reply",
+                        state=state.model_copy(deep=True),
+                        text=late["head"],
+                        input_mode=request.input_mode,
+                    )
+                )
+                fix = self._fix(answered.state, late["tail"])
+                if fix and fix[0] != "?":
+                    return self._redo(answered.state, *fix, request)
             if kind is None and _deferred(state) and state.phase in {"asking", "confirming"}:
                 # "Go back, I slept 5 not 7" to a later question, or "my sleep was 6 hours"
                 # to the read-back at the end: that answer is reopened and replaced.
@@ -868,6 +897,24 @@ class CheckinService:
             # A question reopened by "go back": "keep it" or "skip" leaves the saved answer.
             self._advance(state)
             return respond("Okay, I kept your answer. " + self._prompt(state))
+        split = (
+            unknown_beside_answer(text) if state.phase == "asking" and _deferred(state) else None
+        )
+        if split and not (field == "systolic_bp" and no_new_reading(text)):
+            # "Not sure about sleep, but I walked 20 minutes": the doubt leaves this question
+            # out, and what else was said is read as the reply to the question that follows.
+            doubt, rest = split
+            if not (_safe(self._read, state.model_copy(deep=True), rest, voice) or ({},))[0]:
+                state.unknown_fields += [f for f in [field] if f not in state.unknown_fields]
+                self._advance(state)
+                if state.phase == "asking":
+                    answered = self.turn(
+                        CheckinTurnRequest(
+                            action="reply", state=state, text=rest, input_mode=request.input_mode
+                        )
+                    )
+                    return answered.model_copy(update={"message": UNKNOWN_LEAD + answered.message})
+                return respond(UNKNOWN_LEAD + self._prompt(state))
         if (
             state.phase == "asking"
             and dont_know(text)

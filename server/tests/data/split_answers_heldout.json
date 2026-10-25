@@ -8,11 +8,11 @@
    "turns": [
     {
      "asked": "age",
-     "text": "I'm 64 and I"
+     "say": "I'm 64 and I"
     },
     {
      "asked": "sex",
-     "text": "weigh about 146"
+     "say": "weigh about 146"
     }
    ],
    "expect": {
@@ -31,11 +31,11 @@
    "turns": [
     {
      "asked": "age",
-     "text": "I'm 64 and I"
+     "say": "I'm 64 and I"
     },
     {
      "asked": "sex",
-     "text": "am a woman"
+     "say": "am a woman"
     }
    ],
    "expect": {
@@ -53,11 +53,11 @@
    "turns": [
     {
      "asked": "age",
-     "text": "I'm 64, I'm a"
+     "say": "I'm 64, I'm a"
     },
     {
      "asked": "sex",
-     "text": "woman and I've never smoked"
+     "say": "woman and I've never smoked"
     }
    ],
    "expect": {
@@ -77,11 +77,11 @@
    "turns": [
     {
      "asked": "height_cm",
-     "text": "about five foot four and"
+     "say": "about five foot four and"
     },
     {
      "asked": "weight_kg",
-     "text": "a hundred and forty six pounds"
+     "say": "a hundred and forty six pounds"
     }
    ],
    "expect": {
@@ -101,11 +101,11 @@
    "turns": [
     {
      "asked": "weight_kg",
-     "text": "I weigh about 146 and I"
+     "say": "I weigh about 146 and I"
     },
     {
      "asked": "sleep_hours",
-     "text": "sleep around seven hours"
+     "say": "sleep around seven hours"
     }
    ],
    "expect": {
@@ -122,7 +122,7 @@
    "turns": [
     {
      "asked": "sex",
-     "text": "and I never smoked"
+     "say": "and I never smoked"
     }
    ],
    "expect": {
@@ -139,7 +139,7 @@
    "turns": [
     {
      "asked": "smoking_status",
-     "text": "I'm a woman"
+     "say": "I'm a woman"
     }
    ],
    "expect": {
@@ -154,7 +154,7 @@
    "turns": [
     {
      "asked": "age",
-     "text": "and also"
+     "say": "and also"
     }
    ],
    "expect": {},
@@ -170,7 +170,7 @@
    "turns": [
     {
      "asked": "age",
-     "text": "um so"
+     "say": "um so"
     }
    ],
    "expect": {},
@@ -186,11 +186,11 @@
    "turns": [
     {
      "asked": "age",
-     "text": "I'm 64"
+     "say": "I'm 64"
     },
     {
      "asked": "sex",
-     "text": "and also"
+     "say": "and also"
     }
    ],
    "expect": {
@@ -212,7 +212,7 @@
    "turns": [
     {
      "asked": "height_cm",
-     "text": "5'4, 66 kilos"
+     "say": "5'4, 66 kilos"
     }
    ],
    "expect": {
@@ -231,7 +231,7 @@
    "turns": [
     {
      "asked": "height_cm",
-     "text": "one sixty two centimeters and 146 pounds"
+     "say": "one sixty two centimeters and 146 pounds"
     }
    ],
    "expect": {
@@ -250,7 +250,7 @@
    "turns": [
     {
      "asked": "height_cm",
-     "text": "six foot one, 190 pounds"
+     "say": "six foot one, 190 pounds"
     }
    ],
    "expect": {
@@ -268,7 +268,7 @@
    "turns": [
     {
      "asked": "smoking_status",
-     "text": "never, oh and I'm actually 65"
+     "say": "never, oh and I'm actually 65"
     }
    ],
    "expect": {
@@ -289,7 +289,7 @@
    "turns": [
     {
      "asked": "sleep_hours",
-     "text": "about 7 hours, and I weigh 150 pounds, not 146"
+     "say": "about 7 hours, and I weigh 150 pounds, not 146"
     }
    ],
    "expect": {
@@ -310,7 +310,7 @@
    "turns": [
     {
      "asked": "sleep_hours",
-     "text": "7 hours and I'd say my health is good"
+     "say": "7 hours and I'd say my health is good"
     }
    ],
    "expect": {
@@ -325,7 +325,7 @@
    "turns": [
     {
      "asked": "age",
-     "text": "64, and I have high blood pressure"
+     "say": "64, and I have high blood pressure"
     }
    ],
    "expect": {
@@ -343,7 +343,7 @@
    "turns": [
     {
      "asked": "smoking_status",
-     "text": "my husband smokes"
+     "say": "my husband smokes"
     }
    ],
    "expect": {},
@@ -362,7 +362,7 @@
    "turns": [
     {
      "asked": "smoking_status",
-     "text": "my husband smokes but I never have"
+     "say": "my husband smokes but I never have"
     }
    ],
    "expect": {
@@ -376,7 +376,7 @@
    "turns": [
     {
      "asked": "age",
-     "text": "my wife is 62"
+     "say": "my wife is 62"
     }
    ],
    "expect": {},
@@ -394,7 +394,7 @@
    "turns": [
     {
      "asked": "weight_kg",
-     "text": "my husband weighs 200 pounds, I'm about 150"
+     "say": "my husband weighs 200 pounds, I'm about 150"
     }
    ],
    "expect": {
@@ -412,7 +412,7 @@
    "turns": [
     {
      "asked": "weight_kg",
-     "text": "I don't know my weight but I'm 5'4"
+     "say": "I don't know my weight but I'm 5'4"
     }
    ],
    "expect": {
@@ -433,7 +433,7 @@
    "turns": [
     {
      "asked": "height_cm",
-     "text": "not sure, I weigh 146 pounds"
+     "say": "not sure, I weigh 146 pounds"
     }
    ],
    "expect": {
@@ -452,7 +452,7 @@
    "turns": [
     {
      "asked": "sex",
-     "text": "about 7"
+     "say": "about 7"
     }
    ],
    "expect": {},
@@ -471,7 +471,7 @@
    "turns": [
     {
      "asked": "sleep_hours",
-     "text": "about 7"
+     "say": "about 7"
     }
    ],
    "expect": {
@@ -492,7 +492,7 @@
    "turns": [
     {
      "asked": "general_health",
-     "text": "about 7"
+     "say": "about 7"
     }
    ],
    "expect": {},
@@ -505,7 +505,7 @@
    "turns": [
     {
      "asked": "age",
-     "text": "I'm 64, a woman, about five foot four and 146 pounds, and I never smoked"
+     "say": "I'm 64, a woman, about five foot four and 146 pounds, and I never smoked"
     }
    ],
    "expect": {
@@ -528,7 +528,7 @@
    "turns": [
     {
      "asked": "weight_kg",
-     "text": "I weigh 146 and I sleep 7 hours"
+     "say": "I weigh 146 and I sleep 7 hours"
     }
    ],
    "expect": {
@@ -549,11 +549,11 @@
    "turns": [
     {
      "asked": "weight_kg",
-     "text": "I weigh a hundred and"
+     "say": "I weigh a hundred and"
     },
     {
      "asked": "sleep_hours",
-     "text": "forty six pounds"
+     "say": "forty six pounds"
     }
    ],
    "expect": {}
@@ -565,11 +565,11 @@
    "turns": [
     {
      "asked": "age",
-     "text": "I'm 64 and my"
+     "say": "I'm 64 and my"
     },
     {
      "asked": "sex",
-     "text": "weight is 146 pounds"
+     "say": "weight is 146 pounds"
     }
    ],
    "expect": {
@@ -586,7 +586,7 @@
    "turns": [
     {
      "asked": "smoking_status",
-     "text": "I used to smoke, quit ten years ago, and I'm 64"
+     "say": "I used to smoke, quit ten years ago, and I'm 64"
     }
    ],
    "expect": {
@@ -604,7 +604,7 @@
    "turns": [
     {
      "asked": "sex",
-     "text": "female, and I don't know my height"
+     "say": "female, and I don't know my height"
     }
    ],
    "expect": {
@@ -625,7 +625,7 @@
    "turns": [
     {
      "asked": "height_cm",
-     "text": "5'4. Actually I'm 65 not 64"
+     "say": "5'4. Actually I'm 65 not 64"
     }
    ],
    "expect": {
@@ -640,7 +640,7 @@
    "turns": [
     {
      "asked": "age",
-     "text": "I'm 64, my husband is 70"
+     "say": "I'm 64, my husband is 70"
     }
    ],
    "expect": {
@@ -660,7 +660,7 @@
    "turns": [
     {
      "asked": "sleep_hours",
-     "text": "I sleep 7 hours but my husband sleeps 5"
+     "say": "I sleep 7 hours but my husband sleeps 5"
     }
    ],
    "expect": {
@@ -679,7 +679,7 @@
    "turns": [
     {
      "asked": "weight_kg",
-     "text": "146, um so"
+     "say": "146, um so"
     }
    ],
    "expect": {
@@ -695,7 +695,7 @@
    "turns": [
     {
      "asked": "sex",
-     "text": "female and"
+     "say": "female and"
     }
    ],
    "expect": {
@@ -712,7 +712,7 @@
    "turns": [
     {
      "asked": "smoking_status",
-     "text": "never smoked, and also"
+     "say": "never smoked, and also"
     }
    ],
    "expect": {
@@ -726,7 +726,7 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "about 6 hours, and I did a 30 minute HIIT class and walked 20 minutes"
+     "say": "about 6 hours, and I did a 30 minute HIIT class and walked 20 minutes"
     }
    ],
    "expect": {
@@ -742,11 +742,11 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "I slept about six hours and"
+     "say": "I slept about six hours and"
     },
     {
      "asked": "vigorous_recreation_min",
-     "text": "then I walked for 20 minutes"
+     "say": "then I walked for 20 minutes"
     }
    ],
    "expect": {
@@ -764,11 +764,11 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "about 6 hours but then I"
+     "say": "about 6 hours but then I"
     },
     {
      "asked": "vigorous_recreation_min",
-     "text": "did a hard 30 minute run"
+     "say": "did a hard 30 minute run"
     }
    ],
    "expect": {
@@ -783,7 +783,7 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "and also"
+     "say": "and also"
     }
    ],
    "expect": {},
@@ -799,7 +799,7 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "um so"
+     "say": "um so"
     }
    ],
    "expect": {},
@@ -815,7 +815,7 @@
    "turns": [
     {
      "asked": "vigorous_recreation_min",
-     "text": "my husband did a 30 minute run"
+     "say": "my husband did a 30 minute run"
     }
    ],
    "expect": {},
@@ -828,7 +828,7 @@
    "turns": [
     {
      "asked": "vigorous_recreation_min",
-     "text": "my husband ran, I walked 20 minutes"
+     "say": "my husband ran, I walked 20 minutes"
     }
    ],
    "expect": {
@@ -842,7 +842,7 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "not sure about sleep, but I walked 20 minutes"
+     "say": "not sure about sleep, but I walked 20 minutes"
     }
    ],
    "expect": {
@@ -855,20 +855,26 @@
   {
    "id": "q09",
    "kind": "quick",
-   "setup": {
-    "sleep_hours_last_night": 6,
-    "vigorous_recreation_min": 0,
-    "moderate_recreation_min": 0
-   },
+   "setup": {},
    "turns": [
     {
+     "asked": "sleep_hours_last_night",
+     "say": "about 6 hours"
+    },
+    {
+     "asked": "vigorous_recreation_min",
+     "say": "nothing, I didn't do any exercise"
+    },
+    {
      "asked": "sedentary_min_day",
-     "text": "about 5 hours, oh and I actually slept 7"
+     "say": "about 5 hours, oh and I actually slept 7"
     }
    ],
    "expect": {
-    "sedentary_min_day": 300,
-    "sleep_hours_last_night": 7
+    "sleep_hours_last_night": 7,
+    "vigorous_recreation_min": 0,
+    "moderate_recreation_min": 0,
+    "sedentary_min_day": 300
    }
   },
   {
@@ -880,7 +886,7 @@
    "turns": [
     {
      "asked": "vigorous_recreation_min",
-     "text": "a 45 minute run and I walked for an hour"
+     "say": "a 45 minute run and I walked for an hour"
     }
    ],
    "expect": {
@@ -895,7 +901,7 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "7 hours, and I sat about 8 hours"
+     "say": "7 hours, and I sat about 8 hours"
     }
    ],
    "expect": {
@@ -911,7 +917,7 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "about 7"
+     "say": "about 7"
     }
    ],
    "expect": {
@@ -925,11 +931,11 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "7 hours"
+     "say": "7 hours"
     },
     {
      "asked": "vigorous_recreation_min",
-     "text": "and I sat about 9 hours"
+     "say": "and I sat about 9 hours"
     }
    ],
    "expect": {
@@ -945,7 +951,7 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "about 7 hours and 30 minutes of walking"
+     "say": "about 7 hours and 30 minutes of walking"
     }
    ],
    "expect": {
@@ -960,11 +966,11 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "I slept about 7 and"
+     "say": "I slept about 7 and"
     },
     {
      "asked": "exercise_minutes_today",
-     "text": "a half hour walk"
+     "say": "a half hour walk"
     }
    ],
    "expect": {
@@ -982,7 +988,7 @@
    "turns": [
     {
      "asked": "exercise_minutes_today",
-     "text": "and also"
+     "say": "and also"
     }
    ],
    "expect": {},
@@ -998,7 +1004,7 @@
    "turns": [
     {
      "asked": "wellbeing",
-     "text": "about 7"
+     "say": "about 7"
     }
    ],
    "expect": {},
@@ -1011,7 +1017,7 @@
    "turns": [
     {
      "asked": "exercise_minutes_today",
-     "text": "my wife went for a walk"
+     "say": "my wife went for a walk"
     }
    ],
    "expect": {},
@@ -1024,7 +1030,7 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "can't remember, but I feel pretty good"
+     "say": "can't remember, but I feel pretty good"
     }
    ],
    "expect": {
@@ -1041,11 +1047,11 @@
    "turns": [
     {
      "asked": "sleep_hours_last_night",
-     "text": "about 7 hours"
+     "say": "about 7 hours"
     },
     {
      "asked": "exercise_minutes_today",
-     "text": "um so"
+     "say": "um so"
     }
    ],
    "expect": {
@@ -1063,7 +1069,7 @@
    "turns": [
     {
      "asked": "sleep_hours",
-     "text": "about 7 hours and I weigh 150 pounds"
+     "say": "about 7 hours and I weigh 150 pounds"
     }
    ],
    "expect": {
@@ -1078,7 +1084,7 @@
    "turns": [
     {
      "asked": "alcohol_drinks_weekly",
-     "text": "about 3 drinks, and I don't smoke"
+     "say": "about 3 drinks, and I don't smoke"
     }
    ],
    "expect": {
@@ -1093,7 +1099,7 @@
    "turns": [
     {
      "asked": "weight_kg",
-     "text": "my husband smokes"
+     "say": "my husband smokes"
     }
    ],
    "expect": {},
@@ -1106,11 +1112,11 @@
    "turns": [
     {
      "asked": "sleep_hours",
-     "text": "about 7 hours and"
+     "say": "about 7 hours and"
     },
     {
      "asked": "vigorous_recreation_min_week",
-     "text": "um so"
+     "say": "um so"
     }
    ],
    "expect": {

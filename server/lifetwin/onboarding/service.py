@@ -904,7 +904,10 @@ class ConversationService:
                 left = [f for f in named if f not in found]
                 if found and left and target in {*named, *found}:
                     for name in left:
-                        if name not in state.unknown_fields and getattr(state.confirmed_profile, name) is None:
+                        if (
+                            name not in state.unknown_fields
+                            and getattr(state.confirmed_profile, name) is None
+                        ):
                             state.unknown_fields.append(name)
                     state.skipped_fields = [f for f in state.skipped_fields if f not in left]
                     text, candidates = rest, found

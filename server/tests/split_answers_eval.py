@@ -67,7 +67,7 @@ def play_onboarding(case: dict) -> tuple[dict, list, str | None, list[str]]:
             # The test names the open question; Apple Health's offer is not part of it.
             state.phase, state.current_field = "asking", turn["asked"]
         response = asyncio.run(
-            service.turn(TurnRequest(action="reply", state=state, text=turn["text"]))
+            service.turn(TurnRequest(action="reply", state=state, text=turn["say"]))
         )
         messages.append(response.message)
         state = response.state
@@ -77,7 +77,8 @@ def play_onboarding(case: dict) -> tuple[dict, list, str | None, list[str]]:
             response = asyncio.run(service.turn(TurnRequest(action="confirm", state=state)))
             state = response.state
     confirmed = {
-        k: v for k, v in state.confirmed_profile.model_dump(exclude_none=True).items()
+        k: v
+        for k, v in state.confirmed_profile.model_dump(exclude_none=True).items()
         if k not in setup or not same(setup[k], v)
     }
     return confirmed, list(state.unknown_fields), state.current_field, messages
@@ -101,7 +102,7 @@ def play_checkin(case: dict) -> tuple[dict, list, str | None, list[str]]:
         if state.phase == "asking" and state.current_field != turn["asked"]:
             state.current_field = turn["asked"]
             state.skipped_fields = [f for f in state.skipped_fields if f != turn["asked"]]
-        response = service.turn(CheckinTurnRequest(action="reply", state=state, text=turn["text"]))
+        response = service.turn(CheckinTurnRequest(action="reply", state=state, text=turn["say"]))
         messages.append(response.message)
         state = response.state
         if kind == "weekly" and state.phase == "confirming":
@@ -138,7 +139,7 @@ def score_case(case: dict) -> dict:
     for field in case.get("unknown", []):
         if outcome != "wrong" and field in got:
             outcome, why = "wrong", why + [f"{field} saved and unknown"]
-    return {"id": case["id"], "verdict": outcome, "why": why, "text": case["turns"][-1]["text"]}
+    return {"id": case["id"], "verdict": outcome, "why": why, "text": case["turns"][-1]["say"]}
 
 
 def score() -> dict:
