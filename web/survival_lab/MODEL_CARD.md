@@ -1,6 +1,6 @@
-# Website-specific Cox BMI refit
+# Cox BMI35 refit
 
-**Model:** `personal-cox-bmi35-v3-20261024` in `assets/cox.json`. This artifact is for the standalone internal website only. The Flutter handoff retains its original Cox v2 model. The neural hazard model was not retrained.
+**Model:** `personal-cox-bmi35-v3-20261024` in `assets/cox.json`. The same evaluated Cox artifact and support reference are now in the Flutter handoff and the app's vendored package. The neural hazard model was not retrained.
 
 ## Why it changed
 

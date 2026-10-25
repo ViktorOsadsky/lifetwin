@@ -56,7 +56,7 @@ void main() {
   setUpAll(() async => model = await TwinModelService.load());
 
   test('the model loads once from the package assets', () {
-    expect(model.modelVersion, 'personal-cox-v2-20261024T182404Z');
+    expect(model.modelVersion, 'personal-cox-bmi35-v3-20261024');
   });
 
   test('exact codes: sex_nhanes, smoking, diabetes, hypertension, general health', () {

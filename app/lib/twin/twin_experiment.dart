@@ -33,9 +33,8 @@ abstract final class LeverReason {
   /// Sitting already under 90 min a day.
   static const alreadyLow = 'already_low';
 
-  /// Weight is never a favourable lever in this model (docs/model-sensitivity.md: BMI −1
-  /// helps 0% of profiles; below BMI 23 lower is fitted as worse; above 27 the slope is near
-  /// zero and slightly inverse). Always unsupported.
+  /// Weight is withheld as a lifestyle lever because this observational model
+  /// cannot estimate the effect of changing body weight. Always unsupported.
   static const weightNotALever = 'weight_not_a_lever';
 
   /// The model's response to this change runs against public-health guidance. Shown as
@@ -453,7 +452,7 @@ List<ExperimentLever> _buildLevers(TwinAssessment a, Map<String, dynamic> app, L
 }
 
 const _weightCaveat =
-    'BMI above 27 has a near-zero, slightly inverse link in this model. It is not evidence that gaining weight helps.';
+    'BMI 23–35 is flat in this model and BMI above 35 has a fitted positive hazard link. Neither association establishes the benefit of changing weight.';
 
 /// Lever order from docs/model-sensitivity.json (codex/d-model-sensitivity, copied to
 /// assets/model/): `groups["<age band>|<sex>"].recommendable_levers_ranked`, falling back

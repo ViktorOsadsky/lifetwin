@@ -17,7 +17,7 @@ void main() {
     final survival = result['survival'] as Map<String, dynamic>;
     expect(survival['status'], 'available');
     expect((survival['survival_percent_by_year'] as Map<String, double>)['5'],
-        closeTo(99.31850509406549, 1e-9));
+        closeTo(99.3242941735678, 1e-9));
     expect(survival['death_date'], isNull);
     expect((result['wellness_cards'] as List).isNotEmpty, isTrue);
   });

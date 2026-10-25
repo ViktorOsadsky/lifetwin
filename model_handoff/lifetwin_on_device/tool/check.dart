@@ -44,6 +44,12 @@ void main() {
       );
     }
   }
+  final bmiProfile = Map<String, dynamic>.from(coxGolden.first['profile'] as Map);
+  final at35 = cox.experimentalConditionalSurvival({...bmiProfile, 'bmi': 35}, 5);
+  final at50 = cox.experimentalConditionalSurvival({...bmiProfile, 'bmi': 50}, 5);
+  if (!(at50 < at35)) {
+    throw StateError('Cox high-BMI direction regressed');
+  }
   final neuralGolden =
       jsonDecode(File('test/neural_golden.json').readAsStringSync()) as List;
   for (final item in neuralGolden.cast<Map>()) {

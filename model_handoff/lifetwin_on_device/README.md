@@ -50,7 +50,7 @@ The 50% crossing is *not* the mean expected lifetime. A survival model's mean li
 
 ## Artifacts and checks
 
-`assets/neural_model.json` contains the exported dense network weights and preprocessing parameters from `output/models/temporal_deepsurv_35_79` in the parent research workspace. `../export_neural.py` regenerates the JSON and `test/neural_golden.json` from the original Keras and joblib files; TensorFlow is not needed on device. The Cox `assets/model.json` and raw `support_reference.f64` are the existing trained model and its input-support reference. They are about 0.33 MB combined. The former gzip reference was replaced by raw bytes to support Flutter web without `dart:io`.
+`assets/neural_model.json` contains the exported dense network weights and preprocessing parameters from `output/models/temporal_deepsurv_35_79` in the parent research workspace. `../export_neural.py` regenerates the JSON and `test/neural_golden.json` from the original Keras and joblib files; TensorFlow is not needed on device. The Cox `assets/model.json` and raw `support_reference.f64` contain the evaluated BMI35 v3 model and its matching input-support reference. Run `python model_handoff/sync_cox_from_lab.py` from the repository root after evaluating another Survival Lab release to refresh both package copies, then `python server/tools/lifespan_reference.py build` to regenerate the app's derived lifespan data.
 
 From this package directory:
 

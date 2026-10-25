@@ -4,9 +4,9 @@ This folder (`lib/twin/`) is the data and logic layer behind the forecast, "expe
 
 ## The model package
 
-`packages/lifetwin_on_device/` is a copy of `model_handoff/lifetwin_on_device/` (model `personal-cox-v2-20261024T182404Z`). The app's `pubspec.yaml` depends on it by path.
+`packages/lifetwin_on_device/` vendors the evaluated handoff Cox model `personal-cox-bmi35-v3-20261024`. The app's `pubspec.yaml` depends on it by path. Its neural model remains unchanged.
 
-- **Why a copy:** the package README says to copy it. The copy also pins the model the app was tested with, so a new export in `model_handoff/` can't silently change app results. To update, copy the new folder over and rerun the checks below.
+- **Why a copy:** the app pins a reviewed model release rather than changing whenever the handoff folder changes. To update again, use `python model_handoff/sync_cox_from_lab.py`, regenerate the app's derived lifespan data, and rerun the checks below.
 - **Checks** (run in `packages/lifetwin_on_device/`): `flutter test` and `dart tool/check.dart`. Both pass on macOS. `flutter analyze` in `app/` excludes `packages/**` because the vendored code uses its own style.
 - **Loading:** `TwinRepository.open()` loads the model once at startup (`main.dart`, `_twin`).
 - **Server route:** `POST /api/predict` (`server/lifetwin/prediction/`) still works but the app no longer calls it. It should be removed later.
@@ -45,6 +45,8 @@ The age term is linear: the package encodes `age_decade = (age − 55) / 10` (ch
 
 where `s` is exactly the quantity `ageGroupPercentile` ranks (the Cox log relative hazard **without the `age_decade` and `female` terms**), over the same rows (same sex, the same ±5 y band, see below). The median is the ⌈n/2⌉-th smallest `s` of the band (the lower median for an even band), so **0 is the middle of people your age and sex in the survey, and the score is above 0 exactly when the percentile is above 50** (a tie at the median gives exactly 0). It is the log of a ratio of modelled hazards (the earlier health index is `exp(score)`), not a probability. Display placeholder: signed, two decimals (`+0.50`, `−0.40`). `healthGroupLabel` names the band actually used, e.g. `women 59–69` (for ages outside 35–79 the nearest band, e.g. `women 35–45`). The raw Cox `log_relative_hazard_score` (lower is lower modelled risk; includes age and sex) stays available as `rawLogRelativeHazard` for internal use. The score lives in `AgeGroup.healthScore` in `twin_model.dart`.
 
+The seam and gap figures in the preceding paragraph were measured with Cox v2. Cox v3 changes the projection and regenerated life-table outputs; the current [model card](../../model_handoff/lifetwin_on_device/MODEL_CARD.md) and app tests define the shipped behavior.
+
 | API | Meaning |
 |---|---|
 | `TwinAssessment.healthScore` / `TwinRepository.healthScore` | `double?`, centred: positive = healthier than the middle of your group, 0 = the middle; null unless the model gave a number. Never filled with defaults |
@@ -52,7 +54,7 @@ where `s` is exactly the quantity `ageGroupPercentile` ranks (the Cox log relati
 | `TwinAssessment.rawLogRelativeHazard` / `TwinRepository.rawLogRelativeHazard` | The model's `log_relative_hazard_score` unchanged (lower is better); internal use |
 | `healthScoreStatus` (`HealthScoreStatus?`) | `available`, `extrapolated`, `missingInputs`, `unsupportedAge`, `unsupportedProfile`, `underAge` (under 18) and the app's own `invalidInput`; null on the repository before a profile |
 | `healthScoreMessage` | The model's message when there is no number |
-| `healthScoreHistory({from, to, engine})` | `List<HealthScorePoint>` oldest first: `(at, date, engine, score, rawLogRelativeHazard, status, modelVersion)`; only points of `engine` (default `healthScoreEngine`, `cox_centered_v1`); `score` is the centred score |
+| `healthScoreHistory({from, to, engine})` | `List<HealthScorePoint>` oldest first: `(at, date, engine, score, rawLogRelativeHazard, status, modelVersion)`; only points of `engine` (default `healthScoreEngine`, `cox_centered_bmi35_v2`); `score` is the centred score |
 
 Availability: same as the forecast. Ages 35–79 are `available`; 18–34 and 80–85 are `extrapolated` (the Rough guide flag): the raw score is the forecast's extrapolated one and the index uses the percentile's nearest band, so show `extrapolationCaveat`. Missing inputs, ages under 18 (`underAge`) or over 85, and unsupported profiles give null with the matching status.
 
@@ -66,7 +68,7 @@ The health score is built on the same comparison, so the two always agree: score
 - **Sizes seen** at ±5 for ages 20, 35, 45, 55, 65, 75, 79, 85 (men / women): 281/290, 169/148, 259/295, 235/268, 263/259, 175/151, 90/77, 194/167. No band needed widening.
 - Each `HealthScorePoint` also carries `ageGroupPercentile`, `ageGroupSize` and `ageGroupBand`.
 
-History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it. Each point stores `engine` (`cox_centered_v1`), the centred score under `centered_score` (`HealthScorePoint.score`) and the raw value under `score`. Points written before the engine tag (the earlier −log-hazard scale) read as `legacyHealthScoreEngine` (`cox_v1`) and, like `cox_index_v1` points (the health index) and any other engine's points, are **left out** of `healthScoreHistory()` and so of the sparkline: scales never mix. Simplest correct option: the old points have no centred score, and recomputing them would need the profile at that time, which a point does not keep.
+History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it. Each point stores `engine` (`cox_centered_bmi35_v2`), the centred score under `centered_score` (`HealthScorePoint.score`) and the raw value under `score`. Earlier Cox v2 score points are excluded from the new sparkline because the model changed; old history remains stored. Untagged points still read as `legacyHealthScoreEngine` (`cox_v1`) and are excluded as well.
 
 ## Lifespan reveal (one-time, proof of concept)
 

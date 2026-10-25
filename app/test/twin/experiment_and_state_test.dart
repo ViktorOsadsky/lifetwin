@@ -56,7 +56,7 @@ void main() {
       }
     });
 
-    test('the bundled copy is the sensitivity commit 65acf39 output for this model', () {
+    test('the bundled sensitivity ranking matches the current Cox model', () {
       final json = jsonDecode(File('assets/model/model-sensitivity.json').readAsStringSync()) as Map;
       expect(json['model_version'], model.modelVersion);
       expect(json['causal_interpretation'], isFalse);
@@ -105,7 +105,7 @@ void main() {
       final weight = e.lever(LeverId.weightKg);
       expect(weight.supported, isFalse);
       expect(weight.reason, LeverReason.weightNotALever);
-      expect(weight.caveat, contains('not evidence that gaining weight helps'));
+      expect(weight.caveat, contains('Neither association establishes the benefit of changing weight'));
       e.set(LeverId.weightKg, 80);
       expect(e.lever(LeverId.weightKg).value, 91.875);
       expect(e.result.status, 'no_change');

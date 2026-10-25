@@ -1048,7 +1048,7 @@
        "value": "360"
       }
      ],
-     "rule": "lever order from docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
+     "rule": "lever order from docs/model-sensitivity.json (personal-cox-bmi35-v3-20261024): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
      "evidence": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
      "action": "sitting_breaks"
     },
@@ -1666,7 +1666,7 @@
        "value": "360"
       }
      ],
-     "rule": "lever order from docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
+     "rule": "lever order from docs/model-sensitivity.json (personal-cox-bmi35-v3-20261024): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
      "evidence": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
      "action": "sitting_breaks"
     },
@@ -1981,7 +1981,7 @@
        "value": "360"
       }
      ],
-     "rule": "lever order from docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
+     "rule": "lever order from docs/model-sensitivity.json (personal-cox-bmi35-v3-20261024): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
      "evidence": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
      "action": "sitting_breaks"
     },
@@ -5671,7 +5671,7 @@
       "value": "360"
      }
     ],
-    "rule": "lever order from docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
+    "rule": "lever order from docs/model-sensitivity.json (personal-cox-bmi35-v3-20261024): quit_smoking > vigorous_plus_60 > moderate_plus_90 > short_sleep_plus_1h > sitting_minus_60_realistic",
     "evidence": "https://iris.who.int/items/2abc9ed0-2a55-4a07-a65f-ab4b7c412ecc",
     "action": "sitting_breaks"
    },

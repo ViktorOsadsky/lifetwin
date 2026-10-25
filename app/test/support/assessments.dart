@@ -1,7 +1,7 @@
 import 'package:lifesim/forecast/forecast_client.dart';
 import 'package:lifesim/twin/twin_model.dart';
 
-const modelVersion = 'personal-cox-v2-20261024T182404Z';
+const modelVersion = 'personal-cox-bmi35-v3-20261024';
 
 /// A `LifeTwinEngine.assess()` result (the package's shape, see
 /// packages/lifetwin_on_device/test/fixtures/snapshot_response.json) with these
