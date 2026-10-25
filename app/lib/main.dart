@@ -465,6 +465,12 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
                 _toRoom(forecastContext);
                 _talk(forecastContext);
               },
+              // Answers missing: only those, then back on the Room with the score (never the
+              // whole intake again, never a loop).
+              onAnswerMissing: () {
+                _toRoom(forecastContext);
+                _agentic.answerMissing(context);
+              },
             ),
             transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
           ),
@@ -557,6 +563,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onBand: _wellness == null ? null : () => _agentic.bandFlow(context),
           onSettings: _wellness == null ? null : () => _settings(context),
           stateLine: _stillLearning(),
+          onAnswerMissing: _wellness == null ? null : () => _agentic.answerMissing(context),
           // The whole card opens the plan; its own buttons (Why?, thumbs) win the tap.
           today: _wellness == null || (_profile?['age'] as num? ?? 0) < 18
               ? null

@@ -269,9 +269,10 @@ void main() {
     });
 
     test('with answers missing, levers say which input and there is no number', () {
-      final e = experimentFor({...smoker, 'sedentary_min_day': null, 'general_health': null});
+      // Three missing: no number (one or two give a rough one, rough_missing_test.dart).
+      final e = experimentFor({...smoker, 'sleep_hours': null, 'sedentary_min_day': null, 'general_health': null});
       expect(e.result.status, 'current_unavailable');
-      expect(e.result.missingInputs, ['sedentary_min_day', 'general_health']);
+      expect(e.result.missingInputs, ['sleep_hours', 'sedentary_min_day', 'general_health']);
       final sitting = e.lever(LeverId.sitting);
       expect(sitting.supported, isFalse);
       expect(sitting.reason, LeverReason.missingInput);

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../onboarding/missing_answers.dart';
+import '../twin/twin_model.dart' show HealthScoreStatus;
 import '../twin/twin_repository.dart';
 import 'models.dart';
 
@@ -19,7 +21,11 @@ class RepositoryWellness extends ChangeNotifier {
     ageGroupPercentile: repository.ageGroupPercentile,
     groupLabel: repository.healthGroupLabel,
     message: repository.healthScoreMessage,
-    lifespan: _lifespan(repository.lifespanEstimate),
+    lifespan: _lifespan(
+      repository.lifespanEstimate,
+      missing: repository.healthScoreStatus == HealthScoreStatus.roughMissing ? _missing : 0,
+    ),
+    missingCount: _missing,
     lifespanRevealSeen: repository.lifespanRevealSeen,
     history: [
       for (final p in repository.healthScoreHistory().reversed.take(14).toList().reversed)
@@ -27,7 +33,9 @@ class RepositoryWellness extends ChangeNotifier {
     ],
   );
 
-  static LifespanReveal? _lifespan(LifespanEstimate? e) => e == null
+  int get _missing => missingQuestions(repository.missingInputs, repository.profile).length;
+
+  static LifespanReveal? _lifespan(LifespanEstimate? e, {int missing = 0}) => e == null
       ? null
       : LifespanReveal(
           expectedAge: _round(e.expectedAge),
@@ -35,7 +43,8 @@ class RepositoryWellness extends ChangeNotifier {
           p75Age: _round(e.p75Age),
           expectedYear: e.expectedYear,
           caveat: e.caveat,
-          roughGuide: e.status == LifespanStatus.extrapolated,
+          roughGuide: e.status == LifespanStatus.extrapolated || missing > 0,
+          missingCount: missing,
           p25OpenEnded: e.p25OpenEnded,
           openEnded: e.openEnded,
           p75OpenEnded: e.p75OpenEnded,
@@ -69,20 +78,13 @@ class RepositoryWellness extends ChangeNotifier {
         );
       }
     }
-    return [
-      for (final day in byDay.entries)
-        WellnessDay(date: day.key, values: day.value),
-    ];
+    return [for (final day in byDay.entries) WellnessDay(date: day.key, values: day.value)];
   }
 
   WellnessSettings settingsFor({String? providerId}) => WellnessSettings(
-    reminderMinutes:
-        repository.checkinSettings.reminderHour * 60 +
-        repository.checkinSettings.reminderMinute,
+    reminderMinutes: repository.checkinSettings.reminderHour * 60 + repository.checkinSettings.reminderMinute,
     memoryConsent: repository.store.memoryConsent,
-    personalSuggestions:
-        providerId != null &&
-        repository.outsideAiConsentFor(providerId)[providerId] == true,
+    personalSuggestions: providerId != null && repository.outsideAiConsentFor(providerId)[providerId] == true,
   );
 
   @override

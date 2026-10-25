@@ -35,7 +35,7 @@ void main() {
   });
 
   test('missing inputs: no number, the status and the model\'s message, nothing filled in', () {
-    final a = model.assessModel({...g(0)}..remove('bmi'));
+    final a = model.assessModel({...g(0)}..remove('bmi')..remove('sleep_hours')..remove('sedentary_min_day'));
     expect(a.healthScore, isNull);
     expect(a.healthScoreStatus, HealthScoreStatus.missingInputs);
     expect(a.message, isNotEmpty);
@@ -225,7 +225,7 @@ void main() {
       expect(young.ageGroupNearestBand, isTrue);
       expect(young.ageGroupBand, '35–45');
       expect(model.assessModel({...g(0), 'age': 17}).ageGroupPercentile, isNull);
-      expect(model.assessModel({...g(0)}..remove('bmi')).ageGroupPercentile, isNull);
+      expect(model.assessModel({...g(0)}..remove('bmi')..remove('sleep_hours')..remove('sedentary_min_day')).ageGroupPercentile, isNull);
       expect(model.assessModel({...g(0), 'age': 90}).ageGroupSize, isNull);
     });
 
@@ -251,7 +251,13 @@ void main() {
       final repo = await repoOn(MemoryBackend());
       expect(repo.healthScore, isNull);
       expect(repo.healthScoreStatus, isNull);
-      await repo.saveConversationProfile({...fullProfile, 'weight_kg': null, 'height_cm': null});
+      await repo.saveConversationProfile({
+        ...fullProfile,
+        'weight_kg': null,
+        'height_cm': null,
+        'sleep_hours': null,
+        'sedentary_min_day': null,
+      });
       expect(repo.healthScore, isNull);
       expect(repo.healthScoreStatus, HealthScoreStatus.missingInputs);
       expect(repo.healthScoreMessage, isNotEmpty);

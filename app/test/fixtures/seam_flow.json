@@ -189,7 +189,9 @@
    ],
    "memory_consent": true,
    "seed": 0,
-   "small_talk": false
+   "small_talk": false,
+   "ask_only": null,
+   "missing_offered": true
   },
   "message": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen.",
   "guide_mode": "guided",

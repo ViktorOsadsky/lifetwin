@@ -438,9 +438,11 @@ void main() {
       t,
     ) async {
       final repo = await repoWith(
+        // Three missing: no number (one or two give a rough, flagged one).
         {...older}
           ..remove('sedentary_min_day')
-          ..remove('general_health'),
+          ..remove('general_health')
+          ..remove('sleep_hours'),
       );
       expect(repo.experiment()!.current.status, 'missing_inputs');
       await pumpHub(t, repo);

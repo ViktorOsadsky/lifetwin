@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../onboarding/missing_answers.dart';
 import '../twin/twin_model.dart' show extrapolationCaveat;
 import '../widgets/whole_word_text.dart';
 
@@ -26,8 +27,13 @@ class HomeWellnessPanel extends StatelessWidget {
     this.onDrivers,
     this.stateLine,
     this.compact = false,
+    this.onAnswerMissing,
   });
   final bool compact;
+
+  /// "Answer N more questions" ([WellnessSnapshot.missingCount]): the one path back to the
+  /// missing answers, under a rough score or in place of the number. Hidden when null.
+  final VoidCallback? onAnswerMissing;
   final WellnessSnapshot snapshot;
   final VoidCallback? onHistory;
 
@@ -161,6 +167,8 @@ class HomeWellnessPanel extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: RoughGuideBadge(caveat: extrapolationCaveat),
             ),
+          if (snapshot.roughMissing && snapshot.missingCount > 0)
+            WholeWordText(roughMissingLabel(snapshot.missingCount), style: LtText.body(weight: FontWeight.w700)),
           if (score != null)
             Padding(
               padding: const EdgeInsets.only(right: 6, top: 4),
@@ -178,6 +186,17 @@ class HomeWellnessPanel extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: WholeWordText(HomeWellnessPanel.tagline, style: LtText.body()),
+            ),
+          if (onAnswerMissing != null && snapshot.missingCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 6, top: 6),
+              child: LipButton(
+                label: answerMoreLabel(snapshot.missingCount),
+                icon: Icons.mic_none_rounded,
+                height: 52,
+                fontSize: 19,
+                onTap: onAnswerMissing,
+              ),
             ),
           Padding(
             padding: const EdgeInsets.only(right: 6, top: 4),
@@ -461,6 +480,8 @@ class HealthScoreSummary extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: RoughGuideBadge(caveat: extrapolationCaveat),
           ),
+        if (snapshot.roughMissing && snapshot.missingCount > 0)
+          WholeWordText(roughMissingLabel(snapshot.missingCount), style: LtText.body(weight: FontWeight.w700)),
       ],
     );
   }

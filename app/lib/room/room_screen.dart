@@ -48,7 +48,11 @@ class RoomScreen extends StatefulWidget {
     this.onBand,
     this.today,
     this.stateLine,
+    this.onAnswerMissing,
   });
+
+  /// "Answer N more questions" on the score card (missing_answers.dart). Hidden when null.
+  final VoidCallback? onAnswerMissing;
 
   /// Cosmetic look only; never part of the health profile.
   final ValueListenable<TwinAppearance> appearance;
@@ -254,6 +258,7 @@ class _RoomScreenState extends State<RoomScreen> {
                             ],
                             card: widget.wellness == null ? _OutlookCard(outlook: widget.outlook, onTap: _fortune) : HomeWellnessPanel(
                               snapshot: widget.wellness!, compact: true, onEstimate: _fortune, onDrivers: widget.onDrivers, stateLine: widget.stateLine,
+                              onAnswerMissing: widget.onAnswerMissing,
                             ),
                           ),
                           Opacity(

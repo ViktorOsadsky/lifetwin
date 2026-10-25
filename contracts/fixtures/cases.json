@@ -2679,5 +2679,96 @@
         "care_question_open": false
       }
     }
+  },
+  {
+    "name": "onboarding-ask-only-start",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "start",
+      "state": {
+        "phase": "idle",
+        "confirmed_profile": {
+          "age": 64,
+          "sex": "female",
+          "smoking_status": "never",
+          "height_cm": 165,
+          "weight_kg": 70,
+          "sleep_hours": 7,
+          "general_health": "good",
+          "hypertension_diagnosed": false,
+          "diabetes": false,
+          "sedentary_min_day": 360,
+          "moderate_recreation_min_week": 120
+        },
+        "ask_only": [
+          "vigorous_recreation_min_week",
+          "age"
+        ],
+        "memory_consent": false
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "vigorous_recreation_min_week",
+        "ask_only": [
+          "vigorous_recreation_min_week"
+        ],
+        "missing_offered": true
+      }
+    }
+  },
+  {
+    "name": "onboarding-missing-offer-yes",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "yes",
+      "state": {
+        "phase": "missing",
+        "confirmed_profile": {
+          "age": 64,
+          "sex": "female",
+          "smoking_status": "never",
+          "height_cm": 165,
+          "weight_kg": 70,
+          "sleep_hours": 7,
+          "general_health": "good",
+          "hypertension_diagnosed": false,
+          "diabetes": false,
+          "sedentary_min_day": 360,
+          "moderate_recreation_min_week": 120
+        },
+        "skipped_fields": [
+          "vigorous_recreation_min_week",
+          "exercise_minutes_weekly",
+          "alcohol_drinks_weekly",
+          "systolic_bp",
+          "diastolic_bp"
+        ],
+        "health_offered": true,
+        "missing_offered": true,
+        "memory_consent": false
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "vigorous_recreation_min_week",
+        "ask_only": [
+          "vigorous_recreation_min_week"
+        ]
+      }
+    }
   }
 ]

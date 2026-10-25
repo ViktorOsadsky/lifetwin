@@ -357,7 +357,7 @@ void main() {
         expect(find.text('A few more answers'), findsOneWidget);
         expect(find.text('Hours of sleep'), findsOneWidget);
         expect(find.text('Time spent sitting each day'), findsOneWidget);
-        expect(find.text('Answer 2 more with Mochi'), findsOneWidget);
+        expect(find.text('Answer 2 more questions'), findsOneWidget);
         await evidence(t, 'ideas_not_yet');
       },
     );

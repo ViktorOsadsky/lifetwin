@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../experiment/experiment_page.dart';
+import '../onboarding/missing_answers.dart';
 import '../experiment/experiment_twins.dart';
 import '../experiment/widgets/widgets.dart';
 import '../twin/twin_model.dart' show TwinAssessment;
@@ -306,6 +307,9 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
     );
   }
 
+  /// The questions the estimate still needs (missing_answers.dart).
+  int get _missing => missingQuestions(widget.repository.missingInputs, widget.repository.profile).length;
+
   Widget _done(BuildContext context) {
     final change = weekly ? OutlookChange.between(_before, widget.repository.current) : null;
     final confirmed = Map<String, dynamic>.from(c.turn?.state['confirmed'] as Map? ?? const {});
@@ -315,7 +319,14 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
         _title(weekly ? 'Outlook updated' : 'All done'),
         const SizedBox(height: 8),
         if (change != null)
-          OutlookChangeCard(change: change)
+          OutlookChangeCard(
+            change: change,
+            // "Still needed": the one path back to the missing answers.
+            answerLabel: _missing == 0 ? null : answerMoreLabel(_missing),
+            onTellMochi: _missing == 0 || CheckInScope.maybeOf(context)?.answerMissing == null
+                ? null
+                : () => CheckInScope.maybeOf(context)!.answerMissing!(context),
+          )
         else
           WholeWordText(
             widget.repository.twinState().mood == TwinMood.cheerful ? 'See you tomorrow!' : 'Thanks for telling me.',
@@ -641,40 +652,31 @@ class ReminderOfferCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-   padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-   decoration: BoxDecoration(
-     color: LtColors.paper,
-     borderRadius: BorderRadius.circular(18),
-     border: Border.all(color: LtColors.container, width: 1.5),
-   ),
-   child: Column(
-     crossAxisAlignment: CrossAxisAlignment.stretch,
-     children: [
-       WholeWordText(
-         'Would you like a gentle reminder each day?',
-         style: LtText.body(weight: FontWeight.w700),
-       ),
-       const SizedBox(height: 8),
-       Row(
-         children: [
-           Expanded(
-             child: LipButton(
-               label: 'Not now',
-               kind: LipKind.secondary,
-               height: 56,
-               fontSize: 19,
-               onTap: onNotNow,
-             ),
-           ),
-           const SizedBox(width: 10),
-           Expanded(
-             child: LipButton(label: 'Yes', height: 56, fontSize: 19, onTap: onYes),
-           ),
-         ],
-       ),
-     ],
-   ),
- );
+    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+    decoration: BoxDecoration(
+      color: LtColors.paper,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: LtColors.container, width: 1.5),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        WholeWordText('Would you like a gentle reminder each day?', style: LtText.body(weight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: LipButton(label: 'Not now', kind: LipKind.secondary, height: 56, fontSize: 19, onTap: onNotNow),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: LipButton(label: 'Yes', height: 56, fontSize: 19, onTap: onYes),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 }
 
 /// Mochi's encouragement after a check-in, and "Here's today's plan" (back to Home, then the plan).

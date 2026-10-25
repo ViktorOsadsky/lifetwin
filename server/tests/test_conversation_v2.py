@@ -147,7 +147,11 @@ def test_demo_path_with_apple_health():
     assert "Apple Health shows about 90 minutes" in d.result["message"]
     d.say("None")
     assert d.state["pending_profile"]["moderate_recreation_min_week"] == 90
-    end = d.say("yes")
+    offer = d.say("yes")
+    # The one offer of the missing answer; "not now" finishes (never a loop).
+    assert offer["state"]["phase"] == "missing" and offer["complete"] is False
+    assert "I still need 1 answer for your estimate: your high blood pressure" in offer["message"]
+    end = d.say("Not now")
     assert end["complete"] is True
     assert len(d.state["probes_asked"]) <= MAX_PROBES
     notes = {note["topic"]: note for note in d.state["habit_notes"]}
@@ -160,8 +164,9 @@ def test_demo_path_with_apple_health():
     levers = [rec["lever"] for rec in end["recommendations"]]
     assert levers == ["vigorous_plus_60", "short_sleep_plus_1h", "sitting_minus_60_realistic"]
     assert "dog" in end["message"]
-    # Spoken length: about two and a half minutes, Apple Health screen not counted.
-    assert d.seconds() < 150, d.seconds()
+    # Spoken length: about two and a half minutes, Apple Health screen not counted, plus the
+    # one offer of the missing answer and its "not now" (about 9 seconds).
+    assert d.seconds() < 165, d.seconds()
 
 
 def test_short_demo_setting_asks_one_follow_up_in_the_same_order():
