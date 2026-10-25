@@ -14,7 +14,10 @@ values. Runtime/helper/latest-migration allowlists are checked together. All 121
 tests, Deno formatting/type checks and source export checks passed. The
 setter-only migration was applied through MCP Bridge as version
 `20261025113550`; security/performance advisories before it had no WARN/ERROR
-findings. The existing hosted function remains v5 until the final redeployment.
+findings. Vault now explicitly selects Claude Haiku 5.5 for conversations and PDFs, with
+Muse personalization. Existing keys were preserved; anon, authenticated and
+service-role setter access remains denied. The existing hosted function remains
+v5 until the final redeployment.
 
 PR/merge and live deployment state are recorded in this change's PR. The next
 dependency is Daniel's Edge intent port: review and merge it after applicable
