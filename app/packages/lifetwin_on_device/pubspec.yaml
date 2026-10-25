@@ -5,6 +5,7 @@ publish_to: none
 environment:
   sdk: '>=3.3.0 <4.0.0'
 dependencies:
+  archive: ^4.5.2
   flutter:
     sdk: flutter
 dev_dependencies:

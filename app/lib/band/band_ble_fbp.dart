@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
@@ -65,7 +66,8 @@ class FlutterBluePlusRadio implements BleRadio {
   Future<BleLink> connect(String id, {required Duration timeout, required int mtu}) async {
     final device = BluetoothDevice.fromId(id);
     // iOS negotiates the MTU itself; Android is asked for it.
-    await device.connect(license: bandBlePluginLicense, timeout: timeout, mtu: Platform.isAndroid ? mtu : null);
+    final requestedMtu = !kIsWeb && defaultTargetPlatform == TargetPlatform.android ? mtu : null;
+    await device.connect(license: bandBlePluginLicense, timeout: timeout, mtu: requestedMtu);
     final services = await device.discoverServices();
     return _FbpLink(device, {
       for (final s in services)

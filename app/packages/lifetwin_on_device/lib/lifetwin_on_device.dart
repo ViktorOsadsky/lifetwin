@@ -1,8 +1,8 @@
 library lifetwin_on_device;
 
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:archive/archive.dart' show GZipDecoder;
 import 'package:flutter/services.dart';
 
 export 'src/assessment.dart';
@@ -27,7 +27,7 @@ Future<LifeTwinModel> loadLifeTwinModel({AssetBundle? bundle}) async {
   );
   return LifeTwinModel.fromArtifacts(
     jsonDecode(modelText) as Map<String, dynamic>,
-    Uint8List.fromList(gzip.decode(compressed)),
+    Uint8List.fromList(const GZipDecoder().decodeBytes(compressed)),
   );
 }
 
