@@ -13,6 +13,8 @@ from lifetwin.change import ChangeService
 from lifetwin.change import router as change_router
 from lifetwin.checkin import CheckinService
 from lifetwin.checkin import router as checkin_router
+from lifetwin.coach import DailyCap
+from lifetwin.coach import router as coach_router
 from lifetwin.core.config import Settings
 from lifetwin.core.middleware import RequestBudgetMiddleware
 from lifetwin.core.models import (
@@ -170,6 +172,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     application.state.voice_service = VoiceService(settings)
+    # Coach: deterministic plans; the shared personalizer may reword them only with the person's consent.
+    application.state.coach_phraser = personalizer
+    application.state.coach_cap = DailyCap(settings.coach_llm_daily_cap)
+    application.state.coach_timeout = settings.coach_llm_timeout_seconds
     # Loaded once at startup; None when the artifact files are missing (route stays 501).
     survival_model = load_model(settings.model_artifact_path)
     application.state.survival_model = survival_model
@@ -238,6 +244,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "display_name": DISPLAY_NAMES[personalizer.name],
                 "configured": personalizer.configured,
             },
+            "coach": {
+                "endpoint": "/api/coach/plan",
+                "planner": "deterministic_catalog",
+                "runs": "on_app_open_or_resume",
+                "personalize": {
+                    "provider": personalizer.name,
+                    "display_name": DISPLAY_NAMES[personalizer.name],
+                    "configured": personalizer.configured,
+                    "daily_cap_per_client": settings.coach_llm_daily_cap,
+                },
+            },
         }
 
     @application.post(
@@ -295,6 +312,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(advisor_router, prefix="/api", responses=BODY_ERRORS)
     application.include_router(documents_router, prefix="/api", responses=BODY_ERRORS)
     application.include_router(recommendations_router, prefix="/api", responses=BODY_ERRORS)
+    application.include_router(
+        coach_router,
+        prefix="/api",
+        responses={
+            **BODY_ERRORS,
+            **_described({409: "Feedback for a plan that is not the latest"}),
+        },
+    )
     application.include_router(
         quiz_router,
         prefix="/api",
