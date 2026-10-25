@@ -230,7 +230,7 @@ void main() {
     });
 
     test('no band, no heart rate number, no survival number anywhere on the store', () {
-      expect(bandBluetoothAvailable, isFalse, reason: 'Bluetooth is a stub until a plugin lands');
+      expect(bandBluetoothAvailable, isTrue, reason: 'the app pairs over Bluetooth');
     });
   });
 

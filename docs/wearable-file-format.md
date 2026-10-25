@@ -1,6 +1,6 @@
 # Band daily export and on-phone intake
 
-Status: the user supplied a `lifetwin.band_day.v0` export on October 24, 2026 for [#67](https://github.com/ViktorOsadsky/lifetwin/issues/67). The parser now targets that existing format. It replaces the earlier minute-record proposal; it does not claim firmware changes or calibration. The supplied report is local acceptance input and is **not committed**. File intake is primary; Bluetooth remains a stretch with no production plugin.
+Status: the user supplied a `lifetwin.band_day.v0` export on October 24, 2026 for [#67](https://github.com/ViktorOsadsky/lifetwin/issues/67). The parser now targets that existing format. It replaces the earlier minute-record proposal; it does not claim firmware changes or calibration. The supplied report is local acceptance input and is **not committed**. File intake stays available; Bluetooth now uses the same parser ([band-ble-contract.md](band-ble-contract.md)).
 
 The original hardware/confirmation decisions remain in [#14](https://github.com/ViktorOsadsky/lifetwin/issues/14) and [PR #15](https://github.com/ViktorOsadsky/lifetwin/pull/15). Existing `BandService` confirmation behavior is preserved. UI ownership stays with Daniel.
 
@@ -63,7 +63,7 @@ The app starts native delivery on iOS through `BandFileSession.instance.start()`
 - `integration_test/band_file_device_test.dart` accepts the supplied file from the test app's native iOS Inbox (simulator here; Daniel owns physical-device testing). It checks parsing/store delivery, unknown posture, repeat import, Inbox cleanup and the insufficient-week rule; optional shifted demo days stay synthetic. The real file is copied locally before running and is never bundled.
 - Separate, temporary XCUITests passed actual Files-picker selection/cancellation and Files → Share → registered-handler cold launch on the iOS 26.4 simulator. They used the synthetic fixture with the production native bridge/intake/store; the original document was preserved. Exact scope, results and local evidence are in [the handoff](handoffs/band-file-intake.md). These tests do not validate final product-screen presentation, physical-device behavior, Bluetooth transport or model calibration.
 
-Track: C data/native file intake (#67). Contracts: band daily v0 plus app-only multi-day wrapper; no server/model contract change. Next dependencies: Daniel accepts the final designed route, replacement controls and physical-device flow; hardware/model owners validate intensity, posture and recreational-context mapping before stronger claims. BLE needs an agreed GATT contract and remains deferred.
+Track: C data/native file intake (#67). Contracts: band daily v0 plus app-only multi-day wrapper; no server/model contract change. Next dependencies: Daniel accepts the final designed route, replacement controls and physical-device flow; hardware/model owners validate intensity, posture and recreational-context mapping before stronger claims. Bluetooth delivery of the same JSON is described in [band-ble-contract.md](band-ble-contract.md); the band's send command is still unconfirmed.
 
 ## Demo bundle
 
