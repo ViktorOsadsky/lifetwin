@@ -14,6 +14,7 @@ from lifetwin.core.models import (
     HealthProfile,
     SensitivityRequest,
 )
+from lifetwin.documents.models import DocumentExtractRequest, DocumentExtractResponse
 from lifetwin.onboarding.models import TurnRequest, TurnResponse
 from lifetwin.prediction.models import PredictionResponse
 from lifetwin.quiz.models import QuizBankResponse, QuizQuestion
@@ -48,4 +49,6 @@ SCHEMAS = {
     "quiz.question.schema.json": (QuizQuestion, RESPONSE),
     "voice.token.request.schema.json": (VoiceTokenRequest, REQUEST),
     "voice.token.schema.json": (VoiceTokenResponse, RESPONSE),
+    "documents.extract.request.schema.json": (DocumentExtractRequest, REQUEST),
+    "documents.extract.schema.json": (DocumentExtractResponse, RESPONSE),
 }

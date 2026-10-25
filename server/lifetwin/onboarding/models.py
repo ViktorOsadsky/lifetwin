@@ -184,6 +184,9 @@ class TurnRequest(ApiModel):
     # "import": values the user already confirmed one by one on the phone
     # (e.g. Apple Health read-back). Validated like any profile; no source is sent.
     values: HealthProfile | None = None
+    # Where imported values came from, for the mascot's words only. Upload is a
+    # separate source from Apple Health (docs/document-upload.md).
+    import_source: Literal["apple_health", "document", "wristband"] = "apple_health"
 
     @model_validator(mode="after")
     def action_payload(self):

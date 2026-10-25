@@ -22,14 +22,16 @@ class HttpConversationGuide implements ConversationGuide {
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
-    Map<String, num>? values,
+    Map<String, Object>? values,
     bool aiHelper = false,
+    String? importSource,
   }) async {
     final body = <String, dynamic>{
       'action': action,
       'state': ?state,
       'text': ?text,
       'values': ?values,
+      'import_source': ?importSource,
       'input_mode': fromTranscript ? 'transcript' : 'text',
       // Consent to the server's AI helper is asked separately from voice.
       'provider_consent': aiHelper,

@@ -1,0 +1,34 @@
+NORTHFIELD CLINICAL LABORATORIES
+77 Industrial Pkwy
+Northfield, MN 55099
+Client services (555) 010-4000
+LABORATORY REPORT
+Patient: Walter Examplesmith
+DOB: 02/27/1948    Sex: M
+Patient ID: 5521907
+Address: 301 Birchwood Ave, Apt 4B
+Lakeside, MI 48099
+Phone: (555) 010-4410
+Accession #: LB26-0921-4471
+Ordering provider: Dr. Nadia Okonkwo-Reyes
+Collection date: 2026-09-21 07:45
+Received: 2026-09-21 11:10
+Reported: 2026-09-22 06:02
+Fasting: Yes
+Test    Result    Flag    Reference
+Hemoglobin A1c    6.9 %    H    4.0 - 5.6 %
+Estimated average glucose    151 mg/dL
+Glucose, fasting    126 mg/dL    H    70 - 99 mg/dL
+Total Cholesterol    221 mg/dL    H    < 200 mg/dL
+HDL Cholesterol    44 mg/dL    >= 40 mg/dL
+LDL Cholesterol    142 mg/dL    H    < 100 mg/dL
+Triglycerides    175 mg/dL    H    < 150 mg/dL
+Creatinine    1.0 mg/dL    0.7 - 1.3 mg/dL
+eGFR    78 mL/min/1.73m2
+TSH    2.10 uIU/mL
+Previous HbA1c 6.5 % (03/18/2026)
+ADA categories: Normal < 5.7 %, Prediabetes 5.7 - 6.4 %, Diabetes >= 6.5 %
+H = above reference range
+Results apply only to the person named above.
+Report status: FINAL
+Page 1 of 1

@@ -1,0 +1,37 @@
+GREENLEAF PHARMACY
+2210 Orchard Rd
+Brookhollow, CA 90099
+Phone (555) 010-6100    Fax (555) 010-6101
+Store #0412
+MEDICATION LIST
+Date printed: 10/12/2026
+Patient: Gloria Testfield
+DOB: 06/30/1952
+Insurance member ID: HLX0042217
+Address: 19 Lakeview Terrace
+Brookhollow, CA 90099
+Phone: (555) 010-6177
+Email: gloria.t@example.com
+Active Medications
+Metformin 500 mg tablet
+Sig: Take 1 tablet by mouth twice daily with meals for diabetes
+Rx 4410087    Qty 60    Fill date 10/05/2026    Refills 3
+Prescriber: Dr. Priya Raman
+Lisinopril 10 mg tablet
+Sig: Take 1 tablet by mouth once daily for high blood pressure
+Rx 4410088    Qty 30    Fill date 10/05/2026    Refills 5
+Prescriber: Dr. Priya Raman
+Atorvastatin 20 mg tablet
+Sig: Take 1 tablet by mouth at bedtime for cholesterol
+Rx 4410091    Qty 30    Fill date 10/05/2026    Refills 5
+Prescriber: Dr. Priya Raman
+Nicotine patch 14 mg/24hr
+Sig: Apply 1 patch daily (smoking cessation aid)
+Rx 4410102    Qty 28    Fill date 09/21/2026    Refills 0
+Prescriber: Dr. Priya Raman
+Allergies: Penicillin (rash)
+Pharmacist counseling
+Do not stop taking your medicines without asking your doctor.
+Store tablets at room temperature away from moisture.
+Pharmacist: Aaron Whitlock, PharmD
+Page 1 of 1
