@@ -30,8 +30,14 @@ def bank_data():
 
 def test_reviewed_bank_has_sources_and_complete_recovery():
     bank = load_bank()
-    assert bank.total == len(bank.questions) == 8
-    assert {q.topic for q in bank.questions} == {"food_safety", "nutrition", "activity"}
+    assert bank.total == len(bank.questions) == 38
+    assert {q.topic for q in bank.questions} == {
+        "food_safety",
+        "nutrition",
+        "activity",
+        "sleep",
+        "habits",
+    }
     for question in bank.questions:
         assert question.review_status == "reviewed"
         assert question.sources
@@ -47,8 +53,8 @@ def test_endpoint_delivers_local_answer_metadata_and_isolation_rules(client):
     response = client.get("/api/quiz/questions")
     assert response.status_code == 200
     payload = response.json()
-    assert payload["total"] == 8
-    assert len(payload["questions"]) == 8
+    assert payload["total"] == 38
+    assert len(payload["questions"]) == 20
     rules = payload["local_scoring"]
     assert rules["state_scope"] == "game_health_only"
     assert rules["affects_confirmed_profile"] is False
@@ -67,13 +73,13 @@ def test_filter_limit_and_empty_matches(client):
     payload = client.get(
         "/api/quiz/questions?topic=nutrition&difficulty=challenging&limit=1"
     ).json()
-    assert payload["total"] == 2
+    assert payload["total"] == 4
     assert len(payload["questions"]) == 1
     assert payload["questions"][0]["topic"] == "nutrition"
     assert payload["questions"][0]["difficulty"] == "challenging"
     empty = client.get("/api/quiz/questions?topic=activity&difficulty=moderate").json()
-    assert empty["total"] == 1
-    assert len(empty["questions"]) == 1
+    assert empty["total"] == 6
+    assert len(empty["questions"]) == 6
 
 
 @pytest.mark.parametrize(
@@ -97,7 +103,7 @@ def test_detail_unknown_version_and_invalid_id(client):
 def test_bank_copy_cannot_change_future_delivery():
     bank = load_bank()
     bank.questions.clear()
-    assert len(load_bank().questions) == 8
+    assert len(load_bank().questions) == 38
 
 
 @pytest.mark.parametrize(
@@ -134,7 +140,7 @@ def test_resource_loading_independent_of_working_directory(monkeypatch, tmp_path
 
     _bundled_bank.cache_clear()
     monkeypatch.chdir(tmp_path)
-    assert load_bank().total == 8
+    assert load_bank().total == 38
 
 
 def test_every_question_can_be_listed_when_bank_exceeds_twenty(client, monkeypatch):
@@ -236,10 +242,13 @@ def test_scoring_vectors_match_reference_reducer():
 
 
 @pytest.mark.parametrize("topic", ["sleep", "habits"])
-def test_additive_topics_are_valid_filters_before_content_arrives(client, topic):
+def test_sleep_and_habit_filters_deliver_both_difficulties(client, topic):
     response = client.get("/api/quiz/questions", params={"topic": topic})
     assert response.status_code == 200
-    assert response.json()["questions"] == []
+    questions = response.json()["questions"]
+    assert len(questions) == 7
+    assert {q["topic"] for q in questions} == {topic}
+    assert {q["difficulty"] for q in questions} == {"moderate", "challenging"}
 
 
 @pytest.mark.parametrize("host", ["www.nhlbi.nih.gov", "www.nia.nih.gov"])
@@ -266,3 +275,24 @@ def test_nih_citations_require_an_exact_reviewed_institute_host(host):
             source.model_validate({**source.model_dump(), "url": unsafe})
     with pytest.raises(ValidationError):
         source.model_validate({**source.model_dump(), "publisher": "CDC"})
+
+
+def test_expanded_bank_all_versions_are_reachable_without_changing_originals(client):
+    questions = client.get("/api/quiz/questions?limit=100").json()["questions"]
+    assert len(questions) == 38
+    assert {q["id"] for q in questions} == {q.id for q in load_bank().questions}
+    assert [q["id"] for q in questions[:8]] == [
+        "soup-serving-check.v2",
+        "sodium-label-decoder.v2",
+        "yogurt-sugar-accounting.v2",
+        "serving-size-meaning.v2",
+        "small-activity-windows.v2",
+        "activity-missing-piece.v2",
+        "chicken-salad-prep.v2",
+        "leftovers-next-step.v2",
+    ]
+    for question in questions[8:]:
+        assert question["id"].endswith(".v1")
+        detail = client.get("/api/quiz/questions/" + question["id"])
+        assert detail.status_code == 200
+        assert detail.json() == question

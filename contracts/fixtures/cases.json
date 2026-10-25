@@ -206,7 +206,7 @@
     "status": 200,
     "response_schema": "quiz.schema.json",
     "response_subset": {
-      "total": 8,
+      "total": 38,
       "local_scoring": {
         "state_scope": "game_health_only",
         "affects_confirmed_profile": false,

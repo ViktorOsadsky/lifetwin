@@ -50,6 +50,7 @@ Fallback: tap **Type instead** and type the answers; if the server is unreachabl
 
 ### 2. Outlook reveal (25 s)
 The one-time lifespan/outlook reveal is still pending Viktor. Do not claim life expectancy. Use the 5-year statement.
+**Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [lifespan-estimate.md](lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else. Until the reveal screen is built, the demo keeps the 5-year statement.
 Tap the outlook card in the Room (or the Fortune ball). Say: "Out of 100 people with answers like Rosa's, about N are modeled to be alive in five years. This is the modeled survival of similar people, not a prediction about Rosa."
 Should appear: the "Modeled survival of similar people" title, a 5-year number (about 97 in 100 for Rosa at onboarding), and the drivers in plain words. No death date, no years gained.
 Fallback: if the number is missing, read the message on screen (it says what is still needed) and fill that input by Talk. A missing number is the correct behaviour, not a bug.
@@ -111,6 +112,7 @@ Say: "Voice or typing in, a modeled outlook, a score, what-ifs, a plan, document
 ## Known limitations to say out loud
 
 - The model gives a **5-year** survival only. No lifespan, no death date, no years gained. The lifespan reveal is pending.
+  - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [lifespan-estimate.md](lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else.
 - It is trained for ages **35 to 79**. Outside that range ages are extrapolated and labeled; above 85 no number.
 - Comparisons are modeled differences between profiles, not proof that a change will help.
 - **Not medical advice.** Document values (blood pressure, A1c) are information only and are not model inputs. Wristband values are estimates.

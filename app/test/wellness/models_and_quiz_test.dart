@@ -65,9 +65,10 @@ void main() {
     const young = WellnessSnapshot(healthScore: 0.2, status: HealthScoreStatus.underAge);
     expect(young.displayScore, isNull);
     expect(young.underAge, isTrue);
-    expect(formatHealthScore(-0.42), '\u22120.4');
-    expect(formatHealthScore(1.26), '+1.3');
-    expect(formatHealthScore(-0.01), '0.0');
+    expect(formatHealthScore(-0.42), '\u22120.42');
+    expect(formatHealthScore(1.26), '+1.26');
+    expect(formatHealthScore(0.04), '+0.04');
+    expect(formatHealthScore(-0.001), '0.00');
   });
 
   test('unknown provenance is not invented, estimated stays visible', () {

@@ -84,6 +84,7 @@ class MemoryBackend implements StoreBackend {
 /// - [checkinSettings]: reminder time and weekly day; a preference, not health data.
 /// - [memoryConsent]: the conversation's `memory_consent`; habit notes are kept only while true.
 /// - [outsideAiConsent]: the person's yes to outside-AI wording, for one provider; off by default.
+/// - [lifespanRevealSeen]: the one-time lifespan reveal was shown; a UI flag, not health data.
 ///
 /// Reads are public. Writes are private to this library, so the only write paths are the
 /// [TwinRepository] methods the owner allows (see lib/README-model.md, "Who may write").
@@ -127,6 +128,7 @@ class TwinStore extends ChangeNotifier {
   List<Map<String, dynamic>> get habitNotes => _list('habit_notes');
   Map<String, dynamic>? get twin => _doc['twin'] == null ? null : Map<String, dynamic>.from(_doc['twin'] as Map);
   bool get memoryConsent => _doc['memory_consent'] == true;
+  bool get lifespanRevealSeen => _doc['lifespan_reveal_seen'] == true;
 
   /// The person's yes to outside-AI wording, and the provider it was given for
   /// (`{provider, on}`); off when absent.
@@ -177,6 +179,8 @@ class TwinStore extends ChangeNotifier {
   ]);
 
   Future<void> _saveTwin(Map<String, dynamic> look) => _save('twin', look);
+
+  Future<void> _setLifespanRevealSeen() => _save('lifespan_reveal_seen', true);
 
   /// Turning memory off deletes the stored habit notes.
   Future<void> _setMemoryConsent(bool consent) async {

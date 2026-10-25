@@ -12,7 +12,7 @@ import 'forecast_screen_test.dart' show FakeForecastClient, supportedJson;
 import 'support/assessments.dart';
 
 void main() {
-  testWidgets('the reminder offer comes once, at the end of onboarding, before the reveal', (t) async {
+  testWidgets('the reminder offer comes once, after the reveal, once', (t) async {
     final model = await TwinModelService.load();
     final port = FakePort();
     final repo = TwinRepository(
@@ -43,12 +43,17 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('Continue'));
     await t.pumpAndSettle();
-    expect(find.text('Would you like a gentle reminder each day?'), findsOneWidget);
+    expect(find.text('Would you like a gentle reminder each day?'), findsNothing, reason: 'the reveal comes first');
+    await t.tap(find.text('Ask the ball'));
+    await t.pumpAndSettle();
+    await t.tap(find.bySemanticsLabel('Back'));
+    await t.pumpAndSettle();
+    expect(find.text('Would you like a gentle reminder each day?'), findsOneWidget, reason: 'then the offer, on the Room');
     await t.tap(find.text('Yes').last);
     await t.pumpAndSettle();
     expect(port.asks, 1);
     expect(repo.checkinSettings.reminderOffered, isTrue);
     expect(repo.shouldOfferReminders, isFalse, reason: 'so the first check-in does not offer it again');
-    expect(find.text('Ask the ball'), findsOneWidget);
+    expect(find.text('Would you like a gentle reminder each day?'), findsNothing);
   });
 }
