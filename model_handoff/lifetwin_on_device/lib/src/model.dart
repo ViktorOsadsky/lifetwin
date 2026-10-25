@@ -4,15 +4,15 @@ import 'dart:typed_data';
 /// Frozen Cox model exported from the validated LifeTwin Python model.
 class LifeTwinModel {
   LifeTwinModel._(this.spec, this._reference)
-    : _coefficients = (spec['coefficients'] as List)
-          .map((e) => (e as num).toDouble())
-          .toList(),
-      _center = (spec['feature_center'] as List)
-          .map((e) => (e as num).toDouble())
-          .toList(),
-      _baseline = (spec['baseline_survival'] as List)
-          .map((e) => (e as num).toDouble())
-          .toList();
+      : _coefficients = (spec['coefficients'] as List)
+            .map((e) => (e as num).toDouble())
+            .toList(),
+        _center = (spec['feature_center'] as List)
+            .map((e) => (e as num).toDouble())
+            .toList(),
+        _baseline = (spec['baseline_survival'] as List)
+            .map((e) => (e as num).toDouble())
+            .toList();
 
   final Map<String, dynamic> spec;
   final Float64List _reference;
@@ -112,8 +112,7 @@ class LifeTwinModel {
         'Sleep and awake sitting cannot exceed 24 hours per day',
       );
     }
-    final activity =
-        clean['vigorous_recreation_min_week']! +
+    final activity = clean['vigorous_recreation_min_week']! +
         clean['moderate_recreation_min_week']!;
     if (activity > 10080 ||
         clean['sleep_hours']! * 60 +
@@ -246,6 +245,31 @@ class LifeTwinModel {
       'interpretation':
           'Estimated cumulative survival among similar survey profiles, not an individual death date or medical prognosis.',
     };
+  }
+
+  /// Mathematical Cox recurrence for the projection lab only. This deliberately
+  /// bypasses the trained-age and neighbor-support gates; callers must label it
+  /// as unvalidated when the assessment age is outside 35–79.
+  double experimentalConditionalSurvival(
+    Map<String, dynamic> profile,
+    int years,
+  ) {
+    final missing = <String>[];
+    final clean = _validate(profile, missing);
+    if (clean == null) {
+      throw FormatException('Missing model inputs: $missing');
+    }
+    if (years < 1 || years > _baseline.length) {
+      throw const FormatException('Only years 1–5 are in the Cox artifact');
+    }
+    final encoded = _encode(clean);
+    var score = 0.0;
+    for (var i = 0; i < encoded.length; i++) {
+      score += (encoded[i] - _center[i]) * _coefficients[i];
+    }
+    return math
+        .pow(_baseline[years - 1], math.exp(score.clamp(-40, 40)))
+        .toDouble();
   }
 
   Map<String, dynamic> compare(

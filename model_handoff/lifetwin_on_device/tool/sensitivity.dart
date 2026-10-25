@@ -282,7 +282,7 @@ void main(List<String> args) {
   spec = jsonDecode(File('assets/model.json').readAsStringSync())
       as Map<String, dynamic>;
   final bytes = Uint8List.fromList(
-      gzip.decode(File('assets/support_reference.f64.gz').readAsBytesSync()));
+      File('assets/support_reference.f64').readAsBytesSync());
   model = LifeTwinModel.fromArtifacts(spec, bytes);
 
   // 0. Golden check: this script runs the same code as the checker.
@@ -609,7 +609,7 @@ void main(List<String> args) {
     'interpretation':
         'Observational model contrasts between profiles at the 5-year horizon. Not the benefit of changing a habit, and never years of life gained.',
     'how_to_use':
-        'Order candidate levers for a person by recommendable_levers_ranked for their age band and sex, then compute their own effect with LifeTwinEngine.compare() before showing a number. Skip levers that do not apply to them.',
+        'Order candidate levers for a person by recommendable_levers_ranked for their age band and sex, then compute their own effect with LifeTwinModel.compare() before showing a number. Skip levers that do not apply to them.',
     'checks': {
       'golden_max_abs_error': goldenMax,
       'jacobian_points_checked': jacChecked,
@@ -618,7 +618,7 @@ void main(List<String> args) {
     },
     'profiles': {
       'source':
-          'assets/support_reference.f64.gz decoded to raw inputs (2,000 encoded NHANES training profiles); BMI in 23-27 imputed uniform, sleep in 7-8 h imputed as 7 or 8 (seeded)',
+          'assets/support_reference.f64 decoded to raw inputs (2,000 encoded NHANES training profiles); BMI in 23-27 imputed uniform, sleep in 7-8 h imputed as 7 or 8 (seeded)',
       'seed': seed,
       'n_decoded': decoded.length,
       'n_excluded_unsupported_baseline': excludedBase,

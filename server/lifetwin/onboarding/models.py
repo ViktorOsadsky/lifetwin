@@ -290,6 +290,14 @@ class Recommendation(ApiModel):
     effect_note: Literal["Modeled difference for people like you, not a promise."] = (
         "Modeled difference for people like you, not a promise."
     )
+    # The model input the lever changes and the value to try, so the app's Experiment can
+    # preset the change. Both null for guideline-only items with no model lever.
+    experiment_lever: str | None = None
+    experiment_target: float | int | str | None = None
+    # One plain sentence for a two-line card: no numbers, no promise of benefit.
+    why_short: str = Field(default="", max_length=90)
+    # Host of source_url, e.g. "cdc.gov".
+    source_domain: str = ""
     causal_interpretation: Literal[False] = False
 
 

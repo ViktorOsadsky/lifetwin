@@ -1,0 +1,50 @@
+[
+  {
+    "profile": {
+      "age": 55,
+      "bmi": 27,
+      "sleep_hours": 7,
+      "vigorous_recreation_min_week": 0,
+      "moderate_recreation_min_week": 150,
+      "sedentary_min_day": 360,
+      "sex_nhanes": 1,
+      "smoking_status": 0,
+      "diabetes_diagnosed": 0,
+      "hypertension_diagnosed": 0,
+      "general_health": 3
+    },
+    "log_relative_hazard": -0.6161239615375367
+  },
+  {
+    "profile": {
+      "age": 45,
+      "bmi": 26,
+      "sleep_hours": 8,
+      "vigorous_recreation_min_week": 60,
+      "moderate_recreation_min_week": 120,
+      "sedentary_min_day": 300,
+      "sex_nhanes": 1,
+      "smoking_status": 0,
+      "diabetes_diagnosed": 0,
+      "hypertension_diagnosed": 0,
+      "general_health": 2
+    },
+    "log_relative_hazard": -1.4381577900342686
+  },
+  {
+    "profile": {
+      "age": 70,
+      "bmi": 30,
+      "sleep_hours": 7,
+      "vigorous_recreation_min_week": 0,
+      "moderate_recreation_min_week": 0,
+      "sedentary_min_day": 600,
+      "sex_nhanes": 1,
+      "smoking_status": 2,
+      "diabetes_diagnosed": 1,
+      "hypertension_diagnosed": 1,
+      "general_health": 4
+    },
+    "log_relative_hazard": 2.823420659208925
+  }
+]
