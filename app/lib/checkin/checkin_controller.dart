@@ -441,7 +441,7 @@ class CheckinController extends ChangeNotifier {
     if (!_micOff) return;
     _set(() => _micOff = false);
     _hf('mic_on');
-    _listenAgain();
+    _listenAgain(sayFirst: true); // a question that came while it was off is said once first
   }
 
   /// The screen is in sight again: hands-free listens again by itself.
