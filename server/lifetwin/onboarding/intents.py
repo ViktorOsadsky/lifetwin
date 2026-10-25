@@ -609,6 +609,42 @@ def control_intent(text: str) -> Intent | None:
     return None
 
 
+# -- asking for ideas ------------------------------------------------------------
+
+_IDEA_WORD = r"(?:ideas?|suggestions?|recommendations?)"
+_IDEA_TAIL = (
+    r"(?: (?:for me|for today|today|now|tonight|for this (?:morning|afternoon|evening)|"
+    r"on what to do|about what to do))*"
+)
+_TODAY = r"(?: (?:today|now|tonight|this (?:morning|afternoon|evening)))?"
+_HEALTHIER = (
+    r"(?: (?:to|so i can) (?:be|get|feel|become|stay) (?:healthier|healthy|better|well|fitter))?"
+)
+IDEAS = _units(
+    rf"(?:(?:do you have|have you got|got) )?(?:an?|any|some|one) {_IDEA_WORD}{_IDEA_TAIL}",
+    rf"(?:any|some) {_IDEA_WORD} (?:on |about |for )?(?:what )?(?:i|we) (?:should|could|can) do{_TODAY}",
+    rf"(?:give|show|tell|send) me (?:an?|any|some|one|your) {_IDEA_WORD}{_IDEA_TAIL}",
+    rf"{_IDEA_WORD} for (?:me|today|my day|this (?:morning|afternoon|evening))",
+    rf"what (?:should|can|could|shall) (?:i|we) do{_TODAY}{_HEALTHIER}",
+    rf"what (?:do|would) you (?:recommend|suggest)(?: (?:that )?(?:i|we) do)?{_IDEA_TAIL}{_TODAY}",
+)
+_NOT_IDEAS = re.compile(
+    r"\b(?:supplements?|vitamins?|medications?|medicines?|meds|pills?|tablets?|drugs?|"
+    r"prescriptions?|dosages?)\b"
+)
+
+
+def asks_for_ideas(text: str) -> bool:
+    """Asking "any ideas?" or "what should I do today?": a request for today's idea, not an answer.
+
+    Never an emergency, a supplement or medication ask, or "no idea" (don't know).
+    """
+    words = phrase(text)
+    if not words or _NOT_IDEAS.search(words) or emergency(text):
+        return False
+    return re.fullmatch(f"(?:{IDEAS})", words) is not None
+
+
 def _original_rest(text: str, field: ProfileField) -> str | None:
     """The new answer after the field's name, with its own punctuation ("5.5 hours")."""
     named = re.search(rf"\b(?:{FIELD_NAMES[field]})\b", text, re.I)

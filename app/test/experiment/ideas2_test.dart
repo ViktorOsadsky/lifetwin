@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/agentic_routes.dart';
+import 'package:lifesim/checkin/change_chat.dart';
 import 'package:lifesim/checkin/check_in.dart';
 import 'package:lifesim/checkin/checkin_client.dart';
 import 'package:lifesim/checkin/checkin_models.dart' show QuickPlan;
@@ -40,6 +41,7 @@ import 'package:lifesim/wellness/today_card.dart' show TodayWithMochiCard;
 import '../checkin/readback_flow_test.dart' show ContractGuide;
 import '../checkin_controller_test.dart' show FakeCheckinGuide;
 import '../support/app_fonts.dart';
+import '../support/fake_change_client.dart';
 import '../wellness/coach_test.dart' show FakeCoach;
 import 'experiment_screen_test.dart' show older;
 
@@ -897,6 +899,101 @@ void main() {
       expect(under.ideasHub.featured, isNull, reason: 'never an entry point under 18');
     });
 
+    testWidgets(
+      '(g) a check-in turn with client_action open_ideas shows today\'s idea without replacing the question',
+      (t) async {
+        final r = await repo({
+          'age': 55,
+          'sex': 'male',
+          'height_cm': 175.0,
+          'weight_kg': 80.0,
+          'sleep_hours': 7,
+          'smoking_status': 'never',
+          'diabetes': false,
+          'hypertension_diagnosed': false,
+          'general_health': 3,
+          'vigorous_recreation_min_week': 30,
+          'moderate_recreation_min_week': 90,
+          'sedentary_min_day': 360,
+        });
+        final hub = hubFor(FakeIdeas(), r: r);
+        await hub.ensureToday();
+        final opened = <String>[];
+        final access = IdeasAccess(
+          hub: hub,
+          openIdea: (c, i) => opened.add(i.id),
+          openList: (c, {required origin, levers}) => opened.add('list:$origin'),
+        );
+        t.view.physicalSize = const Size(390, 844);
+        t.view.devicePixelRatio = 1;
+        addTearDown(t.view.reset);
+        final look = ValueNotifier(const TwinAppearance(name: 'Mochi'));
+        addTearDown(look.dispose);
+        await t.pumpWidget(
+          MaterialApp(
+            theme: lifeTwinTheme(),
+            builder: (context, child) => CheckInScope(
+              repository: r,
+              guide: OpenIdeasGuide(ContractGuide()),
+              speechInput: FakeSpeechInput(),
+              speechOutput: FakeSpeechOutput(),
+              appearance: look,
+              now: () => DateTime(2026, 10, 24, 9),
+              ideas: () => access,
+              child: child!,
+            ),
+            home: RoomScreen(
+              appearance: look,
+              hasProfile: true,
+              onTalk: () {},
+              onCustomize: () {},
+              onFortune: () async {},
+            ),
+          ),
+        );
+        await t.pump();
+        await t.tap(find.text('Check in'));
+        await t.pumpAndSettle();
+        // The re-asked question is still there, with the idea under Mochi's line.
+        expect(find.textContaining('How did you sleep last night?'), findsWidgets);
+        expect(find.text('Walk-and-talk'), findsOneWidget);
+        expect(find.text('See ideas ›'), findsOneWidget);
+        await t.tap(find.text('See ideas ›'));
+        await t.pump();
+        expect(opened, ['list:chat']);
+      },
+    );
+
+    testWidgets('(g) the check-in and change responses read client_action; the onboarding turn too', (t) async {
+      expect(
+        CheckinTurn({'message': 'x', 'state': <String, dynamic>{}, 'client_action': 'open_ideas'}).clientAction,
+        'open_ideas',
+      );
+      expect(CheckinTurn({'message': 'x', 'state': <String, dynamic>{}}).clientAction, isNull);
+      expect(ChangeResponse({'message': 'x', 'client_action': 'open_ideas'}).clientAction, 'open_ideas');
+      expect(ChangeResponse({'message': 'x'}).clientAction, isNull);
+    });
+
+    testWidgets('(g) a change turn with open_ideas shows today\'s idea', (t) async {
+      final a = await routes(older);
+      await a.ideasHub.ensureToday();
+      final client = FakeChangeClient();
+      final controller = ChangeChatController(client: OpenIdeasChange(client), repository: a.repo!);
+      addTearDown(controller.dispose);
+      await pumpIn(
+        t,
+        ChangeChatScreen(
+          controller: controller,
+          appearance: const TwinAppearance(),
+          onClose: () {},
+          ideas: a.ideasAccess,
+        ),
+      );
+      await t.pumpAndSettle();
+      expect(find.text('See ideas ›'), findsOneWidget);
+      expect(find.text('Walk-and-talk'), findsOneWidget);
+    });
+
     testWidgets('(g) open_ideas shows the featured idea and See ideas; no featured idea: Mochi says it needs more', (
       t,
     ) async {
@@ -972,4 +1069,55 @@ class CareGuide extends FakeCheckinGuide {
     ...t.raw,
     'state': {...t.state, 'care_line_shown': true},
   });
+}
+
+/// Adds `client_action: open_ideas` to every turn, as the server does after "what should I do?".
+class OpenIdeasGuide extends FakeCheckinGuide {
+  OpenIdeasGuide(this.inner);
+  final ContractGuide inner;
+  @override
+  Future<CheckinTurn> start({
+    required String kind,
+    required String localDate,
+    Map<String, dynamic> previous = const {},
+    QuickPlan? quick,
+  }) async => _mark(await inner.start(kind: kind, localDate: localDate, previous: previous, quick: quick));
+  @override
+  Future<CheckinTurn> turn({
+    required String action,
+    required Map<String, dynamic> state,
+    String? text,
+    bool fromTranscript = false,
+  }) async => _mark(await inner.turn(action: action, state: state, text: text, fromTranscript: fromTranscript));
+  CheckinTurn _mark(CheckinTurn t) => CheckinTurn({...t.raw, 'client_action': 'open_ideas'});
+}
+
+class OpenIdeasChange implements ChangeClient {
+  OpenIdeasChange(this.inner);
+  final ChangeClient inner;
+  ChangeResponse _mark(ChangeResponse r) => ChangeResponse({...r.raw, 'client_action': 'open_ideas'});
+  @override
+  Future<ChangeResponse> start({
+    required Map<String, dynamic> profile,
+    String? field,
+    required bool memoryConsent,
+  }) async => _mark(await inner.start(profile: profile, field: field, memoryConsent: memoryConsent));
+  @override
+  Future<ChangeResponse> turn({
+    required Map<String, dynamic> state,
+    required String action,
+    String? text,
+    bool fromTranscript = false,
+    required Map<String, dynamic> profile,
+    required bool memoryConsent,
+  }) async => _mark(
+    await inner.turn(
+      state: state,
+      action: action,
+      text: text,
+      fromTranscript: fromTranscript,
+      profile: profile,
+      memoryConsent: memoryConsent,
+    ),
+  );
 }

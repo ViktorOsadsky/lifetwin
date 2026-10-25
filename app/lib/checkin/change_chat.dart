@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 
 import '../experiment/experiment_page.dart';
 import '../experiment/experiment_twins.dart';
+import '../experiment/ideas_hub.dart';
+import '../experiment/widgets/ideas_turn_cards.dart';
 import '../experiment/widgets/widgets.dart';
 import '../twin/twin_repository.dart';
 import '../ui/theme.dart';
@@ -45,6 +47,9 @@ class ChangeResponse {
   /// A calm pause: nothing is saved, no next question (never auto-dial).
   bool get emergency => raw['emergency'] == true;
   String get phase => state['phase'] as String? ?? 'asking';
+
+  /// `open_ideas` after "what should I do?" (adults only): the app shows today's idea.
+  String? get clientAction => raw['client_action'] as String?;
 
   /// Non-null fields of `profile_update`: sent only on the yes turn.
   Map<String, dynamic> get profileUpdate => {
@@ -240,7 +245,11 @@ class ChangeChatScreen extends StatefulWidget {
     required this.appearance,
     required this.onClose,
     this.open = defaultOpenUrl,
+    this.ideas,
   });
+
+  /// Today's idea when a turn says `open_ideas`; null hides it.
+  final IdeasAccess? ideas;
 
   final ChangeChatController controller;
   final TwinAppearance appearance;
@@ -290,6 +299,7 @@ class _ChangeChatScreenState extends State<ChangeChatScreen> {
         title: 'Update with Mochi',
         onBack: c.emergency ? c.resume : _close,
         backLabel: c.emergency ? 'Continue' : 'Close',
+        onLeaveCheck: () => !c.emergency && (c.busy || c.confirming),
         dock: c.emergency ? const SizedBox.shrink() : _dock(context),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -307,6 +317,10 @@ class _ChangeChatScreenState extends State<ChangeChatScreen> {
               )
             else ...[
               for (final l in c.lines) _Line(line: l),
+              if (widget.ideas case final access? when r?.clientAction == 'open_ideas') ...[
+                const SizedBox(height: 8),
+                IdeasOpenCard(access: access, appearance: widget.appearance),
+              ],
               if (c.saved.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),

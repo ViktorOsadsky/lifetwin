@@ -55,8 +55,11 @@ void main() {
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
     deleted = 0;
-    repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()));
+    // Joined 8 days ago, so the weekly check-in is open (see weekly_gate_test.dart for the gate itself).
+    var clock = DateTime.now().subtract(const Duration(days: 8));
+    repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => clock);
     await repo.saveConversationProfile(profile);
+    clock = DateTime.now();
     final look = ValueNotifier(const TwinAppearance(name: 'Mochi'));
     addTearDown(look.dispose);
     final voice = VoiceOnboardingController(
@@ -281,6 +284,10 @@ void main() {
     expect(find.text('Added 1 day from the file.'), findsOneWidget);
     // The panel followed; settings has the row and Unpair forgets the files.
     await t.ensureVisible(find.text('Band settings'));
+    // The page is longer now; let the "Added" snackbar leave before tapping near the bottom.
+    await t.pump(const Duration(seconds: 6));
+    await t.pumpAndSettle();
+    await t.ensureVisible(find.text('Band settings'));
     await t.tap(find.text('Band settings'));
     await t.pumpAndSettle();
     expect(find.text('Import band file'), findsOneWidget);
@@ -332,7 +339,7 @@ void main() {
       );
       await t.pumpAndSettle();
       expect(t.takeException(), isNull, reason: '$width wide at $scale x');
-      expect(find.textContaining('min moderate'), findsOneWidget);
+      expect(find.text('Not enough wear time today'), findsOneWidget);
     }
   });
 }

@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import '../checkin/checkin_models.dart' show CheckinSettings, DayLog, shiftDay;
+import '../checkin/checkin_models.dart' show CheckinSettings, DayLog, isoDay, shiftDay, weeklyOpen, weeklyOpensLine;
 import '../checkin/checkin_reminders.dart' show CheckinReminders;
 import '../checkin/checkin_store.dart' show mergeDayLogs;
 import '../checkin/daily_logs.dart' show weekProgress;
@@ -79,7 +79,8 @@ class TwinRepository extends ChangeNotifier {
       reminders: reminders,
       clock: clock,
     );
-    // App start: plan the coming week's reminders again (a week away ends their plan).
+    // Older profiles get their join date now; then plan the coming week's reminders again.
+    if (repo.store.hasProfile) await repo._ensureFirstJoined();
     await repo.replanReminders();
     return repo;
   }
@@ -274,6 +275,7 @@ class TwinRepository extends ChangeNotifier {
     Map<String, String> sources = const {},
     Set<String> estimated = const {},
   }) => _atomically(() async {
+    await _ensureFirstJoined();
     final before = store.profile;
     final merge = mergeConfirmed(before, confirmed);
     if (merge.refused.isNotEmpty) debugPrint('Refused profile fields: ${merge.refused}');
@@ -581,17 +583,59 @@ class TwinRepository extends ChangeNotifier {
     final r = reminders;
     if (r == null) return const [];
     try {
-      return await r.reschedule(checkinSettings, localNow: _clock(), history: store.checkins);
+      final now = _clock();
+      final later = DateTime.tryParse(store.remindLater ?? '');
+      // A remind-later that has fired or passed is done; one still ahead survives the replan.
+      if (store.remindLater != null && (later == null || !later.isAfter(now))) await store._setRemindLater(null);
+      return await r.reschedule(
+        checkinSettings,
+        localNow: now,
+        history: store.checkins,
+        firstJoined: firstJoined,
+        remindLaterAt: later,
+      );
     } catch (e) {
       debugPrint('Reminders could not be planned: $e');
       return const [];
     }
   }
 
-  /// "Remind me later" on the plan: one extra reminder a couple of hours from now (reminders are on).
+  /// The local date onboarding was first completed (null before a profile). A profile saved
+  /// before this was kept reads as its earliest history or check-in date, else today.
+  String? get firstJoined {
+    final kept = store.firstJoined;
+    if (kept != null || !store.hasProfile) return kept;
+    final dates = [
+      for (final e in store.historyEntries) isoDay(dayOf(e.at)),
+      for (final c in store.checkins) c.date,
+    ]..sort();
+    return dates.isEmpty ? isoDay(dayOf(_clock())) : dates.first;
+  }
+
+  Future<void> _ensureFirstJoined() async {
+    if (store.firstJoined != null) return;
+    final joined = store.hasProfile ? firstJoined : isoDay(dayOf(_clock()));
+    if (joined != null) await store._setFirstJoined(joined);
+  }
+
+  /// Is the weekly check-in available now? Not until 7 full days after joining.
+  bool get weeklyAvailable => weeklyOpen(today: isoDay(dayOf(_clock())), firstJoined: firstJoined);
+
+  /// The gentle line shown where the weekly check-in would be, or null once it is open.
+  String? get weeklyGateLine {
+    final joined = firstJoined;
+    return joined == null || weeklyAvailable ? null : weeklyOpensLine(joined);
+  }
+
+  /// "Remind me later" on the plan: one extra reminder a couple of hours from now (reminders are on),
+  /// kept out of quiet hours. Remembered in the store so a refresh doesn't wipe it.
   Future<void> remindLater() async {
+    final r = reminders;
+    if (r == null) return;
     try {
-      await reminders?.remindLater(_clock());
+      final s = checkinSettings;
+      final at = await r.remindLater(_clock(), hour: s.reminderHour, minute: s.reminderMinute);
+      await store._setRemindLater(at.toIso8601String());
     } catch (e) {
       debugPrint('Reminder could not be planned: $e');
     }
@@ -613,6 +657,7 @@ class TwinRepository extends ChangeNotifier {
       history: store.checkins,
       hour: hour,
       minute: minute,
+      firstJoined: firstJoined,
     );
     await saveCheckinSettings(next);
   }

@@ -134,6 +134,16 @@ class TwinStore extends ChangeNotifier {
   /// hidden today (`hidden_date`, `hidden_ids`) and the day Mochi's bubble last showed (`bubble_date`).
   Map<String, dynamic> get ideasState => Map<String, dynamic>.from(_doc['ideas'] as Map? ?? const {});
 
+  /// The local date (`YYYY-MM-DD`) onboarding was first completed; set once. The weekly
+  /// check-in opens 7 days after it. A date, not health data.
+  /// When the pending "Remind me later" notification fires (local wall time, ISO), if any.
+  String? get remindLater {
+    final v = _doc['remind_later'];
+    return v is String && v.isNotEmpty ? v : null;
+  }
+
+  String? get firstJoined => _doc['first_joined'] as String?;
+
   /// The person's yes to outside-AI wording, and the provider it was given for
   /// (`{provider, on}`); off when absent.
   bool get outsideAiConsent => (_doc['outside_ai_consent'] as Map?)?['on'] == true;
@@ -185,6 +195,12 @@ class TwinStore extends ChangeNotifier {
   Future<void> _saveTwin(Map<String, dynamic> look) => _save('twin', look);
 
   Future<void> _saveIdeasState(Map<String, dynamic> state) => _save('ideas', state);
+
+  Future<void> _setRemindLater(String? at) async {
+    if (at != null || remindLater != null) await _save('remind_later', at ?? '');
+  }
+
+  Future<void> _setFirstJoined(String day) => _save('first_joined', day);
 
   Future<void> _setLifespanRevealSeen() => _save('lifespan_reveal_seen', true);
 

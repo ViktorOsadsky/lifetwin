@@ -17,6 +17,27 @@ DateTime parseDay(String iso) {
 
 String shiftDay(String iso, int days) => isoDay(parseDay(iso).add(Duration(days: days)));
 
+/// The first weekly check-in opens this many days after the person first joined.
+const weeklyOpensAfterDays = 7;
+
+/// The day the weekly check-in opens, for someone who joined on [firstJoined] (`YYYY-MM-DD`).
+String weeklyOpenDay(String firstJoined) => shiftDay(firstJoined, weeklyOpensAfterDays);
+
+/// Is the weekly check-in available on [today]? Never before 7 full days after joining.
+bool weeklyOpen({required String today, required String? firstJoined}) =>
+    firstJoined != null && today.compareTo(weeklyOpenDay(firstJoined)) >= 0;
+
+/// "Your first weekly check-in opens on Sunday, November 1".
+String weeklyOpensLine(String firstJoined) {
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+  final d = parseDay(weeklyOpenDay(firstJoined));
+  return 'Your first weekly check-in opens on ${days[d.weekday - 1]}, ${months[d.month - 1]} ${d.day}';
+}
+
 /// The Monday of the Monday–Sunday week that holds [iso].
 String mondayOf(String iso) {
   final d = parseDay(iso);
