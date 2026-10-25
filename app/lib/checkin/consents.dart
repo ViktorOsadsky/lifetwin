@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../twin/twin_repository.dart';
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 
 /// The outside AI provider, from `GET /api/capabilities` -> `personalize`. The name is never
 /// hard-coded in the app: the screens say [displayName], so changing provider changes no copy.
@@ -59,7 +60,7 @@ abstract class CapabilitiesClient {
 
 class HttpCapabilitiesClient implements CapabilitiesClient {
   HttpCapabilitiesClient({http.Client? client, ApiBase? base})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       base = base ?? ApiBase();
   final http.Client _client;
   final ApiBase base;

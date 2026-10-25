@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 import '../voice/speech.dart' show GuideFailure, GuideRejected, GuideTooBusy;
 import 'checkin_models.dart';
 
@@ -127,7 +128,7 @@ abstract class CheckinGuide {
 
 class HttpCheckinClient implements CheckinGuide {
   HttpCheckinClient({http.Client? client, ApiBase? base, this.age, this.aiConsent})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       base = base ?? ApiBase(apiBaseUrl, client);
 
   final http.Client _client;

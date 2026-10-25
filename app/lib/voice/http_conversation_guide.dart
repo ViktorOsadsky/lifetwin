@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'api_base.dart';
+import 'backend_http_client.dart';
 import 'speech.dart';
 
 export 'api_base.dart' show ApiBase, apiBaseUrl;
@@ -10,7 +11,7 @@ export 'api_base.dart' show ApiBase, apiBaseUrl;
 /// Calls POST /api/onboarding/turn. The state is held by the app, not the server.
 class HttpConversationGuide implements ConversationGuide {
   HttpConversationGuide({http.Client? client, String? baseUrl, ApiBase? base})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       base = base ?? ApiBase(baseUrl ?? apiBaseUrl, client);
 
   final http.Client _client;
