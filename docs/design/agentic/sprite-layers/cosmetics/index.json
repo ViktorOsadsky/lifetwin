@@ -1,0 +1,152 @@
+{
+ "schema": "lifetwin.cosmetics_index.v1",
+ "items": [
+  {
+   "id": "cal_hat",
+   "category": "hat",
+   "label": "Cal hat",
+   "dir": "hats/cal_hat",
+   "thumb": "thumbs/cal_hat.png"
+  },
+  {
+   "id": "beanie",
+   "category": "hat",
+   "label": "Beanie",
+   "dir": "hats/beanie",
+   "thumb": "thumbs/beanie.png"
+  },
+  {
+   "id": "cap",
+   "category": "hat",
+   "label": "Cap",
+   "dir": "hats/cap",
+   "thumb": "thumbs/cap.png"
+  },
+  {
+   "id": "visor",
+   "category": "hat",
+   "label": "Visor",
+   "dir": "hats/visor",
+   "thumb": "thumbs/visor.png"
+  },
+  {
+   "id": "straw_hat",
+   "category": "hat",
+   "label": "Sun hat",
+   "dir": "hats/straw_hat",
+   "thumb": "thumbs/straw_hat.png"
+  },
+  {
+   "id": "cal_tee",
+   "category": "top",
+   "label": "Cal tee",
+   "dir": "tops/cal_tee",
+   "thumb": "thumbs/cal_tee.png"
+  },
+  {
+   "id": "cardigan",
+   "category": "top",
+   "label": "Cosy cardigan",
+   "dir": "tops/cardigan",
+   "thumb": "thumbs/cardigan.png"
+  },
+  {
+   "id": "hoodie",
+   "category": "top",
+   "label": "Hoodie",
+   "dir": "tops/hoodie",
+   "thumb": "thumbs/hoodie.png"
+  },
+  {
+   "id": "rain_jacket",
+   "category": "top",
+   "label": "Rain jacket",
+   "dir": "tops/rain_jacket",
+   "thumb": "thumbs/rain_jacket.png"
+  },
+  {
+   "id": "reading_round",
+   "category": "glasses",
+   "label": "Reading glasses",
+   "dir": "glasses/reading_round",
+   "thumb": "thumbs/reading_round.png"
+  },
+  {
+   "id": "sunglasses",
+   "category": "glasses",
+   "label": "Sunglasses",
+   "dir": "glasses/sunglasses",
+   "thumb": "thumbs/sunglasses.png"
+  },
+  {
+   "id": "bifocals",
+   "category": "glasses",
+   "label": "Bifocals",
+   "dir": "glasses/bifocals",
+   "thumb": "thumbs/bifocals.png"
+  },
+  {
+   "id": "knit_scarf",
+   "category": "scarf",
+   "label": "Knit scarf",
+   "dir": "scarf/knit_scarf",
+   "thumb": "thumbs/knit_scarf.png"
+  },
+  {
+   "id": "hearing_aids",
+   "category": "aid",
+   "label": "Hearing aids",
+   "dir": "aids/hearing_aids",
+   "thumb": "thumbs/hearing_aids.png"
+  },
+  {
+   "id": "cane",
+   "category": "aid",
+   "label": "Walking cane",
+   "dir": "aids/cane",
+   "thumb": "thumbs/cane.png"
+  },
+  {
+   "id": "wristband",
+   "category": "aid",
+   "label": "Step counter",
+   "dir": "aids/wristband",
+   "thumb": "thumbs/wristband.png"
+  },
+  {
+   "id": "honey",
+   "category": "fur",
+   "label": "Honey",
+   "dir": "fur/honey",
+   "thumb": "thumbs/honey.png"
+  },
+  {
+   "id": "cocoa",
+   "category": "fur",
+   "label": "Cocoa",
+   "dir": "fur/cocoa",
+   "thumb": "thumbs/cocoa.png"
+  },
+  {
+   "id": "cream",
+   "category": "fur",
+   "label": "Cream",
+   "dir": "fur/cream",
+   "thumb": "thumbs/cream.png"
+  },
+  {
+   "id": "panda",
+   "category": "fur",
+   "label": "Panda",
+   "dir": "fur/panda",
+   "thumb": "thumbs/panda.png"
+  },
+  {
+   "id": "cinnamon",
+   "category": "fur",
+   "label": "Cinnamon",
+   "dir": "fur/cinnamon",
+   "thumb": "thumbs/cinnamon.png"
+  }
+ ]
+}

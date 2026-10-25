@@ -1,0 +1,76 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "bifocals",
+ "category": "glasses",
+ "label": "Bifocals",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "glasses",
+   "slot": "glasses",
+   "bone": "head",
+   "z": 65,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 115,
+    "y": 248,
+    "w": 415,
+    "h": 117
+   },
+   "vector": "glasses.svg",
+   "painted": "glasses.p.png"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "default",
+ "colourable": {
+  "frame": {
+   "key": "#8a5632",
+   "tones": {
+    "hi": "#c09e82",
+    "lt": "#a67a59",
+    "base": "#8a5632",
+    "sh": "#6f4738",
+    "dk": "#553631",
+    "ink": "#452b20"
+   }
+  }
+ },
+ "material": "acetate",
+ "notes": [
+  "Soft rectangular tortoiseshell frames; the flat-top reading segment sits below the eyes."
+ ],
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head",
+  "back": "not visible from behind: draw nothing"
+ }
+}

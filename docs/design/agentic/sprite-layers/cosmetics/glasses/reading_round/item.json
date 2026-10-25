@@ -1,0 +1,76 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "reading_round",
+ "category": "glasses",
+ "label": "Reading glasses",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "glasses",
+   "slot": "glasses",
+   "bone": "head",
+   "z": 65,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 115,
+    "y": 236,
+    "w": 415,
+    "h": 136
+   },
+   "vector": "glasses.svg",
+   "painted": "glasses.p.png"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "default",
+ "colourable": {
+  "frame": {
+   "key": "#d9a441",
+   "tones": {
+    "hi": "#eac88a",
+    "lt": "#e2b665",
+    "base": "#d9a441",
+    "sh": "#a87f43",
+    "dk": "#7e5f39",
+    "ink": "#5f4426"
+   }
+  }
+ },
+ "material": "metal",
+ "notes": [
+  "Gold wire rims sized to the canonical round glasses; lenses barely tinted so the eyes read clearly."
+ ],
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head",
+  "back": "not visible from behind: draw nothing"
+ }
+}

@@ -1,0 +1,146 @@
+{
+ "wave": {
+  "size": [
+   250,
+   333
+  ],
+  "feet_anchor": {
+   "x": 0.536,
+   "y": 0.976
+  },
+  "scale": 0.708,
+  "sheet": "bear_older_regular_A"
+ },
+ "walk_side": {
+  "size": [
+   255,
+   334
+  ],
+  "feet_anchor": {
+   "x": 0.4647,
+   "y": 0.976
+  },
+  "scale": 0.708,
+  "sheet": "bear_older_regular_A"
+ },
+ "sit": {
+  "size": [
+   258,
+   279
+  ],
+  "feet_anchor": {
+   "x": 0.4981,
+   "y": 0.9713
+  },
+  "scale": 0.708,
+  "sheet": "bear_older_regular_A"
+ },
+ "jump": {
+  "size": [
+   269,
+   323
+  ],
+  "feet_anchor": {
+   "x": 0.5428,
+   "y": 0.9752
+  },
+  "scale": 0.708,
+  "sheet": "bear_older_regular_A"
+ },
+ "sleep": {
+  "size": [
+   331,
+   203
+  ],
+  "feet_anchor": {
+   "x": 0.5544,
+   "y": 0.9606
+  },
+  "scale": 0.708,
+  "sheet": "bear_older_regular_A"
+ },
+ "eat": {
+  "size": [
+   213,
+   290
+  ],
+  "feet_anchor": {
+   "x": 0.5141,
+   "y": 0.9724
+  },
+  "scale": 0.708,
+  "sheet": "bear_older_regular_A"
+ },
+ "stretch": {
+  "size": [
+   199,
+   347
+  ],
+  "feet_anchor": {
+   "x": 0.5503,
+   "y": 0.9769
+  },
+  "scale": 0.708,
+  "sheet": "bear_older_regular_A"
+ },
+ "concerned": {
+  "size": [
+   212,
+   328
+  ],
+  "feet_anchor": {
+   "x": 0.4693,
+   "y": 0.9756
+  },
+  "scale": 0.652,
+  "sheet": "bear_older_regular_B"
+ },
+ "listening": {
+  "size": [
+   241,
+   330
+  ],
+  "feet_anchor": {
+   "x": 0.4938,
+   "y": 0.9758
+  },
+  "scale": 0.652,
+  "sheet": "bear_older_regular_B"
+ },
+ "thinking": {
+  "size": [
+   200,
+   326
+  ],
+  "feet_anchor": {
+   "x": 0.515,
+   "y": 0.9755
+  },
+  "scale": 0.652,
+  "sheet": "bear_older_regular_B"
+ },
+ "sleepy": {
+  "size": [
+   244,
+   330
+  ],
+  "feet_anchor": {
+   "x": 0.457,
+   "y": 0.9758
+  },
+  "scale": 0.652,
+  "sheet": "bear_older_regular_B"
+ },
+ "proud": {
+  "size": [
+   229,
+   325
+  ],
+  "feet_anchor": {
+   "x": 0.4934,
+   "y": 0.9754
+  },
+  "scale": 0.652,
+  "sheet": "bear_older_regular_B"
+ }
+}
