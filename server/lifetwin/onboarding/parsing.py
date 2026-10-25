@@ -3155,6 +3155,9 @@ def parse_reply(
             if target
             else {}
         )
+        aside = _other_topic_aside(part, field) if not parsed and several else None
+        if aside and aside != "exercise_minutes_weekly":
+            held = (aside, part)  # a number in the next part may finish it
         if not parsed and several and _habit_aside(part):
             continue  # "... and I walk my dog every morning": a habit note, not a value
         if not parsed and several and target != field and _ambiguous_aside(part):
@@ -3163,7 +3166,7 @@ def parse_reply(
             continue  # an unclear clause for another question: asked later, not a veto
         if not parsed and several and not labeled and not dropped and _chatter(part, field):
             continue  # "I mixed up the digits": an aside beside the answer
-        if not parsed and several and _other_topic_aside(part, field):
+        if aside:
             continue  # "7 hours, and I sit a lot": sitting is asked later
         if not parsed:
             return whole
@@ -3189,17 +3192,13 @@ def parse_reply(
     return values if whole.items() <= values.items() else {}
 
 
-def _other_topic_aside(part: str, field: ProfileField) -> bool:
-    """A clause without a number about another question's topic ("I sit a lot")."""
+def _other_topic_aside(part: str, field: ProfileField) -> str | None:
+    """The topic of a clause without a number about another question ("I sit a lot")."""
     text = _canonical(part)
-    own = TOPICS.get(_topic(field), NOTHING)
-    return (
-        not re.search(r"\d", text)
-        and not re.search(own, text)
-        and any(
-            re.search(cue, text) for topic, cue in TOPICS.items() if topic in NUMERIC_TOPICS
-        )
-    )
+    if re.search(r"\d", text) or re.search(TOPICS.get(_topic(field), NOTHING), text):
+        return None
+    topics = [t for t, cue in TOPICS.items() if t in NUMERIC_TOPICS and re.search(cue, text)]
+    return topics[0] if len(topics) == 1 else None
 
 
 NUMERIC_TOPICS = {"height_cm", "weight_kg", "sleep_hours", "sedentary_min_day", "exercise_minutes_weekly"}
@@ -3329,8 +3328,15 @@ def grounded_candidates(
                 return {}
         if any(key in values and values[key] != value for key, value in quote_values.items()):
             return {}
+            # "My dog is 3", "I retired at 62": a number that counts or dates something else.
+            if STRAY_NUMBER.search(_canonical(text[lo:hi])):
+                return {}
         covered += occurrences
         values.update(quote_values)
+    # An adult's own value: "3" is no age and "46 pounds" no weight, whoever quoted it.
+    for key, (low, high) in STRAY_RANGE.items():
+        if key in values and not low <= values[key] <= high:
+            return {}
     # The rest of the reply may not make the values someone else's, past, a goal or
     # advice: "160 pounds. That's what my wife weighs.", "7 hours. Sometimes less."
     clauses = [text[lo:hi] for lo, hi in _raw_spans(text)]
