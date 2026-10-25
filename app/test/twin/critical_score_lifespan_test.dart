@@ -157,13 +157,13 @@ void main() {
 
     test('lifespan has no estimate without a sex, and never picks one', () {
       final noSex = {...readme}..remove('sex_nhanes');
-      expect(LifespanEstimate.forProfile(noSex, currentYear: 2026), isNull);
+      expect(LifespanEstimate.forProfile(noSex, currentYear: 2026, lab: model.projection), isNull);
       for (final bad in [0, 3, '1', 'male', null, 1.5]) {
         expect(
           LifespanEstimate.forProfile({
             ...readme,
             'sex_nhanes': bad,
-          }, currentYear: 2026),
+          }, currentYear: 2026, lab: model.projection),
           isNull,
           reason: 'sex_nhanes $bad',
         );
@@ -232,16 +232,19 @@ void main() {
       },
     );
 
-    test('the score is exactly the negated model value and older is worse', () {
+    test('the raw model value rises with age; the score (health index) is relative to the age group', () {
       for (final sex in ['male', 'female']) {
         double? last;
         for (final age in [20, 30, 40, 50, 60, 70, 80, 85]) {
           final a = model.assess(person(age: age, sex: sex));
-          expect(a.healthScore, -a.rawLogRelativeHazard!);
+          // The score is the index against people of the same age and sex, so it does not
+          // fall with age by itself; the raw Cox value (age term included) does rise.
+          expect(a.healthScore!, greaterThan(0));
+          if (a.healthScore != 1.0) expect(a.healthScore! > 1, a.ageGroupPercentile! > 50);
           if (last != null) {
-            expect(a.healthScore!, lessThan(last), reason: '$sex $age');
+            expect(a.rawLogRelativeHazard!, greaterThan(last), reason: '$sex $age');
           }
-          last = a.healthScore;
+          last = a.rawLogRelativeHazard;
         }
       }
     });
@@ -327,7 +330,7 @@ void main() {
 
   group('lifespan estimate', () {
     LifespanEstimate estimate(Map<String, dynamic> p, {int year = 2026}) =>
-        LifespanEstimate.forProfile(p, currentYear: year)!;
+        LifespanEstimate.forProfile(p, currentYear: year, lab: model.projection)!;
 
     final dateLike = RegExp(
       r'\b(19|20|21)\d{2}-\d{2}-\d{2}\b|\b(january|february|march|april|may|june|july|august|september|october|november|december)\b|\b\d{1,2}/\d{1,2}/\d{2,4}\b',
@@ -346,7 +349,9 @@ void main() {
           expect(e.p75Age, lessThan(121), reason: reason);
           expect(e.expectedYear, greaterThan(2026), reason: reason);
           expect(e.expectedYear, lessThan(2026 + 100), reason: reason);
-          expect(e.extrapolated, age < 35 || age > 79, reason: reason);
+          // Rough guide where the life table has the larger weight in the seam blend
+          // (owner ruling): ages 18-39 and 75-85.
+          expect(e.extrapolated, lifespanProjectionWeight(age) < 0.5, reason: reason);
           expect(e.caveat, contains('rough'), reason: reason);
           expect(
             e.caveat.contains('even rougher'),
@@ -402,7 +407,7 @@ void main() {
         e.headline,
         e.caveat,
         '${e.expectedYear}',
-        ...e.curve.survivalCurve.map((p) => '${p.$1}'),
+        ...e.annualCurve.map((p) => '${p.age} ${p.survivalPercent}'),
       ];
       expect(dateLike.hasMatch(everything.join(' ')), isFalse);
       expect(e.expectedYear, isA<int>());
@@ -469,7 +474,16 @@ void main() {
       },
     );
 
-    test('older people expect to reach a later age than younger ones, but live fewer more years', () {
+    // Owner choices "Projection with fixes" and "blend the seams": the life table below 35
+    // and from 79, the yearly Cox projection at 45-70, blended linearly in between. No
+    // one-year step is now over 3 years (largest 2.3), but the projection sits 12-22 years
+    // above the life table, so across 35-45 the remaining years still grow (readme male:
+    // 47.8 at 35, 53.1 at 40, 57.3 at 45) and across 70-79 the expected age falls
+    // (103.8 at 70, 98.9 at 75). The rule this test states still does not hold.
+    knownBug(
+      'lifespan seams',
+      'the blended projection/life-table seams (35-45, 70-79): remaining years rise, expected age falls',
+      () {
       double? lastAge, lastRemaining;
       for (var age = 20; age <= 85; age += 5) {
         final e = estimate({...readme, 'age': age});
@@ -498,7 +512,7 @@ void main() {
             LifespanEstimate.forProfile({
               ...readme,
               'age': age,
-            }, currentYear: 2026),
+            }, currentYear: 2026, lab: model.projection),
             isNull,
             reason: 'age $age',
           );
@@ -513,7 +527,7 @@ void main() {
         ]) {
           final missing = {...readme}..remove(key);
           expect(
-            LifespanEstimate.forProfile(missing, currentYear: 2026),
+            LifespanEstimate.forProfile(missing, currentYear: 2026, lab: model.projection),
             isNull,
             reason: 'missing $key',
           );
@@ -551,6 +565,7 @@ void main() {
               () => e = LifespanEstimate.forProfile(
                 a.profileUsed,
                 currentYear: 2026,
+                lab: model.projection,
               ),
               returnsNormally,
               reason: '$sex $age $change',

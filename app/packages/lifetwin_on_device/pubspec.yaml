@@ -14,3 +14,4 @@ flutter:
   assets:
     - assets/model.json
     - assets/support_reference.f64.gz
+    - assets/neural_model.json

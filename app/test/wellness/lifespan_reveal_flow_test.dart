@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lifesim/demo/demo_seed.dart' show openTwin;
+import 'package:lifesim/demo/demo_seed.dart' show rosaProfile;
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
@@ -47,8 +47,8 @@ void main() {
   late Map<String, dynamic> rosa;
   setUpAll(() async {
     model = await TwinModelService.load();
-    // The seeded demo Rosa (64), as she is after her two weeks of history.
-    rosa = Map<String, dynamic>.from((await openTwin(demo: true, backend: MemoryBackend())).profile);
+    // Rosa (64) as she onboards in the demo.
+    rosa = Map<String, dynamic>.from(rosaProfile);
   });
 
   Future<void> launch(WidgetTester t, TwinRepository repo) async {
@@ -97,12 +97,12 @@ void main() {
     await launch(t, repo);
     await finishOnboarding(t);
     expect(repo.lifespanRevealSeen, isTrue);
-    // Seeded Rosa: 2051, age 89 (88.68 rounds up), most likely 83–95.
+    // Rosa's yearly projection: 50% at 98.93, 75% at 87.39, 25% at 108.89.
     final est = repo.lifespanEstimate!;
-    expect(est.expectedYear, year + 25);
-    expect((est.expectedAge.round(), est.p25Age.round(), est.p75Age.round()), (89, 83, 95));
+    expect(est.expectedYear, year + 35);
+    expect((est.expectedAge.round(), est.p25Age.round(), est.p75Age.round()), (99, 87, 109));
     expect(find.text('Around ${est.expectedYear}'), findsOneWidget);
-    expect(find.text('about age 89, most likely 83–95'), findsOneWidget);
+    expect(find.text('about age 99, most likely 87–109'), findsOneWidget);
     expect(find.text('Rough guide'), findsNothing, reason: 'age 64 is inside 35–79');
 
     // The next launch: the flag is remembered, so a later conversation does not reveal again.

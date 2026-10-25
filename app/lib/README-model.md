@@ -39,23 +39,26 @@ The age term is linear: the package encodes `age_decade = (age − 55) / 10` (ch
 
 ## Health score
 
-**Higher is better** (owner ruling, 2026-10-24: "higher should mean better health rating"). 0 is the average survey participant; the typical range is about −3 to +3.
+**Higher is better.** The health score is the **health index** (owner ruling, 2026-10-24: "hazard index needs to turn into health index/score. invert so higher is better"):
 
-The score is the model owner's own number, `log_relative_hazard_score` from `LifeTwinModel.predict()`, with its sign flipped and nothing else (no rescaling, no bands, no 0–100 mapping). That number is Σ(encoded input − centre) × coefficient, the log relative hazard against the average survey participant, so the score **includes the age and sex terms**. The raw value (lower is lower modelled risk) stays available as `rawLogRelativeHazard`. The sign flip lives in ONE function, `healthScoreFromRaw` in `twin_model.dart`, so a new scoring from the model owner drops in there.
+`healthScore = exp(median s of the age group − s(profile))`
+
+where `s` is exactly the quantity `ageGroupPercentile` ranks (the Cox log relative hazard **without the `age_decade` and `female` terms**), over the same rows (same sex, the same ±5 y band, see below). The median is the ⌈n/2⌉-th smallest `s` of the band (the lower median for an even band), so **1.0 is the middle of people your age and sex in the survey, and the index is above 1 exactly when the percentile is above 50** (a tie at the median gives exactly 1.0). It is a ratio of modelled hazards, always above 0, not a probability. `healthGroupLabel` names the band actually used, e.g. `women 59–69` (for ages outside 35–79 the nearest band, e.g. `women 35–45`). The raw Cox `log_relative_hazard_score` (lower is lower modelled risk; includes age and sex) stays available as `rawLogRelativeHazard` for internal use. The index lives in `AgeGroup.healthIndex` in `twin_model.dart`.
 
 | API | Meaning |
 |---|---|
-| `TwinAssessment.healthScore` / `TwinRepository.healthScore` | `double?`, higher is better; null unless the model gave a number. Never filled with defaults |
-| `TwinAssessment.rawLogRelativeHazard` / `TwinRepository.rawLogRelativeHazard` | The model's `log_relative_hazard_score` unchanged (lower is better) |
+| `TwinAssessment.healthScore` / `TwinRepository.healthScore` | `double?`, the health index: higher is better, 1.0 = the middle of your group; null unless the model gave a number. Never filled with defaults |
+| `TwinAssessment.healthGroupLabel` / `TwinRepository.healthGroupLabel` | `String?`, the band the index and percentile use, e.g. `women 59–69`; null with no score |
+| `TwinAssessment.rawLogRelativeHazard` / `TwinRepository.rawLogRelativeHazard` | The model's `log_relative_hazard_score` unchanged (lower is better); internal use |
 | `healthScoreStatus` (`HealthScoreStatus?`) | `available`, `extrapolated`, `missingInputs`, `unsupportedAge`, `unsupportedProfile`, `underAge` (under 18) and the app's own `invalidInput`; null on the repository before a profile |
 | `healthScoreMessage` | The model's message when there is no number |
-| `healthScoreHistory({from, to})` | `List<HealthScorePoint>` oldest first: `(at, date, score, rawLogRelativeHazard, status, modelVersion)`; `score` is higher-is-better, computed on read |
+| `healthScoreHistory({from, to, engine})` | `List<HealthScorePoint>` oldest first: `(at, date, engine, score, rawLogRelativeHazard, status, modelVersion)`; only points of `engine` (default `healthScoreEngine`, `cox_index_v1`); `score` is the health index |
 
-Availability: same as the forecast. Ages 35–79 are `available`; 18–34 and 80–85 are `extrapolated` and carry the same extrapolated score the forecast uses (the age term moved to the real age, see above), so show `extrapolationCaveat`. Missing inputs, ages under 18 (`underAge`) or over 85, and unsupported profiles give null with the matching status.
+Availability: same as the forecast. Ages 35–79 are `available`; 18–34 and 80–85 are `extrapolated` (the Rough guide flag): the raw score is the forecast's extrapolated one and the index uses the percentile's nearest band, so show `extrapolationCaveat`. Missing inputs, ages under 18 (`underAge`) or over 85, and unsupported profiles give null with the matching status.
 
 ### Age-group percentile ("people like you in the survey")
 
-Added beside the score; the score itself is unchanged, and the percentile already points the same way (higher = healthier). `ageGroupPercentile` (0–100) is the share of the package's reference people of the same sex and age band whose score is **higher (worse)** than the person's, so 70 means "healthier than 70 of 100 people like you in the survey", per the model. Also `ageGroupSize` (people compared), `ageGroupBand` (e.g. `40–50`), `ageGroupWidth` (half-width, 5, 7 or 10) and `ageGroupNearestBand` (true for ages outside 35–79). All are on `TwinAssessment` and `TwinRepository`; all are null when there is no score.
+The health index is built on the same comparison, so the two always agree: index > 1 exactly when the percentile is above 50. `ageGroupPercentile` (0–100) is the share of the package's reference people of the same sex and age band whose score is **higher (worse)** than the person's, so 70 means "healthier than 70 of 100 people like you in the survey", per the model. Also `ageGroupSize` (people compared), `ageGroupBand` (e.g. `40–50`), `ageGroupWidth` (half-width, 5, 7 or 10) and `ageGroupNearestBand` (true for ages outside 35–79). All are on `TwinAssessment` and `TwinRepository`; all are null when there is no score.
 
 - **Reference:** `assets/support_reference.f64.gz`, 2000 survey participants × 17 encoded features in the order of `encoded_features`, ages 35–79, unweighted NHANES training participants. It is not a national population, so the copy should say "people like you in the survey", never "people your age" without that.
 - **Scoring:** each reference row and the person use Σ(x − centre) × coefficient **without the `age_decade` and `female` terms**, which removes leftover age differences inside the band. The person's value is the raw score minus those two terms (their real age, also when extrapolated).
@@ -63,19 +66,20 @@ Added beside the score; the score itself is unchanged, and the percentile alread
 - **Sizes seen** at ±5 for ages 20, 35, 45, 55, 65, 75, 79, 85 (men / women): 281/290, 169/148, 259/295, 235/268, 263/259, 175/151, 90/77, 194/167. No band needed widening.
 - Each `HealthScorePoint` also carries `ageGroupPercentile`, `ageGroupSize` and `ageGroupBand`.
 
-History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it. Each point stores the **raw** value under the JSON key `score` (as before the sign change, so older history stays valid); `HealthScorePoint.score` negates it on read.
+History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it. Each point stores `engine` (`cox_index_v1`), the index under `health_index` (`HealthScorePoint.score`) and the raw value under `score`. Points written before the engine tag (the earlier −log-hazard scale) read as `legacyHealthScoreEngine` (`cox_v1`) and, like any other engine's points, are **left out** of `healthScoreHistory()` and so of the sparkline: scales never mix. Simplest correct option: the old points have no index, and recomputing them would need the profile at that time, which a point does not keep.
 
 ## Lifespan reveal (one-time, proof of concept)
 
-Owner override (2026-10-24): a rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method and validation: [docs/lifespan-estimate.md](../../docs/lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band).
+Owner override (2026-10-24): a rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: the model owner's yearly Cox projection (`model_handoff/SURVIVAL_PROJECTION_HANDOFF.md`, commit 9ac602e): `LifeTwinProjectionLab.assess(profile, includeExtrapolation: true)['annual']`, i.e. ∏ S(1 | age = a + k, other inputs fixed), continued past 79 to 110. `expectedAge` is its 50% crossing (`median_crossing_age`); `p25Age` / `p75Age` its 75% / 25% crossings, interpolated between whole ages the same way. The handoff calls the 50% crossing a projected median threshold, not life expectancy. A threshold the curve has not reached by 110 is reported as 110 with `p25OpenEnded` / `openEnded` / `p75OpenEnded` (show "110+"), so a healthy profile always gets an estimate. The seams are blended (owner ruling): every age is `(1 − w) · life table + w · projection` for the expected age, p25 and p75, with the life table being the earlier method ([docs/lifespan-estimate.md](../../docs/lifespan-estimate.md); expected age = its mean) and w = `lifespanProjectionWeight(age)`: 0 below 35, rising linearly to 1 at 45, 1 through 70, falling linearly to 0 at 79, 0 from 79 on. An open-ended projection value counts as 110 and keeps its flag only while the blend is still ≥ 110. A fractional age runs the projection at its floor (it steps whole years); the weight uses the fractional age. Status is `extrapolated` (Rough guide) where the life table has the larger weight (w < 0.5: ages 18–39 and 75–85). No one-year step changes the expected age by more than 3 years (largest 2.3), but the projection sits 12–22 years above the life table, so across 35–45 the remaining years still grow and across 70–79 the expected age falls (`critical_score_lifespan_test.dart` keeps that as a strict known bug).
 
 | API | Meaning |
 |---|---|
 | `TwinRepository.lifespanEstimate` | `LifespanEstimate?` from the current profile; null without a health score (no profile, missing inputs, unsupported profile, under 18, over 85) |
-| `LifespanEstimate.expectedAge`, `p25Age`, `p75Age` | Expected age at death and the 25th–75th percentile ages (unrounded; show whole years, e.g. `headline`) |
+| `LifespanEstimate.expectedAge`, `p25Age`, `p75Age` | 35–79: the projection's 50%, 75% and 25% crossing ages, 110 when open-ended; 18–34 and 80–85: the life table's mean and 25th–75th percentile ages (unrounded; show whole years, e.g. `headline`, which prints "110+"). `annualCurve` has the yearly points; `medianCrossingExtrapolated` is true when the expected age is past 79 |
+| `LifespanEstimate.p25OpenEnded`, `openEnded`, `p75OpenEnded` | The curve had not reached 75% / 50% / 25% by 110; the age is 110, show "110+" |
 | `LifespanEstimate.expectedYear` | Current year + (expectedAge − current age), rounded to a year. There is no day or date |
-| `LifespanEstimate.status` | `LifespanStatus.available` (35–79) or `extrapolated` (18–34, 80–85: nearest band's calibration) |
-| `LifespanEstimate.caveat` | "Proof of concept: a rough estimate …" text; always show it with the number |
+| `LifespanEstimate.status` | `LifespanStatus.available` (projection weight ≥ 0.5, ages 40–74) or `extrapolated` (the life table has the larger weight, ages 18–39 and 75–85; Rough guide). `projectionWeight` is w |
+| `LifespanEstimate.caveat` | "Proof of concept: a rough estimate …" text (the method's own), plus a past-79 note, a "110+" note when open-ended, and "even rougher" for 18–34 and 80–85; always show it with the number |
 | `TwinRepository.lifespanRevealSeen` / `markLifespanRevealSeen()` | One-time flag: show the reveal once, then de-emphasise it. Persisted; `deleteMyData()` clears it |
 
 ## Profile mapping (`profile_mapping.dart`)
@@ -293,6 +297,8 @@ e.reset();                     // or e.reset(LeverId.vigorous)
 
 Levers only move the way guidance points. Less exercise, more sitting, and weight gain are never offered.
 
+**Weight guard (engine boundary, `TwinModelService.compare`):** the model card notes an inverse BMI association for older/heavier profiles. Any `compare()` whose only change is a higher BMI (`bmi`, or `height_cm`/`weight_kg`) returns the current survival for the alternative, a zero difference in every year, `health_index_delta: 0`, `weight_guard: true` and `weightGuardWarning`. Every experiment, plan and recommendation goes through `compare()`.
+
 **`ExperimentLever` fields:** `id`, `label`, `unit`, `min`, `max`, `step`, `current` (null when unknown), `value`, `options`, `supported`, `reason` / `reasonText`, `caveat`, `missingInput`, `changed`.
 
 **`ExperimentResult` fields:**
@@ -305,7 +311,8 @@ Levers only move the way guidance points. Less exercise, more sitting, and weigh
   - `alternative_unavailable`: the tried profile is outside the model's support; show `message` and no number
   - `invalid_input`: the tried values add up to more than 24 hours a day
 - `message`
-- `differenceByYear`: years 1–5 → percentage points, alternative minus current, raw and unrounded
+- `scoreDelta`: the health index of the changed twin minus the current twin's (`currentScore`, `alternativeScore`), from the same `compare()`; 0 under the weight guard
+- `differenceByYear`: years 1–5 → percentage points, alternative minus current, raw and unrounded (Cox survival)
 - `difference5`
 - `currentPercentByYear`, `alternativePercentByYear`
 - `levers`: one `LeverFlag {id, counted, reason, reasonText}` per moved lever; `notCounted` lists the uncounted ones

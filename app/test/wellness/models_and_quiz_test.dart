@@ -54,10 +54,10 @@ void main() {
 
   test('the score shows only when the model gave one for an adult, never rescaled', () {
     expect(const WellnessSnapshot().displayScore, isNull);
-    expect(const WellnessSnapshot(healthScore: -0.42).displayScore, isNull);
+    expect(const WellnessSnapshot(healthScore: 0.66).displayScore, isNull);
     expect(
-      const WellnessSnapshot(healthScore: -0.42, status: HealthScoreStatus.available).displayScore,
-      -0.42,
+      const WellnessSnapshot(healthScore: 0.66, status: HealthScoreStatus.available).displayScore,
+      0.66,
     );
     const rough = WellnessSnapshot(healthScore: 1.3, status: HealthScoreStatus.extrapolated);
     expect(rough.displayScore, 1.3);
@@ -65,10 +65,9 @@ void main() {
     const young = WellnessSnapshot(healthScore: 0.2, status: HealthScoreStatus.underAge);
     expect(young.displayScore, isNull);
     expect(young.underAge, isTrue);
-    expect(formatHealthScore(-0.42), '\u22120.42');
-    expect(formatHealthScore(1.26), '+1.26');
-    expect(formatHealthScore(0.04), '+0.04');
-    expect(formatHealthScore(-0.001), '0.00');
+    expect(formatHealthScore(0.66), '0.66');
+    expect(formatHealthScore(1.26), '1.26');
+    expect(formatHealthScore(1.0), '1.00');
   });
 
   test('unknown provenance is not invented, estimated stays visible', () {
