@@ -130,6 +130,10 @@ class TwinStore extends ChangeNotifier {
   bool get memoryConsent => _doc['memory_consent'] == true;
   bool get lifespanRevealSeen => _doc['lifespan_reveal_seen'] == true;
 
+  /// The local date (`YYYY-MM-DD`) onboarding was first completed; set once. The weekly
+  /// check-in opens 7 days after it. A date, not health data.
+  String? get firstJoined => _doc['first_joined'] as String?;
+
   /// The person's yes to outside-AI wording, and the provider it was given for
   /// (`{provider, on}`); off when absent.
   bool get outsideAiConsent => (_doc['outside_ai_consent'] as Map?)?['on'] == true;
@@ -179,6 +183,8 @@ class TwinStore extends ChangeNotifier {
   ]);
 
   Future<void> _saveTwin(Map<String, dynamic> look) => _save('twin', look);
+
+  Future<void> _setFirstJoined(String day) => _save('first_joined', day);
 
   Future<void> _setLifespanRevealSeen() => _save('lifespan_reveal_seen', true);
 

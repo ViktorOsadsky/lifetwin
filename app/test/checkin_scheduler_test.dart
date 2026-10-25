@@ -39,7 +39,7 @@ void main() {
     });
 
     test('is not due once done today, or when nothing is left to ask', () {
-      final due = scheduler.due(localNow: morning, history: [quick('2026-10-24')], days: []);
+      final due = scheduler.due(localNow: morning, history: [quick('2026-10-24')], days: [], firstJoined: '2026-10-01');
       expect(due.quick, isNull);
       final known = scheduler.quickPlan(
         localNow: morning,
@@ -141,24 +141,29 @@ void main() {
 
   group('the weekly check-in', () {
     const settings = CheckinSettings(); // Sunday
-    test('comes on the weekly day, after the first quick check-in', () {
-      expect(scheduler.weeklyDue(today: '2026-10-25', history: [quick('2026-10-24')], settings: settings), isTrue);
-      expect(scheduler.weeklyDue(today: '2026-10-25', history: [], settings: settings), isFalse);
-      expect(scheduler.weeklyDue(today: '2026-10-24', history: [quick('2026-10-23')], settings: settings), isFalse);
+    test('never comes before 7 full days after joining, then is ready at once', () {
+      bool due(String today, String joined) =>
+          scheduler.weeklyDue(today: today, history: [quick('2026-10-24')], settings: settings, firstJoined: joined);
+      for (var d = 0; d < 7; d++) {
+        expect(due(shiftDay('2026-10-20', d), '2026-10-20'), isFalse, reason: 'day $d');
+      }
+      expect(due('2026-10-27', '2026-10-20'), isTrue); // day 7, not the weekly day
+      expect(due('2026-10-27', '2026-10-20'), isTrue);
+      expect(scheduler.weeklyDue(today: '2026-10-27', history: [], settings: settings, firstJoined: null), isFalse);
     });
 
     test('is not due again within the week, and waits quietly when missed', () {
       final done = [quick('2026-10-24'), weekly('2026-10-25')];
-      expect(scheduler.weeklyDue(today: '2026-10-28', history: done, settings: settings), isFalse);
-      expect(scheduler.weeklyDue(today: '2026-11-01', history: done, settings: settings), isTrue);
-      expect(scheduler.weeklyDue(today: '2026-11-03', history: done, settings: settings), isTrue); // missed Sunday
+      expect(scheduler.weeklyDue(today: '2026-10-28', history: done, settings: settings, firstJoined: '2026-10-01'), isFalse);
+      expect(scheduler.weeklyDue(today: '2026-11-01', history: done, settings: settings, firstJoined: '2026-10-01'), isTrue);
+      expect(scheduler.weeklyDue(today: '2026-11-03', history: done, settings: settings, firstJoined: '2026-10-01'), isTrue); // missed Sunday
       // Done late on a Monday: back on the weekly day.
       final late = [quick('2026-10-24'), weekly('2026-10-26')];
-      expect(scheduler.weeklyDue(today: '2026-11-01', history: late, settings: settings), isTrue);
+      expect(scheduler.weeklyDue(today: '2026-11-01', history: late, settings: settings, firstJoined: '2026-10-01'), isTrue);
     });
 
     test('is offered alongside the quick one, never instead of it', () {
-      final due = scheduler.due(localNow: DateTime(2026, 10, 25, 10), history: [quick('2026-10-24')], days: []);
+      final due = scheduler.due(localNow: DateTime(2026, 10, 25, 10), history: [quick('2026-10-24')], days: [], firstJoined: '2026-10-01');
       expect(due.quick, isNotNull);
       expect(due.weekly, isTrue);
     });

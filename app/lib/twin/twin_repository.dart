@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import '../checkin/checkin_models.dart' show CheckinSettings, DayLog, shiftDay;
+import '../checkin/checkin_models.dart' show CheckinSettings, DayLog, isoDay, shiftDay, weeklyOpen, weeklyOpensLine;
 import '../checkin/checkin_reminders.dart' show CheckinReminders;
 import '../checkin/checkin_store.dart' show mergeDayLogs;
 import '../checkin/daily_logs.dart' show weekProgress;
@@ -79,7 +79,8 @@ class TwinRepository extends ChangeNotifier {
       reminders: reminders,
       clock: clock,
     );
-    // App start: plan the coming week's reminders again (a week away ends their plan).
+    // Older profiles get their join date now; then plan the coming week's reminders again.
+    await repo._ensureFirstJoined();
     await repo.replanReminders();
     return repo;
   }
@@ -269,6 +270,7 @@ class TwinRepository extends ChangeNotifier {
     Map<String, String> sources = const {},
     Set<String> estimated = const {},
   }) => _atomically(() async {
+    await _ensureFirstJoined();
     final before = store.profile;
     final merge = mergeConfirmed(before, confirmed);
     if (merge.refused.isNotEmpty) debugPrint('Refused profile fields: ${merge.refused}');
@@ -576,11 +578,38 @@ class TwinRepository extends ChangeNotifier {
     final r = reminders;
     if (r == null) return const [];
     try {
-      return await r.reschedule(checkinSettings, localNow: _clock(), history: store.checkins);
+      return await r.reschedule(checkinSettings, localNow: _clock(), history: store.checkins, firstJoined: firstJoined);
     } catch (e) {
       debugPrint('Reminders could not be planned: $e');
       return const [];
     }
+  }
+
+  /// The local date onboarding was first completed (null before a profile). A profile saved
+  /// before this was kept reads as its earliest history or check-in date, else today.
+  String? get firstJoined {
+    final kept = store.firstJoined;
+    if (kept != null || !store.hasProfile) return kept;
+    final dates = [
+      for (final e in store.historyEntries) isoDay(dayOf(e.at)),
+      for (final c in store.checkins) c.date,
+    ]..sort();
+    return dates.isEmpty ? isoDay(dayOf(_clock())) : dates.first;
+  }
+
+  Future<void> _ensureFirstJoined() async {
+    if (store.firstJoined != null) return;
+    final joined = store.hasProfile ? firstJoined : isoDay(dayOf(_clock()));
+    if (joined != null) await store._setFirstJoined(joined);
+  }
+
+  /// Is the weekly check-in available now? Not until 7 full days after joining.
+  bool get weeklyAvailable => weeklyOpen(today: isoDay(dayOf(_clock())), firstJoined: firstJoined);
+
+  /// The gentle line shown where the weekly check-in would be, or null once it is open.
+  String? get weeklyGateLine {
+    final joined = firstJoined;
+    return joined == null || weeklyAvailable ? null : weeklyOpensLine(joined);
   }
 
   /// Show the one-time "Would you like a gentle reminder each day?" offer: at the end of
@@ -599,6 +628,7 @@ class TwinRepository extends ChangeNotifier {
       history: store.checkins,
       hour: hour,
       minute: minute,
+      firstJoined: firstJoined,
     );
     await saveCheckinSettings(next);
   }

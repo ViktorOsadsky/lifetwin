@@ -49,6 +49,10 @@ const reminderLines = [
 /// The last planned reminder: reminders pause after it until the next app open.
 const reminderPauseLine = "I'll pause reminders until you're back. I'm here whenever you like.";
 
+/// One notification when the daily and the weekly check-in fall on the same day.
+const dailyAndWeeklyLine = 'Your daily and weekly check-in are ready.';
+const weeklyOnlyLine = 'Your weekly check-in is ready whenever you are.';
+
 /// How many days ahead are planned (iOS keeps at most 64 pending).
 const reminderDays = 7;
 
@@ -70,6 +74,7 @@ class CheckinReminders {
     required List<CheckinEntry> history,
     int? hour,
     int? minute,
+    String? firstJoined,
   }) async {
     final allowed = await port.requestPermission();
     final next = settings.copyWith(
@@ -78,7 +83,7 @@ class CheckinReminders {
       reminderHour: hour ?? settings.reminderHour,
       reminderMinute: minute ?? settings.reminderMinute,
     );
-    await reschedule(next, localNow: localNow, history: history);
+    await reschedule(next, localNow: localNow, history: history, firstJoined: firstJoined);
     return next;
   }
 
@@ -98,22 +103,40 @@ class CheckinReminders {
     CheckinSettings settings, {
     required DateTime localNow,
     required List<CheckinEntry> history,
+    String? firstJoined,
   }) async {
     await port.cancelAll();
     if (!settings.remindersOn) return const [];
     final today = isoDay(dayOf(localNow));
     final doneToday = history.any((c) => c.kind != 'weekly' && c.date == today);
+    final weeklyDates = [
+      for (final c in history)
+        if (c.kind == 'weekly') c.date,
+    ];
+    // A weekly reminder falls on day 7, 14, 21... after joining, unless one was done in the last 6 days.
+    bool weeklyOn(String day) =>
+        firstJoined != null &&
+        weeklyOpen(today: day, firstJoined: firstJoined) &&
+        parseDay(day).difference(parseDay(firstJoined)).inDays % 7 == 0 &&
+        !weeklyDates.any((d) => d.compareTo(shiftDay(day, -6)) >= 0 && d.compareTo(day) <= 0);
     final planned = <DateTime>[];
     for (var i = 0; i < reminderDays + 1 && planned.length < reminderDays; i++) {
-      final day = parseDay(shiftDay(today, i));
+      final dayIso = shiftDay(today, i);
+      final day = parseDay(dayIso);
       final at = DateTime(day.year, day.month, day.day, settings.reminderHour, settings.reminderMinute);
-      if (i == 0 && (doneToday || !at.isAfter(localNow))) continue;
+      final weekly = weeklyOn(dayIso);
+      final dailyPending = !(i == 0 && doneToday);
+      if (i == 0 && !at.isAfter(localNow)) continue;
+      if (!dailyPending && !weekly) continue;
       final id = day.year * 10000 + day.month * 100 + day.day;
+      final last = planned.length == reminderDays - 1;
       await port.scheduleAt(
         id: id,
         localWallTime: at,
         title: reminderTitle,
-        body: planned.length == reminderDays - 1
+        body: weekly
+            ? '${dailyPending ? dailyAndWeeklyLine : weeklyOnlyLine}${last ? ' $reminderPauseLine' : ''}'
+            : last
             ? reminderPauseLine
             : reminderLines[day.difference(DateTime.utc(2026)).inDays % reminderLines.length],
       );

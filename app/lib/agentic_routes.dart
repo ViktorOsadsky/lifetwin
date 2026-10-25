@@ -418,7 +418,8 @@ class AgenticRoutes {
   void changeAnswer(BuildContext context) => changeWithMochi(context, null);
 
   /// The weekly check-in, whether or not the schedule says one is due.
-  Future<void> weeklyCheckIn(BuildContext context) => openCheckIn(context, kind: CheckInKind.weekly);
+  Future<void> weeklyCheckIn(BuildContext context) =>
+      repo?.weeklyAvailable == false ? Future.value() : openCheckIn(context, kind: CheckInKind.weekly);
 
   /// Asks for the outside-AI consent when this provider has no answer yet (or a new provider has taken
   /// over), and completes with whether Personal suggestions may use it now. Call it before the first plan or
