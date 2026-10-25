@@ -32,9 +32,11 @@ This is source behavior at [merged `9ace866`](https://github.com/ViktorOsadsky/l
 | Projection component | Repeated one-year Cox survival steps to 110, advancing age with every other input fixed. Center is the interpolated 50% survival crossing; bounds use the 75% and 25% crossings. |
 | Displayed summary | `(1 − w) × CDC age + w × projection age`, with bounds kept around the center. It mixes different estimands; it is not mean life expectancy or a validated distribution. |
 | Unreached projection threshold | Sentinel age 110 plus its open-ended flag. The flag survives a blend only if the resulting associated age is still at least 110. Show **110+** for retained flags; it means the simulated threshold was not reached within the followed curve, not guaranteed personal survival. |
-| Fractional assessment age | Projection starts at the floor of age; blend weight and calendar-year calculation use actual age. This supersedes the earlier fractional-age refusal. |
+| Fractional model age in the direct lifespan helper | Projection starts at the floor of age; blend weight and calendar-year calculation use actual age. Confirmed app-profile age still requires whole years; this helper does not bypass input/support gates. |
 | `annualCurve` | Selects the CDC component when `w < 0.5`, the projection component otherwise. It is not a blended curve, so its crossings need not equal the displayed blended summary. |
 | Missing / unsupported / under 18 / over 85 | Repository returns no estimate; never substitute zero or a hand-filled age. |
+
+Confirmed-profile writes use [`mergeConfirmed`](../app/lib/twin/checkin_applier.dart), which rejects fractional age updates. An existing known age is retained; a fresh profile stays incomplete. Direct-helper fractional-age behavior therefore does not establish fractional-age intake support.
 
 Supported current Cox outputs remain years 1–5 for supported assessment ages 35–79. Neither repeating one-year steps nor blending extends that validation. Nothing past 79 is validated. The recurrence assumes unchanged future inputs; comparisons remain observational, without causal years gained. The [source projection handoff](../model_handoff/SURVIVAL_PROJECTION_HANDOFF.md) and [36-case SSA sanity report](research/lifespan-sanity.md) explain the limits. The pinned sanity grid samples only pure weights 0/1 and does not validate interior blends or fractional-age behavior.
 
