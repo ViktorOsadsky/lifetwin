@@ -1,6 +1,6 @@
 # Expected lifespan: one-time reveal (proof of concept)
 
-**Status: in the app engine as `TwinRepository.lifespanEstimate`, for a one-time reveal.** It is a rough, proof-of-concept estimate, and the caveat text says so.
+**Current status:** `TwinRepository.lifespanEstimate` is a one-time rough guide. [#126](https://github.com/ViktorOsadsky/lifetwin/pull/126), merged as `41dce10`, replaced the CDC-only summary with an age-weighted CDC/projection blend. [#138](https://github.com/ViktorOsadsky/lifetwin/pull/138), merged as `9ace866`, centers the separate health score on **0**, with positive meaning healthier than the same-sex, nearby-age survey-group median. The historical CDC calculations below describe a retained component, not the entire current headline or clinical validation.
 
 **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Daniel, after talking to Viktor in person:
 
@@ -17,9 +17,32 @@ Add a "rough estimate" note, and put the model caveats behind a "How?" tap. Neve
 **App API** ([app/lib/README-model.md](../app/lib/README-model.md), "Lifespan reveal"):
 
 - `repo.lifespanEstimate` → `LifespanEstimate { expectedAge, p25Age, p75Age, expectedYear, status, caveat }`, computed from the current profile. It is null without a health score, which covers no profile, missing inputs, an unsupported profile, under 18 and over 85.
-- `expectedYear` = current year + (expectedAge − current age), rounded to a whole year. There is no date output: with an SD of 8–13 years, a day would be false precision.
-- `status`: `available` for ages 35–79, `extrapolated` for 18–34 and 80–85.
+- `expectedYear` = current year + (expectedAge − actual current age), rounded half-up to a whole year. There is no day/date output. The historical CDC SD figures below do not describe uncertainty in the blended summary.
+- `status`: `available` where projection weight is at least one half; otherwise `extrapolated`/Rough guide (completed ages 18–39 and 75–85). These names do not establish validation of the lifetime guide.
 - `repo.lifespanRevealSeen` / `markLifespanRevealSeen()`: shown once, then de-emphasised. Persisted, and cleared by `deleteMyData()`.
+
+## Current blend and interpretation
+
+This is source behavior at [merged `9ace866`](https://github.com/ViktorOsadsky/lifetwin/blob/9ace866404bb8df89de673dd299041e25791ccad/app/lib/twin/lifespan.dart), not a new model choice:
+
+| Component / case | Current behavior |
+| --- | --- |
+| Projection weight `w(age)` | 0 through 35; linear rise to 1 at 45; 1 through 70; linear decline to 0 at 79; 0 thereafter. Accepted assessment ages remain 18–85. |
+| CDC component | The personalized CDC-table mean and 25th/75th percentile ages calculated below. |
+| Projection component | Repeated one-year Cox survival steps to 110, advancing age with every other input fixed. Center is the interpolated 50% survival crossing; bounds use the 75% and 25% crossings. |
+| Displayed summary | `(1 − w) × CDC age + w × projection age`, with bounds kept around the center. It mixes different estimands; it is not mean life expectancy or a validated distribution. |
+| Unreached projection threshold | Sentinel age 110 plus its open-ended flag. The flag survives a blend only if the resulting associated age is still at least 110. Show **110+** for retained flags; it means the simulated threshold was not reached within the followed curve, not guaranteed personal survival. |
+| Fractional assessment age | Projection starts at the floor of age; blend weight and calendar-year calculation use actual age. This supersedes the earlier fractional-age refusal. |
+| `annualCurve` | Selects the CDC component when `w < 0.5`, the projection component otherwise. It is not a blended curve, so its crossings need not equal the displayed blended summary. |
+| Missing / unsupported / under 18 / over 85 | Repository returns no estimate; never substitute zero or a hand-filled age. |
+
+Supported current Cox outputs remain years 1–5 for supported assessment ages 35–79. Neither repeating one-year steps nor blending extends that validation. Nothing past 79 is validated. The recurrence assumes unchanged future inputs; comparisons remain observational, without causal years gained. The [source projection handoff](../model_handoff/SURVIVAL_PROJECTION_HANDOFF.md) and [36-case SSA sanity report](research/lifespan-sanity.md) explain the limits. The pinned sanity grid samples only pure weights 0/1 and does not validate interior blends or fractional-age behavior.
+
+The large hard-switch steps were reduced by blending, but increasing remaining years over 35–45 and falling expected age over 70–79 remain acknowledged model issues. Exact app/model simulator acceptance, accessibility and recording timing are tracked separately in [#107](https://github.com/ViktorOsadsky/lifetwin/issues/107), [#134](https://github.com/ViktorOsadsky/lifetwin/issues/134) and [#133](https://github.com/ViktorOsadsky/lifetwin/issues/133).
+
+## Retained CDC component: code and reproduction
+
+The remainder records the CDC component's definition and historical calculation checks. Those checks do not validate the current blended headline, its projection tail or its uncertainty.
 
 Code:
 
@@ -71,7 +94,7 @@ The packaged Cox model gives S(t | x) = S0(t)^exp(β·(x − c)) only for t = 1�
    These spreads were computed before the age-band factor (step 2). The factor multiplies everyone in a band by the same k, so it shifts the level, not the ordering, and changes these spreads only slightly.
 
    Without attenuation, the 10th–90th percentile spread already equals or exceeds Li's extreme contrast, which can't be right. 20 y puts it at about half to three-quarters of Li's extreme. That fits both Clarke's dilution data and Li's long-follow-up HRs. 10 y is also defensible, and the sensitivity is reported throughout.
-5. **Outputs** (`LifespanCurve`; the app reads the `LifespanEstimate` summary above):
+5. **CDC component outputs** (`LifespanCurve`; the app blends this with the projection as described above):
    - survival curve from the current age to 110;
    - life expectancy (the integral of S) and the expected age at death;
    - the SD of the age at death;
@@ -83,7 +106,7 @@ The packaged Cox model gives S(t | x) = S0(t)^exp(β·(x − c)) only for t = 1�
    There is deliberately no exact-date output.
 6. **Scope.** Ages 18–85, matching the health score's extrapolated range (`extrapolatedAgeRange`), and complete profiles only. Under 18 gives no estimate. This module does not repeat the packaged model's 1st–99th-percentile and nearest-neighbour support checks. A caller must only pass a profile the model itself accepts.
 
-## Validation
+## CDC component calculation checks
 
 Generated by `lifespan_reference.py validate` (model `personal-cox-v2-20261024T182404Z`). Section numbers (§) below refer to these tables.
 
@@ -208,12 +231,12 @@ Same NHANES training profiles. Cox = the packaged model (NHANES 2007-2012, death
 
 ## Recommended presentation
 
-The owner chose option 1: expected age plus range. This prototype supports it with the following recommendations:
+The owner chose a one-time rough age plus range. Keep the current method and limits with that presentation:
 
-1. **Headline:** "You're likely to live to about {headlineAge}. Most people like you live to between {rangeLowAge} and {rangeHighAge}." Then: "A rough estimate from people with a similar profile, not a prediction for you." The expected age is the integrated curve, which is what the owner asked for. The p25–p75 range shows the spread without a false endpoint.
-2. **"How?" tap:** the survival curve to 110, P(80/90/100), the attenuation note, and the model caveats: observational, NHANES 2007–2012, 5-year model extended with the US 2024 life table.
-3. **Calendar year:** secondary only, if at all, labelled "around {year}". **No exact day or date anywhere.** With an SD of 8–13 years, a date implies about 4,000× more precision than the estimate has.
-4. **Profile comparisons** ("what if I…"): keep the existing "Modeled difference between profiles" framing. Show years only alongside the caveat that it is an association, not a guaranteed gain, or keep comparisons on 5-year percentages as today.
+1. **Headline:** "You're likely to live to about {headlineAge}. Most people like you live to between {rangeLowAge} and {rangeHighAge}." Then: "A rough estimate from people with a similar profile, not a prediction for you." The current center is the weighted CDC mean/projection crossing, not the integral of one displayed curve. Preserve any 110+ flags and explain that this is an unvalidated rough guide.
+2. **"How?" detail:** name the actual component/blend and fixed-input assumption. The selected component curve is not a blended survival distribution. Retain observational, supported-horizon and past-79 limits; historical CDC milestones/attenuation are component details, not properties of the projection.
+3. **Calendar year:** secondary only, if at all, labelled "around {year}". **No exact day or date anywhere.** Historical CDC spread calculations are not a validated uncertainty interval for this blended guide.
+4. **Profile comparisons** ("what if I…"): keep supported-horizon modeled percentage-point differences and the observational framing. Do not translate the rough guide into causal years gained. Cosmetic and quiz/game health remain separate.
 5. **Gate on support:** show nothing when the packaged model returns `missing_inputs`, `unsupported_age` or `unsupported_profile`.
 
 ## Open questions for the model owner (Victor)
