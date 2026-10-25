@@ -337,3 +337,39 @@ Deno.test("route: loose replies to the Health offer and read-backs, Claude only 
     },
   );
 });
+
+Deno.test("route: unclear read-backs get one check, then discard the unsaved answer", async () => {
+  const state = {
+    phase: "confirming",
+    current_field: "age",
+    pending_profile: { age: 72 },
+  };
+  for (const reply of ["okay", "hmm"]) {
+    const first = await onboarding(state, reply);
+    assert.equal(first.body.state.yes_no_checked, true);
+    assert.equal(first.body.state.confirmed_profile.age, null);
+    const again = await onboarding(first.body.state, reply);
+    assert.equal(again.body.state.yes_no_checked, false);
+    assert.equal(again.body.state.phase, "asking");
+    assert.equal(again.body.state.pending_profile.age, null);
+    assert.equal(again.body.state.confirmed_profile.age, null);
+    const yes = await onboarding(first.body.state, "you nailed it");
+    assert.equal(yes.body.state.confirmed_profile.age, 72);
+  }
+});
+
+Deno.test("route: unexplained word corrections never confirm the old value", async () => {
+  const correctedAge = await onboarding({
+    phase: "confirming",
+    current_field: "age",
+    pending_profile: { age: 72 },
+  }, "yes, actually seventy four");
+  assert.equal(correctedAge.body.state.confirmed_profile.age, null);
+  const correctedSex = await onboarding({
+    phase: "confirming",
+    current_field: "sex",
+    pending_profile: { sex: "male" },
+  }, "no, female");
+  assert.equal(correctedSex.body.state.confirmed_profile.sex, null);
+  assert.equal(correctedSex.body.state.pending_profile.sex, "female");
+});

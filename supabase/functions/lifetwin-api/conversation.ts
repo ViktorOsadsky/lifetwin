@@ -44,8 +44,17 @@ const phrase = (x: string) =>
 type Hear = (text: string, q: Question) => Promise<IntentResult>;
 const rulesOnly: Hear = (text, q) => Promise.resolve(readLocal(text, q));
 /** A read-back reply. A number in it is a value to read, never a yes or a no. */
-const hearBack = (hear: Hear, text: string, prompt: string) =>
-  /\d/.test(text) ? Promise.resolve(null) : hear(text, readBack(prompt));
+const hearBack = (hear: Hear, text: string, prompt: string) => {
+  if (/\d/.test(text)) return Promise.resolve(null);
+  const question = readBack(prompt);
+  const local = readLocal(text, question);
+  // Unexplained words may be a correction ("yes, actually seventy four" or
+  // "no, female"). Read them as an answer, never confirm the old value.
+  if ((clearYes(local) || clearNo(local)) && !explained(text, question)) {
+    return Promise.resolve(null);
+  }
+  return hear(text, question);
+};
 /** A clear yes or no, with no other answer said beside it. */
 const saidYes = (r: IntentResult | null): boolean =>
   !!r && clearYes(r) && !r.corrected_value;
@@ -782,6 +791,16 @@ async function onboardingRoute(
       s.phase = "asking";
       s.pending_profile = profile();
       return respond("Thanks for setting me right. " + intakePrompt(s));
+    }
+    if (heard && ["yes", "unsure"].includes(heard.intent)) {
+      if (!checked) {
+        s.yes_no_checked = true;
+        return respond("Just to check: is that a yes? " + intakePrompt(s));
+      }
+      // Still unclear after the one check: the pending answer is never saved.
+      s.phase = "asking";
+      s.pending_profile = profile();
+      return respond("What is the right answer? " + intakePrompt(s));
     }
   }
   if (action === "confirm") return transition("conversation");
