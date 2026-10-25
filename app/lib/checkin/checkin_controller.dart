@@ -712,6 +712,11 @@ class CheckinController extends ChangeNotifier {
     if (ownsSpeech) {
       input.dispose();
       output.dispose();
+    } else {
+      // The shared input and output stay alive for the next check-in, but this one's listen
+      // (and its socket) and its speech end with it.
+      if (phase == CheckinPhase.listening || _starting != null) input.cancel().ignore();
+      if (phase == CheckinPhase.speaking) output.stop().ignore();
     }
     super.dispose();
   }

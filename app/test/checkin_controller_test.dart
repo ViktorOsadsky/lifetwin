@@ -487,6 +487,24 @@ void main() {
     expect(c.typing, isFalse);
   });
 
+  test('a check-in that does not own the shared input still cancels its listen on dispose', () async {
+    final c = CheckinController(
+      guide: guide,
+      input: input,
+      output: output,
+      ownsSpeech: false,
+      store: store,
+      clock: () => now,
+      voiceUsable: true,
+    );
+    await c.start();
+    await c.startTalk();
+    expect(c.phase, CheckinPhase.listening);
+    c.dispose();
+    expect(input.cancels, 1);
+    expect(input.disposals, 0, reason: 'the shared input stays alive');
+  });
+
   test('microphone refused: typing instead', () async {
     final c = make();
     await c.start();
