@@ -31,25 +31,61 @@ abstract class PcmPlayer {
   Future<void> stop();
 }
 
+/// Whether everything fed has played. Remembers a drain that came before anyone waited,
+/// so [wait] never sits out the whole utterance when playback already ended.
+class PlaybackDrain {
+  bool _drained = true;
+  Completer<void>? _waiter;
+
+  /// Nothing fed is still queued or playing.
+  bool get drained => _drained;
+
+  void fed() => _drained = false;
+
+  /// The player's feed callback: [frames] still queued.
+  void remaining(int frames) {
+    if (frames != 0) return;
+    _drained = true;
+    _release();
+  }
+
+  /// Completes once drained, or after [limit] if the drain event never comes.
+  Future<void> wait(Duration limit) {
+    if (_drained) return Future.value();
+    final c = _waiter = Completer<void>();
+    return c.future.timeout(limit, onTimeout: () {});
+  }
+
+  /// Playback was dropped: nothing is queued any more, and nobody should keep waiting.
+  void reset() {
+    _drained = true;
+    _release();
+  }
+
+  void _release() {
+    final w = _waiter;
+    _waiter = null;
+    if (w != null && !w.isCompleted) w.complete();
+  }
+}
+
 class FlutterPcmSoundPlayer implements PcmPlayer {
   int _rate = 24000;
   int _frames = 0;
-  Completer<void>? _drained;
+  final _drain = PlaybackDrain();
 
   @override
   Future<void> begin(int sampleRate) async {
     _rate = sampleRate;
     _frames = 0;
-    _drained = null;
+    _drain.reset();
     // `playback` uses the loudspeaker. The plugin sets `playAndRecord` without
     // `defaultToSpeaker`, which iOS routes to the quiet phone-call earpiece.
     // The microphone (record package) sets its own playAndRecord + defaultToSpeaker,
     // and the app always stops speaking before it listens, so they never overlap.
     // `playback` also plays when the silent switch is on.
     await FlutterPcmSound.setup(sampleRate: sampleRate, channelCount: 1, iosAudioCategory: IosAudioCategory.playback);
-    FlutterPcmSound.setFeedCallback((remaining) {
-      if (remaining == 0 && !(_drained?.isCompleted ?? true)) _drained!.complete();
-    });
+    FlutterPcmSound.setFeedCallback(_drain.remaining);
   }
 
   @override
@@ -57,22 +93,20 @@ class FlutterPcmSoundPlayer implements PcmPlayer {
     if (pcm.length < 2) return;
     final even = pcm.length.isEven ? pcm : Uint8List.sublistView(pcm, 0, pcm.length - 1);
     _frames += even.length ~/ 2;
+    _drain.fed();
     await FlutterPcmSound.feed(PcmArrayInt16(bytes: ByteData.sublistView(even)));
   }
 
   @override
   Future<void> finish() async {
     if (_frames == 0) return;
-    final c = _drained = Completer<void>();
-    // Fallback in case the drain event never arrives.
-    final limit = Duration(milliseconds: _frames * 1000 ~/ _rate + 1500);
-    await c.future.timeout(limit, onTimeout: () {});
+    // Fallback in case the drain event never arrives. A drain that already came returns at once.
+    await _drain.wait(Duration(milliseconds: _frames * 1000 ~/ _rate + 1500));
   }
 
   @override
   Future<void> stop() async {
-    final c = _drained;
-    if (c != null && !c.isCompleted) c.complete();
+    _drain.reset();
     FlutterPcmSound.setFeedCallback(null);
     await FlutterPcmSound.release();
   }

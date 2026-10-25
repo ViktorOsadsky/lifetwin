@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/voice/cartesia_speech.dart';
 
 import 'engine_fakes.dart';
 
 void main() {
+  drainTests();
+
   group('listening', () {
     late TokenServer server;
     late FakeRecorder rec;
@@ -52,6 +55,49 @@ void main() {
       await starting;
       await pumpEventQueue();
       expect(sockets.made, isEmpty);
+    });
+  });
+}
+
+void drainTests() {
+  group('playback drain', () {
+    test('a drain that came before finish is remembered: no wait', () {
+      fakeAsync((fa) {
+        final d = PlaybackDrain()..fed();
+        d.remaining(0);
+        var done = false;
+        d.wait(const Duration(seconds: 10)).then((_) => done = true);
+        fa.flushMicrotasks();
+        expect(done, true);
+      });
+    });
+
+    test('waits for the drain, ignores low-buffer events, and new audio clears the flag', () {
+      fakeAsync((fa) {
+        final d = PlaybackDrain()..fed();
+        d.remaining(0);
+        d.fed(); // more audio after an underrun
+        var done = false;
+        d.wait(const Duration(seconds: 10)).then((_) => done = true);
+        d.remaining(500);
+        fa.elapse(const Duration(seconds: 2));
+        expect(done, false);
+        d.remaining(0);
+        fa.flushMicrotasks();
+        expect(done, true);
+      });
+    });
+
+    test('a drain event that never comes ends at the limit', () {
+      fakeAsync((fa) {
+        final d = PlaybackDrain()..fed();
+        var done = false;
+        d.wait(const Duration(seconds: 3)).then((_) => done = true);
+        fa.elapse(const Duration(milliseconds: 2999));
+        expect(done, false);
+        fa.elapse(const Duration(milliseconds: 1));
+        expect(done, true);
+      });
     });
   });
 }
