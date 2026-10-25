@@ -90,6 +90,7 @@ class WellnessSnapshot {
     this.message,
     this.lifespan,
     this.lifespanRevealSeen = false,
+    this.history = const [],
   });
 
   final double? healthScore;
@@ -99,6 +100,9 @@ class WellnessSnapshot {
 
   /// The one-time reveal after onboarding was already shown.
   final bool lifespanRevealSeen;
+
+  /// Recent displayed scores (higher is better), oldest first, for the sparkline.
+  final List<double> history;
 
   /// Null before a profile.
   final HealthScoreStatus? status;
