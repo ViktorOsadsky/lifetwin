@@ -14,8 +14,8 @@ import 'widgets/widgets.dart';
 /// The frame every Experiment screen shares (design Y): a scroll view with the dock and the back
 /// button pinned. The back button floats over the content; once the page scrolls, a 76px
 /// paper bar fades in and the button slides into it. Screens with a [title] have that bar
-/// from the start (and a What-if pill when [whatIfPill]). Content is laid out with minimum
-/// heights only, so large text grows instead of clipping.
+/// from the start. Their title and optional What-if pill grow in the scrolling body,
+/// so large headings stay complete without crowding the pinned navigation or dock.
 class ExperimentPage extends StatefulWidget {
   const ExperimentPage({
     super.key,
@@ -83,15 +83,20 @@ class _ExperimentPageState extends State<ExperimentPage> {
               children: [
                 SingleChildScrollView(
                   controller: _scroll,
-                  padding: EdgeInsets.fromLTRB(
-                    14,
-                    titled ? 90 : 76 + 0,
-                    14,
-                    16,
-                  ),
+                  padding: EdgeInsets.fromLTRB(14, titled ? 90 : 76, 14, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [widget.body],
+                    children: [
+                      if (titled) ...[
+                        Semantics(header: true, child: Text(widget.title!, style: LtText.display(26))),
+                        if (widget.whatIfPill) ...[
+                          const SizedBox(height: 12),
+                          const Align(alignment: Alignment.centerLeft, child: ModePill.whatIf()),
+                        ],
+                        const SizedBox(height: 14),
+                      ],
+                      widget.body,
+                    ],
                   ),
                 ),
                 // The bar: always there with a title; otherwise it fades in once scrolled.
@@ -120,58 +125,19 @@ class _ExperimentPageState extends State<ExperimentPage> {
                     ),
                   ),
                 ),
-                if (titled)
-                  // Back (and Home on deep screens), then the title in what is left: the title
-                  // shrinks to fit, so nothing ever sits on top of it.
-                  Positioned(
-                    left: 16,
-                    right: widget.whatIfPill ? 100 : 16,
-                    top: 0,
-                    height: 76,
-                    child: Row(
-                      children: [
-                        RoundBackButton(
-                          label: widget.backLabel,
-                          onTap: widget.onBack,
-                          onLeaveCheck: widget.onLeaveCheck,
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Semantics(
-                            header: true,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                widget.title!,
-                                style: LtText.display(26),
-                                maxLines: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                AnimatedPositioned(
+                  duration: d,
+                  curve: Curves.easeOut,
+                  // Back (and Home beside it) stay pinned in the bar row; a titled page's title
+                  // lives in the scrolling body, so nothing ever sits on top of it.
+                  left: titled || _scrolled || homeShown ? 16 : 30,
+                  top: titled || _scrolled || homeShown ? 12 : 50,
+                  child: RoundBackButton(
+                    label: widget.backLabel,
+                    onTap: widget.onBack,
+                    onLeaveCheck: widget.onLeaveCheck,
                   ),
-                if (titled && widget.whatIfPill)
-                  const Positioned(
-                    right: 16,
-                    top: 22,
-                    child: ModePill.whatIf(),
-                  ),
-                if (!titled)
-                  AnimatedPositioned(
-                    duration: d,
-                    curve: Curves.easeOut,
-                    // With Home beside it, Back stays in the bar row so Home clears the window's name banner.
-                    left: _scrolled || homeShown ? 16 : 30,
-                    top: _scrolled || homeShown ? 12 : 50,
-                    child: RoundBackButton(
-                      label: widget.backLabel,
-                      onTap: widget.onBack,
-                      onLeaveCheck: widget.onLeaveCheck,
-                    ),
-                  ),
+                ),
               ],
             ),
           ),

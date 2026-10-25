@@ -197,9 +197,9 @@ void main() {
   }
 
   for (final e in deep.entries) {
-    for (final scale in [1.0, 2.0]) {
-      testWidgets('${e.key}: Home covers nothing at ${scale}x text', (t) async {
-        await pump(t, scale: scale);
+    for (final (w, scale) in [(390.0, 1.0), (390.0, 2.0), (320.0, 1.0), (320.0, 2.0)]) {
+      testWidgets('${e.key}: Home covers nothing at ${w.toInt()} wide, ${scale}x text', (t) async {
+        await pump(t, size: Size(w, w == 390 ? 844 : 640), scale: scale);
         final c = await mid(t);
         t.takeException();
         e.value(c);
@@ -207,7 +207,7 @@ void main() {
         t.takeException();
         expect(find.byType(HomeButton), findsOneWidget);
         final slug = e.key.toLowerCase().replaceAll(RegExp('[^a-z0-9]+'), '_');
-        await shot(t, '${slug}_${scale.toInt()}x');
+        await shot(t, '${slug}_${w.toInt()}_${scale.toInt()}x');
         final home = t.getRect(find.byType(HomeButton));
         expect(home.shortestSide, greaterThanOrEqualTo(52));
         expect(home.top, greaterThanOrEqualTo(MediaQuery.paddingOf(room).top));
