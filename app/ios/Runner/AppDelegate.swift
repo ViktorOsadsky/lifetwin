@@ -5,6 +5,7 @@ import UIKit
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   /// On-device document text recognition (channel "lifetwin/documents").
   private var documentScanner: DocumentScanner?
+  private var healthActivity: HealthActivityBridge?
 
   override func application(
     _ application: UIApplication,
@@ -24,6 +25,9 @@ import UIKit
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DocumentScanner") {
       documentScanner = DocumentScanner.register(with: registrar.messenger())
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "HealthActivityBridge") {
+      healthActivity = HealthActivityBridge.register(with: registrar.messenger())
     }
   }
 }

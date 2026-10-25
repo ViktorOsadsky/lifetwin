@@ -5,6 +5,15 @@ import 'health_summary.dart';
 /// Values are rounded only for speaking; the exact metric value is what gets
 /// confirmed. US users hear feet, inches and pounds.
 String readBack(HealthCandidate c, {required bool imperial, required DateTime now}) {
+  if (c.isEstimate &&
+      (c.field == HealthField.moderateRecreationMinWeek || c.field == HealthField.vigorousRecreationMinWeek)) {
+    final intensity = c.field == HealthField.moderateRecreationMinWeek ? 'moderate' : 'hard';
+    return 'Apple Health recorded workouts averaging about ${spokenDuration(c.value)} a week over the last 4 weeks '
+        'in the $intensity average-intensity group. This is an estimate: each whole workout is grouped by its '
+        'average effort, not time measured in effort zones. Some workouts may be missing. '
+        'Were these recreational activities, and does this amount represent your usual weekly '
+        '$intensity recreational activity? Is this accurate?';
+  }
   final when = c.measuredAt != null ? ' That was measured on ${spokenDate(c.measuredAt!, now)}.' : '';
   final said = switch (c.field) {
     HealthField.heightCm => 'you are ${spokenHeight(c.value, imperial: imperial)} tall',
@@ -14,6 +23,12 @@ String readBack(HealthCandidate c, {required bool imperial, required DateTime no
     HealthField.sleepHours => 'you sleep about ${spokenDuration(c.value * 60)} on a typical night',
     HealthField.systolicBp => 'the top number of your blood pressure is about ${c.value}',
     HealthField.diastolicBp => 'the bottom number of your blood pressure is about ${c.value}',
+    HealthField.vigorousRecreationMinWeek =>
+      'you do about ${spokenDuration(c.value)} of hard recreational activity a week, on average over the last 4 weeks',
+    HealthField.moderateRecreationMinWeek =>
+      'you do about ${spokenDuration(c.value)} of moderate recreational activity a week, on average over the last 4 weeks',
+    HealthField.sedentaryMinDay =>
+      'you spend about ${spokenDuration(c.value)} sitting while awake a day, on average over the last 4 weeks',
   };
   return "Apple Health says $said.$when Is this accurate?";
 }
