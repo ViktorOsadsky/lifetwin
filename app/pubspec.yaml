@@ -79,6 +79,7 @@ flutter:
   # Flutter finds the 2.0x/ and 3.0x/ variants itself, so only the 1x
   # folders are listed.
   assets:
+    - assets/config/          # optional local public backend.json
     - assets/twin/            # manifest.json
     - assets/twin/bear/base/
     - assets/twin/bear/pose/

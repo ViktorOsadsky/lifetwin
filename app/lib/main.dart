@@ -42,8 +42,13 @@ import 'ui/twin_assets.dart';
 import 'voice/cartesia_speech.dart';
 import 'voice/http_conversation_guide.dart';
 import 'voice/voice_token.dart';
+import 'voice/backend_config.dart';
 
-void main() => runApp(const LifeTwinApp(autoStartOnboarding: true, showGuestEntry: true));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  BackendConfig.current = await BackendConfig.load();
+  runApp(const LifeTwinApp(autoStartOnboarding: true, showGuestEntry: true));
+}
 
 /// The game shell: the Room is home; Talk opens the mascot conversation
 /// (with the Apple Health import), Fortune the magic ball, Customize the look.
