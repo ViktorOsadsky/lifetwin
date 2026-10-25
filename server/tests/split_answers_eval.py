@@ -19,7 +19,6 @@ miss: nothing wrong was saved, but something expected is missing.
 import asyncio
 import json
 import math
-import sys
 from datetime import date
 from pathlib import Path
 

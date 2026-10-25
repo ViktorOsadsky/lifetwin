@@ -33,6 +33,7 @@ from lifetwin.onboarding.intents import (
     keeps_answer,
     read_back_reply,
     resumes,
+    unknown_beside_answer,
 )
 from lifetwin.onboarding.intents import phrase as words_of
 from lifetwin.onboarding.model_inputs import character_hints, model_inputs
@@ -53,6 +54,7 @@ from lifetwin.onboarding.parsing import (
     NO_WORDS,
     QUESTION_EXAMPLE_VALUES,
     QUESTIONS,
+    TOPICS,
     UNKNOWN_WORDS,
     YES_WORDS,
     _canonical,
@@ -890,6 +892,22 @@ class ConversationService:
                 found = _safe(parse_reply, rest, target, today=today, strict=voice) or {}
                 if found:
                     text, hedged, candidates = rest, True, found
+            split = None if candidates else unknown_beside_answer(text)
+            if split:
+                # "I don't know my weight, but I'm 5'4": the doubt is recorded for the
+                # field it names (else the open question) and the fact beside it is kept.
+                doubt, rest = split
+                found = _safe(parse_reply, rest, target, today=today, strict=voice) or {}
+                named = [
+                    f for f, cue in TOPICS.items() if f in ASKED and re.search(cue, doubt.lower())
+                ] or [target]
+                left = [f for f in named if f not in found]
+                if found and left and target in {*named, *found}:
+                    for name in left:
+                        if name not in state.unknown_fields and getattr(state.confirmed_profile, name) is None:
+                            state.unknown_fields.append(name)
+                    state.skipped_fields = [f for f in state.skipped_fields if f not in left]
+                    text, candidates = rest, found
             if (
                 not candidates
                 and dont_know(text)
