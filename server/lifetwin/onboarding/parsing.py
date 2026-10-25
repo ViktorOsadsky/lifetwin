@@ -1847,14 +1847,24 @@ def _grammar(field: str, period: str | None):
     return NUMERIC[field]
 
 
+BARE_NO = re.compile(r"^(?:no|nope|nah|not really|not at all|no i don't|no i do not)$")
+
+
+def _activity(text: str, today: date) -> Found:
+    """Minutes a week of one kind of activity: a bare "no" answers "how many?" with none."""
+    if BARE_NO.fullmatch(text.strip(" .!,")):
+        return [0], [(0, len(text))]
+    return _exercise(text, today)
+
+
 NUMERIC = {
     "age": _age,
     "height_cm": _height,
     "weight_kg": _weight,
     "sleep_hours": _sleep,
     "exercise_minutes_weekly": _exercise,
-    "moderate_recreation_min_week": _exercise,
-    "vigorous_recreation_min_week": _exercise,
+    "moderate_recreation_min_week": _activity,
+    "vigorous_recreation_min_week": _activity,
     "sedentary_min_day": _sitting,
     "alcohol_drinks_weekly": _alcohol,
 }
