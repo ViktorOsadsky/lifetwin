@@ -15,6 +15,12 @@ How we split the original spec ([`projectspec.md`](../projectspec.md)) so four p
 | Daily planning | Target a daily schedule with evidence and explained revisions; notifications and deterministic scores alone do not fulfill the agent loop. Scheduling/storage remain design dependencies |
 | Merging | Short branch → PR → merge to `main` after applicable checks and repository protections pass. No extra review required unless repository rules require it. Bad merge → revert through a PR |
 
+**Hosted deployment, October 25:** the owner selected Supabase Edge Functions
+(TypeScript/Deno), with backend-only provider keys. Python/FastAPI remains the
+local reference. The [Edge deployment guide](../supabase/functions/lifetwin-api/README.md)
+records its API coverage and explicit server-prediction deferral; Flutter keeps
+its on-device model. Track ownership above is unchanged.
+
 Because Victor is free to choose the model, the shared boundary is **the API, not the model file**. Everyone builds against the
 JSON contracts in `contracts/`, so the model behind them can change without breaking anyone.
 

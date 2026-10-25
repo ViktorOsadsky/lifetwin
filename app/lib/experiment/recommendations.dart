@@ -6,6 +6,7 @@ import '../twin/profile_mapping.dart';
 import '../twin/twin_experiment.dart';
 import '../twin/twin_repository.dart';
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 import '../wellness/coach_client.dart' show coachRequestBody;
 import '../wellness/coach_context.dart';
 
@@ -219,7 +220,7 @@ String dayKey(DateTime d) =>
 /// gentle line and the app goes on.
 class HttpRecommendations implements RecommendationsSource, FullIdeasSource {
   HttpRecommendations(this.repository, {ApiBase? base, http.Client? client, DateTime Function()? now})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       _now = now ?? DateTime.now,
       base = base ?? ApiBase();
   final TwinRepository repository;
