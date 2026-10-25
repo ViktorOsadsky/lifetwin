@@ -4,6 +4,8 @@ import 'package:lifesim/ui/theme.dart';
 import 'package:lifesim/wellness/error_screen.dart';
 import 'package:lifesim/wellness/history_screen.dart';
 import 'package:lifesim/wellness/home_panel.dart';
+import 'package:lifesim/twin/twin_model.dart' show HealthScoreStatus;
+import 'package:lifesim/ui/widgets/rough_guide_badge.dart';
 import 'package:lifesim/wellness/models.dart';
 import 'package:lifesim/wellness/outlook_drivers_screen.dart';
 import 'package:lifesim/wellness/settings_screen.dart';
@@ -44,36 +46,80 @@ Future<void> phone(
 }
 
 void main() {
-  testWidgets(
-    'home shows no invented score and reuses the supplied check-in entry',
-    (t) async {
-      var checks = 0;
-      var estimates = 0;
-      await phone(
-        t,
-        Scaffold(
-          body: SingleChildScrollView(
-            child: HomeWellnessPanel(
-              snapshot: const WellnessSnapshot(),
-              now: DateTime(2026, 10, 24),
-              onCheckIn: () => checks++,
-              onEstimate: () => estimates++,
+  testWidgets('home shows no invented score and no second check-in', (t) async {
+    var estimates = 0;
+    await phone(
+      t,
+      Scaffold(
+        body: SingleChildScrollView(
+          child: HomeWellnessPanel(snapshot: const WellnessSnapshot(), onEstimate: () => estimates++),
+        ),
+      ),
+      scale: 2,
+    );
+    expect(find.text('Getting to know you'), findsOneWidget);
+    expect(find.text('Check in'), findsNothing);
+    expect(find.textContaining('days this week'), findsNothing);
+    await reveal(t, find.text('See your estimate'));
+    await t.tap(find.text('See your estimate'));
+    expect(estimates, 1);
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('home shows the model score, its age group and a rough guide when extrapolated', (t) async {
+    await phone(
+      t,
+      Scaffold(
+        body: SingleChildScrollView(
+          child: HomeWellnessPanel(
+            snapshot: const WellnessSnapshot(
+              healthScore: -0.42,
+              status: HealthScoreStatus.extrapolated,
+              ageGroupPercentile: 61.6,
             ),
+            onEstimate: () {},
           ),
         ),
-        scale: 2,
-      );
-      expect(find.text('Getting to know you'), findsOneWidget);
-      expect(find.textContaining('/ 100'), findsNothing);
-      await reveal(t, find.text('Check in'));
-      await t.tap(find.text('Check in'));
-      expect(checks, 1);
-      await reveal(t, find.text('See your estimate'));
-      await t.tap(find.text('See your estimate'));
-      expect(estimates, 1);
-      expect(t.takeException(), isNull);
-    },
-  );
+      ),
+    );
+    expect(find.text('\u22120.4'), findsOneWidget);
+    expect(find.text(HomeWellnessPanel.tagline), findsOneWidget);
+    expect(find.text('Healthier than 62 of 100 people your age'), findsOneWidget);
+    expect(find.text(RoughGuideBadge.label), findsOneWidget);
+    expect(find.textContaining('/ 100'), findsNothing);
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('home drops the tagline at large text and shows no number under 18', (t) async {
+    await phone(
+      t,
+      Scaffold(
+        body: SingleChildScrollView(
+          child: HomeWellnessPanel(
+            snapshot: const WellnessSnapshot(healthScore: 0.3, status: HealthScoreStatus.available),
+            onEstimate: () {},
+          ),
+        ),
+      ),
+      scale: 1.6,
+    );
+    expect(find.text(HomeWellnessPanel.tagline), findsNothing);
+    expect(find.text('+0.3'), findsOneWidget);
+    expect(find.text(RoughGuideBadge.label), findsNothing);
+    await phone(
+      t,
+      Scaffold(
+        body: HomeWellnessPanel(
+          snapshot: const WellnessSnapshot(healthScore: 0.3, status: HealthScoreStatus.underAge),
+          onEstimate: () {},
+        ),
+      ),
+    );
+    expect(find.text('+0.3'), findsNothing);
+    expect(find.text(HomeWellnessPanel.underAgeLine), findsOneWidget);
+    expect(find.text('See your estimate'), findsNothing);
+    expect(t.takeException(), isNull);
+  });
 
   testWidgets(
     'history is read-only, filters dates and labels every value source',

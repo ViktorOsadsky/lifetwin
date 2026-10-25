@@ -1,18 +1,16 @@
 import 'package:flutter/foundation.dart';
 
+import '../twin/twin_model.dart' show HealthScoreStatus;
+
 /// Presentation snapshots only. The twin repository remains the health-data owner.
 /// No screen may derive a health score or write a profile/history value.
 @immutable
 class WellnessDay {
   const WellnessDay({
     required this.date,
-    this.healthScore,
-    this.logged = false,
     this.values = const [],
   });
   final DateTime date;
-  final int? healthScore;
-  final bool logged;
   final List<HistoryValue> values;
 }
 
@@ -61,42 +59,44 @@ class HistoryValue {
       '${source?.label ?? 'Source not recorded'}${estimated ? ' · Estimated' : ''}';
 }
 
+/// The health score as the repository gives it: Viktor's `log_relative_hazard_score`
+/// as is (lower is better, 0 is the survey average, roughly -3 to +3). Never derived,
+/// rescaled or banded here.
 @immutable
 class WellnessSnapshot {
   const WellnessSnapshot({
     this.healthScore,
-    this.days = const [],
-    this.goodWeeks = 0,
+    this.status,
+    this.ageGroupPercentile,
+    this.message,
   });
 
-  /// Null until Track A provides the health-score contract. Never inferred here.
-  final int? healthScore;
-  final List<WellnessDay> days;
+  final double? healthScore;
 
-  /// Supplied by TwinRepository.goodWeeks(), never a streak or a resettable count.
-  final int goodWeeks;
+  /// Null before a profile.
+  final HealthScoreStatus? status;
 
-  int? get displayScore => validHealthScore(healthScore);
+  /// Healthier than this many (0-100) of people your age in the survey.
+  final double? ageGroupPercentile;
+
+  /// The model's message when there is no number.
+  final String? message;
+
+  /// A number is shown only when the model gave one for an adult.
+  double? get displayScore => status != null && status!.hasScore ? healthScore : null;
+  bool get roughGuide => displayScore != null && status == HealthScoreStatus.extrapolated;
+  bool get underAge => status == HealthScoreStatus.underAge;
 }
 
-int? validHealthScore(int? value) =>
-    value != null && value >= 0 && value <= 100 ? value : null;
+/// Signed, one decimal, with a true minus sign: "−0.4", "+1.2", "0.0".
+String formatHealthScore(double score) {
+  final text = score.abs().toStringAsFixed(1);
+  if (text == '0.0') return text;
+  return score < 0 ? '−$text' : '+$text';
+}
 
 DateTime localDay(DateTime value) =>
     DateTime(value.year, value.month, value.day);
-
-/// Seven local calendar days; missing values remain unknown, not zero.
-List<WellnessDay> lastSevenDays(List<WellnessDay> history, DateTime now) {
-  final today = localDay(now);
-  final byDate = {for (final day in history) localDay(day.date): day};
-  return [
-    for (var offset = 6; offset >= 0; offset--)
-      byDate[DateTime(today.year, today.month, today.day - offset)] ??
-          WellnessDay(
-            date: DateTime(today.year, today.month, today.day - offset),
-          ),
-  ];
-}
 
 @immutable
 class WellnessSettings {

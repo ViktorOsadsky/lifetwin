@@ -55,6 +55,7 @@ class ForecastScreen extends StatefulWidget {
     this.healthKeys = const {},
     this.appearance = const TwinAppearance(),
     this.onResult,
+    this.scoreCard,
   });
 
   final ForecastClient client;
@@ -81,6 +82,10 @@ class ForecastScreen extends StatefulWidget {
 
   /// Called with each forecast (the Room shows the last one).
   final ValueChanged<Forecast>? onResult;
+
+  /// The health score card. When given it leads the result, above the outlook
+  /// (owner ruling: the score is shown above any outlook and is visually stronger).
+  final Widget? scoreCard;
 
   @override
   State<ForecastScreen> createState() => _ForecastScreenState();
@@ -303,6 +308,7 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (widget.scoreCard != null) widget.scoreCard!,
         Semantics(
           header: true,
           child: WholeWordText('Your look ahead', style: LtText.display(22, color: LtColors.gold)),

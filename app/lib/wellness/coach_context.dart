@@ -28,11 +28,13 @@ Map<String, dynamic> coachContext(TwinRepository repo, {DateTime? now}) {
   for (final entry in repo.readings()) {
     for (final item in entry.items) {
       if (!['systolic_bp', 'diastolic_bp'].contains(item.field) ||
-          item.value is! num)
+          item.value is! num) {
         continue;
+      }
       final when = item.date ?? entry.date;
-      if (when.compareTo(date) > 0 || item.source == HistorySource.wristband)
+      if (when.compareTo(date) > 0 || item.source == HistorySource.wristband) {
         continue;
+      }
       readings.add({
         'field': item.field,
         'value': item.value,

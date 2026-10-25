@@ -39,7 +39,7 @@ void main() {
       store: await TwinStore.open(MemoryBackend()),
       clock: () => now,
     );
-    adapter = RepositoryWellness(repo, now: () => now);
+    adapter = RepositoryWellness(repo);
   });
   test('coach reads a fresh confirmed snapshot and scoped consent, without filling gaps', () async {
     var context = coachContext(repo, now: now);
@@ -89,33 +89,20 @@ void main() {
     repo.refresh();
   }
 
-  test('real history and day logs remain unknown until confirmed, with no invented score', () async {
+  test('the score is the repository value as is, absent before a profile', () async {
     expect(adapter.snapshot.displayScore, isNull);
-    expect(
-      adapter.snapshot.days.every((d) => d.values.isEmpty && !d.logged),
-      isTrue,
-    );
+    expect(adapter.snapshot.status, isNull);
     await onboard();
-    expect(
-      adapter.snapshot.days.every((d) => !d.logged),
-      isTrue,
-    ); // onboarding is not a check-in
     await quickDays();
     final snapshot = adapter.snapshot;
-    expect(snapshot.goodWeeks, 1);
-    expect(snapshot.goodWeeks, repo.goodWeeks());
-    expect(snapshot.days.length, 7);
-    expect(snapshot.days.every((d) => d.healthScore == null), isTrue);
-    expect(snapshot.days.any((d) => d.logged), isTrue);
-    expect(snapshot.days.last.date, DateTime(2026, 10, 26));
-    expect(snapshot.days.last.values, isEmpty);
-    expect(
-      snapshot.days
-          .where((d) => d.values.isNotEmpty)
-          .expand((d) => d.values)
-          .every((v) => v.source == ValueSource.youSaid),
-      isTrue,
-    );
+    expect(snapshot.healthScore, repo.healthScore);
+    expect(snapshot.status, repo.healthScoreStatus);
+    expect(snapshot.ageGroupPercentile, repo.ageGroupPercentile);
+    if (repo.healthScoreStatus?.hasScore ?? false) {
+      expect(snapshot.displayScore, repo.healthScore);
+    } else {
+      expect(snapshot.displayScore, isNull);
+    }
   });
 
   test('read-only mapping retains mixed sources, estimates, corrections and previous values', () async {
@@ -161,7 +148,7 @@ void main() {
     );
     await repo.deleteMyData();
     expect(adapter.historyDays(), isEmpty);
-    expect(adapter.snapshot.goodWeeks, 0);
+    expect(adapter.snapshot.displayScore, isNull);
     expect(adapter.settingsFor().reminderMinutes, 600);
     expect(adapter.settingsFor().personalSuggestions, isFalse);
   });

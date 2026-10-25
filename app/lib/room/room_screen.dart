@@ -65,7 +65,7 @@ class RoomScreen extends StatefulWidget {
   /// "Use my Apple Health": the Health import. Null (no pill) once Health data is confirmed.
   final VoidCallback? onUseHealth;
 
-  /// Snapshot from the twin adapter; no score until its specification lands.
+  /// Health score from the twin repository (the model's number as is).
   final WellnessSnapshot? wellness;
   final VoidCallback? onQuiz;
   final VoidCallback? onHistory;
@@ -221,7 +221,7 @@ class _RoomScreenState extends State<RoomScreen> {
                               builder: (context, look, _) => NameBanner(name: look.name),
                             ),
                             card: widget.wellness == null ? _OutlookCard(outlook: widget.outlook, onTap: _fortune) : HomeWellnessPanel(
-                              snapshot: widget.wellness!, compact: true, now: DateTime.now(), onEstimate: _fortune, onHistory: widget.onHistory,
+                              snapshot: widget.wellness!, compact: true, onEstimate: _fortune, onHistory: widget.onHistory,
                             ),
                           ),
                           Opacity(

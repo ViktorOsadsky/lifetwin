@@ -3,68 +3,22 @@ import 'package:flutter/foundation.dart';
 import '../twin/twin_repository.dart';
 import 'models.dart';
 
-/// Read-only presentation boundary. Health values, provenance, corrections and
-/// good weeks stay owned by TwinRepository. No score is derived here.
+/// Read-only presentation boundary. Health values, provenance, corrections, good
+/// weeks and the health score stay owned by TwinRepository. No score is derived here.
 class RepositoryWellness extends ChangeNotifier {
-  RepositoryWellness(this.repository, {DateTime Function()? now})
-    : _now = now ?? DateTime.now {
+  RepositoryWellness(this.repository) {
     repository.addListener(_changed);
   }
   final TwinRepository repository;
-  final DateTime Function() _now;
   void _changed() => notifyListeners();
 
-  WellnessSnapshot get snapshot {
-    final today = localDay(_now());
-    final from = DateTime(today.year, today.month, today.day - 6);
-    final entries = repository.history(from: from, to: today);
-    final checked = {
-      for (final e in entries)
-        if (HistoryKind.checkins.contains(e.kind)) localDay(e.at),
-    };
-    final days = repository.dayLogs(from: from, to: today);
-    return WellnessSnapshot(
-      goodWeeks: repository.goodWeeks(),
-      days: [
-        for (final row in days)
-          WellnessDay(
-            date: DateTime.parse(row.date),
-            logged: checked.contains(DateTime.parse(row.date)),
-            values: [
-              for (final field in [
-                'sleep_hours',
-                'vigorous_recreation_min',
-                'moderate_recreation_min',
-                'sedentary_min_day',
-              ])
-                if (row.valueOf(field) case final value?)
-                  _dayValue(field, value, row.date),
-            ],
-          ),
-      ],
-    );
-  }
-
-  HistoryValue _dayValue(String field, num value, String date) {
-    HistoryItem? provenance;
-    // Find the newest confirmation of this day's field, including a correction
-    // confirmed later than the displayed calendar window.
-    for (final entry in repository.history()) {
-      for (final item in entry.items) {
-        if (item.field == field && item.date == date && item.value == value) {
-          provenance = item;
-          break;
-        }
-      }
-      if (provenance != null) break;
-    }
-    return HistoryValue(
-      label: fieldLabel(field, day: true),
-      value: valueText(field, value, day: true),
-      source: ValueSource.fromWire(provenance?.source),
-      estimated: provenance?.estimated ?? false,
-    );
-  }
+  /// The repository's own score values; nothing is computed here.
+  WellnessSnapshot get snapshot => WellnessSnapshot(
+    healthScore: repository.healthScore,
+    status: repository.healthScoreStatus,
+    ageGroupPercentile: repository.ageGroupPercentile,
+    message: repository.healthScoreMessage,
+  );
 
   List<WellnessDay> historyDays({DateTime? from, DateTime? to}) {
     final byDay = <DateTime, List<HistoryValue>>{};

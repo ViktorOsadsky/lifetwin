@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/quiz/quiz_game.dart';
+import 'package:lifesim/twin/twin_model.dart' show HealthScoreStatus;
 import 'package:lifesim/wellness/models.dart';
 import 'package:lifesim/wellness/outlook_drivers_screen.dart';
 
@@ -51,32 +52,22 @@ void main() {
     },
   );
 
-  test('scores stay unknown until a valid score is supplied', () {
+  test('the score shows only when the model gave one for an adult, never rescaled', () {
     expect(const WellnessSnapshot().displayScore, isNull);
-    expect(const WellnessSnapshot(healthScore: -1).displayScore, isNull);
-    expect(const WellnessSnapshot(healthScore: 101).displayScore, isNull);
-    expect(const WellnessSnapshot(healthScore: 0).displayScore, 0);
-    expect(const WellnessSnapshot(healthScore: 100).displayScore, 100);
-  });
-
-  test('trend uses local calendar days, no forward fill and no zero for missing data', () {
-    final history = [
-      WellnessDay(date: DateTime(2026, 10, 23, 20), healthScore: 72),
-      WellnessDay(date: DateTime(2026, 10, 25), healthScore: 80),
-    ];
-    final days = lastSevenDays(history, DateTime(2026, 10, 24, 23));
-    expect(days.length, 7);
-    expect(days.first.date, DateTime(2026, 10, 18));
-    expect(days.last.date, DateTime(2026, 10, 24));
-    expect(days.map((d) => d.healthScore), [
-      null,
-      null,
-      null,
-      null,
-      null,
-      72,
-      null,
-    ]);
+    expect(const WellnessSnapshot(healthScore: -0.42).displayScore, isNull);
+    expect(
+      const WellnessSnapshot(healthScore: -0.42, status: HealthScoreStatus.available).displayScore,
+      -0.42,
+    );
+    const rough = WellnessSnapshot(healthScore: 1.3, status: HealthScoreStatus.extrapolated);
+    expect(rough.displayScore, 1.3);
+    expect(rough.roughGuide, isTrue);
+    const young = WellnessSnapshot(healthScore: 0.2, status: HealthScoreStatus.underAge);
+    expect(young.displayScore, isNull);
+    expect(young.underAge, isTrue);
+    expect(formatHealthScore(-0.42), '\u22120.4');
+    expect(formatHealthScore(1.26), '+1.3');
+    expect(formatHealthScore(-0.01), '0.0');
   });
 
   test('unknown provenance is not invented, estimated stays visible', () {

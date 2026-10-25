@@ -1,30 +1,33 @@
 import 'package:flutter/material.dart';
 
+import '../twin/twin_model.dart' show extrapolationCaveat;
 import '../widgets/whole_word_text.dart';
 
 import '../ui/theme.dart';
-import '../ui/widgets/widgets.dart';
+import '../ui/widgets/rough_guide_badge.dart';
 import 'models.dart';
 import 'widgets.dart';
 
+/// Home's health score card (design K-4). The score leads: it sits above any outlook,
+/// which stays behind "See your estimate". The check-in entry is #58's `CheckInEntry`,
+/// mounted by the Room, never a second one here. No day-dots or weekly counts sit
+/// near the score.
 class HomeWellnessPanel extends StatelessWidget {
   const HomeWellnessPanel({
     super.key,
     required this.snapshot,
-    required this.now,
     required this.onEstimate,
-    this.onCheckIn,
     this.onHistory,
     this.compact = false,
   });
   final bool compact;
   final WellnessSnapshot snapshot;
-  final DateTime now;
-
-  /// Existing openCheckIn / CheckinScheduler entry point; never a second flow.
-  final VoidCallback? onCheckIn;
   final VoidCallback? onHistory;
   final VoidCallback onEstimate;
+
+  static const tagline = 'Feeling good now, and healthy years ahead.';
+  static const scale = 'Lower is better. 0 is the survey average.';
+  static const underAgeLine = 'Health tools start at 18. Until then, play, dress up and chat.';
 
   @override
   Widget build(BuildContext context) => WellnessCard(
@@ -32,54 +35,15 @@ class HomeWellnessPanel extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!compact) ...[
-          WholeWordText(
-            'A little care, every day',
-            style: LtText.body(size: 15),
-          ),
-          const SizedBox(height: 6),
-        ],
-        WholeWordText(
-          'Your health score',
-          style: LtText.display(compact ? 20 : 25),
-        ),
-        const SizedBox(height: 8),
-        if (snapshot.displayScore case final score?)
-          Semantics(
-            label: 'Health score $score out of 100',
-            child: WholeWordText('$score / 100', style: LtText.display(38)),
-          )
-        else
-          WholeWordText(
-            'Getting to know you',
-            style: LtText.display(compact ? 24 : 26),
-          ),
-        SizedBox(height: compact ? 10 : 16),
-        SevenDayTrend(
-          days: lastSevenDays(snapshot.days, now),
-          compact: compact,
-        ),
-        if (onCheckIn != null) ...[
-          const SizedBox(height: 16),
-          LipButton(
-            label: 'Check in',
-            icon: Icons.chat_bubble_outline_rounded,
-            onTap: onCheckIn,
-          ),
-        ],
+        HealthScoreSummary(snapshot: snapshot, compact: compact),
+        // Under 18 there is no estimate; History stays reachable.
         Wrap(
           alignment: WrapAlignment.spaceBetween,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            if (onHistory != null)
-              TextButton(
-                onPressed: onHistory,
-                child: const WholeWordText('My history'),
-              ),
-            TextButton(
-              onPressed: onEstimate,
-              child: const WholeWordText('See your estimate'),
-            ),
+            if (onHistory != null) TextButton(onPressed: onHistory, child: const WholeWordText('My history')),
+            if (!snapshot.underAge)
+              TextButton(onPressed: onEstimate, child: const WholeWordText('See your estimate')),
           ],
         ),
       ],
@@ -87,72 +51,101 @@ class HomeWellnessPanel extends StatelessWidget {
   );
 }
 
-class SevenDayTrend extends StatelessWidget {
-  const SevenDayTrend({super.key, required this.days, this.compact = false});
-  final List<WellnessDay> days;
+/// The score, its tagline and age-group line, and a "Rough guide" badge when the model
+/// extrapolated; under 18 only a quiet info line. Shared by Home and the estimate
+/// screen, where it sits above the outlook.
+class HealthScoreSummary extends StatelessWidget {
+  const HealthScoreSummary({super.key, required this.snapshot, this.compact = false});
+  final WellnessSnapshot snapshot;
   final bool compact;
-  static const _weekday = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      WholeWordText(
-        'Your last 7 days',
-        style: LtText.body(size: compact ? 14 : 18, weight: FontWeight.w700),
-      ),
-      SizedBox(height: compact ? 4 : 10),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+  Widget build(BuildContext context) {
+    if (snapshot.underAge) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final day in days)
-            Expanded(
-              child: Semantics(
-                label:
-                    '${day.date.month}/${day.date.day}: ${switch (validHealthScore(day.healthScore)) {
-                      final score? => 'score $score',
-                      _ => day.values.isEmpty && !day.logged ? 'not recorded' : 'check-in recorded, no score yet',
-                    }}',
-                excludeSemantics: true,
-                child: Column(
-                  children: [
-                    Container(
-                      height: compact ? 22 : 48,
-                      alignment: Alignment.bottomCenter,
-                      child: Container(
-                        height: switch (validHealthScore(day.healthScore)) {
-                          final score? => 8 + (compact ? 14 : 40) * score / 100,
-                          _ => 8,
-                        },
-                        width: 14,
-                        decoration: BoxDecoration(
-                          color:
-                              validHealthScore(day.healthScore) != null ||
-                                  (day.logged || day.values.isNotEmpty)
-                              ? LtColors.mint
-                              : LtColors.trackOff,
-                          border: Border.all(color: LtColors.control),
-                          borderRadius: BorderRadius.circular(7),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: compact ? 3 : 7),
-                    WholeWordText(
-                      _weekday[day.date.weekday - 1],
-                      style: LtText.body(size: 15),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          const Padding(
+            padding: EdgeInsets.only(top: 2, right: 8),
+            child: Icon(Icons.info_outline_rounded, color: LtColors.ink, size: 22),
+          ),
+          Expanded(child: WholeWordText(HomeWellnessPanel.underAgeLine, style: LtText.body())),
         ],
-      ),
-      const SizedBox(height: 8),
-      if (!compact)
-        WholeWordText(
-          'Missing days stay unknown.',
-          style: LtText.body(size: 15),
+      );
+    }
+    final big = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
+    final score = snapshot.displayScore;
+    final percentile = score == null ? null : snapshot.ageGroupPercentile;
+    final words = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: WholeWordText('Health score', style: LtText.display(compact ? 22 : 25)),
         ),
-    ],
-  );
+        if (!big) ...[
+          const SizedBox(height: 4),
+          WholeWordText(HomeWellnessPanel.tagline, style: LtText.body()),
+        ],
+        if (percentile != null) ...[
+          const SizedBox(height: 6),
+          WholeWordText(
+            'Healthier than ${percentile.round()} of 100 people your age',
+            style: LtText.body(weight: FontWeight.w700),
+          ),
+        ],
+        const SizedBox(height: 4),
+        if (score != null)
+          WholeWordText(HomeWellnessPanel.scale, style: LtText.body())
+        else
+          WholeWordText(
+            snapshot.status == null || snapshot.message == null ? 'Getting to know you' : snapshot.message!,
+            style: LtText.body(weight: FontWeight.w700),
+          ),
+      ],
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (score == null)
+          words
+        else if (big)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [_ScoreDisc(score: score), const SizedBox(height: 10), words],
+          )
+        else
+          Row(children: [_ScoreDisc(score: score), const SizedBox(width: 14), Expanded(child: words)]),
+        if (snapshot.roughGuide)
+          const Align(alignment: Alignment.centerLeft, child: RoughGuideBadge(caveat: extrapolationCaveat)),
+      ],
+    );
+  }
+}
+
+/// The score in a mint disc. The number is the model's as is; it is never rescaled,
+/// banded or coloured by value.
+class _ScoreDisc extends StatelessWidget {
+  const _ScoreDisc({required this.score});
+  final double score;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = formatHealthScore(score);
+    return Semantics(
+      label: 'Health score $text',
+      excludeSemantics: true,
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 104, minHeight: 104),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: LtColors.mint,
+          shape: BoxShape.circle,
+          border: Border.all(color: LtColors.control, width: LtBorders.control),
+        ),
+        alignment: Alignment.center,
+        child: Text(text, style: LtText.display(36, weight: FontWeight.w700), maxLines: 1, softWrap: false),
+      ),
+    );
+  }
 }

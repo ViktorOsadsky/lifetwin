@@ -94,13 +94,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   MaterialLocalizations.of(context).formatMediumDate(day.date),
                   style: LtText.display(23),
                 ),
-                if (validHealthScore(day.healthScore) case final score?) ...[
-                  const SizedBox(height: 8),
-                  WholeWordText(
-                    'Health score $score / 100',
-                    style: LtText.body(),
-                  ),
-                ],
                 for (final value in day.values)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),

@@ -17,7 +17,9 @@ import 'onboarding/voice_onboarding_screen.dart';
 import 'room/room_screen.dart';
 import 'quiz/quiz_game.dart';
 import 'quiz/quiz_screen.dart';
+import 'wellness/home_panel.dart' show HealthScoreSummary;
 import 'wellness/models.dart';
+import 'wellness/widgets.dart' show WellnessCard;
 import 'wellness/repository_adapter.dart';
 import 'wellness/history_screen.dart';
 import 'wellness/daily_plan_screen.dart';
@@ -305,6 +307,10 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               healthKeys: {..._healthKeys},
               onResult: (f) {
                 if (f.supported) _outlook.value = f;
+              },
+              scoreCard: switch (_wellness?.snapshot) {
+                final score? when !score.underAge => WellnessCard(child: HealthScoreSummary(snapshot: score)),
+                _ => null,
               },
               // The mascot speaks only if the person chose voice and it still works.
               speech: _controller.voiceUsable && !_controller.typing ? _controller.output : null,
