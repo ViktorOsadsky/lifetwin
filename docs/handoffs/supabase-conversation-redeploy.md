@@ -60,7 +60,8 @@ pending draft. Existing pounds-rounding replay differences remain out of scope.
 
 ## Limits and next dependency
 
-The v7 function's source-download read closed the Bridge shared IPC connection.
+Source-download reads after the interim v6 deployment closed the Bridge shared
+IPC connection.
 A direct read could not resolve the app-held Keychain credential; no credential
 was extracted or copied as a workaround. Thus the reported bundle digest and
 authoritative active-version/JWT metadata are recorded above, while a downloaded
