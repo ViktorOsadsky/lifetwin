@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'band_data.dart';
+import 'band_demo_data.dart';
 import 'band_file.dart';
 import 'band_sitting.dart';
 
@@ -70,37 +71,6 @@ class StubBandClient implements BandClient {
   Stream<BandMinute> minuteRecords() => const Stream.empty();
 }
 
-/// A saved week of minute records for "Try a recorded demo". Every band screen then says "Recorded
-/// demo" and nothing from it is offered as a suggestion or a twin reaction, or saved.
-List<BandMinute> recordedDemoMinutes(DateTime today) {
-  final out = <BandMinute>[];
-  for (var back = 6; back >= 0; back--) {
-    final day = DateTime(
-      today.year,
-      today.month,
-      today.day,
-    ).subtract(Duration(days: back));
-    // Worn 8 AM to 8 PM on most days; a short wear on two days.
-    final hours = (back == 2 || back == 5) ? 4 : 12;
-    for (var h = 0; h < hours; h++) {
-      for (var m = 0; m < 60; m++) {
-        final moving = m < 8 && h % 3 == 0;
-        out.add(
-          BandMinute(
-            at: day.add(Duration(hours: 8 + h, minutes: m)),
-            steps: moving ? 90 : 4,
-            moderate: moving && m < 6,
-            // Authored synthetic waking-day labels, not a sensor classifier.
-            posture: moving ? BandPosture.moving : BandPosture.sitting,
-            wakeState: BandWakeState.awake,
-          ),
-        );
-      }
-    }
-  }
-  return out;
-}
-
 enum BandStatus { connected, notConnected, lowPower, notWorn, demo }
 
 /// The band's state on the phone: paired or not, recorded demo on or off, and the minute records in
@@ -116,6 +86,9 @@ class BandStore extends ChangeNotifier {
   bool paired = false;
   String? bandName;
   bool demo = false;
+
+  /// The built-in recorded demo (14 synthetic days kept as reports), as opposed to an imported demo file.
+  bool _builtInDemo = false;
   bool hiddenFromRoom = false;
 
   /// The band reports power (only some can; a USB power bank usually cannot).
@@ -143,7 +116,7 @@ class BandStore extends ChangeNotifier {
   bool get live => (paired || hasImportedFile) && !demo;
 
   /// The recorded demo is all there is: no paired band and no imported file (those take priority).
-  bool get demoOnly => demo && !paired && !hasImportedFile;
+  bool get demoOnly => demo && !paired && (_builtInDemo || !hasImportedFile);
 
   BandStatus get status {
     if (demo) return BandStatus.demo;
@@ -161,7 +134,11 @@ class BandStore extends ChangeNotifier {
   }
 
   BandWeek week() {
-    final legacy = BandWeek.from(_minutes, _now());
+    // The built-in demo's last day is yesterday, so its week ends there (not on an empty today).
+    final end = _builtInDemo
+        ? DateTime(_now().year, _now().month, _now().day - 1)
+        : _now();
+    final legacy = BandWeek.from(_minutes, end);
     return BandWeek([
       for (final day in legacy.days)
         if (_reports[_day(day.date)] case final report?)
@@ -244,7 +221,7 @@ class BandStore extends ChangeNotifier {
     final day = today;
     return BandSittingRecording.fromMinutes(
       date: day.date,
-      minutes: day.minutes,
+      minutes: _builtInDemo ? _minutes : day.minutes,
       completeWakingDay: demoOnly || completeWakingDay,
       demo: demo,
     );
@@ -277,15 +254,17 @@ class BandStore extends ChangeNotifier {
   /// "Try a recorded demo": a saved week replaces any live minutes in view; nothing is saved from it.
   void setDemo(bool on) {
     _reports.clear();
+    _minutes.clear();
     demo = on;
+    _builtInDemo = on;
+    lastSynced = null;
     if (on) {
-      _minutes
-        ..clear()
-        ..addAll(recordedDemoMinutes(_now()));
-      lastSynced = _minutes.last.at;
-    } else {
-      _minutes.clear();
-      lastSynced = null;
+      final reports = bandDemoReports(_now());
+      for (final r in reports) {
+        _reports[r.day] = r;
+      }
+      _minutes.addAll(bandDemoMinutes(reports.last));
+      lastSynced = reports.last.generatedAt;
     }
     notifyListeners();
   }
@@ -296,6 +275,7 @@ class BandStore extends ChangeNotifier {
     paired = false;
     bandName = null;
     demo = false;
+    _builtInDemo = false;
     connectionLost = false;
     lowPower = null;
     lastSynced = null;
