@@ -7,17 +7,6 @@ This Flutter package bundles two frozen, separate models and runs their math loc
 
 The package no longer generates wellness guidance, habit cards, or avatar states. Its public API is `LifeTwinModel`, `NeuralHazardModel`, and `LifeTwinProjectionLab`.
 
-## Run the web tester
-
-From `model_handoff/projection_lab`:
-
-```powershell
-flutter pub get
-flutter run -d chrome
-```
-
-If Chrome is unavailable, use `flutter run -d web-server` and open its local URL, or `flutter build web` followed by a static HTTP server for `build/web`. The tester and the iOS package use the same Dart model code. The browser performs inference locally; it has no inference API.
-
 ## Integrate into the iOS Flutter app
 
 From `app/pubspec.yaml`, add:
