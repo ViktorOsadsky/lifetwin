@@ -8,8 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
+import 'package:lifesim/ui/twin_assets.dart';
 import 'package:lifesim/ui/widgets/widgets.dart';
 import 'package:lifesim/voice/fakes.dart';
+import 'package:lifesim/wellness/widgets.dart' show WellnessCard;
 import 'package:lifesim/wellness/home_panel.dart';
 
 import 'support/app_fonts.dart';
@@ -66,6 +68,23 @@ void main() {
     await t.pump();
   }
 
+  /// Loads the room and the twin's real sprites, so a picture shows Mochi.
+  Future<void> loadArt(WidgetTester t) async {
+    await t.runAsync(() async {
+      final c = t.element(find.byType(Scaffold).first);
+      await precacheImage(const AssetImage('assets/scene/room/room_bg.jpg'), c);
+      for (final pose in TwinPose.values) {
+        final a = twinAsset(TwinType.bear, TwinLook.calHat, pose);
+        try {
+          await precacheImage(AssetImage(a), c);
+        } catch (_) {}
+      }
+    });
+    for (var i = 0; i < 20; i++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
+  }
+
   double top(WidgetTester t, Finder f) => t.getTopLeft(f.first).dy;
 
   testWidgets('order: quiz above the score card; Experiment below Check in and the largest button', (t) async {
@@ -79,6 +98,10 @@ void main() {
     expect(top(t, quiz), lessThan(top(t, card)));
     expect(top(t, card), lessThan(top(t, checkIn)));
     expect(top(t, checkIn), lessThan(top(t, experiment)));
+    // Check in sits inside the Today row, on its right.
+    final today = find.textContaining('Today', findRichText: true);
+    expect(t.getCenter(checkIn).dx, greaterThan(t.getCenter(today).dx));
+    expect((t.getCenter(checkIn).dy - t.getCenter(today).dy).abs(), lessThan(30));
     expect(top(t, experiment), lessThan(top(t, find.text('Talk'))));
     expect(find.text('Fortune'), findsOneWidget);
     // Experiment is the biggest action after Check in: taller than Check in, far larger than the quiz chip.
@@ -89,19 +112,34 @@ void main() {
     expect(t.state<ScrollableState>(find.byType(Scrollable).first).position.maxScrollExtent, 0);
     // A picture for review.
     final shots = Directory('${Directory.current.path}/../../evidence_shots')..createSync(recursive: true);
-    await t.runAsync(() async {
-      final c = t.element(find.byType(Scaffold).first);
-      await precacheImage(const AssetImage('assets/scene/room/room_bg.jpg'), c);
-    });
-    for (var i = 0; i < 20; i++) {
-      await t.pump(const Duration(milliseconds: 100));
-    }
+    await loadArt(t);
     await t.runAsync(() async {
       final b = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
       final img = await b.toImage(pixelRatio: 2);
       final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
       File('${shots.path}/home_order.png').writeAsBytesSync(bytes!.buffer.asUint8List());
     });
+  });
+
+  testWidgets('Mochi has a clear window: no Home card or button covers the twin at 390 x 844', (t) async {
+    await pumpHome(t);
+    await loadArt(t);
+    final twin = t.getRect(find.byType(TwinSprite).first);
+    // The sprite box has transparent margins: test against the body (the middle of the box).
+    final body = Rect.fromCenter(center: twin.center, width: twin.width * 0.5, height: twin.height * 0.7);
+    Rect box(Finder f, Type within) => t.getRect(find.ancestor(of: f.first, matching: find.byType(within)).first);
+    final boxes = <String, Rect>{
+      'quiz chip': box(find.text('Quiz · play'), Semantics),
+      'score card': t.getRect(find.byType(HomeWellnessPanel)),
+      'check in': box(find.text('Check in'), LipButton),
+      'today row': box(find.textContaining('Today', findRichText: true), WellnessCard),
+      'experiment': box(find.text('Experiment with your twin'), LipButton),
+      'exercise': box(find.text('Exercise'), GestureDetector),
+      'dock': t.getRect(find.text('Talk').first),
+    };
+    for (final e in boxes.entries) {
+      expect(body.overlaps(e.value), isFalse, reason: '${e.key} ${e.value} covers the twin $body');
+    }
   });
 
   for (final w in [390.0, 320.0]) {

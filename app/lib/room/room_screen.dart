@@ -242,7 +242,8 @@ class _RoomScreenState extends State<RoomScreen> {
                                     key: _bottomKey,
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
-                                      const CheckInEntry(),
+                                      // With the Today row, Check in lives inside it (compact); otherwise its own bar.
+                                      if (widget.today == null) const CheckInEntry(),
                                       if (_needTalk && !widget.hasProfile) ...[
                                         const Bubble(
                                           text: RoomScreen.talkFirst,
@@ -252,7 +253,7 @@ class _RoomScreenState extends State<RoomScreen> {
                                         ),
                                         const SizedBox(height: 10),
                                       ],
-                                      if (widget.today != null) ...[widget.today!, const SizedBox(height: 10)],
+                                      if (widget.today != null) ...[widget.today!, const SizedBox(height: 6)],
                                       if (widget.extraPills.isNotEmpty) ...[
                                         Wrap(
                                           alignment: WrapAlignment.center,
@@ -266,11 +267,11 @@ class _RoomScreenState extends State<RoomScreen> {
                                         LipButton(
                                           label: 'Experiment with your twin',
                                           icon: Icons.science_outlined,
-                                          height: 72,
+                                          height: 64,
                                           fontSize: 22,
                                           onTap: widget.onExperiment,
                                         ),
-                                        const SizedBox(height: 10),
+                                        const SizedBox(height: 6),
                                       ],
                                       _ActivityRow(sim: _sim, press: _press),
                                       const SizedBox(height: 10),
@@ -526,8 +527,8 @@ class _ActivityRow extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTap: () => press(a),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 52),
-            padding: const EdgeInsets.symmetric(horizontal: _padX, vertical: 6),
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: _padX, vertical: 4),
             decoration: BoxDecoration(
               color: on ? LtColors.mint : LtColors.paper,
               borderRadius: BorderRadius.circular(LtRadii.chip),
@@ -598,7 +599,7 @@ class _Dock extends StatelessWidget {
     // Customize and Fortune share the rest, so their labels stay on one line.
     final talkW = 40 + 32 + 10 + _labelWidth(context, 'Talk', LtText.display(26)) + LtBorders.control * 2 + 4;
     return Sheet(
-      padding: const EdgeInsets.fromLTRB(8, 14, 8, 14),
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
       child: LayoutBuilder(
         builder: (context, box) {
           // Never squeeze Customize or Fortune under the 15 px floor: Talk gives way first.

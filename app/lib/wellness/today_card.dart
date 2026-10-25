@@ -25,6 +25,7 @@ class TodayWithMochiCard extends StatefulWidget {
     this.beforeFirstPlan,
     this.onPlan,
     this.condensed = false,
+    this.trailing,
     this.openUrl = defaultOpenUrl,
   });
 
@@ -39,6 +40,9 @@ class TodayWithMochiCard extends StatefulWidget {
 
   /// One line for Home: "Today: brisk walk · protein · …", opening the plan on a tap.
   final bool condensed;
+
+  /// Condensed only: a control at the right of the row (Home's Check in button).
+  final Widget? trailing;
 
   @override
   State<TodayWithMochiCard> createState() => _TodayWithMochiCardState();
@@ -183,11 +187,14 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Icon(Icons.chevron_right_rounded, color: LtColors.ink),
-                ),
+                if (widget.trailing != null)
+                  Padding(padding: const EdgeInsets.only(left: 8, right: 6), child: widget.trailing!)
+                else
+                  const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(Icons.chevron_right_rounded, color: LtColors.ink),
+                  ),
               ],
             ),
           ),

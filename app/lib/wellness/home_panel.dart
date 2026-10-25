@@ -85,6 +85,7 @@ class HomeWellnessPanel extends StatelessWidget {
             ],
           ),
         ),
+        if (compact) Flexible(child: chip),
         info,
       ],
     );
@@ -109,6 +110,7 @@ class HomeWellnessPanel extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           PercentileBar(percent: percentile),
+          if (compact && snapshot.history.length >= 2) ScoreSparkline(values: snapshot.history),
         ] else if (score == null)
           WholeWordText(
             snapshot.status == null || snapshot.message == null ? 'Getting to know you' : snapshot.message!,
@@ -152,17 +154,18 @@ class HomeWellnessPanel extends StatelessWidget {
                 ],
               ),
             ),
-          const SizedBox(height: 2),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Row(
-              children: [
-                if (score != null) trend else const Spacer(),
-                const SizedBox(width: 8),
-                Flexible(child: chip),
-              ],
+          if (!compact) const SizedBox(height: 2),
+          if (!compact)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(
+                children: [
+                  if (score != null) trend else const Spacer(),
+                  const SizedBox(width: 8),
+                  Flexible(child: chip),
+                ],
+              ),
             ),
-          ),
           if (snapshot.roughGuide)
             const Padding(
               padding: EdgeInsets.only(right: 8),

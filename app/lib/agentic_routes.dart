@@ -395,8 +395,9 @@ class AgenticRoutes {
 
   /// "Today with Mochi" for Home: mount it where the Today card goes. It asks the outside-AI consent once
   /// before the first plan (the coach may use the same provider), and opens the full plan on a tap.
-  Widget todayCard(BuildContext context, {VoidCallback? onTalk, bool condensed = false}) => TodayWithMochiCard(
+  Widget todayCard(BuildContext context, {VoidCallback? onTalk, bool condensed = false, Widget? trailing}) => TodayWithMochiCard(
     condensed: condensed,
+    trailing: trailing,
     client: coach,
     onPlan: (p) => _lastPlan = p,
     confirmedContext: () => coachContext(repo!),
