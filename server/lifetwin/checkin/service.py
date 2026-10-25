@@ -245,6 +245,10 @@ TOPIC_LABELS = {
 # Where a reply splits into clauses; "an hour and a half" stays one duration.
 CLAUSES = (
     r"[;,]|(?<!\d)\.(?!\d)|\bbut\b|\bthen\b|\bplus\b|\balso\b|"
+    # "7 hours and 30 minutes of walking": minutes of an activity are a new clause, not
+    # the second half of a duration.
+    r"\band\b(?= [\w-]+(?: [\w-]+)? min\w* (?:of )?(?:walk|run|jog|swim|cycl|bik|yoga|"
+    r"exercis|gym|class|workout|hik|danc|garden)\w*)|"
     r"\band\b(?! (?:a )?(?:half|quarter|bit|little)\b| three quarters\b| [\w-]+(?: [\w-]+)? min)"
 )
 # Words that make the rest of a reply more than a note beside the answer.
@@ -1149,7 +1153,7 @@ class CheckinService:
                 named.discard("feeling")  # "slept well", "a good walk": not how they feel
             topics.append(next(iter(named)) if len(named) == 1 else (None if not named else "?"))
         later = self._later(state)
-        if len(clauses) > 1 and "?" not in topics and set(topics) & set(later):
+        if clauses and "?" not in topics and set(topics) & set(later):
             # Clauses without a topic of their own belong to the open question.
             mine = [c for c, t in zip(clauses, topics, strict=True) if t in {None, own}]
             values, hint, same = (

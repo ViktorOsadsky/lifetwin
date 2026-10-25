@@ -2747,13 +2747,12 @@ FILLER_WORDS = (
     r"that|which|that's|what|how|when|because|if|or|with|for|in|on|at|about|around|maybe|"
     r"let me think|let me see|let's see|hold on|one second|one sec"
 )
-FILLER = re.compile(rf"(?:{FILLER_WORDS})(?:[\s,.;-]+(?:{FILLER_WORDS}))*")
+FILLER = re.compile(rf"(?:{FILLER_WORDS})(?:[\s,.;]+(?:{FILLER_WORDS}))*")
 
 
 def is_filler(text: str) -> bool:
     """Only hesitations and the dangling start of a sentence: nothing was answered."""
-    plain = re.sub(r"[^\w'\s]", " ", text.lower())
-    plain = " ".join(plain.split())
+    plain = " ".join(re.sub(r"[^\w'\s-]", " ", text.lower()).split())
     return bool(plain) and bool(FILLER.fullmatch(plain))
 
 
@@ -2810,7 +2809,7 @@ def competing(text: str, field: ProfileField) -> bool:
     I'm 5'4"). In a room full of voices it may not be the person's own answer."""
     if field in CATEGORICAL:
         return False
-    pieces = [p for p in re.split(rf"{SENTENCE_END}|[;,]|\s+and\s+", text, flags=re.I) if p]
+    pieces = [p for p in re.split(rf"{SENTENCE_END}|[;,]|\s+(?:and|but)\s+", text, flags=re.I) if p]
     theirs = [p for p in pieces if p.strip() and _others(p)]
     numbered = [p for p in pieces if re.search(r"\d", _canonical(p))]
     return any(re.search(r"\d", _canonical(p)) for p in theirs) and len(numbered) > 1
@@ -2917,6 +2916,8 @@ def parse_reply(
     if any(_others(part) and re.search(COMPARED_TO, _canonical(part)) for part in parts):
         return {}
     dropped = bool(own) and len(own) < len(parts) and not labeled
+    if strict and dropped and any(re.search(r"\d", _canonical(part)) for part in parts if _others(part)):
+        return {}  # a voice transcript can't tell whose number it heard
     parts = own if dropped else parts
     several = len(parts) > 1
     values: dict = {}
