@@ -7,7 +7,7 @@ Persona: **Rosa, 64** (never smoked, no diagnoses, sits a lot, walks the dog; th
 - **Seeded (recommended for the judged run):** build with `DEMO_SEED=1`. Rosa already has 16 days of history, so steps 3 to 9 show real data. Do step 1 live on a second, empty phone or simulator if you want to show onboarding.
 - **Live from empty:** build without `DEMO_SEED`. Step 1 creates the profile; the history steps are thinner. Use this only for the onboarding segment.
 
-Each step lists: say or tap, what should appear, fallback, and what it depends on. Some screens belong to the UI session and may not be on `main` yet. Those steps are marked **(pending UI)** with a fallback that works today. Check the "Status on main" column in the checklist before the run.
+Each step lists: say or tap, what should appear, fallback, and what it depends on. The screens that were once marked **(pending UI)** are now on `main`; their fallbacks are kept for a failed run. Check the "Status on main" line in the checklist before the run.
 
 ## Setup checklist (do the day before, repeat 30 minutes before)
 
@@ -31,7 +31,7 @@ Each step lists: say or tap, what should appear, fallback, and what it depends o
 
 Pre-flight: open `http://<mac-name>.local:8000/api/capabilities` in the phone's browser. It must load. It shows which features are keyless or configured.
 
-Status on main (this PR's branch point): Talk onboarding, Apple Health, outlook, check-in, Try a change (Experiment), document upload, band and My data are in the app. These are **not yet in the UI**: the "Healthier than X of 100 people your age" line, the coach's daily plan screen, a History screen with sources, and a training disclosure screen. Re-check before the run; the steps below say what to do for each.
+Status on main (this PR's branch point): Talk onboarding, Apple Health, outlook, check-in, Try a change (Experiment), document upload, band and My data are in the app. Also on main: the "Healthier than X of 100 people your age" line, the coach's daily plan screen, a History screen with each value's source, the one-time lifespan reveal, and the outside-AI training line (shown only for a provider that may train on content). Re-check before the run; the steps below say what to do for each.
 
 ## Script
 
@@ -49,14 +49,14 @@ Should appear: read-backs after each answer, a rough-estimate tag on simple-ques
 Fallback: tap **Type instead** and type the answers; if the server is unreachable, switch to the seeded phone and say "here is Rosa after two weeks". If Health has no data, answer height and weight by voice (162.6 cm, 66.5 kg).
 
 ### 2. Outlook reveal (25 s)
-The one-time lifespan/outlook reveal is still pending Viktor. Do not claim life expectancy. Use the 5-year statement.
-**Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [lifespan-estimate.md](lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else. Until the reveal screen is built, the demo keeps the 5-year statement.
+The one-time lifespan reveal is on main: right after onboarding it shows once, then only on "See your estimate". Do not claim life expectancy anywhere else. Use the 5-year statement.
+**Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [lifespan-estimate.md](lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else.
 Tap the outlook card in the Room (or the Fortune ball). Say: "Out of 100 people with answers like Rosa's, about N are modeled to be alive in five years. This is the modeled survival of similar people, not a prediction about Rosa."
 Should appear: the "Modeled survival of similar people" title, a 5-year number (about 97 in 100 for Rosa at onboarding), and the drivers in plain words. No death date, no years gained.
 Fallback: if the number is missing, read the message on screen (it says what is still needed) and fill that input by Talk. A missing number is the correct behaviour, not a bug.
 Depends on: on-device model only. No server.
 
-### 3. Health score hero (25 s) (pending UI for the percentile line)
+### 3. Health score hero (25 s)
 Say: "This is Viktor's health score for Rosa. It comes from the same model. Lower hazard is healthier, and the app says how she compares with people her age: healthier than X of 100 people her age."
 Should appear (seeded): the score and the age-group percentile; the score starts near -0.04 (about 79th percentile for her age group) and ends near -0.13 (about 86th) over the 16 days, following the events, from the real model.
 Fallback if the hero is not merged: describe it from the Room outlook card and say the score and percentile exist in the app's engine (`healthScore`, `ageGroupPercentile`). Do not invent a number.
@@ -74,7 +74,7 @@ Should appear: the "Modeled difference between profiles" title, a signed change 
 Fallback: use the lever detail screen and **See side by side**. If a lever is greyed out, read its reason (for example smoking category cannot be changed to never).
 Depends on: on-device only.
 
-### 6. The coach's daily plan (25 s) (pending UI)
+### 6. The coach's daily plan (25 s)
 Say: "Mochi turns the check-in into a short plan: a walk, a food pattern, a habit, with sources. Rosa can accept, edit or dismiss, and tomorrow's plan changes with what she reports."
 Should appear: 2 to 4 cited items and a revision note after feedback.
 Fallback if the screen is not merged: the engine exists (`POST /api/coach/plan`, deterministic, replayable trace). Show the suggestions from Try a change and the Personal suggestions prompt, or show the API response in the browser docs at `/docs`, and say the app screen is next.
@@ -90,7 +90,7 @@ Should appear: values to confirm one by one with their units and date; unrelated
 Fallback: use the seeded reading (already in history) and say "she did this ten days ago". If OCR fails, use a typed or sharper photo, or type the numbers into Talk.
 Depends on: OCR on the phone; `/api/documents/extract` on the server; Muse only with consent and `DOCUMENT_MUSE_ENABLED=true`.
 
-### 9. History with sources (20 s) (pending UI)
+### 9. History with sources (20 s)
 Say: "Every value keeps where it came from: You said, Apple Health, Document, Changed with Mochi, From your band." Show the history list: onboarding, check-ins with gaps (days she skipped are not penalised), the weekly check-in marked as the one that fed the forecast, the document readings, the Mochi change, the band value tagged as a sensor estimate.
 Fallback if the screen is not merged: show My data and say history is a list of events on the phone, each with its source (labels: "Mochi change", "From your band", "You said").
 Depends on: on-device only. The seed supplies every source.
@@ -103,7 +103,7 @@ Depends on: on-device only (Bluetooth), or the recorded demo.
 
 ### 11. Privacy (25 s)
 Open **My data**. Say: "Everything is on this phone. Rosa said no to outside AI, so nothing about her goes to Muse. If she turns it on, the app asks for her consent first, per provider, and band values are never shared. She can turn memory off, which deletes her habit notes, or tap Delete my data to remove everything." Show **AI and privacy** (outside-AI switch OFF) and the **Delete my data** confirmation, then cancel.
-Training disclosure: say "We use the Muse model variant that does not train on content. Any outside AI that may train on submitted text will be disclosed before it is switched on." The disclosure screen is pending UI; until then say it, do not show it.
+Training disclosure: say "We use the Muse model variant that does not train on content. Any outside AI that may train on submitted text will be disclosed before it is switched on." The app shows a training line beside the outside-AI Yes only when the server says the provider may train on content; this Muse variant does not, so there is no line to show. Say it.
 Depends on: on-device only.
 
 ### 12. Close (10 s)
@@ -111,7 +111,7 @@ Say: "Voice or typing in, a modeled outlook, a score, what-ifs, a plan, document
 
 ## Known limitations to say out loud
 
-- The model gives a **5-year** survival only. No lifespan, no death date, no years gained. The lifespan reveal is pending.
+- The model gives a **5-year** survival only. No lifespan, no death date, no years gained, except the one-time lifespan reveal below.
   - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [lifespan-estimate.md](lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else.
 - It is trained for ages **35 to 79**. Outside that range ages are extrapolated and labeled; above 85 no number.
 - Comparisons are modeled differences between profiles, not proof that a change will help.

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "bank_version": "2.0",
-  "total": 8,
+  "bank_version": "2.1",
+  "total": 38,
   "questions": [
     {
       "schema_version": "1.0",
@@ -371,6 +371,1446 @@
       ],
       "review_status": "reviewed",
       "reviewed_on": "2026-10-23",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "frozen-vegetable-choice.v1",
+      "topic": "nutrition",
+      "difficulty": "moderate",
+      "scenario": "Fresh vegetables are sold out. Which can still be a nutritious choice?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Plain frozen vegetables"
+        },
+        {
+          "id": "b",
+          "text": "Only fresh vegetables count"
+        },
+        {
+          "id": "c",
+          "text": "Skip vegetables until next week"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Frozen vegetables can be a good option. Look for choices without added sugar and with little sodium.",
+      "sources": [
+        {
+          "title": "How to Have Healthier Meals and Snacks",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/healthy-weight-growth/healthy-eating/meals-snacks.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "protein-variety.v1",
+      "topic": "nutrition",
+      "difficulty": "moderate",
+      "scenario": "You want a plant-based protein for dinner. Which fits?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Olive oil alone"
+        },
+        {
+          "id": "b",
+          "text": "Beans or lentils"
+        },
+        {
+          "id": "c",
+          "text": "A spoonful of jam"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Beans and lentils are protein foods. Protein choices can include plants as well as meat, eggs and fish.",
+      "sources": [
+        {
+          "title": "How to Have Healthier Meals and Snacks",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/healthy-weight-growth/healthy-eating/meals-snacks.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "whole-grain-snack.v1",
+      "topic": "nutrition",
+      "difficulty": "moderate",
+      "scenario": "Which snack adds a whole-grain option?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Plain hard candy"
+        },
+        {
+          "id": "b",
+          "text": "A sugary soft drink"
+        },
+        {
+          "id": "c",
+          "text": "Whole-grain crackers"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "Whole-grain crackers are one option. CDC recommends including fiber-rich whole grains.",
+      "sources": [
+        {
+          "title": "How to Have Healthier Meals and Snacks",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/healthy-weight-growth/healthy-eating/meals-snacks.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "restaurant-planning.v1",
+      "topic": "nutrition",
+      "difficulty": "challenging",
+      "scenario": "You find choosing meals in a busy restaurant difficult. What could help?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Review the menu beforehand"
+        },
+        {
+          "id": "b",
+          "text": "Choose only by the largest portion"
+        },
+        {
+          "id": "c",
+          "text": "Assume every menu item has the same ingredients"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Looking at the menu ahead of time gives you time to identify choices that suit you.",
+      "sources": [
+        {
+          "title": "How to Have Healthier Meals and Snacks",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/healthy-weight-growth/healthy-eating/meals-snacks.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "water-swap.v1",
+      "topic": "nutrition",
+      "difficulty": "moderate",
+      "scenario": "You want a drink with no added sugar. Which simple swap fits?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Sweetened tea instead of soda"
+        },
+        {
+          "id": "b",
+          "text": "Plain water instead of sweetened soda"
+        },
+        {
+          "id": "c",
+          "text": "A fruit drink with added sugar"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Plain water contains no sugar. Sweetened teas and fruit drinks can contain added sugar too.",
+      "sources": [
+        {
+          "title": "About Water and Healthier Drinks",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/healthy-weight-growth/water-healthy-drinks/index.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "water-needs-context.v1",
+      "topic": "nutrition",
+      "difficulty": "challenging",
+      "scenario": "Two adults have different activity levels and live in different climates. Must their water needs be identical?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Yes; everyone needs exactly the same amount"
+        },
+        {
+          "id": "b",
+          "text": "Only beverages count, never food"
+        },
+        {
+          "id": "c",
+          "text": "No; activity and conditions can change needs"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "Water needs vary with factors including activity. Hot conditions can increase needs, and foods also contribute water.",
+      "sources": [
+        {
+          "title": "About Water and Healthier Drinks",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/healthy-weight-growth/water-healthy-drinks/index.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "separate-cutting-boards.v1",
+      "topic": "food_safety",
+      "difficulty": "moderate",
+      "scenario": "You are preparing raw meat and a salad that will not be cooked. Which setup helps keep them separate?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use separate boards and keep meat juices away"
+        },
+        {
+          "id": "b",
+          "text": "Use the meat board for salad without cleaning"
+        },
+        {
+          "id": "c",
+          "text": "Put raw meat on top of the salad"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Raw meat and its juices can transfer germs. Use a separate board for ready-to-eat produce and clean utensils and surfaces.",
+      "sources": [
+        {
+          "title": "Preventing Food Poisoning",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/food-safety/prevention/index.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "hot-day-picnic.v1",
+      "topic": "food_safety",
+      "difficulty": "challenging",
+      "scenario": "Perishable picnic food has sat out for 90 minutes above 90 degrees F. Which advice matches CDC guidance?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It always has two hours regardless of heat"
+        },
+        {
+          "id": "b",
+          "text": "Discard it; the hot-weather limit is one hour"
+        },
+        {
+          "id": "c",
+          "text": "Chill it later and assume that removes all risk"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Above 90 degrees F, refrigerate perishables within one hour. The usual two-hour limit does not apply in that heat.",
+      "sources": [
+        {
+          "title": "Preventing Food Poisoning",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/food-safety/prevention/index.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "sleep-quality-matters.v1",
+      "topic": "sleep",
+      "difficulty": "challenging",
+      "scenario": "Someone gets enough hours but repeatedly wakes and feels tired. What matters besides the hour count?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Hours alone prove sleep is refreshing"
+        },
+        {
+          "id": "b",
+          "text": "Feeling tired proves a specific sleep disorder"
+        },
+        {
+          "id": "c",
+          "text": "Sleep quality also matters"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "Repeated waking or tiredness despite enough hours can signal poor quality. These signs alone do not diagnose a disorder.",
+      "sources": [
+        {
+          "title": "About Sleep",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/sleep/about/index.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "sleep-diary-details.v1",
+      "topic": "sleep",
+      "difficulty": "moderate",
+      "scenario": "A clinician asks for a sleep diary. Which record is useful?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Bedtimes, waking, naps and caffeine use"
+        },
+        {
+          "id": "b",
+          "text": "Only the bedroom paint color"
+        },
+        {
+          "id": "c",
+          "text": "Only the longest sleep of the month"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "A diary can record sleep timing, night waking, naps, exercise, drinks and medications. It helps a clinician understand patterns.",
+      "sources": [
+        {
+          "title": "About Sleep",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/sleep/about/index.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "screen-wind-down.v1",
+      "topic": "sleep",
+      "difficulty": "moderate",
+      "scenario": "You want a quieter routine before bed. Which step matches CDC guidance?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Keep checking alerts until you fall asleep"
+        },
+        {
+          "id": "b",
+          "text": "Turn off electronic devices at least 30 minutes before bed"
+        },
+        {
+          "id": "c",
+          "text": "Move bedtime later every night to fit more screen time"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "CDC suggests switching devices off at least 30 minutes before bedtime and keeping a regular sleep schedule.",
+      "sources": [
+        {
+          "title": "About Sleep",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/sleep/about/index.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "late-caffeine.v1",
+      "topic": "sleep",
+      "difficulty": "challenging",
+      "scenario": "Can late-afternoon coffee still affect sleep that night?",
+      "options": [
+        {
+          "id": "a",
+          "text": "No; caffeine always ends after ten minutes"
+        },
+        {
+          "id": "b",
+          "text": "Only hot coffee contains caffeine"
+        },
+        {
+          "id": "c",
+          "text": "Yes; caffeine effects can last up to eight hours"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "Caffeine is a stimulant. Its effects can last up to eight hours.",
+      "sources": [
+        {
+          "title": "Healthy Sleep Habits",
+          "publisher": "NIH",
+          "url": "https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "nap-timing.v1",
+      "topic": "sleep",
+      "difficulty": "challenging",
+      "scenario": "An adult has trouble falling asleep at night. Which nap change may help?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Keep naps short and earlier in the afternoon"
+        },
+        {
+          "id": "b",
+          "text": "Add a long evening nap"
+        },
+        {
+          "id": "c",
+          "text": "Nap until bedtime"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "NHLBI suggests earlier, limited naps when nighttime sleep is difficult; adult naps should be no more than 20 minutes.",
+      "sources": [
+        {
+          "title": "Healthy Sleep Habits",
+          "publisher": "NIH",
+          "url": "https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "shift-work-rest.v1",
+      "topic": "sleep",
+      "difficulty": "challenging",
+      "scenario": "Someone sleeps during the day after a night shift. Which change supports rest?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Leave bright distractions on"
+        },
+        {
+          "id": "b",
+          "text": "Block distracting light and sound"
+        },
+        {
+          "id": "c",
+          "text": "Keep changing sleep shifts whenever possible"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Reducing light and sound in the bedroom can help daytime sleep.",
+      "sources": [
+        {
+          "title": "Healthy Sleep Habits",
+          "publisher": "NIH",
+          "url": "https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "alcohol-sleep-shortcut.v1",
+      "topic": "sleep",
+      "difficulty": "moderate",
+      "scenario": "Which drink should not be used as a bedtime sleep strategy?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A usual caffeine-free drink"
+        },
+        {
+          "id": "b",
+          "text": "Water when thirsty"
+        },
+        {
+          "id": "c",
+          "text": "An alcoholic nightcap"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "NHLBI recommends avoiding alcohol before bed. Feeling drowsy does not make alcohol a good sleep habit.",
+      "sources": [
+        {
+          "title": "Healthy Sleep Habits",
+          "publisher": "NIH",
+          "url": "https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "moderate-talk-test.v1",
+      "topic": "activity",
+      "difficulty": "moderate",
+      "scenario": "During a steady walk you can talk but cannot sing comfortably. Which intensity does the talk test suggest?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Moderate"
+        },
+        {
+          "id": "b",
+          "text": "Always vigorous"
+        },
+        {
+          "id": "c",
+          "text": "No physical activity at all"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Talking but not singing is a rule of thumb for moderate effort. It is a practical guide, not a medical measurement.",
+      "sources": [
+        {
+          "title": "What Counts as Physical Activity for Adults",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/physical-activity-basics/adding-adults/what-counts.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "vigorous-talk-test.v1",
+      "topic": "activity",
+      "difficulty": "moderate",
+      "scenario": "During activity you can say only a few words before pausing for breath. Which intensity does the talk test suggest?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Always light"
+        },
+        {
+          "id": "b",
+          "text": "Vigorous"
+        },
+        {
+          "id": "c",
+          "text": "The activity cannot count unless it is running"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Needing a breath after just a few words is a rule of thumb for vigorous effort. Different activities can reach that level.",
+      "sources": [
+        {
+          "title": "What Counts as Physical Activity for Adults",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/physical-activity-basics/adding-adults/what-counts.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "short-activity-blocks.v1",
+      "topic": "activity",
+      "difficulty": "moderate",
+      "scenario": "You cannot fit one long activity session into your day. What can still count toward weekly aerobic activity?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Only a single uninterrupted session"
+        },
+        {
+          "id": "b",
+          "text": "Only activity done at a gym"
+        },
+        {
+          "id": "c",
+          "text": "Smaller blocks spread through the week"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "CDC says activity can be spread across the week in smaller chunks. Choose activity that fits your abilities.",
+      "sources": [
+        {
+          "title": "Adult Activity: An Overview",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "aerobic-plus-strength.v1",
+      "topic": "activity",
+      "difficulty": "challenging",
+      "scenario": "An adult meets the weekly aerobic guideline. What other type of weekly activity is recommended?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Muscle-strengthening on at least two days"
+        },
+        {
+          "id": "b",
+          "text": "Nothing else; aerobic activity replaces strengthening"
+        },
+        {
+          "id": "c",
+          "text": "Only stretching, which always replaces strengthening"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Adult guidance includes muscle-strengthening as well as aerobic activity. Strengthening should work the major muscle groups.",
+      "sources": [
+        {
+          "title": "Adult Activity: An Overview",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/physical-activity-basics/guidelines/adults.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "relative-effort.v1",
+      "topic": "activity",
+      "difficulty": "challenging",
+      "scenario": "Two people walk at the same speed but have different fitness levels. Must it feel equally hard?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Yes; speed alone determines everyone's effort"
+        },
+        {
+          "id": "b",
+          "text": "No; relative effort can differ"
+        },
+        {
+          "id": "c",
+          "text": "Only age determines effort"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Relative intensity depends on how hard the person works. The same activity can feel moderate to one person and vigorous to another.",
+      "sources": [
+        {
+          "title": "How to Measure Physical Activity Intensity",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/physical-activity-basics/measuring/index.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "effort-scale.v1",
+      "topic": "activity",
+      "difficulty": "challenging",
+      "scenario": "On a 0-to-10 effort scale, 0 means sitting and 10 means maximum effort. Which range describes relatively moderate activity?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Always 0"
+        },
+        {
+          "id": "b",
+          "text": "Only 10"
+        },
+        {
+          "id": "c",
+          "text": "About 5 or 6"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "CDC places relatively moderate effort around 5 or 6. Vigorous effort begins around 7 or 8; this is not a personal exercise prescription.",
+      "sources": [
+        {
+          "title": "How to Measure Physical Activity Intensity",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/physical-activity-basics/measuring/index.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "adapted-aerobic.v1",
+      "topic": "activity",
+      "difficulty": "moderate",
+      "scenario": "An adult who uses a wheelchair wants an aerobic option suited to their abilities. Which can count?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wheelchair rolling at a suitable effort"
+        },
+        {
+          "id": "b",
+          "text": "Only standing activities"
+        },
+        {
+          "id": "c",
+          "text": "Only running can be aerobic"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Wheelchair rolling can be aerobic activity. People with health conditions or disabilities can discuss suitable types and amounts with a professional.",
+      "sources": [
+        {
+          "title": "Chronic Conditions & Disabilities Activity",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/physical-activity-basics/guidelines/chronic-health-conditions-and-disabilities.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "activity-with-limits.v1",
+      "topic": "activity",
+      "difficulty": "moderate",
+      "scenario": "Someone cannot meet the full activity guideline because of their abilities. Which approach matches CDC guidance?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Avoid all movement until the full target is possible"
+        },
+        {
+          "id": "b",
+          "text": "Be as active as able with suitable activities"
+        },
+        {
+          "id": "c",
+          "text": "Ignore their limits and copy someone else's routine"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Some activity is better than none. Appropriate types and amounts depend on the person; a professional can help adapt them.",
+      "sources": [
+        {
+          "title": "Chronic Conditions & Disabilities Activity",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/physical-activity-basics/guidelines/chronic-health-conditions-and-disabilities.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "handwashing-time.v1",
+      "topic": "habits",
+      "difficulty": "moderate",
+      "scenario": "After using the bathroom, how long should you scrub soapy hands?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Two seconds"
+        },
+        {
+          "id": "b",
+          "text": "Only until the water feels warm"
+        },
+        {
+          "id": "c",
+          "text": "At least 20 seconds"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "Scrub for at least 20 seconds, including backs of hands, between fingers and under nails. Rinse and dry afterward.",
+      "sources": [
+        {
+          "title": "About Handwashing",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/clean-hands/about/index.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "handwashing-after-pet-food.v1",
+      "topic": "habits",
+      "difficulty": "challenging",
+      "scenario": "You handle pet food, then start preparing your own snack. What should you do first?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wash your hands with soap and clean running water"
+        },
+        {
+          "id": "b",
+          "text": "Wipe hands on clothing only"
+        },
+        {
+          "id": "c",
+          "text": "Wait until after eating to clean them"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Handling pet food is a key time to wash hands. Wash before preparing or eating your own food too.",
+      "sources": [
+        {
+          "title": "About Handwashing",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/clean-hands/about/index.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "sanitizer-label.v1",
+      "topic": "habits",
+      "difficulty": "moderate",
+      "scenario": "Soap and water are unavailable and your hands are not visibly dirty. Which sanitizer label fits CDC guidance?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Any product with a pleasant scent"
+        },
+        {
+          "id": "b",
+          "text": "At least 60% alcohol"
+        },
+        {
+          "id": "c",
+          "text": "Alcohol-free, regardless of ingredients"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Check for at least 60% alcohol. Cover all hand surfaces and rub until dry rather than wiping it off early.",
+      "sources": [
+        {
+          "title": "Hand Sanitizer Guidelines and Recommendations",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/clean-hands/about/hand-sanitizer.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "greasy-hands.v1",
+      "topic": "habits",
+      "difficulty": "challenging",
+      "scenario": "After gardening your hands are visibly dirty. A sink with soap is available. What is the better choice?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use sanitizer instead because it removes every chemical"
+        },
+        {
+          "id": "b",
+          "text": "Wipe sanitizer off immediately"
+        },
+        {
+          "id": "c",
+          "text": "Wash with soap and water"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "Sanitizer may work less well on dirty or greasy hands and may not remove harmful chemicals. Choose soap and water here.",
+      "sources": [
+        {
+          "title": "Hand Sanitizer Guidelines and Recommendations",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/clean-hands/about/hand-sanitizer.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "daily-tooth-care.v1",
+      "topic": "habits",
+      "difficulty": "moderate",
+      "scenario": "Which routine matches CDC advice for an adult with natural teeth?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Brush twice daily with fluoride toothpaste and floss between teeth"
+        },
+        {
+          "id": "b",
+          "text": "Brush only when teeth hurt"
+        },
+        {
+          "id": "c",
+          "text": "Use mouthwash instead of all brushing"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Regular brushing with fluoride toothpaste and cleaning between teeth help remove plaque. Ask a dentist about adaptations if needed.",
+      "sources": [
+        {
+          "title": "Oral Health Tips for Adults",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/oral-health/prevention/oral-health-tips-for-adults.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "dentures-dental-visits.v1",
+      "topic": "habits",
+      "difficulty": "challenging",
+      "scenario": "Someone wears dentures and has no natural teeth. Do routine dental visits still matter?",
+      "options": [
+        {
+          "id": "a",
+          "text": "No; the mouth needs no further checks"
+        },
+        {
+          "id": "b",
+          "text": "Yes; a dentist still checks the mouth"
+        },
+        {
+          "id": "c",
+          "text": "Only denture appearance matters"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "CDC recommends at least yearly dental visits even with dentures or no natural teeth. These visits check oral health as well as teeth.",
+      "sources": [
+        {
+          "title": "Oral Health Tips for Adults",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/oral-health/prevention/oral-health-tips-for-adults.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
+      "wrong_effect": {
+        "game_health_delta": -5,
+        "mascot_event": "quiz_sick",
+        "reduced_motion_text": "Oops! Your twin feels a little tired, so game health goes down 5 points. This is only a game. Your real health has not changed. Read the explanation to help."
+      },
+      "correct_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Great answer! Your twin is happy. If game health is below 100, it goes up 5 points."
+      },
+      "review_effect": {
+        "game_health_delta": 5,
+        "mascot_event": "quiz_recovering",
+        "reduced_motion_text": "Thanks for reading! Your twin feels better, and the 5 game health points are back."
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "id": "quitting-at-any-age.v1",
+      "topic": "habits",
+      "difficulty": "moderate",
+      "scenario": "An older adult who has smoked for years asks whether quitting can still help. What is accurate?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Benefits stop at retirement"
+        },
+        {
+          "id": "b",
+          "text": "There is no benefit after many years of smoking"
+        },
+        {
+          "id": "c",
+          "text": "Quitting can benefit health at any age"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "CDC reports benefits at any age, including after years of smoking. This does not predict an individual outcome or a date of death.",
+      "sources": [
+        {
+          "title": "Benefits of Quitting Smoking",
+          "publisher": "CDC",
+          "url": "https://www.cdc.gov/tobacco/about/benefits-of-quitting.html",
+          "accessed_on": "2026-10-24"
+        }
+      ],
+      "review_status": "reviewed",
+      "reviewed_on": "2026-10-24",
       "wrong_effect": {
         "game_health_delta": -5,
         "mascot_event": "quiz_sick",

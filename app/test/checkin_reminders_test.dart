@@ -13,6 +13,7 @@ class FakePort implements NotificationPort {
   int asks = 0;
   int clears = 0;
   final scheduled = <(int, DateTime, String)>[];
+  final payloads = <int, String?>{};
 
   @override
   Future<bool> requestPermission() async {
@@ -26,7 +27,11 @@ class FakePort implements NotificationPort {
     required DateTime localWallTime,
     required String title,
     required String body,
-  }) async => scheduled.add((id, localWallTime, body));
+    String? payload,
+  }) async {
+    scheduled.add((id, localWallTime, body));
+    payloads[id] = payload;
+  }
 
   @override
   Future<void> cancelAll() async {
@@ -218,6 +223,24 @@ void main() {
       await expectLater(api.turn(action: 'confirm', state: const {}), throwsA(isA<GuideFailure>()));
       status = 429;
       await expectLater(api.turn(action: 'confirm', state: const {}), throwsA(isA<GuideTooBusy>()));
+    });
+  });
+
+  group('reminder taps', () {
+    test('each check-in reminder names its check-in; Remind me later names none', () async {
+      await reminders.reschedule(on, localNow: DateTime(2026, 10, 24, 8), history: [], firstJoined: '2026-10-17');
+      expect(port.payloads[20261024], 'checkin:weekly', reason: 'day 7 after joining: the weekly is due');
+      expect(port.payloads[20261025], 'checkin:daily');
+      await reminders.remindLater(DateTime(2026, 10, 24, 10));
+      expect(port.payloads[99], isNull);
+    });
+
+    test('a tap opens its check-in, the weekly only while the weekly is open', () {
+      expect(reminderTapTarget('checkin:daily', weeklyOpen: true), ReminderCheckin.daily);
+      expect(reminderTapTarget('checkin:weekly', weeklyOpen: true), ReminderCheckin.weekly);
+      expect(reminderTapTarget('checkin:weekly', weeklyOpen: false), ReminderCheckin.daily);
+      expect(reminderTapTarget(null, weeklyOpen: true), isNull);
+      expect(reminderTapTarget('something else', weeklyOpen: true), isNull);
     });
   });
 }

@@ -27,12 +27,14 @@ abstract class NotificationPort {
   /// Shows the system's "Allow notifications?" question the first time.
   Future<bool> requestPermission();
 
-  /// One notification at [localWallTime] in the phone's current zone.
+  /// One notification at [localWallTime] in the phone's current zone. [payload] comes back when it is
+  /// tapped ([ReminderTapPort]); a check-in reminder's names its check-in ([reminderPayload]).
   Future<void> scheduleAt({
     required int id,
     required DateTime localWallTime,
     required String title,
     required String body,
+    String? payload,
   });
 
   Future<void> cancelAll();
@@ -55,6 +57,26 @@ const weeklyOnlyLine = 'Your weekly check-in is ready whenever you are.';
 
 /// How many days ahead are planned (iOS keeps at most 64 pending).
 const reminderDays = 7;
+
+/// Taps on the phone's notifications. Fake it in tests.
+abstract class ReminderTapPort {
+  /// From now on [onTap] gets the payload of each notification the person taps while the app runs.
+  /// Completes with the payload of the one whose tap launched the app (a cold start), or null.
+  Future<String?> listenForTaps(void Function(String? payload) onTap);
+}
+
+/// The check-in a reminder is for, carried in its payload.
+enum ReminderCheckin { daily, weekly }
+
+String reminderPayload(ReminderCheckin kind) => 'checkin:${kind.name}';
+
+/// What a tapped notification opens: its check-in, but the weekly only while the weekly is open (the
+/// 7-day gate, [weeklyOpen]); otherwise the daily. Null for anything else ("Remind me later"): just the app.
+ReminderCheckin? reminderTapTarget(String? payload, {required bool weeklyOpen}) => switch (payload) {
+  'checkin:weekly' => weeklyOpen ? ReminderCheckin.weekly : ReminderCheckin.daily,
+  'checkin:daily' => ReminderCheckin.daily,
+  _ => null,
+};
 
 class CheckinReminders {
   CheckinReminders(this.port);
@@ -155,6 +177,7 @@ class CheckinReminders {
         id: id,
         localWallTime: at,
         title: reminderTitle,
+        payload: reminderPayload(weekly ? ReminderCheckin.weekly : ReminderCheckin.daily),
         body: weekly
             ? '${dailyPending ? dailyAndWeeklyLine : weeklyOnlyLine}${last ? ' $reminderPauseLine' : ''}'
             : last
@@ -169,13 +192,16 @@ class CheckinReminders {
 
 /// [NotificationPort] on the phone, with flutter_local_notifications. A reminder's wall
 /// time is placed in the phone's current time zone, so 10:00 stays 10:00 across daylight
-/// saving changes; after travel, the next app open plans them again in the new zone.
-class LocalNotificationPort implements NotificationPort {
+/// saving changes; after travel, the next app open plans them again in the new zone. A tap on one
+/// comes back through [listenForTaps] (`onDidReceiveNotificationResponse`, and the launch details
+/// when the tap started the app).
+class LocalNotificationPort implements NotificationPort, ReminderTapPort {
   LocalNotificationPort([FlutterLocalNotificationsPlugin? plugin])
     : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   final FlutterLocalNotificationsPlugin _plugin;
   Future<void>? _ready;
+  void Function(String? payload)? _onTap;
 
   Future<void> _init() => _ready ??= () async {
     tzdata.initializeTimeZones();
@@ -190,8 +216,17 @@ class LocalNotificationPort implements NotificationPort {
           requestBadgePermission: false,
         ),
       ),
+      onDidReceiveNotificationResponse: (response) => _onTap?.call(response.payload),
     );
   }();
+
+  @override
+  Future<String?> listenForTaps(void Function(String? payload) onTap) async {
+    _onTap = onTap;
+    await _init();
+    final launch = await _plugin.getNotificationAppLaunchDetails();
+    return launch?.didNotificationLaunchApp == true ? launch?.notificationResponse?.payload : null;
+  }
 
   @override
   Future<bool> requestPermission() async {
@@ -206,6 +241,7 @@ class LocalNotificationPort implements NotificationPort {
     required DateTime localWallTime,
     required String title,
     required String body,
+    String? payload,
   }) async {
     await _init();
     final when = tz.TZDateTime(
@@ -222,6 +258,7 @@ class LocalNotificationPort implements NotificationPort {
       title: title,
       body: body,
       notificationDetails: const NotificationDetails(iOS: DarwinNotificationDetails()),
+      payload: payload,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
     );
   }

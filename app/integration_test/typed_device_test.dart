@@ -13,7 +13,8 @@
 //   (then xcodebuild, devicectl install, devicectl process launch)
 //
 // The test keeps its data in memory (its own TwinRepository on a MemoryBackend), so it
-// never reads or writes the owner's LifeTwin data on the phone.
+// never reads or writes the owner's LifeTwin data on the phone; shared_preferences is in memory
+// as well (SharedPreferences.setMockInitialValues).
 //
 // In a Profile build `tester.enterText` is ignored (the engine checks the input
 // client id), so the test sets the box's text itself after tapping into it.
@@ -37,6 +38,7 @@ import 'package:lifesim/twin/profile_mapping.dart';
 import 'package:lifesim/twin/twin_model.dart' show extrapolationCaveat;
 import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/voice/speech.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lifesim/ui/widgets/widgets.dart';
 import 'package:lifetwin_on_device/lifetwin_on_device.dart';
 
@@ -297,6 +299,9 @@ List<String> dateProblems(String text) {
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
+  // Preferences in memory too: the owner's Home settings (a collapsed score card, plan choices)
+  // neither leak into the test nor get overwritten by it.
+  SharedPreferences.setMockInitialValues({});
 
   testWidgets('typed end to end on the phone', timeout: const Timeout(Duration(minutes: 20)), (t) async {
     var pass = 0;
