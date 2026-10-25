@@ -163,8 +163,14 @@ void main() {
             final glyphs = t.getRect(text);
             // ExperimentPage's opaque/back bar is 76 pt tall once scrolled.
             expect(glyphs.top, greaterThanOrEqualTo(viewport.top + 76));
-            expect(glyphs.bottom, lessThanOrEqualTo(viewport.bottom));
-            expect(glyphs.overlaps(t.getRect(field)), isFalse);
+            // The whole question, when it fits between the bar and the dock; a longer one (Mochi's
+            // full line at the largest text) is read from its first line and scrolls on.
+            if (glyphs.height <= viewport.height - 76) {
+              expect(glyphs.bottom, lessThanOrEqualTo(viewport.bottom));
+            } else {
+              expect(glyphs.top, lessThan(viewport.top + 76 + 20)); // the bubble's own padding above it
+            }
+            expect(glyphs.intersect(viewport).overlaps(t.getRect(field)), isFalse); // the part in view
             final input = t.getRect(field);
             final send = t.getRect(find.byTooltip('Send'));
             expect(input.bottom, lessThanOrEqualTo(874 - 336));
@@ -188,9 +194,9 @@ void main() {
             );
           }
 
-          expectReadable('How did you sleep?');
+          expectReadable('How did you sleep last night?');
           expect(t.widget<TextField>(field).controller!.text, '7 hours');
-          final prompt = find.text('How did you sleep?');
+          final prompt = find.text('How did you sleep last night?');
           final scrolling = Scrollable.of(t.element(prompt)).position;
           final beforeDrag = scrolling.pixels;
           await t.dragFrom(Offset(width / 2, 170), const Offset(0, -50));
@@ -209,7 +215,7 @@ void main() {
           // closing the keyboard or saving a completed check-in.
           await controller.skip();
           await t.pumpAndSettle();
-          expectReadable('How much sitting?');
+          expectReadable('Got it. About how many hours did you spend sitting yesterday?');
           expect(repo.store.checkins, isEmpty);
           expect(t.takeException(), isNull);
         },

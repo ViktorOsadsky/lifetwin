@@ -123,7 +123,8 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
             children: [
               Positioned(
                 left: 14,
-                top: 18,
+                // At large text the `{ Name }` banner grows down into this corner: Back moves under it.
+                top: 18 + math.max(0.0, MediaQuery.textScalerOf(context).scale(22) - 22) * 1.5,
                 child: RoundBackButton(label: 'Back to room', onTap: () => _unlessArriving(widget.onDone)),
               ),
             ],
@@ -228,52 +229,62 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     );
   }
 
+  /// Two even rows of three, in the same order, so no tab is ever left alone on a line.
   Widget _tabs() {
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      runSpacing: 6,
+    const perRow = 3;
+    return Column(
       children: [
-        for (final t in _Tab.values)
-          Semantics(
-            selected: t == _tab,
-            button: true,
-            label: '${t.label} tab',
-            excludeSemantics: true,
-            onTap: () => setState(() => _tab = t),
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => setState(() => _tab = t),
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 62, minHeight: 66),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                decoration: BoxDecoration(
-                  color: t == _tab ? LtColors.mint : Colors.transparent,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: t == _tab ? LtColors.controlOnMint : Colors.transparent,
-                    width: LtBorders.control,
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(t.icon, size: 26, color: LtColors.ink),
-                    const SizedBox(height: 3),
-                    // One line inside the tab: shrinks rather than breaking the word.
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: WholeWordText(
-                        t.label,
-                        style: LtText.body(weight: t == _tab ? FontWeight.w700 : FontWeight.w400),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+        for (var row = 0; row < _Tab.values.length; row += perRow)
+          Padding(
+            padding: EdgeInsets.only(top: row == 0 ? 0 : 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [for (final t in _Tab.values.skip(row).take(perRow)) Expanded(child: _tabButton(t))],
             ),
           ),
       ],
+    );
+  }
+
+  Widget _tabButton(_Tab t) {
+    return Semantics(
+      selected: t == _tab,
+      button: true,
+      label: '${t.label} tab',
+      excludeSemantics: true,
+      onTap: () => setState(() => _tab = t),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => setState(() => _tab = t),
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 62, minHeight: 66),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          decoration: BoxDecoration(
+            color: t == _tab ? LtColors.mint : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: t == _tab ? LtColors.controlOnMint : Colors.transparent,
+              width: LtBorders.control,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(t.icon, size: 26, color: LtColors.ink),
+              const SizedBox(height: 3),
+              // One line inside the tab: shrinks rather than breaking the word.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: WholeWordText(
+                  t.label,
+                  style: LtText.body(weight: t == _tab ? FontWeight.w700 : FontWeight.w400),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

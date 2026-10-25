@@ -11,8 +11,8 @@ import 'package:lifesim/voice/fakes.dart';
 
 import 'support/app_fonts.dart';
 
-/// Onboarding's typing state looks like the check-in's (VC-7): the "Not listening" pill with a
-/// hollow ring and "Talk instead", however the person came to be typing.
+/// Onboarding's typing state: no voice pill or ring (less on screen), "Talk instead" as the way back,
+/// however the person came to be typing.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadAppFonts);
@@ -61,12 +61,12 @@ void main() {
   }
 
   for (final handsFree in [true, false]) {
-    testWidgets('after "No, I\'ll type" onboarding shows Not listening and Talk instead (handsFree $handsFree)', (t) async {
+    testWidgets('after "No, I\'ll type" onboarding shows no voice pill, and Talk instead (handsFree $handsFree)', (t) async {
       await open(t, handsFree: handsFree);
       await chooseTyping(t);
       expect(c.typing, isTrue);
       expect(input.listening, isFalse);
-      expect(find.text('Not listening'), findsOneWidget);
+      expect(find.text('Not listening'), findsNothing);
       expect(find.text('Talk instead'), findsOneWidget);
       expect(find.byKey(const ValueKey('voice-ring-typing')), findsNothing, reason: 'hollow ring has no live ring');
       expect(find.byKey(const ValueKey('voice-live-dot')), findsNothing);
@@ -85,11 +85,11 @@ void main() {
       await t.tap(find.text('Keep typing'));
       await t.pump();
       expect(input.listening, isFalse);
-      expect(find.text('Not listening'), findsOneWidget);
+      expect(find.text('Not listening'), findsNothing);
     });
   }
 
-  testWidgets('with consent, typing via Type instead shows the pill and Talk instead goes to Speaking', (t) async {
+  testWidgets('with consent, typing via Type instead hides the pill and Talk instead goes to Speaking', (t) async {
     await open(t);
     unawaited(c.answerConsent(true));
     await t.pump();
@@ -97,7 +97,7 @@ void main() {
     await t.tap(find.text('Type instead'));
     await t.pump();
     await t.pump(const Duration(milliseconds: 400));
-    expect(find.text('Not listening'), findsOneWidget);
+    expect(find.text('Not listening'), findsNothing);
     await t.tap(find.text('Talk instead'));
     await t.pump();
     await t.pump(const Duration(milliseconds: 300));
@@ -123,7 +123,7 @@ void main() {
     testWidgets('typing state does not overflow at 1.6x on ${size.width.toInt()} wide', (t) async {
       await open(t, scale: 1.6, size: size);
       await chooseTyping(t);
-      expect(find.text('Not listening'), findsOneWidget);
+      expect(find.text('Not listening'), findsNothing);
       expect(find.text('Talk instead'), findsOneWidget);
       expect(t.getSize(find.ancestor(of: find.text('Talk instead'), matching: find.byType(TextButton)).first).height,
           greaterThanOrEqualTo(48));

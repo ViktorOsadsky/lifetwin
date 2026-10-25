@@ -118,7 +118,16 @@ class CheckinController extends ChangeNotifier {
   bool typing;
 
   /// VoiceOver already reads Mochi's words aloud, so Mochi doesn't speak them again.
-  bool screenReader = false;
+  bool get screenReader => _screenReader;
+  bool _screenReader = false;
+
+  /// Turned off while Mochi waits for a tap: hands-free listens now, not only at the next turn.
+  set screenReader(bool on) {
+    if (on == _screenReader) return;
+    _screenReader = on;
+    // Set by the screen while it builds: the microphone opens just after.
+    if (!on) scheduleMicrotask(_listenAgain);
+  }
 
   /// The one current question is the server's: [turn]'s `current_field`. Everything the
   /// client does is checked against it.
@@ -214,6 +223,11 @@ class CheckinController extends ChangeNotifier {
   int _startFailures = 0;
   static const _startRetries = 3;
   Timer? _startRetry;
+
+  /// The recognizer's connection is open: what is said now is heard. Until then a listen is
+  /// [connecting] ("Connecting…", never "Listening").
+  bool _micLive = false;
+  bool get connecting => phase == CheckinPhase.listening && !_micLive;
   bool _paused = false;
 
   /// The person closed the microphone (separate from [_paused], so coming back on screen never
@@ -471,6 +485,7 @@ class CheckinController extends ChangeNotifier {
 
   Future<void> _openMic() async {
     final token = _turnToken;
+    if (_micLive) _set(() => _micLive = false);
     try {
       if (!await input.hasPermission()) throw const MicDeniedException();
       if (phase != CheckinPhase.listening) return;
@@ -488,6 +503,7 @@ class CheckinController extends ChangeNotifier {
       if (phase == CheckinPhase.listening && !_paused) {
         _hf('mic_open');
         _startFailures = 0;
+        _set(() => _micLive = true);
         _startListenClock();
       }
     } on MicDeniedException {
@@ -509,7 +525,8 @@ class CheckinController extends ChangeNotifier {
       try {
         await input.cancel().timeout(_quickLimit); // a start that never answered must not leave the mic on
       } catch (_) {}
-      if (_retryStart()) return;
+      // A start that hangs (a token server that never answers) is tried once more, not three times.
+      if (_startFailures == 0 && _retryStart()) return;
       _set(() {
         phase = CheckinPhase.idle;
         notice = voiceTroubleNotice;

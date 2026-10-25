@@ -22,6 +22,9 @@ enum VoiceLook {
   /// The microphone is open.
   listening,
 
+  /// The microphone is on its way: not heard yet (the connection to the recognizer is opening).
+  connecting,
+
   /// Waiting for the server (the microphone is closed).
   thinking,
 
@@ -91,11 +94,11 @@ class _VoiceLiveState extends State<VoiceLive> {
       _timer = Timer(VoiceLive.thinkingDelay, () {
         if (mounted) setState(() => _hidden = false);
       });
-    } else if (next == VoiceLook.between && previous == VoiceLook.speaking) {
+    } else if ((next == VoiceLook.between || next == VoiceLook.connecting) && previous == VoiceLook.speaking) {
       // The microphone is closed, so the gold look is still true for a moment.
       _shown = previous;
       _timer = Timer(VoiceLive.thinkingDelay, () {
-        if (mounted) setState(() => _shown = VoiceLook.between);
+        if (mounted) setState(() => _shown = next);
       });
     }
   }
@@ -259,6 +262,7 @@ class VoicePill extends StatelessWidget {
     final (text, spoken) = switch (shown) {
       VoiceLook.speaking => ('Mochi is talking', 'Mochi is talking'),
       VoiceLook.listening => (reduced ? 'Listening' : 'Listening…', 'Listening'),
+      VoiceLook.connecting => (reduced ? 'Connecting' : 'Connecting…', 'Connecting'),
       VoiceLook.thinking => (reduced ? 'Thinking' : 'Thinking…', 'Mochi is thinking'),
       VoiceLook.waiting => ('Waiting for your tap', 'Waiting for your tap'),
       VoiceLook.micOff => ('Mic off', 'Mic off'),

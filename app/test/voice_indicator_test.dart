@@ -299,7 +299,7 @@ void main() {
       await end(t);
     });
 
-    testWidgets('VC-7 Typing: "Not listening", the text field, Send; "Talk instead" just listens, no re-read', (
+    testWidgets('Typing: no voice pill, the text field, Send; "Talk instead" just listens, no re-read', (
       t,
     ) async {
       await open(t);
@@ -307,7 +307,7 @@ void main() {
       await t.pump();
       await t.pump(const Duration(milliseconds: 400));
       expect(input.listening, isFalse);
-      expect(find.text('Not listening'), findsOneWidget);
+      expect(find.text('Not listening'), findsNothing, reason: 'onboarding typing shows no voice pill');
       expectRings({});
       expect(find.byKey(dot), findsNothing);
       expect(find.byType(TextField), findsOneWidget);
@@ -341,7 +341,7 @@ void main() {
       await t.tap(find.text('Type instead'));
       await t.pump();
       await t.pump(const Duration(milliseconds: 200));
-      expect(find.text('Not listening'), findsOneWidget);
+      expect(find.text('Not listening'), findsNothing, reason: 'onboarding typing shows no voice pill');
       expect(find.byKey(const ValueKey('voice-pill-listening')), findsNothing, reason: 'the 150 ms cross-fade is over');
       await end(t);
     });

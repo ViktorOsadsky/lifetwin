@@ -362,6 +362,7 @@ class AgenticRoutes {
       output: talk.output,
       handsFree: talk.handsFree,
       startState: askOnlyState(r.profile, fields, memoryConsent: r.store.memoryConsent),
+      ownsSpeech: false,
     );
     // Voice was already chosen in the intake: no consent question, straight to the first one.
     lastMissingTalk = c;
@@ -382,8 +383,10 @@ class AgenticRoutes {
         ),
       ),
     );
-    // The speech input and output are the intake's own: stopped here, never disposed.
+    // The speech input and output are the intake's own: stopped here, never disposed. This
+    // conversation's own timers and listeners end with it.
     await c.pauseVoice();
+    c.dispose();
   }
 
   /// "My data": what is saved on this phone, the memory switch, AI and privacy, and Delete my data.

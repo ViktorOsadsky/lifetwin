@@ -73,7 +73,9 @@ class _ExperimentPageState extends State<ExperimentPage> {
     final reduced = MediaQuery.disableAnimationsOf(context);
     final d = reduced ? Duration.zero : const Duration(milliseconds: 200);
     final barOn = titled || _scrolled;
-    final homeShown = HomeButton.shownFor(context);
+    // Back sits in the bar row beside Home, and at large text, where the `{ Name }` banner grows
+    // into the corner Back would otherwise share with it.
+    final inBar = HomeButton.shownFor(context) || MediaQuery.textScalerOf(context).scale(1) > 1.3;
     // On a short phone (320 x 568) a pinned dock would leave almost no room for the page, so it
     // scrolls at the end of the page instead.
     final pinDock = MediaQuery.sizeOf(context).height >= 600;
@@ -140,8 +142,8 @@ class _ExperimentPageState extends State<ExperimentPage> {
                   curve: Curves.easeOut,
                   // Back (and Home beside it) stay pinned in the bar row; a titled page's title
                   // lives in the scrolling body, so nothing ever sits on top of it.
-                  left: titled || _scrolled || homeShown ? 16 : 30,
-                  top: titled || _scrolled || homeShown ? 12 : 50,
+                  left: titled || _scrolled || inBar ? 16 : 30,
+                  top: titled || _scrolled || inBar ? 12 : 50,
                   child: RoundBackButton(
                     label: widget.backLabel,
                     onTap: widget.onBack,
