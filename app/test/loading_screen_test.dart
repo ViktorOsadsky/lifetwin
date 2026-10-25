@@ -41,6 +41,10 @@ void main() {
   });
 
   testWidgets('the first frame waits until Mochi is decoded, then goes through', (t) async {
+    // The prior rendering test may have decoded Mochi already. Exercise a cold
+    // image load so a synchronous cache hit cannot release the frame immediately.
+    t.binding.imageCache.clear();
+    t.binding.imageCache.clearLiveImages();
     expect(t.binding.sendFramesToEngine, isTrue);
     await t.runAsync(() async {
       holdFirstFrameUntilMochi(t.binding, timeout: const Duration(seconds: 10));

@@ -43,9 +43,11 @@ import 'ui/twin_assets.dart';
 import 'voice/cartesia_speech.dart';
 import 'voice/http_conversation_guide.dart';
 import 'voice/voice_token.dart';
+import 'voice/backend_config.dart';
 
-void main() {
+Future<void> main() async {
   holdFirstFrameUntilMochi(WidgetsFlutterBinding.ensureInitialized());
+  BackendConfig.current = await BackendConfig.load();
   runApp(const LifeTwinApp(autoStartOnboarding: true, showGuestEntry: true, loadingScreen: true));
 }
 
