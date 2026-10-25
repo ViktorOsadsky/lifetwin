@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../widgets/whole_word_text.dart';
+import 'home_button.dart';
 import '../theme.dart';
 
 enum LipKind {
@@ -219,7 +220,16 @@ class LinkButton extends StatelessWidget {
 
 /// Round 52pt back button with a soft shadow, for the window corner.
 class RoundBackButton extends StatelessWidget {
-  const RoundBackButton({super.key, required this.onTap, this.label = 'Back', this.icon = Icons.chevron_left_rounded});
+  const RoundBackButton({
+    super.key,
+    required this.onTap,
+    this.label = 'Back',
+    this.icon = Icons.chevron_left_rounded,
+    this.onLeaveCheck,
+  });
+
+  /// Passed to the Home button that sits beside Back on deep screens (see [HomeButton]).
+  final bool Function()? onLeaveCheck;
 
   final VoidCallback onTap;
   final String label;
@@ -227,6 +237,16 @@ class RoundBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final back = _back();
+    // Only a real Back gets Home beside it (a button already drawn as Home is left alone).
+    if (icon != Icons.chevron_left_rounded || !HomeButton.shownFor(context)) return back;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [back, const SizedBox(width: 8), HomeButton(onLeaveCheck: onLeaveCheck)],
+    );
+  }
+
+  Widget _back() {
     return Semantics(
       button: true,
       label: label,

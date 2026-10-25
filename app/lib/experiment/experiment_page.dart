@@ -7,6 +7,7 @@ import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/lottie_burst.dart';
+import '../ui/widgets/home_button.dart';
 import '../ui/widgets/widgets.dart';
 import 'widgets/widgets.dart';
 
@@ -25,6 +26,7 @@ class ExperimentPage extends StatefulWidget {
     this.whatIfPill = false,
     this.mode = LtMode.sun,
     this.backLabel = 'Back',
+    this.onLeaveCheck,
   });
 
   final Widget body;
@@ -38,6 +40,9 @@ class ExperimentPage extends StatefulWidget {
   final bool whatIfPill;
   final LtMode mode;
   final String backLabel;
+
+  /// For conversation screens: true while leaving would cut a talk short (Home asks first).
+  final bool Function()? onLeaveCheck;
 
   @override
   State<ExperimentPage> createState() => _ExperimentPageState();
@@ -106,7 +111,7 @@ class _ExperimentPageState extends State<ExperimentPage> {
                 ),
                 if (titled)
                   Positioned(
-                    left: 82,
+                    left: HomeButton.shownFor(context) ? 150 : 82,
                     right: widget.whatIfPill ? 100 : 16,
                     top: 0,
                     height: 76,
@@ -129,7 +134,7 @@ class _ExperimentPageState extends State<ExperimentPage> {
                   curve: Curves.easeOut,
                   left: titled || _scrolled ? 16 : 30,
                   top: titled || _scrolled ? 12 : 50,
-                  child: RoundBackButton(label: widget.backLabel, onTap: widget.onBack),
+                  child: RoundBackButton(label: widget.backLabel, onTap: widget.onBack, onLeaveCheck: widget.onLeaveCheck),
                 ),
               ],
             ),

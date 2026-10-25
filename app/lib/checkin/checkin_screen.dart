@@ -233,6 +233,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
       mode: LtMode.room,
       onBack: c.emergency ? c.continueAfterEmergency : widget.onDone,
       backLabel: c.emergency ? 'Continue' : 'Back',
+      onLeaveCheck: () => !_finished && !c.emergency && c.phase != CheckinPhase.notStarted,
       dock: _keyboardDock(context),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

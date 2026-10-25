@@ -34,6 +34,7 @@ import 'wellness/repository_adapter.dart';
 import 'wellness/history_screen.dart';
 import 'twin/twin_repository.dart';
 import 'ui/swoosh_route.dart';
+import 'ui/widgets/home_button.dart' show HomeDepth;
 import 'ui/theme.dart';
 import 'ui/twin_appearance.dart';
 import 'ui/twin_assets.dart';
@@ -586,6 +587,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       title: 'LifeTwin',
       debugShowCheckedModeBanner: false,
       theme: lifeTwinTheme(),
+      navigatorObservers: [HomeDepth.instance],
       builder: _agentic.wrap,
       home: ListenableBuilder(
         listenable: Listenable.merge([_controller, _wellness]),
