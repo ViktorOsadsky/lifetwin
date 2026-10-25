@@ -8,9 +8,9 @@ import 'package:lifesim/checkin/checkin_store.dart';
 import 'package:lifesim/checkin/daily_logs.dart';
 import 'package:lifetwin_on_device/lifetwin_on_device.dart';
 
-/// The package's own model and validation, loaded from its files.
+/// The app's vendored engine (packages/lifetwin_on_device), loaded from its files.
 LifeTwinEngine engine() {
-  const dir = '../model_handoff/lifetwin_on_device/assets';
+  const dir = 'packages/lifetwin_on_device/assets';
   final model = LifeTwinModel.fromArtifacts(
     jsonDecode(File('$dir/model.json').readAsStringSync()) as Map<String, dynamic>,
     Uint8List.fromList(gzip.decode(File('$dir/support_reference.f64.gz').readAsBytesSync())),

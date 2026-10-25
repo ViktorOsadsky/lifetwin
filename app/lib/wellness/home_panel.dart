@@ -73,11 +73,19 @@ class HomeWellnessPanel extends StatelessWidget {
     final title = Row(
       children: [
         Expanded(
-          child: Semantics(
-            header: true,
-            child: WholeWordText('Health score', style: LtText.display(22)),
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 10,
+            children: [
+              Semantics(
+                header: true,
+                child: WholeWordText('Health score', style: LtText.display(22)),
+              ),
+              if (compact && stateLine != null) WholeWordText(stateLine!, style: LtText.body(size: 15)),
+            ],
           ),
         ),
+        if (compact) Flexible(child: chip),
         info,
       ],
     );
@@ -102,6 +110,7 @@ class HomeWellnessPanel extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           PercentileBar(percent: percentile),
+          if (compact && snapshot.history.length >= 2) ScoreSparkline(values: snapshot.history),
         ] else if (score == null)
           WholeWordText(
             snapshot.status == null || snapshot.message == null ? 'Getting to know you' : snapshot.message!,
@@ -118,7 +127,7 @@ class HomeWellnessPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           title,
-          if (!big && score != null)
+          if (!big && !compact && score != null)
             Padding(
               padding: const EdgeInsets.only(right: 8, bottom: 4),
               child: WholeWordText(HomeWellnessPanel.tagline, style: LtText.body(size: 15)),
@@ -145,23 +154,24 @@ class HomeWellnessPanel extends StatelessWidget {
                 ],
               ),
             ),
-          const SizedBox(height: 2),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Row(
-              children: [
-                if (score != null) trend else const Spacer(),
-                const SizedBox(width: 8),
-                Flexible(child: chip),
-              ],
+          if (!compact) const SizedBox(height: 2),
+          if (!compact)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(
+                children: [
+                  if (score != null) trend else const Spacer(),
+                  const SizedBox(width: 8),
+                  Flexible(child: chip),
+                ],
+              ),
             ),
-          ),
           if (snapshot.roughGuide)
             const Padding(
               padding: EdgeInsets.only(right: 8),
               child: Align(alignment: Alignment.centerLeft, child: RoughGuideBadge(caveat: extrapolationCaveat)),
             ),
-          if (stateLine != null)
+          if (!compact && stateLine != null)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: WholeWordText(stateLine!, style: LtText.body(size: 15)),
