@@ -130,7 +130,14 @@ def test_under_age(client):
 
 
 def test_existing_fields_unchanged(client):
-    out = post(client, {"age": 70, "sex": "male", "smoking_status": "current"})
+    coping = [idea.id for idea in IDEAS if idea.coping]  # set aside: show the habit change
+    out = client.post(
+        "/api/recommendations",
+        json={
+            "profile": {"age": 70, "sex": "male", "smoking_status": "current"},
+            "excluded_ids": coping,
+        },
+    ).json()
     rec = out["recommendations"][0]
     # The id is now the catalog idea's id; the lever and its card are unchanged.
     assert rec["lever"] == "quit_smoking" and BY_ID[rec["id"]].lever == "quit_smoking"
