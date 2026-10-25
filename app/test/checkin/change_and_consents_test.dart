@@ -183,6 +183,32 @@ void main() {
       expect(AiProvider.fromCapabilities(null), isNull);
     });
 
+    testWidgets('the training line shows only when the server says so, with the company name from the server', (
+      t,
+    ) async {
+      for (final (train, expected) in [(true, 'Acme may use what you share to improve its AI.'), (false, null)]) {
+        final p = AiProvider.fromCapabilities({
+          'personalize': {
+            'provider': 'p',
+            'display_name': 'Acme Assistant',
+            'configured': true,
+            'company': 'Acme',
+            'may_train_on_content': train,
+          },
+        })!;
+        await pump(t, OutsideAiConsentScreen(provider: p, onChoose: (_) {}));
+        expect(
+          find.text('Acme may use what you share to improve its AI.'),
+          expected == null ? findsNothing : findsOneWidget,
+        );
+      }
+      // Missing fields: hidden.
+      final bare = AiProvider.fromCapabilities({
+        'personalize': {'provider': 'p', 'display_name': 'Acme Assistant', 'configured': true},
+      })!;
+      expect(bare.trainingLine, isNull);
+    });
+
     testWidgets('consent screen: the name is dynamic, Yes and No equal, no retention promise, Back = No', (t) async {
       for (final name in ['Provider One', 'Another Provider']) {
         final answers = <bool>[];

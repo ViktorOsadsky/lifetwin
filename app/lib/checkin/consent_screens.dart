@@ -213,6 +213,7 @@ class OutsideAiConsentScreen extends StatelessWidget {
               onNo: () => onChoose(false),
               onYes: () => onChoose(true),
             ),
+            if (provider.trainingLine case final line?) ...[const SizedBox(height: 6), TrainingLine(line)],
             const SizedBox(height: 6),
             Text(
               'No thanks? You’ll still get built-in tips.',
@@ -296,6 +297,23 @@ class OutsideAiConsentScreen extends StatelessWidget {
   );
 }
 
+/// "Meta may use what you share to improve its AI." (the company comes from the server): shown beside an
+/// outside-AI Yes button only when the server says the provider may train on content.
+class TrainingLine extends StatelessWidget {
+  const TrainingLine(this.line, {super.key});
+  final String line;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: WholeWordText(
+      line,
+      style: LtText.body(weight: FontWeight.w700),
+      textAlign: TextAlign.center,
+    ),
+  );
+}
+
 /// "AI and privacy" (Z-25): two separate whole-row switches, both off until turned on. The provider
 /// comes from `/api/capabilities`. Turning Personal suggestions on opens the consent first
 /// ([onAskOutsideAi]); turning it off just turns it off.
@@ -360,6 +378,7 @@ class AiSettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
+            if (p?.trainingLine case final line?) TrainingLine(line),
             if (p == null || !p.configured)
               WholeWordText(
                 'No AI provider is set up. You’ll get built-in tips.',

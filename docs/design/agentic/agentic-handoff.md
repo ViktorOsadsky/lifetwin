@@ -8,13 +8,14 @@ The rules every screen follows, including the owner's rulings and the engine con
 
 | Set | What it covers | Status | Overview | Screens | Source | Flutter owner |
 |---|---|---|---|---|---|---|
-| K | Home and health score: reveal, Home, score detail, "See your estimate", age 27, large text, 320pt, under 18 | Approved 8.7 / 8.7 (a small polish round is running) | [sheet](screens/sheets/K-sheet.jpg) | [screens/K](screens/K) | [source/K](source/K) | Justin, #54 |
+| K | Home and health score: reveal, Home, score detail, "See your estimate", age 27, large text, 320pt, under 18 | Approved 8.7 / 8.7 (a small polish round is running) | [sheet](screens/sheets/K-sheet.jpg) | [screens/K](screens/K) | [source/K](source/K) | design session, #54 |
 | Y | Experiment with your twin | Approved 8.6 / 8.8 | [sheet](screens/sheets/Y-sheet.jpg) | [screens/Y](screens/Y) | [source/Y](source/Y) | design session, #58 |
 | Z | Conversation, daily and weekly check-ins, consents, delete my data | Approved 8.9 / 8.6 | [sheet](screens/sheets/Z-sheet.jpg) | [screens/Z](screens/Z) | [source/Z](source/Z) | design session, #58 |
-| S | Upload, daily plan, Outlook drivers | Approved 8.7 | [sheet](screens/sheets/S-sheet.jpg) | [screens/S](screens/S) | [source/S](source/S) | Justin, #56 |
-| Q | Quiz arena, Customize | Approved 8.8 / 8.7 | [sheet](screens/sheets/Q-sheet.jpg) | [screens/Q](screens/Q) | [source/Q](source/Q) | Justin, #55 |
-| R | Failures, Settings, History, large text | Approved 8.6 / 8.7 | [sheet](screens/sheets/R-sheet.jpg) | [screens/R](screens/R) | [source/R](source/R) | Justin, #57 |
+| S | Upload, daily plan, Outlook drivers | Approved 8.7 | [sheet](screens/sheets/S-sheet.jpg) | [screens/S](screens/S) | [source/S](source/S) | design session, #56 |
+| Q | Quiz arena, Customize | Approved 8.8 / 8.7 | [sheet](screens/sheets/Q-sheet.jpg) | [screens/Q](screens/Q) | [source/Q](source/Q) | design session, #55 |
+| R | Failures, Settings, History, large text | Approved 8.6 / 8.7 | [sheet](screens/sheets/R-sheet.jpg) | [screens/R](screens/R) | [source/R](source/R) | design session, #57 |
 | H | ESP32 wristband | Approved 8.6 | [sheet](screens/sheets/H-sheet.jpg) | [screens/H](screens/H) | [source/H](source/H) | design session, #58 |
+| U | Health documents | Approved (blockers fixed) | [sheet](screens/sheets/U-sheet.jpg) | [screens/U](screens/U) | [source/U](source/U) | design session |
 
 Sprite layers for the twin (bodies, poses, hats, age and build, cosmetics) are in [sprite-layers/](sprite-layers/README.md).
 
@@ -28,10 +29,10 @@ Sprite layers for the twin (bodies, poses, hats, age and build, cosmetics) are i
 ## Things that are easy to get wrong
 - **The health score leads.** On every screen that shows the outlook, the score card sits above the outlook and is stronger: bigger, and first in reading and screen-reader order.
   - The line under the score is "Feeling good now, and healthy years ahead." It's dropped at text scale 1.5× and up.
-- **`healthScore` is a placeholder**, 0–100, until Viktor's spec lands. 72 appears in every design.
+- The health score is Viktor's model score, shown so that higher is better (0 = survey average), plus "Healthier than X of 100 people your age". Read it from the engine; never hard-code it.
   - Don't add bands, colours by value, a formula or point values.
   - Habit ticks and check-in counts never feed it.
-- **The lifespan screens are not for build** (K-1b, K-7, K-7c). They carry X–Y placeholders until Viktor's method is in, and the five-year outlook is the fallback.
+- Lifespan: shown once at the end of onboarding as a rough year and age range (never a day), then only behind "See your estimate".
 - **Read numbers from the model or the store.** Don't hard-code them. The canonical persona is Rosa (97 of 100); some older R screens may still show an earlier persona.
 - **Age 18+** for the score, outlook, lifespan and health advice. Under 18 gets Mochi, the room, Customize and the quiz.
 - **Check-ins confirm once, at the end.** There's no per-answer "Looks right?". The Home check-in button is the `CheckInEntry` widget from #58; mount it, don't rebuild it.
