@@ -79,7 +79,11 @@ void main() {
     await t.pumpWidget(
       MaterialApp(
         theme: lifeTwinTheme(),
-        builder: routes.wrap,
+        // The live voice look breathes while the microphone is open; keep these routing tests settled.
+        builder: (c, child) => MediaQuery(
+          data: MediaQuery.of(c).copyWith(disableAnimations: true),
+          child: routes.wrap(c, child),
+        ),
         home: Builder(
           builder: (c) {
             home = c;
@@ -190,7 +194,11 @@ void main() {
     await t.pumpWidget(
       MaterialApp(
         theme: lifeTwinTheme(),
-        builder: routes.wrap,
+        // The live voice look breathes while the microphone is open; keep these routing tests settled.
+        builder: (c, child) => MediaQuery(
+          data: MediaQuery.of(c).copyWith(disableAnimations: true),
+          child: routes.wrap(c, child),
+        ),
         home: const Scaffold(body: CheckInEntry()),
       ),
     );
@@ -206,7 +214,11 @@ void main() {
     await t.pumpWidget(
       MaterialApp(
         theme: lifeTwinTheme(),
-        builder: routes.wrap,
+        // The live voice look breathes while the microphone is open; keep these routing tests settled.
+        builder: (c, child) => MediaQuery(
+          data: MediaQuery.of(c).copyWith(disableAnimations: true),
+          child: routes.wrap(c, child),
+        ),
         home: Builder(
           builder: (c) => Scaffold(body: Column(children: routes.pills(c))),
         ),
@@ -251,7 +263,11 @@ void main() {
     await t.pumpWidget(
       MaterialApp(
         theme: lifeTwinTheme(),
-        builder: routes.wrap,
+        // The live voice look breathes while the microphone is open; keep these routing tests settled.
+        builder: (c, child) => MediaQuery(
+          data: MediaQuery.of(c).copyWith(disableAnimations: true),
+          child: routes.wrap(c, child),
+        ),
         home: Builder(
           builder: (c) => Scaffold(body: Column(children: routes.pills(c))),
         ),

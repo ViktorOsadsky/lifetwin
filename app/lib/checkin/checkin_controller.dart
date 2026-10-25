@@ -154,6 +154,13 @@ class CheckinController extends ChangeNotifier {
   int _speechGen = 0;
 
   bool _nudged = false;
+  bool _nudging = false;
+
+  /// Read-only, for the voice indicator: the nudge was said for this question.
+  bool get nudged => _nudged;
+
+  /// Read-only, for the voice indicator: the nudge is being spoken now (the microphone is closed).
+  bool get nudgeSpeaking => _nudging;
   int _drops = 0;
   static const _dropRestarts = 3;
   bool _paused = false;
@@ -463,15 +470,20 @@ class CheckinController extends ChangeNotifier {
     _starting = again().whenComplete(() => _starting = null);
   }
 
-  /// Hands-free, after a long quiet: "Take your time, I'm listening." once, then listening again.
+  /// Hands-free, after a long quiet: "Take your time. I'm still listening." once, then listening again.
   Future<void> _nudge() async {
     _nudged = true;
     try {
       await input.cancel().timeout(_quickLimit);
     } catch (_) {}
     if (phase != CheckinPhase.listening || _disposed) return;
-    _set(() => phase = CheckinPhase.idle);
-    if (await _speak(listeningNudge)) _listenAgain();
+    _set(() {
+      phase = CheckinPhase.idle;
+      _nudging = true;
+    });
+    final said = await _speak(listeningNudge);
+    _set(() => _nudging = false);
+    if (said) _listenAgain();
   }
 
   /// Every caption (a new partial or final) restarts the end-of-turn wait, once a word is heard.
@@ -616,7 +628,14 @@ class CheckinController extends ChangeNotifier {
       await _stopSpeech();
     }
     _set(() => typing = value);
-    if (!value) _listenAgain(); // back to voice: hands-free listens again
+    if (!value) {
+      // Back to voice: hands-free repeats the question (Mochi always speaks first), then listens.
+      if (continuous && canHearAgain) {
+        unawaited(hearAgain());
+      } else {
+        _listenAgain();
+      }
+    }
   }
 
   Future<void> hearAgain() async {
@@ -836,7 +855,9 @@ class CheckinController extends ChangeNotifier {
     if (first && continuous) {
       wait = Timer(firstAudioLimit, () {
         if (heard || gen != _speechGen || _disposed) return;
-        debugPrint('LifeTwin voice: no audio ${firstAudioLimit.inMilliseconds} ms after the first line came; listening instead');
+        debugPrint(
+          'LifeTwin voice: no audio ${firstAudioLimit.inMilliseconds} ms after the first line came; listening instead',
+        );
         _openedAt = null;
         late.complete();
       });

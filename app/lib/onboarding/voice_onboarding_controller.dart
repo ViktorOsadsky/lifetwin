@@ -40,7 +40,7 @@ const documentNoneNotice = "No answers from your document were added, so I'll ke
 const healthRejectedPrefix = "I couldn't add your Apple Health answers. ";
 
 /// Hands-free: said once after a long quiet; then Mochi just keeps listening.
-const listeningNudge = "Take your time, I'm listening.";
+const listeningNudge = "Take your time. I'm still listening.";
 
 /// Runs the conversation loop. The server decides what happens; this class only
 /// holds the caller-owned state, moves audio in and out, and keeps answers safe
@@ -129,6 +129,13 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   /// Hands-free: the one nudge for this question was said.
   bool _nudged = false;
+  bool _nudging = false;
+
+  /// Read-only, for the voice indicator: the nudge was said for this question.
+  bool get nudged => _nudged;
+
+  /// Read-only, for the voice indicator: the nudge is being spoken now (the microphone is closed).
+  bool get nudgeSpeaking => _nudging;
 
   /// Hands-free: connections lost in a row before anything was heard (restarted out of sight).
   int _drops = 0;
@@ -506,15 +513,20 @@ class VoiceOnboardingController extends ChangeNotifier {
     _starting = again().whenComplete(() => _starting = null);
   }
 
-  /// Hands-free, after a long quiet: "Take your time, I'm listening." once, then listening again.
+  /// Hands-free, after a long quiet: "Take your time. I'm still listening." once, then listening again.
   Future<void> _nudge() async {
     _nudged = true;
     try {
       await input.cancel().timeout(_quickLimit);
     } catch (_) {}
     if (phase != VoicePhase.listening || _disposed) return;
-    _set(() => phase = VoicePhase.idle);
-    if (await _speak(listeningNudge, mascotLine: false)) _listenAgain();
+    _set(() {
+      phase = VoicePhase.idle;
+      _nudging = true;
+    });
+    final said = await _speak(listeningNudge, mascotLine: false);
+    _set(() => _nudging = false);
+    if (said) _listenAgain();
   }
 
   /// Every caption (a new partial or final) restarts the end-of-turn wait, once a word is heard.
@@ -694,7 +706,14 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (!_busy && phase == VoicePhase.interpreting) _set(() => phase = VoicePhase.idle);
     }
     _set(() => typing = value);
-    if (!value) _listenAgain(); // back to voice: hands-free listens again
+    if (!value) {
+      // Back to voice: hands-free repeats the question (Mochi always speaks first), then listens.
+      if (continuous && canHearAgain) {
+        unawaited(hearAgain());
+      } else {
+        _listenAgain();
+      }
+    }
   }
 
   /// The answer to "Talk with me?" when asked after starting by typing.
