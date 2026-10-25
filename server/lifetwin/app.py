@@ -9,6 +9,8 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from lifetwin.advisor import router as advisor_router
+from lifetwin.change import ChangeService
+from lifetwin.change import router as change_router
 from lifetwin.checkin import CheckinService
 from lifetwin.checkin import router as checkin_router
 from lifetwin.core.config import Settings
@@ -55,6 +57,7 @@ FIELD_WORDS = {
     "alcohol_drinks_yesterday": "yesterday's drinks",
     "wellbeing": "how you feel",
     "local_date": "date",
+    "memory_consent": "memory",
 }
 
 
@@ -103,7 +106,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title="LifeTwin backend",
         version="0.1.0",
         description=(
-            "Mascot intake and check-ins, survival forecast, educational plans and quiz content. "
+            "Mascot intake, check-ins and changes, survival forecast, educational plans and quiz content. "
             "Compare and sensitivity are deferred."
         ),
         lifespan=lifespan,
@@ -146,6 +149,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     # Check-ins are guided only and stateless: the caller sends the previous answers.
     application.state.checkin_service = CheckinService()
+    # Changing a saved answer is a stateless talk with Mochi: the caller sends the profile.
+    application.state.change_service = ChangeService()
     application.state.research_client = TavilyResearch(
         api_key=settings.tavily_api_key.get_secret_value(),
         timeout_seconds=settings.provider_timeout_seconds,
@@ -267,6 +272,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         checkin_router,
         prefix="/api",
         responses={**BODY_ERRORS, **_described({409: "Invalid check-in transition"})},
+    )
+    application.include_router(
+        change_router,
+        prefix="/api",
+        responses={**BODY_ERRORS, **_described({409: "Invalid change transition"})},
     )
     application.include_router(advisor_router, prefix="/api", responses=BODY_ERRORS)
     application.include_router(recommendations_router, prefix="/api", responses=BODY_ERRORS)

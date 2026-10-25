@@ -951,6 +951,542 @@
     }
   },
   {
+    "name": "change-free-start",
+    "method": "POST",
+    "path": "/api/change/start",
+    "request_schema": "change.start.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Hi, it's Mochi! What would you like to update?",
+      "complete": false,
+      "state": {
+        "phase": "choosing",
+        "field": null
+      }
+    }
+  },
+  {
+    "name": "change-weight-start",
+    "method": "POST",
+    "path": "/api/change/start",
+    "request_schema": "change.start.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      },
+      "field": "weight_kg"
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Let's update your weight. Right now I have you at 160 pounds. What's changed?",
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      }
+    }
+  },
+  {
+    "name": "change-free-answer",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "I quit smoking",
+      "state": {
+        "phase": "choosing"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "current",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Right now I have that you smoke. I heard you don't smoke now, but you used to. Is that right?",
+      "complete": false,
+      "state": {
+        "phase": "confirming",
+        "field": "smoking_status",
+        "pending": {
+          "smoking_status": "former"
+        }
+      },
+      "profile_update": {
+        "smoking_status": null
+      }
+    }
+  },
+  {
+    "name": "change-big-jump-double-check",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "120 pounds",
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "That's quite a change from 160 to 120 pounds. Is 120 right?",
+      "complete": false,
+      "state": {
+        "phase": "confirming"
+      }
+    }
+  },
+  {
+    "name": "change-confirm-profile-update",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "yes",
+      "state": {
+        "phase": "confirming",
+        "field": "weight_kg",
+        "pending": {
+          "weight_kg": 68.0389
+        }
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Got it. I've updated your weight.",
+      "complete": true,
+      "profile_update": {
+        "age": null,
+        "sex": null,
+        "height_cm": null,
+        "weight_kg": 68.0389,
+        "sleep_hours": null,
+        "exercise_minutes_weekly": null,
+        "smoking_status": null,
+        "alcohol_drinks_weekly": null,
+        "diabetes": null,
+        "systolic_bp": null,
+        "diastolic_bp": null
+      },
+      "state": {
+        "phase": "done"
+      },
+      "habit_note": null
+    }
+  },
+  {
+    "name": "change-probe-with-memory-consent",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "150 pounds",
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      },
+      "memory_consent": true
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Thank you. Before I read it back: did something change, like a new routine?",
+      "complete": false,
+      "state": {
+        "phase": "probing",
+        "probed": true
+      }
+    }
+  },
+  {
+    "name": "change-habit-note",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "yes",
+      "state": {
+        "phase": "confirming",
+        "field": "weight_kg",
+        "pending": {
+          "weight_kg": 68.0389
+        },
+        "probed": true,
+        "note": "I've been walking every morning"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      },
+      "memory_consent": true
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "complete": true,
+      "habit_note": {
+        "field": "weight_kg",
+        "text": "I've been walking every morning"
+      },
+      "profile_update": {
+        "weight_kg": 68.0389
+      }
+    }
+  },
+  {
+    "name": "change-age-more-than-a-birthday",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "I'm 75",
+      "state": {
+        "phase": "asking",
+        "field": "age"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Your age only changes on your birthday, so I can't change it from 72 to 75. If you've had a birthday, just tell me, and I'll make it 73.",
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "pending": {
+          "age": null
+        }
+      }
+    }
+  },
+  {
+    "name": "change-sex-at-birth-refused",
+    "method": "POST",
+    "path": "/api/change/start",
+    "request_schema": "change.start.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      },
+      "field": "sex"
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Sex at birth can't be changed here. Your twin's forecast is built on it, so it stays as you first told me. If it was saved by mistake, \"Delete my data\" in Settings lets you start fresh. Is there anything else you'd like to update?",
+      "complete": false,
+      "state": {
+        "phase": "choosing",
+        "field": null
+      }
+    }
+  },
+  {
+    "name": "change-diabetes-asks-doctor",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "I have diabetes now",
+      "state": {
+        "phase": "asking",
+        "field": "diabetes"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Did a doctor tell you that you have diabetes?",
+      "complete": false,
+      "state": {
+        "phase": "confirming",
+        "pending": {
+          "diabetes": true
+        }
+      }
+    }
+  },
+  {
+    "name": "change-emergency-pause",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "I have chest pain right now",
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "I'm sorry you're going through that. If you need help right now, please call 911. We can carry on whenever you're ready.",
+      "emergency": true,
+      "complete": false,
+      "mascot_events": {
+        "$each": {
+          "state": "concerned"
+        }
+      },
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      }
+    }
+  },
+  {
+    "name": "change-resume-after-pause",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "resume",
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 200,
+    "response_schema": "change.schema.json",
+    "response_subset": {
+      "message": "Okay, let's carry on. Right now I have you at 160 pounds. What's changed?",
+      "emergency": false,
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg"
+      }
+    }
+  },
+  {
+    "name": "change-confirm-nothing",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "confirm",
+      "state": {
+        "phase": "choosing"
+      },
+      "profile": {
+        "age": 72,
+        "sex": "female",
+        "height_cm": 165.1,
+        "weight_kg": 72.5748,
+        "sleep_hours": 6,
+        "exercise_minutes_weekly": 60,
+        "smoking_status": "former",
+        "alcohol_drinks_weekly": 3,
+        "diabetes": false,
+        "systolic_bp": 130,
+        "diastolic_bp": 80
+      }
+    },
+    "status": 409,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_change_transition"
+    }
+  },
+  {
+    "name": "change-inconsistent-state",
+    "method": "POST",
+    "path": "/api/change/turn",
+    "request_schema": "change.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "150",
+      "state": {
+        "phase": "asking",
+        "field": "weight_kg",
+        "pending": {
+          "weight_kg": 70
+        }
+      }
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
+    "name": "change-diastolic-is-not-a-field",
+    "method": "POST",
+    "path": "/api/change/start",
+    "request_schema": "change.start.request.schema.json",
+    "request_schema_valid": false,
+    "request": {
+      "field": "diastolic_bp"
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
+  },
+  {
     "name": "checkin-quick-start-health-read-back",
     "method": "POST",
     "path": "/api/checkin/start",

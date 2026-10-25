@@ -104,18 +104,10 @@ def _shift(day: str, days: int) -> str:
     return (date.fromisoformat(day) + timedelta(days=days)).isoformat()
 
 
-class ProfileUpdate(HealthProfile):
-    """A weekly check-in's confirmed answers as profile values: the HealthProfile
-    fields, plus the on-device model's activity and sitting inputs in its own names."""
-
-    vigorous_recreation_min_week: Annotated[int | None, WholeNumber] = Field(
-        default=None, ge=0, le=10080
-    )
-    moderate_recreation_min_week: Annotated[int | None, WholeNumber] = Field(
-        default=None, ge=0, le=10080
-    )
-    # Awake minutes sitting on a usual day.
-    sedentary_min_day: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1439)
+# A weekly check-in's confirmed answers as profile values. HealthProfile now holds the
+# on-device model's activity and sitting inputs itself, so check-ins and changes return
+# the same shape.
+ProfileUpdate = HealthProfile
 
 
 class DailyLogPart(ApiModel):

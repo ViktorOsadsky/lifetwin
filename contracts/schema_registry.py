@@ -5,6 +5,7 @@ where every field the server always emits (including defaulted safety markers) i
 """
 
 from lifetwin.advisor.models import AdvisorRequest, AdvisorResponse
+from lifetwin.change.models import ChangeResponse, ChangeStartRequest, ChangeTurnRequest
 from lifetwin.checkin.models import CheckinResponse, CheckinStartRequest, CheckinTurnRequest
 from lifetwin.core.models import (
     ApiError,
@@ -36,6 +37,9 @@ SCHEMAS = {
     "checkin.start.request.schema.json": (CheckinStartRequest, REQUEST),
     "checkin.turn.request.schema.json": (CheckinTurnRequest, REQUEST),
     "checkin.schema.json": (CheckinResponse, RESPONSE),
+    "change.start.request.schema.json": (ChangeStartRequest, REQUEST),
+    "change.turn.request.schema.json": (ChangeTurnRequest, REQUEST),
+    "change.schema.json": (ChangeResponse, RESPONSE),
     "advisor.request.schema.json": (AdvisorRequest, REQUEST),
     "advisor.schema.json": (AdvisorResponse, RESPONSE),
     "recommendations.request.schema.json": (RecommendationRequest, REQUEST),

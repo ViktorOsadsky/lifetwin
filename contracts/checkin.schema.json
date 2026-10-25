@@ -944,38 +944,9 @@
       "title": "HabitNote",
       "type": "object"
     },
-    "MascotEvent": {
+    "HealthProfile": {
       "additionalProperties": false,
-      "properties": {
-        "caption": {
-          "maxLength": 1500,
-          "minLength": 1,
-          "title": "Caption",
-          "type": "string"
-        },
-        "state": {
-          "enum": [
-            "asking",
-            "thinking",
-            "confirming",
-            "celebrating",
-            "idle",
-            "concerned"
-          ],
-          "title": "State",
-          "type": "string"
-        }
-      },
-      "required": [
-        "state",
-        "caption"
-      ],
-      "title": "MascotEvent",
-      "type": "object"
-    },
-    "ProfileUpdate": {
-      "additionalProperties": false,
-      "description": "A weekly check-in's confirmed answers as profile values: the HealthProfile\nfields, plus the on-device model's activity and sitting inputs in its own names.",
+      "description": "Explicitly supplied metric inputs; no risk or lifespan inference.",
       "properties": {
         "age": {
           "anyOf": [
@@ -1227,7 +1198,36 @@
         "moderate_recreation_min_week",
         "vigorous_recreation_min_week"
       ],
-      "title": "ProfileUpdate",
+      "title": "HealthProfile",
+      "type": "object"
+    },
+    "MascotEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "caption": {
+          "maxLength": 1500,
+          "minLength": 1,
+          "title": "Caption",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "asking",
+            "thinking",
+            "confirming",
+            "celebrating",
+            "idle",
+            "concerned"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state",
+        "caption"
+      ],
+      "title": "MascotEvent",
       "type": "object"
     }
   },
@@ -1295,7 +1295,7 @@
       "type": "string"
     },
     "profile_update": {
-      "$ref": "#/$defs/ProfileUpdate"
+      "$ref": "#/$defs/HealthProfile"
     },
     "provider_status": {
       "const": "not_configured",

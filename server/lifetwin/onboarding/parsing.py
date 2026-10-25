@@ -3170,3 +3170,40 @@ NO_READING = (
 def no_new_reading(text: str) -> bool:
     """ "No", "I haven't had it checked": no blood pressure reading to give."""
     return bool(re.fullmatch(NO_READING, _plain(text)))
+
+
+# ---------------------------------------------------------------------------
+# Change requests (lifetwin/change): small additions read by the change conversation
+# ---------------------------------------------------------------------------
+
+WEIGHT_CHANGE = re.compile(
+    r"\b(?P<way>lost|dropped|shed|gained|put on)\s+(?:about |around |roughly |nearly |almost |"
+    rf"just |maybe )?{N}\s?(?P<unit>lb|kg)\b"
+)
+
+
+def weight_change(text: str) -> tuple[float, str] | None:
+    """A gain or loss said in a change request ("I lost 10 pounds"): signed kg, and the
+    canonical reply without it. None when a doubt, a vague amount, the past or someone
+    else makes the amount unsafe, or when it is said more than once."""
+    canonical = _canonical(normalize_text(text))
+    if LONG_NUMBER.search(canonical):
+        return None
+    found = list(WEIGHT_CHANGE.finditer(canonical))
+    if len(found) != 1:
+        return None
+    match = found[0]
+    rest = canonical[: match.start()] + " " + canonical[match.end() :]
+    if _doubtful(rest) or VAGUE.search(_unhedged(rest)) or PAST_SPOIL.search(rest):
+        return None
+    if _others(canonical):
+        return None
+    amount = float(match.group(2)) * (LB_PER_KG if match.group("unit") == "lb" else 1)
+    sign = -1 if match.group("way") in {"lost", "dropped", "shed"} else 1
+    return sign * amount, " ".join(rest.split())
+
+
+def someone_else(text: str) -> bool:
+    """A reply only about another person ("my wife's is 120 over 70")."""
+    text = normalize_text(text)
+    return _others(text) and not _mine(text)

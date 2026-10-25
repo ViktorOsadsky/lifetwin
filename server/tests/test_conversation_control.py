@@ -743,9 +743,16 @@ def test_no_reply_in_the_test_corpora_is_a_false_emergency():
         data_file = json.loads(path.read_text())
         # Held-out sets wrap their cases with an "about" note.
         for case in data_file["cases"] if isinstance(data_file, dict) else data_file:
+            if case.get("emergency") is True:
+                continue  # the change corpora's deliberate emergencies
             if "text" in case:
                 replies.add(case["text"])
-            replies.update(turn["say"] for turn in case.get("turns", []))
+            # Dialogues give turns as {"say": ...}; the change corpora as plain strings.
+            replies.update(
+                turn if isinstance(turn, str) else turn["say"]
+                for turn in case.get("turns", [])
+                if not (isinstance(turn, str) and turn.startswith("@"))  # "@resume": an action
+            )
     assert len(replies) >= 800
     assert [text for text in sorted(replies) if emergency(text)] == []
 
