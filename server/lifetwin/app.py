@@ -23,6 +23,7 @@ from lifetwin.core.models import (
     HealthProfile,
     SensitivityRequest,
 )
+from lifetwin.habits import router as habits_router
 from lifetwin.onboarding import ChatCompletionsExtractor, ConversationService, OpenAIExtractor
 from lifetwin.onboarding import router as onboarding_router
 from lifetwin.prediction import load_model
@@ -254,6 +255,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         responses={**BODY_ERRORS, **_described({409: "Invalid change transition"})},
     )
     application.include_router(advisor_router, prefix="/api", responses=BODY_ERRORS)
+    application.include_router(
+        habits_router,
+        prefix="/api",
+        responses={
+            **BODY_ERRORS,
+            **_described({404: "Habit not found", 409: "Invalid habit transition"}),
+        },
+    )
     application.include_router(
         quiz_router,
         prefix="/api",
