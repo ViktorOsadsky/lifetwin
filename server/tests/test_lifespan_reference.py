@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -131,7 +132,31 @@ def test_profile_checks() -> None:
             lr.check_profile(p | bad)
 
 
+_NUMBER = re.compile(r"-?\d+\.\d+(?:[eE][-+]?\d+)?")
+
+
+def _close(a: object, b: object) -> bool:
+    # Floats may differ in the last bits between platforms' maths libraries.
+    if isinstance(a, float) or isinstance(b, float):
+        return (
+            isinstance(a, (int, float))
+            and isinstance(b, (int, float))
+            and math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-12)
+        )
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(_close(a[k], b[k]) for k in a)
+    if isinstance(a, list) and isinstance(b, list):
+        return len(a) == len(b) and all(_close(x, y) for x, y in zip(a, b))
+    return a == b
+
+
 def test_golden_and_dart_data_are_current(inputs: lr.Inputs) -> None:
     """Regenerate with: python server/tools/lifespan_reference.py build"""
-    assert json.loads(lr.GOLDEN.read_text()) == json.loads(json.dumps(lr.build_golden(inputs)))
-    assert lr.DART_DATA.read_text() == lr.render_dart_data(inputs)
+    assert _close(
+        json.loads(lr.GOLDEN.read_text()), json.loads(json.dumps(lr.build_golden(inputs)))
+    )
+    saved, fresh = lr.DART_DATA.read_text(), lr.render_dart_data(inputs)
+    assert _NUMBER.sub("#", saved) == _NUMBER.sub("#", fresh)
+    assert _close(
+        [float(n) for n in _NUMBER.findall(saved)], [float(n) for n in _NUMBER.findall(fresh)]
+    )
