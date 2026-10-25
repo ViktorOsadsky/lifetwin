@@ -4,7 +4,7 @@ This folder (`lib/twin/`) is the data and logic layer behind the forecast, "expe
 
 ## The model package
 
-`packages/lifetwin_on_device/` is a pinned Cox snapshot (model `personal-cox-v2-20261024T182404Z`), originally copied from `model_handoff/lifetwin_on_device/`. Main's score remains the negated Cox log hazard and its reveal remains the CDC wrapper. The root handoff has separate experimental APIs. [PR #126](https://github.com/ViktorOsadsky/lifetwin/pull/126), reviewed at `02f5716`, proposes a median-relative Cox health index and mixed projection/CDC reveal, but is **open and held for owner confirmation**. The conditional proposal below is not an implementation-status promotion. [Contract handoff](../../docs/handoffs/hazard-projection-docs.md).
+`packages/lifetwin_on_device/` is a pinned Cox snapshot (model `personal-cox-v2-20261024T182404Z`), originally copied from `model_handoff/lifetwin_on_device/`. Main's score remains the negated Cox log hazard and its reveal remains the CDC wrapper. The root handoff has separate experimental APIs. [PR #126](https://github.com/ViktorOsadsky/lifetwin/pull/126), reviewed at `787e71a`, proposes a median-relative Cox health index and blended projection/CDC reveal, but is **open and held for owner confirmation**. The conditional proposal below is not an implementation-status promotion. [Contract handoff](../../docs/handoffs/hazard-projection-docs.md).
 
 - **Why a copy:** it pins the model/API the app was tested with, so a new root export cannot silently change app results. The current root package removed the assessment/guidance API used here; adoption requires an explicit adapter integration and relevant checks, rather than a blind copy.
 - **Checks** (run in `packages/lifetwin_on_device/`): `flutter test` and `dart tool/check.dart`. Both pass on macOS. `flutter analyze` in `app/` excludes `packages/**` because the vendored code uses its own style.
@@ -80,7 +80,7 @@ Owner override (2026-10-24): a rough expected year and age range may be shown on
 
 ## Conditional proposal in held PR #126
 
-The following describes source at `02f57169976337db66e74aa9feaa740043d0e636`, **not merged behavior**. [PR #126](https://github.com/ViktorOsadsky/lifetwin/pull/126) explicitly requires owner confirmation. Its latest “Projection with fixes” section supersedes the earlier null-at-missing-crossings behavior in its body. Applicable checks and the known method seams remain review dependencies.
+The following describes source at `787e71a4c4e6283c273db05a9ca64a4f9bdbf37b`, **not merged behavior**. [PR #126](https://github.com/ViktorOsadsky/lifetwin/pull/126) explicitly requires owner confirmation. Its latest “Projection with fixes, seams blended” section supersedes the earlier null-at-missing-crossings and hard-switch behavior in its body. Applicable checks and the known aging-trend issue remain review dependencies.
 
 ### Proposed health index and history
 
@@ -88,21 +88,23 @@ The following describes source at `02f57169976337db66e74aa9feaa740043d0e636`, **
 
 Raw Cox log hazard would remain internal as `rawLogRelativeHazard`. Proposed history stores `engine: cox_index_v1`, `health_index` and raw `score`; `healthScoreHistory({from, to, engine})` defaults to the new engine and excludes legacy/other-scale points. The current history contract above remains the main implementation until a verified merge.
 
-The proposed shared lab loads and computes a neural output, but the app does not read it for the health index or reveal. “Shelved for product outputs” must not be read as removal of neural execution or its bundled artifact. [Proposed score code](https://github.com/ViktorOsadsky/lifetwin/blob/02f57169976337db66e74aa9feaa740043d0e636/app/lib/twin/twin_model.dart).
+The proposed shared lab loads and computes a neural output, but the app does not read it for the health index or reveal. “Shelved for product outputs” must not be read as removal of neural execution or its bundled artifact. [Proposed score code](https://github.com/ViktorOsadsky/lifetwin/blob/787e71a4c4e6283c273db05a9ca64a4f9bdbf37b/app/lib/twin/twin_model.dart).
 
-### Proposed yearly guide, open-ended thresholds and fallback
+### Proposed blended guide and open-ended thresholds
 
-For ages 35–79 the proposed reveal reads `LifeTwinProjectionLab.assess(profile, includeExtrapolation: true)['annual']`: repeated one-year Cox steps as age advances with all other inputs fixed, **assuming nothing changes**. This is not mean life expectancy. `expectedAge` would be the interpolated 50% survival crossing; `p25Age` and `p75Age` the 75% and 25% crossings. The recurrence is unvalidated even inside the checked ages; nothing past 79 is validated in the rough guide.
+The projection component reads `LifeTwinProjectionLab.assess(profile, includeExtrapolation: true)['annual']`: repeated one-year Cox steps as age advances with all other inputs fixed, **assuming nothing changes**. Its 50% survival crossing supplies its age summary and 75%/25% crossings its range; CDC supplies a mean and percentile ages. The latest proposal blends each age summary as `(1 − w) × CDC + w × projection`. This blend is not mean life expectancy or a validated survival distribution; nothing past 79 is validated in the rough guide.
 
-| Proposed API / case | Meaning if this proposal is approved and merged |
+| Proposed API / case | Meaning if approved and merged |
 |---|---|
-| `p25OpenEnded`, `openEnded`, `p75OpenEnded` | The curve did not reach 75%, 50% or 25% by simulation age 110. The associated age is sentinel 110 and the headline shows **110+**. This is not a measured crossing or a guaranteed personal age. |
-| `expectedYear` | A rounded calendar-year guide derived from the selected age; no exact date. Open-ended age flags still need to remain visible. |
-| Assessment ages 18–34 and 80–85 | Retained CDC life-table fallback: mean expected age and 25th–75th-percentile range, with `extrapolated`/rough-guide status. The CDC method is not wholly superseded. |
-| Under 18, over 85, incomplete/unsupported inputs | No estimate through the repository API. The in-range lab also requires a loaded lab and completed-year age. |
-| Seeded demo Rosa | The latest proposal produces a result using open-ended flags; the earlier “Rosa is null” version is superseded. |
+| `projectionWeight` / `lifespanProjectionWeight(age)` | Zero through 35; linear rise to 1 at 45; 1 through 70; linear fall to zero at 79; zero thereafter. Pure CDC below 35 and from 79, pure projection at 45–70. |
+| `p25OpenEnded`, `openEnded`, `p75OpenEnded` | The projection did not reach 75%, 50% or 25% by 110, and the corresponding blended value remains at least 110. A retained flag shows **110+**; sentinel 110 from only one component does not automatically survive blending. No measured crossing or guaranteed age is implied. |
+| `expectedYear` | Rounded calendar-year guide from the blended age; retain any associated open-ended flag. No exact date. |
+| `LifespanStatus.extrapolated` / Rough guide | CDC has more than half the weight: completed ages 18–39 and 75–85. |
+| Fractional age with positive projection weight | Null: the projection lab requires completed years. Under 18, over 85 and incomplete/unsupported repository inputs also remain unavailable. |
+| `annualCurve` | CDC component where CDC has the larger weight, projection otherwise; not a blended curve whose crossings equal every displayed age summary. |
+| Seeded demo Rosa | The latest proposal produces a result; the earlier null-result proposal is superseded. |
 
-Large jumps at 34→35 and 79→80 remain acknowledged as a strict known bug: the implementation would switch between a CDC mean outside the checked ages and a Cox projection median inside. Do not describe a continuous method, a validated birthday effect, or a causal change. Keep the method, open-ended flags, rough-guide caveat and past-79 limits with any displayed result. [Latest proposed lifespan code](https://github.com/ViktorOsadsky/lifetwin/blob/02f57169976337db66e74aa9feaa740043d0e636/app/lib/twin/lifespan.dart), [status and unresolved seams](../../docs/handoffs/hazard-projection-docs.md).
+Blending resolves the earlier large hard-switch seam steps, but leaves an acknowledged strict known bug: remaining years increase over ages 35–45 and expected age falls over 70–79. Keep this limitation explicit; it is not a validated age trend or causal effect. [Latest proposed source](https://github.com/ViktorOsadsky/lifetwin/blob/787e71a4c4e6283c273db05a9ca64a4f9bdbf37b/app/lib/twin/lifespan.dart), [held status and limits](../../docs/handoffs/hazard-projection-docs.md).
 
 ## Profile mapping (`profile_mapping.dart`)
 
