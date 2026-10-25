@@ -1,0 +1,45 @@
+{
+  "checked_at_utc": "2026-10-25T06:08:39+00:00",
+  "server": {
+    "port": 8133,
+    "pid": 80692,
+    "action": "SIGINT to verified owned Uvicorn server",
+    "graceful_shutdown_logged": true,
+    "pid_absent_afterward": true,
+    "listener_absent_afterward": true
+  },
+  "exporter": {
+    "status": "No owned demo133 exporter or matching capture process was running at cleanup inspection; none needed stopping"
+  },
+  "uninstalled_bundles": [
+    {
+      "id": "com.danielqi.lifesim.demo133",
+      "uninstall_exit_code": 0
+    },
+    {
+      "id": "com.danielqi.lifesim.demo133.Demo133UITests.xctrunner",
+      "uninstall_exit_code": 0
+    },
+    {
+      "id": "com.danielqi.lifesim.demo133current",
+      "uninstall_exit_code": 0
+    },
+    {
+      "id": "com.danielqi.lifesim.demo133current.Demo133UITests.xctrunner",
+      "uninstall_exit_code": 0
+    }
+  ],
+  "bundle_absence_verified_before_shutdown": true,
+  "simulator": {
+    "udid": "7F21AE4A-232B-458E-A5B7-F7EA7952BD01",
+    "state": "Shutdown",
+    "initial_state_restored": true
+  },
+  "evidence_preserved": {
+    "committed_original_pngs_verified_against_raw": 10,
+    "final_raw_screenshots_and_timing": true,
+    "passing_native_logs_and_xcresults": true,
+    "earlier_attempt_files": true
+  },
+  "scope": "Only owned rehearsal server/apps/runner and assigned simulator; no further rehearsal, model/product source change, other simulator mutation or physical-device use"
+}
