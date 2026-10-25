@@ -63,6 +63,7 @@ class CheckinController extends ChangeNotifier {
     required this.store,
     this.scheduler = const CheckinScheduler(),
     this.reminders,
+    this.replanReminders,
     this.healthSamples,
     this.onFinished,
     DateTime Function()? clock,
@@ -91,6 +92,11 @@ class CheckinController extends ChangeNotifier {
 
   /// Plans reminders after each check-in, and offers them once after the first one.
   final CheckinReminders? reminders;
+
+  /// Plans the reminders with everything the phone knows (the join date the weekly reminder
+  /// needs, a pending "Remind me later"): `TwinRepository.replanReminders`. Without it, they
+  /// are planned from [store]'s settings and check-ins alone, with no weekly reminder.
+  final Future<void> Function()? replanReminders;
 
   /// Apple Health samples already allowed by the person (sleep, exercise minutes), for
   /// one-tap "Looks right?" read-backs. Null when Apple Health isn't connected.
@@ -836,6 +842,7 @@ class CheckinController extends ChangeNotifier {
         minute: minute,
       );
       await store.saveSettings(next);
+      if (next.remindersOn) await replanReminders?.call();
     } finally {
       _busy = false;
       _set(() => offerReminder = false);
@@ -981,7 +988,10 @@ class CheckinController extends ChangeNotifier {
     final r = reminders;
     if (r != null) {
       try {
-        if (settings.remindersOn) await r.reschedule(settings, localNow: _clock(), history: history);
+        if (settings.remindersOn) {
+          final replan = replanReminders;
+          replan == null ? await r.reschedule(settings, localNow: _clock(), history: history) : await replan();
+        }
       } catch (_) {} // a reminder that can't be planned never blocks the check-in
     }
     _set(() {
