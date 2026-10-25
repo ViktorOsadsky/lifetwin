@@ -11,6 +11,8 @@ import 'package:lifesim/documents/document_ocr.dart';
 import 'package:lifesim/documents/document_screen.dart';
 import 'package:lifesim/documents/document_upload.dart';
 import 'package:lifesim/main.dart';
+import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
+import 'support/settings_hub.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/voice/api_base.dart';
 import 'package:lifesim/voice/fakes.dart';
@@ -382,20 +384,29 @@ void main() {
   });
 
   group('app', () {
+    late TwinModelService hubModel;
+    setUpAll(() async => hubModel = await TwinModelService.load());
     VoiceOnboardingController fakeController(FakeConversationGuide guide) =>
         VoiceOnboardingController(guide: guide, input: FakeSpeechInput(), output: FakeSpeechOutput());
 
-    testWidgets('the Room offers upload; confirmed values wait for the talk, labelled as a document', (t) async {
+    testWidgets('Settings offers upload; confirmed values wait for the talk, labelled as a document', (t) async {
       t.view.physicalSize = const Size(390, 844);
       t.view.devicePixelRatio = 1;
       addTearDown(t.view.reset);
       final guide = FakeConversationGuide();
       final c = fakeController(guide);
       final server = FakeServer((_) => ok(foundBody));
-      await t.pumpWidget(LifeTwinApp(controller: c, documentService: serviceWith(FakeOcr(visitDoc), server)));
+      final repo = await memoryRepo(hubModel);
+      await t.pumpWidget(
+        LifeTwinApp(
+          controller: c,
+          twin: Future.value(repo),
+          documentService: serviceWith(FakeOcr(visitDoc), server),
+        ),
+      );
       await t.pump();
-      await t.tap(find.text('Upload a document'));
-      await t.pumpAndSettle();
+      await t.pump();
+      await openSettingsRow(t, 'Health documents');
       for (final label in [
         'Choose a photo',
         'Yes, it is mine',

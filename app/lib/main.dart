@@ -21,6 +21,8 @@ import 'quiz/quiz_game.dart';
 import 'quiz/quiz_screen.dart';
 import 'wellness/home_panel.dart' show HealthScoreSummary;
 import 'wellness/models.dart';
+import 'wellness/settings_screen.dart';
+import 'wellness/today_placeholder.dart';
 import 'wellness/widgets.dart' show WellnessCard;
 import 'wellness/repository_adapter.dart';
 import 'wellness/history_screen.dart';
@@ -403,6 +405,12 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   Future<void> _plan(BuildContext context) async {
     final repo = await _twin;
     if (!context.mounted) return;
+    // Ask for the outside-AI consent before the first plan request; a configured provider the person
+    // declined gets nothing sent.
+    final provider = await _agentic.provider();
+    if (!context.mounted) return;
+    if (provider != null && provider.configured && !await _agentic.ensureOutsideAiConsent(context)) return;
+    if (!context.mounted) return;
     final client = HttpCoachClient(base: _api);
     try {
       await Navigator.of(context).push<void>(MaterialPageRoute(
@@ -419,6 +427,56 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     } finally {
       client.close();
     }
+  }
+
+  /// The Settings hub: choices, My data, reminders, AI and memory privacy, changing an answer, and the
+  /// places that left Home (Apple Health, Health documents, What I see, Still learning, the wristband).
+  void _settings(BuildContext context) {
+    final adapter = _wellness;
+    if (adapter == null) return;
+    String? providerId;
+    var closed = false;
+    final value = ValueNotifier(adapter.settingsFor());
+    void refresh() {
+      if (!closed) value.value = adapter.settingsFor(providerId: providerId);
+    }
+
+    adapter.addListener(refresh);
+    _agentic.provider().then((p) {
+      providerId = p?.id;
+      refresh();
+    }, onError: (Object _) {}).ignore();
+    Navigator.of(context)
+        .push<void>(
+          MaterialPageRoute(
+            builder: (c) => WellnessSettingsScreen(
+              settings: value,
+              onMemory: () => _agentic.memoryChoice(c),
+              onSuggestions: () => _agentic.aiPrivacy(c),
+              onReminders: () => _agentic.reminders(c),
+              onMyData: () => _agentic.myData(c),
+              onBack: () => Navigator.of(c).pop(),
+              entries: [
+                SettingsEntry(label: 'Change an answer', description: 'Tell Mochi what changed', open: () => _agentic.changeAnswer(c)),
+                SettingsEntry(label: 'Apple Health', description: 'Bring in values you check', open: () => _health(c)),
+                SettingsEntry(label: 'Health documents', description: 'Upload a visit summary or lab report', open: () => _documents(c)),
+                SettingsEntry(label: 'What I see', description: 'Your wellness cards, with sources', open: () => _agentic.wellness(c)),
+                SettingsEntry(label: 'Still learning', description: 'Answers Mochi still needs', open: () => _agentic.stillLearning(c)),
+                SettingsEntry(label: 'Wristband', description: 'Pair or try the recorded demo', open: () => _agentic.bandFlow(c)),
+              ],
+            ),
+          ),
+        )
+        .whenComplete(() {
+          closed = true;
+          adapter.removeListener(refresh);
+          value.dispose();
+        });
+  }
+
+  String? _stillLearning() {
+    final n = _wellness?.repository.current?.missingInputs.length ?? 0;
+    return n == 0 ? null : 'Still learning $n';
   }
 
   void _customize(BuildContext context) => Navigator.of(context).push(
@@ -439,8 +497,6 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
         builder: (context, _) => RoomScreen(
           appearance: _look,
           hasProfile: _profile != null,
-          onUseHealth: _healthKeys.isEmpty ? () => _health(context) : null,
-          onUploadDocument: () => _documents(context),
           onTalk: () => _talk(context),
           onCustomize: () => _customize(context),
           onFortune: () => _ceremony(context),
@@ -448,10 +504,17 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           // The seven days come from the phone repository.
           wellness: _wellness?.snapshot ?? const WellnessSnapshot(),
           onHistory: _wellness == null ? null : () => _history(context),
-          onPlan: _wellness != null && (_profile?['age'] as num? ?? 0) >= 18 ? () => _plan(context) : null,
           onQuiz: () => _playQuiz(context),
           onDrivers: () => _agentic.drivers(context),
-          extraPills: _agentic.pills(context),
+          onSettings: _wellness == null ? null : () => _settings(context),
+          stateLine: _stillLearning(),
+          today: _wellness == null
+              ? null
+              : TodayWithMochiPlaceholder(
+                  onPlan: (_profile?['age'] as num? ?? 0) >= 18 ? () => _plan(context) : null,
+                  onTryChange: () => _agentic.experiment(context),
+                  onWhy: () => _agentic.wellness(context),
+                ),
         ),
       ),
     );

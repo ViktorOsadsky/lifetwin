@@ -7,6 +7,7 @@ import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/voice/fakes.dart';
 
+import 'support/settings_hub.dart';
 import 'document_upload_test.dart' show FakeOcr, FakeServer, foundBody, ok, serviceWith, visitDoc;
 
 void main() {
@@ -32,8 +33,7 @@ void main() {
     );
     await t.pump();
     await t.pump();
-    await t.tap(find.text('Upload a document'));
-    await t.pumpAndSettle();
+    await openSettingsRow(t, 'Health documents');
     for (final label in [
       'Choose a photo',
       'Yes, it is mine',

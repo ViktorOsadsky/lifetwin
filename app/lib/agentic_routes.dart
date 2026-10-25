@@ -124,7 +124,6 @@ class AgenticRoutes {
       onExperiment: () => experiment(context),
       onStillLearning: () => stillLearning(context),
       onWellness: () => wellness(context),
-      onMyData: () => myData(context),
     ),
     if (repo != null) BandPill(store: band, onTap: () => bandFlow(context)),
   ];
