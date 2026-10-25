@@ -1,0 +1,327 @@
+{
+ "about": "Request bodies recorded from the app's own clients by app/test/seams/app_requests_test.dart. Replayed against the server by server/tests/test_seams.py.",
+ "coach_plan": {
+  "path": "/api/coach/plan",
+  "body": {
+   "profile": {
+    "age": 72,
+    "sex": "female",
+    "height_cm": 162.6,
+    "weight_kg": 71.6676,
+    "sleep_hours": 6.0,
+    "smoking_status": "never",
+    "diabetes": false,
+    "general_health": "good",
+    "hypertension_diagnosed": false,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60,
+    "alcohol_drinks_weekly": 2.0,
+    "systolic_bp": 128,
+    "diastolic_bp": 78
+   },
+   "checkins": [
+    {
+     "date": "2026-10-19",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-20",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-21",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-22",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-23",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-24",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-25",
+     "sleep_hours": 7.0,
+     "moderate_recreation_min": 30,
+     "vigorous_recreation_min": 20,
+     "sedentary_min_day": 360
+    },
+    {
+     "date": "2026-10-26",
+     "wellbeing": "good"
+    }
+   ],
+   "readings": [
+    {
+     "field": "systolic_bp",
+     "value": 128,
+     "unit": "mmHg",
+     "date": "2026-10-26",
+     "source": "checkin"
+    },
+    {
+     "field": "diastolic_bp",
+     "value": 78,
+     "unit": "mmHg",
+     "date": "2026-10-26",
+     "source": "checkin"
+    }
+   ],
+   "memory_consent": true,
+   "habit_notes": [
+    {
+     "id": "note-2246e12d",
+     "topic": "sleep",
+     "kind": null,
+     "with": null,
+     "time_of_day": null,
+     "frequency": null,
+     "barrier": null,
+     "bedtime": "11",
+     "wake_time": null,
+     "wakes_for": null,
+     "naps": null,
+     "smoked_years": null,
+     "tried_quitting": null,
+     "quit_aid": null,
+     "quit_ago": null,
+     "feeling": null,
+     "concern": null,
+     "reading": null,
+     "estimate_for": null,
+     "estimate": null,
+     "source": "said",
+     "noted_on": "2026-10-26"
+    },
+    {
+     "id": "note-368f701e",
+     "topic": "sitting",
+     "kind": "tv",
+     "with": null,
+     "time_of_day": null,
+     "frequency": null,
+     "barrier": null,
+     "bedtime": null,
+     "wake_time": null,
+     "wakes_for": null,
+     "naps": null,
+     "smoked_years": null,
+     "tried_quitting": null,
+     "quit_aid": null,
+     "quit_ago": null,
+     "feeling": null,
+     "concern": null,
+     "reading": null,
+     "estimate_for": null,
+     "estimate": null,
+     "source": "said",
+     "noted_on": "2026-10-26"
+    },
+    {
+     "id": "note-7000cf81",
+     "topic": "exercise",
+     "kind": "walking",
+     "with": null,
+     "time_of_day": null,
+     "frequency": null,
+     "barrier": null,
+     "bedtime": null,
+     "wake_time": null,
+     "wakes_for": null,
+     "naps": null,
+     "smoked_years": null,
+     "tried_quitting": null,
+     "quit_aid": null,
+     "quit_ago": null,
+     "feeling": null,
+     "concern": null,
+     "reading": null,
+     "estimate_for": null,
+     "estimate": null,
+     "source": "said",
+     "noted_on": "2026-10-26"
+    }
+   ],
+   "outside_ai_consent": {},
+   "movement_paused": false,
+   "local_date": "2026-10-26",
+   "local_time": "09:30"
+  }
+ },
+ "checkin_start_quick": {
+  "path": "/api/checkin/start",
+  "body": {
+   "kind": "quick",
+   "local_date": "2026-10-26",
+   "previous": {
+    "sleep_hours_last_night": 7
+   },
+   "quick": {
+    "topics": [
+     "sleep",
+     "activity",
+     "sitting"
+    ],
+    "activity_day": "yesterday",
+    "catch_up": true,
+    "suggested": {
+     "sleep_hours_last_night": 7.5,
+     "activity_minutes": 30
+    }
+   },
+   "age": 72
+  }
+ },
+ "checkin_start_daily": {
+  "path": "/api/checkin/start",
+  "body": {
+   "kind": "daily",
+   "local_date": "2026-10-26",
+   "previous": {},
+   "age": 72
+  }
+ },
+ "checkin_start_weekly": {
+  "path": "/api/checkin/start",
+  "body": {
+   "kind": "weekly",
+   "local_date": "2026-10-25",
+   "previous": {},
+   "age": 72
+  }
+ },
+ "checkin_turn_reply": {
+  "path": "/api/checkin/turn",
+  "body": {
+   "action": "reply",
+   "state": {},
+   "text": "about 7 hours",
+   "input_mode": "transcript"
+  }
+ },
+ "checkin_turn_confirm": {
+  "path": "/api/checkin/turn",
+  "body": {
+   "action": "confirm",
+   "state": {},
+   "input_mode": "text"
+  }
+ },
+ "onboarding_start": {
+  "path": "/api/onboarding/turn",
+  "body": {
+   "action": "start",
+   "input_mode": "text",
+   "provider_consent": false
+  }
+ },
+ "onboarding_reply": {
+  "path": "/api/onboarding/turn",
+  "body": {
+   "action": "reply",
+   "state": {},
+   "text": "I'm 72, female",
+   "input_mode": "text",
+   "provider_consent": true
+  }
+ },
+ "onboarding_import": {
+  "path": "/api/onboarding/turn",
+  "body": {
+   "action": "import",
+   "state": {},
+   "values": {
+    "height_cm": 162.6,
+    "weight_kg": 68.0,
+    "sleep_hours": 6.5
+   },
+   "import_source": "apple_health",
+   "input_mode": "text",
+   "provider_consent": false
+  }
+ },
+ "change_start": {
+  "path": "/api/change/start",
+  "body": {
+   "profile": {
+    "age": 72,
+    "sex": "female",
+    "height_cm": 162.6,
+    "weight_kg": 71.6676,
+    "sleep_hours": 6.0,
+    "smoking_status": "never",
+    "diabetes": false,
+    "general_health": "good",
+    "hypertension_diagnosed": false,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60,
+    "alcohol_drinks_weekly": 2.0,
+    "systolic_bp": 128,
+    "diastolic_bp": 78
+   },
+   "field": "weight_kg",
+   "memory_consent": true
+  }
+ },
+ "change_turn": {
+  "path": "/api/change/turn",
+  "body": {
+   "action": "reply",
+   "state": {},
+   "profile": {
+    "age": 72,
+    "sex": "female",
+    "height_cm": 162.6,
+    "weight_kg": 71.6676,
+    "sleep_hours": 6.0,
+    "smoking_status": "never",
+    "diabetes": false,
+    "general_health": "good",
+    "hypertension_diagnosed": false,
+    "sedentary_min_day": 360,
+    "moderate_recreation_min_week": 90,
+    "vigorous_recreation_min_week": 60,
+    "alcohol_drinks_weekly": 2.0,
+    "systolic_bp": 128,
+    "diastolic_bp": 78
+   },
+   "memory_consent": false,
+   "text": "I lost some weight",
+   "input_mode": "text"
+  }
+ },
+ "documents_extract": {
+  "path": "/api/documents/extract",
+  "body": {
+   "pages": [
+    "Blood pressure 128/78 mmHg on 2026-10-01"
+   ],
+   "outside_ai_consent": false
+  }
+ }
+}

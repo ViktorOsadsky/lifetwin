@@ -696,7 +696,8 @@
     "status": {
       "enum": [
         "ok",
-        "emergency"
+        "emergency",
+        "under_age"
       ],
       "title": "Status",
       "type": "string"
