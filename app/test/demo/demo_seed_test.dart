@@ -149,10 +149,16 @@ void main() {
       expect(e.p75Age, closeTo(108.89, 0.005));
       expect(e.headline, contains('about 99'));
       expect(e.expectedYear, 2061); // 2026 + round(98.93 - 64)
+      expect((e.p25OpenEnded, e.openEnded, e.p75OpenEnded), (false, false, false));
       // After the seeded weeks her curve is still above 25% (25.5%) at 110, the lab's last
-      // age, so there is no 75th-percentile age: no estimate rather than an invented one.
-      expect(repo.healthScore, isNotNull);
-      expect(repo.lifespanEstimate, isNull);
+      // age: the 75th-percentile age is open-ended, "110+". She still gets an estimate.
+      final now = repo.lifespanEstimate!;
+      expect(now.status, LifespanStatus.available);
+      expect(now.expectedAge, closeTo(100.21, 0.005));
+      expect(now.p25Age, closeTo(88.51, 0.005));
+      expect((now.p75Age, now.p75OpenEnded, now.openEnded), (110.0, true, false));
+      expect(now.expectedYear, 2062); // 2026 + round(100.21 - 64)
+      expect(now.headline, contains('110+'));
     });
 
     test('the weekly check-in is the one that fed the forecast', () {

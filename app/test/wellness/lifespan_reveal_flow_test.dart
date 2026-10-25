@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lifesim/demo/demo_seed.dart' show openTwin, rosaProfile;
+import 'package:lifesim/demo/demo_seed.dart' show rosaProfile;
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
@@ -47,10 +47,8 @@ void main() {
   late Map<String, dynamic> rosa;
   setUpAll(() async {
     model = await TwinModelService.load();
-    // Rosa (64) as she onboards in the demo. (After her two seeded weeks the yearly
-    // projection stays above 25% at 110, so she would get no estimate to reveal.)
+    // Rosa (64) as she onboards in the demo.
     rosa = Map<String, dynamic>.from(rosaProfile);
-    expect((await openTwin(demo: true, backend: MemoryBackend())).lifespanEstimate, isNull);
   });
 
   Future<void> launch(WidgetTester t, TwinRepository repo) async {

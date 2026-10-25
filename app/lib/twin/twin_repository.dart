@@ -123,10 +123,10 @@ class TwinRepository extends ChangeNotifier {
 
 
   /// The one-time lifespan reveal (owner override 2026-10-24): a rough, proof-of-concept
-  /// age and YEAR (never a date) from the model owner's yearly Cox projection of the
-  /// current profile; see [LifespanEstimate]. Null when there is no health score, or the
-  /// projection gives no curve (ages outside 35–79, unsupported profile, or no 25% crossing
-  /// by 110).
+  /// age and YEAR (never a date) from the current profile: the model owner's yearly Cox
+  /// projection at 35–79, the life table at 18–34 and 80–85 (Rough guide); see
+  /// [LifespanEstimate]. Null when there is no health score (no profile, missing inputs,
+  /// unsupported profile, under 18 or over 85).
   LifespanEstimate? get lifespanEstimate {
     final a = _current;
     if (a == null || a.rawLogRelativeHazard == null) return null;

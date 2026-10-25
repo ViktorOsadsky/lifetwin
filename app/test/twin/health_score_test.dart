@@ -266,11 +266,11 @@ void main() {
     test('lifespanEstimate comes from the current profile; none before a profile or under 18', () async {
       final repo = await repoOn(MemoryBackend());
       expect(repo.lifespanEstimate, isNull);
-      // The yearly projection of this healthy 45-year-old stays above 25% at 110, so there is
-      // no 75th-percentile age and no estimate (unavailable, never filled in).
+      // The yearly projection of this healthy 45-year-old stays above 25% at 110: the
+      // 75th-percentile age is open-ended (110), and there is still an estimate.
       await repo.saveConversationProfile(fullProfile);
-      expect(repo.healthScore, isNotNull);
-      expect(repo.lifespanEstimate, isNull);
+      expect(repo.lifespanEstimate!.p75OpenEnded, isTrue);
+      expect(repo.lifespanEstimate!.p75Age, 110);
       await repo.saveConversationProfile({...fullProfile, 'age': 64, 'smoking_status': 'current'});
       final e = repo.lifespanEstimate!;
       final age = repo.current!.profileUsed['age'] as num;

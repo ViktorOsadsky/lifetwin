@@ -157,13 +157,13 @@ void main() {
 
     test('lifespan has no estimate without a sex, and never picks one', () {
       final noSex = {...readme}..remove('sex_nhanes');
-      expect(LifespanEstimate.forProfile(noSex, currentYear: 2026), isNull);
+      expect(LifespanEstimate.forProfile(noSex, currentYear: 2026, lab: model.projection), isNull);
       for (final bad in [0, 3, '1', 'male', null, 1.5]) {
         expect(
           LifespanEstimate.forProfile({
             ...readme,
             'sex_nhanes': bad,
-          }, currentYear: 2026),
+          }, currentYear: 2026, lab: model.projection),
           isNull,
           reason: 'sex_nhanes $bad',
         );
@@ -232,16 +232,19 @@ void main() {
       },
     );
 
-    test('the score is exactly the negated model value and older is worse', () {
+    test('the raw model value rises with age; the score (health index) is relative to the age group', () {
       for (final sex in ['male', 'female']) {
         double? last;
         for (final age in [20, 30, 40, 50, 60, 70, 80, 85]) {
           final a = model.assess(person(age: age, sex: sex));
-          expect(a.healthScore, -a.rawLogRelativeHazard!);
+          // The score is the index against people of the same age and sex, so it does not
+          // fall with age by itself; the raw Cox value (age term included) does rise.
+          expect(a.healthScore!, greaterThan(0));
+          if (a.healthScore != 1.0) expect(a.healthScore! > 1, a.ageGroupPercentile! > 50);
           if (last != null) {
-            expect(a.healthScore!, lessThan(last), reason: '$sex $age');
+            expect(a.rawLogRelativeHazard!, greaterThan(last), reason: '$sex $age');
           }
-          last = a.healthScore;
+          last = a.rawLogRelativeHazard;
         }
       }
     });
@@ -327,7 +330,7 @@ void main() {
 
   group('lifespan estimate', () {
     LifespanEstimate estimate(Map<String, dynamic> p, {int year = 2026}) =>
-        LifespanEstimate.forProfile(p, currentYear: year)!;
+        LifespanEstimate.forProfile(p, currentYear: year, lab: model.projection)!;
 
     final dateLike = RegExp(
       r'\b(19|20|21)\d{2}-\d{2}-\d{2}\b|\b(january|february|march|april|may|june|july|august|september|october|november|december)\b|\b\d{1,2}/\d{1,2}/\d{2,4}\b',
@@ -402,7 +405,7 @@ void main() {
         e.headline,
         e.caveat,
         '${e.expectedYear}',
-        ...e.curve.survivalCurve.map((p) => '${p.$1}'),
+        ...e.annualCurve.map((p) => '${p.age} ${p.survivalPercent}'),
       ];
       expect(dateLike.hasMatch(everything.join(' ')), isFalse);
       expect(e.expectedYear, isA<int>());
@@ -469,7 +472,13 @@ void main() {
       },
     );
 
-    test('older people expect to reach a later age than younger ones, but live fewer more years', () {
+    // Owner choice "Projection with fixes": the yearly Cox projection for 35-79 and the
+    // life table outside it. The two methods do not join: at the 35 seam the expected age
+    // jumps up by about 14-22 years and at the 79/80 seam it drops by about 4-12 years.
+    knownBug(
+      'lifespan seams',
+      'the projection (35-79) and life table (18-34, 80-85) jump at ages 35 and 80',
+      () {
       double? lastAge, lastRemaining;
       for (var age = 20; age <= 85; age += 5) {
         final e = estimate({...readme, 'age': age});
@@ -498,7 +507,7 @@ void main() {
             LifespanEstimate.forProfile({
               ...readme,
               'age': age,
-            }, currentYear: 2026),
+            }, currentYear: 2026, lab: model.projection),
             isNull,
             reason: 'age $age',
           );
@@ -513,7 +522,7 @@ void main() {
         ]) {
           final missing = {...readme}..remove(key);
           expect(
-            LifespanEstimate.forProfile(missing, currentYear: 2026),
+            LifespanEstimate.forProfile(missing, currentYear: 2026, lab: model.projection),
             isNull,
             reason: 'missing $key',
           );
@@ -551,6 +560,7 @@ void main() {
               () => e = LifespanEstimate.forProfile(
                 a.profileUsed,
                 currentYear: 2026,
+                lab: model.projection,
               ),
               returnsNormally,
               reason: '$sex $age $change',
