@@ -1,6 +1,6 @@
 # LifeTwin working docs
 
-Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent implementation guide, and [AGENTS.md](../AGENTS.md) for PR/merge rules. [`projectspec.md`](../projectspec.md) remains the original modeling and privacy specification. Updated product/stack decisions are recorded in [prd-reconciliation.md](prd-reconciliation.md); the original spec is preserved. See the [backend run guide](../server/README.md) and [implemented contracts](../contracts/README.md) for implementation details. The master guide distinguishes the existing app/voice/model/check-in work from planned document upload and autonomous daily planning.
+Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent implementation guide, and [AGENTS.md](../AGENTS.md) for PR/merge rules. [`projectspec.md`](../projectspec.md) remains the original modeling and privacy specification. Updated product/stack decisions are recorded in [prd-reconciliation.md](prd-reconciliation.md); the original spec is preserved. See the [backend run guide](../server/README.md) and [implemented contracts](../contracts/README.md) for implementation details. The master guide distinguishes the existing app/voice/model/check-in work from implemented document upload and the stateless coach from proposed unattended planning.
 
 | Doc | For |
 |---|---|
@@ -20,5 +20,7 @@ Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent im
 | [model-sensitivity.md](model-sensitivity.md) | Which inputs move the packaged Cox model's 5-year estimate most, by age band and sex, with [machine-readable lever ranking](model-sensitivity.json); observational, not causal |
 | [document-upload.md](document-upload.md) | Health-document upload: on-device text recognition, `/api/documents/extract`, confirmation, privacy boundary, failure modes |
 | [apple-health.md](apple-health.md) | Apple Health import: what is read, read-back rules, privacy decisions, what is left |
+| [design/agentic/agentic-handoff.md](design/agentic/agentic-handoff.md) | Approved K/Q/R/S and other screen exports, HTML source and twin/cosmetic design masters |
+| [design/wellness-ui-handoff.md](design/wellness-ui-handoff.md) | Wellness Home, Q/R/S presentation boundaries, validation and pending engine/art dependencies |
 | [design/painted-card-direction.md](design/painted-card-direction.md) | UI remake direction: painted-card look, bear or human twin, final screens, art assets and pipeline, Flutter notes |
 | [wearable-prototype-plan.md](wearable-prototype-plan.md) | Draft wrist activity-tracker prototype: hardware, metrics, feature list, phases and team decisions |

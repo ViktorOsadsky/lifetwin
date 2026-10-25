@@ -104,3 +104,7 @@ Source and acceptance: [meeting decisions](meetings/2026-10-23-product-refinemen
 - **A (Victor):** retain authority over model inputs, support and validation. Any lifespan summary or new aggregation requires model evidence; the meeting does not authorize unsupported dates or years gained.
 
 Land a focused contract/design PR before dependent upload/planner code. No existing shared contract changes in this refinement. Prove the existing app/backend flow first; present upload or background planning as unavailable until implemented and verified.
+
+## October 24 wellness UI split
+
+The current assignments to FlareYun are [Home #54](https://github.com/ViktorOsadsky/lifetwin/issues/54), [quiz/Customize #55](https://github.com/ViktorOsadsky/lifetwin/issues/55), [upload/plan/drivers #56](https://github.com/ViktorOsadsky/lifetwin/issues/56), and [Settings/History/errors #57](https://github.com/ViktorOsadsky/lifetwin/issues/57). Existing track owners above remain unchanged. The check-in, conversation, consent, wristband and Experiment lane stays in [PR #58](https://github.com/ViktorOsadsky/lifetwin/pull/58). See the [UI handoff](design/wellness-ui-handoff.md) for concrete boundaries and unresolved dependencies; planned engine APIs are not implemented merely because a screen accepts a snapshot or callback.

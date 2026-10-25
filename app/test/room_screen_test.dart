@@ -25,6 +25,8 @@ import 'package:lifesim/voice/fakes.dart';
 
 import 'forecast_screen_test.dart' show FakeForecastClient, supportedJson;
 import 'support/assessments.dart';
+import 'support/settings_hub.dart';
+import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'health_screen_test.dart' show FakeReader;
 
 VoiceOnboardingController fakeController() =>
@@ -52,6 +54,9 @@ Future<void> frames(WidgetTester t, double seconds) async {
   }
 }
 
+/// The room's own status line (no longer a pill on Home): matches while the sim says [text].
+Finder status(String text) => find.byWidgetPredicate((w) => w is RoomScene && w.sim.status == text);
+
 Finder image(String asset) =>
     find.byWidgetPredicate((w) => w is Image && w.image is AssetImage && (w.image as AssetImage).assetName == asset);
 
@@ -66,7 +71,6 @@ Future<ValueNotifier<TwinAppearance>> pumpRoom(
   Size size = const Size(390, 844),
   double textScale = 1,
   bool hasProfile = true,
-  VoidCallback? onUseHealth,
 }) async {
   setPhone(t, size);
   final notifier = ValueNotifier(look);
@@ -82,7 +86,6 @@ Future<ValueNotifier<TwinAppearance>> pumpRoom(
           onFortune: onFortune ?? () async {},
           outlook: outlook,
           hasProfile: hasProfile,
-          onUseHealth: onUseHealth,
         ),
       ),
     ),
@@ -136,7 +139,13 @@ void expectOneLine(WidgetTester t, String label, {bool checkFloor = true}) {
   }
 }
 
+late TwinModelService roomModel;
+
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    roomModel = await TwinModelService.load();
+  });
   testWidgets('the room draws the background, the twin between the layers, and the UI', (t) async {
     await pumpRoom(t);
     expect(image(roomLayout.bgAsset), findsOneWidget);
@@ -153,7 +162,7 @@ void main() {
     final twinAt = order.indexWhere((w) => w.key == const ValueKey('room-twin'));
     expect(bgAt >= 0 && bgAt < twinAt, isTrue, reason: 'bg, then the twin');
     expect(find.bySemanticsLabel('Twin name: My twin'), findsOneWidget);
-    expect(find.text('Hanging out'), findsOneWidget);
+    expect(status('Hanging out'), findsOneWidget);
     expect(find.text('Ask the ball'), findsOneWidget); // no forecast yet: no number
     expect(find.textContaining('in 100'), findsNothing);
     for (final label in ['Exercise', 'Eat', 'Sleep', 'Customize', 'Talk', 'Fortune']) {
@@ -185,41 +194,41 @@ void main() {
     await pumpRoom(t);
     await t.tap(find.text('Exercise'));
     await t.pump();
-    expect(find.text('Off to the mat'), findsOneWidget);
-    await pumpUntil(t, find.text('Jumping jacks!'));
+    expect(status('Off to the mat'), findsOneWidget);
+    await pumpUntil(t, status('Jumping jacks!'));
     final seen = <TwinPose>{};
     for (var i = 0; i < 20; i++) {
       await t.pump(const Duration(milliseconds: 50));
       seen.add(twinPose(t));
     }
     expect(seen, containsAll([TwinPose.stretch, TwinPose.jump]));
-    await pumpUntil(t, find.text('Feeling strong'));
+    await pumpUntil(t, status('Feeling strong'));
   });
 
   testWidgets('Eat walks to the table and eats', (t) async {
     await pumpRoom(t);
     await t.tap(find.text('Eat'));
     await t.pump();
-    expect(find.text('Snack time!'), findsOneWidget);
-    await pumpUntil(t, find.text('Crunch, crunch!'));
+    expect(status('Snack time!'), findsOneWidget);
+    await pumpUntil(t, status('Crunch, crunch!'));
     await t.pump(const Duration(milliseconds: 100));
     expect(twinPose(t), TwinPose.eat);
-    await pumpUntil(t, find.text('Full and happy'));
+    await pumpUntil(t, status('Full and happy'));
   });
 
   testWidgets('Sleep climbs into bed under the quilt with z\'s; a tap wakes', (t) async {
     await pumpRoom(t);
     await t.tap(find.text('Sleep'));
     await t.pump();
-    expect(find.text('Off to bed'), findsOneWidget);
-    await pumpUntil(t, find.text('Sleeping. Tap to wake'));
+    expect(status('Off to bed'), findsOneWidget);
+    await pumpUntil(t, status('Sleeping. Tap to wake'));
     await t.pump(const Duration(milliseconds: 600));
     expect(twinPose(t), TwinPose.sleep);
     expect(image(roomLayout.fgBed.asset), findsOneWidget);
     expect(find.text('z'), findsWidgets);
     await t.tap(find.byKey(const ValueKey('room-twin')), warnIfMissed: false);
     await t.pump();
-    expect(find.text('Good morning!'), findsOneWidget);
+    expect(status('Good morning!'), findsOneWidget);
     await frames(t, 1);
     expect(image(roomLayout.fgBed.asset), findsNothing);
   });
@@ -228,7 +237,7 @@ void main() {
     await pumpRoom(t);
     await t.tap(find.byKey(const ValueKey('room-twin')), warnIfMissed: false);
     await t.pump(const Duration(milliseconds: 100));
-    expect(find.text('Wheee!'), findsOneWidget);
+    expect(status('Wheee!'), findsOneWidget);
     expect(twinPose(t), TwinPose.jump);
     await frames(t, 1);
     expect(twinPose(t), isNot(TwinPose.jump));
@@ -239,8 +248,8 @@ void main() {
     await pumpRoom(t, onFortune: () async => opened++);
     await t.tap(find.text('Fortune'));
     await t.pump();
-    expect(find.text('Off to the shelf'), findsOneWidget);
-    await pumpUntil(t, find.text('The ball glows!'));
+    expect(status('Off to the shelf'), findsOneWidget);
+    await pumpUntil(t, status('The ball glows!'));
     expect(twinPose(t), TwinPose.holdBall);
     expect(image(roomLayout.shelfEmpty.asset), findsOneWidget); // the ball left the shelf
     for (var i = 0; i < 400 && opened == 0; i++) {
@@ -257,40 +266,19 @@ void main() {
     await t.tap(find.text('Fortune'));
     await t.pump();
     expect(find.text(RoomScreen.talkFirst), findsOneWidget);
-    expect(find.text('Off to the shelf'), findsNothing);
+    expect(status('Off to the shelf'), findsNothing);
     await t.tap(find.text('Ask the ball'));
     await frames(t, 3);
     expect(opened, 0);
   });
 
-  for (final scale in [1.0, 3.1]) {
-    testWidgets('scale $scale: "Use my Apple Health" pill: one line, at least 48 pt, opens the import', (t) async {
-      var opened = 0;
-      await pumpRoom(t, textScale: scale, onUseHealth: () => opened++);
-      expect(t.takeException(), isNull);
-      expectOneLine(t, 'Use my Apple Health', checkFloor: false);
-      expect(boxOf(t, 'Use my Apple Health').height, greaterThanOrEqualTo(48));
-      expect(t.widget<Text>(find.text('Use my Apple Health')).style!.fontSize, greaterThanOrEqualTo(17));
-      await t.tap(find.text('Use my Apple Health'));
-      expect(opened, 1);
-    });
-  }
-
-  testWidgets('a double tap on the Apple Health pill opens the import once', (t) async {
-    var opened = 0;
-    await pumpRoom(t, onUseHealth: () => opened++);
-    final at = t.getCenter(find.text('Use my Apple Health'));
-    await t.tapAt(at);
-    await t.pump(const Duration(milliseconds: 60));
-    await t.tapAt(at);
-    await t.pump();
-    expect(opened, 1);
-    await t.pump(const Duration(milliseconds: 800));
-    await t.tapAt(at);
-    expect(opened, 2, reason: 'a later tap works again');
+  testWidgets('Home has no Apple Health or upload pills; Settings and History are pinned icons', (t) async {
+    await pumpRoom(t);
+    expect(find.text('Use my Apple Health'), findsNothing);
+    expect(find.text('Upload a document'), findsNothing);
   });
 
-  testWidgets('the pill stays when the import is not taken (an answer is still being checked)', (t) async {
+  testWidgets('the Settings row imports nothing when the import is not taken (an answer is still being checked)', (t) async {
     setPhone(t);
     final now = DateTime.now();
     final c = fakeController();
@@ -302,7 +290,8 @@ void main() {
         value: 68,
       ),
     ]);
-    await t.pumpWidget(LifeTwinApp(controller: c, healthReader: reader));
+    await t.pumpWidget(LifeTwinApp(controller: c, healthReader: reader, twin: Future.value(await memoryRepo(roomModel))));
+    await t.pump();
     await t.pump();
     await t.tap(find.text('Talk'));
     await t.pumpAndSettle();
@@ -318,18 +307,16 @@ void main() {
     expect(c.confirming, isTrue);
     await t.tap(find.bySemanticsLabel('Home'));
     await t.pumpAndSettle();
-    await t.tap(find.text('Use my Apple Health'));
-    await t.pumpAndSettle();
+    await openSettingsRow(t, 'Apple Health');
     await t.tap(find.text('Yes, use Apple Health'));
     await t.pumpAndSettle();
     await t.tap(find.text("Yes, that's right"));
     await t.pumpAndSettle();
     await t.tap(find.text('Continue'));
     await t.pumpAndSettle();
-    expect(find.byType(RoomScreen), findsOneWidget);
+    expect(find.byType(RoomScreen, skipOffstage: false), findsOneWidget);
     expect(c.notice, healthWaitNotice);
     expect(c.confirmedProfile, isNot(contains('weight_kg')));
-    expect(find.text('Use my Apple Health'), findsOneWidget, reason: 'nothing was imported, so it is offered again');
   });
 
   testWidgets('no Apple Health pill once Health data is confirmed (no import callback)', (t) async {
@@ -337,7 +324,7 @@ void main() {
     expect(find.text('Use my Apple Health'), findsNothing);
   });
 
-  testWidgets('the Room pill imports Apple Health, then goes; the talk adds the values when it starts', (t) async {
+  testWidgets('the Settings row imports Apple Health; the talk adds the values when it starts', (t) async {
     setPhone(t);
     final now = DateTime.now();
     final c = fakeController();
@@ -349,16 +336,18 @@ void main() {
         value: 68,
       ),
     ]);
-    await t.pumpWidget(LifeTwinApp(controller: c, healthReader: reader));
+    await t.pumpWidget(LifeTwinApp(controller: c, healthReader: reader, twin: Future.value(await memoryRepo(roomModel))));
     await t.pump();
-    await t.tap(find.text('Use my Apple Health'));
-    await t.pumpAndSettle();
+    await t.pump();
+    await openSettingsRow(t, 'Apple Health');
     expect(find.byType(HealthImportScreen), findsOneWidget);
     await t.tap(find.text('Yes, use Apple Health'));
     await t.pumpAndSettle();
     await t.tap(find.text("Yes, that's right"));
     await t.pumpAndSettle();
     await t.tap(find.text('Continue'));
+    await t.pumpAndSettle();
+    t.state<NavigatorState>(find.byType(Navigator)).pop(); // out of Settings, back to Home
     await t.pumpAndSettle();
     expect(find.byType(RoomScreen), findsOneWidget);
     expect(find.text('Use my Apple Health'), findsNothing);
@@ -401,15 +390,17 @@ void main() {
       return (c, forecast);
     }
 
-    testWidgets('Continue opens the fortune; Back returns to the Room, whose card and Fortune then work', (t) async {
+    testWidgets('Continue opens the fortune; Back returns to the Room, whose quiet estimate link still works', (t) async {
       final (_, forecast) = await start(t);
       expect(forecast.calls, hasLength(1));
       await t.tap(find.bySemanticsLabel('Back'));
       await t.pumpAndSettle();
       expect(find.byType(RoomScreen), findsOneWidget);
-      expect(find.text('about 88 in 100'), findsOneWidget); // the real forecast on the outlook card
+      expect(find.text('Getting to know you'), findsOneWidget);
+      expect(find.text('about 88 in 100'), findsNothing);
       forecast.answers.add(forecastFrom(supportedJson()));
-      await t.tap(find.text('Fortune'));
+      await t.ensureVisible(find.text('See your estimate'));
+      await t.tap(find.text('See your estimate'));
       await pumpUntil(t, find.byType(FortuneCeremonyScreen));
       await t.pumpAndSettle();
       await t.tap(find.text('Ask the ball'));
@@ -432,7 +423,8 @@ void main() {
       // Left unfinished: the Room no longer offers a forecast from the older answers.
       Navigator.of(t.element(find.byType(VoiceOnboardingScreen))).pop();
       await t.pumpAndSettle();
-      await t.tap(find.text('Fortune'));
+      await t.ensureVisible(find.text('See your estimate'));
+      await t.tap(find.text('See your estimate'));
       await t.pump();
       expect(find.text(RoomScreen.talkFirst), findsOneWidget);
       await frames(t, 3);
@@ -458,12 +450,12 @@ void main() {
     await t.tap(find.text('Exercise'));
     await t.pump();
     // A crossfade of about half a second instead of a walk across the room.
-    await pumpUntil(t, find.text('Jumping jacks!'), seconds: 1.5);
+    await pumpUntil(t, status('Jumping jacks!'), seconds: 1.5);
     final transform = t.widget<Transform>(
       find.descendant(of: find.byKey(const ValueKey('room-twin')), matching: find.byType(Transform)).first,
     );
     expect(transform.transform.getRotation().entry(0, 1), closeTo(0, 1e-9));
-    await pumpUntil(t, find.text('Feeling strong'), seconds: 4);
+    await pumpUntil(t, status('Feeling strong'), seconds: 4);
   });
 
   testWidgets('a human twin uses its own poses for every room action', (t) async {
@@ -477,7 +469,7 @@ void main() {
     expect(resolveRoomPose(const TwinAppearance(look: TwinLook.plain), RoomPose.sleep).$1, TwinPose.sleep);
     await pumpRoom(t, look: human);
     await t.tap(find.text('Sleep'));
-    await pumpUntil(t, find.text('Sleeping. Tap to wake'));
+    await pumpUntil(t, status('Sleeping. Tap to wake'));
     await t.pump(const Duration(milliseconds: 300));
     final sprite = t.widget<TwinSprite>(find.byType(TwinSprite));
     expect(sprite.appearance.sprite(sprite.pose), 'assets/twin/human/pose/sleep.png');
@@ -486,7 +478,7 @@ void main() {
   testWidgets('a twin without the hat sleeps in its no-hat pose', (t) async {
     await pumpRoom(t, look: const TwinAppearance(look: TwinLook.plain));
     await t.tap(find.text('Sleep'));
-    await pumpUntil(t, find.text('Sleeping. Tap to wake'));
+    await pumpUntil(t, status('Sleeping. Tap to wake'));
     await t.pump(const Duration(milliseconds: 300));
     final sprite = t.widget<TwinSprite>(find.byType(TwinSprite));
     expect(sprite.appearance.sprite(sprite.pose), 'assets/twin/bear/pose_nohat/sleep.png');
@@ -515,10 +507,10 @@ void main() {
     expect(find.byKey(const ValueKey('room-fx')), findsOneWidget);
     await frames(t, 1.5);
     await t.tap(find.text('Exercise'));
-    await pumpUntil(t, find.text('Jumping jacks!'));
+    await pumpUntil(t, status('Jumping jacks!'));
     await t.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const ValueKey('room-fx')), findsOneWidget);
-    await pumpUntil(t, find.text('Feeling strong'));
+    await pumpUntil(t, status('Feeling strong'));
   });
 
   test('effects: each action spawns its own; none under reduced motion', () {
@@ -553,12 +545,12 @@ void main() {
     await pumpRoom(t);
     expect(image(roomLayout.bowlEmpty.asset), findsNothing);
     await t.tap(find.text('Eat'));
-    await pumpUntil(t, find.text('Crunch, crunch!'));
+    await pumpUntil(t, status('Crunch, crunch!'));
     await t.pump(const Duration(milliseconds: 100));
     expect(image(roomLayout.bowlEmpty.asset), findsWidgets); // the apple is out
-    await pumpUntil(t, find.text('Yum!'));
+    await pumpUntil(t, status('Yum!'));
     expect(image(roomLayout.bowlEmpty.asset), findsWidgets);
-    await pumpUntil(t, find.text('Full and happy'));
+    await pumpUntil(t, status('Full and happy'));
     expect(find.byKey(const ValueKey('room-apple-pop')), findsOneWidget); // popping back in
     await frames(t, 0.6);
     expect(image(roomLayout.bowlEmpty.asset), findsNothing);
@@ -568,11 +560,11 @@ void main() {
   testWidgets('reduced motion: the apple comes back at once, with no effects', (t) async {
     await pumpRoom(t, reduced: true);
     await t.tap(find.text('Eat'));
-    await pumpUntil(t, find.text('Crunch, crunch!'));
+    await pumpUntil(t, status('Crunch, crunch!'));
     await t.pump(const Duration(milliseconds: 100));
     expect(image(roomLayout.bowlEmpty.asset), findsWidgets);
     expect(find.byKey(const ValueKey('room-fx')), findsNothing);
-    await pumpUntil(t, find.text('Full and happy'));
+    await pumpUntil(t, status('Full and happy'));
     await t.pump(const Duration(milliseconds: 50));
     expect(image(roomLayout.bowlEmpty.asset), findsNothing);
     expect(find.byKey(const ValueKey('room-apple-pop')), findsNothing);
@@ -582,9 +574,9 @@ void main() {
     await pumpRoom(t);
     await t.longPress(find.byKey(const ValueKey('room-twin')), warnIfMissed: false);
     await t.pump(const Duration(milliseconds: 100));
-    expect(find.text('Whoa, dizzy!'), findsOneWidget);
+    expect(status('Whoa, dizzy!'), findsOneWidget);
     expect(twinPose(t), TwinPose.dizzy);
-    await pumpUntil(t, find.text('All better'), seconds: 3);
+    await pumpUntil(t, status('All better'), seconds: 3);
     expect(twinPose(t), isNot(TwinPose.dizzy));
   });
 
@@ -701,7 +693,7 @@ void main() {
       for (final scale in [1.0, 1.3]) {
         await pumpRoom(t, size: const Size(375, 667), textScale: scale);
         await t.tap(find.text('Exercise'));
-        await pumpUntil(t, find.text('Jumping jacks!'));
+        await pumpUntil(t, status('Jumping jacks!'));
         final row = boxOf(t, 'Exercise');
         for (var i = 0; i < 30; i++) {
           await t.pump(const Duration(milliseconds: 50));
@@ -709,7 +701,7 @@ void main() {
           expect(twin.bottom, lessThanOrEqualTo(row.top), reason: 'feet above the buttons at ${scale}x');
           expect(twin.top, greaterThanOrEqualTo(0), reason: 'head on screen at ${scale}x');
         }
-        await pumpUntil(t, find.text('Feeling strong'));
+        await pumpUntil(t, status('Feeling strong'));
         expect(t.takeException(), isNull);
       }
     });
