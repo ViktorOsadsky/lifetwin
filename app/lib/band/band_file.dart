@@ -199,6 +199,19 @@ class BandDayReport {
         'The recorded minutes are more than the first-to-last coverage window.',
       );
     }
+    // Export and report offsets may differ, so compare their actual instants.
+    // The last HH:MM is inclusive; a partial export need not wait for midnight.
+    final coveredThrough = dayStartUtc.add(
+      Duration(
+        hours: int.parse(last.substring(0, 2)),
+        minutes: int.parse(last.substring(3)),
+      ),
+    );
+    if (DateTime.parse(generated).isBefore(coveredThrough)) {
+      throw const BandFileFailure(
+        'The export time is before the report coverage ends.',
+      );
+    }
     final minutes = _object(
       root['minutes'],
       'The daily minute totals are missing.',
