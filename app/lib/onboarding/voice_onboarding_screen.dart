@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../checkin/consent_screens.dart' show TrainingLine;
+import '../checkin/consents.dart' show AiProvider;
 import '../checkin/emergency_card.dart';
 import '../forecast/profile_labels.dart';
 import '../health/readback.dart' show usesImperial;
@@ -50,6 +52,7 @@ class VoiceOnboardingScreen extends StatefulWidget {
     this.onUseHealth,
     this.onOpenSettings = openAppSettings,
     this.appearance = const TwinAppearance(),
+    this.aiProvider,
   });
 
   final VoiceOnboardingController controller;
@@ -65,6 +68,9 @@ class VoiceOnboardingScreen extends StatefulWidget {
 
   /// Cosmetic look of the twin in the window.
   final TwinAppearance appearance;
+
+  /// The outside AI provider, for the training line beside "Yes, turn it on" when the server says it applies.
+  final AiProvider? aiProvider;
 
   @override
   State<VoiceOnboardingScreen> createState() => _VoiceOnboardingScreenState();
@@ -566,6 +572,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         "If I can't understand an answer, an AI service can read your words. "
         "It's off unless you say yes. You can change this in Settings.",
     buttons: [
+      if (widget.aiProvider?.trainingLine case final line?) TrainingLine(line),
       LipButton(
         label: 'Yes, turn it on',
         icon: Icons.check_rounded,

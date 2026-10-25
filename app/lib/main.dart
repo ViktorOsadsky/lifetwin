@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'checkin/checkin_reminders.dart';
+import 'checkin/consents.dart' show AiProvider;
 import 'customize/customize_screen.dart';
 import 'agentic_routes.dart';
 import 'documents/document_screen.dart';
@@ -92,6 +93,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
         ),
       );
 
+  /// The outside AI provider (for the training line on the AI-helper question), once known.
+  AiProvider? _aiProvider;
+
   /// "Delete my data" wiped the phone: forget what this session held in memory too.
   void _afterDelete() => setState(() {
     _stored = null;
@@ -139,6 +143,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   @override
   void initState() {
     super.initState();
+    _agentic.provider().then((p) => _aiProvider = p, onError: (Object _) {});
     _twin.then((repo) {
       if (!mounted) return;
       final look = repo.store.twin;
@@ -194,6 +199,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     (talkContext) => VoiceOnboardingScreen(
       controller: _controller,
       appearance: _look.value,
+      aiProvider: _aiProvider,
       onUseHealth: () => _health(talkContext),
       onDone: (profile) {
         _keepConversation();
