@@ -14,6 +14,7 @@ import 'documents/health_documents_screen.dart';
 import 'wellness/coach_client.dart';
 import 'wellness/coach_context.dart';
 import 'wellness/daily_plan_screen.dart';
+import 'wellness/plan_acceptance.dart';
 import 'wellness/today_card.dart';
 import 'checkin/check_in.dart';
 import 'checkin/checkin_client.dart';
@@ -367,6 +368,7 @@ class AgenticRoutes {
     final r = repo;
     if (r != null) bandService = BandService(repository: r);
     _lastPlan = null;
+    planAcceptance.clear();
     _provider = null;
     _hub?.clear();
     onDeleted?.call();
@@ -455,6 +457,9 @@ class AgenticRoutes {
   /// The latest plan the coach gave, so a later revision can say what changed.
   DailyPlan? _lastPlan;
 
+  /// Items accepted on today's plan, kept on the phone per local date.
+  final planAcceptance = PlanAcceptance()..load();
+
   /// After a check-in: asks the coach to revise today's plan with the check-in results (the same
   /// `previous_plan` path the plan screen uses) and returns its encouragement and, one line each, its own
   /// reasons for what changed. Without an earlier plan to compare with there is nothing to say about changes.
@@ -488,6 +493,7 @@ class AgenticRoutes {
         trailing: trailing,
         client: coach,
         onPlan: (p) => _lastPlan = p,
+        acceptance: planAcceptance,
         confirmedContext: () => coachContext(repo!),
         // No consent ask here: the card shows on Home, which can sit behind onboarding's last screen. The ask
         // comes from the person's tap (opening the plan, or Ideas).
@@ -507,6 +513,8 @@ class AgenticRoutes {
         builder: (page) => DailyPlanScreen(
           client: coach,
           onPlan: (p) async => _lastPlan = p,
+          acceptance: planAcceptance,
+          onRemind: r.checkinSettings.remindersOn && r.reminders != null ? r.remindLater : null,
           confirmedContext: () => coachContext(r),
           onBack: () => Navigator.of(page).pop(),
           onIdeas: ideasAllowed ? () => ideas(page, origin: 'Today') : null,

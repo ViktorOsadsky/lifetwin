@@ -5,6 +5,7 @@ import '../experiment/widgets/source_link.dart';
 import '../ui/theme.dart';
 import '../widgets/whole_word_text.dart';
 import 'coach_client.dart';
+import 'plan_acceptance.dart';
 import 'widgets.dart';
 
 /// Mochi's line when there is no plan to show (loading, offline, or an error): the card is never empty.
@@ -30,6 +31,7 @@ class TodayWithMochiCard extends StatefulWidget {
     this.onIdeas,
     this.ideas,
     this.openUrl = defaultOpenUrl,
+    this.acceptance,
   });
 
   final CoachClient client;
@@ -40,6 +42,9 @@ class TodayWithMochiCard extends StatefulWidget {
   /// Told each plan the coach gives (the first and every revision).
   final void Function(DailyPlan plan)? onPlan;
   final OpenUrl openUrl;
+
+  /// Items accepted on the plan screen: Home then reads "Today: 3 things planned ✓".
+  final PlanAcceptance? acceptance;
 
   /// One line for Home: "Today: brisk walk · protein · …", opening the plan on a tap.
   final bool condensed;
@@ -173,7 +178,11 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => widget.acceptance == null
+      ? _card(context)
+      : ListenableBuilder(listenable: widget.acceptance!, builder: (context, _) => _card(context));
+
+  Widget _card(BuildContext context) {
     final plan = _plan;
     final slots = <(String, IconData, String)>[
       ('workout', Icons.directions_walk_rounded, 'Move'),
@@ -182,6 +191,8 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
       ('encourage', Icons.favorite_border_rounded, 'Mochi'),
     ];
     final encourage = _first('encourage');
+    final ids = widget.acceptance?.idsFor(plan?.json['local_date'] as String?) ?? const <String>{};
+    final acceptedCount = [for (final i in plan?.items ?? const <Map<String, dynamic>>[]) if (ids.contains(i['id'])) i].length;
     final showRows = plan != null && !plan.emergency && plan.items.isNotEmpty;
     if (widget.condensed) {
       final titles = [
@@ -189,7 +200,10 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
           if (showRows && _first(kind)?['title'] is String)
             (_first(kind)!['title'] as String).toLowerCase(),
       ];
-      final line = titles.isEmpty
+      final planned = acceptedCount;
+      final line = planned > 0
+          ? '$planned ${planned == 1 ? 'thing' : 'things'} planned ✓'
+          : titles.isEmpty
           ? (_failed || _loading
                 ? todayFallbackLine
                 : (encourage?['message'] as String? ?? todayFallbackLine))
@@ -199,7 +213,7 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
         TextSpan(
           children: [
             TextSpan(
-              text: titles.isEmpty ? 'Today with Mochi · ' : 'Today: ',
+              text: titles.isEmpty && planned == 0 ? 'Today with Mochi · ' : 'Today: ',
               style: LtText.body(size: 17, weight: FontWeight.w700),
             ),
             TextSpan(text: line, style: LtText.body(size: 17)),

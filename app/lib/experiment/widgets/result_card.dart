@@ -4,7 +4,8 @@ import '../../ui/theme.dart';
 import '../../ui/widgets/lottie_burst.dart';
 import '../../ui/widgets/rough_guide_badge.dart';
 import '../../widgets/whole_word_text.dart';
-import '../../wellness/models.dart' show scoreChangeLine, scoreChangeSemantics;
+import '../../wellness/models.dart'
+    show ScoreChange, formatHealthScore, formatScoreDelta, newScoreSemantics, scoreChangeOf;
 import '../experiment_copy.dart';
 import '../result_display.dart';
 import 'bear_array.dart';
@@ -179,11 +180,7 @@ class _ResultCardState extends State<ResultCard> {
       if (from != null && delta != null)
         Padding(
           padding: const EdgeInsets.only(bottom: 6),
-          child: Semantics(
-            label: scoreChangeSemantics(from, delta),
-            excludeSemantics: true,
-            child: WholeWordText(scoreChangeLine(from, delta), style: LtText.body(weight: FontWeight.w700)),
-          ),
+          child: _ScoreChange(from: from, delta: delta),
         ),
       Stack(
         children: [
@@ -382,4 +379,53 @@ class _GainedBear extends CustomPainter {
 
   @override
   bool shouldRepaint(_GainedBear old) => false;
+}
+
+/// "Health score +0.50 →" small and plain, then the NEW score bold in a pill. The pill carries a word
+/// and an arrow as well as its colour: ▲ Better (teal), ▼ Lower (soft coral), About the same (grey).
+/// Text is ink on every fill (7.2 to 10.8 against the pill).
+class _ScoreChange extends StatelessWidget {
+  const _ScoreChange({required this.from, required this.delta});
+  final double from;
+  final double delta;
+
+  @override
+  Widget build(BuildContext context) {
+    final kind = scoreChangeOf(delta);
+    final (word, fill, edge) = switch (kind) {
+      ScoreChange.better => ('▲ Better', LtColors.mintTint, LtColors.teal),
+      ScoreChange.lower => ('▼ Lower', LtColors.peach, LtColors.peachLip),
+      ScoreChange.same => ('About the same', LtColors.trackOff, LtColors.container),
+    };
+    return Semantics(
+      label: newScoreSemantics(from, delta),
+      excludeSemantics: true,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        runSpacing: 6,
+        children: [
+          Text('Health score ${formatHealthScore(from)} →', style: LtText.body(color: LtColors.secondary)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: edge, width: 2),
+            ),
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              children: [
+                Text(word, style: LtText.body(weight: FontWeight.w700)),
+                Text(formatHealthScore(from + delta), style: LtText.display(24)),
+                if (kind != ScoreChange.same)
+                  Text('(${formatScoreDelta(delta)})', style: LtText.body(weight: FontWeight.w700)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -85,6 +85,14 @@ class CheckinReminders {
   /// "Not now": remembered, so the offer isn't repeated.
   CheckinSettings decline(CheckinSettings settings) => settings.copyWith(reminderOffered: true, remindersOn: false);
 
+  /// One extra reminder about two hours from [localNow], for "Remind me later" on today's plan.
+  Future<void> remindLater(DateTime localNow) => port.scheduleAt(
+    id: 99,
+    localWallTime: localNow.add(const Duration(hours: 2)),
+    title: reminderTitle,
+    body: 'A small step from today’s plan is waiting. No rush.',
+  );
+
   /// Turns reminders off and removes the planned ones.
   Future<CheckinSettings> turnOff(CheckinSettings settings) async {
     await port.cancelAll();

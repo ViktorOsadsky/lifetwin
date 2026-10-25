@@ -192,16 +192,24 @@ String healthScoreSemantics(double score, {double? percentile}) =>
     'Health score ${spokenHealthScore(score)}. Above 0 is healthier; 0 is the middle of people your age.'
     '${percentile == null ? '' : ' Healthier than ${percentile.round()} of 100 people your age.'}';
 
-/// The Experiment's line above the survival rows: "Health score 1.65 → 1.70 (+0.05)".
-String scoreChangeLine(double from, double delta) =>
-    'Health score ${formatHealthScore(from)} → ${formatHealthScore(from + delta)} (${formatScoreDelta(delta)})';
+enum ScoreChange { better, lower, same }
 
-/// "Health score would go from plus 0.50 to plus 0.55, up 0.05." (or "down", or "would stay at").
-String scoreChangeSemantics(double from, double delta) {
-  final d = formatScoreDelta(delta);
-  if (d == 'No change') return 'Health score would stay at ${spokenHealthScore(from)}.';
-  return 'Health score would go from ${spokenHealthScore(from)} to ${spokenHealthScore(from + delta)}, '
-      '${delta < 0 ? 'down' : 'up'} ${d.substring(1)}.';
+/// Better at +0.005 or more, lower at -0.005 or less, otherwise about the same (the weight guard's 0
+/// included).
+ScoreChange scoreChangeOf(double delta) =>
+    delta >= 0.005 ? ScoreChange.better : (delta <= -0.005 ? ScoreChange.lower : ScoreChange.same);
+
+/// "New health score plus 0.55, up 0.05 from plus 0.50" / "down 0.03 from ..." / "..., about the same".
+String newScoreSemantics(double from, double delta) {
+  final now = spokenHealthScore(from + delta);
+  switch (scoreChangeOf(delta)) {
+    case ScoreChange.same:
+      return 'New health score $now, about the same';
+    case ScoreChange.better:
+      return 'New health score $now, up ${formatScoreDelta(delta).substring(1)} from ${spokenHealthScore(from)}';
+    case ScoreChange.lower:
+      return 'New health score $now, down ${formatScoreDelta(delta).substring(1)} from ${spokenHealthScore(from)}';
+  }
 }
 
 /// The sheet behind the card's circled i.
