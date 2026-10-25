@@ -105,6 +105,16 @@ class Reading(ApiModel):
         return self
 
 
+class DocumentContext(ApiModel):
+    """What the person confirmed from health documents, kept on the phone with no expiry
+    until Delete my data (owner ruling 2026-10-25). The phone sends it only with memory
+    consent. Informational: it is never a model input, never ranks or changes a plan,
+    and is never sent to a provider."""
+
+    readings: list[Reading] = Field(default_factory=list, max_length=40)
+    diagnoses: list[Literal["diabetes", "hypertension"]] = Field(default_factory=list, max_length=2)
+
+
 class CoachNote(ApiModel):
     """A habit note the phone keeps (conversation-v2's ``HabitNote`` fields), plus the
     phone's ``id``, a first ``name`` for a pet or person, and the day it was noted.
@@ -204,6 +214,8 @@ class CoachPlanRequest(ApiModel):
     # May Mochi use the little things it remembers? false or null: notes are ignored.
     memory_consent: bool | None = None
     habit_notes: list[CoachNote] = Field(default_factory=list, max_length=20)
+    # Document readings and diagnoses kept as long-term context (memory consent only).
+    document_context: DocumentContext | None = None
     # The person's own goal words ("keep up with my grandkids").
     goals: list[Words] = Field(default_factory=list, max_length=3)
     limits: list[LimitTag] = Field(default_factory=list, max_length=5)
@@ -241,6 +253,10 @@ class CoachPlanRequest(ApiModel):
             raise ValueError("Check-ins cannot be dated after local_date")
         if any(reading.date > self.local_date for reading in self.readings):
             raise ValueError("Readings cannot be dated after local_date")
+        if self.document_context is not None and any(
+            reading.date > self.local_date for reading in self.document_context.readings
+        ):
+            raise ValueError("Document readings cannot be dated after local_date")
         if len({day.date for day in self.checkins}) != len(self.checkins):
             raise ValueError("One check-in summary per day")
         if len({note.id for note in self.habit_notes}) != len(self.habit_notes):
@@ -337,6 +353,7 @@ class MemoryInstruction(ApiModel):
 
 class CoachPlanResponse(ApiModel):
     schema_version: Literal["1.0"] = "1.0"
+    # "under_age" is no longer sent (under-18s are treated normally); still accepted.
     status: Literal["ok", "emergency", "under_age"]
     revision_id: str | None
     based_on: str | None
