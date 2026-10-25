@@ -62,7 +62,7 @@ NOT_FOR_ME = re.compile(
     re.I,
 )
 
-LEVER_SOURCE = "docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z)"
+LEVER_SOURCE = "docs/model-sensitivity.json (personal-cox-bmi35-v3-20261024)"
 LEVER_ORDER = (
     "quit_smoking",
     "vigorous_plus_60",
@@ -795,7 +795,7 @@ class Planner:
                     change, rule = "kept", "done at the top of the range: keep"
                     why = f"You did {old}. That's a good amount, so it stays."
             elif status == "not_done" and NO_TIME.search(reason):
-                minutes = max(prev_act.min_minutes, prev_minutes - 5)
+                minutes = min(prev_minutes, max(prev_act.min_minutes, prev_minutes - 5))
                 change = "shorter" if minutes < prev_minutes else "kept"
                 why = (
                     f"You said there wasn't time, so today's is shorter: {minutes} minutes."
@@ -845,7 +845,8 @@ class Planner:
         rule: str,
     ) -> PlanItem:
         body = activity.steps.format(minutes=minutes)
-        keep = list(activity.keep_words)
+        # The reworded line must keep the minutes, or a shorter plan reads the same as before.
+        keep = [*activity.keep_words, *([str(minutes)] if str(minutes) in body.split() else [])]
         if "walking_aid" in self.limits and activity.position == "standing":
             body += " Bring your walker or cane."
             keep.append("walker or cane")

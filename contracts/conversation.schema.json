@@ -142,6 +142,11 @@
           "title": "Health Offered",
           "type": "boolean"
         },
+        "health_reasked": {
+          "default": false,
+          "title": "Health Reasked",
+          "type": "boolean"
+        },
         "memory_consent": {
           "anyOf": [
             {
@@ -382,6 +387,7 @@
         "steer_field",
         "steer_lead",
         "health_offered",
+        "health_reasked",
         "current_probe",
         "probes_asked",
         "habit_notes",

@@ -195,7 +195,7 @@ class WellnessCard {
 /// The engine (and scale) of the health score: the centred Cox score ([AgeGroup.healthScore]).
 /// Stored on every score history point; readers keep only this engine's points, so scales
 /// never mix (earlier `cox_index_v1` and untagged points are left out).
-const healthScoreEngine = 'cox_centered_v1';
+const healthScoreEngine = 'cox_centered_bmi35_v2';
 
 /// The tag a history point stored before the engine tag existed reads as: the earlier
 /// −(Cox log relative hazard) scale, which readers leave out.
@@ -318,8 +318,8 @@ class TwinModelService {
   /// `LifeTwinEngine.compare()` with the same age extrapolation. Request and result have
   /// the package's shapes, plus `extrapolated` and `extrapolation_caveat`.
   ///
-  /// Weight guard (model card: the fitted BMI link is inverse for older/heavier profiles and
-  /// is not evidence that gaining weight helps): when the only change is a higher BMI
+  /// Weight guard (model card: BMI is flat from 23 to 35 and the positive fitted
+  /// association above 35 is not a causal weight-change effect): when the only change is a higher BMI
   /// (`bmi`, or `height_cm`/`weight_kg`), the alternative's survival is the current one and
   /// the modelled difference is zero in every year, with `weight_guard: true` and
   /// [weightGuardWarning]. Every experiment, plan and recommendation goes through here.

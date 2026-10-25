@@ -157,6 +157,71 @@ void main() {
     },
   );
   testWidgets(
+    'Not for me sends not_done with reason and shows the swapped item',
+    (t) async {
+      final swapped = planJson(revision: 'r2');
+      (swapped['items'] as List).first
+        ..['id'] = 'swim'
+        ..['catalog_id'] = 'swim'
+        ..['title'] = 'An easy swim';
+      final client = FakeCoach()..responses.add(DailyPlan.fromJson(swapped));
+      final handle = t.ensureSemantics();
+      await phone(
+        t,
+        DailyPlanScreen(
+          client: client,
+          confirmedContext: () => {'local_date': '2026-10-24'},
+          initialPlan: DailyPlan.fromJson(planJson()),
+          onBack: () {},
+          onTalk: () {},
+        ),
+      );
+      await reveal(t, find.text('Not for me'));
+      expect(
+        t.getSemantics(find.text('Not for me')).label,
+        contains('Not for me: swap A short walk for something else.'),
+      );
+      await t.tap(find.text('Not for me'));
+      await t.pumpAndSettle();
+      expect(client.requests.single['feedback'], {
+        'revision_id': 'r1',
+        'items': [
+          {'item_id': 'move', 'status': 'not_done', 'reason': 'Not for me'},
+        ],
+      });
+      expect(find.text('An easy swim'), findsOneWidget);
+      expect(find.text('A short walk'), findsNothing);
+      handle.dispose();
+    },
+  );
+  testWidgets('plan actions wrap without overflow at 1.6x text', (t) async {
+    await phone(
+      t,
+      DailyPlanScreen(
+        client: FakeCoach(),
+        confirmedContext: () => {'local_date': '2026-10-24'},
+        initialPlan: DailyPlan.fromJson(planJson()),
+        onBack: () {},
+        onTalk: () {},
+      ),
+      scale: 1.6,
+    );
+    await reveal(t, find.text('Not for me'));
+    for (final label in ['Skip', 'Not done', 'Not for me']) {
+      final r = t.getRect(
+        find
+            .ancestor(
+              of: find.text(label),
+              matching: find.byType(OutlinedButton),
+            )
+            .first,
+      );
+      expect(r.height, greaterThanOrEqualTo(48), reason: label);
+      expect(r.right, lessThanOrEqualTo(320), reason: label);
+    }
+    expect(t.takeException(), isNull);
+  });
+  testWidgets(
     'stale feedback preserves the old plan and refreshes from current inputs',
     (t) async {
       final client = FakeCoach()
@@ -246,4 +311,60 @@ void main() {
       expect(t.takeException(), isNull);
     });
   }
+
+  testWidgets(
+    'No time after a Skip swap sends the swapped item and shows the shorter plan',
+    (t) async {
+      Map<String, dynamic> swim(String revision, int minutes, String message) {
+        final json = planJson(revision: revision);
+        final item =
+            Map<String, dynamic>.from((json['items'] as List).first as Map)
+              ..['catalog_id'] = 'swim_laps'
+              ..['title'] = 'Swimming'
+              ..['message'] = message
+              ..['minutes'] = minutes;
+        return json..['items'] = [item];
+      }
+
+      final client = FakeCoach()
+        ..responses.addAll([
+          DailyPlan.fromJson(swim('r2', 20, 'Swim for 20 minutes.')),
+          DailyPlan.fromJson(swim('r3', 15, 'Swim for 15 minutes.')),
+        ]);
+      await phone(
+        t,
+        DailyPlanScreen(
+          client: client,
+          confirmedContext: () => {'local_date': '2026-10-24'},
+          initialPlan: DailyPlan.fromJson(planJson()),
+          onBack: () {},
+          onTalk: () {},
+        ),
+      );
+      await reveal(t, find.text('Skip'));
+      await t.tap(find.text('Skip'));
+      await t.pumpAndSettle();
+      await reveal(t, find.text('Not done'));
+      await t.tap(find.text('Not done'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('No time'));
+      await t.pump();
+      await t.tap(find.text('Tell Mochi'));
+      await t.pumpAndSettle();
+      final sent = client.requests.last;
+      expect(sent['previous_plan']['revision_id'], 'r2');
+      expect(sent['previous_plan']['items'][0]['catalog_id'], 'swim_laps');
+      expect(sent['feedback'], {
+        'revision_id': 'r2',
+        'items': [
+          {'item_id': 'move', 'status': 'not_done', 'reason': 'No time'},
+        ],
+      });
+      expect(
+        find.text('Swim for 15 minutes.', findRichText: true),
+        findsOneWidget,
+      );
+      expect(t.takeException(), isNull);
+    },
+  );
 }

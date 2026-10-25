@@ -59,12 +59,14 @@ def test_outside_18_to_85_is_null(age):
 
 
 def test_ages_without_a_band_use_the_overall_median():
-    assert effect_category("quit_smoking", 25, "male") == "some"  # overall 1.02 pp
+    assert effect_category("quit_smoking", 25, "male") == "some"  # overall 1.05 pp
     assert effect_category("quit_smoking", 85, None) == "some"
 
 
 def test_table_matches_the_sensitivity_json():
-    groups = json.loads(SENSITIVITY.read_text())["groups"]
+    sensitivity = json.loads(SENSITIVITY.read_text())
+    assert levers.MODEL_VERSION == sensitivity["model_version"]
+    groups = sensitivity["groups"]
     for key, medians in levers.MEDIAN_PP.items():
         group = groups[key if "|" in key or key == "all" else f"age:{key}"]
         want = {r["lever"]: r["median_pp"] for r in group["recommendable_levers_ranked"]}

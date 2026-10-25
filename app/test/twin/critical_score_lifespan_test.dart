@@ -476,10 +476,8 @@ void main() {
 
     // Owner choices "Projection with fixes" and "blend the seams": the life table below 35
     // and from 79, the yearly Cox projection at 45-70, blended linearly in between. No
-    // one-year step is now over 3 years (largest 2.3), but the projection sits 12-22 years
-    // above the life table, so across 35-45 the remaining years still grow (readme male:
-    // 47.8 at 35, 53.1 at 40, 57.3 at 45) and across 70-79 the expected age falls
-    // (103.8 at 70, 98.9 at 75). The rule this test states still does not hold.
+    // The earlier Cox v2 assessment showed undesirable trends at the blend seams.
+    // The same property should be checked for this refit during implementation.
     knownBug(
       'lifespan seams',
       'the blended projection/life-table seams (35-45, 70-79): remaining years rise, expected age falls',
