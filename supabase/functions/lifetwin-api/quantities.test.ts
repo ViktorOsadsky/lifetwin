@@ -90,3 +90,13 @@ test("background speech keeps the question open; answers are never off topic", a
     tv.restore();
   }
 });
+
+test("the reader never picks one of two heights", () => {
+  // The rules read the correction; this reader used to return the first (162.6 cm).
+  const two = readQuantity(
+    "I'm five foot four, well, five three and a half",
+    "height_cm",
+  );
+  assert.equal(two.status, "ambiguous");
+  assert.equal(readQuantity("5 foot 10", "height_cm").value, 177.8);
+});

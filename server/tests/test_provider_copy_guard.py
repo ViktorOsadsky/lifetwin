@@ -345,7 +345,9 @@ def test_care_endpoint_rejects_added_claims_even_when_full_safety_line_survives(
         "/api/checkin/turn", json={**body, "outside_ai_consent": {provider_name: True}}
     ).json()
     assert provider.calls == 1
-    assert out == baseline
+    # Only the provider status says the provider was asked; its wording was refused.
+    assert (baseline["provider_status"], out["provider_status"]) == ("not_needed", "used")
+    assert {**out, "provider_status": "not_needed"} == baseline
     assert out["message"].count("911") == 1
 
 
@@ -378,6 +380,8 @@ def test_care_endpoint_can_select_bounded_variants_without_changing_safety_or_st
     assert out["message"] == f"{canonical} {CARE_QUESTION}"
     assert draft.endswith(SAFETY_PHRASE) and canonical.endswith(draft)
     assert out["message"].count("911") == 1
-    assert {k: v for k, v in out.items() if k not in {"message", "mascot_events"}} == {
-        k: v for k, v in baseline.items() if k not in {"message", "mascot_events"}
+    assert (baseline["provider_status"], out["provider_status"]) == ("not_needed", "used")
+    same = {"message", "mascot_events", "provider_status"}
+    assert {k: v for k, v in out.items() if k not in same} == {
+        k: v for k, v in baseline.items() if k not in same
     }

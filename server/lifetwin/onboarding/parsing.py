@@ -1487,6 +1487,12 @@ def _exercise(
             # A bare count: weekly minutes, the question's own unit ("150"). Small
             # numbers are more likely days or hours, so they are asked about.
             found = _collect(rf"{N}(?=\s*(?:$|[,;.!]))", text, lambda m: float(m.group(1)))
+            if found and len(found[0]) == 1 and 15 <= found[0][0] <= 120:
+                # "My swim takes 45, I do it Monday and Thursday": one session's minutes
+                # and the days it happens on (#220).
+                counts, count_spans = _times_per_week(_blank(text, found[1]))
+                if len(set(counts)) == 1:
+                    return [found[0][0] * counts[0]], found[1] + count_spans
             if found and found[0] and not 0 < found[0][0] < 15:
                 return found
             return None
@@ -2471,6 +2477,14 @@ _CORRECTION_CUE = (
     r"scratch that|make that|make it)"
 )
 SELF_CORRECTION_WORDS = rf"(?:{_CORRECTION_NO}|{_CORRECTION_CUE})"
+# "Well" or "probably" between two values of one kind: the first is being revised
+# ("5 4... probably 5 3.5 now"; the transcript cleaner has already dropped the "...").
+# "Maybe" stays a choice between the two ("about 6 hours, maybe 7" is asked about).
+_ELLIPSIS = r"(?:\.{2,}|…)"
+_TRAIL_OFF = (
+    rf"[,;]?\s*(?:{_ELLIPSIS}\s*)?(?:,\s*)?"
+    rf"(?:\bwell\b\s*(?:[,;]|{_ELLIPSIS})?\s*(?:{_ELLIPSIS}\s*)?|(?=(?:probably|more like) ))"
+)
 # A bare "no" counts only set off by punctuation, as transcripts write it: "5 10 no 6 foot"
 # typed without any is asked about.
 _CORRECTION = (
@@ -2482,6 +2496,11 @@ SELF_CORRECTED = (
     rf"(?=(?:(?:i'm|i am|it's|it is) )?(?P<next>{_VALUE.replace('unit', 'unit2')}))"
     rf"|(?<![\d.:/])(?:{_VALUE.replace('unit', 'unit3')})\s*[,.;]\s*"
     rf"(?=(?P<last>{_VALUE.replace('unit', 'unit4')})\s+actually[.!]?\s*$)"
+    # "5 4... probably 5 3.5 now", "5 ft 4, well, 5 3.5": trailing off and saying it again.
+    # The hedge stays, so the new value is read back for a yes.
+    rf"|(?<![\d.:/])(?:{_VALUE.replace('unit', 'unit5')})\s*(?:{_TRAIL_OFF})\s*"
+    rf"(?=(?:(?:i'm|i am|it's|it is) )?(?:(?:probably|maybe|more like) )?"
+    rf"(?P<again>{_VALUE.replace('unit', 'unit6')}))"
 )
 
 
@@ -2489,8 +2508,8 @@ def _drop_self_correction(text: str) -> str:
     """Keep only the corrected value, when both are the same kind of measurement."""
 
     def drop(match: re.Match) -> str:
-        first = match.group("unit") or match.group("unit3")
-        second = match.group("unit2") or match.group("unit4")
+        first = match.group("unit") or match.group("unit3") or match.group("unit5")
+        second = match.group("unit2") or match.group("unit4") or match.group("unit6")
         if first and second and first.rstrip("s") != second.rstrip("s"):
             return match.group(0)
         return " "
@@ -2522,6 +2541,44 @@ NOW_CLAUSE = re.compile(r"\b(?:now|these days|nowadays|currently|at the moment|r
 NOW_AFTER_PAST = {"height_cm", "weight_kg", "sleep_hours", "exercise_minutes_weekly"}
 
 
+# "7 hours, sometimes less", "about 2 hours a week, more in summer", "170 lbs but I'm
+# trying to lose 10": a closing remark about how the value varies or where it is going.
+# The value said is the answer (owner, 2026-10-25: "wayyyyy more flexible"); the remark
+# is left out of it. Only at the end, after a number, and only with no number of its own,
+# except a weight goal ("lose 10"), which is never a weight.
+_MORE_LESS = r"(?:a (?:bit|little|lot) |much |even )?(?:less|more|fewer|longer|shorter)"
+_WHEN_VARIES = (
+    r"(?:(?:in|during) (?:the )?(?:summer|winter|spring|fall|autumn)(?:time| months)?|"
+    r"on (?:the )?(?:weekends?|weekdays?|good days|bad days)|"
+    r"(?:in|when) (?:it's |the )?(?:good |nice |warm |bad |cold )?weather|"
+    r"when it's (?:warm|nice|cold|sunny|raining))"
+)
+QUALIFIER_TAIL = re.compile(
+    r"(?<=\D)(?:\s*[,;]\s*|\s+)(?:(?:but|and|though|although)\s+)?(?:"
+    rf"(?:sometimes|often|occasionally|some (?:nights|days|weeks)) {_MORE_LESS}"
+    rf"(?: than that)?(?: {_WHEN_VARIES})?"
+    rf"|{_MORE_LESS} {_WHEN_VARIES}"
+    r")\s*[.!]?\s*$"
+)
+WEIGHT_GOAL_TAIL = re.compile(
+    r"(?<=\D)(?:\s*[,;]\s*|\s+)(?:(?:but|and|though|although)\s+)?(?:i'm |i am |i've been )?"
+    r"(?:trying|want|wanting|hoping|planning|working|aiming|need|i want|i'd like|i would like|"
+    r"i need|i hope|i plan) (?:to |on )?(?:lose|losing|drop|dropping|shed|shedding|"
+    r"get(?:ting)? (?:down|it down))\b[^.;!?]*[.!]?\s*$"
+)
+
+
+def _drop_qualifier(text: str, field: str) -> str:
+    """The reply without a closing remark that qualifies its value."""
+    tail = WEIGHT_GOAL_TAIL if _base(field) == "weight_kg" else QUALIFIER_TAIL
+    match = tail.search(text)
+    if not match or not re.search(r"\d", text[: match.start()]):
+        return text
+    if tail is QUALIFIER_TAIL and re.search(r"\d", match.group(0)):
+        return text
+    return text[: match.start()].rstrip(" ,;")
+
+
 def _now_after_past(text: str) -> str:
     clauses = [(start, end) for start, end, _ in _clauses(text)]
     past = [
@@ -2538,7 +2595,15 @@ def _now_after_past(text: str) -> str:
     if not past or len(now) != 1 or not numbered <= set(past) | set(now) or not numbered & set(now):
         return text
     a, b = now[0]
-    text = _blank(text, past)
+    # "I was 5 4 but I've shrunk, probably 5 3.5 now": the change between the two values
+    # explains the now value; it does not make it an old one.
+    why = [
+        (c, d)
+        for c, d in clauses
+        if (c, d) not in numbered
+        and re.search(r"\b(?:shrunk|shrank|lost|gained|put on)\b", text[c:d])
+    ]
+    text = _blank(text, past + why)
     return text[:a] + NOW_CLAUSE.sub(" ", text[a:b]) + text[b:]
 
 
@@ -2570,6 +2635,7 @@ def parse_value(
         return _blood_pressure(field, canonical)
     if field not in CATEGORICAL:
         canonical = re.sub(MODEST_LEAD, "", _drop_self_correction(canonical))
+        canonical = _drop_qualifier(canonical, field)
     if _base(field) in NOW_AFTER_PAST:
         canonical = _now_after_past(canonical)
     if _base(field) == "sleep_hours":
@@ -2663,6 +2729,18 @@ VAGUE_PORTION = (
 )
 
 
+# "Less than I used to", "more than I'd like", "a bit heavier these days": a comparison
+# with no amount. Mochi asks gently for a rough number instead of making small talk.
+VAGUE_COMPARISON = re.compile(
+    r"^(?:(?:oh|well|hmm|i'd say|i think|probably|about|it's|i'm|i am|i weigh|i sleep|"
+    r"a bit|a little|a lot|much|quite a bit|way|not|definitely)\s+)*"
+    r"(?:less|more|lighter|heavier|fewer|shorter|taller|longer)\b"
+    r"(?:\s+(?:than\s+)?(?:i used to|i should|i'd like|i would like|i want|i was|i did|"
+    r"before|it used to be|last year|normal|usual|i'd want|ideal|i ought to|i'd hope|"
+    r"these days|nowadays|lately|now)(?:\s+(?:be|weigh|sleep|do|to))?)?\s*$"
+)
+
+
 def clarify(
     text: str, field: ProfileField, *, today: date | None = None, period: str | None = None
 ) -> str | None:
@@ -2679,6 +2757,23 @@ def clarify(
         canonical = _in_period(canonical, field, period)
         if canonical is None:
             return None
+    if (
+        field not in CATEGORICAL
+        and field not in BP_FIELDS
+        and VAGUE_COMPARISON.search(canonical)
+        and not re.search(r"\d", canonical)
+        and len(canonical.split()) <= 8
+        and not OTHER_PERSON.search(canonical)
+    ):
+        # "Less than I used to" to the weight question: a vague answer, not small talk.
+        if _base(field) == "weight_kg":
+            return "That's alright. Roughly how much do you weigh now? A guess is fine, like 160 pounds."
+        example = EXAMPLES.get(_base(field), "").strip('"')
+        like = f", like {example}" if example else ""
+        return (
+            f"That's alright. Roughly how much {FRIENDLY_LABELS[field]} is that now? "
+            f"A guess is fine{like}."
+        )
     if _doubtful(canonical) or OTHER_PERSON.search(canonical):
         return None
     if field == "alcohol_drinks_weekly" and re.search(NON_ALCOHOL, canonical):

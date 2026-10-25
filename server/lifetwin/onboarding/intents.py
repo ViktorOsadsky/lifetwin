@@ -12,6 +12,7 @@ from typing import Literal
 from lifetwin.onboarding.models import ProfileField
 from lifetwin.onboarding.parsing import (
     ADVICE,
+    DAY_NAMES,
     FIELD_CUES,
     HYPOTHETICAL,
     NO_WORDS,
@@ -945,12 +946,21 @@ _DANGLING_RATE = r"^(?:per|a|each|every) (?:day|week|night|month)\s+(?=\S*\d)"
 _RATE = r"\b(?:a|per|each|every) (?:day|week|night|month)\b"
 
 
-def _on_topic(piece: str, field: ProfileField, confirming: bool, checkin: bool = False) -> bool:
+def _on_topic(
+    piece: str, field: ProfileField, confirming: bool, checkin: bool = False, asked: bool = True
+) -> bool:
     """A number, the question's topic, or a word that answers it."""
     canonical = _canonical(piece)
     if re.search(r"\d", canonical) or is_skip(piece, field):
         return True
     if checkin and same_as_before(piece):
+        return True
+    if (
+        asked
+        and _base(field) == "exercise_minutes_weekly"
+        and re.search(rf"{DAY_NAMES}|\b(?:once|twice|\d+ times)\b", canonical)
+    ):
+        # "My swim takes 45, I do it Monday and Thursday": how often is part of the answer.
         return True
     cues = (
         TOPICS.get(_topic(field), NOTHING),
@@ -1019,7 +1029,7 @@ def focus(
         return (
             _on_topic(piece, field, confirming, checkin)
             or _changes_meaning(piece)
-            or any(_on_topic(piece, other, False) for other in also)
+            or any(_on_topic(piece, other, False, asked=False) for other in also)
         )
 
     # Each sentence keeps its own end, so "yes?" stays a question.

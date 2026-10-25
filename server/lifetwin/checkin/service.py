@@ -576,50 +576,68 @@ class CheckinService:
         """Templates only (no outside AI)."""
         response = self._turn(request)
         template = self._care_template(request, response)
-        return self._with_care(response, template) if template else response
+        response = self._with_care(response, template) if template else response
+        return response.model_copy(update={"provider_status": self._idle_status()})
+
+    def _idle_status(self) -> str:
+        """The status of a turn that asked no provider."""
+        configured = any(
+            provider is not None and provider.configured
+            for provider in (self.intent_reader, self.personalizer)
+        )
+        return "not_needed" if configured else "not_configured"
 
     async def aturn(self, request: CheckinTurnRequest) -> CheckinResponse:
         """The route's turn: with consent for the active provider, the care reply may be
         reworded. It may only change the words, and the safety phrase must survive, or
         the template stands."""
-        response = self._turn(request, await self._claude_heard(request))
+        heard, status = await self._claude_heard(request)
+        response = self._turn(request, heard)
         template = self._care_template(request, response)
         if not template:
-            return response
+            return response.model_copy(update={"provider_status": status})
         message = template
         if consented(request.outside_ai_consent, self.personalizer):
-            reworded = await phrase_care(
+            reworded, answered = await phrase_care(
                 self.personalizer, template, request.text or "", self.timeout
             )
+            if answered is not None:
+                status = "used" if answered else "unavailable"
             if reworded and SAFETY_PHRASE in reworded:
                 message = reworded
-        return self._with_care(response, message)
+        return self._with_care(response, message).model_copy(update={"provider_status": status})
 
-    async def _claude_heard(self, request: CheckinTurnRequest) -> IntentResult | None:
-        """Claude's reading of a read-back reply the rules could not settle, or None.
+    async def _claude_heard(self, request: CheckinTurnRequest) -> tuple[IntentResult | None, str]:
+        """Claude's reading of a read-back reply the rules could not settle, or None, and
+        the provider status of the turn so far.
 
         Only for a reply to a read-back or Apple Health's number, with no number in it,
         and only with the person's yes for Claude.
         """
         state = request.state
         text = clean_reply(normalize_text(request.text or ""))
+        idle = self._idle_status()
         if (
             request.action != "reply"
             or not text
             or self.intent_reader is None
-            or request.outside_ai_consent.get("claude") is not True
+            or not self.intent_reader.configured
             or not (state.phase == "confirming" or self._suggestion(state) is not None)
             or re.search(r"\d", text)
             or read_back_reply(text)[0] not in {"unsure", "other"}
         ):
-            return None
+            return None, idle
         question = read_back(self._prompt(state))
-        if read_local(text, question).confident and explained(text, question):
-            return None
+        if question.consent or (read_local(text, question).confident and explained(text, question)):
+            return None, idle
+        if request.outside_ai_consent.get("claude") is not True:
+            return None, "consent_required"
         reading = await read_intent(
             text, question, self.intent_reader, allowed=True, ask_claude=True
         )
-        return reading if reading.source == "claude" else None
+        if reading.source == "claude":
+            return reading, "used"
+        return None, "unavailable"
 
     def _care_template(self, request: CheckinTurnRequest, response: CheckinResponse) -> str | None:
         before = request.state
