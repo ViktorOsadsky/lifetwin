@@ -40,13 +40,13 @@ were not tested. Reduced motion/increased contrast were not changed.
   overlaps Today/What-if labels at 1.6; native maximum text worsens the same overlap.
   [1.6 evidence](../qa/accessibility-2026-10-24/evidence/scale16-experiment-hub.png),
   [native maximum](../qa/accessibility-2026-10-24/evidence/ax5-experiment-hub.png).
-- Home at native maximum fragments Higher risk / Better health into letters around
+- [#150](https://github.com/ViktorOsadsky/lifetwin/issues/150): Home at native maximum fragments Higher risk / Better health into letters around
   Average, and reduces the Today summary to fragments beside Check in.
   [Scale labels](../qa/accessibility-2026-10-24/evidence/ax5-home-scroll1.png),
   [Today summary](../qa/accessibility-2026-10-24/evidence/ax5-home-scroll4.png).
   [Local draft](../qa/accessibility-2026-10-24/local-drafts/home-largest-text-readability.md).
   This is readability failure, not navigation loss.
-- Check-in clips the current sleep question behind the fixed Skip/input dock while the
+- [#149](https://github.com/ViktorOsadsky/lifetwin/issues/149): Check-in clips the current sleep question behind the fixed Skip/input dock while the
   keyboard is open, at 1.6 and native maximum. Two attempted scrolls retain the crop;
   a background tap did not dismiss the keyboard. Keyboard-dismissal recovery remains
   unverified. [1.6](../qa/accessibility-2026-10-24/evidence/scale16-daily-checkin.png),
@@ -54,8 +54,7 @@ were not tested. Reduced motion/increased contrast were not changed.
   [local draft](../qa/accessibility-2026-10-24/local-drafts/checkin-keyboard-clipping.md).
   No claim of permanent loss or unreachable input.
 
-Unpublished drafts remain local review material. External publication requires resolving
-any outstanding approval gate; this report is not an alternative publication route.
+All four confirmed findings are filed on GitHub. The retained drafts record their reproduction details.
 Design owners choose fixes; this QA does not assign new owners or change production UI.
 
 ## Seventeen-state matrix
@@ -144,7 +143,8 @@ restored light, only `.a11y134` app/runner removed, assigned simulator restored 
 local 8134 server/exporter stopped. [Cleanup record](../qa/accessibility-2026-10-24/evidence/cleanup.json).
 No physical phone or other owner's simulator/app was changed.
 
-Branch `codex/c-accessibility-acceptance` is for local review; no push/PR/merge is claimed.
+Branch `codex/c-accessibility-acceptance` is prepared for a documentation/evidence PR.
+Root publishes the reviewed record; #134 stays open for the coverage gaps above.
 Next dependency: design-owner fixes confirmed bugs, then targeted actual-app rechecks plus
 completion of blocked routes, full numeric score/caveat VoiceOver read-back, secondary
 VoiceOver order/actions, all-target measurement and comprehensive contrast validation.
