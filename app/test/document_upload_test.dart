@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,9 @@ import 'package:lifesim/documents/document_ocr.dart';
 import 'package:lifesim/documents/document_screen.dart';
 import 'package:lifesim/documents/document_upload.dart';
 import 'package:lifesim/main.dart';
+import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
+import 'package:lifesim/twin/twin_repository.dart' show HistorySource;
+import 'support/settings_hub.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/voice/api_base.dart';
 import 'package:lifesim/voice/fakes.dart';
@@ -74,6 +78,13 @@ final foundBody = {
 };
 
 /// A fake LifeTwin server: records every request body and answers with [reply].
+class PendingOcr extends FakeOcr {
+  PendingOcr() : super(visitDoc);
+  final result = Completer<RecognisedDocument>();
+  @override
+  Future<RecognisedDocument> scan(DocumentSource source) => result.future;
+}
+
 class FakeServer {
   FakeServer(this.reply);
   http.Response Function(Map<String, dynamic> body) reply;
@@ -231,9 +242,21 @@ void main() {
       final bp = candidates.last;
       expect(
         documentReadBack(bp, imperial: true, now: now),
-        contains("138 over 86. That was from September 14. I'll keep it as a note"),
+        contains("138 over 86. That was from September 14. This reading doesn't change your forecast"),
       );
     });
+  });
+
+  test('stopped native read cannot send its late text to extraction', () async {
+    final ocr = PendingOcr();
+    final server = FakeServer((_) => ok(foundBody));
+    final service = serviceWith(ocr, server);
+    final reading = service.read(DocumentSource.camera);
+    service.discard();
+    ocr.result.complete(visitDoc);
+    expect((await reading).status, DocumentReadStatus.cancelled);
+    expect(server.bodies, isEmpty);
+    expect(service.holdingText, isFalse);
   });
 
   group('screen', () {
@@ -245,6 +268,7 @@ void main() {
 
     Future<void> tap(WidgetTester t, String label) async {
       await t.ensureVisible(find.text(label));
+      await t.pumpAndSettle();
       await t.tap(find.text(label));
       await t.pumpAndSettle();
       await t.pump(const Duration(milliseconds: 800)); // past the double-tap guard
@@ -281,6 +305,24 @@ void main() {
       await tap(t, 'Continue');
       expect(done!.profileValues, {'diabetes': true});
       expect(done!.toAsk, ['weight_kg', 'hypertension_diagnosed']);
+    });
+
+    testWidgets('a conflicting document cannot replace a saved answer', (t) async {
+      setPhone(t);
+      DocumentImportResult? result;
+      await t.pumpWidget(MaterialApp(home: DocumentUploadScreen(
+        service: serviceWith(FakeOcr(visitDoc), FakeServer((_) => ok(foundBody))),
+        confirmedValues: const {'weight_kg': 70},
+        onDone: (r) => result = r,
+      )));
+      await tap(t, 'Choose a photo');
+      await tap(t, 'Yes, it is mine');
+      expect(find.text('Two different answers'), findsOneWidget);
+      expect(find.textContaining('70 kg'), findsOneWidget);
+      expect(find.text("Yes, that's right"), findsNothing);
+      await tap(t, 'Talk it over with Mochi');
+      expect(result!.profileValues, isEmpty);
+      expect(result!.toAsk, contains('weight_kg'));
     });
 
     testWidgets('declining upload changes nothing', (t) async {
@@ -335,7 +377,7 @@ void main() {
         ),
       );
       await tap(t, 'Choose a photo');
-      expect(find.textContaining('Muse by Meta, an AI service'), findsOneWidget);
+      expect(find.textContaining('Muse can help find your numbers. It gets the words, never the photo. Just this document.'), findsOneWidget);
       await tap(t, 'No thanks');
       expect(find.text("I didn't find any answers in it"), findsOneWidget);
       expect(server.bodies.map((b) => b['outside_ai_consent']), [false]);
@@ -343,19 +385,30 @@ void main() {
   });
 
   group('app', () {
+    late TwinModelService hubModel;
+    setUpAll(() async => hubModel = await TwinModelService.load());
     VoiceOnboardingController fakeController(FakeConversationGuide guide) =>
         VoiceOnboardingController(guide: guide, input: FakeSpeechInput(), output: FakeSpeechOutput());
 
-    testWidgets('the Room offers upload; confirmed values wait for the talk, labelled as a document', (t) async {
+    testWidgets('Health documents: confirmed values are kept, labelled as a document', (t) async {
       t.view.physicalSize = const Size(390, 844);
       t.view.devicePixelRatio = 1;
       addTearDown(t.view.reset);
       final guide = FakeConversationGuide();
       final c = fakeController(guide);
       final server = FakeServer((_) => ok(foundBody));
-      await t.pumpWidget(LifeTwinApp(controller: c, documentService: serviceWith(FakeOcr(visitDoc), server)));
+      final repo = await memoryRepo(hubModel);
+      await t.pumpWidget(
+        LifeTwinApp(
+          controller: c,
+          twin: Future.value(repo),
+          documentService: serviceWith(FakeOcr(visitDoc), server),
+        ),
+      );
       await t.pump();
-      await t.tap(find.text('Upload a document'));
+      await t.pump();
+      await openSettingsRow(t, 'Health documents');
+      await t.tap(find.text('Scan a document'));
       await t.pumpAndSettle();
       for (final label in [
         'Choose a photo',
@@ -366,16 +419,15 @@ void main() {
         "No, that's not right",
         'Continue',
       ]) {
+        await t.ensureVisible(find.text(label));
+        await t.pumpAndSettle();
         await t.tap(find.text(label));
         await t.pumpAndSettle();
         await t.pump(const Duration(milliseconds: 800));
       }
-      expect(c.hasPendingHealth, isTrue);
-      expect(c.confirmedProfile, isEmpty, reason: 'nothing is used before the talk takes it');
-      await c.answerConsent(false);
-      final import = guide.calls.firstWhere((call) => call['action'] == 'import');
-      expect(import['values'], {'weight_kg': 82.6, 'diabetes': true});
-      expect(import['importSource'], 'document');
+      // The Health documents page keeps what was confirmed, labelled as a document, in History.
+      final sources = [for (final e in repo.history()) for (final i in e.items) i.source];
+      expect(sources, contains(HistorySource.document));
     });
 
     testWidgets('a failed upload keeps answers confirmed before', (t) async {

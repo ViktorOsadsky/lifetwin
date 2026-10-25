@@ -208,12 +208,12 @@ class _RoomSceneState extends State<RoomScene> {
               clipBehavior: Clip.none,
               children: [
                 Positioned.fill(
-                  child: Image.asset(
+                  child: _roomLight(Image.asset(
                     layout.bgAsset,
                     fit: BoxFit.fill,
                     gaplessPlayback: true,
                     semanticLabel: 'A cozy room with a bed, a table, a yoga mat and a shelf with a crystal ball',
-                  ),
+                  )),
                 ),
                 if (sim.ballTaken) _layer(layout.shelfEmpty),
                 ..._bowl(layout),
@@ -261,7 +261,7 @@ class _RoomSceneState extends State<RoomScene> {
                 key: const ValueKey('room-apple-pop'),
                 scale: pop,
                 alignment: pivot,
-                child: Image.asset(layout.bowlApple.asset, fit: BoxFit.fill, gaplessPlayback: true),
+                child: _roomLight(Image.asset(layout.bowlApple.asset, fit: BoxFit.fill, gaplessPlayback: true)),
               ),
             ),
           ),
@@ -273,9 +273,27 @@ class _RoomSceneState extends State<RoomScene> {
     key: key,
     rect: l.rect,
     child: IgnorePointer(
-      child: ExcludeSemantics(child: Image.asset(l.asset, fit: BoxFit.fill, gaplessPlayback: true)),
+      child: ExcludeSemantics(child: _roomLight(Image.asset(l.asset, fit: BoxFit.fill, gaplessPlayback: true))),
     ),
   );
+
+  Widget _roomLight(Widget child) => switch (widget.appearance.room) {
+    TwinRoom.original => child,
+    TwinRoom.morning => ColorFiltered(
+      colorFilter: ColorFilter.mode(
+        LtColors.mint.withValues(alpha: 0.16),
+        BlendMode.srcATop,
+      ),
+      child: child,
+    ),
+    TwinRoom.twilight => ColorFiltered(
+      colorFilter: ColorFilter.mode(
+        LtColors.night.withValues(alpha: 0.28),
+        BlendMode.srcATop,
+      ),
+      child: child,
+    ),
+  };
 
   List<Widget> _twin(RoomLayout layout) {
     final proj = layout.projector;

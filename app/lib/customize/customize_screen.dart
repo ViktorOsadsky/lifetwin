@@ -30,7 +30,8 @@ enum _Tab {
   tops('Tops', Icons.checkroom_rounded),
   glasses('Glasses', Icons.visibility_outlined),
   fur('Fur', Icons.pets_rounded),
-  aids('Aids', Icons.elderly_rounded);
+  aids('Aids', Icons.accessibility_new_rounded),
+  room('Room', Icons.chair_outlined);
 
   const _Tab(this.label, this.icon);
   final String label;
@@ -90,7 +91,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
               const SizedBox(height: 12),
               _tabs(),
               const SizedBox(height: 12),
-              if (_tab == _Tab.hats) _hats() else _comingSoon(),
+              if (_tab == _Tab.hats) _hats() else if (_tab == _Tab.room) _rooms() else _comingSoon(),
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -262,6 +263,44 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     alignment: Alignment.center,
     padding: const EdgeInsets.all(16),
     child: WholeWordText('${_tab.label} are coming soon.', textAlign: TextAlign.center, style: LtText.body(size: 18)),
+  );
+
+  Widget _rooms() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      WholeWordText(
+        'A light for your room',
+        style: LtText.body(size: 19, weight: FontWeight.w700),
+      ),
+      const SizedBox(height: 10),
+      Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        alignment: WrapAlignment.center,
+        children: [
+          for (final (room, label, color) in [
+            (TwinRoom.original, 'Cozy', LtColors.lavender),
+            (TwinRoom.morning, 'Morning', LtColors.mint),
+            (TwinRoom.twilight, 'Twilight', LtColors.night),
+          ])
+            _Tile(
+              label: label,
+              selected: _draft.room == room,
+              tilt: 0,
+              art: Container(
+                width: 48,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: LtColors.control),
+                ),
+              ),
+              onTap: () => setState(() => _draft = _draft.copyWith(room: room)),
+            ),
+        ],
+      ),
+    ],
   );
 }
 
