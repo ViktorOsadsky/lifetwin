@@ -124,7 +124,7 @@ def checkin(c: TestClient, start: dict, replies: dict) -> dict:
     raise AssertionError("check-in did not finish: " + r["message"])
 
 
-def main() -> None:
+def build() -> dict:
     c = client()
     quick = []
     # Seven evening check-ins ending yesterday: each completes its own day's row.
@@ -136,7 +136,7 @@ def main() -> None:
         c, {"kind": "weekly", "local_date": "2026-10-25", "previous": {}}, WEEKLY_REPLIES
     )
     daily = checkin(c, {"kind": "daily", "local_date": "2026-10-23", "previous": {}}, DAILY_REPLIES)
-    data = {
+    return {
         "about": "Real server responses, written by server/tests/make_app_fixtures.py.",
         "onboarding_ready": onboarding(c, memory=True),
         "onboarding_no_memory": onboarding(c, memory=False),
@@ -144,7 +144,14 @@ def main() -> None:
         "weekly": weekly,
         "daily": daily,
     }
-    OUT.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n")
+
+
+def render(data: dict) -> str:
+    return json.dumps(data, indent=1, ensure_ascii=False) + "\n"
+
+
+def main() -> None:
+    OUT.write_text(render(build()))
     print(f"Wrote {OUT.relative_to(ROOT)}")
 
 
