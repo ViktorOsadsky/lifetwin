@@ -12,9 +12,10 @@ This folder holds the logic for Mochi's quick daily check-in and the weekly chec
   - Progress is "good weeks": Monday–Sunday weeks with at least 4 different days with a finished check-in of any kind, counted over all time, not in a row (`weekProgress`). It counts days, not check-ins.
   - Nothing says "missed".
   - The only catch-up is one optional last question: "Yesterday was a bit of a blank. How did you sleep the night before?" It is asked only when yesterday had no check-in and that answer would complete yesterday's row.
+- One read-back at the end (quick and daily; contract change of 2026-10, see "The read-back contract" below). Each answer is heard and echoed in a few words ("7 hours of sleep, got it."), and the next question follows. One read-back of every answer comes at the end; a yes saves them all. Weekly check-ins, which change the profile, still read back each answer.
 - Apple Health:
   - Health can suggest last night's sleep, the night before's sleep, and the day's Apple Exercise minutes.
-  - Mochi reads each one back once as "Looks right?", and nothing is kept without a yes.
+  - Quick: Mochi offers each sleep value in the question itself ("Apple Health says you slept about 7.5 hours last night. Does that sound right?"). A yes (or the `confirm` action) only hears it; it is saved with the yes to the read-back at the end.
   - Exercise minutes can't say which were out of breath, so Mochi asks only the pace.
 - No direct edits: answers reach history only from a finished conversation (`CheckinStore.applyFinishedCheckin`). To change an answer, the person goes back in the conversation or tells Mochi.
 - Daily history stays separate from the profile. Only a weekly check-in's `profile_update` changes the profile, and `unknown` never replaces a known value.
@@ -33,23 +34,50 @@ Greeting: "Hi, it's Mochi! Just a quick check-in, under a minute. You can skip a
 
 1. **Sleep:** "How did you sleep last night? About how many hours?"
    - With a last answer: "Last time you slept {value}. How about last night? About how many hours?"
-   - Apple Health: "Apple Health says you slept about {value} last night. Looks right?"
+   - Apple Health: "Apple Health says you slept about {value} last night. Does that sound right?"
 2. **Activity:** "Did you get out and about {day}? Tell me if anything got you out of breath, like brisk walking uphill, or if it was easy, like a gentle walk, and for about how long."
    - Follow-ups for the part not mentioned:
-     - "And anything easier {day}, like an easy walk or pottering about? About how long?"
-     - "And did anything {day} get you out of breath, like brisk walking uphill? If so, for about how long?"
+     - "And anything easier {day}, like an easy walk or some housework? About how long?" (60 and over: "…or pottering about?"; younger: "…like walking to work or an easy bike ride?")
+     - "And did anything {day} get you out of breath, like brisk walking uphill? If so, for about how long?" (younger: "…like a run, the gym or cycling hard?")
    - A time without a pace: "Did that get you out of breath, like brisk walking uphill, or was it at an easy pace?"
    - Apple Health: "Apple Health shows about {value} of exercise {day}. Did any of it get you out of breath, or was it all at an easy pace?"
-3. **Sitting** (everyday examples, rotating by date):
+   - Younger people get rotating examples instead: "a run or a gym class" / "walking to work", "a spin class or a game of football" / "an easy bike ride", "HIIT or cycling hard" / "a walk at lunch" (`AGE_FORMS` in `scripts.py`).
+3. **Sitting** (everyday examples, rotating by date; younger people hear desk time, the commute, meetings and screens instead):
    - "About how many hours did you spend sitting {day}? Count reading, TV, meals and time in the car."
    - "Thinking of {day}, about how many hours were you sitting down, like watching TV, reading or at the table?"
    - "Roughly how many hours did you sit {day}, all together? Things like TV, puzzles, meals or driving all count."
 4. **Feeling**, when there is room: "And how are you feeling today: good, okay, or not great?"
 5. **Catch-up** (optional, last): "One more, only if you like. Yesterday was a bit of a blank. How did you sleep the night before? If you can't remember, just say skip."
 
+After each answer Mochi echoes it ("45 minutes out of breath and 20 minutes easy, got it.") and asks the next question. At the end: "Before I save anything, here's what I heard: … Is that right?" A yes ends with "All saved. Nice work taking a minute for yourself today!" (daily adds "See you tomorrow.").
+
 Which topics: sleep if today's row has no sleep, activity if the activity day's row lacks either pace, and sitting if it lacks sitting. Feeling fills a free place (at most three). If everything is known and feeling is done, no check-in is due.
 
 The weekly check-in (on the person's weekly day, Sunday by default; quietly still ready afterwards; filed under the Monday–Sunday week holding most of the seven days before it, `weekDescribedBy`) now asks the model's own inputs: `vigorous_recreation_min_week` and `moderate_recreation_min_week` as one plain question with a follow-up, and `sedentary_min_day` on a usual day.
+
+## The read-back contract (quick and daily)
+
+Until 2026-10 every answer was read back ("I heard you slept 7 hours last night. Is that right?") and Apple Health's values had their own "Looks right?". Now quick and daily check-ins have exactly one read-back, at the end, for every kind of answer: spoken, typed, tapped (`submitQuick`) and Apple Health's. Server state (`state` in every `/api/checkin/turn` response) and the controller members that show it:
+
+| Server state | Meaning | Controller |
+|---|---|---|
+| `phase: "asking"`, `current_field` set, `pending` = answers heard so far | A question is open. The message starts with an echo of the last answer ("7 hours of sleep, got it.") | `confirming == false`; `heardAnswers` (= `pending`, nulls dropped) |
+| `phase: "asking"`, `from_health: true`, `suggested[current_field]` set | Apple Health's value offered in the question | `confirmingHealth == true`; "Looks right" → `confirm()` (action `confirm`), "Not quite" → `change()` then the person's answer |
+| `phase: "confirming"`, `current_field: null`, `checking: []`, `pending` = every answer | **The one read-back at the end.** "Before I save anything, here's what I heard: … Is that right?" | `finalReadback == true`, `confirming == true` |
+| `phase: "confirming"`, `current_field` set, `checking` = the fields asked about | A check question about one unusual value (more than 14 h of sleep, 300 min of activity or 16 h of sitting): "Did I hear 15 hours of sleep? That's a lot for one night, so I just want to check. Is that right?" | `checkQuestion == true`, `confirming == true` |
+| `phase: "probing"` | The optional habit follow-up (memory consent) | as before |
+| `phase: "ready"`, `complete: true`, `confirmed` = every answer, `pending` empty | Saved (`daily_logs` built from `confirmed`) | `phase == CheckinPhase.done` |
+
+What the `ReadbackAdapter` calls:
+
+- Yes to the read-back (or to a check question): `confirm()` (action `confirm`, or a reply "yes").
+- "Not quite": `change()`, then the person's words through `submitTyped` or Talk. They are sent as `"no, <words>"`: "no, my sleep was 6 hours" changes that answer and returns the read-back again with the new value. A plain "no" asks what to change (with only one answer, it asks for the right one). "go back to my sitting" (or `goBack()`, which works at the read-back too) reopens that question; its answer stays heard until replaced, and "keep it" keeps it.
+- During the check-in, "go back, I slept 5 not 7" or "no wait, 45 minutes" changes an earlier answer without stopping; the open question then comes back.
+- `skip()` is refused (409) at the read-back; it works at a check question (the unusual value is dropped).
+- Show `heardAnswers` if the read-back is also shown as a list; the message already says every value.
+- Nothing is in `confirmed` or saved on the phone before the final yes. `questionNumber` counts heard answers as done.
+- A reply may also answer a later question ("7 hours, and I walked 20 minutes to work"): that value is heard, echoed, and its question isn't asked.
+- The start request takes `age` (the profile's age, optional). It only chooses everyday examples: 60 and over keep gardening and "pottering about"; younger people hear the gym, running, cycling, the commute and desk time; no age uses examples for anyone. The UI should pass it.
 
 ## What the UI calls
 
@@ -63,7 +91,7 @@ The weekly check-in (on the person's weekly day, Sunday by default; quietly stil
 | `startTalk()`, `stopTalk()`, `cancelTalk()`, `listenSecondsLeft` | the Talk button |
 | `submitTyped(text)`, `setTyping(bool)`, `typing` | typing |
 | `quickAnswers` → `submitQuick(words)` | tap answers (feeling, sitting hours, pace, "Nothing") |
-| `confirming`, `confirmingHealth`, `confirm()`, `change()`, `keepAnswer()` | the read-back. Label it "Looks right" / "Not quite" when `confirmingHealth` |
+| `confirming`, `finalReadback`, `checkQuestion`, `heardAnswers`, `confirmingHealth`, `confirm()`, `change()`, `keepAnswer()` | the read-back (see "The read-back contract"). Label it "Looks right" / "Not quite" when `confirmingHealth` |
 | `skip()`, `goBack()` / `canGoBack`, `cancel()` | Skip, Go back, Stop |
 | `emergency`, `emergencyCallUri` (`tel:911`), `continueAfterEmergency()` | paused: Mochi concerned, a "Call 911" button the person taps, and Continue |
 | `canRetry` / `retry()`, `hearAgain()`, `stopSpeaking()`, `screenReader` | as in onboarding |

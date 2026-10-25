@@ -48,11 +48,12 @@ class CheckinState(ApiModel):
     # and sitting questions are about (the app's choice: "today" in the evening).
     local_date: str | None = Field(default=None, pattern=ISO_DATE)
     activity_day: DayWord | None = None
-    # Quick only: Apple Health values the person has not confirmed yet. Each is read
-    # back once, as "Looks right?", when its question comes up; never saved without a yes.
+    # Quick only: Apple Health values the person has not confirmed yet. Each is
+    # offered in its question ("Does that sound right?") when it comes up; never saved
+    # without the yes to the read-back at the end.
     suggested: CheckinValues = Field(default_factory=CheckinValues)
     suggested_activity_min: Annotated[int | None, WholeNumber] = Field(default=None, ge=0, le=1440)
-    # The pending answer is Apple Health's value (read back as "Looks right?"), or the
+    # Apple Health's value is offered in the open question (quick), or the
     # held minutes below are Apple Health's exercise minutes.
     from_health: bool = False
     # The activity question is down to one pace: a follow-up ("And anything easier?"),
@@ -203,7 +204,7 @@ def profile_update(state: CheckinState) -> ProfileUpdate:
 
 class QuickSuggestions(ApiModel):
     """Apple Health values for the quick check-in, read on the phone and not yet
-    confirmed. Mochi reads each back ("Looks right?"); nothing is kept without a yes."""
+    confirmed. Mochi offers each in its question; nothing is kept without the final yes."""
 
     sleep_hours_last_night: float | None = Field(default=None, ge=0, le=24)
     sleep_hours_night_before: float | None = Field(default=None, ge=0, le=24)

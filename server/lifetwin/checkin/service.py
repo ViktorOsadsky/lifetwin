@@ -1236,7 +1236,8 @@ class CheckinService:
 
     @staticmethod
     def _offer(state: CheckinState) -> None:
-        """Apple Health's value for the question that comes up, read back once."""
+        """Apple Health's value for the question that comes up: offered in the question
+        (quick), or read back once (weekly never has one)."""
         field = state.current_field
         if state.phase != "asking" or field is None:
             return
