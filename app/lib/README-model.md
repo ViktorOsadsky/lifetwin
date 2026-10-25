@@ -80,7 +80,9 @@ This is the one object the UI and the check-in controller (`lib/checkin/`) shoul
 | Member | What it does |
 |---|---|
 | `static Future<TwinRepository> open({AssetBundle? bundle, StoreBackend? backend, CheckinReminders? reminders, DateTime Function()? clock})` | Loads the model and sensitivity ranking, opens the store. `main.dart` passes `CheckinReminders(LocalNotificationPort())` |
-| `TwinAssessment? current` / `TwinAssessment? refresh()` | Assessment of the stored profile, with the history window; null before a profile. Call `refresh()` on app open (a daily window ends yesterday) |
+| `TwinAssessment? current` / `TwinAssessment? refresh()` | Assessment of the stored profile, with the history window; null before a profile. Call `refresh()` on app open (a daily window ends yesterday); it also plans the reminders again |
+| `Future<List<DateTime>> replanReminders()` | Plans the coming week's reminders from the saved settings; run by `open` (app start) and `refresh` |
+| `bool shouldOfferReminders` / `acceptReminders({hour, minute})` / `declineReminders()` | The one-time reminder offer, shown at the end of onboarding (or after the first check-in); a yes asks the phone's notification permission |
 | `Map<String, dynamic> profile` | Confirmed profile (read only) |
 | `TwinStore store` | Read-only views: `profile`, `hasProfile`, `checkins`, `dayLogs`, `historyEntries`, `habitNotes`, `twin`, `checkinSettings`, `memoryConsent` |
 | `TwinAssessment assess([Map? appProfile, Map? modelInputs])` | Assesses any profile with the phone's history; writes nothing |

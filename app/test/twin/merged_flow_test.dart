@@ -313,6 +313,38 @@ void main() {
     expect(repo.profile, before);
   });
 
+  group('reminders', () {
+    test('are offered at the end of onboarding, once', () async {
+      expect(repo.shouldOfferReminders, isFalse); // never on first launch
+      await onboard();
+      expect(repo.shouldOfferReminders, isTrue);
+      await repo.declineReminders();
+      expect(repo.shouldOfferReminders, isFalse);
+    });
+
+    test('a yes plans the week; every app open plans it again', () async {
+      await onboard();
+      await repo.acceptReminders(hour: 8);
+      expect(repo.checkinSettings.remindersOn, isTrue);
+      expect(port.scheduled, hasLength(reminderDays));
+      // A week later the app opens again: a new week is planned from that day.
+      now = DateTime(2026, 11, 2, 7, 0);
+      repo.refresh();
+      await Future<void>.delayed(Duration.zero);
+      expect(port.scheduled, hasLength(reminderDays));
+      expect(port.scheduled.first, 20261102);
+    });
+
+    test('app start plans them too', () async {
+      await onboard();
+      await checkinStore.saveSettings(const CheckinSettings(remindersOn: true, reminderOffered: true));
+      port.scheduled.clear();
+      final opened = await TwinRepository.open(backend: backend, reminders: CheckinReminders(port), clock: () => now);
+      expect(opened.checkinSettings.remindersOn, isTrue);
+      expect(port.scheduled, hasLength(reminderDays));
+    });
+  });
+
   test('Delete my data: everything is gone and the reminders are cancelled', () async {
     await onboard();
     await quickDays(quickWeek);

@@ -68,13 +68,16 @@ class TwinRepository extends ChangeNotifier {
       TwinStore.open(backend),
       loadLeverRanking(bundle: bundle),
     ]);
-    return TwinRepository(
+    final repo = TwinRepository(
       model: loaded[0] as TwinModelService,
       store: loaded[1] as TwinStore,
       leverRanking: loaded[2] as LeverRanking,
       reminders: reminders,
       clock: clock,
     );
+    // App start: plan the coming week's reminders again (a week away ends their plan).
+    await repo.replanReminders();
+    return repo;
   }
 
   final TwinModelService model;
@@ -456,6 +459,49 @@ class TwinRepository extends ChangeNotifier {
   Map<String, bool> outsideAiConsentFor(String provider) =>
       outsideAiConsent && outsideAiProvider == provider ? {provider: true} : const {};
 
+  // ---- reminders ------------------------------------------------------------------
+
+  /// Plans the next week's reminders again from the saved settings and check-ins (a
+  /// done day gets none). Runs at app start ([open]) and on every [refresh]; a reminder
+  /// that can't be planned never blocks the app. Returns the planned times.
+  Future<List<DateTime>> replanReminders() async {
+    final r = reminders;
+    if (r == null) return const [];
+    try {
+      return await r.reschedule(checkinSettings, localNow: _clock(), history: store.checkins);
+    } catch (e) {
+      debugPrint('Reminders could not be planned: $e');
+      return const [];
+    }
+  }
+
+  /// Show the one-time "Would you like a gentle reminder each day?" offer: at the end of
+  /// onboarding (a profile is saved) or after the first check-in, until it is answered.
+  bool get shouldOfferReminders =>
+      reminders?.shouldOffer(checkinSettings, store.checkins, onboarded: store.hasProfile) ?? false;
+
+  /// Yes to the offer at [hour]:[minute] (10:00 unless picked): the phone asks to allow
+  /// notifications now, then the week is planned. Reminders stay off if the phone says no.
+  Future<void> acceptReminders({int? hour, int? minute}) async {
+    final r = reminders;
+    if (r == null) return;
+    final next = await r.accept(
+      checkinSettings,
+      localNow: _clock(),
+      history: store.checkins,
+      hour: hour,
+      minute: minute,
+    );
+    await saveCheckinSettings(next);
+  }
+
+  /// "Not now": remembered, so the offer isn't repeated.
+  Future<void> declineReminders() async {
+    final r = reminders;
+    if (r == null) return;
+    await saveCheckinSettings(r.decline(checkinSettings));
+  }
+
   /// Reminder time and weekly day. Not health data.
   CheckinSettings get checkinSettings => store.checkinSettings;
   Future<void> saveCheckinSettings(CheckinSettings settings) async {
@@ -606,9 +652,12 @@ class TwinRepository extends ChangeNotifier {
     }
   }
 
-  /// Recomputes [current] now, e.g. on app open when the date has moved on (a daily
-  /// window ends yesterday). Null before a profile.
-  TwinAssessment? refresh() => store.hasProfile ? _refresh() : null;
+  /// Call on every app open: recomputes [current] (a daily window ends yesterday; null
+  /// before a profile) and plans the coming week's reminders again ([replanReminders]).
+  TwinAssessment? refresh() {
+    unawaited(replanReminders());
+    return store.hasProfile ? _refresh() : null;
+  }
 
   TwinAssessment _refresh() {
     final a = assess();

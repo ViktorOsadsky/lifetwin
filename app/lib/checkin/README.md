@@ -21,7 +21,9 @@ This folder holds the logic for Mochi's quick daily check-in and the weekly chec
 - One day's report never changes the forecast by itself. The forecast is reassessed only through a supported window. An animation may acknowledge a check-in, but nothing may claim a health improvement.
 - Reminders:
   - A reminder is a scheduled local notification, and the app does its work when it is opened. Nothing runs in the background.
-  - Notification permission is asked once, after the first finished check-in, and only if the person says yes. It is separate from Apple Health access and from consent to process answers.
+  - Reminders are offered once: at the end of onboarding (`TwinRepository.shouldOfferReminders`, then `acceptReminders(hour:, minute:)` or `declineReminders()`), or after the first finished check-in if they weren't offered yet (`CheckinController.offerReminder`). Notification permission is asked only after a yes. It is separate from Apple Health access and from consent to process answers.
+  - Reminders are planned 7 days ahead and planned again at app start (`TwinRepository.open`), on every app open (`repo.refresh()`) and after every check-in. The 7th, last planned one says "I'll pause reminders until you're back. I'm here whenever you like.", so a week away ends kindly instead of in silence; the next app open plans a new week.
+  - Reminder lines are invitations: never missed days, streaks, guilt or health claims.
 
 ## Question rotation (verbatim, from `server/lifetwin/checkin/scripts.py`)
 
@@ -67,9 +69,9 @@ The weekly check-in (on the person's weekly day, Sunday by default; quietly stil
 | `canRetry` / `retry()`, `hearAgain()`, `stopSpeaking()`, `screenReader` | as in onboarding |
 | `questionNumber` → `(n, of)` | "Question 2 of 3" |
 | `progress` (`goodWeeks`, `daysThisWeek`) | after it finishes, e.g. "3 good weeks so far" |
-| `offerReminder`, `acceptReminders(hour:, minute:)`, `declineReminders()` | the one-time reminder offer after the first check-in (default 10:00) |
+| `offerReminder`, `acceptReminders(hour:, minute:)`, `declineReminders()` | the one-time reminder offer after the first check-in, if onboarding didn't already offer it (default 10:00) |
 
-To decide what to show on the home screen, call `CheckinScheduler().due(localNow: DateTime.now(), history:, days:, settings:)`. It returns `DueCheckins.quick` (a plan, or null) and `.weekly`. Offer the weekly check-in after the quick one, never instead of it. On every app open, call `CheckinReminders.reschedule(settings, localNow:, history:)`.
+To decide what to show on the home screen, call `CheckinScheduler().due(localNow: DateTime.now(), history:, days:, settings:)`. It returns `DueCheckins.quick` (a plan, or null) and `.weekly`. Offer the weekly check-in after the quick one, never instead of it. On every app open, call `repo.refresh()`: it also plans the reminders again (`repo.replanReminders()`). At the end of onboarding, show the reminder offer when `repo.shouldOfferReminders` is true.
 
 ## Storage: `CheckinStore` over `TwinRepository`
 
