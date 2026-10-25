@@ -398,7 +398,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
         ],
         if (_voiceUi && !c.typing && c.voiceUsable) ...[
           const SizedBox(height: 10),
-          c.screenReader ? const VoiceOverInfo() : const ListeningNote(),
+          c.screenReader ? const VoiceOverInfo() : ListeningNote(noiseLink: c.phase == CheckinPhase.listening),
         ],
         if (c.notice != null) ...[
           const SizedBox(height: 8),

@@ -26,6 +26,14 @@ What Cartesia does **not** do: understanding answers. Ink's transcript goes to t
 
 Without a Cartesia key, `/api/voice/token` returns 503 and the app switches to typing.
 
+## Background noise and other voices
+
+- **Phone front end.** The recorder (record_ios 2.1, `echoCancel: true`) turns on Apple's voice-processing I/O on the microphone (`setVoiceProcessingEnabled`: echo cancel and noise suppression; `autoGain` is its AGC) on a `playAndRecord` + `defaultToSpeaker` session. Mochi's voice plays on a separate `playback` session, set up again after every listen, so voice processing never quiets it. Nothing in the app ducks other audio; both sessions are non-mixable, so other apps' audio stops instead.
+- **Voice Isolation.** While the microphone is open, a "Reduce background noise" link under "Mochi listens only on this screen." opens the iPhone's Mic Mode menu (`AVCaptureDevice.showSystemUserInterface(.microphoneModes)`, channel `lifetwin/mic_mode`). iOS remembers the choice for the app. Voice Isolation is the strongest filter for a TV or other people.
+- **Gate** (`lib/voice/heard_gate.dart`, inside the STT input). The first 300 ms after the microphone opens, and sound already going when it opened (up to 1 s, until the first quiet moment), go to Ink as silence. A caption counts only after about 200 ms of voice-level audio and only with a real word: sound labels like `[noise]` and hesitations like "um" alone never start the end-of-turn wait. An unchanged caption does not restart that wait. A transcript piece with `confidence` under 0.4 is dropped; Ink's documented transcript has no confidence (only optional `words` timings), so that check is a no-op today. Hands-free, a turn is sent after 30 s even if new words keep coming.
+- **Someone else talking.** Whether a heard reply is the person or a TV is a model decision on the server. The app already handles a reply field **`off_topic: true`** on `/api/onboarding/turn` and `/api/checkin/turn`: nothing new is shown as the question, the screen shows "Sorry, I think I heard someone else. Could you say that again?", Mochi says it once per question and listens again (a repeat just listens again). The server should send the same `state` back unchanged, record nothing, and may leave `message` as the open question. The server does not send it yet.
+- The levels (onset 600, voice 300 RMS of 32768) are not measured on a phone yet; `stt gated` lines in the voice log show what was held back.
+
 ## Known limitations
 
 - Ink holds back the last word or two until it hears more. The pause detector covers the common case, but in a very noisy room the pause may not be noticed until Stop.

@@ -946,7 +946,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
                 ],
                 if (!c.typing) ...[
                   const SizedBox(height: 10),
-                  _pad(c.screenReader ? const VoiceOverInfo() : const ListeningNote()),
+                  _pad(c.screenReader ? const VoiceOverInfo() : ListeningNote(noiseLink: listening)),
                 ],
               ],
             ),
