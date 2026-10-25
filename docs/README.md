@@ -14,6 +14,8 @@ Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent im
 | [tracks/B-api.md](tracks/B-api.md) | FastAPI server and deployment |
 | [tracks/C-flutter-app.md](tracks/C-flutter-app.md) | Flutter app screens and visualizations |
 | [tracks/D-advisor-demo.md](tracks/D-advisor-demo.md) | AI advisor, safety copy, demo |
+| [demo/upload-demo.md](demo/upload-demo.md) | Synthetic portal PDFs, matching text and upload demo sequence; no real patient data |
+| [demo/voice-usability-demo.md](demo/voice-usability-demo.md) | Clearly labeled synthetic voice-session dataset; not real study evidence |
 | [ios-testing.md](ios-testing.md) | Running the app on the test iPhone and the simulator |
 | [model-sensitivity.md](model-sensitivity.md) | Which inputs move the packaged Cox model's 5-year estimate most, by age band and sex, with [machine-readable lever ranking](model-sensitivity.json); observational, not causal |
 | [document-upload.md](document-upload.md) | Health-document upload: on-device text recognition, `/api/documents/extract`, confirmation, privacy boundary, failure modes |
