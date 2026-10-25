@@ -209,4 +209,41 @@ void main() {
       expect(t.takeException(), isNull);
     },
   );
+
+  for (final entry in {
+    422: 'Mochi couldn’t make today’s plan from what’s saved',
+    503: 'The plan couldn’t connect. Your saved plan is still here.',
+    429: 'A lot is happening. Give it a moment, then try again.',
+  }.entries) {
+    testWidgets('HTTP ${entry.key} shows the right plan message', (t) async {
+      final client = FakeCoach()..responses.add(CoachFailure(entry.key));
+      await phone(
+        t,
+        DailyPlanScreen(
+          client: client,
+          confirmedContext: () => {'local_date': '2026-10-24'},
+          initialPlan: DailyPlan.fromJson(planJson()),
+          onBack: () {},
+          onTalk: () {},
+        ),
+      );
+      await reveal(t, find.text('Yes'));
+      await t.tap(find.text('Yes'));
+      await t.pumpAndSettle();
+      final message = find.textContaining(entry.value, findRichText: true);
+      await t.scrollUntilVisible(
+        message,
+        -200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(message, findsOneWidget);
+      if (entry.key == 422) {
+        expect(
+          find.textContaining('couldn’t connect', findRichText: true),
+          findsNothing,
+        );
+      }
+      expect(t.takeException(), isNull);
+    });
+  }
 }
