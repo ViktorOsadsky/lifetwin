@@ -18,6 +18,7 @@ import 'wellness/plan_acceptance.dart';
 import 'wellness/today_card.dart';
 import 'checkin/check_in.dart';
 import 'checkin/checkin_client.dart';
+import 'checkin/checkin_reminders.dart' show ReminderCheckin, ReminderTapPort, reminderTapTarget;
 import 'checkin/consent_screens.dart';
 import 'checkin/consents.dart';
 import 'checkin/my_data_screen.dart';
@@ -29,6 +30,8 @@ import 'onboarding/missing_answers.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'onboarding/voice_onboarding_screen.dart';
 import 'experiment/experiment_screen.dart';
+import 'experiment/idea_detail_screen.dart';
+import 'experiment/ideas_hub.dart';
 import 'experiment/ideas_list_screen.dart';
 import 'experiment/recommendations.dart';
 import 'experiment/room_pills.dart';
@@ -70,6 +73,7 @@ class AgenticRoutes {
     BandClient? bandClient,
     BandFilePicker? bandFilePicker,
     this.onDeleted,
+    this.openSettings = openAppSettings,
     // ignore: prefer_initializing_formals
   }) : _guide = guide,
        _api = api,
@@ -83,6 +87,9 @@ class AgenticRoutes {
        _bandClient = bandClient ?? StubBandClient();
 
   final ValueListenable<TwinAppearance> look;
+
+  /// Opens this app's page in iPhone Settings (Apple Health access lives there); tests pass a fake.
+  final Future<void> Function() openSettings;
 
   /// The onboarding conversation, for its speech input and output and the person's choice of voice.
   final VoiceOnboardingController Function() voice;
@@ -143,10 +150,41 @@ class AgenticRoutes {
   /// The repository has loaded.
   void attach(TwinRepository r) {
     repo = r;
+    _hub = null;
+    _access = null;
     consents ??= ConsentStore(r);
     bandService ??= BandService(repository: r);
     // The forecast follows what the check-ins and the stored days say.
     r.refresh();
+    _listenForReminderTaps(r);
+  }
+
+  /// Give it to `MaterialApp.navigatorKey`: a tapped reminder opens its check-in on this navigator.
+  final navigatorKey = GlobalKey<NavigatorState>();
+  bool _listening = false;
+
+  /// Reminder taps, while the app runs and the one that launched it, open their check-in ([openReminder]).
+  void _listenForReminderTaps(TwinRepository r) {
+    final port = r.reminders?.port;
+    if (_listening || port is! ReminderTapPort) return;
+    _listening = true;
+    (port as ReminderTapPort).listenForTaps((p) => openReminder(p).ignore()).then((launch) async {
+      if (launch == null) return;
+      // Cold start: the Room (and the check-in scope above it) is built first.
+      await WidgetsBinding.instance.endOfFrame;
+      await openReminder(launch);
+    }, onError: (Object e) => debugPrint('Reminder taps are not available: $e'));
+  }
+
+  /// A tapped check-in reminder: opens its check-in through [openCheckIn], as the Room's entry does (so
+  /// nothing without a saved profile). A weekly reminder opens the weekly only while the 7-day gate is open
+  /// ([TwinRepository.weeklyAvailable]), otherwise the daily. Other notifications just open the app.
+  Future<void> openReminder(String? payload) async {
+    final r = repo, context = navigatorKey.currentContext;
+    if (r == null || context == null || !context.mounted) return;
+    final target = reminderTapTarget(payload, weeklyOpen: r.weeklyAvailable);
+    if (target == null || CheckInScope.maybeOf(context) == null) return;
+    await openCheckIn(context, kind: target == ReminderCheckin.weekly ? CheckInKind.weekly : CheckInKind.quick);
   }
 
   /// Puts the check-in scope above the navigator, so every route can call `openCheckIn`.
@@ -167,7 +205,8 @@ class AgenticRoutes {
         appearance: look,
         todayPlan: TodayPlanHook(update: _planUpdate, open: (c) => todayPlan(c)),
         answerMissing: answerMissing,
-        child: child!,
+        ideas: () => ideasAccess,
+        child: IdeasScope(access: ideasAccess, child: child!),
       ),
     );
   }
@@ -281,7 +320,12 @@ class AgenticRoutes {
           MaterialPageRoute<void>(
             fullscreenDialog: true,
             builder: (c) =>
-                ChangeChatScreen(controller: controller, appearance: look.value, onClose: () => Navigator.of(c).pop()),
+                ChangeChatScreen(
+                  controller: controller,
+                  appearance: look.value,
+                  ideas: ideasAccess,
+                  onClose: () => Navigator.of(c).pop(),
+                ),
           ),
         )
         .whenComplete(controller.dispose);
@@ -344,6 +388,7 @@ class AgenticRoutes {
           onBack: () => Navigator.of(page).pop(),
           onAiPrivacy: () => aiPrivacy(page),
           onWeeklyCheckIn: () => weeklyCheckIn(page),
+          onHealthSettings: () => openSettings(),
           onReminders: () => reminders(page),
           onNotebook: () => notebook(page),
           onDeleted: () {
@@ -362,9 +407,9 @@ class AgenticRoutes {
     consents?.setAiHelper(false);
     final r = repo;
     if (r != null) bandService = BandService(repository: r);
-    _lastPlan = null;
     planAcceptance.clear();
     _provider = null;
+    _hub?.clear();
     onDeleted?.call();
   }
 
@@ -449,8 +494,25 @@ class AgenticRoutes {
     return answer;
   }
 
-  /// The latest plan the coach gave, so a later revision can say what changed.
-  DailyPlan? _lastPlan;
+  /// The latest plan the coach gave today, so a later revision can say what changed. Kept in the store
+  /// per local date ([TwinRepository.todayPlan]), so it survives a relaunch; Delete my data removes it.
+  DailyPlan? get _lastPlan {
+    final json = repo?.todayPlan;
+    if (json == null) return null;
+    try {
+      return DailyPlan.fromJson(json);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  Future<void> _keepPlan(DailyPlan plan) async {
+    try {
+      await repo?.saveTodayPlan(plan.json);
+    } catch (e) {
+      debugPrint('The plan could not be kept: $e');
+    }
+  }
 
   /// Items accepted on today's plan, kept on the phone per local date.
   final planAcceptance = PlanAcceptance()..load();
@@ -468,7 +530,7 @@ class AgenticRoutes {
       context['latest_revision_id'] = previous.revision;
     }
     final plan = await coach.plan(context);
-    _lastPlan = plan;
+    await _keepPlan(plan);
     String? line;
     for (final i in plan.items) {
       if (i['kind'] == 'encourage') line = i['message'] as String;
@@ -483,10 +545,11 @@ class AgenticRoutes {
   /// before the first plan (the coach may use the same provider), and opens the full plan on a tap.
   Widget todayCard(BuildContext context, {VoidCallback? onTalk, bool condensed = false, Widget? trailing}) =>
       TodayWithMochiCard(
+        ideas: ideasAllowed ? ideasAccess : null,
         condensed: condensed,
         trailing: trailing,
         client: coach,
-        onPlan: (p) => _lastPlan = p,
+        onPlan: (p) => _keepPlan(p).ignore(),
         acceptance: planAcceptance,
         confirmedContext: () => coachContext(repo!),
         // No consent ask here: the card shows on Home, which can sit behind onboarding's last screen. The ask
@@ -506,7 +569,7 @@ class AgenticRoutes {
       MaterialPageRoute<void>(
         builder: (page) => DailyPlanScreen(
           client: coach,
-          onPlan: (p) async => _lastPlan = p,
+          onPlan: _keepPlan,
           acceptance: planAcceptance,
           onRemind: r.checkinSettings.remindersOn && r.reminders != null ? r.remindLater : null,
           confirmedContext: () => coachContext(r),
@@ -521,6 +584,63 @@ class AgenticRoutes {
     );
   }
 
+  IdeasHub? _hub;
+  IdeasAccess? _access;
+
+  /// Today's ideas: the day's cached answer, what is hidden, and the server source. One per app run.
+  IdeasHub get ideasHub => _hub ??= IdeasHub(
+    source: ideasSource?.call(repo!) ?? HttpRecommendations(repo!, base: _api),
+    repo: repo,
+    allowed: () => ideasAllowed,
+  );
+
+  /// What the ways in to Ideas need (null before the phone's data has loaded). Each way in still
+  /// hides itself when the hub has no idea for today or the person is under 18.
+  IdeasAccess? get ideasAccess => repo == null
+      ? null
+      : _access ??= IdeasAccess(
+          hub: ideasHub,
+          openIdea: (c, idea) => ideaDetail(c, idea),
+          openList: (c, {required origin, levers}) => ideas(c, origin: origin, levers: levers),
+        );
+
+  /// The AI that worded the ideas, only when the person already agreed to it (no question is asked).
+  Future<AiProvider?> _wordedProvider() async {
+    try {
+      final p = await provider();
+      final c = consents;
+      return p != null && c != null && c.mayShare(p) ? p : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// One idea in full (from Home, the check-in, onboarding, voice). "Try it with my twin" opens Experiment.
+  Future<void> ideaDetail(BuildContext context, Recommendation idea) async {
+    if (repo == null || !ideasAllowed) return;
+    final worded = await _wordedProvider();
+    if (!context.mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (c) => IdeaDetailScreen(
+          idea: idea,
+          appearance: look.value,
+          backLabel: 'Back',
+          worded: worded,
+          onBack: () => Navigator.of(c).pop(),
+          onTry: idea.leverId == null
+              ? null
+              : () => experiment(
+                  c,
+                  presetLever: idea.leverId,
+                  presetValue: idea.leverValue,
+                  backLabel: 'Back to idea',
+                ),
+        ),
+      ),
+    );
+  }
+
   /// Ideas for you are for people 18 and over; under 18 (or no age) there is no entry point and
   /// the server is never asked.
   bool get ideasAllowed => ((repo?.profile['age'] as num?) ?? 0) >= 18;
@@ -528,7 +648,7 @@ class AgenticRoutes {
   /// "Ideas for you": up to three ideas from `/api/recommendations`. [origin] names where it was
   /// opened from for the back button ("Back to {origin}"). Asks the outside-AI consent first, if it
   /// has not been answered (the person just tapped, so it is not a surprise).
-  Future<void> ideas(BuildContext context, {required String origin}) async {
+  Future<void> ideas(BuildContext context, {required String origin, Set<String>? levers}) async {
     final r = repo;
     if (r == null || !ideasAllowed) return;
     final may = await ensureOutsideAiConsent(context);
@@ -538,7 +658,8 @@ class AgenticRoutes {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (c) => IdeasListScreen(
-          source: ideasSource?.call(r) ?? HttpRecommendations(r, base: _api),
+          hub: ideasHub,
+          onlyLevers: levers,
           appearance: look.value,
           origin: origin,
           missingInputs: missing,
@@ -584,6 +705,7 @@ class AgenticRoutes {
           presetValue: presetValue,
           backLabel: backLabel,
           onIdeas: ideasAllowed ? () => ideas(c, origin: 'Experiment') : null,
+          ideas: ideasAllowed ? ideasAccess : null,
           onBack: () => Navigator.of(c).pop(),
           onTellMochi: (field) {
             Navigator.of(c).pop();

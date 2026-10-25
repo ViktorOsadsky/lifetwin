@@ -34,6 +34,7 @@ import 'wellness/repository_adapter.dart';
 import 'wellness/history_screen.dart';
 import 'twin/twin_repository.dart';
 import 'ui/swoosh_route.dart';
+import 'ui/widgets/home_button.dart' show HomeDepth;
 import 'ui/theme.dart';
 import 'ui/twin_appearance.dart';
 import 'ui/twin_assets.dart';
@@ -471,6 +472,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               profile: _profile ?? const {},
               appearance: _look.value,
               healthKeys: {..._healthKeys},
+              documentKeys: {..._documentValues.keys},
               onDrivers: () => _agentic.drivers(forecastContext),
               onPlayQuiz: () => _playQuiz(forecastContext),
               onResult: (f) {
@@ -550,6 +552,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
                 SettingsEntry(
                   label: 'Weekly check-in',
                   description: _wellness?.repository.weeklyGateLine ?? 'A few questions about your week',
+                  enabled: _wellness?.repository.weeklyAvailable ?? true,
                   open: () => _agentic.weeklyCheckIn(c),
                 ),
                 SettingsEntry(label: 'Apple Health', description: 'Bring in values you check', open: () => _health(c)),
@@ -586,6 +589,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       title: 'LifeTwin',
       debugShowCheckedModeBanner: false,
       theme: lifeTwinTheme(),
+      navigatorKey: _agentic.navigatorKey,
+      navigatorObservers: [HomeDepth.instance],
       builder: _agentic.wrap,
       home: ListenableBuilder(
         listenable: Listenable.merge([_controller, _wellness]),
@@ -610,6 +615,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onBand: _wellness == null ? null : () => _agentic.bandFlow(context),
           onSettings: _wellness == null ? null : () => _settings(context),
           stateLine: _stillLearning(),
+          ideas: _agentic.ideasAccess,
           onAnswerMissing: _wellness == null ? null : () => _agentic.answerMissing(context),
           // The whole card opens the plan; its own buttons (Why?, thumbs) win the tap.
           today: _wellness == null || (_profile?['age'] as num? ?? 0) < 18

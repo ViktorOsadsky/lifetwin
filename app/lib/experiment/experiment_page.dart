@@ -7,6 +7,7 @@ import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/lottie_burst.dart';
+import '../ui/widgets/home_button.dart';
 import '../ui/widgets/widgets.dart';
 import 'widgets/widgets.dart';
 
@@ -25,6 +26,7 @@ class ExperimentPage extends StatefulWidget {
     this.whatIfPill = false,
     this.mode = LtMode.sun,
     this.backLabel = 'Back',
+    this.onLeaveCheck,
   });
 
   final Widget body;
@@ -38,6 +40,9 @@ class ExperimentPage extends StatefulWidget {
   final bool whatIfPill;
   final LtMode mode;
   final String backLabel;
+
+  /// For conversation screens: true while leaving would cut a talk short (Home asks first).
+  final bool Function()? onLeaveCheck;
 
   @override
   State<ExperimentPage> createState() => _ExperimentPageState();
@@ -106,7 +111,7 @@ class _ExperimentPageState extends State<ExperimentPage> {
                 ),
                 if (titled)
                   Positioned(
-                    left: 82,
+                    left: HomeButton.shownFor(context) ? 150 : 82,
                     right: widget.whatIfPill ? 100 : 16,
                     top: 0,
                     height: 76,
@@ -129,7 +134,7 @@ class _ExperimentPageState extends State<ExperimentPage> {
                   curve: Curves.easeOut,
                   left: titled || _scrolled ? 16 : 30,
                   top: titled || _scrolled ? 12 : 50,
-                  child: RoundBackButton(label: widget.backLabel, onTap: widget.onBack),
+                  child: RoundBackButton(label: widget.backLabel, onTap: widget.onBack, onLeaveCheck: widget.onLeaveCheck),
                 ),
               ],
             ),
@@ -148,13 +153,19 @@ class _ExperimentPageState extends State<ExperimentPage> {
 /// One twin standing in a plate window: its state, where across the window it stands, and
 /// whether a lilac halo blooms behind it (the what-if twin).
 class TwinSlot {
-  const TwinSlot({required this.state, required this.x, this.halo = false, this.height = 196});
+  const TwinSlot({required this.state, required this.x, this.halo = false, this.height = 196, this.pose, this.hop});
   final TwinState state;
 
   /// Where the feet are across the window, 0 to 1.
   final double x;
   final bool halo;
   final double height;
+
+  /// A pose of its own (an idea's), instead of the one the state picks.
+  final TwinPose? pose;
+
+  /// Lifts the twin by this many logical pixels (negative is up) while it plays; null: still.
+  final Animation<double>? hop;
 }
 
 /// A plate window (233 high) with the `{ Name }` banner, [twins] standing on the meadow, and
@@ -215,7 +226,14 @@ class ExperimentPlate extends StatelessWidget {
                             height: h * 1.2,
                             child: const LottieBurst.whatIfAppear(),
                           ),
-                        TwinStateSprite(state: t.state, appearance: appearance, height: h),
+                        if (t.hop == null)
+                          TwinStateSprite(state: t.state, appearance: appearance, height: h, pose: t.pose)
+                        else
+                          AnimatedBuilder(
+                            animation: t.hop!,
+                            builder: (_, child) => Transform.translate(offset: Offset(0, t.hop!.value), child: child),
+                            child: TwinStateSprite(state: t.state, appearance: appearance, height: h, pose: t.pose),
+                          ),
                       ],
                     ),
                   );

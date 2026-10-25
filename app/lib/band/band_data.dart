@@ -89,6 +89,77 @@ class BandDay {
         ];
 }
 
+extension BandDayDetail on BandDay {
+  static bool _sits(BandPosture p) =>
+      p == BandPosture.sitting ||
+      p == BandPosture.lying ||
+      p == BandPosture.sittingOrLying;
+
+  bool get _hasPostures =>
+      report != null || minutes.any((m) => m.worn && m.posture != BandPosture.unknown);
+
+  /// Sitting or lying minutes in the day (the sensor does not tell them apart). Null when unknown.
+  int? get sittingMinutes {
+    if (report case final r?) return r.observedSittingOrLyingMinutes;
+    if (!_hasPostures) return null;
+    return minutes.where((m) => m.worn && _sits(m.posture)).length;
+  }
+
+  /// Longest unbroken sitting or lying stretch, in minutes. Null when unknown.
+  int? get longestSittingMinutes {
+    if (report case final r?) return r.longestSittingMinutes;
+    if (!_hasPostures) return null;
+    var best = 0, run = 0;
+    for (final m in minutes) {
+      run = m.worn && _sits(m.posture) ? run + 1 : 0;
+      if (run > best) best = run;
+    }
+    return best;
+  }
+
+  /// Times the band saw a change from sitting to upright. Null when unknown.
+  int? get standUps {
+    if (report case final r?) return r.transitions;
+    if (!_hasPostures) return null;
+    var n = 0;
+    for (var i = 1; i < minutes.length; i++) {
+      if (_sits(minutes[i - 1].posture) &&
+          (minutes[i].posture == BandPosture.standing || minutes[i].posture == BandPosture.moving)) {
+        n++;
+      }
+    }
+    return n;
+  }
+
+  int? get standingMinutes {
+    if (report case final r?) return r.postures['standing'];
+    if (!_hasPostures) return null;
+    return minutes.where((m) => m.worn && m.posture == BandPosture.standing).length;
+  }
+
+  int? get lightWalkingMinutes => report?.postures['walking_light'];
+  int? get moderateWalkingMinutes => report?.postures['walking_moderate'];
+
+  /// Part-worn day: some wear, not enough to count.
+  bool get isPartial => wornMinutes > 0 && !isValid;
+
+  /// Sitting or lying minutes by hour (0-23); null when the band was not worn that hour.
+  List<int?> get sittingByHour {
+    final steps = stepsByHour;
+    if (report case final r?) {
+      return [
+        for (var h = 0; h < 24; h++) steps[h] == null ? null : r.hourly[h]['sitting_lying_min'],
+      ];
+    }
+    return [
+      for (var h = 0; h < 24; h++)
+        steps[h] == null
+            ? null
+            : minutes.where((m) => m.at.hour == h && m.worn && _sits(m.posture)).length,
+    ];
+  }
+}
+
 /// The weekly moderate-minutes estimate from the band.
 class BandWeek {
   BandWeek(this.days);

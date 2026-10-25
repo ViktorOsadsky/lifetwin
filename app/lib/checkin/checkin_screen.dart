@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../experiment/experiment_page.dart';
 import '../onboarding/missing_answers.dart';
 import '../experiment/experiment_twins.dart';
+import '../experiment/ideas_hub.dart';
+import '../experiment/widgets/idea_scene.dart';
+import '../experiment/widgets/ideas_turn_cards.dart';
 import '../experiment/widgets/widgets.dart';
 import '../onboarding/voice_onboarding_controller.dart' show listeningNudge;
 import '../twin/twin_model.dart' show TwinAssessment;
@@ -60,7 +63,11 @@ class CheckInScreen extends StatefulWidget {
     this.open = defaultOpenUrl,
     this.readback = const ServerReadback(),
     this.todayPlan,
+    this.ideas,
   });
+
+  /// Today's idea for the done screen; null hides it.
+  final IdeasAccess? ideas;
 
   final CheckinController controller;
   final CheckInKind kind;
@@ -107,6 +114,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
     _before = widget.repository.current;
     c.mayListen = _mayListen;
     WidgetsBinding.instance.addObserver(this);
+    widget.ideas?.hub.ensureToday();
     c.start(kind: widget.kind.name).then((ok) {
       if (mounted) {
         setState(() {
@@ -233,6 +241,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
       mode: LtMode.room,
       onBack: c.emergency ? c.continueAfterEmergency : widget.onDone,
       backLabel: c.emergency ? 'Continue' : 'Back',
+      onLeaveCheck: () => !_finished && !c.emergency && c.phase != CheckinPhase.notStarted,
       dock: _keyboardDock(context),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -349,6 +358,10 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
             ),
           ),
         ),
+        if (widget.ideas case final access? when c.turn?.clientAction == 'open_ideas') ...[
+          const SizedBox(height: 10),
+          IdeasOpenCard(access: access, appearance: widget.appearance),
+        ],
         if (c.finalReadback) ...[
           const SizedBox(height: 10),
           Semantics(
@@ -435,6 +448,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
           const SizedBox(height: 12),
           _Encouragement(hook: hook, onDone: widget.onDone),
         ],
+        if (widget.ideas case final access?) _ideaCard(access),
         if (c.progress != null && c.progress!.goodWeeks > 0) ...[
           const SizedBox(height: 10),
           WholeWordText(
@@ -449,6 +463,38 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
       ],
     );
   }
+
+  /// "Mochi has an idea for today" on the finished daily check-in: not weekly, never in an emergency,
+  /// and never after Mochi's care line (that moment is not for suggestions).
+  Widget _ideaCard(IdeasAccess access) => ListenableBuilder(
+    listenable: access.hub,
+    builder: (context, _) {
+      final idea = access.hub.featured;
+      if (idea == null || weekly || c.emergency || c.turn?.state['care_line_shown'] == true) {
+        return const SizedBox.shrink();
+      }
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              header: true,
+              child: Row(
+                children: [
+                  const Icon(Icons.lightbulb_outline_rounded, size: 22, color: LtColors.ink),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text('Mochi has an idea for today', style: LtText.body(weight: FontWeight.w700))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            IdeaRow(idea: idea, appearance: widget.appearance, onTap: () => access.openIdea(context, idea)),
+          ],
+        ),
+      );
+    },
+  );
 
   Widget _keyboardDock(BuildContext context) {
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;

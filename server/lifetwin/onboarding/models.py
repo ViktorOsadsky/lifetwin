@@ -358,7 +358,9 @@ class TurnResponse(ApiModel):
     quick_replies: list[str] = Field(default_factory=list, max_length=8)
     # "open_health_import": the person said yes to Apple Health; the app opens its
     # import screen and then sends action "import" (or "skip" if nothing was used).
-    client_action: Literal["open_health_import"] | None = None
+    # "open_ideas": the person asked for ideas; the app shows today's idea. The state is
+    # unchanged and the current question comes back in the same message.
+    client_action: Literal["open_health_import", "open_ideas"] | None = None
     # What the on-device model has so far, from confirmed answers only.
     model_inputs: ModelInputs
     character_hints: CharacterHints = Field(default_factory=CharacterHints)
