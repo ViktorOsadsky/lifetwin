@@ -23,14 +23,16 @@ Claimed in [issue #6](https://github.com/ViktorOsadsky/lifetwin/issues/6). Code 
 Age, sex, smoking, alcohol and diabetes stay as conversation questions. In onboarding v2 Mochi offers Apple Health right after age, sex and smoking (the server returns `client_action: "open_health_import"` on a yes), and the confirmed values come back with action `import`. Exercise Time is all brisk-or-harder movement, so after an import Mochi asks only how much of it is harder exercise and reads the rest back as lighter activity (`moderate_recreation_min_week = exercise_minutes_weekly - vigorous_recreation_min_week`); this split needs owner approval. US users hear feet, inches and pounds; values are
 stored in the profile's metric units.
 
-## Activity estimates (#106): data API, pending UI/device acceptance
+## Activity estimates (#106): confirmation flow connected, device acceptance pending
 
 `HealthReader.readSummary(now: ...)` combines the existing generic candidates with optional native workout
 **estimates**. `summarizeWithAvailability()` exposes which model activity inputs remain unanswered and why. The
 existing `read()` / `summarize()` path, Exercise Time suggestion and onboarding split are preserved; this work does
-not validate that older split as recreational activity. No screens or engine code changed. The current
-`HealthImportScreen` still calls the generic path; Daniel owns switching its data call to `readSummary()` and
-preserving its confirmation boundary.
+not validate that older split as recreational activity. `HealthImportScreen` now calls `readSummary()` with its
+already-read generic samples, avoiding a second query. Each workout estimate uses the stronger recreational/usual-week
+read-back and the existing Yes / No / Go back controls. Rejecting or missing a bucket leaves it unanswered; sitting
+is never filled from stand time. Confirmed estimates retain Apple Health source and per-field estimate flags in import
+history and, after the conversation completes, profile provenance. No engine code changed.
 
 The app-owned channel is `lifetwin/health_activity`, method `readWorkoutAverages`, schema
 `apple_health_workout_averages.v0`. Its coordination is recorded on
@@ -86,8 +88,9 @@ Primary sources and API checks (October 24, 2026):
 
 **Acceptance limits:** real device availability of optional workout MET metadata remains unverified. Simulator
 `HKWorkout` fixtures exercise the real native extraction/aggregation API without HealthKit writes; they do not prove
-that a user's Watch/workout producer populates the key. Daniel must connect the data API and verify real-source
-availability and the explicit read-back/confirmation path before claiming end-to-end #106 completion. The sitting
+that a user's Watch/workout producer populates the key. The screen integration has host-level confirmation, rejection,
+undo and provenance checks. Daniel must verify real-source availability and the on-device read-back/confirmation path
+before claiming end-to-end #106 completion. The sitting
 input still needs its own supported awake-sitting source; it remains a conversation question. Only confirmed bounded
 averages for these three inputs may leave the phone; no new raw activity/metadata may be added to outside-AI payloads.
 
@@ -107,8 +110,8 @@ no server route, provider request, HealthKit permission or raw-data retention.
 ## Not done yet
 
 - Server contract and route for `apple_health_samples.v0` (Track B).
-- Switching the existing `HealthImportScreen` generic data call to `readSummary()` and checking the stronger
-  recreational-activity estimate read-back. Daniel owns this UI integration.
+- Real-source workout MET availability and device acceptance of the connected estimate read-back. Daniel owns the
+  physical-device verification; synthetic channel fixtures do not satisfy it.
 - On-device run: needs Developer Mode on the test iPhone. A signed generic iOS build with the HealthKit entitlement
   succeeded on team `A5C3J42JT3`.
 
