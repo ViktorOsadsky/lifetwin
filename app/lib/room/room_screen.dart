@@ -82,6 +82,7 @@ class RoomScreen extends StatefulWidget {
   /// "Experiment with your twin": the big primary button in the bottom section.
   final VoidCallback? onExperiment;
   final VoidCallback? onHistory;
+
   /// More pills beside the status line (`roomPills`).
   final List<Widget> extraPills;
 
@@ -121,20 +122,48 @@ class _RoomScreenState extends State<RoomScreen> {
     _maybeShowTodaySoon();
   }
 
-  /// Mochi's bubble with today's idea.
+  /// Mochi's bubble with today's idea. It sits over the Today card's idea line (which says the same
+  /// thing), so it never covers Mochi or the activity pill, and it hides itself after 6 seconds (with
+  /// Reduce Motion it stays until closed).
   bool _ideaBubble = false;
+  Timer? _bubbleTimer;
+  final _todayKey = GlobalKey();
+
+  void _showBubble() {
+    _bubbleTimer?.cancel();
+    setState(() => _ideaBubble = true);
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      _bubbleTimer = Timer(const Duration(seconds: 6), _hideBubble);
+    }
+  }
+
+  void _hideBubble() {
+    _bubbleTimer?.cancel();
+    if (mounted && _ideaBubble) setState(() => _ideaBubble = false);
+  }
+
+  /// Where the bubble goes: its bottom on the Today card's bottom (it covers the idea line), or just
+  /// above the bottom controls when there is no card.
+  double _bubbleBottom(BuildContext context) {
+    final box = _todayKey.currentContext?.findRenderObject();
+    if (box is RenderBox && box.hasSize && box.attached) {
+      final screen = MediaQuery.sizeOf(context).height;
+      return screen - box.localToGlobal(Offset(0, box.size.height)).dy;
+    }
+    return _clear.bottom + 6;
+  }
 
   void _maybeShowTodaySoon() => WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowToday());
 
-  /// Once a day, on the first Home visit with an idea, the bubble shows by itself. Not at large text,
-  /// where tapping Mochi opens the list instead.
+  /// Once a day, on the first Home visit with an idea, the bubble shows by itself, but only when the Today
+  /// card (and its "Today's idea" line, the daily cue) is not there. Not at large text either.
   void _maybeShowToday() {
     final hub = widget.ideas?.hub;
     if (!mounted || hub == null || _ideaBubble || !widget.hasProfile) return;
-    if (hub.featured == null || !hub.bubbleDue) return;
+    if (widget.today != null || hub.featured == null || !hub.bubbleDue) return;
     if (MediaQuery.textScalerOf(context).scale(1) >= 1.5) return;
     hub.markBubbleShown();
-    setState(() => _ideaBubble = true);
+    _showBubble();
   }
 
   /// A tap on Mochi: the bubble with today's idea; at 1.5x text and up, the Ideas list directly.
@@ -144,7 +173,7 @@ class _RoomScreenState extends State<RoomScreen> {
     if (MediaQuery.textScalerOf(context).scale(1) >= 1.5) {
       access.openList(context, origin: 'room');
     } else {
-      setState(() => _ideaBubble = true);
+      _showBubble();
     }
   }
 
@@ -191,13 +220,15 @@ class _RoomScreenState extends State<RoomScreen> {
   /// The activity pill's chooser: "What should Mochi do?" Walk (let it roam), Exercise, Eat, Sleep. Each
   /// goes through the same [_press] path the old row used, so the bed tuck, climb and get-up are unchanged.
   Future<void> _chooseActivity() async {
-    final current = _sim.inBed
-        ? RoomAction.sleep
-        : (_sim.action == RoomAction.fortune ? null : _sim.action);
+    final current = _sim.inBed ? RoomAction.sleep : (_sim.action == RoomAction.fortune ? null : _sim.action);
     final picked = await showModalBottomSheet<RoomAction?>(
       context: context,
       useSafeArea: true,
-      builder: (c) => _ActivityChooser(current: current, onPick: (a) => Navigator.of(c).pop(a), onWalk: () => Navigator.of(c).pop(null)),
+      builder: (c) => _ActivityChooser(
+        current: current,
+        onPick: (a) => Navigator.of(c).pop(a),
+        onWalk: () => Navigator.of(c).pop(null),
+      ),
     );
     if (!mounted) return;
     if (picked != null) {
@@ -238,6 +269,7 @@ class _RoomScreenState extends State<RoomScreen> {
   @override
   void dispose() {
     widget.ideas?.hub.removeListener(_maybeShowToday);
+    _bubbleTimer?.cancel();
     _pressLock?.cancel();
     _sim.dispose();
     super.dispose();
@@ -270,20 +302,6 @@ class _RoomScreenState extends State<RoomScreen> {
                   ),
                 ),
               ),
-              if (_ideaBubble && widget.ideas != null)
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: _clear.bottom + 6,
-                  child: _IdeaBubble(
-                    hub: widget.ideas!.hub,
-                    onSee: () {
-                      setState(() => _ideaBubble = false);
-                      widget.ideas!.openList(context, origin: 'room');
-                    },
-                    onClose: () => setState(() => _ideaBubble = false),
-                  ),
-                ),
               SafeArea(
                 // With very large text the top bar and the buttons can be taller than the
                 // screen: then they scroll. Taps between them still reach the room.
@@ -306,16 +324,29 @@ class _RoomScreenState extends State<RoomScreen> {
                             actions: [
                               if (widget.onQuiz != null) _QuizIcon(onTap: widget.onQuiz!),
                               if (widget.onBand != null)
-                                _HeaderIcon(icon: Icons.directions_walk_rounded, label: 'Add band', onTap: widget.onBand!),
+                                _HeaderIcon(
+                                  icon: Icons.directions_walk_rounded,
+                                  label: 'Add band',
+                                  onTap: widget.onBand!,
+                                ),
                               if (widget.onHistory != null)
                                 _HeaderIcon(icon: Icons.history_rounded, label: 'My history', onTap: widget.onHistory!),
                               if (widget.onSettings != null)
-                                _HeaderIcon(icon: Icons.settings_outlined, label: 'Settings', onTap: widget.onSettings!),
+                                _HeaderIcon(
+                                  icon: Icons.settings_outlined,
+                                  label: 'Settings',
+                                  onTap: widget.onSettings!,
+                                ),
                             ],
-                            card: widget.wellness == null ? _OutlookCard(outlook: widget.outlook, onTap: _fortune) : CollapsibleHealthScore(
-                              snapshot: widget.wellness!, onEstimate: _fortune, onDrivers: widget.onDrivers, stateLine: widget.stateLine,
-                              onAnswerMissing: widget.onAnswerMissing,
-                            ),
+                            card: widget.wellness == null
+                                ? _OutlookCard(outlook: widget.outlook, onTap: _fortune)
+                                : CollapsibleHealthScore(
+                                    snapshot: widget.wellness!,
+                                    onEstimate: _fortune,
+                                    onDrivers: widget.onDrivers,
+                                    stateLine: widget.stateLine,
+                                    onAnswerMissing: widget.onAnswerMissing,
+                                  ),
                           ),
                           Opacity(
                             opacity: f.barOpacity.clamp(0.0, 1.0),
@@ -339,7 +370,10 @@ class _RoomScreenState extends State<RoomScreen> {
                                         ),
                                         const SizedBox(height: 10),
                                       ],
-                                      if (widget.today != null) ...[widget.today!, const SizedBox(height: 6)],
+                                      if (widget.today != null) ...[
+                                        KeyedSubtree(key: _todayKey, child: widget.today!),
+                                        const SizedBox(height: 6),
+                                      ],
                                       if (widget.extraPills.isNotEmpty) ...[
                                         Wrap(
                                           alignment: WrapAlignment.center,
@@ -377,6 +411,21 @@ class _RoomScreenState extends State<RoomScreen> {
                   ),
                 ),
               ),
+              if (_ideaBubble && widget.ideas != null)
+                Positioned(
+                  left: 14,
+                  right: 14,
+                  bottom: _bubbleBottom(context),
+                  child: _IdeaBubble(
+                    key: const ValueKey('room-idea-bubble'),
+                    hub: widget.ideas!.hub,
+                    onSee: () {
+                      _hideBubble();
+                      widget.ideas!.openList(context, origin: 'room');
+                    },
+                    onClose: _hideBubble,
+                  ),
+                ),
             ],
           ),
         ),
@@ -462,7 +511,9 @@ class _TopBar extends StatelessWidget {
                 // The header row (My twin + icons, quiz first) is the first row on Home.
                 Row(
                   children: [
-                    Expanded(child: Align(alignment: Alignment.centerLeft, child: banner)),
+                    Expanded(
+                      child: Align(alignment: Alignment.centerLeft, child: banner),
+                    ),
                     ...actions,
                   ],
                 ),
@@ -543,7 +594,10 @@ class _OutlookCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: [card, RoughGuideBadge(caveat: extrapolationCaveat)],
+      children: [
+        card,
+        RoughGuideBadge(caveat: extrapolationCaveat),
+      ],
     );
   }
 }
@@ -737,7 +791,9 @@ class _ActivityChooser extends StatelessWidget {
             children: [
               Icon(icon, size: 24, color: LtColors.ink),
               const SizedBox(width: 14),
-              Expanded(child: Text(label, style: LtText.body(weight: FontWeight.w700))),
+              Expanded(
+                child: Text(label, style: LtText.body(weight: FontWeight.w700)),
+              ),
               if (selected) const Icon(Icons.check_rounded, size: 24, color: LtColors.ink),
             ],
           ),
@@ -753,7 +809,12 @@ class _ActivityChooser extends StatelessWidget {
           child: Semantics(header: true, child: Text('What should Mochi do?', style: LtText.display(24))),
         ),
         option('Walk', Icons.directions_walk_rounded, current == null, onWalk),
-        option('Exercise', Icons.fitness_center_rounded, current == RoomAction.exercise, () => onPick(RoomAction.exercise)),
+        option(
+          'Exercise',
+          Icons.fitness_center_rounded,
+          current == RoomAction.exercise,
+          () => onPick(RoomAction.exercise),
+        ),
         option('Eat', Icons.restaurant_rounded, current == RoomAction.eat, () => onPick(RoomAction.eat)),
         option('Sleep', Icons.bedtime_rounded, current == RoomAction.sleep, () => onPick(RoomAction.sleep)),
         const SizedBox(height: 12),
@@ -762,11 +823,10 @@ class _ActivityChooser extends StatelessWidget {
   }
 }
 
-
 /// Mochi's tap bubble: today's idea and "See ideas ›", with a 48 pt close button. It fades in (at once
 /// under Reduce Motion), never moves by itself and stays until it is dismissed.
 class _IdeaBubble extends StatelessWidget {
-  const _IdeaBubble({required this.hub, required this.onSee, required this.onClose});
+  const _IdeaBubble({super.key, required this.hub, required this.onSee, required this.onClose});
   final IdeasHub hub;
   final VoidCallback onSee;
   final VoidCallback onClose;
@@ -782,14 +842,16 @@ class _IdeaBubble extends StatelessWidget {
         tween: Tween(begin: reduced ? 1 : 0, end: 1),
         duration: reduced ? Duration.zero : const Duration(milliseconds: 240),
         curve: Curves.easeOut,
-        builder: (context, t, child) =>
-            Opacity(opacity: t, child: Transform.scale(scale: 0.9 + 0.1 * t, alignment: Alignment.bottomCenter, child: child)),
+        builder: (context, t, child) => Opacity(
+          opacity: t,
+          child: Transform.scale(scale: 0.9 + 0.1 * t, alignment: Alignment.bottomCenter, child: child),
+        ),
         child: Semantics(
           container: true,
           liveRegion: true,
           label: 'Today’s idea: ${idea.title}',
           child: Container(
-            padding: const EdgeInsets.fromLTRB(18, 8, 4, 4),
+            padding: const EdgeInsets.fromLTRB(14, 4, 2, 4),
             decoration: BoxDecoration(
               color: LtColors.paper,
               borderRadius: BorderRadius.circular(26),
@@ -798,42 +860,41 @@ class _IdeaBubble extends StatelessWidget {
             ),
             child: Row(
               children: [
+                const Icon(Icons.lightbulb_outline_rounded, size: 22, color: LtColors.ink),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text.rich(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: 'Today’s idea: ', style: LtText.body(size: 17)),
                         TextSpan(
-                          children: [
-                            TextSpan(text: 'Today’s idea: ', style: LtText.display(19)),
-                            TextSpan(text: idea.title, style: LtText.display(19, weight: FontWeight.w700)),
-                          ],
+                          text: idea.title,
+                          style: LtText.body(size: 17, weight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Semantics(
+                  button: true,
+                  label: 'See ideas',
+                  excludeSemantics: true,
+                  onTap: onSee,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onSee,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                      child: Center(
+                        child: Text(
+                          'See ideas ›',
+                          style: LtText.body(weight: FontWeight.w700)
+                              .copyWith(decoration: TextDecoration.underline, decorationThickness: 2),
                         ),
                       ),
-                      Semantics(
-                        button: true,
-                        label: 'See ideas',
-                        excludeSemantics: true,
-                        onTap: onSee,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: onSee,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(minHeight: 48),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'See ideas ›',
-                                style: LtText.body(weight: FontWeight.w700).copyWith(
-                                  decoration: TextDecoration.underline,
-                                  decorationThickness: 2,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
                 IconButton(

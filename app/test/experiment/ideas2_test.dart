@@ -29,6 +29,7 @@ import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/ui/theme.dart';
 import 'package:lifesim/ui/twin_appearance.dart';
 import 'package:lifesim/ui/twin_assets.dart';
+import 'package:lifesim/ui/widgets/twin_sprite.dart' show TwinSprite;
 import 'package:lifesim/ui/widgets/widgets.dart' show TwinStateSprite;
 import 'package:lifesim/voice/api_base.dart';
 import 'package:lifesim/voice/fakes.dart';
@@ -568,26 +569,99 @@ void main() {
       expect(find.textContaining('Today’s idea: ', findRichText: true), findsNothing);
     });
 
-    testWidgets('(b) tapping Mochi shows a bubble with today\'s idea and See ideas; the daily bubble shows once', (
-      t,
-    ) async {
+    Rect twinBody(WidgetTester t) {
+      final twin = t.getRect(find.byType(TwinSprite).first);
+      return Rect.fromCenter(center: twin.center, width: twin.width * 0.5, height: twin.height * 0.7);
+    }
+
+    for (final (size, top) in [(const Size(390, 844), 0.0), (const Size(402, 874), 62.0)]) {
+      testWidgets('(b) no automatic bubble beside the Today line; a tap shows it clear of Mochi and the pill ($size)', (
+        t,
+      ) async {
+        final a = await routes(older);
+        await pumpHome(t, a, size: size, top: top);
+        // The Today card's idea line is the daily cue: no bubble by itself, and the day is not "used up".
+        expect(find.byKey(const ValueKey('room-idea-bubble')), findsNothing);
+        expect(find.text('See ideas ›'), findsNothing);
+        expect(a.ideasHub.bubbleDue, isTrue);
+        // A tap on Mochi shows it.
+        await t.tap(find.byKey(const ValueKey('room-twin')));
+        await t.pump();
+        await t.pump(const Duration(milliseconds: 300));
+        final bubble = find.byKey(const ValueKey('room-idea-bubble'));
+        expect(bubble, findsOneWidget);
+        expect(find.text('See ideas ›'), findsOneWidget);
+        final rect = t.getRect(bubble);
+        expect(rect.overlaps(twinBody(t)), isFalse, reason: 'covers Mochi: $rect vs ${twinBody(t)}');
+        expect(
+          rect.overlaps(t.getRect(find.byKey(const ValueKey('room-twin')))),
+          isFalse,
+          reason: 'covers the twin box',
+        );
+        expect(
+          rect.overlaps(t.getRect(find.byKey(const ValueKey('room-activity')))),
+          isFalse,
+          reason: 'covers the pill',
+        );
+        expect(rect.height, lessThan(80), reason: 'compact');
+        await evidence(t, size.width == 390 ? 'bubble_390' : 'bubble');
+        // It hides itself after 6 seconds.
+        await t.pump(const Duration(seconds: 6));
+        await t.pump(const Duration(milliseconds: 50));
+        expect(bubble, findsNothing);
+      });
+    }
+
+    testWidgets('(b) the bubble opens the list from See ideas, and Close dismisses it', (t) async {
       final a = await routes(older);
       await pumpHome(t, a);
-      // The first Home visit of the day shows it by itself.
-      expect(find.text('See ideas ›'), findsOneWidget);
-      expect(a.ideasHub.bubbleDue, isFalse);
-      await evidence(t, 'bubble');
+      await t.tap(find.byKey(const ValueKey('room-twin')));
+      await t.pump(const Duration(milliseconds: 300));
       await t.tap(find.byTooltip('Close'));
       await t.pump();
       expect(find.text('See ideas ›'), findsNothing);
-      // A tap on Mochi brings it back.
       await t.tap(find.byKey(const ValueKey('room-twin')));
       await t.pump(const Duration(milliseconds: 300));
-      expect(find.text('See ideas ›'), findsOneWidget);
       await t.tap(find.text('See ideas ›'));
       await t.pumpAndSettle();
       expect(find.byType(IdeasListScreen), findsOneWidget);
       expect(find.bySemanticsLabel('Back to room'), findsOneWidget);
+    });
+
+    testWidgets('(b) with Reduce Motion the bubble has no timer and stays until closed', (t) async {
+      t.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(t.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      final a = await routes(older);
+      await pumpHome(t, a);
+      await t.tap(find.byKey(const ValueKey('room-twin')));
+      await t.pump(const Duration(milliseconds: 50));
+      expect(find.text('See ideas ›'), findsOneWidget);
+      await t.pump(const Duration(seconds: 20));
+      expect(find.text('See ideas ›'), findsOneWidget);
+      await t.tap(find.byTooltip('Close'));
+      await t.pump();
+      expect(find.text('See ideas ›'), findsNothing);
+    });
+
+    testWidgets('(b) without the Today card the daily bubble shows by itself, once', (t) async {
+      final a = await routes(older);
+      await a.ideasHub.ensureToday();
+      final look = ValueNotifier(const TwinAppearance(name: 'Mochi'));
+      addTearDown(look.dispose);
+      Widget room() => RoomScreen(
+        appearance: look,
+        hasProfile: true,
+        onTalk: () {},
+        onCustomize: () {},
+        onFortune: () async {},
+        ideas: a.ideasAccess,
+      );
+      await pumpIn(t, room());
+      await t.pump(const Duration(milliseconds: 300));
+      expect(find.text('See ideas ›'), findsOneWidget);
+      expect(a.ideasHub.bubbleDue, isFalse);
+      await t.pump(const Duration(seconds: 7));
+      expect(find.text('See ideas ›'), findsNothing);
     });
 
     testWidgets('(b) a new run on the same day does not show the bubble by itself again', (t) async {
