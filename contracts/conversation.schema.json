@@ -1714,7 +1714,10 @@
     "client_action": {
       "anyOf": [
         {
-          "const": "open_health_import",
+          "enum": [
+            "open_health_import",
+            "open_ideas"
+          ],
           "type": "string"
         },
         {

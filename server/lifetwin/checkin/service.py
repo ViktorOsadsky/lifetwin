@@ -69,6 +69,7 @@ from lifetwin.onboarding.intents import (
     RESUME_LEAD,
     SAFETY_PHRASE,
     asks_back,
+    asks_for_ideas,
     care_choice,
     care_reply,
     clean_reply,
@@ -103,6 +104,7 @@ from lifetwin.onboarding.parsing import (
 from lifetwin.onboarding.script import SUPPLEMENT_REPLY
 from lifetwin.onboarding.service import (
     ASKING,
+    IDEAS_LEAD,
     LOUDER_LEAD,
     NO_LEAD,
     NOT_CAUGHT,
@@ -613,8 +615,10 @@ class CheckinService:
         text = clean_reply(normalize_text(request.text or ""))
         voice = request.input_mode == "transcript"
 
-        def respond(message: str, hint: str | None = None) -> CheckinResponse:
-            return self._respond(state, message, hint)
+        def respond(
+            message: str, hint: str | None = None, client_action: str | None = None
+        ) -> CheckinResponse:
+            return self._respond(state, message, hint, client_action=client_action)
 
         if action == "reply" and state.phase != "cancelled" and _safe(emergency, text):
             # The check-in pauses on the same question: no value, no next question.
@@ -704,6 +708,9 @@ class CheckinService:
             if SUPPLEMENTS.search(words_of(text)) and ASKING.search(text.lower()):
                 # Mochi never suggests a supplement: the same fixed reply as onboarding.
                 return respond(SUPPLEMENT_REPLY + " " + self._prompt(state))
+            if asks_for_ideas(text):
+                # Nothing is recorded and the state stays: the app shows today's idea.
+                return respond(IDEAS_LEAD + " " + self._prompt(state), client_action="open_ideas")
             if state.phase == "asking" and REQUEST.search(text.lower()):
                 # A request is not an answer: nothing is recorded, the question comes back.
                 return respond(QUESTION_BACK_LEAD + self._prompt(state))
@@ -1493,7 +1500,12 @@ class CheckinService:
             state.suggested_activity_min = None
 
     def _respond(
-        self, state: CheckinState, message: str, hint: str | None = None, urgent: bool = False
+        self,
+        state: CheckinState,
+        message: str,
+        hint: str | None = None,
+        urgent: bool = False,
+        client_action: str | None = None,
     ) -> CheckinResponse:
         reaction = {
             "asking": "asking",
@@ -1508,6 +1520,7 @@ class CheckinService:
             complete=state.phase == "ready",
             mascot_events=[MascotEvent(state="concerned" if urgent else reaction, caption=message)],
             speech_hint=hint,
+            client_action=client_action,
             emergency=urgent,
             profile_update=profile_update(state),
             daily_logs=daily_logs(state),
