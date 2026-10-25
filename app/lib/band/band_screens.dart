@@ -46,7 +46,7 @@ class BandPairScreen extends StatefulWidget {
   State<BandPairScreen> createState() => _BandPairScreenState();
 }
 
-enum _Step { before, searching, found, trouble, paired }
+enum _Step { before, searching, linking, found, trouble, paired }
 
 class _BandPairScreenState extends State<BandPairScreen> {
   _Step _step = _Step.before;
@@ -76,6 +76,7 @@ class _BandPairScreenState extends State<BandPairScreen> {
   }
 
   Future<void> _pair(BandDevice d) async {
+    setState(() => _step = _Step.linking);
     final ok = await widget.store.pair(d);
     if (!mounted) return;
     setState(() => _step = ok ? _Step.paired : _Step.trouble);
@@ -86,6 +87,7 @@ class _BandPairScreenState extends State<BandPairScreen> {
     final (bubble, title, state) = switch (_step) {
       _Step.before => ('Put the band on your leg, then turn it on.', 'Find your band', steadyTwin),
       _Step.searching => ('Looking…', 'Find your band', curiousTwin),
+      _Step.linking => ('Linking…', 'Pair your band', curiousTwin),
       _Step.found => ('Found your band!', 'Pair your band', steadyTwin),
       _Step.trouble => ('Hmm, I can’t see it yet.', 'Can’t find your band', steadyTwin),
       _Step.paired => ('Yay, we’re linked!', 'Band paired', _proud),
@@ -129,12 +131,14 @@ class _BandPairScreenState extends State<BandPairScreen> {
           WholeWordText('Strap it around your leg, just above the ankle.', style: LtText.body()),
           const SizedBox(height: 8),
           WholeWordText(
-            'Live pairing isn’t available in this version yet. Try a recorded demo band, or import a file from your band.',
+            'No band yet? Try a recorded demo band, or import a file from your band.',
             style: LtText.body(weight: FontWeight.w700),
           ),
         ];
       case _Step.searching:
         return [NoNumberBox(icon: Icons.bluetooth_searching_rounded, title: 'Looking for your band…')];
+      case _Step.linking:
+        return [NoNumberBox(icon: Icons.bluetooth_connected_rounded, title: 'Reading your band…')];
       case _Step.found:
         return [
           for (final d in _found)
@@ -175,6 +179,10 @@ class _BandPairScreenState extends State<BandPairScreen> {
       case _Step.trouble:
         final off = _bt == BluetoothState.off, denied = _bt == BluetoothState.notAllowed;
         return [
+          if (widget.store.pairProblem case final problem?) ...[
+            WholeWordText(problem, style: LtText.body(weight: FontWeight.w700)),
+            const SizedBox(height: 8),
+          ],
           _Check(
             label: off ? 'Bluetooth is off' : (denied ? 'Bluetooth not allowed' : 'Bluetooth is on'),
             ok: _bt == BluetoothState.on,
@@ -241,6 +249,7 @@ class _BandPairScreenState extends State<BandPairScreen> {
           ),
         ]);
       case _Step.searching:
+      case _Step.linking:
         return const SizedBox.shrink();
       case _Step.found:
         return const SizedBox.shrink();

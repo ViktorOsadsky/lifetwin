@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'band_ble.dart';
 import 'band_data.dart';
 import 'band_demo_data.dart';
 import 'band_file.dart';
@@ -9,7 +10,10 @@ import 'band_sitting.dart';
 enum BluetoothState { on, off, notAllowed }
 
 class BandDevice {
-  const BandDevice({required this.name, this.strength = 0});
+  const BandDevice({required this.name, this.strength = 0, this.id = ''});
+
+  /// The phone's handle for this band (never shown on screen).
+  final String id;
 
   /// The band's Bluetooth name (firmware, assumed "LifeTwin Band").
   final String name;
@@ -18,9 +22,8 @@ class BandDevice {
   final int strength;
 }
 
-/// The wrist band over Bluetooth. STUB: there is no Bluetooth plugin in the app yet, so no real band
-/// can be found; [StubBandClient] finds nothing unless given devices, and the recorded demo is the only
-/// data. Wording on screen is "Bluetooth", "pair", "band": never "BLE", "GATT", "device ID" or "ESP32".
+/// The activity band over Bluetooth: [BleBandClient] (band_ble.dart) in the app, [StubBandClient] in
+/// tests. Wording on screen is "Bluetooth", "pair", "band": never "BLE", "GATT", "device ID" or "ESP32".
 abstract class BandClient {
   Future<BluetoothState> bluetooth();
 
@@ -28,26 +31,33 @@ abstract class BandClient {
   Future<List<BandDevice>> scan({
     Duration timeout = const Duration(seconds: 20),
   });
+  /// Links to the band; false or a [BandTransferFailure] when it cannot.
   Future<bool> pair(BandDevice device);
+
+  /// The whole days the linked band sends, validated as one delivery by `parseBandFile`. Throws
+  /// [BandTransferFailure] or [BandFileFailure]; empty when it has nothing to send.
+  Future<List<BandDayReport>> fetchDays();
   Future<void> unpair();
 
   /// Minute records, as they arrive (buffered minutes resume from the last unsent one).
   Stream<BandMinute> minuteRecords();
 }
 
-/// No Bluetooth plugin yet.
-const bandBluetoothAvailable = false;
+/// The app pairs over Bluetooth (flutter_blue_plus, band_ble_fbp.dart).
+const bandBluetoothAvailable = true;
 
 class StubBandClient implements BandClient {
   StubBandClient({
     this.state = BluetoothState.on,
     this.devices = const [],
     this.pairs = true,
+    this.days = const [],
   });
 
   BluetoothState state;
   List<BandDevice> devices;
   bool pairs;
+  List<BandDayReport> days;
   int scans = 0;
 
   @override
@@ -63,6 +73,9 @@ class StubBandClient implements BandClient {
 
   @override
   Future<bool> pair(BandDevice device) async => pairs;
+
+  @override
+  Future<List<BandDayReport>> fetchDays() async => days;
 
   @override
   Future<void> unpair() async {}
@@ -105,6 +118,8 @@ class BandStore extends ChangeNotifier {
   bool get hasImportedFile => _reports.isNotEmpty;
   String get sourceLabel => demo
       ? 'Recorded demo'
+      : paired
+      ? 'Bluetooth'
       : hasImportedFile
       ? 'Imported band file'
       : 'Bluetooth';
@@ -227,8 +242,33 @@ class BandStore extends ChangeNotifier {
     );
   }
 
+  /// Why the last pairing failed, in plain words; null when it worked or no reason is known.
+  String? pairProblem;
+
+  /// Links to the band and imports the days it sends, as one whole delivery like a file: any failure
+  /// (link, transfer, a day the parser rejects) disconnects and imports nothing. Nothing is saved to
+  /// the profile here; only the person's "Yes" does that.
   Future<bool> pair(BandDevice d) async {
-    if (!await client.pair(d)) return false;
+    pairProblem = null;
+    final wasDemo = _builtInDemo;
+    try {
+      if (!await client.pair(d)) return false;
+      final days = await client.fetchDays();
+      if (days.isNotEmpty) {
+        if (wasDemo) setDemo(false); // real band days replace the built-in recorded demo
+        importReports(days);
+      }
+    } on Exception catch (e) {
+      if (wasDemo && !demo) setDemo(true);
+      pairProblem = e is BandFileFailure
+          ? 'The band’s data didn’t check out, so nothing was added. ${e.reason}'
+          : e is BandTransferFailure
+          ? e.reason
+          : 'Mochi couldn’t link to the band. Try again.';
+      await client.unpair();
+      notifyListeners();
+      return false;
+    }
     paired = true;
     bandName = d.name;
     notifyListeners();
