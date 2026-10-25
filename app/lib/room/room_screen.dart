@@ -243,8 +243,8 @@ class _RoomScreenState extends State<RoomScreen> {
                               valueListenable: widget.appearance,
                               builder: (context, look, _) => NameBanner(name: look.name),
                             ),
-                            quiz: widget.onQuiz == null ? null : _QuizChip(onTap: widget.onQuiz!),
                             actions: [
+                              if (widget.onQuiz != null) _QuizIcon(onTap: widget.onQuiz!),
                               if (widget.onBand != null)
                                 _HeaderIcon(icon: Icons.directions_walk_rounded, label: 'Add band', onTap: widget.onBand!),
                               if (widget.onHistory != null)
@@ -340,35 +340,34 @@ class _HeaderIcon extends StatelessWidget {
   );
 }
 
-/// The quiz entry: small and secondary, under the header, above the score card.
-class _QuizChip extends StatelessWidget {
-  const _QuizChip({required this.onTap});
+/// The quiz entry: a small round icon, the first (leftmost) of the header icons, in the gold accent.
+class _QuizIcon extends StatelessWidget {
+  const _QuizIcon({required this.onTap});
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: 'Quiz. Play',
-    excludeSemantics: true,
-    onTap: onTap,
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
+  Widget build(BuildContext context) => Tooltip(
+    message: 'Quiz',
+    excludeFromSemantics: true,
+    child: Semantics(
+      button: true,
+      label: 'Quiz. Play a round.',
+      excludeSemantics: true,
       onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 48),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: LtColors.night,
-          borderRadius: BorderRadius.circular(LtRadii.chip),
-          boxShadow: LtShadows.small,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.quiz_outlined, color: LtColors.gold, size: 22),
-            const SizedBox(width: 6),
-            Text('Quiz · play', style: LtText.body(size: 16, weight: FontWeight.w700, color: LtColors.cream)),
-          ],
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(color: LtColors.night, shape: BoxShape.circle),
+              child: const Icon(Icons.quiz_outlined, color: LtColors.gold, size: 22),
+            ),
+          ),
         ),
       ),
     ),
@@ -378,9 +377,8 @@ class _QuizChip extends StatelessWidget {
 /// The banner and the outlook card side by side, stacked when the screen is
 /// narrow or the text is large (so nothing wraps letter by letter).
 class _TopBar extends StatelessWidget {
-  const _TopBar({super.key, required this.banner, required this.card, this.actions = const [], this.quiz});
+  const _TopBar({super.key, required this.banner, required this.card, this.actions = const []});
   final Widget banner;
-  final Widget? quiz;
   final List<Widget> actions;
   final Widget card;
 
@@ -400,8 +398,7 @@ class _TopBar extends StatelessWidget {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // The quiz chip is the first thing on Home (right side, so a double tap on the intake's Home button at the top left never lands on it); every gap below is 8.
-                if (quiz != null) ...[Align(alignment: Alignment.centerRight, child: quiz), const SizedBox(height: 8)],
+                // The header row (My twin + icons, quiz first) is the first row on Home.
                 Row(
                   children: [
                     Expanded(child: Align(alignment: Alignment.centerLeft, child: banner)),

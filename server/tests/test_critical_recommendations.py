@@ -457,42 +457,22 @@ def test_unsafe_outside_wording_falls_back_to_the_template(line):
     [
         pytest.param(
             "A pre-workout drink before your walk could help.",
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="BUG: personalize.safety.BLOCKED lacks pre-workout, so it is spoken",
-            ),
             id="pre-workout",
         ),
         pytest.param(
             "You could have an energy drink first.",
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="BUG: personalize.safety.BLOCKED lacks energy drinks, so it is spoken",
-            ),
             id="energy-drink",
         ),
         pytest.param(
             "That should add time to your life.",
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="BUG: personalize.safety lets a years-gained promise through unless it says 'years'",
-            ),
             id="time-to-your-life",
         ),
         pytest.param(
             "You will feel better soon.",
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="BUG: personalize.safety lets a promised result through ('will feel better')",
-            ),
             id="promise",
         ),
         pytest.param(
             "Aim to lose a bit of belly.",
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="BUG: personalize.safety lets weight-loss wording through unless it says weight",
-            ),
             id="belly",
         ),
     ],
@@ -506,19 +486,12 @@ def test_outside_wording_with_stimulants_promises_or_weight_loss_falls_back(line
 # --- The person's own words are echoed back ------------------------------------------------------------
 
 
-xfail_echo = pytest.mark.xfail(
-    strict=True,
-    reason="BUG: /api/recommendations repeats raw habit-note words (no safe_slot filter as in coach)",
-)
-
-
-@xfail_echo
 @pytest.mark.parametrize(
     "note",
     [
         {"topic": "exercise", "kind": "creatine and energy drinks"},
         {"topic": "exercise", "kind": "pre-workout shots"},
-        {"topic": "exercise", "kind": "vitamin D walks"},
+        {"topic": "exercise", "kind": "protein powder workouts"},
     ],
 )
 def test_supplement_words_in_a_note_are_not_repeated_in_a_suggestion(note):
@@ -527,8 +500,43 @@ def test_supplement_words_in_a_note_are_not_repeated_in_a_suggestion(note):
     assert not SUPPLEMENTS.search(text), text
 
 
-@xfail_echo
 def test_numbers_in_a_note_never_become_numbers_in_a_suggestion():
     recs = suggest(HealthProfile(), [HabitNote(topic="exercise", kind="10000 steps in 3 years")])
     text = " ".join(r.message for r in recs)
     assert not FORBIDDEN.search(text), text
+
+
+def test_a_note_naming_vitamin_d_can_be_quoted():
+    recs = suggest(HealthProfile(), [HabitNote(topic="exercise", kind="vitamin D walks")])
+    assert "vitamin D walks" in " ".join(r.message for r in recs)
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Some people take vitamin D, so check with your doctor or pharmacist first.",
+        "A daily multivitamin or more fiber is common; ask your pharmacist before starting.",
+    ],
+)
+def test_a_gentle_well_known_supplement_with_a_doctor_pointer_is_spoken(line):
+    provider = Provider(line)
+    body = post(make_client(provider), {"smoking_status": "current"}, consent={"muse": True})
+    assert body["phrased_by"] == "muse", body["recommendations"][0]["message"]
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Some people take vitamin D.",  # no pointer to the doctor or pharmacist
+        "Some people take vitamin D, 2000 IU, so check with your doctor.",  # a dose
+        "Take 1000 mg of vitamin D; check with your doctor.",
+        "Vitamin D can prevent illness, so check with your doctor.",  # presented as prevention
+        "Try vitamin C, and check with your doctor first.",  # not on the gentle list
+        "A creatine powder may help; check with your doctor.",
+        "Herbal tea with fiber, check with your doctor.",
+    ],
+)
+def test_a_supplement_line_without_the_pointer_or_with_a_dose_or_claim_falls_back(line):
+    provider = Provider(line)
+    body = post(make_client(provider), {"smoking_status": "current"}, consent={"muse": True})
+    assert body["phrased_by"] == "templates", body["recommendations"][0]["message"]

@@ -58,7 +58,7 @@ def spoken(body):
 # --- Age bands and their edges ---------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("age", [17, 18, 39, 40, 64])
+@pytest.mark.parametrize("age", [18, 39, 40, 64])
 def test_ages_below_65_never_hear_older_adult_wording(client, age):
     for minutes in (0, 60, 300):
         body = plan(client, {"age": age, "exercise_minutes_weekly": minutes})
@@ -95,9 +95,7 @@ def test_the_18_edge_adults_get_the_young_adult_set_and_17_does_not(client):
     assert workout(plan(client, {"age": 18, "exercise_minutes_weekly": 300}))["intensity"] == (
         "vigorous"
     )
-    assert workout(plan(client, {"age": 17, "exercise_minutes_weekly": 300}))["intensity"] != (
-        "vigorous"
-    )
+    assert workout(plan(client, {"age": 17, "exercise_minutes_weekly": 300})) is None
 
 
 @pytest.mark.parametrize("age", [80, 85, 86, 120])
@@ -113,19 +111,18 @@ def test_unknown_or_under_18_never_gets_a_vigorous_pick(client, age, minutes):
     profile = {"exercise_minutes_weekly": minutes}
     if age is not None:
         profile["age"] = age
-    assert workout(plan(client, profile))["intensity"] != "vigorous"
+    picked = workout(plan(client, profile))
+    assert picked is None or picked["intensity"] != "vigorous"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: /api/coach/plan gives a 17-year-old the full adult plan (cites the adult "
-    "guideline, offers quit-smoking help) while /api/recommendations refuses under 18",
-)
 def test_under_18_is_not_handed_an_adult_plan(client):
     body = plan(client, {"age": 17, "smoking_status": "current", "exercise_minutes_weekly": 0})
     text = spoken(body)
     assert "guidelines for adults" not in text
     assert "quit smoking" not in text.lower()
+    assert body["status"] == "under_age" and body["items"] == [] and body["plan_type"] is None
+    assert body["revision_id"] is None and not body["emergency"]
+    assert "adults" in body["lines"][0]
 
 
 @pytest.mark.parametrize("age", [-1, 121, 200])
@@ -137,7 +134,7 @@ def test_impossible_ages_are_refused_not_planned(client, age):
 
 
 def test_a_sweep_over_ages_levels_and_limits_never_breaks_the_rules(client):
-    ages = [None, 17, 18, 29, 39, 40, 52, 64, 65, 79, 80, 85, 86]
+    ages = [None, 18, 29, 39, 40, 52, 64, 65, 79, 80, 85, 86]
     limit_sets = [
         [],
         ["knee_pain"],

@@ -186,7 +186,12 @@ HOW_ARE_YOU_ASKED = re.compile(
 SUPPLEMENTS = re.compile(
     r"\b(?:supplements?|vitamins?|multi ?vitamins?|fish oil|omega ?3s?|turmeric|curcumin|"
     r"melatonin|coq ?10|ginkgo|ginseng|probiotics?|collagen|magnesium|zinc|glucosamine|"
-    r"biotin|b ?12|iron (?:pills?|tablets?)|calcium (?:pills?|tablets?)|herbal (?:pills?|remed\w*))\b"
+    r"biotin|b ?12|iron (?:pills?|tablets?)|calcium (?:pills?|tablets?)|herbal (?:pills?|remed\w*)|"
+    r"creatine|energy (?:drinks?|shots?)|pre[- ]?workout|caffeine (?:pills?|tablets?)|"
+    r"protein (?:powders?|shakes?))\b"
+)
+REQUEST = re.compile(
+    r"^(?:please )?(?:recommend|suggest)\b|\b(?:can|could) you (?:recommend|suggest)\b"
 )
 ASKING = re.compile(
     r"\?|^(?:should|do|can|could|would|is|are|what|which|how)\b|\b(?:should i|do i need|"
