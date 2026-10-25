@@ -168,10 +168,42 @@ void main() {
       input.onCaption!('I’m 64, and I’m a woman. Never');
       await t.pump();
       await t.pump(const Duration(milliseconds: 150));
-      expect(find.text('You’re saying'), findsOneWidget);
+      expect(find.text('Hearing you…'), findsOneWidget);
+      expect(find.text('You said'), findsNothing);
       expect(find.textContaining('I’m a woman.', findRichText: true), findsOneWidget);
       await shot(t, 'vc_2_listening');
       await end(t);
+    });
+
+    testWidgets('partial speech shows at once under "Hearing you…" (last word softer); the final becomes "You said"', (
+      t,
+    ) async {
+      final handle = t.ensureSemantics();
+      await open(t);
+      guide.gate = Completer<void>();
+      input.transcript = 'chatter from the room';
+      input.onCaption!('chatter');
+      await t.pump();
+      expect(find.text('Hearing you…'), findsOneWidget);
+      expect(find.textContaining('chatter', findRichText: true), findsOneWidget);
+      expect(find.text('You said'), findsNothing);
+      final live = t.getSemantics(find.byKey(const ValueKey('transcript-live')));
+      expect(live.flagsCollection.isLiveRegion, isFalse, reason: 'partials are not read out word by word');
+      input.onCaption!('chatter from the room');
+      await t.pump();
+      expect(find.text('Hearing you…'), findsOneWidget);
+      await t.pump(voiceEndOfTurn);
+      await t.pump(const Duration(milliseconds: 100));
+      expect(find.text('You said'), findsOneWidget);
+      expect(find.text('Hearing you…'), findsNothing);
+      final done = t.getSemantics(find.byKey(const ValueKey('transcript-final')));
+      expect(done.flagsCollection.isLiveRegion, isTrue);
+      expect(done.label, 'You said: chatter from the room');
+      guide.gate!.complete();
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 100));
+      await end(t);
+      handle.dispose();
     });
 
     testWidgets('the pill is a polite live label, not a button', (t) async {

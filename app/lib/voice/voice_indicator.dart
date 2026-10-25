@@ -452,7 +452,9 @@ class TranscriptCard extends StatelessWidget {
     ];
     return Semantics(
       container: true,
-      label: listening ? 'You\'re saying: $text' : 'You said: $text',
+      // Only the final words are announced (polite); the partials are not read word by word.
+      liveRegion: !listening,
+      label: listening ? 'Hearing you: $text' : 'You said: $text',
       excludeSemantics: true,
       child: Container(
         key: ValueKey(listening ? 'transcript-live' : 'transcript-final'),
@@ -468,7 +470,7 @@ class TranscriptCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(listening ? 'You’re saying' : 'You said', style: LtText.body(size: 17, color: LtColors.secondary)),
+            Text(listening ? 'Hearing you…' : 'You said', style: LtText.body(size: 17, color: LtColors.secondary)),
             const SizedBox(height: 2),
             Text.rich(
               TextSpan(
