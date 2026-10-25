@@ -34,6 +34,7 @@ import 'wellness/widgets.dart' show WellnessCard;
 import 'wellness/repository_adapter.dart';
 import 'wellness/history_screen.dart';
 import 'twin/twin_repository.dart';
+import 'ui/loading_screen.dart';
 import 'ui/swoosh_route.dart';
 import 'ui/widgets/home_button.dart' show HomeDepth;
 import 'ui/theme.dart';
@@ -45,9 +46,9 @@ import 'voice/voice_token.dart';
 import 'voice/backend_config.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  holdFirstFrameUntilMochi(WidgetsFlutterBinding.ensureInitialized());
   BackendConfig.current = await BackendConfig.load();
-  runApp(const LifeTwinApp(autoStartOnboarding: true, showGuestEntry: true));
+  runApp(const LifeTwinApp(autoStartOnboarding: true, showGuestEntry: true, loadingScreen: true));
 }
 
 /// The game shell: the Room is home; Talk opens the mascot conversation
@@ -66,6 +67,7 @@ class LifeTwinApp extends StatefulWidget {
     this.agentic,
     this.autoStartOnboarding = false,
     this.showGuestEntry = false,
+    this.loadingScreen = false,
   });
 
   /// Tests pass a controller built from fakes.
@@ -87,6 +89,9 @@ class LifeTwinApp extends StatefulWidget {
   /// existing installs with saved data continue directly to their twin.
   final bool showGuestEntry;
 
+  /// Mochi waves on lavender until the model and the store open (the real app; tests opt in).
+  final bool loadingScreen;
+
   /// Tests pass a fake; otherwise Apple Health.
   final HealthReader? healthReader;
 
@@ -103,6 +108,8 @@ class LifeTwinApp extends StatefulWidget {
 class _LifeTwinAppState extends State<LifeTwinApp> {
   // Start finding the server now, while the Room is on screen.
   late final ApiBase _api = ApiBase()..url().ignore();
+  // The loading screen stays up until the model and the store open (or fail to).
+  late bool _loading = widget.loadingScreen;
   late final VoiceOnboardingController _controller = widget.controller ?? _live(_api);
   // Loaded once, at startup.
   late final Future<TwinRepository> _twin =
@@ -261,6 +268,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       BandFileSession.instance.start().ignore();
     }
     _agentic.provider().then((p) => _aiProvider = p, onError: (Object _) {});
+    _twin.whenComplete(() {
+      if (mounted && _loading) setState(() => _loading = false);
+    }).ignore();
     _twin.then((repo) {
       if (!mounted) return;
       final look = repo.store.twin;
@@ -616,7 +626,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       navigatorKey: _agentic.navigatorKey,
       navigatorObservers: [HomeDepth.instance],
       builder: _agentic.wrap,
-      home: ListenableBuilder(
+      home: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _loading ? const LoadingScreen() : ListenableBuilder(
         listenable: Listenable.merge([_controller, _wellness]),
         builder: (context, _) => widget.showGuestEntry && !_guestSession &&
             !(_wellness?.repository.store.guestEntryAccepted ?? false)
@@ -654,6 +666,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
                 ),
         ),
         ),
+      ),
       ),
     );
   }

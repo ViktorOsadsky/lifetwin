@@ -22,6 +22,13 @@ after main integration succeeded. `flutter analyze` passed and all 1,559 Flutter
 tests passed, including four new config/routing/override regression cases. Diff
 checks passed; existing local iOS project/plist/Podfile changes were excluded.
 
+Subsequent main integration preserved Mochi's newly merged launch/loading screen
+while awaiting public config before creating clients. Resolved it in an isolated
+checkout to preserve the owner's uncommitted iOS edits. Analysis and 35 focused
+startup/connection tests passed there. The new loading-screen test now clears its
+image cache before testing a cold decode, avoiding an order-dependent immediate
+cache hit. Final full-suite validation is recorded by PR CI.
+
 Limits / next dependency: fresh checkouts must install their public config asset
 or use build defines (documented in the iOS guide). Microphone capture, Cartesia
 audio playback and physical-device acceptance remain separate checks. A complete
