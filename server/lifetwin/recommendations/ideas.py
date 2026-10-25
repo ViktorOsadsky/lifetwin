@@ -5,6 +5,8 @@ existing source (service.SOURCES). Tags say who it suits; ``avoid`` holds the co
 limitation tags (coach/models.py ``LimitTag``) that rule it out. An idea with an
 ``avoid`` tag is never shown to someone with that limitation. ``needs`` ideas are only
 shown when the person's own words mention one of their interests (no dog, no dog idea).
+``coping`` ideas are helpers rather than the habit change itself and carry no effect.
+Every title is at most four words and every why_short at most ten.
 
 Messages are Mochi's words: no weight, years, dates, promises or percentage points, and
 no supplements. ``test_recommendation_ideas.py`` checks every line against the outside-AI
@@ -121,6 +123,9 @@ class Idea:
     social: Literal["social", "solo", "either"] = "either"
     place: Literal["indoor", "outdoor", "either"] = "either"
     avoid: tuple[str, ...] = ()
+    # A coping trick or a helper (a craving tip, a wind-down routine, a seated stretch),
+    # not the habit change itself: it carries no effect category of its own.
+    coping: bool = False
 
     @property
     def card(self) -> str:
@@ -162,8 +167,9 @@ IDEAS: tuple[Idea, ...] = (
         "The ten-minute delay",
         "When a craving hits, tell yourself you'll wait ten minutes first. Set a timer, sip "
         "some water or step outside, and see if the urge fades. Each wait is good practice.",
-        "Most cravings pass if you can wait them out a little.",
+        "Most cravings pass if you can wait a little.",
         "craving",
+        coping=True,
     ),
     Idea(
         "smoke_after_dinner_walk",
@@ -179,6 +185,7 @@ IDEAS: tuple[Idea, ...] = (
         times=("evening",),
         place="outdoor",
         avoid=WALKING,
+        coping=True,
     ),
     Idea(
         "smoke_busy_hands",
@@ -188,9 +195,10 @@ IDEAS: tuple[Idea, ...] = (
         "Keep something for your hands and mouth close by: a toothpick, sugar-free gum, "
         "crunchy carrot sticks or a stress ball. Reach for it when you'd usually reach for a "
         "cigarette.",
-        "Having a swap ready makes a craving easier to ride out.",
+        "A ready swap makes a craving easier to ride out.",
         "craving",
         interests=("work", "driving"),
+        coping=True,
     ),
     Idea(
         "smoke_slow_breaths",
@@ -203,6 +211,7 @@ IDEAS: tuple[Idea, ...] = (
         "Slow breathing gives a craving time to pass.",
         "breath",
         interests=("worry",),
+        coping=True,
     ),
     Idea(
         "smoke_tell_someone",
@@ -212,10 +221,11 @@ IDEAS: tuple[Idea, ...] = (
         "Tell a friend or someone in your family that you're thinking about quitting, and "
         "ask if you can text them when a craving gets hard. Having someone in your corner "
         "can make the tough moments easier.",
-        "Quitting with someone cheering you on is easier than going it alone.",
+        "Quitting is easier with someone cheering you on.",
         "social",
         interests=("friends", "family", "grandkids", "phone"),
         social="social",
+        coping=True,
     ),
     Idea(
         "smoke_triggers",
@@ -227,6 +237,7 @@ IDEAS: tuple[Idea, ...] = (
         "Knowing when cravings come helps you plan for them.",
         "craving",
         social="solo",
+        coping=True,
     ),
     Idea(
         "smoke_free_car",
@@ -235,9 +246,10 @@ IDEAS: tuple[Idea, ...] = (
         "A smoke-free car",
         "If you smoke while driving, make the car a smoke-free zone. Clean out the ashtray, "
         "add a fresh air freshener and keep gum and a good playlist ready for the drive.",
-        "Breaking the link between driving and smoking takes away a trigger.",
+        "A smoke-free car takes away a driving trigger.",
         "craving",
         interests=("driving",),
+        coping=True,
     ),
     Idea(
         "smoke_free_home",
@@ -247,21 +259,23 @@ IDEAS: tuple[Idea, ...] = (
         "Make your home smoke-free, one room at a time or all at once. Stepping outside adds "
         "a pause that gives you a moment to choose, and it keeps the air fresh for the "
         "people and pets you love.",
-        "A pause before each cigarette gives you a moment to choose.",
+        "A pause before each cigarette gives you a choice.",
         "craving",
         interests=("grandkids", "family", "dog"),
+        coping=True,
     ),
     Idea(
         "smoke_push_back_first",
         Q,
         ("any",),
-        "Push back the first one",
+        "Delay the first one",
         "If your first cigarette comes with your morning coffee, try pushing it back a little "
         "each day: after your shower, then after breakfast. Shrinking the habit step by step "
         "still counts.",
         "Small steps away from the habit still count.",
         "craving",
         times=("morning",),
+        coping=True,
     ),
     Idea(
         "smoke_quit_jar",
@@ -271,9 +285,10 @@ IDEAS: tuple[Idea, ...] = (
         "Put the money you'd spend on cigarettes into a jar each day and watch it grow. Pick "
         "something you'd love to spend it on, like a meal out with friends or a gift for "
         "someone special.",
-        "Seeing what you save keeps the reason to quit in view.",
+        "Seeing your savings keeps your reason to quit close.",
         "craving",
         interests=("friends", "grandkids", "family"),
+        coping=True,
     ),
     Idea(
         "smoke_ask_pharmacist",
@@ -290,9 +305,9 @@ IDEAS: tuple[Idea, ...] = (
         "start_after_meal_walk",
         MOD,
         ("start",),
-        "A walk after a meal",
+        "A walk after meals",
         "You could start small, with a short walk after a meal a few days a week.",
-        "Even a short, easy walk is a good place to begin.",
+        "A short, easy walk is a great place to begin.",
         "walk",
         interests=("walking", "cooking"),
         place="outdoor",
@@ -319,19 +334,20 @@ IDEAS: tuple[Idea, ...] = (
         "Dancing in your chair",
         "Pick a favorite song and move from your chair: swing your arms, tap your feet and "
         "roll your shoulders. When it ends, play another.",
-        "Moving in your chair counts, and it is easy on the joints.",
+        "Moving in your chair counts, and it's gentle.",
         "dance",
         interests=("music",),
         place="indoor",
+        coping=True,
     ),
     Idea(
         "start_grocery_lap",
         MOD,
         ("start", "more"),
-        "A lap of the store",
+        "A grocery store lap",
         "Next time you shop, walk one easy lap of the grocery store before you start filling "
         "your cart. It's flat and dry, and the cart is there to lean on.",
-        "Folding a walk into errands you already do makes it easy to keep.",
+        "A walk folded into errands is easy to keep.",
         "walk",
         interests=("shopping",),
         place="indoor",
@@ -344,7 +360,7 @@ IDEAS: tuple[Idea, ...] = (
         "A walk-and-talk call",
         "Call a friend or someone in your family and take a gentle stroll while you chat, "
         "around the block or even around the house. The time flies when you're catching up.",
-        "Pairing a walk with a good chat makes the time fly.",
+        "A good chat makes a walk fly by.",
         "social",
         interests=("phone", "friends", "family", "grandkids"),
         social="social",
@@ -371,7 +387,7 @@ IDEAS: tuple[Idea, ...] = (
         "Steps during your show",
         "During one TV show, stand up and walk around the room whenever the ads come on. "
         "You'll be moving without missing a moment.",
-        "Tying a little movement to a show you already watch makes it stick.",
+        "Moving during a favorite show makes it stick.",
         "walk",
         interests=("tv",),
         times=("evening",),
@@ -382,10 +398,10 @@ IDEAS: tuple[Idea, ...] = (
         "start_grandkids_park",
         MOD,
         ("start", "more"),
-        "Park time with the grandkids",
+        "Park time with grandkids",
         "Take the grandkids to the park and join in: push the swings, stroll the paths and "
         "chase a ball now and then. Their energy is catching.",
-        "Playing with the grandkids is activity that doesn't feel like a chore.",
+        "Playing with grandkids hardly feels like exercise.",
         "social",
         ages=MID_UP,
         interests=("grandkids",),
@@ -412,7 +428,7 @@ IDEAS: tuple[Idea, ...] = (
         "start_dog_yes",
         MOD,
         ("start",),
-        "Say yes to the dog",
+        "Yes to the dog",
         "Next time your dog asks to go out, take a slow stroll around the block together "
         "instead of just opening the door.",
         "Your dog is a ready-made walking buddy.",
@@ -433,15 +449,16 @@ IDEAS: tuple[Idea, ...] = (
         "stretch",
         interests=("tv",),
         place="indoor",
+        coping=True,
     ),
     Idea(
         "start_church_stroll",
         MOD,
         ("start", "more"),
-        "A stroll with your community",
+        "A community stroll",
         "Arrive at church or your community group a little early and take a gentle walk "
         "around the building or the grounds with someone you know.",
-        "A walk with people you know is easy to look forward to.",
+        "A walk with friendly faces is easy to enjoy.",
         "social",
         interests=("church",),
         needs=True,
@@ -468,7 +485,7 @@ IDEAS: tuple[Idea, ...] = (
         "A slow morning loop",
         "Start the day with an easy walk around the block or the garden, then come back to "
         "your coffee. A gentle, regular start is easy to keep.",
-        "Making it part of your morning means you don't have to remember it.",
+        "Part of your morning, so there's nothing to remember.",
         "walk",
         interests=("walking", "garden"),
         times=("morning",),
@@ -482,27 +499,28 @@ IDEAS: tuple[Idea, ...] = (
         "A seated routine",
         "In a sturdy chair, lift each knee in turn, circle your arms, and press your palms "
         "together, a few minutes of each, to music you like.",
-        "Moving in your chair counts, and it is easy on the joints.",
+        "Moving in your chair counts, and it's gentle.",
         "stretch",
         interests=("music", "tv"),
         place="indoor",
+        coping=True,
     ),
     # --- Activity, a little more: for people doing some. ------------------------------------
     Idea(
         "more_one_session",
         MOD,
         ("more",),
-        "One more time a week",
+        "One more weekly session",
         "Adding one more session a week of something you already enjoy is an easy way to "
         "build on it.",
-        "Building on something you already enjoy is easier to keep up.",
+        "Building on what you enjoy is easier to keep up.",
         "walk",
     ),
     Idea(
         "more_dog_new_route",
         MOD,
         ("more",),
-        "A new route with your dog",
+        "A new dog route",
         "Take your dog a different, slightly longer way around. New smells for them, new "
         "sights for you, and a few extra minutes for both of you.",
         "A new route makes a familiar walk fun again.",
@@ -562,7 +580,7 @@ IDEAS: tuple[Idea, ...] = (
         "A lunchtime loop",
         "Take a short walk on your lunch break or after lunch, even just around the "
         "building. A regular slot makes it easier to remember.",
-        "A regular slot in the day makes a walk easier to remember.",
+        "A regular slot makes a walk easy to remember.",
         "walk",
         interests=("work",),
         times=("afternoon",),
@@ -575,7 +593,7 @@ IDEAS: tuple[Idea, ...] = (
         "Join a walking group",
         "Look for a walking group at a community center, library or church. Walking with "
         "others makes it social, and they'll notice when you're missing.",
-        "Walking with others makes it social and easier to keep up.",
+        "Walking with others is social and easy to keep.",
         "social",
         interests=("church", "friends"),
         social="social",
@@ -603,7 +621,7 @@ IDEAS: tuple[Idea, ...] = (
         "An easy bike ride",
         "Take your bike out for an easy ride on a flat path or a quiet street, or pedal an "
         "exercise bike while you watch something.",
-        "An easy ride is a gentle way to add a little activity.",
+        "An easy ride gently adds a little activity.",
         "walk",
         interests=("cycling",),
         needs=True,
@@ -644,7 +662,7 @@ IDEAS: tuple[Idea, ...] = (
         "Walk with a story",
         "Save a podcast, an audiobook or a favorite album just for walks. You'll look "
         "forward to the next chapter, and to the walk that comes with it.",
-        "Something to look forward to makes a walk easier to start.",
+        "Something to look forward to gets you out walking.",
         "walk",
         interests=("reading", "music", "alone", "walking"),
         social="solo",
@@ -686,7 +704,7 @@ IDEAS: tuple[Idea, ...] = (
         "On your next walk, pick up the pace between two lampposts, then ease off for the "
         "next two, and keep swapping. Brisk bits that leave you a little out of breath count "
         "double.",
-        "A faster pace for part of your walk is a simple next step.",
+        "Faster stretches are a simple next step for walkers.",
         "walk",
         interests=("walking",),
         place="outdoor",
@@ -699,7 +717,7 @@ IDEAS: tuple[Idea, ...] = (
         "Find a hill",
         "Add a hill or a slope to your usual route and climb it at a steady push. Walking "
         "uphill turns an easy walk into a livelier one.",
-        "A hill on your route is a simple way to add effort.",
+        "A hill adds effort to your usual walk.",
         "walk",
         interests=("walking",),
         place="outdoor",
@@ -712,7 +730,7 @@ IDEAS: tuple[Idea, ...] = (
         "Walk to the beat",
         "Make a playlist of upbeat songs and match your steps to the beat for a song or two, "
         "then cool off with a slower one.",
-        "Music with a quick beat makes a faster pace feel easy.",
+        "A quick beat makes a faster pace feel easy.",
         "walk",
         interests=("music", "walking", "alone"),
         social="solo",
@@ -722,7 +740,7 @@ IDEAS: tuple[Idea, ...] = (
         "pace_dog_home",
         VIG,
         ("pace",),
-        "A quick finish with your dog",
+        "Race your dog home",
         "For the last stretch of your dog walk, pick up the pace and let your dog set a quick "
         "tempo home. Brisk minutes like these count double.",
         "Your dog is happy to set a quicker pace.",
@@ -739,7 +757,7 @@ IDEAS: tuple[Idea, ...] = (
         "Tag with the grandkids",
         "Join the grandkids in a game of tag or kick a ball around the yard. Short bursts of "
         "running around are the kind of activity that leaves you out of breath.",
-        "Playing with the grandkids is lively activity that feels like fun.",
+        "Running games with grandkids are lively, fun activity.",
         "social",
         ages=MID_UP,
         interests=("grandkids",),
@@ -755,7 +773,7 @@ IDEAS: tuple[Idea, ...] = (
         "Take the stairs",
         "Choose the stairs over the elevator when you can, and take them at a good pace. A "
         "couple of flights gets your heart going.",
-        "Stairs are a quick way to add effort to your day.",
+        "Stairs add quick effort to your day.",
         "walk",
         interests=("work", "shopping"),
         place="indoor",
@@ -765,7 +783,7 @@ IDEAS: tuple[Idea, ...] = (
         "pace_brisk_friend",
         VIG,
         ("pace",),
-        "A brisk walk with a friend",
+        "Brisk walks with friends",
         "Walk with a friend at a pace where you can talk but not sing. You'll keep each other "
         "going a bit faster than you'd go alone.",
         "A walking partner helps you keep a brisker pace.",
@@ -836,14 +854,14 @@ IDEAS: tuple[Idea, ...] = (
         "Mix it up",
         "To keep it fun, swap in something new now and then, like a new walking route, a "
         "swim or a dance class.",
-        "You are already active, so keep doing what works for you.",
+        "You're already active, so keep doing what works.",
         "walk",
     ),
     Idea(
         "keep_strength",
         KEEP,
         ("keep",),
-        "Strong as well as active",
+        "Strong and active",
         "Alongside what you do, the guidelines also suggest muscle-strengthening moves on two "
         "days a week, like carrying groceries, heavy gardening or resistance bands.",
         "Strength moves round out the activity you already do.",
@@ -896,7 +914,7 @@ IDEAS: tuple[Idea, ...] = (
         "Listen to your body",
         "Keep an easy day in your week, and switch activities if something starts to ache. "
         "Staying steady matters as much as anything.",
-        "You are already active, so keep doing what works for you.",
+        "You're already active, so keep doing what works.",
         "walk",
     ),
     Idea(
@@ -917,7 +935,7 @@ IDEAS: tuple[Idea, ...] = (
         "Notice your streak",
         "Mark each active day on a calendar or in your phone. A row of check marks is a nice "
         "reminder of how far you've come.",
-        "Seeing your streak is a nice reminder of what you do.",
+        "Your streak is a nice reminder of what you do.",
         "walk",
         interests=("phone",),
         social="solo",
@@ -930,7 +948,7 @@ IDEAS: tuple[Idea, ...] = (
         "A regular bedtime",
         "You could try a regular bedtime that leaves room for 7 hours, which CDC suggests "
         "for adults.",
-        "A regular bedtime leaves room for the sleep adults are advised to get.",
+        "A regular bedtime leaves room for enough sleep.",
         "sleep",
     ),
     Idea(
@@ -941,10 +959,11 @@ IDEAS: tuple[Idea, ...] = (
         "Give yourself a half-hour wind-down before bed: dim the lights, have a warm shower, "
         "read a few pages or play some quiet music. The same routine each night tells your "
         "body it's time to sleep.",
-        "A calm routine before bed signals that it's time to sleep.",
+        "A calm routine tells your body it's bedtime.",
         "sleep",
         interests=("reading", "music", "worry"),
         times=("evening",),
+        coping=True,
     ),
     Idea(
         "sleep_morning_light",
@@ -958,6 +977,7 @@ IDEAS: tuple[Idea, ...] = (
         interests=("garden", "dog", "walking"),
         times=("morning",),
         place="outdoor",
+        coping=True,
     ),
     Idea(
         "sleep_fixed_wake",
@@ -966,9 +986,10 @@ IDEAS: tuple[Idea, ...] = (
         "A fixed wake time",
         "Get up at the same time every day, weekends too. A steady wake time makes it easier "
         "to feel sleepy at a regular hour at night.",
-        "A steady wake time helps you feel sleepy at a regular hour.",
+        "A steady wake time helps you feel sleepy on time.",
         "sleep",
         times=("morning",),
+        coping=True,
     ),
     Idea(
         "sleep_screens_off",
@@ -981,6 +1002,7 @@ IDEAS: tuple[Idea, ...] = (
         "sleep",
         interests=("tv", "phone", "work"),
         times=("evening",),
+        coping=True,
     ),
     Idea(
         "sleep_dark_room",
@@ -992,6 +1014,7 @@ IDEAS: tuple[Idea, ...] = (
         "A dark, quiet, cool room makes it easier to sleep.",
         "sleep",
         interests=("noise",),
+        coping=True,
     ),
     Idea(
         "sleep_worry_list",
@@ -1005,6 +1028,7 @@ IDEAS: tuple[Idea, ...] = (
         interests=("worry", "reading"),
         times=("evening",),
         social="solo",
+        coping=True,
     ),
     Idea(
         "sleep_bedtime_alarm",
@@ -1029,6 +1053,7 @@ IDEAS: tuple[Idea, ...] = (
         interests=("nap",),
         needs=True,
         times=("afternoon",),
+        coping=True,
     ),
     Idea(
         "sleep_active_day",
@@ -1042,6 +1067,7 @@ IDEAS: tuple[Idea, ...] = (
         interests=("walking", "dog"),
         times=("afternoon",),
         avoid=WALKING,
+        coping=True,
     ),
     Idea(
         "sleep_earlier_supper",
@@ -1054,6 +1080,7 @@ IDEAS: tuple[Idea, ...] = (
         "eat",
         interests=("cooking",),
         times=("evening",),
+        coping=True,
     ),
     Idea(
         "sleep_get_up",
@@ -1062,9 +1089,10 @@ IDEAS: tuple[Idea, ...] = (
         "Bed is for sleep",
         "If you can't fall asleep after a while, get up, do something calm in dim light, and "
         "go back to bed when you feel sleepy.",
-        "Keeping bed for sleep helps your body link bed with sleep.",
+        "Keeping bed for sleep helps your body link them.",
         "sleep",
         interests=("worry", "reading"),
+        coping=True,
     ),
     # --- Sitting less: last. ---------------------------------------------------------------
     Idea(
@@ -1085,7 +1113,7 @@ IDEAS: tuple[Idea, ...] = (
         "sit_remote_away",
         SIT,
         ("any",),
-        "The remote across the room",
+        "Remote across the room",
         "Keep the TV remote across the room, so changing the channel means a few steps each time.",
         "A few extra steps each time break up long sitting.",
         "stand",
@@ -1177,18 +1205,19 @@ IDEAS: tuple[Idea, ...] = (
         "Shift and reach",
         "Every hour, change position, sit up tall, and reach both arms overhead and out to "
         "the sides a few times. Small moves break up long spells of stillness.",
-        "Small moves in your seat break up long spells of stillness.",
+        "Small moves in your seat break up stillness.",
         "stretch",
         interests=("tv", "reading", "puzzles"),
+        coping=True,
     ),
     Idea(
         "sit_walking_meeting",
         SIT,
         ("any",),
-        "Stand for part of a meeting",
+        "Stand in meetings",
         "Stand for part of a video call or a meeting, or suggest a walking meeting with a "
         "colleague.",
-        "Standing for part of your work day breaks up long sitting.",
+        "Standing for part of the work day breaks up sitting.",
         "stand",
         ages=("18-39", "40-64"),
         interests=("work",),
@@ -1203,7 +1232,7 @@ IDEAS: tuple[Idea, ...] = (
         "Up every hour",
         "You could try standing up and moving for a few minutes every hour. Moving more and "
         "sitting less is good advice for everyone.",
-        "Standing and moving a bit more often breaks up long sitting.",
+        "Standing up more often breaks up long sitting.",
         "stand",
         avoid=STANDING,
     ),
@@ -1232,6 +1261,7 @@ IDEAS: tuple[Idea, ...] = (
         interests=("tv",),
         times=("evening",),
         place="indoor",
+        coping=True,
     ),
 )
 BY_ID: dict[str, Idea] = {idea.id: idea for idea in IDEAS}

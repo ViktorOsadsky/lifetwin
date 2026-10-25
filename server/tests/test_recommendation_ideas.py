@@ -18,10 +18,11 @@ import lifetwin.onboarding  # noqa: F401  (import first: avoids a pre-existing i
 from lifetwin.app import create_app
 from lifetwin.coach.models import LimitTag
 from lifetwin.coach.planner import NOTE_LIMITS as COACH_NOTE_LIMITS
+from lifetwin.coach.safety import NUMBER_WORDS
 from lifetwin.core.config import Settings
 from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.models import HabitNote, IdeaKind
-from lifetwin.personalize.safety import NUMBER_WORDS, safe_line
+from lifetwin.personalize.safety import safe_line
 from lifetwin.recommendations import service
 from lifetwin.recommendations.ideas import (
     AGE_BANDS,
@@ -35,7 +36,7 @@ from lifetwin.recommendations.ideas import (
     NOTE_LIMITS,
     TIMES,
 )
-from lifetwin.recommendations.levers import EFFECT_NOTE, LEVER_ORDER
+from lifetwin.recommendations.levers import EFFECT_NOTE, LEVER_ORDER, effect_category
 from lifetwin.recommendations.service import SOURCES, suggest
 
 STAGES = {
@@ -51,6 +52,16 @@ CARDS = {
     "short_sleep_plus_1h": "sleep",
     "sitting_minus_60_realistic": "sitting",
 }
+# Medical claims and advice the catalog never makes (the outside-AI denylist this
+# catalog was first checked against, kept here now that outside wording is bound to
+# the draft itself).
+MEDICAL = re.compile(
+    r"\b(?:diagnos\w*|prescri\w*|medicat\w*|medicine\w*|pills?|tablets?|doses?|dosage|mg|"
+    r"cure\w*|treat\w*|heals?|prevents?|reverses?|risk of|chance of|die|dying|death|"
+    r"diet\w*|calories|fat|slim\w*|belly|waist\w*|stimulants?|herbal|will feel|"
+    r"stop taking|start taking|increase your|decrease your|next (?:week|month)|by the end)\b",
+    re.I,
+)
 DAYS = [date(2026, 10, 24) + timedelta(days=n) for n in range(7)]
 NOTE_POOL = [
     {"topic": "exercise", "kind": "walking", "with": "dog"},
@@ -98,6 +109,12 @@ def random_cases(count: int, seed: int):
         yield profile, raw
 
 
+def own_effect(item, profile: dict):
+    if item.lever == "keep_it_up" or BY_ID[item.id].coping:
+        return None
+    return effect_category(item.lever, profile.get("age"), profile.get("sex"))
+
+
 def shown(recs):
     for rec in recs:
         yield rec
@@ -137,9 +154,27 @@ def test_lengths_and_the_safety_check_on_every_line():
         assert 0 < len(idea.why) <= 90, idea.id
         assert not re.search(r"\d", idea.why) and not NUMBER_WORDS.search(idea.why), idea.id
         for text in (idea.title, idea.message, idea.why):
-            assert safe_line(text, text), (idea.id, text)
+            assert safe_line(text, text), (idea.id, text)  # a valid trusted draft
+            assert not MEDICAL.search(text), (idea.id, text)
             assert not FORBIDDEN.search(text), (idea.id, text)
             assert not SUPPLEMENTS.search(text), (idea.id, text)
+
+
+def test_titles_are_at_most_four_words_and_why_short_at_most_ten():
+    for idea in IDEAS:
+        assert len(idea.title.split()) <= 4, (idea.id, idea.title)
+        assert len(idea.why.split()) <= 10, (idea.id, idea.why)
+
+
+def test_coping_tricks_are_flagged_and_every_lever_keeps_a_habit_change():
+    assert BY_ID["smoke_delay"].coping and BY_ID["smoke_slow_breaths"].coping
+    assert not BY_ID["smoke_quitline"].coping
+    for lever, stages in STAGES.items():
+        if lever == "keep_it_up":
+            continue
+        for stage in stages:
+            core = [i for i in IDEAS if i.lever == lever and stage in i.stages and not i.coping]
+            assert core, (lever, stage)
 
 
 def test_encouragement_never_asks_for_more():
@@ -343,14 +378,19 @@ def test_old_rules_hold_on_every_day_with_notes():
             for item in shown([rec]):
                 assert item.lever == rec.lever and item.wellness_card == rec.wellness_card
                 assert item.kind in KINDS
-                assert (item.effect, item.experiment_lever, item.experiment_target) == (
-                    rec.effect,
+                # The experiment follows the lever; the effect cue is the idea's own.
+                assert (item.experiment_lever, item.experiment_target) == (
                     rec.experiment_lever,
                     rec.experiment_target,
                 )
+                assert item.effect == own_effect(item, profile)
+                source_title, source_url = SOURCES[BY_ID[item.id].source]
+                assert (item.source_title, item.source_url) == (source_title, source_url)
+                assert item.source_domain == "cdc.gov"
                 assert item.effect_note == EFFECT_NOTE and item.causal_interpretation is False
                 assert 0 < len(item.message) <= 400
                 assert safe_line(item.message, item.message), item.message
+                assert not MEDICAL.search(item.message), item.message
                 assert not FORBIDDEN.search(item.message) and not SUPPLEMENTS.search(item.message)
                 assert 0 < len(item.why_short) <= 90
                 if item.lever == "keep_it_up":
@@ -415,3 +455,45 @@ def test_a_bad_local_date_is_refused(bad):
         "/api/recommendations", json={"profile": {"sleep_hours": 5}, "local_date": bad}
     )
     assert response.status_code == 422
+
+
+# --- Excluded ids ------------------------------------------------------------------------
+
+
+def test_excluded_ids_never_appear_property_sweep():
+    rng = random.Random(5)
+    ids = sorted(BY_ID)
+    for n, (profile, raw) in enumerate(random_cases(800, 3)):
+        excluded = set(rng.sample(ids, rng.randint(0, 50)))
+        recs = suggest(HealthProfile(**profile), notes_of(*raw), DAYS[n % 7], sorted(excluded))
+        for item in shown(recs):
+            assert item.id not in excluded, (item.id, profile)
+        assert service.featured(recs) not in excluded
+        assert len(recs) <= 3
+
+
+def test_every_idea_of_a_lever_excluded_falls_back_or_is_left_out():
+    walker = HealthProfile(moderate_recreation_min_week=60, vigorous_recreation_min_week=0)
+    pace = [i.id for i in IDEAS if i.lever == "vigorous_plus_60"]
+    (rec,) = suggest(walker, [], DAYS[0], pace)
+    assert rec.lever == "moderate_plus_90"  # a faster pace falls back to a little more
+    activity = pace + [i.id for i in IDEAS if i.lever == "moderate_plus_90"]
+    assert suggest(walker, [], DAYS[0], activity) == []
+    smoker = HealthProfile(smoking_status="current", sleep_hours=5)
+    smoking = [i.id for i in IDEAS if i.lever == "quit_smoking"]
+    assert [r.lever for r in suggest(smoker, [], DAYS[0], smoking)] == ["short_sleep_plus_1h"]
+
+
+def test_excluded_ids_over_http():
+    c = client()
+    body = {"profile": {"smoking_status": "current"}, "local_date": "2026-10-24"}
+    first = post(c, body)
+    gone = [first["featured"]] + [a["id"] for a in first["recommendations"][0]["alternatives"]]
+    again = post(c, {**body, "excluded_ids": gone})
+    assert again["featured"] not in gone
+    for rec in again["recommendations"]:
+        assert rec["id"] not in gone
+        assert not {a["id"] for a in rec["alternatives"]} & set(gone)
+    too_many = c.post("/api/recommendations", json={**body, "excluded_ids": ["x"] * 51})
+    assert too_many.status_code == 422
+    assert c.post("/api/recommendations", json={**body, "excluded_ids": [""]}).status_code == 422
