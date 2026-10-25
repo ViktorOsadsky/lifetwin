@@ -81,7 +81,7 @@ const RoomLayout roomLayout = RoomLayout(
     'exercise': Offset(1.05, 1.1500000000000001),
     'eat': Offset(-0.28000000000000014, 1.6600000000000001),
     'sleepSide': Offset(0.98, -1.25),
-    'bed': Offset(0.010000000000000009, -1.12),
+    'bed': Offset(0.25, -1.22),
     'fortune': Offset(1.2200000000000002, -1.7),
     'rug': Offset(-1.0, 0.44999999999999996),
   },

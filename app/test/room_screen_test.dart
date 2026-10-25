@@ -216,6 +216,20 @@ void main() {
     await pumpUntil(t, status('Full and happy'));
   });
 
+  testWidgets('the activity pill names what the twin is doing, with its icon', (t) async {
+    await pumpRoom(t);
+    final pill = find.byKey(const ValueKey('room-activity'));
+    expect(pill, findsOneWidget);
+    expect(find.descendant(of: pill, matching: find.text('Relaxing')), findsOneWidget);
+    expect(find.descendant(of: pill, matching: find.byIcon(Icons.weekend_rounded)), findsOneWidget);
+    await t.tap(find.text('Sleep'));
+    await pumpUntil(t, status('Sleeping. Tap to wake'));
+    await t.pump(const Duration(milliseconds: 100));
+    expect(find.descendant(of: pill, matching: find.text('Sleeping')), findsOneWidget);
+    expect(find.descendant(of: pill, matching: find.byIcon(Icons.bedtime_rounded)), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'is sleeping$')), findsOneWidget);
+  });
+
   testWidgets('Sleep climbs into bed under the quilt with z\'s; a tap wakes', (t) async {
     await pumpRoom(t);
     await t.tap(find.text('Sleep'));
