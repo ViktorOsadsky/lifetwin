@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LifeTwin Band</title>
+<style>
+:root{--bg:#f4f6f9;--card:#ffffff;--text:#1b2230;--muted:#667085;--line:#e1e5ec;--accent:#2f5bd8;--accent-text:#ffffff;--warn:#fff4e0;--warn-text:#7a4a00;--ok:#1d8a55}
+@media (prefers-color-scheme: dark){:root{--bg:#11141a;--card:#1a1f29;--text:#e8ebf1;--muted:#9aa4b5;--line:#2a3140;--accent:#7aa2ff;--accent-text:#0d1220;--warn:#3a2c10;--warn-text:#ffd58a;--ok:#4cc88a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0 2px}
+h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.sub{color:var(--muted);margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:8px 12px;cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600}
+button:disabled{opacity:.45;cursor:not-allowed}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;border:1px solid var(--line);color:var(--muted)}
+.pill.on{color:var(--ok);border-color:var(--ok)}
+.warn{background:var(--warn);color:var(--warn-text);border-radius:10px;padding:10px 12px;margin-bottom:12px;display:none}
+.muted{color:var(--muted)}
+.live{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.livebox{min-width:240px;flex:1;border-radius:12px;padding:16px;color:#fff;background:#8a93a5;transition:background .15s}
+.livebox .big{font-size:30px;font-weight:700;line-height:1.1}
+.livebox .small{opacity:.9;font-size:13px;margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0}
+.tile{border:1px solid var(--line);border-radius:10px;padding:8px 10px;border-left-width:6px}
+.tile b{display:block;font-size:20px}
+.tile span{color:var(--muted);font-size:13px}
+.tile.big b{font-size:26px;font-variant-numeric:tabular-nums}
+.bar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:var(--line);margin-top:6px}
+.bar i{display:block;height:100%;transition:width .3s}
+.scroll{overflow-x:auto}
+.grid{display:grid;grid-template-columns:34px repeat(60,minmax(7px,1fr));gap:1px;min-width:520px}
+.grid .h{font-size:11px;color:var(--muted);text-align:right;padding-right:4px;line-height:11px}
+.grid .c{height:11px;border-radius:2px;background:var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:13px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:600}
+input[type=date]{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text)}
+details pre{white-space:pre-wrap;font-size:12px;max-height:200px;overflow:auto;background:var(--bg);padding:8px;border-radius:8px}
+</style>
+</head>
+<body>
+<main>
+  <h1>LifeTwin Band</h1>
+  <p class="sub">Thigh-pocket band. Connect, set the clock, download your sitting / standing / walking minutes. Time is added automatically.</p>
+
+  <div class="warn" id="nobt"><b>This browser can't use Bluetooth.</b> Open this file in <b>Chrome or Edge</b> on a laptop (or Chrome on Android). iPhone and Safari don't support it.</div>
+
+  <section class="card">
+    <h2>Band</h2>
+    <div class="row">
+      <button class="primary" id="btnConnect">Connect band</button>
+      <button id="btnSync" disabled>Sync &amp; download</button>
+      <button id="btnDisc" disabled>Disconnect</button>
+      <span class="pill" id="pillConn">not connected</span>
+      <label class="muted"><input type="checkbox" id="showAll"> show all Bluetooth devices</label>
+    </div>
+    <p class="muted" id="info" style="margin:10px 0 0">Press Connect, pick “LifeTwin Band”. The clock is set and stored minutes are downloaded automatically.</p>
+  </section>
+
+  <section class="card">
+    <h2>Live posture (thigh pocket)</h2>
+    <div class="live">
+      <div class="livebox" id="liveBox">
+        <div class="big" id="liveName">Not connected</div>
+        <div class="small" id="liveSub">Connect the band to see it update.</div>
+      </div>
+      <div style="flex:1;min-width:240px">
+        <div class="row">
+          <button id="btnStand" disabled>1. Save STANDING position</button>
+          <button id="btnSit" disabled>2. Save SITTING position</button>
+        </div>
+        <p class="muted" id="capMsg" style="margin:8px 0 0">Put the band in your pocket first. Click, then get into position: it waits 5 s, then holds 3 s. Stand with the leg vertical; sit with the thigh horizontal. Sitting and lying down look the same to a thigh sensor.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">Live timers</h2>
+      <button id="btnResetT" disabled>Reset timers</button>
+    </div>
+    <div class="tiles" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">
+      <div class="tile big" style="border-left-color:#4c78c9"><b id="tSit">--:--:--</b><span>Sitting / lying</span></div>
+      <div class="tile big" style="border-left-color:#2e9e6b"><b id="tStand">--:--:--</b><span>Standing + walking</span></div>
+      <div class="tile big" style="border-left-color:var(--muted)"><b id="tSteps">--</b><span>Steps</span></div>
+      <div class="tile big" style="border-left-color:var(--muted)"><b id="tNow">--:--:--</b><span id="tNowLabel">Current position, how long</span></div>
+    </div>
+    <div class="bar"><i id="barSit" style="background:#4c78c9;width:0"></i><i id="barStand" style="background:#2e9e6b;width:0"></i></div>
+    <p class="muted" id="tNote" style="margin:8px 0 0">Counted by the band itself since it was last reset or powered on, so it keeps running if you close this page. Connect to see it.</p>
+  </section>
+
+  <section class="card">
+    <h2>Step counting</h2>
+    <div class="row">
+      <label>Sensitivity <select id="sSens"><option value="1">1 (fewest steps)</option><option value="2">2</option><option value="3" selected>3 (default)</option><option value="4">4</option><option value="5">5 (small steps)</option></select></label>
+      <label><input type="checkbox" id="cGate" checked> Ignore steps while sitting</label>
+      <label><input type="checkbox" id="cDbl"> Count each detected step twice</label>
+    </div>
+    <p class="muted" style="margin:8px 0 0">Raise sensitivity if small steps are missed; lower it if you get extra steps. Keep “ignore steps while sitting” on: without it a bouncing leg while seated counts as walking (needs your sitting position saved). Use “count twice” only if the band consistently reports about <b>half</b> your real steps.</p>
+  </section>
+
+  <section class="card">
+    <h2>Step test: band vs your own count</h2>
+    <div class="row">
+      <button id="btnWalkStart" disabled>Start walk</button>
+      <button id="btnWalkStop" disabled>Stop walk</button>
+      <span class="pill" id="walkState">idle</span>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label>Steps you counted <input type="number" id="walkTruth" min="0" style="width:90px;font:inherit;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text)"></label>
+      <button id="btnWalkSave" disabled>Save result</button>
+      <button id="btnWalkClear">Clear results</button>
+    </div>
+    <p class="muted" id="walkMsg" style="margin:8px 0">Press Start, walk a known number of steps (count them out loud), press Stop, type your count, Save. Try slow, normal, fast, and small steps.</p>
+    <div class="scroll"><table id="walkTbl"><thead><tr><th>#</th><th>You</th><th>Band</th><th>Difference</th><th>Error</th><th>Seconds</th><th>Steps/min</th></tr></thead><tbody></tbody></table></div>
+    <p class="muted" id="walkSum" style="margin:8px 0 0"></p>
+  </section>
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">Day</h2>
+      <div class="row"><button id="dPrev">&larr;</button><input type="date" id="dDate"><button id="dNext">&rarr;</button></div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div class="scroll"><div class="grid" id="grid"></div></div>
+    <div class="legend" id="legend"></div>
+    <p class="muted" id="dayNote" style="margin:8px 0 0"></p>
+  </section>
+
+  <section class="card">
+    <h2>Test labels (optional): check the band against what you really did</h2>
+    <div class="row">
+      <button data-label="sitting">I'm sitting</button>
+      <button data-label="standing">I'm standing</button>
+      <button data-label="walking">I'm walking</button>
+      <button data-label="running">I'm running</button>
+      <button data-label="none">Stop labelling</button>
+      <span class="pill" id="curLabel">no label</span>
+    </div>
+    <p class="muted" style="margin:8px 0">Press the button at the moment you change what you're doing. Only whole minutes inside one label are compared.</p>
+    <div class="scroll" id="acc"></div>
+  </section>
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">Day summary file (what the main app will receive)</h2>
+      <button class="primary" id="btnSummary">Download day summary (JSON)</button>
+    </div>
+    <p class="muted" style="margin:8px 0">Totals only, no minute-by-minute data. It is built for the day selected above. Later, the iPhone app will receive this same file from the band at the end of the day.</p>
+    <details><summary>Preview</summary><pre id="sumPre" style="white-space:pre-wrap;font-size:12px;max-height:260px;overflow:auto"></pre></details>
+  </section>
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">Minutes (selected day, newest first)</h2>
+      <div class="row"><button id="btnCsv">Download CSV (all data)</button><button id="btnClear">Clear saved data</button></div>
+    </div>
+    <div class="scroll"><table id="tbl"><thead><tr><th>Time</th><th>Category</th><th>Steps</th><th>Movement (mg)</th><th>Posture</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <details class="card"><summary>Connection log</summary><pre id="log"></pre></details>
+</main>
+
+<script id="logic">
+// ==== LOGIC START ====
+const SVC = '4c540001-7b2a-4f0e-9a51-0d1e2c3b4a50';
+const WALK_MIN_STEPS = 15;   // a minute with fewer steps than this is classed by posture, not as walking
+const CATS = [
+  {id:'sitting',    label:'Sitting / lying',     color:'#4c78c9'},
+  {id:'standing',   label:'Standing',            color:'#2e9e6b'},
+  {id:'walk_light', label:'Walking, light',      color:'#e8b030'},
+  {id:'walk_mod',   label:'Walking, moderate',   color:'#ef7b45'},
+  {id:'vigorous',   label:'Running / vigorous',  color:'#d6453d'},
+  {id:'other',      label:'Other posture',       color:'#8e6bbf'},
+  {id:'nonwear',    label:'Not worn',            color:'#aab0bc'},
+  {id:'unknown',    label:'Positions not saved', color:'#d6dae2'}
+];
+const CAT = Object.fromEntries(CATS.map(c => [c.id, c]));
+// A thigh sensor reads "thigh horizontal" for both sitting and lying down, so they share one category.
+const POSTURE_TEXT = ['unknown','sitting','standing','other'];
+const POSTURE_CAT = ['unknown','sitting','standing','other'];
+const ACCEPT = { sitting:['sitting'], standing:['standing'], walking:['walk_light','walk_mod'], running:['vigorous'] };
+
+function parseRecord(dv) {            // 12-byte minute record, format version 2
+  return { ts: dv.getUint32(0, true), steps: dv.getUint8(4), enmo: dv.getUint16(5, true) / 10,
+           cls: dv.getUint8(7), flags: dv.getUint8(8), std: dv.getUint16(9, true) / 10, posture: dv.getUint8(11) };
+}
+function isEnd(r) { return r.ts === 0xFFFFFFFF; }
+function flagText(f) {
+  const t = []; if (f & 1) t.push('not worn'); if (f & 2) t.push('still'); if (f & 4) t.push('motion');
+  if (f & 8) t.push('positions not saved'); if (f & 16) t.push('time unsynced'); return t.join(', ');
+}
+// Any run of >= 30 consecutive "still" minutes is not-worn (the band only flags from the 30th).
+function markNonwear(sorted) {
+  const nw = new Set(); let run = [];
+  const flush = () => { if (run.length >= 30) run.forEach(t => nw.add(t)); run = []; };
+  for (const r of sorted) {
+    if (r.flags & 1) nw.add(r.ts);
+    const still = (r.flags & 2) !== 0;
+    if (still && (run.length === 0 || r.ts - run[run.length - 1] <= 90)) run.push(r.ts);
+    else { flush(); if (still) run.push(r.ts); }
+  }
+  flush(); return nw;
+}
+function categorize(r, nonwear) {
+  if (nonwear) return 'nonwear';
+  if (r.cls >= 3) return 'vigorous';
+  if (r.cls === 2) return 'walk_mod';
+  if (r.steps >= WALK_MIN_STEPS) return 'walk_light';
+  return POSTURE_CAT[r.posture] || 'unknown';
+}
+function annotate(recs) {             // returns sorted copy with .cat on every record
+  const sorted = recs.slice().sort((a, b) => a.ts - b.ts);
+  const nw = markNonwear(sorted);
+  return sorted.map(r => Object.assign({}, r, { cat: categorize(r, nw.has(r.ts)) }));
+}
+function fmtDur(min) { const h = Math.floor(min / 60), m = Math.round(min % 60); return h ? `${h} h ${m} min` : `${m} min`; }
+function summarizeDay(recs) {         // recs: annotated, sorted
+  const mins = {}; CATS.forEach(c => mins[c.id] = 0);
+  let steps = 0, transitions = 0, longestSit = 0, curSit = 0, prev = null;
+  for (const r of recs) {
+    mins[r.cat]++; steps += r.steps;
+    const contiguous = prev && r.ts - prev.ts <= 90;
+    const sit = r.cat === 'sitting', up = ['standing','walk_light','walk_mod','vigorous'].includes(r.cat);
+    if (sit) { curSit = contiguous && prev.cat === 'sitting' ? curSit + 1 : 1; longestSit = Math.max(longestSit, curSit); } else curSit = 0;
+    if (contiguous && prev.cat === 'sitting' && up) transitions++;
+    prev = r;
+  }
+  return { mins, steps, transitions, longestSit };
+}
+function labelAt(labels, startMs, endMs) {   // label covering the whole minute, or null
+  let cur = null, nextT = Infinity;
+  for (let i = 0; i < labels.length; i++) { if (labels[i].t <= startMs) { cur = labels[i]; nextT = i + 1 < labels.length ? labels[i + 1].t : Infinity; } }
+  if (!cur || cur.name === 'none' || endMs > nextT) return null;
+  return cur.name;
+}
+function computeAccuracy(recs, labels) {
+  const out = {};
+  const L = labels.slice().sort((a, b) => a.t - b.t);
+  for (const r of recs) {
+    const name = labelAt(L, (r.ts - 60) * 1000, r.ts * 1000);
+    if (!name) continue;
+    const t = out[name] || (out[name] = { total: 0, correct: 0, by: {} });
+    t.total++; if (ACCEPT[name].includes(r.cat)) t.correct++;
+    t.by[r.cat] = (t.by[r.cat] || 0) + 1;
+  }
+  return out;
+}
+function pad(n) { return String(n).padStart(2, '0'); }
+function localDate(ms) { const d = new Date(ms); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function localTime(ms) { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function toCsv(recs, labels) {
+  const L = labels.slice().sort((a, b) => a.t - b.t);
+  const rows = ['date,time_local,unix_ts,category,posture,steps,movement_mg,activity_class,still_std_mg,notes,your_label'];
+  for (const r of recs) {
+    const startMs = (r.ts - 60) * 1000;
+    rows.push([localDate(startMs), localTime(startMs), r.ts, CAT[r.cat].label, POSTURE_TEXT[r.posture] || 'unknown', r.steps,
+      r.enmo.toFixed(1), ['sedentary','light','moderate','vigorous'][r.cls] || '', r.std.toFixed(1),
+      '"' + flagText(r.flags) + '"', labelAt(L, startMs, r.ts * 1000) || ''].join(','));
+  }
+  return rows.join('\n');
+}
+function fmtHMS(sec) { const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60); return `${pad(h)}:${pad(m)}:${pad(s)}`; }
+function parseTotals(dv) {            // 20-byte live timers message from the band
+  return { sit: dv.getUint32(0, true), stand: dv.getUint32(4, true), other: dv.getUint32(8, true),
+           steps: dv.getUint32(12, true), run: dv.getUint16(16, true), posture: dv.getUint8(18) };
+}
+// Aggregates only (no per-minute data), matching the plan: steps, activity minutes, wear time, valid-day status.
+function buildDaySummary(recs, date, tzMin, meta) {     // recs: annotated, sorted, all within `date`
+  const sum = summarizeDay(recs), m = sum.mins;
+  const wear = recs.length - m.nonwear;
+  const hourly = Array.from({ length: 24 }, (_, h) => ({ hour: h, sitting_lying_min: 0, standing_min: 0, walking_min: 0, running_min: 0, other_min: 0, not_worn_min: 0, steps: 0 }));
+  const key = { sitting: 'sitting_lying_min', standing: 'standing_min', walk_light: 'walking_min', walk_mod: 'walking_min', vigorous: 'running_min', other: 'other_min', nonwear: 'not_worn_min' };
+  for (const r of recs) { const o = hourly[new Date((r.ts - 60) * 1000).getHours()]; o.steps += r.steps; if (key[r.cat]) o[key[r.cat]]++; }
+  const t = recs.map(r => r.ts - 60), first = t.length ? Math.min(...t) : null, last = t.length ? Math.max(...t) : null;
+  return {
+    schema: 'lifetwin.band_day.v0', date, timezone_offset_minutes: tzMin, generated_at: new Date().toISOString(),
+    device: { mount: 'thigh_pocket', firmware: meta.firmware || null, record_format: meta.format || null },
+    coverage: { minutes_recorded: recs.length, wear_minutes: wear, valid_day: wear >= 600,
+                first_minute: first === null ? null : localTime(first * 1000), last_minute: last === null ? null : localTime(last * 1000) },
+    minutes: { sitting_or_lying: m.sitting, standing: m.standing, walking_light: m.walk_light, walking_moderate: m.walk_mod,
+               running_vigorous: m.vigorous, other_posture: m.other, not_worn: m.nonwear, positions_not_saved: m.unknown },
+    moderate_vigorous_minutes: m.walk_mod + m.vigorous,
+    steps: sum.steps, sit_to_stand_transitions: sum.transitions, longest_sitting_minutes: sum.longestSit,
+    hourly,
+    notes: ['Device estimates, not medical measurements.', 'A thigh sensor counts lying down as sitting.', 'Walking intensity uses provisional steps-per-minute cut-offs.', 'A valid day has at least 600 wear minutes.']
+  };
+}
+function stepSettingsByte(sens, ignoreSitting, dbl) { return (sens & 7) | (ignoreSitting ? 8 : 0) | (dbl ? 16 : 0); }
+function parseStepSettings(b) { const s = b & 7; return { sens: s >= 1 && s <= 5 ? s : 3, ignoreSitting: !!(b & 8), dbl: !!(b & 16) }; }
+function stepTestRow(truth, band, seconds) {
+  const diff = band - truth;
+  return { truth, band, diff, errPct: truth > 0 ? 100 * diff / truth : null, seconds, cadence: seconds > 0 ? Math.round(band / seconds * 60) : null };
+}
+function stepTestSummary(rows) {
+  const r = rows.filter(x => x.errPct !== null);
+  if (!r.length) return { n: 0, meanAbsErrPct: null, biasPct: null };
+  return { n: r.length, meanAbsErrPct: r.reduce((a, x) => a + Math.abs(x.errPct), 0) / r.length, biasPct: r.reduce((a, x) => a + x.errPct, 0) / r.length };
+}
+// ==== LOGIC END ====
+</script>
+
+<script>
+(function () {
+'use strict';
+const UUID = n => `4c54000${n}-7b2a-4f0e-9a51-0d1e2c3b4a50`;
+const C = { info: UUID(2), time: UUID(3), ctrl: UUID(4), hist: UUID(5), live: UUID(6), tot: UUID(7) };
+const STORE_KEY = 'lifetwin_band_v1';
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+let store = { records: {}, labels: [] };
+let lastTotals = null, walk = null, walkResult = null, walkRows = [];
+let dev = null, ch = {}, liveAt = 0, busy = false, annotated = [], fwInfo = { firmware: null, format: null };
+
+function log(m) { const p = $('log'); p.textContent += `${new Date().toLocaleTimeString()}  ${m}\n`; p.scrollTop = p.scrollHeight; }
+function load() { try { const s = localStorage.getItem(STORE_KEY); if (s) store = JSON.parse(s); } catch (e) { log('Could not read saved data: ' + e.message); } }
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) { log('Could not save data: ' + e.message); } }
+async function write(c, bytes) { return c.writeValueWithResponse ? c.writeValueWithResponse(bytes) : c.writeValue(bytes); }
+function setConn(on, text) { $('pillConn').textContent = text; $('pillConn').classList.toggle('on', on);
+  ['btnSync', 'btnDisc', 'btnStand', 'btnSit', 'btnResetT', 'btnWalkStart'].forEach(id => $(id).disabled = !on); $('btnConnect').disabled = on; }
+
+// ---------- rendering ----------
+function reannotate() { annotated = annotate(Object.values(store.records)); }
+function dayRange() { const [y, m, d] = $('dDate').value.split('-').map(Number); const s = new Date(y, m - 1, d).getTime() / 1000; return [s, s + 86400]; }
+function renderDay() {
+  const [s, e] = dayRange();
+  const recs = annotated.filter(r => r.ts - 60 >= s && r.ts - 60 < e);
+  const sum = summarizeDay(recs);
+  $('tiles').innerHTML = CATS.filter(c => sum.mins[c.id] > 0).map(c =>
+    `<div class="tile" style="border-left-color:${c.color}"><b>${fmtDur(sum.mins[c.id])}</b><span>${c.label}</span></div>`).join('') +
+    `<div class="tile" style="border-left-color:var(--muted)"><b>${sum.steps.toLocaleString()}</b><span>Steps</span></div>` +
+    `<div class="tile" style="border-left-color:var(--muted)"><b>${sum.transitions}</b><span>Sit → stand transitions</span></div>` +
+    `<div class="tile" style="border-left-color:var(--muted)"><b>${fmtDur(sum.longestSit)}</b><span>Longest sitting stretch</span></div>`;
+  const cell = new Array(1440).fill(null);
+  recs.forEach(r => { const i = Math.floor((r.ts - 60 - s) / 60); if (i >= 0 && i < 1440) cell[i] = r; });
+  let g = '';
+  for (let h = 0; h < 24; h++) {
+    g += `<div class="h">${pad(h)}:00</div>`;
+    for (let m = 0; m < 60; m++) {
+      const r = cell[h * 60 + m];
+      g += r ? `<div class="c" style="background:${CAT[r.cat].color}" title="${pad(h)}:${pad(m)}  ${CAT[r.cat].label}  (${r.steps} steps)"></div>` : `<div class="c" title="${pad(h)}:${pad(m)}  no data"></div>`;
+    }
+  }
+  $('grid').innerHTML = g;
+  $('legend').innerHTML = CATS.map(c => `<span><i style="background:${c.color}"></i>${c.label}</span>`).join('');
+  const dstr = $('dDate').value; window.__daySummary = buildDaySummary(recs, dstr, -new Date().getTimezoneOffset(), fwInfo); $('sumPre').textContent = JSON.stringify(window.__daySummary, null, 2);
+  $('dayNote').textContent = recs.length ? `${recs.length} minutes recorded this day. Each square is one minute; rows are hours.` : 'No data for this day yet. Connect the band and press Sync & download.';
+  $('tbl').tBodies[0].innerHTML = recs.slice().reverse().slice(0, 400).map(r => {
+    const t = (r.ts - 60) * 1000;
+    return `<tr><td>${localTime(t)}</td><td><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${CAT[r.cat].color};margin-right:6px"></i>${CAT[r.cat].label}</td><td>${r.steps}</td><td>${r.enmo.toFixed(1)}</td><td>${POSTURE_TEXT[r.posture] || ''}</td><td>${flagText(r.flags)}</td></tr>`;
+  }).join('');
+}
+function renderAcc() {
+  const a = computeAccuracy(annotated, store.labels), keys = Object.keys(a);
+  const last = store.labels.length ? store.labels[store.labels.length - 1].name : 'none';
+  $('curLabel').textContent = last === 'none' ? 'no label' : `now: ${last}`;
+  if (!keys.length) { $('acc').innerHTML = '<p class="muted">No labelled minutes downloaded yet.</p>'; return; }
+  $('acc').innerHTML = '<table><thead><tr><th>You said</th><th>Minutes</th><th>Band agreed</th><th>What the band said</th></tr></thead><tbody>' + keys.map(k => {
+    const t = a[k]; const by = Object.entries(t.by).map(([c, n]) => `${CAT[c].label} ${n}`).join(', ');
+    return `<tr><td>${k}</td><td>${t.total}</td><td><b>${Math.round(100 * t.correct / t.total)}%</b></td><td>${by}</td></tr>`;
+  }).join('') + '</tbody></table>';
+}
+function renderAll() { reannotate(); renderDay(); renderAcc(); }
+function renderLive(dv) {
+  const posture = dv.getUint8(4), steps = dv.getUint16(2, true), mv = dv.getUint16(0, true);
+  const names = ['Positions not saved', 'Sitting', 'Standing', 'Other (tilted)'];
+  const colors = ['#8a93a5', CAT.sitting.color, CAT.standing.color, CAT.other.color];
+  $('liveName').textContent = names[posture] || '?'; $('liveBox').style.background = colors[posture] || '#8a93a5';
+  $('liveSub').textContent = `${steps} steps this minute · movement ${mv} mg`; liveAt = Date.now();
+}
+
+// ---------- Bluetooth ----------
+async function readInfo() {
+  const v = await ch.info.readValue();
+  if (v.byteLength < 9 || v.getUint8(2) !== 2) { $('info').textContent = 'The band is running a different firmware version (the chest build, or older than 0.2). Re-upload the thigh-pocket sketch, then reconnect.'; return; }
+  if (v.byteLength >= 10) { const st = parseStepSettings(v.getUint8(9)); $('sSens').value = String(st.sens); $('cGate').checked = st.ignoreSitting; $('cDbl').checked = st.dbl; }
+  const ps = v.getUint8(8); fwInfo = { firmware: `${v.getUint8(0)}.${v.getUint8(1)}`, format: v.getUint8(2) };
+  $('info').textContent = `Firmware ${v.getUint8(0)}.${v.getUint8(1)} · ${v.getUint16(6, true)} minutes stored on the band · standing ${ps & 1 ? '✓ saved' : '✗ not saved'} · sitting ${ps & 2 ? '✓ saved' : '✗ not saved'}`;
+}
+function onLive(e) { renderLive(e.target.value); }
+function renderTotals(t) {
+  const names = ['no position saved', 'Sitting', 'Standing', 'Other (tilted)'];
+  $('tSit').textContent = fmtHMS(t.sit); $('tStand').textContent = fmtHMS(t.stand); $('tSteps').textContent = t.steps.toLocaleString();
+  $('tNow').textContent = fmtHMS(t.run); $('tNowLabel').textContent = `${names[t.posture] || '?'}, for this long`;
+  const tot = t.sit + t.stand; $('barSit').style.width = tot ? (100 * t.sit / tot) + '%' : '0'; $('barStand').style.width = tot ? (100 * t.stand / tot) + '%' : '0';
+  $('tNote').textContent = `Other (tilted) ${fmtHMS(t.other)} · sitting ${tot ? Math.round(100 * t.sit / tot) : 0}% / standing ${tot ? Math.round(100 * t.stand / tot) : 0}% of counted time. Counted by the band; the numbers keep running if this page is closed.`;
+}
+function onTotals(e) {
+  const dv = e.target.value; if (dv.byteLength < 20) return;
+  const t = parseTotals(dv); lastTotals = t; renderTotals(t);
+  if (walk) { const n = t.steps - walk.startSteps; $('walkState').textContent = `walking… band counted ${n} so far`; }
+}
+function loadWalk() { try { walkRows = JSON.parse(localStorage.getItem('lifetwin_steptests') || '[]'); } catch (e) { walkRows = []; } }
+function saveWalk() { try { localStorage.setItem('lifetwin_steptests', JSON.stringify(walkRows)); } catch (e) {} }
+function renderWalk() {
+  $('walkTbl').tBodies[0].innerHTML = walkRows.map((r, i) => `<tr><td>${i + 1}</td><td>${r.truth}</td><td>${r.band}</td><td>${r.diff > 0 ? '+' : ''}${r.diff}</td><td>${r.errPct === null ? '' : (r.errPct > 0 ? '+' : '') + r.errPct.toFixed(0) + '%'}</td><td>${r.seconds}</td><td>${r.cadence === null ? '' : r.cadence}</td></tr>`).join('');
+  const sm = stepTestSummary(walkRows);
+  $('walkSum').textContent = sm.n ? `${sm.n} test${sm.n > 1 ? 's' : ''}: average error ${sm.meanAbsErrPct.toFixed(0)}%. ${sm.biasPct > 5 ? 'The band tends to count too many.' : sm.biasPct < -5 ? 'The band tends to count too few.' : 'No consistent over- or under-counting.'}` : '';
+}
+async function sendStepSettings() {
+  try { await write(ch.ctrl, Uint8Array.of(9, stepSettingsByte(+$('sSens').value, $('cGate').checked, $('cDbl').checked))); }
+  catch (e) { log('Step settings failed: ' + e.message); }
+}
+async function startTotals() {
+  if (!ch.tot) { $('tNote').textContent = 'This band has older firmware without live timers. Re-upload the 0.6 sketch, then reconnect.'; return; }
+  ch.tot.removeEventListener('characteristicvaluechanged', onTotals);
+  ch.tot.addEventListener('characteristicvaluechanged', onTotals);
+  await ch.tot.startNotifications();
+}
+async function startLive() {
+  ch.live.removeEventListener('characteristicvaluechanged', onLive);
+  ch.live.addEventListener('characteristicvaluechanged', onLive);
+  await ch.live.startNotifications();
+  await write(ch.ctrl, Uint8Array.of(3));
+}
+async function connectBand() {
+  if (!navigator.bluetooth) { $('nobt').style.display = 'block'; return; }
+  try {
+    const opts = $('showAll').checked ? { acceptAllDevices: true, optionalServices: [SVC] } : { filters: [{ services: [SVC] }, { namePrefix: 'LifeTwin' }], optionalServices: [SVC] };
+    dev = await navigator.bluetooth.requestDevice(opts);
+    dev.addEventListener('gattserverdisconnected', () => { setConn(false, 'not connected'); $('liveName').textContent = 'Disconnected'; $('liveBox').style.background = '#8a93a5'; log('Band disconnected'); });
+    setConn(true, 'connecting…'); log('Connecting to ' + (dev.name || 'device'));
+    const server = await dev.gatt.connect();
+    const svc = await server.getPrimaryService(SVC);
+    for (const k of Object.keys(C)) {
+      try { ch[k] = await svc.getCharacteristic(C[k]); }
+      catch (e) { if (k === 'tot') { ch.tot = null; log('No live timers on this firmware (needs 0.6)'); } else throw e; }
+    }
+    setConn(true, 'connected');
+    await readInfo(); await startLive(); await startTotals(); await syncAndDownload();
+  } catch (e) { log('Connect failed: ' + e.message); setConn(false, 'not connected'); if (e.name !== 'NotFoundError') $('info').textContent = 'Could not connect: ' + e.message; }
+}
+async function syncAndDownload() {
+  if (busy || !ch.ctrl) return; busy = true; $('btnSync').disabled = true;
+  try {
+    const tb = new DataView(new ArrayBuffer(6)); tb.setUint32(0, Math.floor(Date.now() / 1000), true); tb.setInt16(4, -new Date().getTimezoneOffset(), true);   // unix time + time zone (minutes east of UTC)
+    await write(ch.time, new Uint8Array(tb.buffer)); log('Clock set from this computer'); await sleep(300);
+    const ts = Object.keys(store.records).map(Number); const since = ts.length ? Math.max(...ts) : 0;
+    const got = []; let finish; const done = new Promise(r => finish = r); let timer;
+    const bump = ms => { clearTimeout(timer); timer = setTimeout(() => finish('timeout'), ms); };
+    const h = e => { const dv = e.target.value; if (dv.byteLength < 12) return; const r = parseRecord(dv);
+      if (isEnd(r)) { finish('end'); return; } got.push(r); $('info').textContent = `Downloading… ${got.length} minutes`; bump(4000); };
+    ch.hist.addEventListener('characteristicvaluechanged', h);
+    await ch.hist.startNotifications(); bump(8000);
+    const sb = new DataView(new ArrayBuffer(5)); sb.setUint8(0, 1); sb.setUint32(1, since, true);
+    await write(ch.ctrl, new Uint8Array(sb.buffer));
+    const why = await done; clearTimeout(timer);
+    ch.hist.removeEventListener('characteristicvaluechanged', h); try { await ch.hist.stopNotifications(); } catch (e) {}
+    let added = 0, skipped = 0;
+    got.forEach(r => { if (r.ts < 1600000000) { skipped++; return; } if (!store.records[r.ts]) added++; store.records[r.ts] = r; });
+    save(); renderAll(); log(`Download ${why}: ${got.length} received, ${added} new${skipped ? `, ${skipped} skipped (no clock)` : ''}`);
+    await readInfo(); if (why === 'timeout' && !got.length) $('info').textContent += ' · nothing new to download';
+  } catch (e) { log('Sync failed: ' + e.message); $('info').textContent = 'Sync failed: ' + e.message; }
+  busy = false; $('btnSync').disabled = !(dev && dev.gatt.connected);
+}
+async function capture(code, name) {
+  try {
+    await write(ch.ctrl, Uint8Array.of(code));
+    for (let s = 9; s > 0; s--) { $('capMsg').textContent = s > 4 ? `Saving ${name} position: get into position… ${s - 4}` : `Hold still… ${s}`; await sleep(1000); }
+    await sleep(1500); await readInfo();
+    $('capMsg').textContent = 'Done. If a position says ✗ not saved above, try again. It must be at least 45° different from the other one.';
+  } catch (e) { $('capMsg').textContent = 'Capture failed: ' + e.message; }
+}
+
+// ---------- wiring ----------
+function setDate(d) { $('dDate').value = localDate(d.getTime()); renderDay(); }
+$('btnConnect').onclick = connectBand;
+$('btnSync').onclick = syncAndDownload;
+$('btnDisc').onclick = () => { if (dev && dev.gatt.connected) dev.gatt.disconnect(); };
+$('btnResetT').onclick = async () => { try { await write(ch.ctrl, Uint8Array.of(7)); } catch (e) { log('Reset failed: ' + e.message); } };
+$('btnSummary').onclick = () => {
+  const blob = new Blob([JSON.stringify(window.__daySummary, null, 2)], { type: 'application/json' }); const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `lifetwin-band-day-${$('dDate').value}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+['sSens', 'cGate', 'cDbl'].forEach(id => $(id).onchange = sendStepSettings);
+$('btnWalkStart').onclick = () => {
+  if (!lastTotals) { $('walkMsg').textContent = 'No live step count yet. Connect the band (firmware 0.6 or newer) and wait a second.'; return; }
+  walk = { startSteps: lastTotals.steps, t0: Date.now() }; walkResult = null; $('btnWalkStart').disabled = true; $('btnWalkStop').disabled = false; $('btnWalkSave').disabled = true; $('walkState').textContent = 'walking…';
+};
+$('btnWalkStop').onclick = () => {
+  if (!walk || !lastTotals) return;
+  const band = lastTotals.steps - walk.startSteps, secs = Math.round((Date.now() - walk.t0) / 1000);
+  if (band < 0) { $('walkMsg').textContent = 'The timers were reset during the test. Start again.'; walk = null; $('btnWalkStart').disabled = false; $('btnWalkStop').disabled = true; return; }
+  walkResult = { band, secs }; walk = null; $('btnWalkStop').disabled = true; $('btnWalkStart').disabled = false; $('btnWalkSave').disabled = false;
+  $('walkState').textContent = `stopped: band counted ${band} in ${secs}s`; $('walkMsg').textContent = 'Now type how many steps YOU counted and press Save result. (Wait about 3 s after your last step so the band finishes counting.)';
+};
+$('btnWalkSave').onclick = () => {
+  const truth = parseInt($('walkTruth').value, 10); if (!walkResult || isNaN(truth)) { $('walkMsg').textContent = 'Type your step count first.'; return; }
+  walkRows.push(stepTestRow(truth, walkResult.band, walkResult.secs)); saveWalk(); renderWalk(); walkResult = null; $('btnWalkSave').disabled = true; $('walkTruth').value = ''; $('walkState').textContent = 'idle';
+};
+$('btnWalkClear').onclick = () => { if (confirm('Delete all saved step tests?')) { walkRows = []; saveWalk(); renderWalk(); } };
+$('btnStand').onclick = () => capture(5, 'standing');
+$('btnSit').onclick = () => capture(6, 'sitting');
+$('dDate').onchange = renderDay;
+$('dPrev').onclick = () => { const [y, m, d] = $('dDate').value.split('-').map(Number); setDate(new Date(y, m - 1, d - 1)); };
+$('dNext').onclick = () => { const [y, m, d] = $('dDate').value.split('-').map(Number); setDate(new Date(y, m - 1, d + 1)); };
+document.querySelectorAll('[data-label]').forEach(b => b.onclick = () => { store.labels.push({ t: Date.now(), name: b.dataset.label }); save(); renderAcc(); });
+$('btnCsv').onclick = () => {
+  const blob = new Blob([toCsv(annotated, store.labels)], { type: 'text/csv' }); const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `lifetwin-band-${localDate(Date.now())}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+$('btnClear').onclick = () => { if (confirm('Delete all saved band data and labels from this browser?')) { store = { records: {}, labels: [] }; save(); renderAll(); } };
+setInterval(() => { if (liveAt && dev && dev.gatt.connected && Date.now() - liveAt > 5000) $('liveSub').textContent += ' (no update for 5 s)'; }, 5000);
+
+if (!navigator.bluetooth) $('nobt').style.display = 'block';
+load(); loadWalk(); renderWalk(); setDate(new Date()); renderAll();
+})();
+</script>
+</body>
+</html>

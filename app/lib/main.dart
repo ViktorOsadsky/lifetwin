@@ -13,6 +13,7 @@ import 'agentic_routes.dart';
 import 'documents/document_screen.dart';
 import 'documents/document_extract.dart';
 import 'documents/document_upload.dart';
+import 'entry/guest_login_screen.dart';
 import 'forecast/forecast_client.dart';
 import 'forecast/forecast_screen.dart';
 import 'forecast/fortune_ceremony_screen.dart';
@@ -45,7 +46,7 @@ import 'voice/voice_token.dart';
 
 void main() {
   holdFirstFrameUntilMochi(WidgetsFlutterBinding.ensureInitialized());
-  runApp(const LifeTwinApp(autoStartOnboarding: true, loadingScreen: true));
+  runApp(const LifeTwinApp(autoStartOnboarding: true, showGuestEntry: true, loadingScreen: true));
 }
 
 /// The game shell: the Room is home; Talk opens the mascot conversation
@@ -63,6 +64,7 @@ class LifeTwinApp extends StatefulWidget {
     this.twin,
     this.agentic,
     this.autoStartOnboarding = false,
+    this.showGuestEntry = false,
     this.loadingScreen = false,
   });
 
@@ -80,6 +82,10 @@ class LifeTwinApp extends StatefulWidget {
 
   /// With no profile, the conversation opens by itself after a short Mochi wave (the real app; tests opt in).
   final bool autoStartOnboarding;
+
+  /// Production starts with local guest entry. Tests of the game shell can skip it;
+  /// existing installs with saved data continue directly to their twin.
+  final bool showGuestEntry;
 
   /// Mochi waves on lavender until the model and the store open (the real app; tests opt in).
   final bool loadingScreen;
@@ -143,6 +149,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     _agentic.provider().then((p) => _aiProvider = p, onError: (Object _) {});
     setState(() {
       _stored = null;
+      _guestSession = false;
       _saved = false;
       _healthKeys.clear();
       _healthValues.clear();
@@ -156,6 +163,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// The profile saved on the phone by an earlier session, once the store is open.
   Map<String, dynamic>? _stored;
   RepositoryWellness? _wellness;
+  bool _guestSession = false;
+  bool _storeUnavailable = false;
 
   /// Cosmetic only; never merged into the confirmed profile.
   late final ValueNotifier<TwinAppearance> _look = widget.appearance ?? ValueNotifier(const TwinAppearance());
@@ -273,10 +282,20 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
         if (repo.store.hasProfile) _stored = repo.store.profile;
       });
       _syncOutlook();
-    }, onError: (Object e) => debugPrint('LifeTwin model or store did not load: $e'));
+    }, onError: (Object e) {
+      debugPrint('LifeTwin model or store did not load: $e');
+      if (mounted) setState(() => _storeUnavailable = true);
+    });
   }
 
   void _saveLook() => _wellness?.repository.saveTwinLook(_appearanceJson(_look.value)).ignore();
+
+  Future<void> _continueAsGuest() async {
+    final repo = _wellness?.repository;
+    if (repo == null) return;
+    await repo.continueAsGuest();
+    if (mounted) setState(() => _guestSession = true);
+  }
 
   void _history(BuildContext context) {
     final adapter = _wellness;
@@ -609,7 +628,10 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
         duration: const Duration(milliseconds: 300),
         child: _loading ? const LoadingScreen() : ListenableBuilder(
         listenable: Listenable.merge([_controller, _wellness]),
-        builder: (context, _) => OnboardingAutoStart(
+        builder: (context, _) => widget.showGuestEntry && !_guestSession &&
+            !(_wellness?.repository.store.guestEntryAccepted ?? false)
+          ? GuestLoginScreen(onContinue: _wellness == null ? null : _continueAsGuest, unavailable: _storeUnavailable)
+          : OnboardingAutoStart(
           enabled: widget.autoStartOnboarding && _wellness != null && _profile == null,
           session: _autoStartSession,
           appearance: _look,
