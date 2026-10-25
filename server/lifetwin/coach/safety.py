@@ -12,6 +12,7 @@ wording, no links, the same placeholders, and the draft's safety words.
 """
 
 import re
+import unicodedata
 
 from lifetwin.onboarding.intents import emergency
 
@@ -22,27 +23,45 @@ def _rx(*parts: str) -> re.Pattern:
     return re.compile("|".join(parts), _FLAGS)
 
 
+def clean(text: str) -> str:
+    """Compatibility-fold the text (full-width letters) and drop invisible format characters
+    (zero-width spaces, soft hyphens), so a spelling trick cannot hide a word from a gate."""
+    folded = unicodedata.normalize("NFKC", text)
+    return "".join(c for c in folded if unicodedata.category(c) != "Cf")
+
+
 def words(text: str) -> str:
-    return " ".join(re.sub(r"[^\w'\s]", " ", text.lower().replace("’", "'")).split())
+    return " ".join(re.sub(r"[^\w'\s]", " ", clean(text).lower().replace("’", "'")).split())
 
 
 # ---------------------------------------------------------------------------
 # Input gates
 # ---------------------------------------------------------------------------
 
+# Stimulants, performance and weight-loss products, and well-known brands.
+PRODUCT_WORDS = (
+    r"\bfat[ -]?burn\w*|\bthermogenic\w*|\bgarcinia\b|\byohimb\w*|\bdmaa\b|\bdmha\b|\bdnp\b",
+    r"\bphentermine\b|\bephedr\w*|\bsynephrine\b|\bclenbuterol\b|\bsarms?\b|\banabolic\b",
+    r"\btestosterone\b|\bhgh\b|\bstimulants?\b|\bappetite suppress\w*|\bhydroxycut\b",
+    r"\badderall\b|\britalin\b|\bmodafinil\b|\bnootropic\w*|\bkratom\b|\bbcaas?\b",
+    r"\bcarnitine\b|\bgreen tea extract\b|\bamino acids?\b|\bprotein bars?\b|\bcreatines\b",
+    r"\bzincs\b|\bcentrum\b|\bnature made\b|\bone a day\b|\boptimum nutrition\b|\bgnc\b",
+    r"\bherbalife\b|\bgarden of life\b|\bsleep aids?\b|\blaxatives?\b",
+)
 # Words for supplements and medicines, shared by the input gate and the output check.
 SUPPLEMENT_WORDS = (
     r"\bsupplement\w*|\bvitamin\w*|\bvitamina\w*|\bmulti ?vitamin\w*|\bvit\b|\bd3\b|\bk2\b",
     r"\bfish[ -]?oil\w*|\bomega\w*|\bcod liver\b|\bkrill\b|\bmagnesium\b|\bzinc\b|\bcalcium\b",
     r"\biron\b|\bpotassium\b|\bmelatonin\b|\bprobiotic\w*|\bturmeric\b|\bcurcumin\b",
     r"\bginkgo\b|\bginseng\b|\bst\.? john'?s\b|\bwort\b|\bglucosamine\b|\bchondroitin\b",
-    r"\bcollagen\b|\bbiotin\b|\bcoq ?10\b|\bb ?12\b|\bfolic\b|\bniacin\b|\bechinacea\b",
+    r"\bcollagen\b|\bbiotin\b|\bcoq ?10\b|\bb[ -]?12\b|\bfolic\b|\bniacin\b|\bechinacea\b",
     r"\belderberry\b|\bashwagandha\b|\bcreatine\b|\bwhey\b|\bcbd\b|\bcannabi\w*|\bhemp\b",
     r"\bensure\b|\bboost shakes?\b|\bprotein (?:powder|shake|drink)s?\b|\bherb(?:al|s)?\b",
     r"\bgumm(?:y|ies)\b|\bcapsules?\b|\bsoftgels?\b|\bkelp\b|\bspirulina\b|\bkombucha\b",
     r"\benergy (?:drinks?|shots?|gels?|chews?|bars?)\b|\bred ?bull\b|\bmonster energy\b",
     r"\bpre[ -]?workouts?\b|\bcaffeine (?:pills?|tablets?|capsules?|supplements?|powder|shots?)\b",
     r"\bcaffeinated (?:pills?|tablets?)\b|\bno[ -]?doz\b|\bpreworkout\b",
+    *PRODUCT_WORDS,
 )
 DRUG_WORDS = (
     r"\bmetformin\b|\binsulin\b|\bwarfarin\b|\bcoumadin\b|\beliquis\b|\bapixaban\b|\bxarelto\b",
@@ -60,7 +79,10 @@ DRUG_WORDS = (
     r"\be-?cig\w*|\bpatch(?:es)?\b|\blozenges?\b|\bpills?\b|\btablets?\b|\bmeds\b",
     r"\bmedicat\w*|\bmedicines?\b|\bdrugs?\b|\bprescri\w*",
 )
-DOSE_WORDS = (r"\bdos(?:e|es|age|ing)\b|\boverdos\w*",)
+DOSE_WORDS = (
+    r"\bdos(?:e|es|age|ing)\b|\boverdos\w*",
+    r"\b\d+(?:\.\d+)? ?(?:mg|mcg|ug|µg|iu|g)\b",
+)
 
 # Said now, these get the existing 911 line. The shared onboarding check catches the
 # plainest phrasings; the coach adds more, because a plan must never follow them.
@@ -69,8 +91,16 @@ ACUTE = _rx(
     r"squeez\w*|crush\w*|ach\w*|burn\w*)\b",
     r"\b(?:pain|pressure|tightness|heaviness|discomfort)\b.{0,15}\bchest\b",
     r"\belephant\b.{0,20}\bchest\b|\bchest\b.{0,40}\belephant\b",
-    r"\b(?:can't|cannot|can not|can barely|could barely|hardly|struggling to|trouble) "
-    r"(?:breathe|breathing|catch my breath|get (?:my )?breath)\b",
+    r"\b(?:can't|cant|cannot|can not|can barely|could barely|hardly|struggling to|trouble) "
+    r"(?:breathe?|breathing|catch my breath|get (?:my )?breath)\b",
+    r"\b(?:stopped|stops|not|isn't|is not) breathing\b|\bsuffocat\w*",
+    r"\b(?:i'm|i am|im) (?:dying|going to die)\b(?! to\b)",
+    r"\b(?:having|am having|i'm having) (?:a |an )?(?:seizure|anaphyla\w*)",
+    # Not "cut myself" alone: an everyday minor injury ("cut myself chopping onions").
+    r"\bself ?harm\w*|\b(?:cutting|hurting|harm|harming|kill|killing) my ?self\b",
+    r"\bbleeding (?:heavily|badly|a lot|non ?stop)\b|\bsevere bleeding\b|\bwon't stop bleeding\b",
+    r"\b(?:coughing|vomiting|throwing up) (?:up )?blood\b|\b(?:was|got|been) poisoned\b",
+    r"\btook too many\b.{0,15}\b(?:pills|tablets|meds|medicines?)\b",
     r"\bgasping\b|\bchoking\b|\bturning blue\b",
     r"\bface (?:is )?(?:drooping|droopy|numb)\b|\bslurr\w*|\bwords (?:come|are coming) out wrong\b",
     r"\b(?:can't|cannot) (?:move|feel|lift) my (?:left |right )?(?:arm|leg|hand|face|side)\b",
@@ -134,9 +164,7 @@ FORGET_ALL = _rx(
 )
 FORGET = re.compile(r"\b(?:forget|don't remember|do not remember|delete)\b(.*)", _FLAGS)
 SUPPLEMENT = _rx(*SUPPLEMENT_WORDS)
-DOSE = _rx(
-    r"\bdos(?:e|es|age|ing)\b|\bhow much (?:should|can|do) i take\b|\bhow many \w* ?to take\b"
-)
+DOSE = _rx(*DOSE_WORDS, r"\bhow much (?:should|can|do) i take\b|\bhow many \w* ?to take\b")
 MEDICINE = _rx(
     *DRUG_WORDS,
     r"\b(?:stop|quit|skip|change|lower|raise|double|halve) (?:taking )?(?:my|the) "
@@ -178,7 +206,7 @@ def _clauses(text: str) -> list[str]:
 
 def words_keep(text: str) -> str:
     """Lower-case words, keeping sentence marks so clauses can be split."""
-    return " ".join(re.sub(r"[^\w'\s.;!?]", " ", text.lower().replace("’", "'")).split())
+    return " ".join(re.sub(r"[^\w'\s.;!?]", " ", clean(text).lower().replace("’", "'")).split())
 
 
 def _hit(pattern: re.Pattern, clause: str) -> bool:
@@ -192,6 +220,7 @@ def _hit(pattern: re.Pattern, clause: str) -> bool:
 def is_emergency(text: str | None) -> bool:
     if not text:
         return False
+    text = clean(text)
     if emergency(text):
         return True
     return any(_hit(ACUTE, c) and not LONG_AGO.search(c) for c in _clauses(text))
@@ -227,6 +256,7 @@ BLOCKED = _rx(
     # Supplements, medicines and products (a tripwire lexicon, not a complete list).
     r"\bsupplement\w*|\bvitamin\w*|\bmulti ?vitamin\w*|\bfish[ -]?oil\b|\bomega\w*|\bcod liver\b",
     r"\bkrill\b|\bmagnesium\b|\bzinc\b|\bcalcium\b|\biron\b|\bpotassium\b|\bmelatonin\b",
+    *PRODUCT_WORDS,
     r"\bprobiotic\w*|\bturmeric\b|\bcurcumin\b|\bginkgo\b|\bginseng\b|\bst\.? john'?s\b",
     r"\bwort\b|\bglucosamine\b|\bchondroitin\b|\bcollagen\b|\bbiotin\b|\bcoq ?10\b|\bb ?12\b",
     r"\bfolic\b|\bniacin\b|\bechinacea\b|\belderberry\b|\bashwagandha\b|\bcreatine\b",
@@ -526,6 +556,11 @@ def safe_line(line: object, draft: str, keep_words: tuple[str, ...] = ()) -> boo
     if _sentences(text) > _sentences(draft) + 1:
         return False
     if re.search(r"[<>\[\]\\|`*#@/]", text):
+        return False
+    # Letters outside ASCII are invisible to the word checks below: allow only those the
+    # draft already uses (an accent in a name), never a new script or a look-alike letter.
+    foreign = {c for c in text if not c.isascii() and c != "'"} - set(draft)
+    if foreign:
         return False
     # Words: nothing new but warm fillers, and most of the draft's content kept.
     allowed = _vocab(draft) | {_stem(w) for w in WARM | FILLER}

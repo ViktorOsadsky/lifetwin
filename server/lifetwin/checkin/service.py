@@ -516,6 +516,8 @@ class CheckinService:
         if request.local_date:
             try:
                 day = date.fromisoformat(request.local_date)
+                if not (date.min < day < date.max):
+                    raise ValueError("no day on either side")
             except ValueError:
                 self._invalid("Please send the phone's date as 2026-10-24.")
         quick = {}

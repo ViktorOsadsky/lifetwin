@@ -242,10 +242,12 @@ function recommendations(req: any): WellnessResult {
       : "65+";
   const excluded = new Set(req.excluded_ids ?? []),
     day = ordinal(req.local_date ?? new Date().toISOString().slice(0, 10));
+  // No vigorous pick for anyone under 18 (an unknown age keeps the ideas for all ages).
+  const noVigorous = p.age != null && p.age < 18;
   const eligible = (idea: any) =>
-    !excluded.has(idea.id) && !idea.avoid.some((tag: string) =>
-      limits.has(tag)
-    ) &&
+    !excluded.has(idea.id) &&
+    !(noVigorous && idea.lever === "vigorous_plus_60") &&
+    !idea.avoid.some((tag: string) => limits.has(tag)) &&
     (!idea.needs || idea.interests.some((tag: string) => interests.has(tag))) &&
     (band === null
       ? (idea.ages.length === 3 ||
@@ -602,7 +604,10 @@ async function coach(req: any): Promise<WellnessResult> {
     causal_interpretation: false,
     limitations,
   };
-  const said = (req.said ?? "").replaceAll("’", "'");
+  // As safety.clean(): full-width letters folded and invisible characters dropped, so a
+  // spelling trick cannot hide a word from the gates.
+  const said = (req.said ?? "").normalize("NFKC").replace(/\p{Cf}/gu, "")
+    .replaceAll("’", "'");
   const notes = req.memory_consent === true ? (req.habit_notes ?? []) : [];
   const text = [
     said,
