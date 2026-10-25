@@ -1,13 +1,14 @@
-"""Lever ranking from docs/model-sensitivity.json (branch codex/d-model-sensitivity, 65acf39).
+"""Cached recommendation ranking and effect cues from docs/model-sensitivity.json.
 
-That scan ranks the recommendable levers by their median modeled 5-year difference
-for each age band and sex; the order is identical in every group, so only the order
-is kept here. No percentage points are copied: Mochi never quotes them, and the app
-computes a person's own difference with the on-device ``compare()``.
-``test_recommendations.py`` checks this order against the JSON when it is present.
+The approved Cox v3 scan ranks recommendable levers by their median modeled 5-year
+survival difference. The order is identical in every group. Group medians stay on
+the server and produce categorical cues only; Mochi never quotes their figures.
+The app computes a person's own difference with the on-device ``compare()``.
+``test_recommendation_effect.py`` checks the cached medians and model provenance
+against the JSON.
 """
 
-MODEL_VERSION = "personal-cox-v2-20261024T182404Z"
+MODEL_VERSION = "personal-cox-bmi35-v3-20261024"
 SOURCE = "docs/model-sensitivity.json"
 LEVER_ORDER: tuple[str, ...] = (
     "quit_smoking",
@@ -48,74 +49,74 @@ EFFECT_NOTE = "Modeled difference for people like you, not a promise."
 # fall back to "all". ``test_recommendation_effect.py`` checks this table against the JSON.
 MEDIAN_PP: dict[str, dict[str, float]] = {
     "all": {
-        "quit_smoking": 1.0228,
-        "vigorous_plus_60": 0.6442,
-        "moderate_plus_90": 0.4177,
-        "short_sleep_plus_1h": 0.1608,
-        "sitting_minus_60_realistic": 0.1594,
+        "quit_smoking": 1.053,
+        "vigorous_plus_60": 0.6364,
+        "moderate_plus_90": 0.4085,
+        "short_sleep_plus_1h": 0.156,
+        "sitting_minus_60_realistic": 0.1544,
     },
     "35-49": {
-        "quit_smoking": 0.5491,
-        "vigorous_plus_60": 0.2237,
-        "moderate_plus_90": 0.1947,
-        "short_sleep_plus_1h": 0.0656,
-        "sitting_minus_60_realistic": 0.0577,
+        "quit_smoking": 0.5728,
+        "vigorous_plus_60": 0.2196,
+        "moderate_plus_90": 0.1919,
+        "short_sleep_plus_1h": 0.0637,
+        "sitting_minus_60_realistic": 0.0557,
     },
     "50-64": {
-        "quit_smoking": 1.655,
-        "vigorous_plus_60": 0.7998,
-        "moderate_plus_90": 0.7121,
-        "short_sleep_plus_1h": 0.2118,
-        "sitting_minus_60_realistic": 0.182,
+        "quit_smoking": 1.6675,
+        "vigorous_plus_60": 0.7895,
+        "moderate_plus_90": 0.6978,
+        "short_sleep_plus_1h": 0.2043,
+        "sitting_minus_60_realistic": 0.1764,
     },
     "65-79": {
-        "quit_smoking": 4.7378,
-        "vigorous_plus_60": 2.1091,
-        "moderate_plus_90": 2.0187,
-        "short_sleep_plus_1h": 0.5152,
-        "sitting_minus_60_realistic": 0.4805,
+        "quit_smoking": 4.8122,
+        "vigorous_plus_60": 2.0683,
+        "moderate_plus_90": 2.0103,
+        "short_sleep_plus_1h": 0.5049,
+        "sitting_minus_60_realistic": 0.4638,
     },
     "35-49|male": {
-        "quit_smoking": 0.6118,
-        "vigorous_plus_60": 0.2786,
-        "moderate_plus_90": 0.2591,
-        "short_sleep_plus_1h": 0.0788,
-        "sitting_minus_60_realistic": 0.0702,
+        "quit_smoking": 0.6212,
+        "vigorous_plus_60": 0.2784,
+        "moderate_plus_90": 0.2528,
+        "short_sleep_plus_1h": 0.0782,
+        "sitting_minus_60_realistic": 0.068,
     },
     "35-49|female": {
-        "quit_smoking": 0.4977,
-        "vigorous_plus_60": 0.1897,
-        "moderate_plus_90": 0.1527,
-        "short_sleep_plus_1h": 0.0548,
-        "sitting_minus_60_realistic": 0.0476,
+        "quit_smoking": 0.5019,
+        "vigorous_plus_60": 0.1859,
+        "moderate_plus_90": 0.1482,
+        "short_sleep_plus_1h": 0.0521,
+        "sitting_minus_60_realistic": 0.0452,
     },
     "50-64|male": {
-        "quit_smoking": 1.9048,
-        "vigorous_plus_60": 0.9718,
-        "moderate_plus_90": 0.8737,
-        "short_sleep_plus_1h": 0.2439,
-        "sitting_minus_60_realistic": 0.2222,
+        "quit_smoking": 1.9506,
+        "vigorous_plus_60": 0.9422,
+        "moderate_plus_90": 0.8665,
+        "short_sleep_plus_1h": 0.2342,
+        "sitting_minus_60_realistic": 0.215,
     },
     "50-64|female": {
-        "quit_smoking": 1.3362,
-        "vigorous_plus_60": 0.7024,
-        "moderate_plus_90": 0.6131,
-        "short_sleep_plus_1h": 0.1712,
-        "sitting_minus_60_realistic": 0.1563,
+        "quit_smoking": 1.3535,
+        "vigorous_plus_60": 0.6811,
+        "moderate_plus_90": 0.6084,
+        "short_sleep_plus_1h": 0.1667,
+        "sitting_minus_60_realistic": 0.1513,
     },
     "65-79|male": {
-        "quit_smoking": 5.0548,
-        "vigorous_plus_60": 2.4935,
-        "moderate_plus_90": 2.2762,
-        "short_sleep_plus_1h": 0.6518,
-        "sitting_minus_60_realistic": 0.5586,
+        "quit_smoking": 5.2514,
+        "vigorous_plus_60": 2.4429,
+        "moderate_plus_90": 2.235,
+        "short_sleep_plus_1h": 0.6306,
+        "sitting_minus_60_realistic": 0.5351,
     },
     "65-79|female": {
-        "quit_smoking": 4.3865,
-        "vigorous_plus_60": 1.7642,
-        "moderate_plus_90": 1.6705,
-        "short_sleep_plus_1h": 0.4179,
-        "sitting_minus_60_realistic": 0.3944,
+        "quit_smoking": 4.6009,
+        "vigorous_plus_60": 1.7306,
+        "moderate_plus_90": 1.5893,
+        "short_sleep_plus_1h": 0.4053,
+        "sitting_minus_60_realistic": 0.3884,
     },
 }
 
