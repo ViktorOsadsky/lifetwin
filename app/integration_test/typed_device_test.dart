@@ -217,7 +217,13 @@ Future<Reply> type(WidgetTester t, String text) async {
     r.error = 'no Send button';
     return r;
   }
-  await tick(t, 50);
+  // The screen first stops Mochi's speech (a long line can take a moment), then sends:
+  // give that up to 4 s before calling the tap swallowed.
+  await waitUntil(
+    t,
+    () => field.controller!.text.isEmpty || !identical(c.turn, before) || c.phase == VoicePhase.interpreting,
+    seconds: 4,
+  );
   if (field.controller!.text.isNotEmpty && identical(c.turn, before) && c.phase != VoicePhase.interpreting) {
     r.error = 'Send was swallowed (box still "${field.controller!.text}")';
     return r;
