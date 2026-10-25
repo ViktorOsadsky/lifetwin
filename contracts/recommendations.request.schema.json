@@ -544,6 +544,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "excluded_ids": {
+      "items": {
+        "maxLength": 60,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 50,
+      "title": "Excluded Ids",
+      "type": "array"
+    },
     "habit_notes": {
       "items": {
         "$ref": "#/$defs/HabitNote"

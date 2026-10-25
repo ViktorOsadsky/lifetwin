@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../checkin/consents.dart' show AiProvider;
+import '../onboarding/missing_answers.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/widgets/widgets.dart';
@@ -36,6 +37,7 @@ class IdeasListScreen extends StatefulWidget {
     required this.onTry,
     this.missingInputs = const [],
     this.onAnswerMore,
+    this.questionCount,
     this.worded,
     this.open = defaultOpenUrl,
     this.onlyLevers,
@@ -58,8 +60,12 @@ class IdeasListScreen extends StatefulWidget {
   /// Model inputs still missing (`missing_inputs`), for the "a few more answers" screen.
   final List<String> missingInputs;
 
-  /// Opens the conversation with Mochi that asks for the missing answers.
+  /// Opens the conversation with Mochi that asks for the missing answers ("Answer N more
+  /// questions").
   final VoidCallback? onAnswerMore;
+
+  /// The questions it asks (height and weight are two); [missingInputs].length when null.
+  final int? questionCount;
 
   /// The outside AI that worded the ideas, when the person agreed to it; null otherwise. Its
   /// training line shows only when `may_train_on_content` is true.
@@ -106,29 +112,19 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
   String get _backLabel => 'Back to ${widget.origin}';
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: _hub,
-    builder: (context, _) => _build(context),
-  );
+  Widget build(BuildContext context) => ListenableBuilder(listenable: _hub, builder: (context, _) => _build(context));
 
   Widget _build(BuildContext context) {
     final res = _hub.response;
     if (res == null) {
       if (_hub.loading || (_firstLoad && !_hub.hasFailure)) {
-        return _plate(
-          'Finding today’s idea…',
-          'Mochi is looking for ideas.',
-          null,
-          null,
-        );
+        return _plate('Finding today’s idea…', 'Mochi is looking for ideas.', null, null);
       }
       final offline = _hub.failure?.statusCode == null;
       return _plate(
         'Ideas didn’t load.',
         'Your answers are safe.',
-        offline
-            ? 'Check your connection, then try again.'
-            : 'Something went wrong on our side. Try again.',
+        offline ? 'Check your connection, then try again.' : 'Something went wrong on our side. Try again.',
         LipButton(
           label: 'Try again',
           icon: Icons.refresh_rounded,
@@ -153,42 +149,27 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
     return _list(ideas, hero: only == null && _hub.deck.isNotEmpty);
   }
 
-  Widget _plate(String bubble, String heading, String? body, Widget? action) =>
-      ExperimentPage(
-        title: 'Ideas for you',
-        onBack: widget.onBack,
-        backLabel: _backLabel,
-        dock: action == null
-            ? null
-            : Padding(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  12,
-                  16,
-                  14 + MediaQuery.paddingOf(context).bottom,
-                ),
-                child: action,
-              ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ExperimentPlate(
-              appearance: widget.appearance,
-              twins: const [TwinSlot(state: steadyTwin, x: 0.3)],
-              bubble: bubble,
-            ),
-            const SizedBox(height: 14),
-            Semantics(
-              header: true,
-              child: WholeWordText(heading, style: LtText.display(26)),
-            ),
-            if (body != null) ...[
-              const SizedBox(height: 6),
-              WholeWordText(body, style: LtText.body(size: 18)),
-            ],
-          ],
+  Widget _plate(String bubble, String heading, String? body, Widget? action) => ExperimentPage(
+    title: 'Ideas for you',
+    onBack: widget.onBack,
+    backLabel: _backLabel,
+    dock: action == null
+        ? null
+        : Padding(padding: EdgeInsets.fromLTRB(16, 12, 16, 14 + MediaQuery.paddingOf(context).bottom), child: action),
+    body: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ExperimentPlate(
+          appearance: widget.appearance,
+          twins: const [TwinSlot(state: steadyTwin, x: 0.3)],
+          bubble: bubble,
         ),
-      );
+        const SizedBox(height: 14),
+        Semantics(header: true, child: WholeWordText(heading, style: LtText.display(26))),
+        if (body != null) ...[const SizedBox(height: 6), WholeWordText(body, style: LtText.body(size: 18))],
+      ],
+    ),
+  );
 
   /// I-3: nothing to say yet. The rows are the model inputs still missing, in plain words.
   Widget _notYet() {
@@ -198,14 +179,9 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
       onBack: widget.onBack,
       backLabel: _backLabel,
       dock: Padding(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          12,
-          16,
-          14 + MediaQuery.paddingOf(context).bottom,
-        ),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 14 + MediaQuery.paddingOf(context).bottom),
         child: LipButton(
-          label: n > 0 ? 'Answer $n more with Mochi' : 'Talk to Mochi',
+          label: n > 0 ? answerMoreLabel(widget.questionCount ?? n) : 'Talk to Mochi',
           icon: Icons.chat_bubble_outline_rounded,
           fontSize: 24,
           onTap: widget.onAnswerMore,
@@ -220,13 +196,7 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
             bubble: 'Not yet!',
           ),
           const SizedBox(height: 14),
-          Semantics(
-            header: true,
-            child: WholeWordText(
-              'A few more answers',
-              style: LtText.display(26),
-            ),
-          ),
+          Semantics(header: true, child: WholeWordText('A few more answers', style: LtText.display(26))),
           const SizedBox(height: 6),
           WholeWordText(
             'Once I know a little more about your days, I’ll have some ideas for you. There’s no rush.',
@@ -239,8 +209,7 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
               child: Column(
                 children: [
                   for (final (i, m) in widget.missingInputs.indexed) ...[
-                    if (i > 0)
-                      const Divider(height: 1, color: Color(0xFFE9DFD0)),
+                    if (i > 0) const Divider(height: 1, color: Color(0xFFE9DFD0)),
                     ConstrainedBox(
                       constraints: const BoxConstraints(minHeight: 64),
                       child: Row(
@@ -250,25 +219,15 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
                             height: 44,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: LtColors.control,
-                                width: 2,
-                              ),
+                              border: Border.all(color: LtColors.control, width: 2),
                             ),
-                            child: Icon(
-                              _icon(m),
-                              size: 24,
-                              color: LtColors.ink,
-                            ),
+                            child: Icon(_icon(m), size: 24, color: LtColors.ink),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: WholeWordText(
                               Answers.label(m),
-                              style: LtText.body(
-                                size: 18,
-                                weight: FontWeight.w700,
-                              ),
+                              style: LtText.body(size: 18, weight: FontWeight.w700),
                             ),
                           ),
                         ],
@@ -284,24 +243,13 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
     );
   }
 
-  IconData _icon(String input) =>
-      LeverCopy.of(input)?.icon ?? Icons.help_outline_rounded;
+  IconData _icon(String input) => LeverCopy.of(input)?.icon ?? Icons.help_outline_rounded;
 
   /// Nothing left after "Not for me" on every idea.
-  Widget _allHidden() => _plate(
-    'Hidden.',
-    'You’ve hidden today’s ideas.',
-    'Mochi will skip them.',
-    null,
-  );
+  Widget _allHidden() => _plate('Hidden.', 'You’ve hidden today’s ideas.', 'Mochi will skip them.', null);
 
   /// "More ideas like this" with no idea for those levers.
-  Widget _noneLikeThis() => _plate(
-    'Not today!',
-    'No ideas like this today.',
-    'Ideas for you has the rest.',
-    null,
-  );
+  Widget _noneLikeThis() => _plate('Not today!', 'No ideas like this today.', 'Ideas for you has the rest.', null);
 
   void _another(int deckSize) => setState(() {
     if (_index + 1 >= deckSize) {
@@ -325,10 +273,7 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
       ..showSnackBar(
         SnackBar(
           duration: const Duration(seconds: 6),
-          content: Text(
-            'Hidden. Mochi will skip it.',
-            style: LtText.body(color: LtColors.paper),
-          ),
+          content: Text('Hidden. Mochi will skip it.', style: LtText.body(color: LtColors.paper)),
           action: SnackBarAction(
             label: 'Undo',
             textColor: LtColors.mint,
@@ -370,10 +315,7 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: LtColors.paper,
                       borderRadius: BorderRadius.circular(22),
@@ -382,14 +324,9 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Mochi',
-                          style: LtText.body(color: LtColors.secondary),
-                        ),
+                        Text('Mochi', style: LtText.body(color: LtColors.secondary)),
                         WholeWordText(
-                          ideas.length == 1
-                              ? 'One idea for you.'
-                              : '${_word(ideas.length)} ideas, most helpful first.',
+                          ideas.length == 1 ? 'One idea for you.' : '${_word(ideas.length)} ideas, most helpful first.',
                           style: LtText.body(size: 18),
                         ),
                       ],
@@ -402,10 +339,7 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
           ],
           // The effect note stays on the first screen, above the first card.
           if (anyEffect || hero) ...[
-            WholeWordText(
-              '$effectNote.',
-              style: LtText.body(color: LtColors.secondary),
-            ),
+            WholeWordText('$effectNote.', style: LtText.body(color: LtColors.secondary)),
             const SizedBox(height: 8),
           ],
           if (hero)
@@ -418,24 +352,14 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
                 child: MediaQuery.disableAnimationsOf(context)
                     ? child
                     : SlideTransition(
-                        position: Tween(
-                          begin: const Offset(0.12, 0),
-                          end: Offset.zero,
-                        ).animate(anim),
+                        position: Tween(begin: const Offset(0.12, 0), end: Offset.zero).animate(anim),
                         child: child,
                       ),
               ),
               layoutBuilder: (current, previous) => Stack(
                 alignment: Alignment.topCenter,
                 children: [
-                  ...previous.map(
-                    (w) => Positioned(
-                      left: 0,
-                      right: 0,
-                      top: 0,
-                      child: IgnorePointer(child: w),
-                    ),
-                  ),
+                  ...previous.map((w) => Positioned(left: 0, right: 0, top: 0, child: IgnorePointer(child: w))),
                   ?current,
                 ],
               ),
@@ -455,23 +379,15 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
                       position: _index + 1,
                       total: deck.length,
                       onOpen: () => _openDetail(deck[_index]),
-                      onEffect: () =>
-                          showEffectSheet(context, deck[_index].effect!),
-                      onTry: deck[_index].leverId == null
-                          ? null
-                          : () => widget.onTry(deck[_index]),
-                      onAnother: deck.length > 1
-                          ? () => _another(deck.length)
-                          : null,
+                      onEffect: () => showEffectSheet(context, deck[_index].effect!),
+                      onTry: deck[_index].leverId == null ? null : () => widget.onTry(deck[_index]),
+                      onAnother: deck.length > 1 ? () => _another(deck.length) : null,
                       onNotForMe: () => _notForMe(deck[_index]),
                     ),
             ),
           if (hero && more.isNotEmpty) ...[
             const SizedBox(height: 18),
-            Semantics(
-              header: true,
-              child: WholeWordText('More ideas', style: LtText.display(24)),
-            ),
+            Semantics(header: true, child: WholeWordText('More ideas', style: LtText.display(24))),
             const SizedBox(height: 10),
           ],
           for (final (i, idea) in more.indexed) ...[
@@ -491,10 +407,7 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
               Flexible(
                 child: WholeWordText(
                   'Linked, not proven.',
-                  style: LtText.body(
-                    weight: FontWeight.w700,
-                    color: LtColors.secondary,
-                  ),
+                  style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary),
                 ),
               ),
               Text('  ·  ', style: LtText.body(color: LtColors.secondary)),
@@ -508,11 +421,7 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
               children: [
                 const Padding(
                   padding: EdgeInsets.only(top: 2),
-                  child: Icon(
-                    Icons.auto_awesome_outlined,
-                    size: 20,
-                    color: LtColors.secondary,
-                  ),
+                  child: Icon(Icons.auto_awesome_outlined, size: 20, color: LtColors.secondary),
                 ),
                 const SizedBox(width: 6),
                 Expanded(
@@ -569,11 +478,7 @@ class _MochiHead extends StatelessWidget {
         maxWidth: 110,
         maxHeight: 110,
         alignment: const Alignment(0, -0.2),
-        child: TwinStateSprite(
-          state: steadyTwin,
-          appearance: appearance,
-          height: 110,
-        ),
+        child: TwinStateSprite(state: steadyTwin, appearance: appearance, height: 110),
       ),
     ),
   );
@@ -597,10 +502,8 @@ class _AboutLink extends StatelessWidget {
         child: Center(
           child: Text(
             'About this ›',
-            style: LtText.body(weight: FontWeight.w700).copyWith(
-              decoration: TextDecoration.underline,
-              decorationThickness: 2,
-            ),
+            style: LtText.body(weight: FontWeight.w700)
+                .copyWith(decoration: TextDecoration.underline, decorationThickness: 2),
           ),
         ),
       ),
@@ -622,10 +525,7 @@ Future<void> showEffectSheet(BuildContext context, String effect) {
           decoration: BoxDecoration(
             color: LtColors.paper,
             borderRadius: BorderRadius.circular(LtRadii.panel),
-            border: Border.all(
-              color: LtColors.container,
-              width: LtBorders.container,
-            ),
+            border: Border.all(color: LtColors.container, width: LtBorders.container),
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
@@ -638,10 +538,7 @@ Future<void> showEffectSheet(BuildContext context, String effect) {
                     EffectMeter(effect: effect, scale: 1.3),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Semantics(
-                        header: true,
-                        child: Text(word, style: LtText.display(28)),
-                      ),
+                      child: Semantics(header: true, child: Text(word, style: LtText.display(28))),
                     ),
                   ],
                 ),

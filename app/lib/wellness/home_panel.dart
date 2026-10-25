@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../experiment/ideas_hub.dart' show IdeasScope;
 import '../experiment/widgets/idea_scene.dart' show IdeasLinkRow;
+import '../onboarding/missing_answers.dart';
 import '../twin/twin_model.dart' show extrapolationCaveat;
 import '../widgets/whole_word_text.dart';
 
@@ -31,11 +32,16 @@ class HomeWellnessPanel extends StatelessWidget {
     this.stateLine,
     this.compact = false,
     this.onCollapse,
+    this.onAnswerMissing,
   });
   final bool compact;
 
   /// Collapses the card to the score chip (the chevron at the card's bottom right). Null: no collapse button.
   final VoidCallback? onCollapse;
+
+  /// "Answer N more questions" ([WellnessSnapshot.missingCount]): the one path back to the
+  /// missing answers, under a rough score or in place of the number. Hidden when null.
+  final VoidCallback? onAnswerMissing;
   final WellnessSnapshot snapshot;
   final VoidCallback? onHistory;
 
@@ -178,6 +184,8 @@ class HomeWellnessPanel extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: RoughGuideBadge(caveat: extrapolationCaveat),
             ),
+          if (snapshot.roughMissing && snapshot.missingCount > 0)
+            WholeWordText(roughMissingLabel(snapshot.missingCount), style: LtText.body(weight: FontWeight.w700)),
           if (score != null)
             Padding(
               padding: const EdgeInsets.only(right: 6, top: 4),
@@ -195,6 +203,17 @@ class HomeWellnessPanel extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: WholeWordText(HomeWellnessPanel.tagline, style: LtText.body()),
+            ),
+          if (onAnswerMissing != null && snapshot.missingCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 6, top: 6),
+              child: LipButton(
+                label: answerMoreLabel(snapshot.missingCount),
+                icon: Icons.mic_none_rounded,
+                height: 52,
+                fontSize: 19,
+                onTap: onAnswerMissing,
+              ),
             ),
           Padding(
             padding: const EdgeInsets.only(right: 6, top: 4),
@@ -246,11 +265,15 @@ class CollapsibleHealthScore extends StatefulWidget {
     required this.onEstimate,
     this.onDrivers,
     this.stateLine,
+    this.onAnswerMissing,
   });
   final WellnessSnapshot snapshot;
   final VoidCallback onEstimate;
   final VoidCallback? onDrivers;
   final String? stateLine;
+
+  /// "Answer N more questions", in the expanded card (the collapsed chip shows "Rough guide").
+  final VoidCallback? onAnswerMissing;
 
   static const prefsKey = 'home_score_collapsed';
   static const duration = Duration(milliseconds: 200);
@@ -309,6 +332,7 @@ class _CollapsibleHealthScoreState extends State<CollapsibleHealthScore> {
       onDrivers: widget.onDrivers,
       stateLine: widget.stateLine,
       onCollapse: () => _set(true),
+      onAnswerMissing: widget.onAnswerMissing,
     );
     if (snap.underAge || score == null) return panel;
     final instant = MediaQuery.disableAnimationsOf(context) || _instant;
@@ -396,6 +420,10 @@ class _CollapsedScoreChip extends StatelessWidget {
             ),
           ),
           if (snapshot.roughGuide) const RoughGuideBadge(caveat: extrapolationCaveat),
+          // A rough score with answers missing: "Rough guide"; tapping it opens the card, where
+          // "Answer N more questions" is.
+          if (snapshot.roughMissing && snapshot.missingCount > 0)
+            RoughGuideBadge(caveat: roughMissingLabel(snapshot.missingCount), onTap: onTap, expanded: false),
         ],
       ),
     ),
@@ -674,6 +702,8 @@ class HealthScoreSummary extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: RoughGuideBadge(caveat: extrapolationCaveat),
           ),
+        if (snapshot.roughMissing && snapshot.missingCount > 0)
+          WholeWordText(roughMissingLabel(snapshot.missingCount), style: LtText.body(weight: FontWeight.w700)),
       ],
     );
   }

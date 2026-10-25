@@ -13,7 +13,9 @@ model-sensitivity rulings):
   someone walking may pick up the pace; someone at 150+ gets encouragement only;
 - sleep only for people under 7 hours; never "more sleep" at 8 or more;
 - sitting less last;
-- an idea ruled out by a limitation the person mentioned is never shown.
+- an idea ruled out by a limitation the person mentioned is never shown, nor one the
+  person set aside (excluded_ids);
+- only the habit change itself carries the lever's effect cue; a coping trick has none.
 """
 
 import re
@@ -29,6 +31,7 @@ from lifetwin.personalize.service import consented, phrase_recommendations
 from lifetwin.recommendations.ideas import (
     ALL_AGES,
     ANY_PAIN,
+    BY_ID,
     IDEAS,
     INTEREST_PATTERNS,
     NOTE_LIMITS,
@@ -94,7 +97,13 @@ def _slot(value: str | None) -> bool:
 class Person:
     """The tags the idea picker matches on, from the profile and every habit note."""
 
-    def __init__(self, profile: HealthProfile, notes: list[HabitNote]):
+    def __init__(
+        self,
+        profile: HealthProfile,
+        notes: list[HabitNote],
+        excluded_ids: list[str] | tuple[str, ...] = (),
+    ):
+        self.excluded = set(excluded_ids)
         text = " ".join(
             str(value)
             for note in notes
@@ -131,7 +140,7 @@ class Person:
 
 def eligible(idea: Idea, person: Person) -> bool:
     """Never an idea a limitation rules out, the wrong age band, or a missing interest."""
-    if person.limits & set(idea.avoid):
+    if idea.id in person.excluded or person.limits & set(idea.avoid):
         return False
     if idea.needs and not person.interests & set(idea.interests):
         return False
@@ -399,26 +408,36 @@ BUILDERS = {
 
 
 def _fields(rec: RecommendationIdea, profile: HealthProfile) -> dict:
+    """Each idea's own effect cue (none for a coping trick) and its lever's experiment."""
     exp = _experiment(rec, profile)
+    coping = BY_ID[rec.id].coping if rec.id in BY_ID else False
     return {
-        "effect": effect_category(rec.lever, profile.age, profile.sex),
+        "effect": None if coping else effect_category(rec.lever, profile.age, profile.sex),
         "experiment_lever": exp[0] if exp else None,
         "experiment_target": exp[1] if exp else None,
     }
 
 
 def suggest(
-    profile: HealthProfile, notes: list[HabitNote], local_date: str | date | None = None
+    profile: HealthProfile,
+    notes: list[HabitNote],
+    local_date: str | date | None = None,
+    excluded_ids: list[str] | tuple[str, ...] = (),
 ) -> list[Recommendation]:
-    person, day = Person(profile, notes), _day(local_date)
+    """Excluded ids (ideas the person set aside) are never shown. A lever whose ideas are
+    all excluded falls back to the next one (a faster pace to a little more) or is left out."""
+    person, day = Person(profile, notes, excluded_ids), _day(local_date)
     found: list[Recommendation] = []
     for lever in LEVER_ORDER:
         build = BUILDERS.get(lever)
         rec = build(profile, notes, person, day) if build else None
         if rec:
-            fields = _fields(rec, profile)
-            alternatives = [alt.model_copy(update=fields) for alt in rec.alternatives]
-            found.append(rec.model_copy(update={**fields, "alternatives": alternatives}))
+            alternatives = [
+                alt.model_copy(update=_fields(alt, profile)) for alt in rec.alternatives
+            ]
+            found.append(
+                rec.model_copy(update={**_fields(rec, profile), "alternatives": alternatives})
+            )
     # Encouragement goes last: changes first, praise after.
     found.sort(key=lambda rec: rec.lever == "keep_it_up")
     return found[:3]
@@ -441,7 +460,7 @@ async def recommend(
             character_hints=character_hints(request.profile, []),
             lever_ranking=LeverRanking(model_version=MODEL_VERSION, order=list(LEVER_ORDER)),
         )
-    recs = suggest(request.profile, request.habit_notes, request.local_date)
+    recs = suggest(request.profile, request.habit_notes, request.local_date, request.excluded_ids)
     phrased_by = "templates"
     if recs and consented(request.outside_ai_consent, personalizer):
         recs, used = await phrase_recommendations(

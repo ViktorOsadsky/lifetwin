@@ -70,8 +70,13 @@ class CheckInScope extends InheritedWidget {
     this.todayPlan,
     this.ideas,
     this.handsFree = false,
+    this.answerMissing,
     required super.child,
   });
+
+  /// "Answer N more questions" (`AgenticRoutes.answerMissing`), for the outlook card's "Still
+  /// needed". Null: no action is shown.
+  final Future<void> Function(BuildContext context)? answerMissing;
 
   /// Voice check-ins listen by themselves whenever Mochi isn't speaking (the app sets this).
   final bool handsFree;

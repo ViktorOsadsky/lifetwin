@@ -19,6 +19,7 @@ import 'forecast/fortune_ceremony_screen.dart';
 import 'health/health_reader.dart';
 import 'health/health_screen.dart';
 import 'health/health_summary.dart';
+import 'onboarding/onboarding_autostart.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'onboarding/voice_onboarding_screen.dart';
 import 'room/room_screen.dart';
@@ -40,7 +41,7 @@ import 'voice/cartesia_speech.dart';
 import 'voice/http_conversation_guide.dart';
 import 'voice/voice_token.dart';
 
-void main() => runApp(const LifeTwinApp());
+void main() => runApp(const LifeTwinApp(autoStartOnboarding: true));
 
 /// The game shell: the Room is home; Talk opens the mascot conversation
 /// (with the Apple Health import), Fortune the magic ball, Customize the look.
@@ -56,6 +57,7 @@ class LifeTwinApp extends StatefulWidget {
     this.appearance,
     this.twin,
     this.agentic,
+    this.autoStartOnboarding = false,
   });
 
   /// Tests pass a controller built from fakes.
@@ -69,6 +71,9 @@ class LifeTwinApp extends StatefulWidget {
 
   /// The agentic screens' shell (check-ins, Experiment, pills). Tests pass one with fake clients.
   final AgenticRoutes? agentic;
+
+  /// With no profile, the conversation opens by itself after a short Mochi wave (the real app; tests opt in).
+  final bool autoStartOnboarding;
 
   /// Tests pass a fake; otherwise Apple Health.
   final HealthReader? healthReader;
@@ -115,6 +120,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// "Delete my data" wiped the phone: forget what this session held in memory too, so the app is
   /// as on a fresh install (the Room with no profile; Talk starts at the voice question).
   void _afterDelete() {
+    _autoStartSession++; // the conversation may start by itself again, once
     _look.removeListener(_saveLook); // the default look must not be written back to the phone
     _look.value = const TwinAppearance();
     _look.addListener(_saveLook);
@@ -346,6 +352,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     super.dispose();
   }
 
+  /// Bumped by "Delete my data": re-arms the one automatic start of the conversation.
+  int _autoStartSession = 0;
+
   /// Set once onboarding is saved and the reminder offer is still due; shown on the first return to the Room.
   (BuildContext, TwinRepository)? _reminderOffer;
 
@@ -361,7 +370,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   }
 
   /// The conversation, swooshing up from the Room.
-  void _talk(BuildContext context) => SwooshRoute.push<void>(
+  void _talk(BuildContext context, {bool quick = false}) => (quick ? OnboardingAutoStart.fadeIn<void> : SwooshRoute.push<void>)(
     context,
     (talkContext) => VoiceOnboardingScreen(
       controller: _controller,
@@ -494,6 +503,12 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
                 _toRoom(forecastContext);
                 _talk(forecastContext);
               },
+              // Answers missing: only those, then back on the Room with the score (never the
+              // whole intake again, never a loop).
+              onAnswerMissing: () {
+                _toRoom(forecastContext);
+                _agentic.answerMissing(context);
+              },
             ),
             transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
           ),
@@ -570,7 +585,12 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       builder: _agentic.wrap,
       home: ListenableBuilder(
         listenable: Listenable.merge([_controller, _wellness]),
-        builder: (context, _) => RoomScreen(
+        builder: (context, _) => OnboardingAutoStart(
+          enabled: widget.autoStartOnboarding && _wellness != null && _profile == null,
+          session: _autoStartSession,
+          appearance: _look,
+          onStart: (c, {required quick}) => _talk(c, quick: quick),
+          child: RoomScreen(
           appearance: _look,
           hasProfile: _profile != null,
           onTalk: () => _talk(context),
@@ -587,6 +607,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onSettings: _wellness == null ? null : () => _settings(context),
           stateLine: _stillLearning(),
           ideas: _agentic.ideasAccess,
+          onAnswerMissing: _wellness == null ? null : () => _agentic.answerMissing(context),
           // The whole card opens the plan; its own buttons (Why?, thumbs) win the tap.
           today: _wellness == null || (_profile?['age'] as num? ?? 0) < 18
               ? null
@@ -595,6 +616,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
                   onTap: () => _agentic.todayPlan(context, onTalk: () => _talk(context)),
                   child: _agentic.todayCard(context, onTalk: () => _talk(context), condensed: true, trailing: const CheckInEntry(compact: true)),
                 ),
+        ),
         ),
       ),
     );

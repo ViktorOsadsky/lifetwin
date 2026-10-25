@@ -54,20 +54,13 @@ class IdeaHero extends StatelessWidget {
     final spoken = [
       'Today’s idea: ${idea.title}.',
       why,
-      if (word != null)
-        'Modeled effect: ${word.toLowerCase()}.'
-      else
-        'Guideline, not modeled.',
+      if (word != null) 'Modeled effect: ${word.toLowerCase()}.' else 'Guideline, not modeled.',
       if (pager != null) '$pager.',
     ].join(' ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        IdeaScene(
-          key: ValueKey('scene-${idea.id}'),
-          appearance: appearance,
-          kind: idea.kind,
-        ),
+        IdeaScene(key: ValueKey('scene-${idea.id}'), appearance: appearance, kind: idea.kind),
         const SizedBox(height: 10),
         Sheet(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -82,12 +75,9 @@ class IdeaHero extends StatelessWidget {
                 excludeSemantics: true,
                 onTap: onOpen,
                 customSemanticsActions: {
-                  const CustomSemanticsAction(label: 'Another idea'):
-                      ?onAnother,
+                  const CustomSemanticsAction(label: 'Another idea'): ?onAnother,
                   const CustomSemanticsAction(label: 'Not for me'): onNotForMe,
-                  if (word != null)
-                    const CustomSemanticsAction(label: 'What does this mean?'):
-                        onEffect,
+                  if (word != null) const CustomSemanticsAction(label: 'What does this mean?'): onEffect,
                 },
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
@@ -97,28 +87,18 @@ class IdeaHero extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(
-                            Icons.lightbulb_outline_rounded,
-                            size: 22,
-                            color: LtColors.ink,
-                          ),
+                          const Icon(Icons.lightbulb_outline_rounded, size: 22, color: LtColors.ink),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               'Today’s idea',
-                              style: LtText.body(
-                                weight: FontWeight.w700,
-                                color: LtColors.secondary,
-                              ),
+                              style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary),
                             ),
                           ),
                           if (pager != null)
                             Text(
                               pager,
-                              style: LtText.body(
-                                weight: FontWeight.w700,
-                                color: LtColors.secondary,
-                              ),
+                              style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary),
                             ),
                         ],
                       ),
@@ -131,15 +111,9 @@ class IdeaHero extends StatelessWidget {
                         // Its own tap opens the effect sheet; it is part of the merged element for VoiceOver.
                         EffectCue(effect: idea.effect, onTap: onEffect)
                       else
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: GuidelineChip(),
-                        ),
+                        const Align(alignment: Alignment.centerLeft, child: GuidelineChip()),
                       const SizedBox(height: 6),
-                      WholeWordText(
-                        basedOn(idea),
-                        style: LtText.body(color: LtColors.secondary),
-                      ),
+                      WholeWordText(basedOn(idea), style: LtText.body(color: LtColors.secondary)),
                     ],
                   ),
                 ),
@@ -207,10 +181,8 @@ class _NotForMe extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'Not for me',
-              style: LtText.body(weight: FontWeight.w700).copyWith(
-                decoration: TextDecoration.underline,
-                decorationThickness: 2,
-              ),
+              style: LtText.body(weight: FontWeight.w700)
+                  .copyWith(decoration: TextDecoration.underline, decorationThickness: 2),
             ),
           ],
         ),
@@ -221,11 +193,7 @@ class _NotForMe extends StatelessWidget {
 
 /// The last card of the deck: nothing more to step to today.
 class IdeasEndCard extends StatelessWidget {
-  const IdeasEndCard({
-    super.key,
-    required this.appearance,
-    required this.onFirst,
-  });
+  const IdeasEndCard({super.key, required this.appearance, required this.onFirst});
   final TwinAppearance appearance;
   final VoidCallback onFirst;
 
@@ -233,24 +201,14 @@ class IdeasEndCard extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      IdeaScene(
-        key: const ValueKey('scene-end'),
-        appearance: appearance,
-        kind: 'craving',
-      ),
+      IdeaScene(key: const ValueKey('scene-end'), appearance: appearance, kind: 'craving'),
       const SizedBox(height: 10),
       Sheet(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Semantics(
-              header: true,
-              child: WholeWordText(
-                'That’s all for today',
-                style: LtText.display(28),
-              ),
-            ),
+            Semantics(header: true, child: WholeWordText('That’s all for today', style: LtText.display(28))),
             const SizedBox(height: 10),
             LipButton(
               label: 'Back to the first',

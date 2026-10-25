@@ -2752,5 +2752,178 @@
         }
       }
     }
+  },
+  {
+    "name": "recommendations-excluded-ids-leave-coping-tips-without-effect",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 70,
+        "sex": "male",
+        "smoking_status": "current"
+      },
+      "local_date": "2026-10-26",
+      "excluded_ids": [
+        "smoke_quitline",
+        "smoke_ask_pharmacist"
+      ]
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "featured": "smoke_slow_breaths",
+      "recommendations": {
+        "$each": {
+          "lever": "quit_smoking",
+          "effect": null,
+          "experiment_lever": "smoking_status",
+          "experiment_target": "former",
+          "alternatives": {
+            "$each": {
+              "effect": null,
+              "source_domain": "cdc.gov"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "recommendations-habit-change-ideas-carry-the-effect",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 70,
+        "sex": "male",
+        "smoking_status": "current"
+      },
+      "local_date": "2026-10-26",
+      "excluded_ids": [
+        "smoke_delay",
+        "smoke_after_dinner_walk",
+        "smoke_busy_hands",
+        "smoke_slow_breaths",
+        "smoke_tell_someone",
+        "smoke_triggers",
+        "smoke_free_car",
+        "smoke_free_home",
+        "smoke_push_back_first",
+        "smoke_quit_jar"
+      ]
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "featured": "smoke_quitline",
+      "recommendations": {
+        "$each": {
+          "lever": "quit_smoking",
+          "effect": "big",
+          "alternatives": {
+            "$each": {
+              "effect": "big",
+              "source_domain": "cdc.gov"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "onboarding-ask-only-start",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "start",
+      "state": {
+        "phase": "idle",
+        "confirmed_profile": {
+          "age": 64,
+          "sex": "female",
+          "smoking_status": "never",
+          "height_cm": 165,
+          "weight_kg": 70,
+          "sleep_hours": 7,
+          "general_health": "good",
+          "hypertension_diagnosed": false,
+          "diabetes": false,
+          "sedentary_min_day": 360,
+          "moderate_recreation_min_week": 120
+        },
+        "ask_only": [
+          "vigorous_recreation_min_week",
+          "age"
+        ],
+        "memory_consent": false
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "vigorous_recreation_min_week",
+        "ask_only": [
+          "vigorous_recreation_min_week"
+        ],
+        "missing_offered": true
+      }
+    }
+  },
+  {
+    "name": "onboarding-missing-offer-yes",
+    "method": "POST",
+    "path": "/api/onboarding/turn",
+    "request_schema": "conversation.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "yes",
+      "state": {
+        "phase": "missing",
+        "confirmed_profile": {
+          "age": 64,
+          "sex": "female",
+          "smoking_status": "never",
+          "height_cm": 165,
+          "weight_kg": 70,
+          "sleep_hours": 7,
+          "general_health": "good",
+          "hypertension_diagnosed": false,
+          "diabetes": false,
+          "sedentary_min_day": 360,
+          "moderate_recreation_min_week": 120
+        },
+        "skipped_fields": [
+          "vigorous_recreation_min_week",
+          "exercise_minutes_weekly",
+          "alcohol_drinks_weekly",
+          "systolic_bp",
+          "diastolic_bp"
+        ],
+        "health_offered": true,
+        "missing_offered": true,
+        "memory_consent": false
+      }
+    },
+    "status": 200,
+    "response_schema": "conversation.schema.json",
+    "response_subset": {
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "vigorous_recreation_min_week",
+        "ask_only": [
+          "vigorous_recreation_min_week"
+        ]
+      }
+    }
   }
 ]

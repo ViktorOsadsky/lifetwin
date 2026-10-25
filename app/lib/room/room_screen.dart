@@ -49,8 +49,12 @@ class RoomScreen extends StatefulWidget {
     this.onBand,
     this.today,
     this.stateLine,
+    this.onAnswerMissing,
     this.ideas,
   });
+
+  /// "Answer N more questions" on the score card (missing_answers.dart). Hidden when null.
+  final VoidCallback? onAnswerMissing;
 
   /// Today's ideas: tapping Mochi shows a bubble with today's idea (and once a day by itself). Null
   /// or no featured idea (under 18, nothing cached): tapping Mochi only hops.
@@ -310,6 +314,7 @@ class _RoomScreenState extends State<RoomScreen> {
                             ],
                             card: widget.wellness == null ? _OutlookCard(outlook: widget.outlook, onTap: _fortune) : CollapsibleHealthScore(
                               snapshot: widget.wellness!, onEstimate: _fortune, onDrivers: widget.onDrivers, stateLine: widget.stateLine,
+                              onAnswerMissing: widget.onAnswerMissing,
                             ),
                           ),
                           Opacity(

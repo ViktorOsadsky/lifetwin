@@ -44,7 +44,10 @@ class _IdeasOpenCardState extends State<IdeasOpenCard> {
         children: [
           IdeaRow(idea: idea, appearance: widget.appearance, onTap: () => widget.access.openIdea(context, idea)),
           Center(
-            child: MoreIdeasLink(label: 'See ideas', onTap: () => widget.access.openList(context, origin: 'chat')),
+            child: MoreIdeasLink(
+              label: 'See ideas',
+              onTap: () => widget.access.openList(context, origin: 'chat'),
+            ),
           ),
         ],
       );
@@ -78,10 +81,7 @@ class _IdeasClosingCardState extends State<IdeasClosingCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(
-          header: true,
-          child: WholeWordText('Mochi’s first ideas for you', style: LtText.display(24)),
-        ),
+        Semantics(header: true, child: WholeWordText('Mochi’s first ideas for you', style: LtText.display(24))),
         const SizedBox(height: 10),
         for (final idea in first) ...[
           IdeaRow(
@@ -93,7 +93,10 @@ class _IdeasClosingCardState extends State<IdeasClosingCard> {
           const SizedBox(height: 8),
         ],
         Center(
-          child: MoreIdeasLink(label: 'See all ideas', onTap: () => widget.access.openList(context, origin: 'chat')),
+          child: MoreIdeasLink(
+            label: 'See all ideas',
+            onTap: () => widget.access.openList(context, origin: 'chat'),
+          ),
         ),
         WholeWordText('$effectNote.', style: LtText.body(color: LtColors.secondary)),
       ],

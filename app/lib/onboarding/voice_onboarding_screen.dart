@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show CustomSemanticsAction;
@@ -19,6 +20,7 @@ import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart';
 import '../voice/speech.dart';
+import '../voice/voice_indicator.dart';
 import '../widgets/whole_word_text.dart';
 import 'voice_onboarding_controller.dart';
 
@@ -129,6 +131,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
 
   final _noticeKey = GlobalKey(debugLabel: 'notice');
   final _quickKey = GlobalKey(debugLabel: 'quick answers');
+  final _transcriptKey = GlobalKey();
+  String _shownCaption = '';
   final _lineKey = GlobalKey(debugLabel: "the twin's line");
 
   /// The controls scroll when the text is very large; each new turn starts at the top, so
@@ -278,9 +282,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     if (i == null || identical(i, _shownImport)) return;
     _shownImport = i;
     _noteTimer?.cancel();
-    setState(
-      () => _importNote = 'Added from ${i.source == 'document' ? 'your document' : 'Apple Health'} ✓',
-    );
+    setState(() => _importNote = 'Added from ${i.source == 'document' ? 'your document' : 'Apple Health'} ✓');
     _noteTimer = Timer(Duration(seconds: largeText(context) ? 8 : 6), () {
       if (mounted) setState(() => _importNote = null);
     });
@@ -425,6 +427,11 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       if (_quickInStory && !largeText(context)) _reveal(_quickKey);
       if (_controlsScroll.hasClients) _controlsScroll.jumpTo(0);
     }
+    // The last line of what is heard stays visible above the controls.
+    if (c.caption != _shownCaption) {
+      _shownCaption = c.caption;
+      if (c.caption.isNotEmpty && _voiceUi) _reveal(_transcriptKey);
+    }
     if (c.notice != null && c.notice != _shownNotice) _reveal(_noticeKey);
     _shownNotice = c.notice;
   }
@@ -455,6 +462,23 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   }
 
   bool get _keyboard => MediaQuery.viewInsetsOf(context).bottom > 0;
+
+  /// The continuous-voice look (status pill, ring, live transcript) is on for the whole
+  /// conversation of a hands-free controller, except the consent questions, an emergency
+  /// pause and the end.
+  bool get _voiceUi =>
+      c.handsFree && !c.askingVoice && !c.emergency && c.phase != VoicePhase.consent && c.phase != VoicePhase.done;
+
+  /// What the pill and ring say now. Only an open microphone is ever [VoiceLook.listening].
+  VoiceLook get _look {
+    if (c.typing) return VoiceLook.typing;
+    return switch (c.phase) {
+      VoicePhase.listening => VoiceLook.listening,
+      VoicePhase.speaking => VoiceLook.speaking,
+      VoicePhase.interpreting => VoiceLook.thinking,
+      _ => c.screenReader ? VoiceLook.waiting : VoiceLook.between,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -507,50 +531,80 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   /// [bubble] is set, the twin's words beside it.
   Widget _window(SwooshFrame frame, double opacity, {required bool compact, Widget? bubble}) {
     final mood = _mood;
+    Widget plate(VoiceLook? shown, bool hidden) => PlateWindow(
+      name: widget.appearance.name,
+      showBanner: !compact,
+      plate: PlateScene(
+        asset: ScenePlate.room.asset,
+        focus: const Offset(0.5, 0.554),
+        focusTarget: Offset(compact ? 0.5 : 0.28, 0.86),
+        zoom: 1.38,
+        twinBuilder: (feet, scale, box) {
+          final h = (185 * scale).clamp(60.0, box.height * 0.82 < 60 ? 60.0 : box.height * 0.82);
+          final twin = plantTwin(
+            feet,
+            TwinSprite(appearance: widget.appearance, pose: mood.pose, height: h, hero: true, isRoom: false),
+          );
+          if (shown == null) return twin;
+          final d = math.min(h * 1.05, box.height * 0.92);
+          final cy = (feet.dy - h * 0.45).clamp(
+            d / 2 + 2,
+            math.max(d / 2 + 2, box.height - d / 2 - 2),
+          ); // inside the picture
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: feet.dx - d * 0.57,
+                top: cy - d * 0.57,
+                width: d * 1.14,
+                height: d * 1.14,
+                child: VoiceRing(look: hidden ? VoiceLook.between : shown, size: d),
+              ),
+              twin,
+            ],
+          );
+        },
+      ),
+      overlay: LayoutBuilder(
+        builder: (context, box) => Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (bubble != null)
+              Positioned(
+                top: 26,
+                right: 8,
+                width: box.maxWidth * 0.6,
+                child: Opacity(
+                  opacity: frame.bubbleOpacity.clamp(0.0, 1.0),
+                  child: Transform.scale(
+                    scale: frame.bubbleScale,
+                    alignment: Alignment.centerLeft,
+                    child: Align(alignment: Alignment.topLeft, child: bubble),
+                  ),
+                ),
+              ),
+            // The status pill: a label on the bottom edge of the picture, never a button.
+            if (shown != null)
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: -24,
+                child: Center(
+                  child: VoicePill(look: shown, hidden: hidden),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
     return Opacity(
       opacity: opacity,
       child: SizedBox(
         height: compact ? 150 : 250,
-        child: PlateWindow(
-          name: widget.appearance.name,
-          showBanner: !compact,
-          plate: PlateScene(
-            asset: ScenePlate.room.asset,
-            focus: const Offset(0.5, 0.554),
-            focusTarget: Offset(compact ? 0.5 : 0.28, 0.86),
-            zoom: 1.38,
-            twinBuilder: (feet, scale, box) => plantTwin(
-              feet,
-              TwinSprite(
-                appearance: widget.appearance,
-                pose: mood.pose,
-                height: (185 * scale).clamp(60.0, box.height * 0.82 < 60 ? 60.0 : box.height * 0.82),
-                hero: true,
-                isRoom: false,
-              ),
-            ),
-          ),
-          overlay: LayoutBuilder(
-            builder: (context, box) => Stack(
-              children: [
-                if (bubble != null)
-                  Positioned(
-                    top: 26,
-                    right: 8,
-                    width: box.maxWidth * 0.6,
-                    child: Opacity(
-                      opacity: frame.bubbleOpacity.clamp(0.0, 1.0),
-                      child: Transform.scale(
-                        scale: frame.bubbleScale,
-                        alignment: Alignment.centerLeft,
-                        child: Align(alignment: Alignment.topLeft, child: bubble),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+        child: _voiceUi
+            ? VoiceLive(look: _look, builder: (context, shown, hidden) => plate(shown, hidden))
+            : plate(null, false),
       ),
     );
   }
@@ -632,7 +686,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
                       bubble: inWindow ? _bubble(line, inWindow: true, header: header) : null,
                     ),
                   ),
-                if (!keyboard) const SizedBox(height: 10),
+                // The pill hangs 24 pt below the picture: room for it, the same in every state.
+                if (!keyboard) SizedBox(height: _voiceUi ? 36 : 10),
                 ...top,
                 if (line.isNotEmpty && !inWindow) ...[_pad(_bubble(line, inWindow: false, header: header))],
                 ...story,
@@ -675,11 +730,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
               padding: const EdgeInsets.fromLTRB(_gutter, 0, _gutter, 8),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: ImportControl(
-                  collapsed: false,
-                  shortText: largeText(context),
-                  onTap: _importTap,
-                ),
+                child: ImportControl(collapsed: false, shortText: largeText(context), onTap: _importTap),
               ),
             ),
         ],
@@ -820,7 +871,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     final crowded = readBack || c.notice != null || quick || (listening && c.caption.isNotEmpty);
     final links = c.phase != VoicePhase.done && !keyboard;
     final voiceLine = c.phase == VoicePhase.speaking
-        ? _speaking()
+        ? (_voiceUi ? null : _speaking()) // hands-free has no Stop: the pill says Mochi is talking
         : c.canHearAgain && (!listening || c.continuous)
         ? LinkButton(label: 'Hear it again', icon: Icons.volume_up_rounded, onTap: c.hearAgain)
         : null;
@@ -844,7 +895,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
             ),
           ),
         if (n != null && !keyboard) ...[
-          _pad(StepProgress(step: n, total: VoiceOnboardingController.questionCount)),
+          _pad(StepProgress(step: n, total: c.questionTotal)),
           const SizedBox(height: 12),
         ],
       ],
@@ -871,9 +922,45 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           const SizedBox(height: 4),
           _pad(Align(alignment: Alignment.centerLeft, child: voiceLine)),
         ],
-        if (c.caption.isNotEmpty && !keyboard) ...[
+        if (_voiceUi && c.nudged && c.caption.isEmpty && (listening || c.nudgeSpeaking) && !keyboard) ...[
+          const SizedBox(height: 8),
+          _pad(const NudgeCaption(line: listeningNudge)),
+        ],
+        if (_voiceUi && !keyboard) ...[
+          // The transcript and the note under it are one block: it is the part kept in view above the dock.
+          KeyedSubtree(
+            key: _transcriptKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (c.caption.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _pad(TranscriptCard(text: c.caption, listening: listening)),
+                ],
+                if (!c.typing) ...[
+                  const SizedBox(height: 10),
+                  _pad(c.screenReader ? const VoiceOverInfo() : const ListeningNote()),
+                ],
+              ],
+            ),
+          ),
+        ] else if (c.caption.isNotEmpty && !keyboard) ...[
           const SizedBox(height: 8),
           _pad(listening ? _hearing() : _youSaid()),
+        ],
+        // At large text the Fill row moves into the scroll (VC-6), so the dock keeps Type instead in reach.
+        if (_voiceUi && largeText(context) && !keyboard && _importWanted) ...[
+          const SizedBox(height: 10),
+          _pad(
+            LipButton(
+              label: ImportControl.label,
+              icon: Icons.favorite_border_rounded,
+              kind: LipKind.secondary,
+              height: 72,
+              fontSize: 20,
+              onTap: _importTap,
+            ),
+          ),
         ],
         if (c.notice != null) ...[
           const SizedBox(height: 14),
@@ -892,7 +979,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       ],
       controls: [
         // The one import control, in a fixed slot at the top of the controls (always in view).
-        if (!keyboard && _importWanted)
+        if (!keyboard && _importWanted && !(_voiceUi && largeText(context)))
           SizedBox(
             height: 56,
             child: Align(
@@ -900,7 +987,10 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
               child: Row(
                 children: [
                   Flexible(
-                    child: ImportControl(collapsed: _importCollapsed || _importNote != null || largeText(context), onTap: _importTap),
+                    child: ImportControl(
+                      collapsed: _importCollapsed || _importNote != null || largeText(context),
+                      onTap: _importTap,
+                    ),
                   ),
                   if (_importNote != null)
                     Expanded(
@@ -1021,7 +1111,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           onTap: busy ? null : c.change,
         ),
         // By voice, the person can also just say yes, no, or the right answer.
-        if (!c.typing) ...[const SizedBox(height: 4), TalkButton(controller: c, compact: true)],
+        if (!c.typing) ...[const SizedBox(height: 4), ..._talkControl(compact: true)],
         _switchMode(),
       ];
     }
@@ -1039,7 +1129,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       ],
       if (quick) ...[_quickAnswers(busy), const SizedBox(height: 8)],
       // With quick answers on screen they are the big choices; Talk is the smaller one.
-      if (quick) TalkButton(controller: c, compact: true) else ..._answerControls(busy, keyboard),
+      if (quick) ..._talkControl(compact: true) else ..._answerControls(busy, keyboard),
       if (!keyboard) _switchMode(),
       LinkButton(label: 'Skip this question', onTap: busy ? null : _skip),
       if (!keyboard) ..._chips(),
@@ -1067,9 +1157,27 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     onTap: _useHealth,
   );
 
+  /// Hands-free needs no button: the pill shows what is happening. With VoiceOver on there is
+  /// one tap target (the pill says Mochi is waiting). Without hands-free, the Talk button.
+  List<Widget> _talkControl({bool compact = false}) {
+    if (!c.handsFree) return [TalkButton(controller: c, compact: compact)];
+    if (c.continuous) return const [];
+    final waiting = c.phase == VoicePhase.idle;
+    return [
+      LipButton(
+        key: const ValueKey('tap-to-talk'),
+        label: 'Tap to talk to Mochi',
+        icon: Icons.mic_none_rounded,
+        height: 72,
+        hint: 'Double tap, then speak',
+        onTap: waiting ? () => c.startTalk() : null,
+      ),
+    ];
+  }
+
   /// The typing box and Send, or the Talk button.
   List<Widget> _answerControls(bool busy, bool keyboard) {
-    if (!c.typing) return [TalkButton(controller: c)];
+    if (!c.typing) return _talkControl();
     final field = c.state?['current_field'];
     return [
       TextField(
@@ -1449,7 +1557,11 @@ class _TalkButtonState extends State<TalkButton> {
           opening
               ? Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [mic, const SizedBox(width: 6), const Icon(Icons.keyboard_outlined, size: 30, color: LtColors.ink)],
+                  children: [
+                    mic,
+                    const SizedBox(width: 6),
+                    const Icon(Icons.keyboard_outlined, size: 30, color: LtColors.ink),
+                  ],
                 )
               : mic,
           WholeWordText(label, textAlign: TextAlign.center, style: LtText.display(26)),
@@ -1471,7 +1583,9 @@ class _TalkButtonState extends State<TalkButton> {
                 : 'Double tap, then speak'),
       excludeSemantics: true,
       onTap: busy ? null : () => listening ? c.stopTalk() : c.startTalk(),
-      customSemanticsActions: opening ? {const CustomSemanticsAction(label: 'Type instead'): () => c.setTyping(true)} : null,
+      customSemanticsActions: opening
+          ? {const CustomSemanticsAction(label: 'Type instead'): () => c.setTyping(true)}
+          : null,
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: _down,
@@ -1605,7 +1719,11 @@ class ImportControl extends StatelessWidget {
                   Flexible(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text(shortText ? 'Fill from Health or document' : label, maxLines: 1, style: LtText.body(size: 16, weight: FontWeight.w700)),
+                      child: Text(
+                        shortText ? 'Fill from Health or document' : label,
+                        maxLines: 1,
+                        style: LtText.body(size: 16, weight: FontWeight.w700),
+                      ),
                     ),
                   ),
                 ],

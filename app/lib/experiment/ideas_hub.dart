@@ -13,12 +13,8 @@ import 'recommendations.dart';
 ///
 /// The age rule is the caller's: under 18 nothing here is ever asked for.
 class IdeasHub extends ChangeNotifier {
-  IdeasHub({
-    required this.source,
-    this.repo,
-    DateTime Function()? now,
-    this.allowed = _always,
-  }) : _now = now ?? DateTime.now {
+  IdeasHub({required this.source, this.repo, DateTime Function()? now, this.allowed = _always})
+    : _now = now ?? DateTime.now {
     _restore();
   }
 
@@ -47,17 +43,14 @@ class IdeasHub extends ChangeNotifier {
   bool get loading => _loading;
 
   /// The last failure, kept while a cached answer is still shown (offline).
-  RecommendationsFailure? get failure => _error is RecommendationsFailure
-      ? _error as RecommendationsFailure
-      : null;
+  RecommendationsFailure? get failure => _error is RecommendationsFailure ? _error as RecommendationsFailure : null;
   bool get hasFailure => _error != null;
 
   /// The cached answer, if it is today's.
   IdeasResponse? get response => allowed() && _responseDay == today ? _response : null;
 
   /// Ideas hidden today.
-  List<String> get hidden =>
-      _hiddenDay == today ? List.unmodifiable(_hidden) : const [];
+  List<String> get hidden => _hiddenDay == today ? List.unmodifiable(_hidden) : const [];
 
   bool _visible(Recommendation r) => !hidden.contains(r.id);
 
@@ -84,11 +77,7 @@ class IdeasHub extends ChangeNotifier {
     final cards = deck;
     final parent = cards.isEmpty
         ? null
-        : res.recommendations
-              .where(
-                (r) => r == cards.first || r.alternatives.contains(cards.first),
-              )
-              .firstOrNull;
+        : res.recommendations.where((r) => r == cards.first || r.alternatives.contains(cards.first)).firstOrNull;
     return [
       for (final r in res.recommendations)
         if (r != parent && _visible(r)) r,
@@ -123,8 +112,7 @@ class IdeasHub extends ChangeNotifier {
 
   /// Asks the server again. A failure keeps the cached answer (the list says "Check your
   /// connection" above it); with no cache it is thrown for the screen to show.
-  Future<void> refresh() =>
-      _inflight ??= _refresh().whenComplete(() => _inflight = null);
+  Future<void> refresh() => _inflight ??= _refresh().whenComplete(() => _inflight = null);
 
   Future<void> _refresh() async {
     // Never notify in the middle of a build (this is often asked for from an initState).
@@ -147,9 +135,7 @@ class IdeasHub extends ChangeNotifier {
         await _persist();
       }
     } on Object catch (e) {
-      _error = e is RecommendationsFailure
-          ? e
-          : const RecommendationsFailure(null);
+      _error = e is RecommendationsFailure ? e : const RecommendationsFailure(null);
       if (!cached) {
         _loading = false;
         notifyListeners();
@@ -210,10 +196,8 @@ class IdeasHub extends ChangeNotifier {
     if (r == null) return;
     try {
       await r.saveIdeasState({
-        if (_responseDay != null && _response?.raw != null)
-          'date': _responseDay,
-        if (_responseDay != null && _response?.raw != null)
-          'response': _response!.raw,
+        if (_responseDay != null && _response?.raw != null) 'date': _responseDay,
+        if (_responseDay != null && _response?.raw != null) 'response': _response!.raw,
         'hidden_date': _hiddenDay,
         'hidden_ids': _hidden,
         'bubble_date': ?_bubbleDay,
@@ -229,9 +213,7 @@ class IdeasHub extends ChangeNotifier {
     final s = r.ideasState;
     try {
       if (s['response'] is Map && s['date'] is String) {
-        _response = IdeasResponse.fromJson(
-          Map<String, dynamic>.from(s['response'] as Map),
-        );
+        _response = IdeasResponse.fromJson(Map<String, dynamic>.from(s['response'] as Map));
         _responseDay = s['date'] as String;
       }
     } catch (_) {
@@ -241,9 +223,7 @@ class IdeasHub extends ChangeNotifier {
     _hiddenDay = s['hidden_date'] as String? ?? '';
     _hidden
       ..clear()
-      ..addAll([
-        for (final id in (s['hidden_ids'] as List? ?? const [])) '$id',
-      ]);
+      ..addAll([for (final id in (s['hidden_ids'] as List? ?? const [])) '$id']);
     _bubbleDay = s['bubble_date'] as String?;
   }
 }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../experiment/experiment_page.dart';
+import '../onboarding/missing_answers.dart';
 import '../experiment/experiment_twins.dart';
 import '../experiment/ideas_hub.dart';
 import '../experiment/widgets/idea_scene.dart';
 import '../experiment/widgets/ideas_turn_cards.dart';
 import '../experiment/widgets/widgets.dart';
+import '../onboarding/voice_onboarding_controller.dart' show listeningNudge;
 import '../twin/twin_model.dart' show TwinAssessment;
 import '../twin/twin_repository.dart';
 import '../twin/twin_state.dart';
@@ -13,6 +15,7 @@ import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart' hide TwinMood;
+import '../voice/voice_indicator.dart';
 import '../widgets/whole_word_text.dart';
 import 'check_in.dart';
 import 'checkin_controller.dart';
@@ -178,6 +181,51 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
     widget.onDone();
   }
 
+  /// The continuous-voice look (status pill, ring, live transcript): hands-free, with a question open.
+  bool get _voiceUi => c.handsFree && c.turn != null && !c.emergency && !_nothing && !_finished;
+
+  /// What the pill and ring say now. Only an open microphone is ever [VoiceLook.listening].
+  VoiceLook get _look {
+    if (c.typing || !c.voiceUsable) return VoiceLook.typing;
+    return switch (c.phase) {
+      CheckinPhase.listening => VoiceLook.listening,
+      CheckinPhase.speaking => VoiceLook.speaking,
+      CheckinPhase.interpreting => VoiceLook.thinking,
+      CheckinPhase.idle => c.screenReader ? VoiceLook.waiting : VoiceLook.between,
+      _ => VoiceLook.typing,
+    };
+  }
+
+  /// The ring around the twin and the status pill on the bottom edge of the picture.
+  Widget _voiceOverlay() => VoiceLive(
+    look: _look,
+    builder: (context, shown, hidden) => LayoutBuilder(
+      builder: (context, box) {
+        const d = 190.0;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: box.maxWidth * 0.3 - d * 0.57,
+              top: box.maxHeight * 0.5 - d * 0.57,
+              width: d * 1.14,
+              height: d * 1.14,
+              child: VoiceRing(look: hidden ? VoiceLook.between : shown, size: d, glow: false),
+            ),
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: -24,
+              child: Center(
+                child: VoicePill(look: shown, hidden: hidden),
+              ),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+
   TwinState _twin() {
     if (c.emergency) {
       return const TwinState(mood: TwinMood.concerned, pose: TwinPose.stand, reason: TwinStateReason.emergency);
@@ -200,8 +248,10 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
           ExperimentPlate(
             appearance: widget.appearance,
             twins: [TwinSlot(state: _twin(), x: 0.3)],
+            overlay: _voiceUi ? _voiceOverlay() : null,
           ),
-          const SizedBox(height: 14),
+          // The pill hangs 24 pt below the picture: room for it.
+          SizedBox(height: _voiceUi ? 36 : 14),
           _prompt(context),
           const SizedBox(height: 14),
           Sheet(
@@ -331,9 +381,22 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
           const SizedBox(height: 6),
           _AnswerList(items: widget.readback.heard(c.turn!)),
         ],
-        if (c.phase == CheckinPhase.listening && c.caption.isNotEmpty) ...[
+        if (_voiceUi && c.nudged && c.caption.isEmpty && (c.phase == CheckinPhase.listening || c.nudgeSpeaking)) ...[
+          const SizedBox(height: 8),
+          const NudgeCaption(line: listeningNudge),
+        ],
+        if (_voiceUi &&
+            c.caption.isNotEmpty &&
+            (c.phase == CheckinPhase.listening || c.phase == CheckinPhase.interpreting)) ...[
+          const SizedBox(height: 8),
+          TranscriptCard(text: c.caption, listening: c.phase == CheckinPhase.listening),
+        ] else if (c.phase == CheckinPhase.listening && c.caption.isNotEmpty) ...[
           const SizedBox(height: 8),
           WholeWordText('“${c.caption}”', style: LtText.body(color: LtColors.secondary)),
+        ],
+        if (_voiceUi && !c.typing && c.voiceUsable) ...[
+          const SizedBox(height: 10),
+          c.screenReader ? const VoiceOverInfo() : const ListeningNote(),
         ],
         if (c.notice != null) ...[
           const SizedBox(height: 8),
@@ -347,6 +410,9 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
     );
   }
 
+  /// The questions the estimate still needs (missing_answers.dart).
+  int get _missing => missingQuestions(widget.repository.missingInputs, widget.repository.profile).length;
+
   Widget _done(BuildContext context) {
     final change = weekly ? OutlookChange.between(_before, widget.repository.current) : null;
     final confirmed = Map<String, dynamic>.from(c.turn?.state['confirmed'] as Map? ?? const {});
@@ -356,7 +422,14 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
         _title(weekly ? 'Outlook updated' : 'All done'),
         const SizedBox(height: 8),
         if (change != null)
-          OutlookChangeCard(change: change)
+          OutlookChangeCard(
+            change: change,
+            // "Still needed": the one path back to the missing answers.
+            answerLabel: _missing == 0 ? null : answerMoreLabel(_missing),
+            onTellMochi: _missing == 0 || CheckInScope.maybeOf(context)?.answerMissing == null
+                ? null
+                : () => CheckInScope.maybeOf(context)!.answerMissing!(context),
+          )
         else
           WholeWordText(
             widget.repository.twinState().mood == TwinMood.cheerful ? 'See you tomorrow!' : 'Thanks for telling me.',
@@ -563,6 +636,30 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
                   ),
                 ],
               )
+            else if (c.handsFree)
+              // Hands-free needs no button: the pill shows what is happening. With VoiceOver there is
+              // one tap target. "Type instead" stays in reach in every voice state.
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (c.screenReader)
+                    LipButton(
+                      key: const ValueKey('tap-to-talk'),
+                      label: 'Tap to talk to Mochi',
+                      icon: Icons.mic_none_rounded,
+                      height: 72,
+                      hint: 'Double tap, then speak',
+                      onTap: c.phase == CheckinPhase.idle ? () => c.startTalk() : null,
+                    ),
+                  Center(
+                    child: LinkButton(
+                      label: 'Type instead',
+                      icon: Icons.keyboard_outlined,
+                      onTap: () => c.setTyping(true),
+                    ),
+                  ),
+                ],
+              )
             else
               Row(
                 children: [
@@ -605,6 +702,10 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
                     ),
                   ),
                 ],
+              ),
+            if (c.handsFree && c.typing && c.voiceUsable)
+              Center(
+                child: LinkButton(label: 'Talk instead', icon: Icons.mic_none_rounded, onTap: () => c.setTyping(false)),
               ),
           ],
         ],
@@ -728,40 +829,31 @@ class ReminderOfferCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-   padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-   decoration: BoxDecoration(
-     color: LtColors.paper,
-     borderRadius: BorderRadius.circular(18),
-     border: Border.all(color: LtColors.container, width: 1.5),
-   ),
-   child: Column(
-     crossAxisAlignment: CrossAxisAlignment.stretch,
-     children: [
-       WholeWordText(
-         'Would you like a gentle reminder each day?',
-         style: LtText.body(weight: FontWeight.w700),
-       ),
-       const SizedBox(height: 8),
-       Row(
-         children: [
-           Expanded(
-             child: LipButton(
-               label: 'Not now',
-               kind: LipKind.secondary,
-               height: 56,
-               fontSize: 19,
-               onTap: onNotNow,
-             ),
-           ),
-           const SizedBox(width: 10),
-           Expanded(
-             child: LipButton(label: 'Yes', height: 56, fontSize: 19, onTap: onYes),
-           ),
-         ],
-       ),
-     ],
-   ),
- );
+    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+    decoration: BoxDecoration(
+      color: LtColors.paper,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: LtColors.container, width: 1.5),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        WholeWordText('Would you like a gentle reminder each day?', style: LtText.body(weight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: LipButton(label: 'Not now', kind: LipKind.secondary, height: 56, fontSize: 19, onTap: onNotNow),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: LipButton(label: 'Yes', height: 56, fontSize: 19, onTap: onYes),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 }
 
 /// Mochi's encouragement after a check-in, and "Here's today's plan" (back to Home, then the plan).

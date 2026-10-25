@@ -121,7 +121,6 @@ class TwinRepository extends ChangeNotifier {
   int? get ageGroupWidth => _current?.ageGroupWidth;
   bool? get ageGroupNearestBand => _current?.ageGroupNearestBand;
 
-
   /// The one-time lifespan reveal (owner override 2026-10-24): a rough, proof-of-concept
   /// age and YEAR (never a date) from the current profile: the model owner's yearly Cox
   /// projection blended with the life table at the seams (Rough guide where the life table
@@ -131,8 +130,25 @@ class TwinRepository extends ChangeNotifier {
   LifespanEstimate? get lifespanEstimate {
     final a = _current;
     if (a == null || a.rawLogRelativeHazard == null) return null;
+    if (a.roughMissing) {
+      // Rough (1 or 2 answers missing): the same marginalised hazard as the score.
+      final fill = a.raw['rough_fill'], shift = a.raw['rough_shift'];
+      if (fill is! Map || shift is! double) return null;
+      return LifespanEstimate.forProfile(
+        {...a.profileUsed, ...Map<String, dynamic>.from(fill)},
+        currentYear: _clock().year,
+        lab: model.projection,
+        logHazardShift: shift,
+      );
+    }
     return LifespanEstimate.forProfile(a.profileUsed, currentYear: _clock().year, lab: model.projection);
   }
+
+  /// The model inputs still missing (package names, e.g. `vigorous_recreation_min_week`); empty
+  /// before a profile and when nothing is missing. With 1 or 2 the score is rough
+  /// ([HealthScoreStatus.roughMissing]); with more there is none.
+  List<String> get missingInputs => _current?.missingInputs ?? const [];
+  int get missingCount => missingInputs.length;
 
   /// True once the person has seen the lifespan reveal; the UI then de-emphasises it.
   /// Persisted; [deleteMyData] clears it.
@@ -775,8 +791,7 @@ class TwinRepository extends ChangeNotifier {
 
   List<HistoryItem> _documentReadingItems(DocumentCandidate c) {
     final date = c.date == null ? null : isoDate(c.date!);
-    HistoryItem item(String f, Object v) =>
-        HistoryItem(field: f, value: v, source: HistorySource.document, date: date);
+    HistoryItem item(String f, Object v) => HistoryItem(field: f, value: v, source: HistorySource.document, date: date);
     final v = c.value;
     switch (c.field) {
       case 'blood_pressure':

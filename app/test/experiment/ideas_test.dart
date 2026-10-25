@@ -357,7 +357,7 @@ void main() {
         expect(find.text('A few more answers'), findsOneWidget);
         expect(find.text('Hours of sleep'), findsOneWidget);
         expect(find.text('Time spent sitting each day'), findsOneWidget);
-        expect(find.text('Answer 2 more with Mochi'), findsOneWidget);
+        expect(find.text('Answer 2 more questions'), findsOneWidget);
         await evidence(t, 'ideas_not_yet');
       },
     );
@@ -453,7 +453,7 @@ void main() {
     );
 
     testWidgets(
-      '18 and over: the drivers screen's ideas row opens the list, Back to what moves it',
+      '18 and over: the drivers ideas row opens the list, Back to what moves it',
       (t) async {
         final src = FakeSource([pace, sleep]);
         final a = await routes(older, source: src);

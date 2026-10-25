@@ -17,13 +17,7 @@ import '../recommendations.dart';
 /// Give it a `ValueKey(idea.id)` so a new idea plays the hop once; everything here is decorative
 /// and hidden from VoiceOver (the card around it says the words).
 class IdeaScene extends StatefulWidget {
-  const IdeaScene({
-    super.key,
-    required this.appearance,
-    required this.kind,
-    this.bubble,
-    this.x = 0.5,
-  });
+  const IdeaScene({super.key, required this.appearance, required this.kind, this.bubble, this.x = 0.5});
 
   final TwinAppearance appearance;
   final String? kind;
@@ -38,27 +32,14 @@ class IdeaScene extends StatefulWidget {
   State<IdeaScene> createState() => _IdeaSceneState();
 }
 
-class _IdeaSceneState extends State<IdeaScene>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  );
+class _IdeaSceneState extends State<IdeaScene> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
   late final Animation<double> _hop = TweenSequence<double>([
     TweenSequenceItem(
-      tween: Tween(
-        begin: 6.0,
-        end: -5.0,
-      ).chain(CurveTween(curve: const Cubic(.2, 0, 0, 1))),
+      tween: Tween(begin: 6.0, end: -5.0).chain(CurveTween(curve: const Cubic(.2, 0, 0, 1))),
       weight: 45,
     ),
-    TweenSequenceItem(
-      tween: Tween(
-        begin: -5.0,
-        end: 0.0,
-      ).chain(CurveTween(curve: Curves.easeOut)),
-      weight: 55,
-    ),
+    TweenSequenceItem(tween: Tween(begin: -5.0, end: 0.0).chain(CurveTween(curve: Curves.easeOut)), weight: 55),
     TweenSequenceItem(tween: ConstantTween(0.0), weight: 480),
   ]).animate(_c);
   bool _started = false;
@@ -99,14 +80,7 @@ class _IdeaSceneState extends State<IdeaScene>
       child: ExperimentPlate(
         appearance: widget.appearance,
         bubble: widget.bubble,
-        twins: [
-          TwinSlot(
-            state: steadyTwin,
-            x: widget.x,
-            pose: ideaPose(widget.kind),
-            hop: _hop,
-          ),
-        ],
+        twins: [TwinSlot(state: steadyTwin, x: widget.x, pose: ideaPose(widget.kind), hop: _hop)],
         overlay: Stack(
           children: [
             for (final (i, icon) in props.indexed)
@@ -117,11 +91,7 @@ class _IdeaSceneState extends State<IdeaScene>
                 top: i == 0 ? 74 : 138,
                 child: ScaleTransition(
                   scale: _pop(i),
-                  child: IdeaProp(
-                    icon: icon,
-                    lilac: i == 1,
-                    tilt: i == 0 ? -0.12 : 0.1,
-                  ),
+                  child: IdeaProp(icon: icon, lilac: i == 1, tilt: i == 0 ? -0.12 : 0.1),
                 ),
               ),
           ],
@@ -134,12 +104,7 @@ class _IdeaSceneState extends State<IdeaScene>
 /// A decorative prop: a soft mint or lilac square with a slight tilt, 40 px, no border and no
 /// shadow, so it can never be mistaken for a button. Not announced.
 class IdeaProp extends StatelessWidget {
-  const IdeaProp({
-    super.key,
-    required this.icon,
-    this.lilac = false,
-    this.tilt = -0.1,
-  });
+  const IdeaProp({super.key, required this.icon, this.lilac = false, this.tilt = -0.1});
   final IconData icon;
   final bool lilac;
   final double tilt;
@@ -163,12 +128,7 @@ class IdeaProp extends StatelessWidget {
 
 /// A small Mochi in the pose for [kind], in a round lilac badge (the cards and rows).
 class IdeaThumb extends StatelessWidget {
-  const IdeaThumb({
-    super.key,
-    required this.appearance,
-    required this.kind,
-    this.size = 48,
-  });
+  const IdeaThumb({super.key, required this.appearance, required this.kind, this.size = 48});
   final TwinAppearance appearance;
   final String? kind;
   final double size;
@@ -188,12 +148,7 @@ class IdeaThumb extends StatelessWidget {
         maxWidth: size * 1.7,
         maxHeight: size * 1.7,
         alignment: const Alignment(0, -0.1),
-        child: TwinStateSprite(
-          state: steadyTwin,
-          appearance: appearance,
-          height: size * 1.7,
-          pose: ideaPose(kind),
-        ),
+        child: TwinStateSprite(state: steadyTwin, appearance: appearance, height: size * 1.7, pose: ideaPose(kind)),
       ),
     ),
   );
@@ -219,18 +174,11 @@ class GuidelineChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.menu_book_outlined,
-            size: 20,
-            color: LtColors.secondary,
-          ),
+          const Icon(Icons.menu_book_outlined, size: 20, color: LtColors.secondary),
           const SizedBox(width: 6),
           Text(
             'Guideline',
-            style: LtText.body(
-              weight: FontWeight.w700,
-              color: LtColors.secondary,
-            ),
+            style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary),
           ),
         ],
       ),
@@ -241,13 +189,7 @@ class GuidelineChip extends StatelessWidget {
 /// A tappable row for a short list of ideas (the check-in, onboarding, voice): Mochi's pose, the
 /// title and, optionally, the server's line. A 56 pt target.
 class IdeaRow extends StatelessWidget {
-  const IdeaRow({
-    super.key,
-    required this.idea,
-    required this.appearance,
-    required this.onTap,
-    this.showLine = true,
-  });
+  const IdeaRow({super.key, required this.idea, required this.appearance, required this.onTap, this.showLine = true});
   final Recommendation idea;
   final TwinAppearance appearance;
   final VoidCallback onTap;
@@ -268,9 +210,7 @@ class IdeaRow extends StatelessWidget {
           side: const BorderSide(color: LtColors.control, width: 2),
         ),
         child: InkWell(
-          customBorder: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(LtRadii.panel),
-          ),
+          customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(LtRadii.panel)),
           onTap: onTap,
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 64),
@@ -285,19 +225,11 @@ class IdeaRow extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(idea.title, style: LtText.display(20)),
-                        if (showLine)
-                          Text(
-                            line,
-                            style: LtText.body(color: LtColors.secondary),
-                          ),
+                        if (showLine) Text(line, style: LtText.body(color: LtColors.secondary)),
                       ],
                     ),
                   ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 28,
-                    color: LtColors.ink,
-                  ),
+                  const Icon(Icons.chevron_right_rounded, size: 28, color: LtColors.ink),
                 ],
               ),
             ),
@@ -337,7 +269,9 @@ class IdeasLinkRow extends StatelessWidget {
               children: [
                 const Icon(Icons.lightbulb_outline_rounded, size: 26, color: LtColors.ink),
                 const SizedBox(width: 12),
-                Expanded(child: Text(label, style: LtText.body(weight: FontWeight.w700))),
+                Expanded(
+                  child: Text(label, style: LtText.body(weight: FontWeight.w700)),
+                ),
                 const Icon(Icons.chevron_right_rounded, size: 28, color: LtColors.ink),
               ],
             ),
