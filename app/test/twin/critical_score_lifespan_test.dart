@@ -349,7 +349,9 @@ void main() {
           expect(e.p75Age, lessThan(121), reason: reason);
           expect(e.expectedYear, greaterThan(2026), reason: reason);
           expect(e.expectedYear, lessThan(2026 + 100), reason: reason);
-          expect(e.extrapolated, age < 35 || age > 79, reason: reason);
+          // Rough guide where the life table has the larger weight in the seam blend
+          // (owner ruling): ages 18-39 and 75-85.
+          expect(e.extrapolated, lifespanProjectionWeight(age) < 0.5, reason: reason);
           expect(e.caveat, contains('rough'), reason: reason);
           expect(
             e.caveat.contains('even rougher'),
@@ -472,12 +474,15 @@ void main() {
       },
     );
 
-    // Owner choice "Projection with fixes": the yearly Cox projection for 35-79 and the
-    // life table outside it. The two methods do not join: at the 35 seam the expected age
-    // jumps up by about 14-22 years and at the 79/80 seam it drops by about 4-12 years.
+    // Owner choices "Projection with fixes" and "blend the seams": the life table below 35
+    // and from 79, the yearly Cox projection at 45-70, blended linearly in between. No
+    // one-year step is now over 3 years (largest 2.3), but the projection sits 12-22 years
+    // above the life table, so across 35-45 the remaining years still grow (readme male:
+    // 47.8 at 35, 53.1 at 40, 57.3 at 45) and across 70-79 the expected age falls
+    // (103.8 at 70, 98.9 at 75). The rule this test states still does not hold.
     knownBug(
       'lifespan seams',
-      'the projection (35-79) and life table (18-34, 80-85) jump at ages 35 and 80',
+      'the blended projection/life-table seams (35-45, 70-79): remaining years rise, expected age falls',
       () {
       double? lastAge, lastRemaining;
       for (var age = 20; age <= 85; age += 5) {

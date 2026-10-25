@@ -7,7 +7,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/demo/demo_seed.dart' show rosaProfile;
-import 'package:lifesim/twin/lifespan.dart' show estimateLifespanForProfile, lifespanEndAge;
+import 'package:lifesim/twin/lifespan.dart' show estimateLifespanForProfile, lifespanEndAge, lifespanProjectionWeight;
 import 'package:lifesim/twin/profile_mapping.dart';
 import 'package:lifesim/twin/twin_model.dart';
 import 'package:lifesim/twin/twin_repository.dart';
@@ -277,10 +277,10 @@ void main() {
       expect(e.headline, contains('110+'));
       expect(e.caveat, contains('110+'));
 
-      // A very healthy woman of 35: even 50% is not reached by 110.
+      // A very healthy woman of 50 (pure projection): even 50% is not reached by 110.
       final best = {
         ...rosa(),
-        'age': 35,
+        'age': 50,
         'bmi': 25.0,
         'vigorous_recreation_min_week': 300,
         'moderate_recreation_min_week': 600,
@@ -293,7 +293,7 @@ void main() {
       expect(b.annualCurve.last.survivalPercent, greaterThan(50));
       expect((b.expectedAge, b.openEnded, b.p75Age, b.p75OpenEnded), (110.0, true, 110.0, true));
       expect(b.p25Age, lessThanOrEqualTo(110));
-      expect(b.expectedYear, 2026 + 75); // follows from expectedAge = 110
+      expect(b.expectedYear, 2026 + 60); // follows from expectedAge = 110
       expect(b.headline, contains('about 110+'));
 
       // Closed ends carry no flag.
@@ -302,31 +302,86 @@ void main() {
       expect(r.caveat, isNot(contains('110+')));
     });
 
-    test('ages 18, 34, 80 and 85 use the life table (Rough guide); 35 and 79 the projection', () {
+    test('the blend: life table below 35 and from 79, projection 45–70, linear in between', () {
+      expect([for (final a in [18, 34, 35, 40, 44.5, 45, 64, 70, 74.5, 75, 79, 79.5, 80, 85]) lifespanProjectionWeight(a)], [
+        0,
+        0,
+        0,
+        0.5,
+        0.95,
+        1,
+        1,
+        1,
+        0.5,
+        4 / 9,
+        0,
+        0,
+        0,
+        0,
+      ]);
       for (final sex in [1, 2]) {
-        for (final age in [18, 34, 35, 79, 80, 85]) {
+        for (final age in [18, 34, 35, 38, 40, 44, 45, 64, 70, 72, 75, 79, 80, 85]) {
           final p = {...rosa(), 'age': age, 'sex_nhanes': sex};
           final e = LifespanEstimate.forProfile(p, currentYear: 2026, lab: model.projection)!;
-          final outside = age < 35 || age > 79;
-          expect(e.status, outside ? LifespanStatus.extrapolated : LifespanStatus.available, reason: 'age $age');
-          expect(e.extrapolated, outside);
-          expect(e.caveat.contains('even rougher'), outside, reason: 'age $age');
-          if (outside) {
-            final curve = estimateLifespanForProfile(p);
-            expect(e.expectedAge, closeTo(curve.expectedAgeAtDeath, 1e-12));
-            expect(e.p25Age, closeTo(curve.age25thPercentile, 1e-12));
-            expect(e.p75Age, closeTo(curve.age75thPercentile, 1e-12));
-            expect(e.expectedYear, curve.expectedYear(2026));
-            expect(e.caveat, contains('2024 US life table'));
+          final w = lifespanProjectionWeight(age);
+          final curve = estimateLifespanForProfile(p);
+          final annual = model.projection!.assess(p, includeExtrapolation: true)['annual'] as Map?;
+          final reason = 'sex $sex age $age';
+          expect(e.projectionWeight, w, reason: reason);
+          if (w == 0) {
+            expect(e.expectedAge, closeTo(curve.expectedAgeAtDeath, 1e-12), reason: reason);
+            expect(e.p25Age, closeTo(curve.age25thPercentile, 1e-12), reason: reason);
+            expect(e.p75Age, closeTo(curve.age75thPercentile, 1e-12), reason: reason);
           } else {
-            final annual = model.projection!.assess(p, includeExtrapolation: true)['annual'] as Map;
-            expect(e.expectedAge, closeTo((annual['median_crossing_age'] as num).toDouble(), 1e-12));
+            final proj = (annual!['median_crossing_age'] as num?)?.toDouble() ?? 110.0;
+            expect(e.expectedAge, closeTo((1 - w) * curve.expectedAgeAtDeath + w * proj, 1e-9), reason: reason);
+          }
+          expect(e.p25Age, lessThanOrEqualTo(e.expectedAge), reason: reason);
+          expect(e.expectedAge, lessThanOrEqualTo(e.p75Age), reason: reason);
+          expect(e.expectedYear, 2026 + (e.expectedAge - age + 0.5).floor(), reason: reason);
+          // Rough guide only where the life table has the larger weight.
+          expect(e.extrapolated, w < 0.5, reason: reason);
+          expect(e.caveat.contains('even rougher'), w < 0.5, reason: reason);
+          expect(e.caveat, contains('Proof of concept'));
+          expect(e.caveat.contains('outside the ages'), age < 35 || age > 79, reason: reason);
+        }
+      }
+      // Pure life table works without the projection lab; where the projection has weight it
+      // is needed.
+      expect(LifespanEstimate.forProfile({...rosa(), 'age': 30}, currentYear: 2026, lab: null), isNotNull);
+      expect(LifespanEstimate.forProfile({...rosa(), 'age': 79}, currentYear: 2026, lab: null), isNotNull);
+      expect(LifespanEstimate.forProfile({...rosa(), 'age': 40}, currentYear: 2026, lab: null), isNull);
+      expect(LifespanEstimate.forProfile(rosa(), currentYear: 2026, lab: null), isNull);
+    });
+
+    test('no one-year step changes the expected age by more than 3 years, 18–85, both sexes', () {
+      final golden = jsonDecode(File('test/twin/lifespan_golden.json').readAsStringSync()) as Map<String, dynamic>;
+      final readme = Map<String, dynamic>.from(
+        (golden['profiles'] as List).cast<Map<String, dynamic>>().firstWhere(
+              (p) => p['name'] == 'male_45_readme',
+            )['profile']
+            as Map,
+      );
+      var largest = 0.0;
+      for (final base in [rosa(), readme]) {
+        for (final sex in [1, 2]) {
+          double? last;
+          for (var age = 18; age <= 85; age++) {
+            final e = LifespanEstimate.forProfile(
+              {...base, 'age': age, 'sex_nhanes': sex},
+              currentYear: 2026,
+              lab: model.projection,
+            )!;
+            if (last != null) {
+              final step = (e.expectedAge - last).abs();
+              if (step > largest) largest = step;
+              expect(step, lessThanOrEqualTo(3.0), reason: 'sex $sex age ${age - 1}→$age');
+            }
+            last = e.expectedAge;
           }
         }
       }
-      // The life table works without the projection lab; the projection does not.
-      expect(LifespanEstimate.forProfile({...rosa(), 'age': 30}, currentYear: 2026, lab: null), isNotNull);
-      expect(LifespanEstimate.forProfile(rosa(), currentYear: 2026, lab: null), isNull);
+      expect(largest, greaterThan(0));
     });
 
     test('the repository marks the life-table ages Rough guide', () async {
