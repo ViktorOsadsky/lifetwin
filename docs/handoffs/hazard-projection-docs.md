@@ -36,7 +36,7 @@ The measured Cox scope remains supported assessment ages 35â€“79 and horizons 1â
 
 Result: factual current-main documentation plus conditional copy for the latest held proposal. No app code, inference method, model artifact, schema or model version changes. The CDC method is not globally superseded: it remains current main and the proposed out-of-range fallback.
 
-PR / merge state: docs draft #115 remains conditional; engine #126 is open under an explicit owner hold. This task makes a local docs commit only, with no push, merge or posts. Owner confirmation and applicable checks remain dependencies; a strict known-bug test or arithmetic golden check does not establish clinical or long-range validation.
+PR / merge state: docs draft #115 remains conditional; engine #126 is open under an explicit owner hold. These changes are on the draft PR branch and are not merged. Owner confirmation and applicable checks remain dependencies; a strict known-bug test or arithmetic golden check does not establish clinical or long-range validation.
 
 Checks actually run: all local Markdown targets in these five documents resolve; `git diff --check` passes. Stage logs contain **107 / 104 / 123 / 124 words**, including tool/timing/rating lines and link labels, with all minutes/ratings still `[fill in]`. The confirmed team section is unchanged, and the model card's Development and Data/interpretation paragraphs match the source card exactly. No engine, provider, UI or device tests were run by this documentation review.
 
