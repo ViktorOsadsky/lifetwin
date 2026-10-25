@@ -100,7 +100,7 @@ class StepGuide implements ConversationGuide {
 class LiveInput extends FakeSpeechInput {
   void Function(String)? say;
   @override
-  Future<void> start(void Function(String text) onCaption) async {
+  Future<void> start(void Function(String text) onCaption, {void Function(Object error)? onDropped}) async {
     starts++;
     say = onCaption;
   }
