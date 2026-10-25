@@ -126,7 +126,7 @@
    "seed": 0,
    "small_talk": false
   },
-  "message": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150. More ideas are on the next screen.",
+  "message": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen.",
   "guide_mode": "guided",
   "provider_status": "not_configured",
   "voice_status": "deferred",
@@ -139,7 +139,7 @@
   "mascot_events": [
    {
     "state": "celebrating",
-    "caption": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150. More ideas are on the next screen."
+    "caption": "Got it. All done, thank you! One idea for you: You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen."
    }
   ],
   "complete": true,
@@ -176,7 +176,7 @@
     "id": "vigorous_plus_60",
     "lever": "vigorous_plus_60",
     "title": "Pick up the pace",
-    "message": "You said you walk. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150.",
+    "message": "You said you walk. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150.",
     "based_on": [
      "moderate_recreation_min_week",
      "vigorous_recreation_min_week",
@@ -279,7 +279,7 @@
    "seed": 0,
    "small_talk": false
   },
-  "message": "Got it. All done, thank you! One idea for you: You said you're active. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150. More ideas are on the next screen.",
+  "message": "Got it. All done, thank you! One idea for you: You said you're active. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen.",
   "guide_mode": "guided",
   "provider_status": "not_configured",
   "voice_status": "deferred",
@@ -292,7 +292,7 @@
   "mascot_events": [
    {
     "state": "celebrating",
-    "caption": "Got it. All done, thank you! One idea for you: You said you're active. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150. More ideas are on the next screen."
+    "caption": "Got it. All done, thank you! One idea for you: You said you're active. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150. More ideas are on the next screen."
    }
   ],
   "complete": true,
@@ -329,7 +329,7 @@
     "id": "vigorous_plus_60",
     "lever": "vigorous_plus_60",
     "title": "Pick up the pace",
-    "message": "You said you're active. You could try a faster pace for part of it. Brisk minutes count double toward the weekly 150.",
+    "message": "You said you're active. You could try a faster pace for part of it. Minutes that leave you out of breath count double toward the weekly 150.",
     "based_on": [
      "moderate_recreation_min_week",
      "vigorous_recreation_min_week"
