@@ -98,6 +98,8 @@ void main() {
       ),
     );
     await choose(t, "No, I'll type");
+    await t.tap(find.text('Keep talking')); // the inline offer, answered; the pill is the later shortcut
+    await t.pumpAndSettle();
     expect(find.text('Fill this in faster'), findsOneWidget);
     await t.tap(find.text('Fill this in faster'));
     await t.pumpAndSettle();
@@ -129,9 +131,76 @@ void main() {
       ),
     );
     await choose(t, "No, I'll type");
+    await t.tap(find.text('Keep talking'));
+    await t.pumpAndSettle();
     await t.tap(find.byIcon(Icons.close_rounded));
     await t.pump();
     expect(find.text('Fill this in faster'), findsNothing);
+  });
+
+  group('the inline offer to fill this in from Apple Health or a document', () {
+    Future<(VoiceOnboardingController, List<String>)> open(WidgetTester t) async {
+      t.view.physicalSize = const Size(390, 844);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      final c = VoiceOnboardingController(
+        guide: ThirdQuestionGuide(),
+        input: FakeSpeechInput(),
+        output: FakeSpeechOutput(),
+      );
+      final opened = <String>[];
+      await t.pumpWidget(
+        MaterialApp(
+          home: VoiceOnboardingScreen(
+            controller: c,
+            onDone: (_) {},
+            onUseHealth: () => opened.add('health'),
+            onUploadDocument: () => opened.add('document'),
+          ),
+        ),
+      );
+      await choose(t, "No, I'll type");
+      return (c, opened);
+    }
+
+    const ask = 'Want to save time? I can fill some of this from Apple Health or a health document.';
+
+    testWidgets('appears once by question 3, without the pill beside it; Keep talking brings the pill', (t) async {
+      await open(t);
+      expect(find.text(ask), findsOneWidget);
+      expect(find.text('Use Apple Health'), findsOneWidget);
+      expect(find.text('Upload a document'), findsOneWidget);
+      expect(find.text('Fill this in faster'), findsNothing, reason: 'never both at once');
+      await t.tap(find.text('Keep talking'));
+      await t.pumpAndSettle();
+      expect(find.text(ask), findsNothing, reason: 'offered once');
+      expect(find.text('Fill this in faster'), findsOneWidget);
+    });
+
+    testWidgets('Use Apple Health opens the Health import, once', (t) async {
+      final (_, opened) = await open(t);
+      await t.pump(const Duration(milliseconds: 700)); // a fresh question ignores a tap at first
+      await t.tap(find.text('Use Apple Health'));
+      await t.pumpAndSettle();
+      expect(opened, ['health']);
+      expect(find.text(ask), findsNothing);
+    });
+
+    testWidgets('Upload a document opens the document upload, once', (t) async {
+      final (_, opened) = await open(t);
+      await t.tap(find.text('Upload a document'));
+      await t.pumpAndSettle();
+      expect(opened, ['document']);
+      expect(find.text(ask), findsNothing);
+    });
+
+    testWidgets('not offered before question 3, and not after an import', (t) async {
+      final r = Rig();
+      await r.pump(t);
+      await choose(t, "No, I'll type");
+      expect(r.c.questionNumber, 1);
+      expect(find.text('Want to save time?', findRichText: true, skipOffstage: false), findsNothing);
+    });
   });
 
   testWidgets('an emergency pauses calmly: Call 911 is a tap, Continue sends resume and asks the question again', (

@@ -61,7 +61,9 @@ void main() {
     expect(c.turn!.phase, 'offering');
     expect(c.questionNumber, isNot(1)); // three answers are already confirmed
     expect(c.healthOffer, isTrue);
-    expect(find.text('Use my Apple Health'), findsOneWidget);
+    expect(find.text('Use Apple Health'), findsOneWidget, reason: 'the inline offer');
+    await t.tap(find.text('Keep talking'));
+    await t.pumpAndSettle();
 
     await t.enterText(find.byType(TextField), 'yes please');
     await t.tap(find.text('Send'));
