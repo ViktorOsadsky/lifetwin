@@ -187,7 +187,7 @@ class BandStore extends ChangeNotifier {
         'Keep recorded demo data separate from measured imports.',
       );
     }
-    final today = _day(_now());
+    final today = _day(_now().toLocal());
     if (reports.any((r) => r.day.compareTo(today) > 0)) {
       throw const BandFileFailure(
         'A band report is dated after today. Check the date on the band.',

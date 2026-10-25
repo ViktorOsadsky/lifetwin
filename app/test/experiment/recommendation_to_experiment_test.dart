@@ -110,12 +110,12 @@ void main() {
     expect(got?.leverValue, isNull);
   });
 
-  test('BUG: the app reads the server\'s experiment_lever / experiment_target somewhere', () {
+  test('the app reads the server\'s experiment_lever / experiment_target', () {
     final hits = Directory('lib')
         .listSync(recursive: true)
         .whereType<File>()
         .where((f) => f.path.endsWith('.dart'))
         .where((f) => f.readAsStringSync().contains('experiment_lever'));
     expect(hits, isNotEmpty, reason: 'the recommendations contract (#102) has a field the app never parses');
-  }, skip: 'BUG: no app code parses experiment_lever/experiment_target; Recommendation uses an assumed {lever_id,value} shape, IdeasScreen has no caller (onTry is unwired) and no /api/recommendations client exists');
+  });
 }

@@ -38,8 +38,14 @@ Future<LifeTwinProjectionLab> loadLifeTwinProjectionLab({
   LifeTwinModel? cox,
 }) async {
   final assets = bundle ?? rootBundle;
-  final neuralText = await assets.loadString(
+  // Read the bytes and decode here: AssetBundle.loadString hands files over 50 KB (this one
+  // is ~52 KB) to an isolate via compute(), which never completes inside a widget test's
+  // fake-async zone and would hang anything that loads the model there.
+  final neural = await assets.load(
     'packages/lifetwin_on_device/assets/neural_model.json',
+  );
+  final neuralText = utf8.decode(
+    neural.buffer.asUint8List(neural.offsetInBytes, neural.lengthInBytes),
   );
   return LifeTwinProjectionLab(
     cox ?? await loadLifeTwinModel(bundle: assets),

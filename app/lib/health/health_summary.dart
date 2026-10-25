@@ -1,7 +1,19 @@
 import 'health_sample.dart';
+import 'workout_averages.dart';
 
-/// Profile fields Apple Health can suggest. Names match contracts/profile.schema.json.
-enum HealthField { heightCm, weightKg, exerciseMinutesWeekly, sleepHours, systolicBp, diastolicBp }
+/// Profile fields recognized at the Apple Health confirmation boundary.
+/// Names match contracts/profile.schema.json; unavailable fields stay unanswered.
+enum HealthField {
+  heightCm,
+  weightKg,
+  exerciseMinutesWeekly,
+  sleepHours,
+  systolicBp,
+  diastolicBp,
+  vigorousRecreationMinWeek,
+  moderateRecreationMinWeek,
+  sedentaryMinDay,
+}
 
 extension HealthFieldName on HealthField {
   String get profileKey => switch (this) {
@@ -11,6 +23,9 @@ extension HealthFieldName on HealthField {
     HealthField.sleepHours => 'sleep_hours',
     HealthField.systolicBp => 'systolic_bp',
     HealthField.diastolicBp => 'diastolic_bp',
+    HealthField.vigorousRecreationMinWeek => 'vigorous_recreation_min_week',
+    HealthField.moderateRecreationMinWeek => 'moderate_recreation_min_week',
+    HealthField.sedentaryMinDay => 'sedentary_min_day',
   };
 }
 
@@ -22,6 +37,7 @@ class HealthCandidate {
     required this.basis,
     this.measuredAt,
     this.periodDays,
+    this.isEstimate = false,
   });
 
   final HealthField field;
@@ -38,10 +54,132 @@ class HealthCandidate {
   /// For averages (exercise, sleep, blood pressure): how many days were looked at.
   final int? periodDays;
 
+  /// Native mean-MET grouping estimates entire workouts, not measured zone time.
+  final bool isEstimate;
+
   static const source = 'apple_health';
 }
 
 const sleepTypes = {'SLEEP_ASLEEP', 'SLEEP_LIGHT', 'SLEEP_DEEP', 'SLEEP_REM'};
+
+/// The model asks about recreational activity and awake sitting, rather than
+/// total movement. These fields need their own evidence; no missing value is 0.
+const modelActivityFields = {
+  HealthField.vigorousRecreationMinWeek,
+  HealthField.moderateRecreationMinWeek,
+  HealthField.sedentaryMinDay,
+};
+const modelActivityWindowDays = 28;
+
+enum HealthActivityUnavailableReason {
+  /// Nothing recent was returned. iOS does not distinguish no data from denial.
+  noData,
+
+  /// Exercise totals, workout names and heart rate cannot establish both the
+  /// recreational context and minutes at the model's requested intensity.
+  recreationAndIntensityNotEstablished,
+
+  /// Stand hours count hours with at least one minute standing, not sitting
+  /// duration. Even actual standing duration leaves sleep/non-wear unknown.
+  awakeSittingNotMeasured,
+
+  /// A native read failed, was unsupported, timed out or failed strict parsing.
+  nativeEstimateUnavailable,
+
+  /// Bounded native query returned too many workouts to produce an estimate.
+  workoutQueryTruncated,
+
+  /// No usable workout mean-MET estimate exists for this intensity bucket.
+  noQualifyingWorkoutEstimate,
+}
+
+/// On-phone availability details for the import's confirmation/conversation
+/// boundary. This object has no raw samples or network serialization.
+class HealthSummary {
+  HealthSummary({
+    required List<HealthCandidate> candidates,
+    required Map<HealthField, HealthActivityUnavailableReason> unavailableActivity,
+  }) : candidates = List.unmodifiable(candidates),
+       unavailableActivity = Map.unmodifiable(unavailableActivity);
+
+  final List<HealthCandidate> candidates;
+  final Map<HealthField, HealthActivityUnavailableReason> unavailableActivity;
+}
+
+/// Adds native whole-workout mean-MET estimates only after strict parsing. They
+/// remain suggestions pending explicit recreational/context confirmation, never
+/// measured minutes in zones. Generic samples never infer either bucket/sitting.
+HealthSummary summarizeWithAvailability(
+  List<HealthSample> samples,
+  DateTime now, {
+  WorkoutAverages? workoutAverages,
+  bool workoutEstimateUnavailable = false,
+}) {
+  final recentActivity = samples.where(
+    (s) =>
+        const {
+          'EXERCISE_TIME',
+          'WORKOUT',
+          'HEART_RATE',
+          'ACTIVITY_INTENSITY',
+          'APPLE_STAND_HOUR',
+          'APPLE_STAND_TIME',
+          'STEPS',
+        }.contains(s.type) &&
+        _within(s, now, modelActivityWindowDays) &&
+        !s.start.isAfter(s.end) &&
+        (s.value == null || s.value!.isFinite),
+  );
+  final hasActivity = recentActivity.isNotEmpty;
+  final hasExercise = recentActivity.any(
+    (s) => const {'EXERCISE_TIME', 'WORKOUT', 'HEART_RATE', 'ACTIVITY_INTENSITY'}.contains(s.type),
+  );
+  final candidates = summarize(samples, now);
+  final unavailable = {
+    HealthField.vigorousRecreationMinWeek: hasExercise
+        ? HealthActivityUnavailableReason.recreationAndIntensityNotEstablished
+        : HealthActivityUnavailableReason.noData,
+    HealthField.moderateRecreationMinWeek: hasExercise
+        ? HealthActivityUnavailableReason.recreationAndIntensityNotEstablished
+        : HealthActivityUnavailableReason.noData,
+    HealthField.sedentaryMinDay: hasActivity
+        ? HealthActivityUnavailableReason.awakeSittingNotMeasured
+        : HealthActivityUnavailableReason.noData,
+  };
+  if (workoutAverages?.hasReturnedWorkouts == true || workoutAverages?.truncated == true) {
+    unavailable[HealthField.sedentaryMinDay] = HealthActivityUnavailableReason.awakeSittingNotMeasured;
+  }
+  for (final (field, minutes) in [
+    (HealthField.moderateRecreationMinWeek, workoutAverages?.moderateWeeklyMinutes),
+    (HealthField.vigorousRecreationMinWeek, workoutAverages?.vigorousWeeklyMinutes),
+  ]) {
+    if (workoutEstimateUnavailable) {
+      unavailable[field] = HealthActivityUnavailableReason.nativeEstimateUnavailable;
+    } else if (workoutAverages?.truncated == true) {
+      unavailable[field] = HealthActivityUnavailableReason.workoutQueryTruncated;
+    } else if (workoutAverages != null) {
+      // The profile accepts whole minutes. A sub-minute average that rounds to
+      // zero stays unanswered; an absent intensity is never a healthy zero.
+      if (minutes != null && minutes.round() > 0) {
+        candidates.add(
+          HealthCandidate(
+            field: field,
+            value: minutes.round(),
+            basis: WorkoutAverages.method,
+            periodDays: modelActivityWindowDays,
+            isEstimate: true,
+          ),
+        );
+        unavailable.remove(field);
+      } else {
+        unavailable[field] = workoutAverages.hasReturnedWorkouts
+            ? HealthActivityUnavailableReason.noQualifyingWorkoutEstimate
+            : HealthActivityUnavailableReason.noData;
+      }
+    }
+  }
+  return HealthSummary(candidates: candidates, unavailableActivity: unavailable);
+}
 
 /// Turns raw samples into at most one candidate per field.
 ///
@@ -73,6 +211,9 @@ const plausibleRange = <HealthField, (num, num)>{
   HealthField.sleepHours: (2, 14),
   HealthField.systolicBp: (70, 250),
   HealthField.diastolicBp: (40, 150),
+  HealthField.vigorousRecreationMinWeek: (0, 10080),
+  HealthField.moderateRecreationMinWeek: (0, 10080),
+  HealthField.sedentaryMinDay: (0, 1439),
 };
 
 List<HealthCandidate> _summarize(List<HealthSample> samples, DateTime now) {

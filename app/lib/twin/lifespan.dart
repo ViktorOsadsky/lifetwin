@@ -209,8 +209,8 @@ class LifespanEstimate {
 
   /// From a model profile (package codes; the profile the model accepted) in [currentYear].
   /// Null (unavailable) under 18 or over 85, for an age that is not a finite number, for an
-  /// incomplete or unsupported profile, and where the projection has weight: an age not in
-  /// whole years or no [lab].
+  /// incomplete or unsupported profile, and where the projection has weight, no [lab]. A
+  /// fractional age is fine: the projection runs at its floor, the blend weight uses it.
   static LifespanEstimate? forProfile(
     Map<String, dynamic> profile, {
     required int currentYear,
@@ -223,7 +223,10 @@ class LifespanEstimate {
     final table = _lifeTable(profile, age, currentYear);
     if (age < _checkedAges.low || age > _checkedAges.high) return table;
     final w = lifespanProjectionWeight(age);
-    final projection = lab == null ? null : _projection(profile, age, currentYear, lab);
+    // The projection steps whole years, so a fractional age runs it at the completed years
+    // (the floor); the weight uses the fractional age.
+    final whole = age == age.floor() ? profile : {...profile, 'age': age.floor()};
+    final projection = lab == null ? null : _projection(whole, age, currentYear, lab);
     if (w == 0 && table != null && projection == null) return table;
     if (projection == null || (w < 1 && table == null)) return null;
     return w == 1 ? projection : _blend(table!, projection, w, age, currentYear);

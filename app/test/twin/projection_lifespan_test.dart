@@ -403,7 +403,27 @@ void main() {
       expect(bad.expectedAge, lessThan(good.expectedAge));
     });
 
-    test('unavailable under 18, over 85, for an incomplete or unsupported profile, or a fractional age', () {
+    test('a fractional age gets an estimate: projection at the floor, blend weight fractional', () {
+      final p = rosa();
+      final half = LifespanEstimate.forProfile({...p, 'age': 64.5}, currentYear: 2026, lab: model.projection)!;
+      final whole = LifespanEstimate.forProfile(p, currentYear: 2026, lab: model.projection)!;
+      expect(half.expectedAge, whole.expectedAge); // pure projection, run at 64
+      expect(half.expectedYear, 2026 + (whole.expectedAge - 64.5 + 0.5).floor());
+      for (final age in [18.4, 34.9, 35.5, 40.25, 44.9, 70.5, 78.6, 79.5, 85.0]) {
+        final e = LifespanEstimate.forProfile({...p, 'age': age}, currentYear: 2026, lab: model.projection);
+        expect(e, isNotNull, reason: 'age $age');
+        expect(e!.projectionWeight, lifespanProjectionWeight(age), reason: 'age $age');
+        expect(e.p25Age, lessThanOrEqualTo(e.expectedAge));
+        expect(e.expectedAge, lessThanOrEqualTo(e.p75Age));
+      }
+      final mid = LifespanEstimate.forProfile({...p, 'age': 40.25}, currentYear: 2026, lab: model.projection)!;
+      final table = estimateLifespanForProfile({...p, 'age': 40.25});
+      final at40 = model.projection!.assess({...p, 'age': 40}, includeExtrapolation: true)['annual'] as Map;
+      final proj = (at40['median_crossing_age'] as num?)?.toDouble() ?? 110.0;
+      expect(mid.expectedAge, closeTo(0.475 * table.expectedAgeAtDeath + 0.525 * proj, 1e-9));
+    });
+
+    test('unavailable under 18, over 85, or for an incomplete or unsupported profile', () {
       final p = rosa();
       for (final q in [
         {...p, 'age': 17},
@@ -411,7 +431,6 @@ void main() {
         {...p, 'age': double.nan},
         {...p}..remove('bmi'),
         {...p, 'bmi': 60, 'sedentary_min_day': 1200, 'sleep_hours': 2},
-        {...p, 'age': 64.5},
       ]) {
         expect(LifespanEstimate.forProfile(q, currentYear: 2026, lab: model.projection), isNull, reason: '$q');
       }
