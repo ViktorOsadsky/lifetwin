@@ -207,10 +207,13 @@ def test_the_set_of_post_routes_is_the_one_we_test():
 
 
 def test_an_oversized_body_is_413_on_every_post_route_and_never_500():
-    app = create_app(settings(max_body_bytes=512, max_document_body_bytes=2048))
+    app = create_app(
+        settings(max_body_bytes=512, max_document_body_bytes=2048, max_pdf_body_bytes=4096)
+    )
     client = TestClient(app, raise_server_exceptions=False)
+    limits = {"/api/documents/extract": 2048, "/api/documents/read": 4096}
     for path in post_routes(app):
-        limit = 2048 if path == "/api/documents/extract" else 512
+        limit = limits.get(path, 512)
         body = json.dumps({"text": "x" * (limit + 1)})
         response = client.post(path, content=body, headers={"content-type": "application/json"})
         assert response.status_code == 413, (path, response.status_code)

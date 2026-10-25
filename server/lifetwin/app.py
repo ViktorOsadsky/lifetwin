@@ -27,6 +27,8 @@ from lifetwin.core.models import (
 )
 from lifetwin.documents import DocumentService
 from lifetwin.documents import router as documents_router
+from lifetwin.documents.models import MAX_PDF_BYTES, MAX_PDF_PAGES
+from lifetwin.documents.pdf import ClaudeDocumentReader
 from lifetwin.onboarding import (
     AnthropicExtractor,
     ChatCompletionsExtractor,
@@ -82,6 +84,10 @@ def invalid_input_message(exc: RequestValidationError) -> str:
         return "Please agree to use your voice first."
     if any("pages" in list(error.get("loc", [])) for error in errors):
         return "That document has too many pages or too much text. Please choose up to 10 pages."
+    if any("pdf_base64" in list(error.get("loc", [])) for error in errors):
+        return (
+            "That PDF is too big to send. Please choose one under 10 MB, or read it on this phone."
+        )
     if any(BP_ORDER_MESSAGE in str(error.get("msg", "")) for error in errors):
         return BP_ORDER_MESSAGE
     names = []
@@ -177,13 +183,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Documents: the deterministic parser always; the selected outside AI (Muse over Chat
     # Completions, or Claude) only when enabled, configured and the person agreed for
     # that provider in the request. It reads the words only, never the photo.
+    # A whole PDF goes to Claude only with DOCUMENT_PROVIDER=claude and the person's yes for
+    # that document (POST /api/documents/read); otherwise the phone reads it.
     conversation_extractor = application.state.conversation_service.extractor
+    pdf_reader = (
+        ClaudeDocumentReader(
+            api_key=settings.anthropic_api_key.get_secret_value(),
+            model=settings.claude_model,
+            timeout_seconds=settings.document_read_timeout_seconds,
+        )
+        if settings.document_provider == "claude"
+        else None
+    )
     application.state.document_service = DocumentService(
         conversation_extractor
         if settings.llm_provider in {"chat_completions", "anthropic"}
+        and settings.document_provider != "local"
         else None,
         muse_enabled=settings.document_muse_enabled,
         timeout_seconds=settings.provider_timeout_seconds,
+        pdf_reader=pdf_reader,
     )
     # Check-ins are guided only and stateless: the caller sends the previous answers.
     # The care reply may be reworded by the shared personalizer, only with consent for it.
@@ -263,7 +282,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "prediction": prediction_state,
             "voice": "available" if voice_configured(settings) else "unavailable",
             "health_data_storage": "none",
-            "documents": "text_extraction",
+            # Recognised text always works. "pdf": who may read a whole PDF, by name, for the
+            # app's per-document consent sheet; configured false: PDFs are read on the phone.
+            "documents": {
+                "text_extraction": True,
+                "pdf": {
+                    "provider": settings.document_provider,
+                    "display_name": DISPLAY_NAMES.get(settings.document_provider),
+                    "company": COMPANIES.get(settings.document_provider),
+                    "configured": bool(pdf_reader and pdf_reader.configured),
+                    "endpoint": "/api/documents/read",
+                    "max_bytes": MAX_PDF_BYTES,
+                    "max_pages": MAX_PDF_PAGES,
+                },
+            },
             # The app's consent text names this provider; consent is per provider.
             "personalize": {
                 "provider": personalizer.name,
