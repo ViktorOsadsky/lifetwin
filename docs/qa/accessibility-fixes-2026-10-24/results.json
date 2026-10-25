@@ -1,0 +1,104 @@
+{
+  "scope": "Focused proposed-fix native regression; not full accessibility or model-parity acceptance",
+  "base": "27c973654f4ca44475dbc4dddbcdbf5d0198bdf6",
+  "home_commit": "3930b80a597da725166cee3bb2d213ff2c80ae1a",
+  "conversation_commit": "828f624f461ebe42afc097710c5d1bcee678eb14",
+  "native": [
+    {
+      "check": "Home whole direction words and full Today plus separate Check in through scrolling",
+      "scale16": "PASS observed; test01 44.751s",
+      "ax5": "PASS observed; test01 41.658s",
+      "evidence": [
+        "scale16/scale16-home.png",
+        "ax5/ax5-home-scroll1.png",
+        "ax5/ax5-home-scroll2.png"
+      ]
+    },
+    {
+      "check": "Score-info caveats and Got it reachable across scrolling",
+      "scale16": "PASS observed",
+      "ax5": "PASS observed",
+      "evidence": [
+        "ax5/ax5-score-info.png",
+        "ax5/ax5-score-info-scroll1.png",
+        "ax5/ax5-score-info-scroll2.png"
+      ]
+    },
+    {
+      "check": "Experiment banner and mode pills separated; body and honesty dock scroll",
+      "scale16": "PASS targeted geometry observed; test02 24.744s",
+      "ax5": "PARTIAL targeted separation/What-if and dock observed; test02 28.864s; Today only partially captured, not full-page pass",
+      "evidence": [
+        "scale16/scale16-experiment-hub.png",
+        "ax5/ax5-experiment-hub.png",
+        "ax5/ax5-experiment-body1.png",
+        "ax5/ax5-experiment-dock-scrolled.png"
+      ]
+    },
+    {
+      "check": "Experiment fixed toolbar title at AX5",
+      "scale16": "Not separately accepted",
+      "ax5": "FAIL large title vertically cropped/ellipsized; separate shared-header follow-up, not fixed by these patches",
+      "evidence": [
+        "ax5/ax5-experiment-body1.png"
+      ]
+    },
+    {
+      "check": "Initial sleep question with keyboard, exact typed7 and keyboard retained after scroll gestures",
+      "scale16": "OBSERVED scope passed within a method that later failed wrong next-title premise; no complete passing test03 claimed",
+      "ax5": "PASS final focused test03 22.332s,0 failures,exit0",
+      "limits": "At AX5 the generic body gesture starts over the dock, so independent body scroll offset is not established; full prompt and exact draft/keyboard retention are. Independent body scrolling is observed at1.6 and host-tested. No native next-question sequence acceptance.",
+      "evidence": [
+        "scale16/scale16-checkin-keyboard.png",
+        "scale16/scale16-checkin-draft-after-scroll.png",
+        "ax5/ax5-checkin-keyboard.png",
+        "ax5/ax5-checkin-draft-after-scroll.png"
+      ]
+    },
+    {
+      "check": "Actual VoiceOver Settings focus while ambient activity changes",
+      "scale16": "BLOCKED NoSpeech on traversal; initial room speech read only; native collector passing is not speech pass",
+      "ax5": "NOT_RUN",
+      "evidence": [
+        "scale16-voiceover-actual-trace.txt",
+        "scale16-voiceover-result.txt",
+        "scale16-voiceover-restoration.txt"
+      ]
+    }
+  ],
+  "host": {
+    "home3930b80": {
+      "focused_tests": 35,
+      "full_flutter_tests": 1191,
+      "full_seconds": 41,
+      "focused_analysis": "clean",
+      "reported_by": "root; initial incomplete copy1185passed+3environmentfailures, then synced fixtures and reran"
+    },
+    "newer_composed_health_base8b6e91f": {
+      "full_flutter_tests": 1217,
+      "analysis": "clean",
+      "source_manifest": "composed-host-source.json",
+      "reported_by": "root; separate host composition, not native source"
+    }
+  },
+  "cleanup": {
+    "original_content_size": "large",
+    "final_content_size": "large",
+    "original_appearance": "light",
+    "final_appearance": "light",
+    "original_voiceover": false,
+    "restored_voiceover": false,
+    "original_device_state": "Shutdown",
+    "final_device_state": "Shutdown",
+    "isolated_app_uninstalled": true,
+    "isolated_runner_uninstalled": true,
+    "own_server8134_stopped": true
+  },
+  "raw_results_directory": "/private/tmp/lifetwin-accessibility-fixes-134",
+  "physical_device_used": false,
+  "record_branch_base": "50cdac993c108fc156858169d65d213feb093ccf",
+  "later_owner_changes_unverified": [
+    "PR165 collapsible score",
+    "PR164 full reset"
+  ]
+}

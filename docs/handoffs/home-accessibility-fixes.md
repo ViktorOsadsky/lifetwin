@@ -1,9 +1,13 @@
 # Home accessibility fixes — #142 and #150
 
 Track C, coordinated with the #134 audit. Daniel's screen ownership is unchanged.
-Branch `codex/c-home-accessibility-fixes` starts at `27c9736`; local commit only,
-with root handling the PR and merge. This handoff records host verification;
-native VoiceOver and rendered acceptance of the fix remain separate.
+Product branch `codex/c-home-accessibility-fixes` started at `27c9736`; PR160
+merged as `bda309e`. The final tested production fix is `3930b80`. This evidence
+is on separate branch `codex/c-accessibility-fix-evidence` from owner main `50cdac9`.
+Focused native evidence composes it with conversation PR161 (`828f624`, merged `ef4d20c`);
+actual VoiceOver traversal remains blocked, separately from host semantics.
+Later owner PR165 score collapse and PR164 reset changes are outside that native
+source and remain unverified by these captures.
 
 ## Result and affected contracts
 
@@ -14,9 +18,9 @@ native VoiceOver and rendered acceptance of the fix remain separate.
   the selected text size and bold setting. They stack with full available width
   before the horizontal arrangement would fragment words. Score, percentile,
   marker and caveats keep the existing model values and meaning.
-- `wellness/today_card.dart`: the condensed card keeps the full summary without
-  ellipsis. At large text it puts the summary above the separate Check in action.
-  The normal layout keeps the action alongside the summary. Both actions retain
+- `wellness/today_card.dart`: the condensed card retains its two-line compact preview
+  at normal text size. At scale >=1.5 it shows the full summary above the separate
+  Check in action. The normal layout keeps the action alongside the summary. Both actions retain
   their existing callbacks; no text-size cap or scale-down widget is added.
 
 No profile, model, API, planner or persistence contract changes. The natural card
@@ -50,16 +54,23 @@ that environment issue; no production or existing test change was needed.
 
 ## Next dependency and limits
 
-Root coordinates native regression with the separate Experiment/check-in fixes.
-Capture both 1.6 and maximum native text with readback, inspect full scrolling
-content, and run actual VoiceOver traversal during ambient activity changes.
+The focused native regression with the separate Experiment/check-in fixes is
+recorded in [the composed evidence](../qa/accessibility-fixes-2026-10-24/README.md).
+It captures 1.6 and maximum native text with readback and inspects scrolling content.
+The bounded actual VoiceOver attempt could read the initial room description but
+returned NoSpeech on traversal; quiet ambient speech acceptance remains BLOCKED.
 Host semantics flags do not establish spoken output, focus retention or native
 touch accessibility. This patch does not claim a full accessibility audit pass.
-No physical iPhone or simulator was used for the host checks above.
+No physical iPhone was used. Native evidence uses only the isolated iOS27 simulator.
 
 
 CI follow-up: the full suite exposed two integration regressions missed by the initial focused set.
 The score scale now uses intrinsic-compatible `OverflowBar`, protecting the existing score/reveal sheet.
 Normal-size Today keeps its existing two-line compact preview and opens the full plan on tap; at large text
 it expands fully with Check in beneath. The existing long-plan compact-height test and lifespan reveal flow
-are included in the expanded validation. Native capture waits for these corrections.
+are included in the expanded validation. Native capture uses these corrections. Root then ran all 35 focused/integration tests,
+all 1191 Flutter tests (41 seconds), and focused analysis cleanly. The first full
+temporary copy lacked sibling contracts/model fixtures (1185 passed, three environment
+failures); syncing them yielded the complete pass. A separate latest-main composition
+with Health/reset `8b6e91f` plus both UI patches passed all 1217 Flutter tests and full
+analysis; that host composition is distinct from the native base `27c9736` overlay.

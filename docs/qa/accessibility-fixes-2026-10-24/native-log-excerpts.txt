@@ -1,0 +1,41 @@
+== scale16-native-tests.log ==
+Test Case '-[A11y134UITests test01Home]' passed (44.751 seconds).
+Test Case '-[A11y134UITests test02ExperimentModes]' passed (24.744 seconds).
+/tmp/lifetwin-a11y134-validation/ios/A11y134UITests/A11y134UITests.m:88: error: -[A11y134UITests test03KeyboardCheckIn] : (([app.staticTexts[@"How much sitting?"]waitForExistenceWithTimeout:8]) is true) failed - Actual next sitting question
+Test Case '-[A11y134UITests test03KeyboardCheckIn]' failed (29.746 seconds).
+2026-10-24 23:44:28.983220-0700 A11y134UITests-Runner[29204:3309494] FIX134 scale16-voiceover-result.txt BLOCKED insufficient actual traversal or activity transition evidence; focused=0 distinctActivities=0 sampleErrors=0
+2026-10-24 23:44:28.984222-0700 A11y134UITests-Runner[29204:3309494] FIX134 scale16-voiceover-actual-trace.txt BLOCKED traversal: Error Domain=com.apple.xctest.voiceoverservice Code=3 "No speech available" UserInfo={NSLocalizedDescription=No speech available}
+2026-10-24 23:44:34.060400-0700 A11y134UITests-Runner[29204:3309494] FIX134 scale16-voiceover-restoration.txt initial=0 final=0
+Test Case '-[A11y134UITests test04QuietAmbientVoiceOver]' passed (25.224 seconds).
+** TEST EXECUTE FAILED **
+
+== scale16-checkin-corrected.log ==
+/tmp/lifetwin-a11y134-validation/ios/A11y134UITests/A11y134UITests.m:99: error: -[A11y134UITests test03KeyboardCheckIn] : (([app.staticTexts[@"How much sitting?"]waitForExistenceWithTimeout:8]) is true) failed - Actual next sitting question
+Test Case '-[A11y134UITests test03KeyboardCheckIn]' failed (31.604 seconds).
+** TEST EXECUTE FAILED **
+
+== scale16-checkin-final.log ==
+/tmp/lifetwin-a11y134-validation/ios/A11y134UITests/A11y134UITests.m:82: error: -[A11y134UITests test03KeyboardCheckIn] : Failed to not hittable: TextField, {{5.3, 24.7}, {103.3, 23.7}}
+Test Case '-[A11y134UITests test03KeyboardCheckIn]' failed (14.514 seconds).
+** TEST EXECUTE FAILED **
+
+== scale16-vo-standalone.log ==
+2026-10-24 23:47:35.422806-0700 A11y134UITests-Runner[33395:3340920] FIX134 scale16-voiceover-result.txt BLOCKED insufficient actual traversal or activity transition evidence; focused=0 distinctActivities=0 sampleErrors=0
+2026-10-24 23:47:35.424913-0700 A11y134UITests-Runner[33395:3340920] FIX134 scale16-voiceover-actual-trace.txt initialSpeech=LifeTwin A cozy room with a bed, a table, a yoga mat and a shelf error=(null)
+BLOCKED traversal: Error Domain=com.apple.xctest.voiceoverservice Code=3 "No speech available" UserInfo={NSLocalizedDescription=No speech available}
+2026-10-24 23:47:40.526289-0700 A11y134UITests-Runner[33395:3340920] FIX134 scale16-voiceover-restoration.txt initial=0 final=0
+Test Case '-[A11y134UITests test04QuietAmbientVoiceOver]' passed (28.374 seconds).
+** TEST EXECUTE SUCCEEDED **
+
+== ax5-native-tests.log ==
+Test Case '-[A11y134UITests test01Home]' passed (41.658 seconds).
+Test Case '-[A11y134UITests test02ExperimentModes]' passed (28.864 seconds).
+/tmp/lifetwin-a11y134-validation/ios/A11y134UITests/A11y134UITests.m:94: error: -[A11y134UITests test03KeyboardCheckIn] : Failed to get matching snapshot: No matches found for Elements matching predicate '"Type your answer" IN identifiers' from input {(
+    TextField, value: 7, Keyboard Focused
+Test Case '-[A11y134UITests test03KeyboardCheckIn]' failed (23.413 seconds).
+** TEST EXECUTE FAILED **
+
+== ax5-checkin-final.log ==
+Test Case '-[A11y134UITests test03KeyboardCheckIn]' passed (22.332 seconds).
+** TEST EXECUTE SUCCEEDED **
+
