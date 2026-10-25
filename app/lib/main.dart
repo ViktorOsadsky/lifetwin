@@ -306,6 +306,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               profile: _profile ?? const {},
               appearance: _look.value,
               healthKeys: {..._healthKeys},
+              onDrivers: () => _agentic.drivers(forecastContext),
+              onPlayQuiz: () => _playQuiz(forecastContext),
               onResult: (f) {
                 if (f.supported) _outlook.value = f;
               },
@@ -380,6 +382,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onHistory: _wellness == null ? null : () => _history(context),
           onPlan: _wellness != null && (_profile?['age'] as num? ?? 0) >= 18 ? () => _plan(context) : null,
           onQuiz: () => _playQuiz(context),
+          onDrivers: () => _agentic.drivers(context),
           extraPills: _agentic.pills(context),
         ),
       ),

@@ -45,6 +45,7 @@ class RoomScreen extends StatefulWidget {
     this.onPlan,
     this.extraPills = const [],
     this.onUploadDocument,
+    this.onDrivers,
   });
 
   /// Cosmetic look only; never part of the health profile.
@@ -74,6 +75,9 @@ class RoomScreen extends StatefulWidget {
   final List<Widget> extraPills;
   /// "Upload a document": health-document upload, offered at entry beside Apple Health.
   final VoidCallback? onUploadDocument;
+
+  /// "What moves it" on the Home card.
+  final VoidCallback? onDrivers;
 
   static const talkFirst = "Let's talk first, so I can make your forecast.";
 
@@ -221,7 +225,7 @@ class _RoomScreenState extends State<RoomScreen> {
                               builder: (context, look, _) => NameBanner(name: look.name),
                             ),
                             card: widget.wellness == null ? _OutlookCard(outlook: widget.outlook, onTap: _fortune) : HomeWellnessPanel(
-                              snapshot: widget.wellness!, compact: true, onEstimate: _fortune, onHistory: widget.onHistory,
+                              snapshot: widget.wellness!, compact: true, onEstimate: _fortune, onHistory: widget.onHistory, onDrivers: widget.onDrivers,
                             ),
                           ),
                           Opacity(

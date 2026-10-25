@@ -18,11 +18,15 @@ class HomeWellnessPanel extends StatelessWidget {
     required this.snapshot,
     required this.onEstimate,
     this.onHistory,
+    this.onDrivers,
     this.compact = false,
   });
   final bool compact;
   final WellnessSnapshot snapshot;
   final VoidCallback? onHistory;
+
+  /// "What moves it": the outlook's drivers.
+  final VoidCallback? onDrivers;
   final VoidCallback onEstimate;
 
   static const tagline = 'Feeling good now, and healthy years ahead.';
@@ -42,6 +46,8 @@ class HomeWellnessPanel extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             if (onHistory != null) TextButton(onPressed: onHistory, child: const WholeWordText('My history')),
+            if (!snapshot.underAge && onDrivers != null)
+              TextButton(onPressed: onDrivers, child: const WholeWordText('What moves it')),
             if (!snapshot.underAge)
               TextButton(onPressed: onEstimate, child: const WholeWordText('See your estimate')),
           ],

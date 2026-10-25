@@ -15,6 +15,7 @@ import 'experiment/wellness_screen.dart';
 import 'twin/twin_repository.dart';
 import 'ui/twin_appearance.dart';
 import 'voice/api_base.dart';
+import 'wellness/outlook_drivers_screen.dart';
 
 /// Everything the agentic screens need from the app shell, in one place so `main.dart` stays small:
 /// the scope that lets any screen call `openCheckIn`, the Room's pills, and the routes behind them
@@ -106,6 +107,31 @@ class AgenticRoutes {
             Navigator.of(c).pop();
             changeWithMochi(context, field);
           },
+        ),
+      ),
+    );
+  }
+
+  /// "What moves it": the engine's guidance cards as directions only (strengths link with a higher
+  /// outlook, opportunities with a lower one). "Explore an experiment" opens [experiment].
+  void drivers(BuildContext context) {
+    final r = repo;
+    if (r == null) return;
+    final drivers = [
+      for (final c in r.wellnessCards)
+        if (c.level == 'strength' || c.level == 'opportunity')
+          OutlookDriver(
+            label: c.title,
+            direction: c.level == 'strength' ? DriverDirection.higher : DriverDirection.lower,
+            reason: c.message,
+          ),
+    ];
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (c) => OutlookDriversScreen(
+          drivers: drivers,
+          onBack: () => Navigator.of(c).pop(),
+          onExperiment: () => experiment(c),
         ),
       ),
     );
