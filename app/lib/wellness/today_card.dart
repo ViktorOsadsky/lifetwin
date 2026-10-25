@@ -26,6 +26,7 @@ class TodayWithMochiCard extends StatefulWidget {
     this.onPlan,
     this.condensed = false,
     this.trailing,
+    this.onIdeas,
     this.openUrl = defaultOpenUrl,
   });
 
@@ -43,6 +44,9 @@ class TodayWithMochiCard extends StatefulWidget {
 
   /// Condensed only: a control at the right of the row (Home's Check in button).
   final Widget? trailing;
+
+  /// "More ideas ›" (full card only; Home's compact card stays one short row). Null hides it (under 18).
+  final VoidCallback? onIdeas;
 
   @override
   State<TodayWithMochiCard> createState() => _TodayWithMochiCardState();
@@ -244,6 +248,7 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> {
                     onWhy: () => _why(item),
                     onFeedback: (status, {reason}) => _feedback(item, status, reason: reason),
                   ),
+            if (widget.onIdeas != null) MoreIdeasLink(onTap: widget.onIdeas!),
           ],
         ),
       ),
@@ -350,4 +355,39 @@ class _Row extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "More ideas ›": opens Ideas for you. A 48pt target.
+class MoreIdeasLink extends StatelessWidget {
+  const MoreIdeasLink({super.key, required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerLeft,
+    child: Semantics(
+      button: true,
+      label: 'More ideas',
+      excludeSemantics: true,
+      onTap: onTap,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            widthFactor: 1,
+            child: Text(
+              'More ideas ›',
+              style: LtText.body(weight: FontWeight.w700).copyWith(
+                decoration: TextDecoration.underline,
+                decorationThickness: 2,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }

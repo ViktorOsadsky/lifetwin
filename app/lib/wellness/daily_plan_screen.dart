@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../ui/theme.dart';
 import '../ui/widgets/widgets.dart';
 import 'coach_client.dart';
+import 'today_card.dart' show MoreIdeasLink;
 import 'widgets.dart';
 
 class DailyPlanScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class DailyPlanScreen extends StatefulWidget {
     required this.onTalk,
     this.initialPlan,
     this.onPlan,
+    this.onIdeas,
   });
   final CoachClient client;
 
@@ -30,6 +32,9 @@ class DailyPlanScreen extends StatefulWidget {
 
   /// The repository integration may persist the plan on the phone.
   final Future<void> Function(DailyPlan)? onPlan;
+
+  /// "More ideas ›": Ideas for you (null hides it: under 18).
+  final VoidCallback? onIdeas;
 
   @override
   State<DailyPlanScreen> createState() => _DailyPlanScreenState();
@@ -287,6 +292,7 @@ class _DailyPlanScreenState extends State<DailyPlanScreen> {
               message: 'Let’s find a small next step together.',
             ),
           for (final item in plan.items) _item(item),
+          if (widget.onIdeas != null) MoreIdeasLink(onTap: widget.onIdeas!),
         ],
         if (plan.changes.isNotEmpty)
           WellnessCard(

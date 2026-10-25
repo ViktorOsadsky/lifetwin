@@ -30,7 +30,11 @@ class LeverDetailScreen extends StatefulWidget {
     required this.leverId,
     required this.appearance,
     this.open = defaultOpenUrl,
+    this.presetValue,
   });
+
+  /// An idea's target value to start the control on; null starts where the what-if is.
+  final double? presetValue;
 
   final TwinRepository repository;
 
@@ -47,7 +51,7 @@ class LeverDetailScreen extends StatefulWidget {
 class _LeverDetailScreenState extends State<LeverDetailScreen> {
   // This lever alone, on a fresh copy.
   late final TwinExperiment _probe = widget.repository.experiment()!
-    ..set(widget.leverId, widget.whatIf.lever(widget.leverId).value ?? 0);
+    ..set(widget.leverId, widget.presetValue ?? widget.whatIf.lever(widget.leverId).value ?? 0);
 
   @override
   void dispose() {

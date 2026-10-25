@@ -34,7 +34,21 @@ class ExperimentScreen extends StatefulWidget {
     this.onBack,
     this.onTellMochi,
     this.openUrl = defaultOpenUrl,
+    this.onIdeas,
+    this.presetLever,
+    this.presetValue,
+    this.backLabel = 'Back to room',
   });
+
+  /// "Ideas for you" row (null hides it: under 18, or no ideas source).
+  final VoidCallback? onIdeas;
+
+  /// An idea's lever to open on arrival, and the value to start it on (null: no preset value).
+  final String? presetLever;
+  final double? presetValue;
+
+  /// "Back to {origin}".
+  final String backLabel;
 
   final TwinRepository repository;
   final TwinAppearance appearance;
@@ -52,6 +66,18 @@ class ExperimentScreen extends StatefulWidget {
 class _ExperimentScreenState extends State<ExperimentScreen> {
   // A fresh what-if from the stored profile. It only reads the repository.
   late final TwinExperiment? _exp = widget.repository.experiment();
+
+  @override
+  void initState() {
+    super.initState();
+    final lever = widget.presetLever, exp = _exp;
+    if (lever != null && exp != null && exp.current.available) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_levers(exp).any((l) => l.id == lever)) return;
+        _openLever(context, exp, lever, preset: widget.presetValue);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -116,7 +142,7 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
     return ExperimentPage(
       title: ExperimentCopy.title,
       onBack: _back,
-      backLabel: 'Back to room',
+      backLabel: widget.backLabel,
       dock: HonestyDock(
         action: LipButton(
           label: ExperimentCopy.sideBySide,
@@ -149,6 +175,10 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
             summary: counted > 0 && display.hasNumber ? _together(counted) : null,
             celebrate: true,
           ),
+          if (widget.onIdeas != null) ...[
+            const SizedBox(height: 14),
+            _IdeasRow(onTap: widget.onIdeas!),
+          ],
           const SizedBox(height: 14),
           Sheet(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -196,12 +226,13 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
 
   String _name(String id) => LeverCopy.of(id)?.full ?? 'This change';
 
-  void _openLever(BuildContext context, TwinExperiment exp, String id) => Navigator.of(context).push(
+  void _openLever(BuildContext context, TwinExperiment exp, String id, {double? preset}) => Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (_) => LeverDetailScreen(
         repository: widget.repository,
         whatIf: exp,
         leverId: id,
+        presetValue: preset,
         appearance: widget.appearance,
         open: widget.openUrl,
       ),
@@ -215,6 +246,41 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
         whatIf: exp,
         appearance: widget.appearance,
         open: widget.openUrl,
+      ),
+    ),
+  );
+}
+
+/// "Ideas for you": a row on the hub that opens the ideas list.
+class _IdeasRow extends StatelessWidget {
+  const _IdeasRow({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: 'Ideas for you. Personal ideas to try with your twin.',
+    excludeSemantics: true,
+    onTap: onTap,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 64),
+        padding: const EdgeInsets.fromLTRB(12, 8, 10, 8),
+        decoration: BoxDecoration(
+          color: LtColors.paper,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: LtColors.control, width: 2),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.lightbulb_outline_rounded, size: 28, color: LtColors.ink),
+            const SizedBox(width: 12),
+            Expanded(child: WholeWordText('Ideas for you', style: LtText.body(size: 18, weight: FontWeight.w700))),
+            const Icon(Icons.chevron_right_rounded, size: 28, color: LtColors.ink),
+          ],
+        ),
       ),
     ),
   );

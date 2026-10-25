@@ -36,12 +36,16 @@ class OutlookDriversScreen extends StatelessWidget {
     required this.drivers,
     required this.onBack,
     required this.onExperiment,
+    this.onIdeas,
   });
   final List<OutlookDriver> drivers;
   final VoidCallback onBack;
 
   /// The Experiment screen belongs to codex/c-agentic-ui.
   final VoidCallback onExperiment;
+
+  /// "See ideas": the Ideas for you list (null hides it: under 18).
+  final VoidCallback? onIdeas;
 
   @override
   Widget build(BuildContext context) => WellnessPage(
@@ -94,6 +98,10 @@ class OutlookDriversScreen extends StatelessWidget {
       ),
       const SizedBox(height: 18),
       LipButton(label: 'Explore an experiment', onTap: onExperiment),
+      if (onIdeas != null) ...[
+        const SizedBox(height: 12),
+        LipButton(label: 'See ideas', kind: LipKind.secondary, height: 56, fontSize: 20, onTap: onIdeas),
+      ],
     ],
   );
 }

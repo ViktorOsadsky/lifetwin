@@ -26,6 +26,8 @@ import 'health/health_reader.dart';
 import 'health/health_sample.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'experiment/experiment_screen.dart';
+import 'experiment/ideas_list_screen.dart';
+import 'experiment/recommendations.dart';
 import 'experiment/room_pills.dart';
 import 'experiment/still_learning_screen.dart';
 import 'experiment/weight_screen.dart';
@@ -61,6 +63,7 @@ class AgenticRoutes {
     this.documentService,
     CoachClient? coach,
     CapabilitiesClient? capabilities,
+    this.ideasSource,
     BandClient? bandClient,
     BandFilePicker? bandFilePicker,
     this.onDeleted,
@@ -89,6 +92,9 @@ class AgenticRoutes {
   /// Today's plan (`POST /api/coach/plan`); tests pass a fake.
   late final CoachClient coach = _coach ?? HttpCoachClient(base: _api);
   final CoachClient? _coach;
+
+  /// Ideas for you (`POST /api/recommendations`); tests pass a fake.
+  final RecommendationsSource Function(TwinRepository repo)? ideasSource;
 
   /// The check-in server; it is told the profile's age so Mochi's examples fit.
   late final CheckinGuide guide = _guide ?? HttpCheckinClient(base: _api, age: () => repo?.profile['age']);
@@ -401,14 +407,19 @@ class AgenticRoutes {
     client: coach,
     onPlan: (p) => _lastPlan = p,
     confirmedContext: () => coachContext(repo!),
-    beforeFirstPlan: () => ensureOutsideAiConsent(context),
+    // No consent ask here: the card shows on Home, which can sit behind onboarding's last screen. The ask
+    // comes from the person's tap (opening the plan, or Ideas).
+    onIdeas: ideasAllowed ? () => ideas(context, origin: 'Today') : null,
     onOpen: () => todayPlan(context, onTalk: onTalk),
   );
 
   /// The full daily plan (`DailyPlanScreen`).
-  void todayPlan(BuildContext context, {VoidCallback? onTalk}) {
+  Future<void> todayPlan(BuildContext context, {VoidCallback? onTalk}) async {
     final r = repo;
     if (r == null) return;
+    // The person tapped: now is the time to ask about the outside AI, once.
+    await ensureOutsideAiConsent(context);
+    if (!context.mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (page) => DailyPlanScreen(
@@ -416,10 +427,44 @@ class AgenticRoutes {
           onPlan: (p) async => _lastPlan = p,
           confirmedContext: () => coachContext(r),
           onBack: () => Navigator.of(page).pop(),
+          onIdeas: ideasAllowed ? () => ideas(page, origin: 'Today') : null,
           onTalk: () {
             Navigator.of(page).pop();
             onTalk?.call();
           },
+        ),
+      ),
+    );
+  }
+
+  /// Ideas for you are for people 18 and over; under 18 (or no age) there is no entry point and
+  /// the server is never asked.
+  bool get ideasAllowed => ((repo?.profile['age'] as num?) ?? 0) >= 18;
+
+  /// "Ideas for you": up to three ideas from `/api/recommendations`. [origin] names where it was
+  /// opened from for the back button ("Back to {origin}"). Asks the outside-AI consent first, if it
+  /// has not been answered (the person just tapped, so it is not a surprise).
+  Future<void> ideas(BuildContext context, {required String origin}) async {
+    final r = repo;
+    if (r == null || !ideasAllowed) return;
+    final may = await ensureOutsideAiConsent(context);
+    final p = may ? await provider() : null;
+    if (!context.mounted) return;
+    final missing = (r.current ?? r.assess(const {})).missingInputs;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (c) => IdeasListScreen(
+          source: ideasSource?.call(r) ?? HttpRecommendations(r, base: _api),
+          appearance: look.value,
+          origin: origin,
+          missingInputs: missing,
+          worded: p,
+          onBack: () => Navigator.of(c).pop(),
+          onAnswerMore: () {
+            Navigator.of(c).pop();
+            changeWithMochi(context, null);
+          },
+          onTry: (idea) => experiment(c, presetLever: idea.leverId, presetValue: idea.leverValue, backLabel: 'Back to ideas'),
         ),
       ),
     );
@@ -436,7 +481,7 @@ class AgenticRoutes {
     );
   }
 
-  void experiment(BuildContext context) {
+  void experiment(BuildContext context, {String? presetLever, double? presetValue, String backLabel = 'Back to room'}) {
     final r = repo;
     if (r == null) return;
     Navigator.of(context).push(
@@ -444,6 +489,10 @@ class AgenticRoutes {
         builder: (c) => ExperimentScreen(
           repository: r,
           appearance: look.value,
+          presetLever: presetLever,
+          presetValue: presetValue,
+          backLabel: backLabel,
+          onIdeas: ideasAllowed ? () => ideas(c, origin: 'Experiment') : null,
           onBack: () => Navigator.of(c).pop(),
           onTellMochi: (field) {
             Navigator.of(c).pop();
@@ -473,7 +522,8 @@ class AgenticRoutes {
         builder: (c) => OutlookDriversScreen(
           drivers: drivers,
           onBack: () => Navigator.of(c).pop(),
-          onExperiment: () => experiment(c),
+          onExperiment: () => experiment(c, backLabel: 'Back to what moves it'),
+          onIdeas: ideasAllowed ? () => ideas(c, origin: 'what moves it') : null,
         ),
       ),
     );
