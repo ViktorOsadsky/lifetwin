@@ -29,6 +29,11 @@ SAVED_NAMES = {
     "diabetes": "diabetes answer",
     "exercise_minutes_weekly": "exercise answer",
     "sleep_hours": "sleep answer",
+    "vigorous_recreation_min_week": "harder activity answer",
+    "moderate_recreation_min_week": "lighter activity answer",
+    "sedentary_min_day": "sitting answer",
+    "hypertension_diagnosed": "high blood pressure answer",
+    "general_health": "health rating",
 }
 SAME = "That's the same as what I have, so nothing needs to change."
 KEPT = "Okay, I'll leave it as it is. Nothing has changed."
@@ -94,6 +99,11 @@ LABELS: dict[str, str] = {
     "alcohol_drinks_weekly": "drinks",
     "diabetes": "diabetes",
     "systolic_bp": "blood pressure",
+    "vigorous_recreation_min_week": "harder activity",
+    "moderate_recreation_min_week": "lighter activity",
+    "sedentary_min_day": "sitting time",
+    "hypertension_diagnosed": "high blood pressure answer",
+    "general_health": "health rating",
 }
 # Asked when the person said what changed but not the new value.
 NEW_VALUE: dict[str, str] = {
@@ -112,6 +122,17 @@ NEW_VALUE: dict[str, str] = {
     ),
     "diabetes": "Has a doctor told you that you have diabetes?",
     "systolic_bp": "What was your latest blood pressure reading? For example, 135 over 85.",
+    "vigorous_recreation_min_week": (
+        "In a usual week now, about how many minutes of activity make you breathe hard, "
+        "like brisk walking uphill or jogging? Say none if there isn't any."
+    ),
+    "moderate_recreation_min_week": (
+        "In a usual week now, about how many minutes of lighter activity do you do, like an "
+        "easy walk or gardening?"
+    ),
+    "sedentary_min_day": "On a usual day now, about how many hours do you sit? TV and driving count.",
+    "hypertension_diagnosed": "Has a doctor told you that you have high blood pressure?",
+    "general_health": "How would you rate your health now: excellent, very good, good, fair or poor?",
 }
 HELP: dict[str, str] = {
     "age": "Your age goes up by one on your birthday. If you've had one, just tell me.",
@@ -131,6 +152,29 @@ HELP: dict[str, str] = {
     "systolic_bp": (
         'Tell me both numbers from your latest blood pressure reading, like "135 over 85".'
     ),
+    "vigorous_recreation_min_week": (
+        "Tell me how many minutes a week you do something that makes you breathe hard, like "
+        '"30 minutes of brisk walking uphill", or "none".'
+    ),
+    "moderate_recreation_min_week": (
+        'Tell me how many minutes a week of easier activity you do, like "an hour of gardening".'
+    ),
+    "sedentary_min_day": 'Tell me about how many hours you sit on a usual day, like "6 hours".',
+    "hypertension_diagnosed": (
+        "I'm asking if a doctor has told you that you have high blood pressure. Say yes or no."
+    ),
+    "general_health": 'Just pick one: "excellent", "very good", "good", "fair" or "poor".',
+}
+HEALTH_WORDS = {
+    "excellent": "excellent",
+    "very_good": "very good",
+    "good": "good",
+    "fair": "fair",
+    "poor": "poor",
+}
+WEEKLY_ACTIVITY = {
+    "vigorous_recreation_min_week": "of activity that makes you breathe hard",
+    "moderate_recreation_min_week": "of lighter activity",
 }
 SMOKING_NOW = {
     "current": "you smoke now",
@@ -220,6 +264,17 @@ def current_line(field: str, profile: dict) -> str:
     if field == "diabetes":
         told = "has told" if value else "hasn't told"
         return f"Right now I have that a doctor {told} you that you have diabetes."
+    if field == "hypertension_diagnosed":
+        told = "has told" if value else "hasn't told"
+        return f"Right now I have that a doctor {told} you that you have high blood pressure."
+    if field == "general_health":
+        return f"Right now I have you rating your health as {HEALTH_WORDS[value]}."
+    if field in WEEKLY_ACTIVITY:
+        if value == 0:
+            return f"Right now I have no minutes {WEEKLY_ACTIVITY[field]} in a usual week."
+        return f"Right now I have {count(value, 'minute')} {WEEKLY_ACTIVITY[field]} a week."
+    if field == "sedentary_min_day":
+        return f"Right now I have you sitting about {count(value / 60, 'hour')} a day."
     return f"Right now I have your blood pressure at {bp_words(profile)}."
 
 
@@ -227,7 +282,10 @@ def _direction(field: str, old, new, metric: bool) -> str:
     if (
         old is None
         or old == new
-        or (field in {"exercise_minutes_weekly", "alcohol_drinks_weekly"} and new == 0)
+        or (
+            field in {"exercise_minutes_weekly", "alcohol_drinks_weekly", *WEEKLY_ACTIVITY}
+            and new == 0
+        )
     ):
         return ""
     way = "down" if new < old else "up"
@@ -261,7 +319,19 @@ def heard(
     if field == "diabetes":
         told = "has told" if new else "has not told"
         return f"I heard a doctor {told} you that you have diabetes."
+    if field == "hypertension_diagnosed":
+        told = "has told" if new else "has not told"
+        return f"I heard a doctor {told} you that you have high blood pressure."
+    if field == "general_health":
+        return f"I heard you'd rate your health as {HEALTH_WORDS[new]} now."
+    if field == "sedentary_min_day":
+        before = f", instead of {count(old / 60, 'hour')}" if old is not None and old != new else ""
+        return f"I heard you sit {approx}{count(new / 60, 'hour')} on a usual day now{before}."
     side = _direction(field, old, new, metric)
+    if field in WEEKLY_ACTIVITY:
+        if new == 0:
+            return f"I heard you have no minutes {WEEKLY_ACTIVITY[field]} in a usual week now."
+        return f"I heard {approx}{count(new, 'minute')} {WEEKLY_ACTIVITY[field]} a week now{side}."
     if field == "weight_kg":
         return f"I heard you weigh {approx}{weight_words(new, metric)} now{side}."
     if field == "height_cm":
@@ -299,6 +369,16 @@ def big_change(field: str, values: dict, profile: dict, metric: bool = False) ->
         return (
             f"That's quite a change from {plain(old)} to {plain(new)} minutes a week. "
             f"Is {count(new, 'minute')} right?"
+        )
+    if field in WEEKLY_ACTIVITY and abs(new - old) >= 300:
+        return (
+            f"That's quite a change from {plain(old)} to {plain(new)} minutes a week. "
+            f"Is {count(new, 'minute')} right?"
+        )
+    if field == "sedentary_min_day" and abs(new - old) >= 180:
+        return (
+            f"That's quite a change from {plain(old / 60)} to {plain(new / 60)} hours of sitting "
+            f"a day. Is {count(new / 60, 'hour')} right?"
         )
     if field == "alcohol_drinks_weekly" and abs(new - old) >= 14:
         return (

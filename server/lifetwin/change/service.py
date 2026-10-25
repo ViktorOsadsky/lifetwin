@@ -121,6 +121,9 @@ PROBED = {
     "weight_kg",
     "sleep_hours",
     "exercise_minutes_weekly",
+    "vigorous_recreation_min_week",
+    "moderate_recreation_min_week",
+    "sedentary_min_day",
     "smoking_status",
     "alcohol_drinks_weekly",
     "systolic_bp",
@@ -141,6 +144,16 @@ TALK: dict[ChangeField, str] = {
     "diabetes": TOPICS["diabetes"] + r"|pre ?diabet\w*|\bdiabetic\b",
     "systolic_bp": TOPICS["blood_pressure"]
     + r"|\b(?:bp|hypertension)\b|\d{2,3}\s?(?:/|over)\s?\d{2,3}",
+    # The new answers are named only in plain, specific words, so a reply about walking,
+    # a reading or "my health" keeps going to the answer it went to before.
+    "vigorous_recreation_min_week": r"\b(?:harder activity|hard exercise|vigorous\w*|"
+    r"out of breath|breathe hard|breathing hard)\b",
+    "moderate_recreation_min_week": r"\b(?:lighter activity|light activity|moderate activity|"
+    r"moderate exercise|light exercise)\b",
+    "sedentary_min_day": TOPICS["sedentary_min_day"],
+    "hypertension_diagnosed": r"\b(?:high blood pressure answer|blood pressure diagnosis|"
+    r"diagnos\w* with (?:high blood pressure|hypertension))\b",
+    "general_health": r"\b(?:health rating|rate my health|rating of my health)\b",
 }
 NOTHING = re.compile(
     r"(?:(?:no|nope|nah|well|oh|um|actually)\s+)*(?:no|nope|nah|nothing|nothing really|"
