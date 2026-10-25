@@ -501,7 +501,7 @@ class _OutlookCard extends StatelessWidget {
   Widget _card(Forecast? f) {
     final has = f != null && f.supported;
     final years = has ? f.maxHorizonYears : 5;
-    final line = has ? 'about ${f.outOf100(years)} in 100' : 'Ask the ball';
+    final line = has ? 'about ${f.outOf100(years)} in 100' : 'Talk with Mochi to see it';
     final card = Semantics(
       label: 'Your $years-year look: $line${has ? '. ${TwinAssessment.survivalTitle}' : ''}',
       excludeSemantics: true,

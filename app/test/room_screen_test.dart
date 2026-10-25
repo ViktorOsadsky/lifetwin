@@ -176,7 +176,7 @@ void main() {
     expect(bgAt >= 0 && bgAt < twinAt, isTrue, reason: 'bg, then the twin');
     expect(find.bySemanticsLabel('Twin name: My twin'), findsOneWidget);
     expect(status('Hanging out'), findsOneWidget);
-    expect(find.text('Ask the ball'), findsOneWidget); // no forecast yet: no number
+    expect(find.text('Talk with Mochi to see it'), findsOneWidget); // no forecast yet: no number
     expect(find.textContaining('in 100'), findsNothing);
     for (final label in ['Customize', 'Talk']) {
       expect(find.text(label), findsOneWidget);
@@ -193,7 +193,7 @@ void main() {
     final outlook = ValueNotifier<Forecast?>(null);
     addTearDown(outlook.dispose);
     await pumpRoom(t, outlook: outlook);
-    expect(find.text('Ask the ball'), findsOneWidget);
+    expect(find.text('Talk with Mochi to see it'), findsOneWidget);
     outlook.value = forecastFrom(availableAssessment(const {1: 0.99, 2: 0.97, 3: 0.95, 4: 0.93, 5: 0.9080}));
     await t.pump();
     expect(find.text('about 91 in 100'), findsOneWidget);
