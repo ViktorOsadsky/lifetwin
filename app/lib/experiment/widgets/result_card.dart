@@ -292,7 +292,7 @@ class _ResultCardState extends State<ResultCard> {
                   label: 'Today',
                   color: LtColors.container,
                   fill: LtColors.paper,
-                  child: Text.rich(
+                  child: WholeWordText.rich(
                     TextSpan(
                       text: '${d.todayText} ',
                       style: LtText.display(22),
@@ -307,7 +307,7 @@ class _ResultCardState extends State<ResultCard> {
                   label: 'What-if',
                   color: LtColors.control,
                   fill: const Color(0xFFF4F2FD),
-                  child: Text(d.whatIfText!, style: LtText.display(22)),
+                  child: WholeWordText(d.whatIfText!, style: LtText.display(22)),
                 ),
               ),
             ],

@@ -489,13 +489,14 @@ class _RoomSceneState extends State<RoomScene> {
       ),
     );
     final tap = widget.onActivityTap;
-    // A 48 pt hit area around the small pill.
+    // A hit area around the small pill that stays 48 pt even where the room is drawn smaller
+    // (the scene scales down to about 0.8 on a 320 pt phone).
     return Positioned(
       key: const ValueKey('room-activity'),
-      left: p.dx - 70,
-      top: p.dy + dy - 12,
-      width: 140,
-      height: 48,
+      left: p.dx - 80,
+      top: p.dy + dy - 18,
+      width: 160,
+      height: 60,
       child: Semantics(
         button: tap != null,
         // Idle wandering is ambient animation, not a status announcement. The

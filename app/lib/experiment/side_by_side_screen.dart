@@ -60,7 +60,16 @@ class SideBySideScreen extends StatelessWidget {
             appearance: appearance,
             twins: [TwinSlot(state: whatIfTwinState(today, display), x: 0.3, halo: true)],
             bubble: display.kind == ResultKind.tiny ? ExperimentCopy.bubbleTiny : ExperimentCopy.bubbleBig,
-            overlay: const Stack(children: [Positioned(right: 16, top: 30, child: ModePill.whatIf())]),
+            // At large text the name banner is taller, so the pill sits lower to stay clear of it.
+            overlay: Stack(
+              children: [
+                Positioned(
+                  right: 16,
+                  top: MediaQuery.textScalerOf(context).scale(1) >= 1.5 ? 56 : 30,
+                  child: const ModePill.whatIf(),
+                ),
+              ],
+            ),
           ),
         if (!big) const SizedBox(height: 14),
         ResultCard(
@@ -151,7 +160,7 @@ class SideBySideScreen extends StatelessWidget {
                 children: [
                   const Icon(Icons.star_border_rounded, size: 24, color: LtColors.ink),
                   const SizedBox(width: 8),
-                  Text("You're already strong", style: LtText.display(22)),
+                  Expanded(child: WholeWordText("You're already strong", style: LtText.display(22))),
                 ],
               ),
               const SizedBox(height: 4),

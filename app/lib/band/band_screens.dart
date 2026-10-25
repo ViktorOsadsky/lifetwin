@@ -418,13 +418,14 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
             const SizedBox(height: 12),
             _howCard(),
             const SizedBox(height: 8),
-            Row(
+            // Side by side when they fit; at large text the button goes under the words.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    s.lastSynced == null ? 'Not synced yet' : 'Synced just now',
-                    style: LtText.body(color: LtColors.secondary),
-                  ),
+                WholeWordText(
+                  s.lastSynced == null ? 'Not synced yet' : 'Synced just now',
+                  style: LtText.body(color: LtColors.secondary),
                 ),
                 TextButton(
                   onPressed: widget.onSettings,
