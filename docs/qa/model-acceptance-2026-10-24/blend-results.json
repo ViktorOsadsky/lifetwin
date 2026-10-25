@@ -1,0 +1,202 @@
+{
+  "schema": "lifetwin.qa107.blend.v2",
+  "merged_sha": "9ace866404bb8df89de673dd299041e25791ccad",
+  "host_fixture_only": false,
+  "proposed_sha": null,
+  "source": "/private/tmp/lifetwin-task-107/server/tools/lifespan_reference.py",
+  "tolerance": 1e-09,
+  "requires_canonical_projection_oracle": true,
+  "records": [
+    {
+      "id": "rosa_seed_effective",
+      "projection_weight": 1.0,
+      "summary_method": "yearly_cox_median",
+      "selected_curve_source": "yearly_cox_projection",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "synthetic_45_male",
+      "projection_weight": 1.0,
+      "summary_method": "yearly_cox_median",
+      "selected_curve_source": "yearly_cox_projection",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "synthetic_58_female",
+      "projection_weight": 1.0,
+      "summary_method": "yearly_cox_median",
+      "selected_curve_source": "yearly_cox_projection",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "synthetic_76_male",
+      "projection_weight": 0.3333333333333333,
+      "summary_method": "blend_life_table_mean_yearly_cox_median",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_18",
+      "projection_weight": 0.0,
+      "summary_method": "life_table_mean",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_34",
+      "projection_weight": 0.0,
+      "summary_method": "life_table_mean",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_35",
+      "projection_weight": 0.0,
+      "summary_method": "life_table_mean",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_39",
+      "projection_weight": 0.4,
+      "summary_method": "blend_life_table_mean_yearly_cox_median",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_40",
+      "projection_weight": 0.5,
+      "summary_method": "blend_life_table_mean_yearly_cox_median",
+      "selected_curve_source": "yearly_cox_projection",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_44",
+      "projection_weight": 0.9,
+      "summary_method": "blend_life_table_mean_yearly_cox_median",
+      "selected_curve_source": "yearly_cox_projection",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_45",
+      "projection_weight": 1.0,
+      "summary_method": "yearly_cox_median",
+      "selected_curve_source": "yearly_cox_projection",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_70",
+      "projection_weight": 1.0,
+      "summary_method": "yearly_cox_median",
+      "selected_curve_source": "yearly_cox_projection",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_74",
+      "projection_weight": 0.5555555555555556,
+      "summary_method": "blend_life_table_mean_yearly_cox_median",
+      "selected_curve_source": "yearly_cox_projection",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_75",
+      "projection_weight": 0.4444444444444444,
+      "summary_method": "blend_life_table_mean_yearly_cox_median",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_78",
+      "projection_weight": 0.1111111111111111,
+      "summary_method": "blend_life_table_mean_yearly_cox_median",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_79",
+      "projection_weight": 0.0,
+      "summary_method": "life_table_mean",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_80",
+      "projection_weight": 0.0,
+      "summary_method": "life_table_mean",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "edge_85",
+      "projection_weight": 0.0,
+      "summary_method": "life_table_mean",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "direct_fractional_34.5",
+      "projection_weight": 0.0,
+      "summary_method": "life_table_mean",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "direct_fractional_35.5",
+      "projection_weight": 0.05,
+      "summary_method": "blend_life_table_mean_yearly_cox_median",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "direct_fractional_40.5",
+      "projection_weight": 0.55,
+      "summary_method": "blend_life_table_mean_yearly_cox_median",
+      "selected_curve_source": "yearly_cox_projection",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "direct_fractional_74.5",
+      "projection_weight": 0.5,
+      "summary_method": "blend_life_table_mean_yearly_cox_median",
+      "selected_curve_source": "yearly_cox_projection",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    },
+    {
+      "id": "direct_fractional_79.5",
+      "projection_weight": 0.0,
+      "summary_method": "life_table_mean",
+      "selected_curve_source": "life_table",
+      "CDC_component_all_points_parity": true,
+      "weighted_summary_bounds_flags_headline_parity": true
+    }
+  ],
+  "observed_adjacent_age_differences_not_continuity_proof": {
+    "34_to_35": 0.0636727591227384,
+    "39_to_40": 1.4496918625981436,
+    "74_to_75": 0.040564712873447206,
+    "78_to_79": -0.4977560391539271,
+    "79_to_80": 0.3389508303199449
+  }
+}

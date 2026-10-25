@@ -56,7 +56,7 @@ void main() {
         await pump(
           t,
           WellnessSnapshot(
-            healthScore: hasNumber ? -0.4 : null,
+            healthScore: hasNumber ? 0.67 : null,
             status: status,
             ageGroupPercentile: hasNumber ? 41 : null,
           ),
@@ -69,14 +69,14 @@ void main() {
           return;
         }
         if (hasNumber) {
-          expect(find.text('−0.40'), findsOneWidget, reason: 'a true minus sign, two decimals');
+          expect(find.text('+0.67'), findsOneWidget, reason: 'the score, signed, two decimals');
           expect(find.textContaining('Better health'), findsOneWidget);
           expect(find.textContaining('Higher risk'), findsOneWidget);
         } else {
           // No number: a plain line, never a fabricated score or a scale.
           expect(find.text('Getting to know you'), findsOneWidget);
           expect(find.textContaining('Better health'), findsNothing);
-          expect(find.textContaining(RegExp(r'[+−]\d\.\d\d')), findsNothing);
+          expect(find.textContaining(RegExp(r'\d\.\d\d')), findsNothing);
         }
       });
     }
@@ -97,7 +97,7 @@ void main() {
   testWidgets('a number without a status never shows (no invented score)', (t) async {
     await pump(t, const WellnessSnapshot(healthScore: 1.2));
     expectSane(t);
-    expect(find.text('+1.20'), findsNothing);
+    expect(find.text('1.20'), findsNothing);
     expect(find.text('Getting to know you'), findsOneWidget);
   });
 
@@ -108,17 +108,18 @@ void main() {
   });
 
   testWidgets('higher is better: a higher score sits further along the Better health direction', (t) async {
-    await pump(t, const WellnessSnapshot(healthScore: -2, status: HealthScoreStatus.available));
-    expect(ScoreScale.position(-2), lessThan(ScoreScale.position(2)));
-    expect(find.text('−2.00'), findsOneWidget);
-    await pump(t, const WellnessSnapshot(healthScore: 2, status: HealthScoreStatus.available));
-    expect(find.text('+2.00'), findsOneWidget);
+    await pump(t, const WellnessSnapshot(healthScore: -0.5, status: HealthScoreStatus.available));
+    expect(ScoreScale.position(-0.5), lessThan(ScoreScale.position(0.7)));
+    expect(ScoreScale.position(0), 0.5); // 0 is the middle of the age group
+    expect(find.text('−0.50'), findsOneWidget);
+    await pump(t, const WellnessSnapshot(healthScore: 0.7, status: HealthScoreStatus.available));
+    expect(find.text('+0.70'), findsOneWidget);
     final l = t.getRect(find.textContaining('Higher risk')), r = t.getRect(find.textContaining('Better health'));
     expect(l.left, lessThan(r.left), reason: 'risk on the left, better health on the right');
   });
 
   testWidgets('the number is not coloured by value (no red for low, green for high)', (t) async {
-    for (final (score, text) in [(-2.5, '−2.50'), (2.5, '+2.50')]) {
+    for (final (score, text) in [(-0.4, '−0.40'), (0.9, '+0.90')]) {
       await pump(t, WellnessSnapshot(healthScore: score, status: HealthScoreStatus.available));
       final colour = t.widget<Text>(find.text(text)).style?.color;
       expect(colour == null || colour == LtColors.ink, isTrue, reason: 'score $score coloured $colour');
@@ -130,25 +131,36 @@ void main() {
     expectSane(t);
     expect(find.text('+9.87'), findsOneWidget);
     expect(ScoreScale.position(9.87), 1.0);
-    await pump(t, const WellnessSnapshot(healthScore: -9.87, status: HealthScoreStatus.available));
-    expect(find.text('−9.87'), findsOneWidget);
-    expect(ScoreScale.position(-9.87), 0.0);
+    await pump(t, const WellnessSnapshot(healthScore: -5.05, status: HealthScoreStatus.available));
+    expect(find.text('−5.05'), findsOneWidget);
+    expect(ScoreScale.position(-5.05), 0.0);
   });
 
-  test('formatting edge cases: tiny negative is 0.00 without a minus; the semantics say higher is better', () {
-    expect(formatHealthScore(-0.004), '0.00');
-    expect(formatHealthScore(0.004), '0.00');
+  test('formatting edge cases: signed two decimals, a real minus, no sign at zero; the semantics say plus/minus', () {
+    expect(formatHealthScore(0.994), '+0.99');
     expect(formatHealthScore(-0.006), '−0.01');
-    expect(healthScoreSemantics(-0.004), isNot(contains('minus')));
-    expect(healthScoreSemantics(1.5), contains('Higher is better'));
+    expect(formatHealthScore(0), '0.00');
+    expect(formatHealthScore(-0.004), '0.00', reason: 'never "−0.00"');
+    expect(formatHealthScore(-0.4), contains('−'));
+    expect(formatHealthScore(-0.4), isNot(contains('-')));
+    expect(healthScoreSemantics(0.5), contains('plus 0.50'));
+    expect(healthScoreSemantics(-0.4), contains('minus 0.40'));
+    expect(healthScoreSemantics(0), startsWith('Health score 0.00.'));
+    expect(healthScoreSemantics(1.5), contains('Above 0 is healthier'));
   });
 
-  testWidgets('the info button ("What moves your score") opens at every state that shows a number or a line', (t) async {
-    for (final status in [HealthScoreStatus.available, HealthScoreStatus.extrapolated, HealthScoreStatus.missingInputs]) {
+  testWidgets('the info button ("What moves your score") opens at every state that shows a number or a line', (
+    t,
+  ) async {
+    for (final status in [
+      HealthScoreStatus.available,
+      HealthScoreStatus.extrapolated,
+      HealthScoreStatus.missingInputs,
+    ]) {
       var opened = 0;
       await pump(
         t,
-        WellnessSnapshot(healthScore: status.hasScore ? 0.5 : null, status: status),
+        WellnessSnapshot(healthScore: status.hasScore ? 1.5 : null, status: status),
         onDrivers: () => opened++,
       );
       await t.tap(find.byTooltip('What moves your score'));
@@ -157,7 +169,7 @@ void main() {
   });
 
   testWidgets('extrapolated shows the Rough guide badge; available does not', (t) async {
-    await pump(t, const WellnessSnapshot(healthScore: 0.5, status: HealthScoreStatus.extrapolated));
+    await pump(t, const WellnessSnapshot(healthScore: 1.5, status: HealthScoreStatus.extrapolated));
     expect(find.text('Rough guide'), findsOneWidget);
     await pump(t, const WellnessSnapshot(healthScore: 0.5, status: HealthScoreStatus.available));
     expect(find.text('Rough guide'), findsNothing);

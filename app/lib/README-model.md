@@ -4,9 +4,9 @@ This folder (`lib/twin/`) is the data and logic layer behind the forecast, "expe
 
 ## The model package
 
-`packages/lifetwin_on_device/` is a copy of `model_handoff/lifetwin_on_device/` (model `personal-cox-v2-20261024T182404Z`). The app's `pubspec.yaml` depends on it by path.
+`packages/lifetwin_on_device/` pins model `personal-cox-v2-20261024T182404Z`, originally copied from `model_handoff/lifetwin_on_device/`. Main at `9ace866` includes [#126](https://github.com/ViktorOsadsky/lifetwin/pull/126)'s blended Cox/CDC reveal and [#138](https://github.com/ViktorOsadsky/lifetwin/pull/138)'s centred Cox score. The earlier negative-log score and 1.0-relative index are superseded display scales. [Current contract handoff](../../docs/handoffs/hazard-projection-docs.md).
 
-- **Why a copy:** the package README says to copy it. The copy also pins the model the app was tested with, so a new export in `model_handoff/` can't silently change app results. To update, copy the new folder over and rerun the checks below.
+- **Why a copy:** it pins the model/API the app was tested with, so a new root export cannot silently change app results. The current root package removed the assessment/guidance API used here; adoption requires an explicit adapter integration and relevant checks, rather than a blind copy.
 - **Checks** (run in `packages/lifetwin_on_device/`): `flutter test` and `dart tool/check.dart`. Both pass on macOS. `flutter analyze` in `app/` excludes `packages/**` because the vendored code uses its own style.
 - **Loading:** `TwinRepository.open()` loads the model once at startup (`main.dart`, `_twin`).
 - **Server route:** `POST /api/predict` (`server/lifetwin/prediction/`) still works but the app no longer calls it. It should be removed later.
@@ -18,7 +18,7 @@ This folder (`lib/twin/`) is the data and logic layer behind the forecast, "expe
 - Label the curve `TwinAssessment.survivalTitle` ("Modeled survival of similar people").
 - Label comparisons `ExperimentResult.title` ("Modeled difference between profiles"). `causalInterpretation` is always false.
 - Never show a death date, an age at death or years gained.
-  - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [docs/lifespan-estimate.md](../../docs/lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else. API: `repo.lifespanEstimate` and `lifespanRevealSeen` (see "Lifespan reveal" below).
+  - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Current method: the yearly Cox projection blended with the earlier [CDC wrapper](../../docs/lifespan-estimate.md), as detailed below. Scope: this one-time reveal only; the rule still applies everywhere else. API: `repo.lifespanEstimate` and `lifespanRevealSeen` (see "Lifespan reveal" below).
 - Nothing is filled in. A missing answer is never replaced by a typical or healthy value. The "We assumed" section is gone.
 
 ## Ages 18–34 and 80–85 (extrapolated)
@@ -37,7 +37,7 @@ What the UI sees for these ages:
 
 The age term is linear: the package encodes `age_decade = (age − 55) / 10` (checked in a test), so the move is exact for any age. Over 85 there is no number: `unsupported_age` with "Annual estimates support ages 18–85 only." Under 18 there is no number either: `under_age` with "LifeTwin estimates are for adults, ages 18 and over." (the app is 18+ for medical features). `Forecast`, `ExperimentResult` and the health score all go through `TwinModelService`, so they agree; the package's own `assess()`/`compare()` still say 35–79. The wellness cards don't change, because the package's guidance only changes at ages 18, 61 and 65, which neither anchor crosses.
 
-## Health score
+## Health score (current main)
 
 **Positive is healthier.** The health score is **centred on 0** (owner: "i wish health score would be positive if it is good"; before that, "invert so higher is better"):
 
@@ -48,13 +48,13 @@ where `s` is exactly the quantity `ageGroupPercentile` ranks (the Cox log relati
 | API | Meaning |
 |---|---|
 | `TwinAssessment.healthScore` / `TwinRepository.healthScore` | `double?`, centred: positive = healthier than the middle of your group, 0 = the middle; null unless the model gave a number. Never filled with defaults |
-| `TwinAssessment.healthGroupLabel` / `TwinRepository.healthGroupLabel` | `String?`, the band the index and percentile use, e.g. `women 59–69`; null with no score |
+| `TwinAssessment.healthGroupLabel` / `TwinRepository.healthGroupLabel` | `String?`, the band the score and percentile use, e.g. `women 59–69`; null with no score |
 | `TwinAssessment.rawLogRelativeHazard` / `TwinRepository.rawLogRelativeHazard` | The model's `log_relative_hazard_score` unchanged (lower is better); internal use |
 | `healthScoreStatus` (`HealthScoreStatus?`) | `available`, `extrapolated`, `missingInputs`, `unsupportedAge`, `unsupportedProfile`, `underAge` (under 18) and the app's own `invalidInput`; null on the repository before a profile |
 | `healthScoreMessage` | The model's message when there is no number |
 | `healthScoreHistory({from, to, engine})` | `List<HealthScorePoint>` oldest first: `(at, date, engine, score, rawLogRelativeHazard, status, modelVersion)`; only points of `engine` (default `healthScoreEngine`, `cox_centered_v1`); `score` is the centred score |
 
-Availability: same as the forecast. Ages 35–79 are `available`; 18–34 and 80–85 are `extrapolated` (the Rough guide flag): the raw score is the forecast's extrapolated one and the index uses the percentile's nearest band, so show `extrapolationCaveat`. Missing inputs, ages under 18 (`underAge`) or over 85, and unsupported profiles give null with the matching status.
+Availability: same as the forecast. Ages 35–79 are `available`; 18–34 and 80–85 are `extrapolated` (the Rough guide flag): the raw score is the forecast's extrapolated one and the score uses the percentile's nearest band, so show `extrapolationCaveat`. Missing inputs, ages under 18 (`underAge`) or over 85, and unsupported profiles give null with the matching status.
 
 ### Age-group percentile ("people like you in the survey")
 
@@ -68,19 +68,27 @@ The health score is built on the same comparison, so the two always agree: score
 
 History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it. Each point stores `engine` (`cox_centered_v1`), the centred score under `centered_score` (`HealthScorePoint.score`) and the raw value under `score`. Points written before the engine tag (the earlier −log-hazard scale) read as `legacyHealthScoreEngine` (`cox_v1`) and, like `cox_index_v1` points (the health index) and any other engine's points, are **left out** of `healthScoreHistory()` and so of the sparkline: scales never mix. Simplest correct option: the old points have no centred score, and recomputing them would need the profile at that time, which a point does not keep.
 
-## Lifespan reveal (one-time, proof of concept)
+## Lifespan reveal (one-time blended proof of concept)
 
-Owner override (2026-10-24): a rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: the model owner's yearly Cox projection (`model_handoff/SURVIVAL_PROJECTION_HANDOFF.md`, commit 9ac602e): `LifeTwinProjectionLab.assess(profile, includeExtrapolation: true)['annual']`, i.e. ∏ S(1 | age = a + k, other inputs fixed), continued past 79 to 110. `expectedAge` is its 50% crossing (`median_crossing_age`); `p25Age` / `p75Age` its 75% / 25% crossings, interpolated between whole ages the same way. The handoff calls the 50% crossing a projected median threshold, not life expectancy. A threshold the curve has not reached by 110 is reported as 110 with `p25OpenEnded` / `openEnded` / `p75OpenEnded` (show "110+"), so a healthy profile always gets an estimate. The seams are blended (owner ruling): every age is `(1 − w) · life table + w · projection` for the expected age, p25 and p75, with the life table being the earlier method ([docs/lifespan-estimate.md](../../docs/lifespan-estimate.md); expected age = its mean) and w = `lifespanProjectionWeight(age)`: 0 below 35, rising linearly to 1 at 45, 1 through 70, falling linearly to 0 at 79, 0 from 79 on. An open-ended projection value counts as 110 and keeps its flag only while the blend is still ≥ 110. A fractional age runs the projection at its floor (it steps whole years); the weight uses the fractional age. Status is `extrapolated` (Rough guide) where the life table has the larger weight (w < 0.5: ages 18–39 and 75–85). No one-year step changes the expected age by more than 3 years (largest 2.3), but the projection sits 12–22 years above the life table, so across 35–45 the remaining years still grow and across 70–79 the expected age falls (`critical_score_lifespan_test.dart` keeps that as a strict known bug).
+Owner override (2026-10-24): a rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: the model owner's yearly Cox projection (`model_handoff/SURVIVAL_PROJECTION_HANDOFF.md`, commit 9ac602e): `LifeTwinProjectionLab.assess(profile, includeExtrapolation: true)['annual']`, i.e. ∏ S(1 | age = a + k, other inputs fixed), continued past 79 to 110. `expectedAge` is its 50% crossing (`median_crossing_age`); `p25Age` / `p75Age` its 75% / 25% crossings, interpolated between whole ages the same way. The handoff calls the 50% crossing a projected median threshold, not life expectancy. A threshold the curve has not reached by 110 is reported as 110 with `p25OpenEnded` / `openEnded` / `p75OpenEnded` (show "110+"), without inventing a measured crossing. Missing/unsupported inputs can still make the estimate unavailable. The seams are blended (owner ruling): every age is `(1 − w) · life table + w · projection` for the expected age, p25 and p75, with the life table being the earlier method ([docs/lifespan-estimate.md](../../docs/lifespan-estimate.md); expected age = its mean) and w = `lifespanProjectionWeight(age)`: 0 below 35, rising linearly to 1 at 45, 1 through 70, falling linearly to 0 at 79, 0 from 79 on. An open-ended projection value counts as 110 and keeps its flag only while the blend is still ≥ 110. The direct lifespan helper runs a fractional model age at its floor for projection; weight uses actual age. This does not bypass the confirmed-profile whole-year age validator. Status is `extrapolated` (Rough guide) where the life table has the larger weight (w < 0.5: ages 18–39 and 75–85). No one-year step changes the expected age by more than 3 years (largest 2.3), but the projection sits 12–22 years above the life table, so across 35–45 the remaining years still grow and across 70–79 the expected age falls (`critical_score_lifespan_test.dart` keeps that as a strict known bug).
 
 | API | Meaning |
 |---|---|
 | `TwinRepository.lifespanEstimate` | `LifespanEstimate?` from the current profile; null without a health score (no profile, missing inputs, unsupported profile, under 18, over 85) |
-| `LifespanEstimate.expectedAge`, `p25Age`, `p75Age` | 35–79: the projection's 50%, 75% and 25% crossing ages, 110 when open-ended; 18–34 and 80–85: the life table's mean and 25th–75th percentile ages (unrounded; show whole years, e.g. `headline`, which prints "110+"). `annualCurve` has the yearly points; `medianCrossingExtrapolated` is true when the expected age is past 79 |
-| `LifespanEstimate.p25OpenEnded`, `openEnded`, `p75OpenEnded` | The curve had not reached 75% / 50% / 25% by 110; the age is 110, show "110+" |
+| `LifespanEstimate.expectedAge`, `p25Age`, `p75Age` | Weighted summaries: projection 50%, 75% and 25% crossing ages combined with the life table's mean and 25th–75th percentile ages; pure projection at 45–70, pure CDC through 35 and from 79 onward (unrounded; show whole years, e.g. `headline`, which prints "110+"). `annualCurve` has the yearly points; `medianCrossingExtrapolated` is true when the expected age is past 79 |
+| `LifespanEstimate.p25OpenEnded`, `openEnded`, `p75OpenEnded` | The projection had not reached 75% / 50% / 25% by 110 AND the corresponding blended age is still at least 110; show "110+" only for a retained flag |
 | `LifespanEstimate.expectedYear` | Current year + (expectedAge − current age), rounded to a year. There is no day or date |
 | `LifespanEstimate.status` | `LifespanStatus.available` (projection weight ≥ 0.5, ages 40–74) or `extrapolated` (the life table has the larger weight, ages 18–39 and 75–85; Rough guide). `projectionWeight` is w |
 | `LifespanEstimate.caveat` | "Proof of concept: a rough estimate …" text (the method's own), plus a past-79 note, a "110+" note when open-ended, and "even rougher" for 18–34 and 80–85; always show it with the number |
 | `TwinRepository.lifespanRevealSeen` / `markLifespanRevealSeen()` | One-time flag: show the reveal once, then de-emphasise it. Persisted; `deleteMyData()` clears it |
+
+## Interpretation and loading limits
+
+The reveal combines CDC mean/percentile ages with projection crossing ages; it is not mean life expectancy or a validated survival distribution. Its `annualCurve` selects CDC where CDC has the larger weight and projection otherwise; it is not a blended survival curve whose crossings equal every displayed summary. The projection advances whole years with other inputs held fixed, **assuming nothing changes**. Nothing past 79 is validated in this rough guide; the measured Cox evaluation covers assessment ages 35–79 and horizons 1–5 only.
+
+The direct `LifespanEstimate.forProfile` helper accepts a fractional model age: projection uses its floor, while blend weight and remaining-year calculation use actual age. Confirmed app profiles still require whole-year age; `mergeConfirmed` refuses a fractional age update, retaining an existing known age or leaving a fresh profile incomplete. Under 18, over 85, incomplete/unsupported profiles and absent required projection lab remain unavailable.
+
+The shared lab loads and computes a neural output, but the app does not read it for score or reveal. “Shelved for product outputs” does not mean removal of neural execution or artifacts. The neural asset loader reads bytes and decodes UTF-8 directly, avoiding `AssetBundle.loadString`'s large-file background isolate before `runApp`; this changes loading, not model values. [Loader](../packages/lifetwin_on_device/lib/lifetwin_on_device.dart), [merged contract and remaining trend bugs](../../docs/handoffs/hazard-projection-docs.md).
 
 ## Profile mapping (`profile_mapping.dart`)
 

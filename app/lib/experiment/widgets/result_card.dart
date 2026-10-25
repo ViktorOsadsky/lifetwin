@@ -4,6 +4,7 @@ import '../../ui/theme.dart';
 import '../../ui/widgets/lottie_burst.dart';
 import '../../ui/widgets/rough_guide_badge.dart';
 import '../../widgets/whole_word_text.dart';
+import '../../wellness/models.dart' show scoreChangeLine, scoreChangeSemantics;
 import '../experiment_copy.dart';
 import '../result_display.dart';
 import 'bear_array.dart';
@@ -30,6 +31,8 @@ class ResultCard extends StatefulWidget {
     this.gainNote = 'with these changes',
     this.summary,
     this.celebrate = false,
+    this.currentScore,
+    this.scoreDelta,
   });
 
   final ResultDisplay display;
@@ -44,6 +47,11 @@ class ResultCard extends StatefulWidget {
 
   /// A soft glow behind the headline when the outlook updates.
   final bool celebrate;
+
+  /// The health index today and the what-if's difference (`scoreDelta`). The line shows only
+  /// with both, on a number result.
+  final double? currentScore;
+  final double? scoreDelta;
 
   @override
   State<ResultCard> createState() => _ResultCardState();
@@ -166,7 +174,17 @@ class _ResultCardState extends State<ResultCard> {
       d.headline!,
       style: LtText.display(tiny ? 22 : 28, color: good ? LtColors.teal : LtColors.ink),
     );
+    final from = widget.currentScore, delta = widget.scoreDelta;
     return [
+      if (from != null && delta != null)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Semantics(
+            label: scoreChangeSemantics(from, delta),
+            excludeSemantics: true,
+            child: WholeWordText(scoreChangeLine(from, delta), style: LtText.body(weight: FontWeight.w700)),
+          ),
+        ),
       Stack(
         children: [
           if (widget.celebrate && good)

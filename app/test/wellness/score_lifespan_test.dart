@@ -23,23 +23,37 @@ Future<void> pump(WidgetTester t, Widget child) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   group('health score: higher is better', () {
-    test('sign, two decimals and the accessible name come from the value', () {
-      expect(formatHealthScore(0.04), '+0.04');
-      expect(formatHealthScore(-1.5), '−1.50');
-      expect(formatHealthScore(0.001), '0.00');
-      expect(healthScoreSemantics(0.04), 'Health score plus 0.04. Higher is better. 0 is the middle of people your age.');
-      expect(healthScoreSemantics(-0.5), 'Health score minus 0.50. Higher is better. 0 is the middle of people your age.');
+    test('two decimals and the accessible name come from the value (the index, 1 is the middle)', () {
+      expect(formatHealthScore(0.504), '+0.50');
+      expect(formatHealthScore(-0.4), '−0.40');
+      expect(formatHealthScore(0), '0.00');
+      expect(
+        healthScoreSemantics(0.504),
+        'Health score plus 0.50. Above 0 is healthier; 0 is the middle of people your age.',
+      );
+      expect(
+        healthScoreSemantics(0.504, percentile: 78.6),
+        'Health score plus 0.50. Above 0 is healthier; 0 is the middle of people your age. '
+        'Healthier than 79 of 100 people your age.',
+      );
+      expect(
+        healthScoreSemantics(-0.4, percentile: 30),
+        'Health score minus 0.40. Above 0 is healthier; 0 is the middle of people your age. '
+        'Healthier than 30 of 100 people your age.',
+      );
     });
 
-    test('the marker sits by the public value: better health is to the right', () {
+    test('the fallback marker sits by the value: better health is to the right, 0 in the middle', () {
       expect(ScoreScale.position(0), 0.5);
-      expect(ScoreScale.position(1.5), greaterThan(0.5));
-      expect(ScoreScale.position(-1.5), lessThan(0.5));
+      expect(ScoreScale.position(0.4), greaterThan(0.5));
+      expect(ScoreScale.position(-0.4), lessThan(0.5));
+      expect(ScoreScale.position(0.4) - 0.5, closeTo(0.5 - ScoreScale.position(-0.4), 1e-12));
       expect(ScoreScale.position(99), 1);
+      expect(ScoreScale.position(-99), 0);
     });
 
     testWidgets('the card reads Higher risk, Average, Better health and names the score', (t) async {
-      for (final score in [0.04, -1.2]) {
+      for (final score in [0.04, -0.3]) {
         await pump(
           t,
           HealthScoreSummary(
@@ -77,7 +91,8 @@ void main() {
     testWidgets('a year and ages, the caveat behind (i), never a day', (t) async {
       await pump(t, const LifespanBlock(lifespan: l));
       expect(find.text('Around 2051'), findsOneWidget);
-      expect(find.text('about age 87, most likely 80–93'), findsOneWidget);
+      expect(find.text('age 80–93'), findsOneWidget);
+      expect(find.text('Estimate, rough guide'), findsOneWidget, reason: 'always, whatever the flag says');
       expect(find.text('Rough guide'), findsNothing);
       for (final s in t.widgetList<Text>(find.byType(Text)).map((w) => w.data ?? '')) {
         expect(
@@ -93,14 +108,22 @@ void main() {
       expect(find.text(l.caveat!), findsOneWidget);
     });
 
-    testWidgets('outside ages 35-79 the Rough guide badge shows', (t) async {
+    testWidgets('a flagged estimate shows the same caption and the open end as 110+', (t) async {
       await pump(
         t,
         const LifespanBlock(
-          lifespan: LifespanReveal(expectedAge: 90, p25Age: 84, p75Age: 95, expectedYear: 2040, roughGuide: true),
+          lifespan: LifespanReveal(
+            expectedAge: 105,
+            p25Age: 89,
+            p75Age: 110,
+            expectedYear: 2040,
+            roughGuide: true,
+            p75OpenEnded: true,
+          ),
         ),
       );
-      expect(find.text('Rough guide'), findsOneWidget);
+      expect(find.text('age 89–110+'), findsOneWidget);
+      expect(find.text('Estimate, rough guide'), findsOneWidget);
     });
   });
 

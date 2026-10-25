@@ -1,0 +1,90 @@
+{
+  "source_head": "9ace866404bb8df89de673dd299041e25791ccad",
+  "approved_projection_merge": "41dce102e00c6a1e8baccb83f53a4d5b313f771f",
+  "projection_pr_final_head": "614e37dfb1cdb390010f9f6f6b0edd35a5b5baf8",
+  "score_override_pr": 138,
+  "score_scale": "cox_centered_v1",
+  "reference_expected": 0.0,
+  "tolerance": 1e-09,
+  "simulator": {
+    "udid": "7F21AE4A-232B-458E-A5B7-F7EA7952BD01",
+    "runtime": "iOS26.4",
+    "device": "iPhone17Pro",
+    "initial_state": "Shutdown",
+    "final_state_at_handoff": "Shutdown",
+    "bundle": "com.danielqi.lifesim.modelqa107",
+    "isolated_uninstall_exit": 0,
+    "terminate_exit": 3,
+    "terminate_note": "Driver had already stopped app: found nothing to terminate",
+    "handoff": "Released to submission_review for #133 after uninstall and shutdown; no further simulator use"
+  },
+  "production_files_sync_checked": 520,
+  "production_sha256": {
+    "lib/twin/twin_model.dart": "83544964d8755d3c0bde33fb2442969b687c9ecf24385463f5af411f25f26b17",
+    "lib/twin/twin_repository.dart": "da084e7a86103bd5dc7d84468e2e3d991ad38a10b0a21d545bb2c45fc6899bba",
+    "lib/twin/lifespan.dart": "dd5dba8f403d97529f5a949bb78b4b5fa89443faabefd69a0c8c2e8deb34a06b",
+    "lib/twin/lifespan_data.dart": "e16b939f3919ab9e3627226cc4bcde04353e5655881b2f86d23dc6b60e9895d0",
+    "lib/twin/checkin_applier.dart": "9772382622b5bd76f758031800743c999bb585c3e6d802f21ffca2740d8cdf1a",
+    "lib/twin/history_log.dart": "300fb4409d8d6235d245e2623d1c51b1f6e6a5e6193a27e70ee207d1bccd99e9",
+    "lib/twin/twin_experiment.dart": "b5c2b547b1619279d94cbaa00c1c08ac4910b71206076a0411ff67a8fc3b67f0",
+    "lib/agentic_routes.dart": "0d21a62c238d12fcb98fbfae2ea2c796f277a28a900d6c9b92f819adf9eef4a7",
+    "lib/experiment/recommendations.dart": "d9519ed42e4947ec5521e9b5d4730d9de3d5060cad647278c3ac2ca53819cdab",
+    "lib/experiment/experiment_screen.dart": "6678699671e4b673cb0fb6716de33b8e4dc0cae39170bb3d794ef2945c1e4237",
+    "lib/wellness/coach_client.dart": "b35490fc0a89767b4d7deb25e7b763d2d466e7cf3ec67272852493f469d6ed5d",
+    "lib/wellness/coach_context.dart": "9a4ec9819c058f5163d233b310cfc8d26cae2df125a57a1389240abda6de4c11",
+    "packages/lifetwin_on_device/assets/model.json": "6c1d8ef12893429197e7410374972dafc524a56554afb4d11b304fc21f6672f2",
+    "packages/lifetwin_on_device/assets/neural_model.json": "2bda389501304d27187b7fb0e53aa2d9bee9c450bf9c5c9e28527a49cfb6731c",
+    "packages/lifetwin_on_device/assets/support_reference.f64.gz": "8c76b67331cb66a01fe5951f37cadb66efd3fa0ebbe963a29754f1a0f4781050",
+    "packages/lifetwin_on_device/lib/src/model.dart": "dd35885931be9dbf638d3f258eea062d2a9d71a5990c5b879bed249ee17db1c1",
+    "packages/lifetwin_on_device/lib/src/projection.dart": "8e1d6a18d4991434a34d86a44f5929f78296776bbd0a40b4bf12967bf3b40359",
+    "packages/lifetwin_on_device/lib/src/neural_hazard.dart": "c3ce1f1d5e92e1e30eb6bf13c8122b30d06a957ce70c1fe684002345568893cd",
+    "packages/lifetwin_on_device/lib/lifetwin_on_device.dart": "13e3a44ef88fee5d21e47a444df9bbf906273d0fb3b3570cf47cd8f3506b521c"
+  },
+  "canonical_sha256": {
+    "lib/src/model.dart": "b3385bf7d2b4a311ff416c06a478d9de6ea5ea53b1890ec4c52e7be9f2dbb07d",
+    "lib/src/projection.dart": "8e1d6a18d4991434a34d86a44f5929f78296776bbd0a40b4bf12967bf3b40359",
+    "lib/src/neural_hazard.dart": "c3ce1f1d5e92e1e30eb6bf13c8122b30d06a957ce70c1fe684002345568893cd",
+    "assets/model.json": "6c1d8ef12893429197e7410374972dafc524a56554afb4d11b304fc21f6672f2",
+    "assets/neural_model.json": "2bda389501304d27187b7fb0e53aa2d9bee9c450bf9c5c9e28527a49cfb6731c",
+    "assets/support_reference.f64": "412717c1d1453ed540908fb17ce3e0e1c6cc0c5360a44d2d7d8082e1f7fef093"
+  },
+  "decompressed_reference_equal": true,
+  "package_projection_neural_bytes_equal_canonical": true,
+  "capture_original_sha256": "32ea45f5751212885cc5fe3fac63d154dfb229a79086307621fcd9f74f68bdde",
+  "capture_compact_sha256": "7ca9d216613652a6ff4f90f34edb8be57c45e4c76bd1b2f40c36c6e55dfeea96",
+  "server_checks_compact_sha256": "e7b0d65be1196e81b6ca6822cc208e46e9e2f91446901dab0221c59160de18d2",
+  "checks": {
+    "simulator_driver_exit": 0,
+    "canonical_oracle_exit": 0,
+    "blend_oracle_exit": 0,
+    "host_route_tests_passed": 49,
+    "host_route_tests_failed": 0,
+    "known_issue_124": "FAIL: two weight-gain paraphrases still published by recommendations with fake consented provider; coach rejects all three cases",
+    "oracle_negative_controls_rejected": 3
+  },
+  "limits": [
+    "Synthetic in-memory repository/model simulator integration; no final product-screen route acceptance claimed",
+    "49 existing production UI/route tests ran on host with deterministic clients",
+    "Server supplement used real in-process endpoints and a fake consented provider; no live external provider",
+    "Installed Flutter3.47.0/Dart3.13.0; SDKfloor lowered only temporary copy from^3.13.7 to^3.13.0; source/lockfiles unchanged in repo",
+    "Initial simulator test failed due to harness conflating fractional confirmed intake with direct wrapper; retained failed raw artifact/log only under/private/tmp; corrected test fixtures only"
+  ],
+  "independent_home_evidence": {
+    "source": "#133 native XCUITest capture, supplied and independently viewed by root after QA107 simulator handoff",
+    "source_head": "9ace866404bb8df89de673dd299041e25791ccad",
+    "artifact": "home-from-demo133.png",
+    "sha256": "6006dd2eb3b0f67f1751e9fb9465ffa81d6d6a1f3350c80fc5163d95034b719a",
+    "observed": [
+      "Health score +0.59",
+      "Healthier than86of100peopleyourage"
+    ],
+    "scope": "Actual production Home, distinct from QA107 custom model scaffold; synthetic demo seed only"
+  },
+  "harness_sha256": {
+    "integration_test.dart": "863e21ae2b7a63a57b5e2c7e86f6d189119c9337808e5d130e617f4aaba71ccb",
+    "driver.dart": "3d789723ae486b4b3ddbc4c8d6f0c544cf8861b80ac790f4a5060eda5cf585f4",
+    "canonical_oracle.dart": "5eee28eacec7d6fe37c6bf64d5e9336e8b48a8b51830d7e129ec74243bbfe189",
+    "blend_oracle.py": "2ba9ca94587590d4c8f1eebf3e123c3cac9917282befa1771d0d8320b48b9392",
+    "server_check.py": "ab1037b1387ace86b12198a728434252d3dd46acff344c459a320b489c7f5c3f"
+  }
+}

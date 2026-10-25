@@ -311,4 +311,60 @@ void main() {
       expect(t.takeException(), isNull);
     });
   }
+
+  testWidgets(
+    'No time after a Skip swap sends the swapped item and shows the shorter plan',
+    (t) async {
+      Map<String, dynamic> swim(String revision, int minutes, String message) {
+        final json = planJson(revision: revision);
+        final item =
+            Map<String, dynamic>.from((json['items'] as List).first as Map)
+              ..['catalog_id'] = 'swim_laps'
+              ..['title'] = 'Swimming'
+              ..['message'] = message
+              ..['minutes'] = minutes;
+        return json..['items'] = [item];
+      }
+
+      final client = FakeCoach()
+        ..responses.addAll([
+          DailyPlan.fromJson(swim('r2', 20, 'Swim for 20 minutes.')),
+          DailyPlan.fromJson(swim('r3', 15, 'Swim for 15 minutes.')),
+        ]);
+      await phone(
+        t,
+        DailyPlanScreen(
+          client: client,
+          confirmedContext: () => {'local_date': '2026-10-24'},
+          initialPlan: DailyPlan.fromJson(planJson()),
+          onBack: () {},
+          onTalk: () {},
+        ),
+      );
+      await reveal(t, find.text('Skip'));
+      await t.tap(find.text('Skip'));
+      await t.pumpAndSettle();
+      await reveal(t, find.text('Not done'));
+      await t.tap(find.text('Not done'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('No time'));
+      await t.pump();
+      await t.tap(find.text('Tell Mochi'));
+      await t.pumpAndSettle();
+      final sent = client.requests.last;
+      expect(sent['previous_plan']['revision_id'], 'r2');
+      expect(sent['previous_plan']['items'][0]['catalog_id'], 'swim_laps');
+      expect(sent['feedback'], {
+        'revision_id': 'r2',
+        'items': [
+          {'item_id': 'move', 'status': 'not_done', 'reason': 'No time'},
+        ],
+      });
+      expect(
+        find.text('Swim for 15 minutes.', findRichText: true),
+        findsOneWidget,
+      );
+      expect(t.takeException(), isNull);
+    },
+  );
 }
