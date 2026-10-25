@@ -168,6 +168,17 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- consent -----------------------------------------------------------
 
+  /// After "Delete my data": forget the conversation and the choices made in it, so the next Talk starts fresh.
+  void resetConversation() => _set(() {
+    turn = null;
+    correcting = false;
+    askingVoice = false;
+    aiHelper = false;
+    notice = null;
+    caption = '';
+    mascotLine = '';
+  });
+
   Future<void> answerConsent(bool yes, {bool aiHelper = false}) async {
     if (phase != VoicePhase.consent || _busy) return;
     _set(() {

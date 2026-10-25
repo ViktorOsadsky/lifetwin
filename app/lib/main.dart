@@ -77,7 +77,17 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   late final ForecastClient _forecast =
       widget.forecastClient ?? OnDeviceForecastClient(_twin, modelInputs: () => _controller.modelInputs);
 
-  late final AgenticRoutes _agentic = widget.agentic ?? AgenticRoutes(look: _look, api: _api, voice: () => _controller);
+  late final AgenticRoutes _agentic = widget.agentic ?? AgenticRoutes(look: _look, api: _api, voice: () => _controller, onDeleted: _afterDelete);
+
+  /// "Delete my data" wiped the phone: forget what this session held in memory too.
+  void _afterDelete() => setState(() {
+    _stored = null;
+    _healthKeys.clear();
+    _healthValues.clear();
+    _documentValues.clear();
+    _outlook.value = null;
+    _controller.resetConversation();
+  });
 
   /// The profile saved on the phone by an earlier session, once the store is open.
   Map<String, dynamic>? _stored;
