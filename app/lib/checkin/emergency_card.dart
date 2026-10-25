@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../experiment/widgets/source_link.dart';
 import '../ui/theme.dart';
+import 'checkin_controller.dart' show emergencyCallUri;
 import '../widgets/whole_word_text.dart';
 
 /// The calm emergency pause (Z-19, Z-20, Z-32), shared by check-ins and the change chat.
@@ -36,7 +37,7 @@ class EmergencyCard extends StatelessWidget {
         const SizedBox(height: 8),
         Semantics(header: true, child: Text(help, style: LtText.display(28))),
         const SizedBox(height: 14),
-        _Call911(onTap: () => open(Uri.parse('tel:911'))),
+        _Call911(onTap: () => open(emergencyCallUri)),
         const SizedBox(height: 4),
         Center(
           child: Text('Opens your phone app', style: LtText.body(color: LtColors.secondary)),

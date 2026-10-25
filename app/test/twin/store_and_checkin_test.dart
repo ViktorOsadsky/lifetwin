@@ -3,10 +3,12 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lifesim/checkin/daily_logs.dart' show DailyLogsAssembler;
 import 'package:lifesim/twin/checkin_applier.dart';
 import 'package:lifesim/twin/twin_history.dart';
 import 'package:lifesim/twin/twin_model.dart';
 import 'package:lifesim/twin/twin_repository.dart';
+import 'package:lifesim/twin/twin_state.dart';
 
 /// Every model input known (golden profile 1 with height and weight).
 const fullProfile = {
@@ -83,7 +85,8 @@ void main() {
       final again = await TwinStore.open(backend);
       expect(again.profile, fullProfile); // nulls are not stored
       expect(again.checkins.map((c) => c.kind), ['weekly', 'weekly']);
-      expect(again.weeklySummaries.single, {
+      // One weekly summary per week, derived from the check-ins: the later one wins.
+      expect(const DailyLogsAssembler().weeklySummaries(again.checkins).single, {
         'week_start': '2026-10-19',
         'sleep_hours': 6.5,
         'vigorous_recreation_min_week': 60,
@@ -152,14 +155,15 @@ void main() {
       final b = ProtectedFileBackend();
       final repo = await repoOn(b);
       await repo.saveConversationProfile({'age': 50});
-      expect(jsonDecode(file!), {
-        'version': 1,
-        'profile': {'age': 50},
-      });
+      final doc = jsonDecode(file!) as Map;
+      expect(doc.keys, unorderedEquals(['version', 'profile', 'profile_meta', 'history']));
+      expect(doc['version'], 1);
+      expect(doc['profile'], {'age': 50});
+      expect((doc['history'] as List).single['kind'], 'onboarding'); // the history is in the same protected file
       expect(await b.protection(), 'NSFileProtectionComplete');
       await repo.deleteMyData();
       expect(file, isNull);
-      expect(calls.map((c) => c.method), ['read', 'write', 'protection', 'delete']);
+      expect(calls.map((c) => c.method), ['read', 'write', 'protection', 'delete']); // one write per event
 
       // No plugin (flutter test without the mock, macOS): kept in memory, never unprotected.
       final m = ProtectedFileBackend(channel: const MethodChannel('lifetwin/none'));
@@ -173,7 +177,7 @@ void main() {
   group('check-in applier (contracts on codex/d-twin-checkins)', () {
     test('weekly profile_update: each non-null field is set, nulls left alone', () {
       final r = responseFor('checkin-weekly-profile-update');
-      final o = applyCheckinResponse(fullProfile, r, localDate: monday);
+      final o = applyCheckinResponse(fullProfile, r, localDate: isoDate(monday));
       expect(o.profile['sleep_hours'], 6.0);
       expect(o.profile['exercise_minutes_weekly'], 90);
       expect(o.profile['weight_kg'], 71.67);
@@ -196,31 +200,101 @@ void main() {
     test('"not sure" never overwrites a known answer; it only fills a gap', () {
       final r = responseFor('checkin-weekly-profile-update');
       r['profile_update'] = {'smoking_status': 'unknown', 'sleep_hours': 6.0};
-      final known = applyCheckinResponse({...fullProfile, 'smoking_status': 'current'}, r, localDate: monday);
+      final known = applyCheckinResponse({...fullProfile, 'smoking_status': 'current'}, r, localDate: isoDate(monday));
       expect(known.profile['smoking_status'], 'current');
       expect(known.profile['sleep_hours'], 6.0);
       expect(known.changedFields, ['sleep_hours']);
-      final gap = applyCheckinResponse({...fullProfile}..remove('smoking_status'), r, localDate: monday);
+      final gap = applyCheckinResponse({...fullProfile}..remove('smoking_status'), r, localDate: isoDate(monday));
       expect(gap.profile['smoking_status'], 'unknown');
-      expect(keepKnownAnswers({'smoking_status': 'never', 'age': 50}, {'smoking_status': 'not_sure', 'age': 51}), {
+      expect(mergeConfirmed({'smoking_status': 'never', 'age': 50}, {'smoking_status': 'unknown', 'age': 51}).profile, {
         'smoking_status': 'never',
         'age': 51,
       });
     });
 
+    test('the server confirming "unknown" for a known answer: the app keeps the known one', () {
+      // The contract says "set each non-null field"; the owner rule wins on the phone.
+      final r = responseFor('checkin-weekly-profile-update');
+      r['profile_update'] = {...r['profile_update'] as Map<String, dynamic>, 'smoking_status': 'unknown'};
+      final o = applyCheckinResponse({...fullProfile, 'smoking_status': 'former'}, r, localDate: isoDate(monday));
+      expect(o.profile['smoking_status'], 'former');
+      expect(o.changedFields, isNot(contains('smoking_status')));
+      expect(o.refusedFields, isEmpty);
+    });
+
+    test('a value of the wrong type is refused, never written', () {
+      final r = responseFor('checkin-weekly-profile-update');
+      r['profile_update'] = {
+        'sleep_hours': "I don't know",
+        'age': 'seventy',
+        'weight_kg': -5,
+        'diabetes': 'yes',
+        'exercise_minutes_weekly': 90.5,
+        'sex': 'other',
+        'smoking_status': 'sometimes',
+      };
+      final o = applyCheckinResponse(fullProfile, r, localDate: isoDate(monday));
+      expect(o.profile, fullProfile);
+      expect(o.changedFields, isEmpty);
+      expect(
+        o.refusedFields,
+        unorderedEquals([
+          'sleep_hours',
+          'age',
+          'weight_kg',
+          'diabetes',
+          'exercise_minutes_weekly',
+          'sex',
+          'smoking_status',
+        ]),
+      );
+    });
+
+    test('only profile fields may be written: wellbeing, memory_consent and others are refused', () {
+      final r = responseFor('checkin-weekly-profile-update');
+      r['profile_update'] = {'wellbeing': 'good', 'memory_consent': true, 'game_health': 3, 'sleep_hours': 6.5};
+      final o = applyCheckinResponse(fullProfile, r, localDate: isoDate(monday));
+      expect(o.profile, {...fullProfile, 'sleep_hours': 6.5});
+      expect(o.profile.containsKey('wellbeing'), isFalse);
+      expect(o.profile.containsKey('memory_consent'), isFalse);
+      expect(o.refusedFields, unorderedEquals(['wellbeing', 'memory_consent', 'game_health']));
+    });
+
+    test('a daily check-in never touches the profile, even with a profile_update', () {
+      final r = {
+        'complete': true,
+        'emergency': false,
+        'profile_update': {'sleep_hours': 4.0, 'weight_kg': 60.0, 'smoking_status': 'current'},
+        'state': {
+          'kind': 'daily',
+          'phase': 'ready',
+          'questions': ['sleep_hours_last_night', 'exercise_minutes_today', 'wellbeing'],
+          'confirmed': {'sleep_hours_last_night': 4.0, 'wellbeing': 'okay'},
+        },
+      };
+      final o = applyCheckinResponse(fullProfile, r, localDate: isoDate(monday));
+      expect(o.profile, fullProfile);
+      expect(o.changedFields, isEmpty);
+      expect(o.record!.kind, 'daily');
+    });
+
     test('a weekly check-in still going changes nothing', () {
-      final o = applyCheckinResponse(fullProfile, responseFor('checkin-weekly-confirm'), localDate: monday);
+      final o = applyCheckinResponse(fullProfile, responseFor('checkin-weekly-confirm'), localDate: isoDate(monday));
       expect(o.profile, fullProfile);
       expect(o.record, isNull);
       expect(o.changedFields, isEmpty);
     });
 
     test('an emergency pause is flagged and not stored; resume clears it', () {
-      final o = applyCheckinResponse(fullProfile, responseFor('checkin-emergency-pause'), localDate: monday);
+      final o = applyCheckinResponse(fullProfile, responseFor('checkin-emergency-pause'), localDate: isoDate(monday));
       expect(o.emergency, isTrue);
       expect(o.record, isNull);
       expect(
-        applyCheckinResponse(fullProfile, responseFor('checkin-resume-after-pause'), localDate: monday).emergency,
+        applyCheckinResponse(
+          fullProfile,
+          responseFor('checkin-resume-after-pause'),
+          localDate: isoDate(monday),
+        ).emergency,
         isFalse,
       );
     });
@@ -237,7 +311,7 @@ void main() {
           'confirmed': {'sleep_hours_last_night': 5.5, 'exercise_minutes_today': null, 'wellbeing': 'okay'},
         },
       };
-      final o = applyCheckinResponse(fullProfile, r, localDate: monday);
+      final o = applyCheckinResponse(fullProfile, r, localDate: isoDate(monday));
       expect(o.profile, fullProfile);
       expect(o.changedFields, isEmpty);
       expect(o.record!.answers, {'sleep_hours_last_night': 5.5, 'wellbeing': 'okay'});
@@ -256,7 +330,7 @@ void main() {
         (monday, '2026-10-19'),
         (DateTime(2026, 10, 28), '2026-10-19'),
       ]) {
-        expect(applyCheckinResponse(fullProfile, r, localDate: day).weeklySummary, {
+        expect(applyCheckinResponse(fullProfile, r, localDate: isoDate(day)).weeklySummary, {
           'week_start': week,
           'sleep_hours': 6.5,
           'vigorous_recreation_min_week': 30,
@@ -267,47 +341,58 @@ void main() {
     });
   });
 
-  group('history windows', () {
-    test('weekly: consecutive weeks ending with the latest completed one, at most four', () {
-      Map<String, dynamic> w(String start) => {
-        'week_start': start,
+  group('history windows (the one assembler, DailyLogsAssembler)', () {
+    CheckinEntry weekly(String date) => CheckinEntry(
+      kind: 'weekly',
+      date: date,
+      answers: const {
         'sleep_hours': 7,
         'vigorous_recreation_min_week': 60,
         'moderate_recreation_min_week': 165,
         'sedentary_min_day': 393,
-      };
-      final rows = [w('2026-09-14'), w('2026-09-28'), w('2026-10-05'), w('2026-10-12'), w('2026-10-19')];
-      expect(weeklyWindow(rows, monday)!.map((r) => r['week_start']), [
+      },
+    );
+
+    test('weekly: consecutive weeks ending with the latest completed one, at most four', () {
+      // Sunday check-ins describe the week ending that day.
+      final checkins = [
+        for (final d in ['2026-09-20', '2026-10-04', '2026-10-11', '2026-10-18', '2026-10-25']) weekly(d),
+      ];
+      final windows = candidateWindows(checkins: checkins, dayLogs: const [], asOf: monday);
+      expect((windows.first['weekly_summaries'] as List).map((r) => r['week_start']), [
         '2026-09-28',
         '2026-10-05',
         '2026-10-12',
         '2026-10-19',
       ]);
-      expect(weeklyWindow(rows, DateTime(2026, 10, 25)), hasLength(3)); // Sunday: latest completed is 10-12
-      expect(weeklyWindow([w('2026-10-05')], monday), isNull); // the latest week is missing
-      expect(
-        weeklyWindow([
-          {...w('2026-10-19'), 'sedentary_min_day': null},
-        ], monday),
-        isNull,
-      );
+      // On Sunday the latest completed week is 10-12, and the 10-25 check-in is not yet in it.
+      final sunday = candidateWindows(checkins: checkins, dayLogs: const [], asOf: DateTime(2026, 10, 25));
+      expect(sunday.first['weekly_summaries'], hasLength(3));
+      // The latest week missing: no weekly window, only the snapshot.
+      expect(candidateWindows(checkins: [weekly('2026-10-11')], dayLogs: const [], asOf: monday), [const {}]);
     });
 
-    test('daily: complete days ending yesterday, longest window first', () {
-      final rows = [
+    test('daily: complete days ending yesterday; a missed day ends the run', () {
+      final days = [
         for (var i = 1; i <= 15; i++)
-          {
-            'date': isoDate(monday.subtract(Duration(days: i))),
-            'workday': i % 7 != 1 && i % 7 != 2,
-            'sleep_hours': 7,
-            'vigorous_recreation_min': 0,
-            'moderate_recreation_min': 30,
-            'sedentary_min_day': 400,
-          },
+          DayLog(
+            date: isoDate(monday.subtract(Duration(days: i))),
+            sleepHours: 7,
+            vigorousMin: 0,
+            moderateMin: 30,
+            sedentaryMin: 400,
+          ),
       ];
-      final windows = dailyWindows(rows, monday);
-      expect(windows.map((w) => w.length), [14, 7]);
-      expect(windows.first.last['date'], '2026-10-25');
+      final w = candidateWindows(checkins: const [], dayLogs: days, asOf: monday);
+      expect(w.map((x) => x.keys.firstOrNull), ['daily_logs', null]);
+      expect((w.first['daily_logs'] as List), hasLength(14));
+      expect((w.first['daily_logs'] as List).last['date'], '2026-10-25');
+      // Yesterday missed: unknown, never 0, so there is no daily window at all.
+      final gap = [
+        for (final d in days)
+          if (d.date != '2026-10-25') d,
+      ];
+      expect(candidateWindows(checkins: const [], dayLogs: gap, asOf: monday), [const {}]);
     });
   });
 
@@ -348,6 +433,43 @@ void main() {
       final a = await repo.saveConversationProfile({...fullProfile, 'smoking_status': 'unknown'});
       expect(repo.profile['smoking_status'], 'former');
       expect(a.status, 'available');
+    });
+
+    test('saving a conversation never erases: null or absent fields keep the stored values', () async {
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      await repo.saveConversationProfile({...fullProfile, 'smoking_status': 'former'});
+      await repo.saveConversationProfile({...fullProfile, 'smoking_status': null});
+      expect(repo.profile['smoking_status'], 'former');
+      await repo.saveConversationProfile({'age': 71});
+      expect(repo.profile, {...fullProfile, 'smoking_status': 'former', 'age': 71});
+      expect(repo.profile['height_cm'], 175.0);
+      expect(repo.profile['weight_kg'], 76.5625);
+    });
+
+    test('saving a conversation refuses wrong types and non-profile keys', () async {
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      await repo.saveConversationProfile(fullProfile);
+      await repo.saveConversationProfile({'sleep_hours': "I don't know", 'wellbeing': 'good', 'memory_consent': true});
+      expect(repo.profile, fullProfile);
+    });
+
+    test('changing the map from repo.profile leaves the stored profile alone', () async {
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      await repo.saveConversationProfile(fullProfile);
+      final copy = repo.profile;
+      copy['age'] = 99;
+      copy.remove('weight_kg');
+      expect(repo.profile, fullProfile);
+      expect(repo.store.profile, fullProfile);
+    });
+
+    test('after an emergency, a later ordinary check-in response clears the emergency', () async {
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()), clock: () => monday);
+      await repo.applyCheckin(responseFor('checkin-emergency-pause'));
+      expect(repo.twinState().emergency, isTrue);
+      await repo.applyCheckin(responseFor('checkin-resume-after-pause'));
+      expect(repo.twinState().emergency, isFalse);
+      expect(repo.twinState().mood, isNot(TwinMood.concerned));
     });
 
     test('the emergency flag shows on the twin until cleared', () async {

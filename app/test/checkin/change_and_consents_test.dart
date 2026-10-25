@@ -3,16 +3,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/checkin/change_chat.dart';
+import 'package:lifesim/experiment/answers.dart';
 import 'package:lifesim/checkin/consent_screens.dart';
 import 'package:lifesim/checkin/consents.dart';
 import 'package:lifesim/checkin/my_data_screen.dart';
-import 'package:lifesim/checkin/reminders.dart';
+import 'package:lifesim/checkin/checkin_reminders.dart';
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/ui/theme.dart';
 import 'package:lifesim/ui/twin_appearance.dart';
 
 import '../support/app_fonts.dart';
+import '../checkin_reminders_test.dart' show FakePort;
 import '../support/fake_change_client.dart';
 import 'daily_checkin_test.dart' show profile;
 
@@ -24,8 +26,9 @@ void main() {
     model = await TwinModelService.load();
   });
 
-  Future<TwinRepository> repoWith(Map<String, dynamic>? p) async {
+  Future<TwinRepository> repoWith(Map<String, dynamic>? p, {FakePort? port}) async {
     final repo = TwinRepository(
+      reminders: port == null ? null : CheckinReminders(port),
       model: model,
       store: await TwinStore.open(MemoryBackend()),
       clock: () => DateTime(2026, 10, 28),
@@ -46,6 +49,25 @@ void main() {
       .widgetList<Text>(find.byType(Text))
       .map((w) => w.data ?? w.textSpan?.toPlainText() ?? '')
       .where((s) => s.isNotEmpty);
+
+  test('every model input the app can ask about maps to a ChangeField, including sitting', () {
+    for (final input in [
+      'age',
+      'sex_nhanes',
+      'bmi',
+      'sleep_hours',
+      'vigorous_recreation_min_week',
+      'moderate_recreation_min_week',
+      'sedentary_min_day',
+      'smoking_status',
+      'diabetes_diagnosed',
+      'hypertension_diagnosed',
+      'general_health',
+    ]) {
+      expect(changeFields, contains(Answers.changeField(input)), reason: input);
+    }
+    expect(Answers.changeField('sedentary_min_day'), 'sedentary_min_day');
+  });
 
   group('change through Mochi (Z-10, Z-30, Z-31, Z-32)', () {
     testWidgets('saves only after "Yes, save"; the sheet stays open; nothing before the yes', (t) async {
@@ -194,7 +216,8 @@ void main() {
     });
 
     testWidgets('re-consent when the provider changes: a new id has no answer, so it asks again', (t) async {
-      final store = ConsentStore();
+      final repo = await repoWith(profile);
+      final store = ConsentStore(repo);
       const one = AiProvider(id: 'a', displayName: 'Provider A', configured: true);
       const two = AiProvider(id: 'b', displayName: 'Provider B', configured: true);
       expect(store.needsAnswer(one), isTrue);
@@ -216,7 +239,7 @@ void main() {
 
     testWidgets('three consents stay separate: AI helper, personal suggestions, and memory', (t) async {
       final repo = await repoWith(profile);
-      final store = ConsentStore();
+      final store = ConsentStore(repo);
       const p = AiProvider(id: 'p', displayName: 'The Provider', configured: true);
       var asked = 0;
       await pump(t, AiSettingsScreen(consents: store, provider: p, onAskOutsideAi: () => asked++, onBack: () {}));
@@ -258,22 +281,24 @@ void main() {
 
   group('My data and Delete my data (Z-21, Z-22, Z-36, Z-23)', () {
     testWidgets('two confirms; Keep changes nothing; Yes, delete clears answers, consents and reminders', (t) async {
-      final repo = await repoWith(profile);
+      final port = FakePort();
+      final repo = await repoWith(profile, port: port);
       await repo.applyMemoryConsent(true);
       await repo.addHabitNote({'topic': 'walks', 'text': 'x'});
-      final consents = ConsentStore();
+      final consents = ConsentStore(repo);
       await consents.setOutsideAi('p', true);
       consents.setAiHelper(true);
-      final scheduler = InMemoryReminderScheduler();
-      final reminders = ReminderPrefs(scheduler);
-      await reminders.setDaily(true);
+      await repo.saveCheckinSettings(
+        await repo.reminders!.accept(repo.checkinSettings, localNow: DateTime(2026, 10, 28), history: const []),
+      );
+      expect(repo.checkinSettings.remindersOn, isTrue);
+      final clearsBefore = port.clears;
       var deleted = 0;
       await pump(
         t,
         MyDataScreen(
           repository: repo,
           consents: consents,
-          reminders: reminders,
           onBack: () {},
           onAiPrivacy: () {},
           onDeleted: () => deleted++,
@@ -313,8 +338,8 @@ void main() {
       expect(repo.store.memoryConsent, isFalse);
       expect(consents.outsideAiFor('p'), isNull);
       expect(consents.aiHelper, isFalse);
-      expect(scheduler.scheduled, isEmpty);
-      expect(reminders.dailyOn, isFalse);
+      expect(port.clears, greaterThan(clearsBefore), reason: 'the planned reminders are cancelled');
+      expect(repo.checkinSettings.remindersOn, isFalse);
     });
 
     testWidgets('turning memory off with notes asks first and clears the notebook', (t) async {
@@ -325,8 +350,7 @@ void main() {
         t,
         MyDataScreen(
           repository: repo,
-          consents: ConsentStore(),
-          reminders: ReminderPrefs(InMemoryReminderScheduler()),
+          consents: ConsentStore(repo),
           onBack: () {},
           onAiPrivacy: () {},
           onDeleted: () {},
@@ -346,24 +370,32 @@ void main() {
       expect(repo.store.habitNotes, isEmpty);
     });
 
-    test(
+    testWidgets(
       'reminders: permission is asked in context, the first time one is turned on; the text carries no health details',
-      () async {
-        final scheduler = InMemoryReminderScheduler();
-        final prefs = ReminderPrefs(scheduler);
-        expect(scheduler.permissionAsks, 0);
-        await prefs.setDaily(true);
-        expect(scheduler.permissionAsks, 1);
-        expect(scheduler.scheduled[ReminderKind.daily]?.hour, 9);
-        await prefs.setDailyTime(19, 30);
-        expect(scheduler.scheduled[ReminderKind.daily]?.minute, 30);
-        await prefs.setWeekly(true);
-        expect(scheduler.scheduled[ReminderKind.weekly]?.weekday, DateTime.sunday);
-        expect(reminderNotificationText, isNot(matches(RegExp(r'missed|blood|weight|health', caseSensitive: false))));
-        scheduler.permission = false;
-        final denied = ReminderPrefs(scheduler);
-        await denied.setDaily(true);
-        expect(denied.dailyOn, isFalse, reason: 'no permission: nothing is scheduled');
+      (t) async {
+        final port = FakePort();
+        final repo = await repoWith(profile, port: port);
+        await pump(t, ReminderSettingsScreen(repository: repo, onBack: () {}, now: () => DateTime(2026, 10, 28, 8)));
+        expect(port.asks, 0);
+        await t.tap(find.text('Check-in reminder'));
+        await t.pumpAndSettle();
+        expect(port.asks, 1);
+        expect(repo.checkinSettings.remindersOn, isTrue);
+        expect(port.scheduled, isNotEmpty);
+        await t.tap(find.text('Evening 7:30'));
+        await t.pumpAndSettle();
+        expect(repo.checkinSettings.reminderHour, 19);
+        for (final line in reminderLines) {
+          expect(line, isNot(matches(RegExp(r'missed|blood|weight|health', caseSensitive: false))));
+        }
+        await t.tap(find.text('Check-in reminder'));
+        await t.pumpAndSettle();
+        expect(repo.checkinSettings.remindersOn, isFalse);
+        // The phone says no: it stays off.
+        port.allow = false;
+        await t.tap(find.text('Check-in reminder'));
+        await t.pumpAndSettle();
+        expect(repo.checkinSettings.remindersOn, isFalse);
       },
     );
   });

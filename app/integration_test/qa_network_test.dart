@@ -14,8 +14,9 @@ import 'support/qa_support.dart';
 
 const cantReach = "I can't reach LifeTwin right now.";
 
-/// Today's intake has no sitting, high blood pressure, general health or hard/moderate
-/// split, so the on-device model reports missing inputs and shows no number.
+/// A complete intake gives the on-device model every input, so it shows a number
+/// ([forecastNumber]). An intake with skipped or unknown answers still reports missing
+/// inputs and shows no number.
 const missingInputs =
     "I can't make a forecast for you yet. Complete every model input to show annual survival percentages.";
 
@@ -29,14 +30,12 @@ void main() {
     await answerAll(t);
     await tapText(t, 'Continue');
     await askTheBall(t);
-    await waitFor(t, find.textContaining(missingInputs));
-    expect(find.textContaining('time spent sitting each day'), findsOneWidget);
-    expect(find.textContaining('still living'), findsNothing);
+    await waitFor(t, find.textContaining(forecastNumber));
+    expect(find.textContaining(missingInputs), findsNothing);
     await tapRound(t, 'Back');
     await waitFor(t, find.byType(RoomScreen));
-    expect(find.text('Ask the ball'), findsWidgets); // no number on the outlook card
     await openFortune(t);
-    await waitFor(t, find.textContaining(missingInputs));
+    await waitFor(t, find.textContaining(forecastNumber));
     await tapRound(t, 'Back');
     await waitFor(t, find.byType(RoomScreen));
     expect(await qaCount('/api/predict'), 0);
@@ -54,22 +53,24 @@ void main() {
     expect(find.text('Try again'), findsOneWidget);
     // Typing something anyway while it is still down must not strand the conversation.
     if (find.byType(TextField).evaluate().isNotEmpty) {
-      await t.enterText(find.byType(TextField), '71');
+      await t.enterText(find.byType(TextField), 'No thanks');
       await tapText(t, 'Send');
       await waitFor(t, find.textContaining(cantReach));
     }
     await qaMode('pass');
     await tapText(t, 'Try again');
-    await waitFor(t, find.textContaining('How old are you?'));
+    // The first thing Mochi asks is whether it may remember the little things.
+    await waitFor(t, find.textContaining(memoryQuestion));
     await settled(t);
     expect(ctl(t).notice, isNull);
+    await say(t, 'No thanks', ageQuestion);
     await say(t, '71', 'you are 71');
   });
 
   testWidgets('server down mid-conversation: message, Try again, no lost answers', (t) async {
     await startTyped(t);
     await say(t, '71', 'you are 71');
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     await qaMode('down');
     await t.enterText(find.byType(TextField), 'female');
     await tapText(t, 'Send');
@@ -92,7 +93,7 @@ void main() {
     expect(ctl(t).confirming, isTrue, reason: 'the read-back must still be waiting for Yes');
     await qaMode('pass');
     await tapText(t, 'Try again');
-    await waitFor(t, find.textContaining('How tall'));
+    await waitFor(t, find.textContaining(smokingQuestion));
     await settled(t);
     expect(ctl(t).confirmedProfile['age'], 71);
     expect(ctl(t).confirmedProfile['sex'], 'female');
@@ -121,7 +122,7 @@ void main() {
     expect(ctl(t).notice, isNotNull);
     expect(ctl(t).confirming, isTrue);
     await tapText(t, 'Try again');
-    await waitFor(t, find.textContaining('What sex'));
+    await waitFor(t, find.textContaining(sexQuestion));
   });
 
   testWidgets('rate limit (429): the wait message, then Try again works', (t) async {
@@ -151,7 +152,7 @@ void main() {
       await tapText(t, 'No, change it');
       await tapText(t, 'Never mind');
       await tapText(t, 'Yes');
-      await waitFor(t, find.textContaining('What sex'));
+      await waitFor(t, find.textContaining(sexQuestion));
       await settled(t);
       await tapText(t, 'Go back');
       await waitFor(t, find.textContaining('go back to your age'));
@@ -165,7 +166,7 @@ void main() {
     await qaMode('down');
     await tapText(t, 'Continue');
     await askTheBall(t);
-    await waitFor(t, find.textContaining(missingInputs));
+    await waitFor(t, find.textContaining(forecastNumber));
     expect(find.text("I couldn't get your forecast just now."), findsNothing);
     expect(find.text('Try again'), findsNothing);
     await qaMode('pass');
@@ -177,10 +178,12 @@ void main() {
   testWidgets('no forecast (age 85, sex skipped): the status message, what is needed, and a way to add it', (t) async {
     await startTyped(t);
     await say(t, '85', 'you are 85');
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     await tapText(t, 'Skip this question');
-    await waitFor(t, find.textContaining('How tall'));
+    await waitFor(t, find.textContaining(smokingQuestion));
     await settled(t);
+    await tapText(t, 'Skip this question');
+    await declineHealth(t);
     for (var i = 0; i < 12 && find.text('Continue').evaluate().isEmpty; i++) {
       await tapText(t, 'Skip this question');
       await pumpFor(t, const Duration(milliseconds: 800));
@@ -207,7 +210,7 @@ void main() {
     await yes(t, 'Continue');
     await tapText(t, 'Continue');
     await askTheBall(t);
-    // Still no number: the other inputs are missing (and 85 is outside 35–79).
+    // Still no number: the other inputs are skipped (and 85 is outside 35–79).
     await waitFor(t, find.textContaining(missingInputs));
     expect(find.textContaining('sex at birth'), findsNothing);
     expect(find.textContaining('still living'), findsNothing);

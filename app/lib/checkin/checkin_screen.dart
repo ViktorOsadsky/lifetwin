@@ -3,73 +3,58 @@ import 'package:flutter/material.dart';
 import '../experiment/experiment_page.dart';
 import '../experiment/experiment_twins.dart';
 import '../experiment/widgets/widgets.dart';
+import '../twin/twin_model.dart' show TwinAssessment;
+import '../twin/twin_repository.dart';
 import '../twin/twin_state.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart' hide TwinMood;
 import '../widgets/whole_word_text.dart';
-import 'checkin_client.dart';
+import 'check_in.dart';
 import 'checkin_controller.dart';
 import 'emergency_card.dart';
+import 'outlook_change.dart';
 import 'updated_card.dart';
 
-/// Quick replies for the question being asked: the person's own tapped answer, sent as text.
-/// Nothing is pre-selected and "Skip" is always there. Fields with no sensible chips (drinks,
-/// smoking, blood pressure) are answered by typing or talking.
-List<String> quickReplies(String? field) => switch (field) {
-  'wellbeing' => const ['Good', 'Okay', 'Not great'],
-  'sleep_hours_last_night' || 'sleep_hours' => const ['5 hours', '6 hours', '7 hours', '8 hours'],
-  'exercise_minutes_today' => const ['0 minutes', '15 minutes', '30 minutes', '60 minutes'],
-  'exercise_minutes_weekly' => const ['0 minutes', '60 minutes', '150 minutes', '300 minutes'],
-  _ => const [],
-};
-
-/// Mochi's short line in the bubble for the field being asked (the full reply sits in the card).
-String bubbleFor(
-  String? field, {
-  required bool confirming,
-  required bool done,
-  required bool readback,
-  required CheckInKind kind,
-}) {
-  if (done) return kind == CheckInKind.daily ? 'Thanks for checking in!' : 'Your week is in.';
-  if (readback) return kind == CheckInKind.daily ? 'Here’s your day. Right?' : 'Here’s your week. Right?';
+/// Mochi's short line in the bubble for the field being asked (the full question sits in the card).
+String bubbleFor(String? field, {required bool confirming, required bool done, required bool weekly}) {
+  if (done) return weekly ? 'Your week is in.' : 'Thanks for checking in!';
   if (confirming) return 'Did I get that right?';
   return switch (field) {
     'wellbeing' => 'How are you feeling?',
     'sleep_hours_last_night' || 'sleep_hours' => 'How did you sleep?',
-    'exercise_minutes_today' => 'Did you move today?',
-    'exercise_minutes_weekly' => 'How active was your week?',
-    'alcohol_drinks_yesterday' || 'alcohol_drinks_weekly' => 'Any drinks?',
-    'smoking_status' => 'Do you smoke?',
-    'weight_kg' => 'Your weight?',
-    'systolic_bp' || 'diastolic_bp' => 'Blood pressure?',
+    'vigorous_recreation_min' || 'moderate_recreation_min' => 'Did you move?',
+    'vigorous_recreation_min_week' || 'moderate_recreation_min_week' => 'How active was your week?',
+    'sedentary_min_day' => 'How much sitting?',
     _ => 'Got a minute?',
   };
 }
 
-/// The check-in chat (Z-15 daily, Z-16 weekly): Mochi asks one question at a time, with quick
-/// replies, a keyboard or voice; reads each answer back before it counts; and pauses calmly on an
-/// emergency. About 3 questions for daily, so it takes about a minute. When a weekly check-in
-/// finishes, the outlook change shows (Z-17).
+/// The check-in chat: Mochi asks one question at a time, with tap answers, voice or the keyboard, and Skip.
+/// It is driven by the engine's `CheckinController`, which saves the finished check-in exactly once.
+///
+/// A tapped answer is the answer: the chat confirms it for the person. A spoken or typed answer is read back
+/// with "Yes" / "Not quite", and an Apple Health value with "Looks right" / "Not quite". An emergency pauses
+/// calmly ("Call 911" is a tapped `tel:` link, never dialled for you). When a weekly check-in finishes, how
+/// the outlook moved shows (Z-17).
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({
     super.key,
     required this.controller,
+    required this.kind,
+    required this.repository,
     required this.appearance,
     required this.onDone,
     this.open = defaultOpenUrl,
-    this.onTalk,
   });
 
   final CheckinController controller;
+  final CheckInKind kind;
+  final TwinRepository repository;
   final TwinAppearance appearance;
   final VoidCallback onDone;
   final OpenUrl open;
-
-  /// "Tap to talk": starts voice input. Null until voice is wired to this screen; the keyboard is shown instead.
-  final VoidCallback? onTalk;
 
   @override
   State<CheckInScreen> createState() => _CheckInScreenState();
@@ -77,14 +62,25 @@ class CheckInScreen extends StatefulWidget {
 
 class _CheckInScreenState extends State<CheckInScreen> {
   final _text = TextEditingController();
-  bool _typing = false;
+  TwinAssessment? _before;
+  bool _nothing = false;
+  bool _starting = true;
 
   CheckinController get c => widget.controller;
+  bool get weekly => widget.kind == CheckInKind.weekly;
 
   @override
   void initState() {
     super.initState();
-    if (!c.started) c.start();
+    _before = widget.repository.current;
+    c.start(kind: widget.kind.name).then((ok) {
+      if (mounted) {
+        setState(() {
+          _starting = false;
+          _nothing = !ok;
+        });
+      }
+    });
   }
 
   @override
@@ -97,87 +93,89 @@ class _CheckInScreenState extends State<CheckInScreen> {
     final t = _text.text.trim();
     if (t.isEmpty) return;
     _text.clear();
-    c.reply(t);
+    c.submitTyped(t);
   }
+
+  Future<void> _quick(String words) async {
+    await c.submitQuick(words);
+    // The tap is the answer: no second tap to confirm it (an Apple Health value still asks).
+    if (c.confirming && !c.confirmingHealth) await c.confirm();
+  }
+
+  bool get _finished => c.turn?.complete ?? false;
 
   TwinState _twin() {
     if (c.emergency) {
       return const TwinState(mood: TwinMood.concerned, pose: TwinPose.stand, reason: TwinStateReason.emergency);
     }
-    if (c.done) return c.repository.twinState();
+    if (_finished) return widget.repository.twinState();
     return curiousTwin;
   }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: c,
-    builder: (context, _) {
-      final r = c.response;
-      final confirming = r?.phase == 'confirming';
-      return ExperimentPage(
-        mode: LtMode.room,
-        onBack: c.emergency ? c.resume : widget.onDone,
-        backLabel: c.emergency ? 'Continue' : 'Back',
-        dock: _dock(context, confirming),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ExperimentPlate(
-              appearance: widget.appearance,
-              twins: [TwinSlot(state: _twin(), x: 0.3)],
-              bubble: c.emergency
-                  ? EmergencyCard.apology
-                  : bubbleFor(
-                      r?.currentField,
-                      confirming: confirming,
-                      done: c.done,
-                      readback: c.readback != null,
-                      kind: c.kind,
-                    ),
-            ),
-            const SizedBox(height: 14),
-            Sheet(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              child: c.emergency
-                  ? EmergencyCard(onContinue: c.resume, picksUpAt: c.pausedAt, open: widget.open)
-                  : _card(context),
-            ),
-          ],
-        ),
-      );
-    },
+    builder: (context, _) => ExperimentPage(
+      mode: LtMode.room,
+      onBack: c.emergency ? c.continueAfterEmergency : widget.onDone,
+      backLabel: c.emergency ? 'Continue' : 'Back',
+      dock: _dock(context),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ExperimentPlate(
+            appearance: widget.appearance,
+            twins: [TwinSlot(state: _twin(), x: 0.3)],
+            bubble: c.emergency
+                ? EmergencyCard.apology
+                : _nothing
+                ? 'All set for today!'
+                : bubbleFor(c.turn?.currentField, confirming: c.confirming, done: _finished, weekly: weekly),
+          ),
+          const SizedBox(height: 14),
+          Sheet(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: c.emergency
+                ? EmergencyCard(onContinue: c.continueAfterEmergency, picksUpAt: c.mascotLine, open: widget.open)
+                : _card(context),
+          ),
+        ],
+      ),
+    ),
   );
 
+  Widget _title(String text) => Semantics(header: true, child: Text(text, style: LtText.display(28)));
+
   Widget _card(BuildContext context) {
-    final r = c.response;
-    final weekly = c.kind == CheckInKind.weekly;
-    if (r == null) {
+    final label = weekly ? 'Weekly check-in' : 'Check in';
+    if (_nothing) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(weekly ? 'Weekly check-in' : 'Daily check-in', style: LtText.display(28)),
-          WholeWordText(c.error ?? 'One moment…', style: LtText.body(color: LtColors.secondary)),
-          if (c.error != null) ...[
-            const SizedBox(height: 10),
-            LipButton(label: 'Try again', fontSize: 22, onTap: c.start),
-          ],
+          _title('All set for today'),
+          WholeWordText('Nothing more to ask. See you tomorrow.', style: LtText.body(color: LtColors.secondary)),
         ],
       );
     }
-    if (c.done) return _done(context, r);
-    if (c.readback != null) return _readback(context);
+    if (_starting || c.turn == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _title(label),
+          WholeWordText(c.notice ?? 'One moment…', style: LtText.body(color: LtColors.secondary)),
+          if (c.canRetry) ...[const SizedBox(height: 10), LipButton(label: 'Try again', fontSize: 22, onTap: c.retry)],
+        ],
+      );
+    }
+    if (_finished) return _done(context);
+    final q = c.questionNumber;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
-            Expanded(
-              child: Semantics(
-                header: true,
-                child: Text(weekly ? 'Weekly check-in' : 'Daily check-in', style: LtText.display(28)),
-              ),
-            ),
-            _Dots(total: c.total, position: c.position),
+            Expanded(child: _title(label)),
+            if (q != null) _Dots(total: q.$2, position: q.$1),
           ],
         ),
         WholeWordText(weekly ? 'A few minutes' : 'About 1 minute', style: LtText.body(color: LtColors.secondary)),
@@ -198,133 +196,118 @@ class _CheckInScreenState extends State<CheckInScreen> {
                     text: 'Mochi  ',
                     style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary),
                   ),
-                  TextSpan(text: r.message, style: LtText.body()),
+                  TextSpan(text: c.mascotLine, style: LtText.body()),
                 ],
               ),
             ),
           ),
         ),
-        if (c.error != null) ...[
+        if (c.phase == CheckinPhase.listening && c.caption.isNotEmpty) ...[
           const SizedBox(height: 8),
-          WholeWordText('That did not go through. Try again.', style: LtText.body(color: LtColors.secondary)),
+          WholeWordText('“${c.caption}”', style: LtText.body(color: LtColors.secondary)),
+        ],
+        if (c.notice != null) ...[
+          const SizedBox(height: 8),
+          WholeWordText(c.notice!, style: LtText.body(color: LtColors.secondary)),
+        ],
+        if (c.canRetry) ...[
+          const SizedBox(height: 8),
+          LipButton(label: 'Try again', kind: LipKind.secondary, height: 56, fontSize: 20, onTap: c.retry),
         ],
       ],
     );
   }
 
-  /// The ONE read-back of the whole check-in, with every answer in a list (skipped ones dashed).
-  Widget _readback(BuildContext context) {
-    final weekly = c.kind == CheckInKind.weekly;
+  Widget _done(BuildContext context) {
+    final change = weekly ? OutlookChange.between(_before, widget.repository.current) : null;
+    final confirmed = Map<String, dynamic>.from(c.turn?.state['confirmed'] as Map? ?? const {});
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(header: true, child: Text(weekly ? 'Weekly check-in' : 'Daily check-in', style: LtText.display(28))),
-        WholeWordText('Here’s what I heard.', style: LtText.body(color: LtColors.secondary)),
+        _title(weekly ? 'Outlook updated' : 'All done'),
         const SizedBox(height: 8),
-        for (final item in c.readback!)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: item.value == null
-                ? NoNumberBox(icon: Icons.keyboard_double_arrow_right_rounded, title: '${item.label} · Skipped')
-                : Container(
-                    constraints: const BoxConstraints(minHeight: 56),
-                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFBF6EE),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: LtColors.container, width: 1.5),
-                    ),
-                    child: Semantics(
-                      container: true,
-                      label: '${item.label}: ${item.value}',
-                      excludeSemantics: true,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(item.label, style: LtText.body(color: LtColors.secondary)),
-                          Text(item.value!, style: LtText.display(20)),
-                        ],
-                      ),
-                    ),
-                  ),
-          ),
-      ],
-    );
-  }
-
-  Widget _done(BuildContext context, CheckInResponse r) {
-    final change = c.change;
-    final weekly = c.kind == CheckInKind.weekly;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Semantics(header: true, child: Text(weekly ? 'Outlook updated' : 'All done', style: LtText.display(28))),
-        const SizedBox(height: 8),
-        if (weekly && change != null)
+        if (change != null)
           OutlookChangeCard(change: change)
         else
           WholeWordText(
-            c.repository.twinState().mood == TwinMood.cheerful ? 'See you tomorrow!' : 'Thanks for telling me.',
+            widget.repository.twinState().mood == TwinMood.cheerful ? 'See you tomorrow!' : 'Thanks for telling me.',
             style: LtText.body(),
           ),
-        if (weekly && r.confirmed.isNotEmpty) ...[
+        if (weekly && confirmed.isNotEmpty) ...[
           const SizedBox(height: 12),
           Semantics(
             header: true,
             child: Text('Your confirmed week', style: LtText.body(weight: FontWeight.w700)),
           ),
-          ConfirmedWeek(confirmed: r.confirmed),
+          ConfirmedWeek(confirmed: confirmed),
+        ],
+        if (c.progress != null && c.progress!.goodWeeks > 0) ...[
+          const SizedBox(height: 10),
+          WholeWordText(
+            c.progress!.goodWeeks == 1 ? '1 good week so far' : '${c.progress!.goodWeeks} good weeks so far',
+            style: LtText.body(weight: FontWeight.w700),
+          ),
+        ],
+        if (c.offerReminder) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            decoration: BoxDecoration(
+              color: LtColors.paper,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: LtColors.container, width: 1.5),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                WholeWordText(
+                  'Would you like a gentle reminder each day?',
+                  style: LtText.body(weight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: LipButton(
+                        label: 'Not now',
+                        kind: LipKind.secondary,
+                        height: 56,
+                        fontSize: 19,
+                        onTap: c.declineReminders,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: LipButton(label: 'Yes', height: 56, fontSize: 19, onTap: c.acceptReminders),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ],
     );
   }
 
-  Widget _dock(BuildContext context, bool confirming) {
+  Widget _dock(BuildContext context) {
     final pad = EdgeInsets.fromLTRB(16, 12, 16, 14 + MediaQuery.paddingOf(context).bottom);
     if (c.emergency) return const SizedBox.shrink();
-    if (c.done) {
+    if (_nothing || _finished) {
       return Padding(
         padding: pad,
         child: LipButton(label: 'Back to my room', fontSize: 24, onTap: widget.onDone),
       );
     }
-    final r = c.response;
-    if (r == null) return const SizedBox.shrink();
-    if (c.readback != null) {
-      return Padding(
-        padding: pad,
-        child: Row(
-          children: [
-            Expanded(
-              child: LipButton(
-                label: 'Change with Mochi',
-                icon: Icons.chat_bubble_outline_rounded,
-                kind: LipKind.secondary,
-                fontSize: 18,
-                onTap: c.busy ? null : c.redo,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: LipButton(
-                label: 'Looks right',
-                icon: Icons.check_rounded,
-                fontSize: 20,
-                onTap: c.busy ? null : c.accept,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    final chips = confirming ? const <String>[] : quickReplies(r.currentField);
+    if (c.turn == null) return const SizedBox.shrink();
+    final busy = c.phase == CheckinPhase.interpreting;
     return Padding(
       padding: pad,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (confirming)
+          if (c.confirming)
             Row(
               children: [
                 Expanded(
@@ -332,16 +315,16 @@ class _CheckInScreenState extends State<CheckInScreen> {
                     label: 'Not quite',
                     kind: LipKind.secondary,
                     fontSize: 20,
-                    onTap: c.busy ? null : () => c.reply('no'),
+                    onTap: busy ? null : c.change,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: LipButton(
-                    label: 'Yes',
+                    label: c.confirmingHealth ? 'Looks right' : 'Yes',
                     icon: Icons.check_rounded,
                     fontSize: 20,
-                    onTap: c.busy ? null : c.confirm,
+                    onTap: busy ? null : c.confirm,
                   ),
                 ),
               ],
@@ -351,12 +334,14 @@ class _CheckInScreenState extends State<CheckInScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final q in chips) _Chip(label: q, onTap: c.busy ? null : () => c.reply(q)),
-                _Chip(label: 'Skip', icon: Icons.keyboard_double_arrow_right_rounded, onTap: c.busy ? null : c.skip),
+                for (final (label, words) in c.quickAnswers)
+                  _Chip(label: label, onTap: busy ? null : () => _quick(words)),
+                _Chip(label: 'Skip', icon: Icons.keyboard_double_arrow_right_rounded, onTap: busy ? null : c.skip),
+                if (c.canGoBack) _Chip(label: 'Go back', icon: Icons.undo_rounded, onTap: busy ? null : c.goBack),
               ],
             ),
             const SizedBox(height: 10),
-            if (_typing)
+            if (c.typing || !c.voiceUsable)
               Row(
                 children: [
                   Expanded(
@@ -386,10 +371,10 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 children: [
                   Expanded(
                     child: LipButton(
-                      label: 'Tap to talk',
+                      label: c.phase == CheckinPhase.listening ? 'Tap when done' : 'Tap to talk',
                       icon: Icons.mic_none_rounded,
                       fontSize: 24,
-                      onTap: widget.onTalk ?? () => setState(() => _typing = true),
+                      onTap: c.phase == CheckinPhase.listening ? c.stopTalk : c.startTalk,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -397,10 +382,10 @@ class _CheckInScreenState extends State<CheckInScreen> {
                     button: true,
                     label: 'Type instead',
                     excludeSemantics: true,
-                    onTap: () => setState(() => _typing = true),
+                    onTap: () => c.setTyping(true),
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: () => setState(() => _typing = true),
+                      onTap: () => c.setTyping(true),
                       child: Container(
                         width: 56,
                         height: 56,

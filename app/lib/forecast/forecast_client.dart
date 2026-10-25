@@ -96,9 +96,12 @@ class ForecastFailure implements Exception {
 /// The forecast on the phone: `LifeTwinEngine.assess()` with the phone's history. No
 /// network. (POST /api/predict is no longer called; the server route stays for now.)
 class OnDeviceForecastClient implements ForecastClient {
-  OnDeviceForecastClient(this.repository);
+  OnDeviceForecastClient(this.repository, {this.modelInputs});
 
   final Future<TwinRepository> repository;
+
+  /// The conversation's latest `model_inputs`; when `ready`, the model reads its profile.
+  final Map<String, dynamic>? Function()? modelInputs;
 
   @override
   Future<Forecast> predict(Map<String, dynamic> confirmedProfile) async {
@@ -108,6 +111,6 @@ class OnDeviceForecastClient implements ForecastClient {
     } catch (e) {
       throw ForecastFailure('model failed to load: $e', modelMissing: true);
     }
-    return Forecast.fromAssessment(repo.assess(confirmedProfile));
+    return Forecast.fromAssessment(repo.assess(confirmedProfile, modelInputs?.call()));
   }
 }

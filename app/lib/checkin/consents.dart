@@ -1,9 +1,9 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../twin/twin_repository.dart';
 import '../voice/api_base.dart';
 
 /// The outside AI provider, from `GET /api/capabilities` -> `personalize`. The name is never
@@ -33,10 +33,6 @@ abstract class CapabilitiesClient {
   Future<AiProvider?> personalize();
 }
 
-/// STUB-FLAG: `/api/capabilities` is not on main yet (it is in the integration branch). Until it
-/// lands the app falls back to "no provider": the consent is not shown and nothing goes out.
-const useServerCapabilities = true;
-
 class HttpCapabilitiesClient implements CapabilitiesClient {
   HttpCapabilitiesClient({http.Client? client, ApiBase? base})
     : _client = client ?? http.Client(),
@@ -46,7 +42,6 @@ class HttpCapabilitiesClient implements CapabilitiesClient {
 
   @override
   Future<AiProvider?> personalize() async {
-    if (!useServerCapabilities) return null;
     try {
       final url = await base.url();
       final r = await _client.get(Uri.parse('$url/api/capabilities')).timeout(const Duration(seconds: 8));
@@ -58,59 +53,29 @@ class HttpCapabilitiesClient implements CapabilitiesClient {
   }
 }
 
-/// Where the persisted consent lives. STUB: in memory until the engine session adds a key for
-/// `outside_ai_consent` to the protected phone store (lib/twin is theirs). It is never sent to the
-/// server as a setting; it only gates what the app sends.
-abstract class ConsentBackend {
-  Future<String?> read();
-  Future<void> write(String text);
-  Future<void> delete();
-}
-
-class MemoryConsentBackend implements ConsentBackend {
-  String? text;
-  @override
-  Future<String?> read() async => text;
-  @override
-  Future<void> write(String t) async => text = t;
-  @override
-  Future<void> delete() async => text = null;
-}
-
-/// The three separate AI consents (never bundled with each other, with Apple Health or with
+/// The AI consents, kept apart (never bundled with each other, with Apple Health or with
 /// notifications; nothing is pre-selected):
 ///
 /// 1. Per-document yes: a per-request flag on document extraction (not held here).
 /// 2. AI helper ([aiHelper]): held in memory for the conversation, sent as `provider_consent`.
-/// 3. Personal suggestions ([outsideAi]): a persisted toggle on the phone, keyed by provider id
-///    (`{"muse": true}`), sent with each request. A new provider id has no entry, so it asks again.
+/// 3. Personal suggestions: the phone's persisted consent on [TwinRepository]
+///    (`outsideAiConsent`, `outsideAiProvider`, `setOutsideAiConsent`), off by default and after Delete
+///    my data. It covers only the provider it was given for, so a new provider asks again.
 ///
-/// Memory (`memory_consent`) is a fourth, separate choice and lives in `TwinRepository`.
-/// Nothing here promises anything about a provider's own retention.
+/// Memory (`memory_consent`) is a fourth, separate choice and lives in `TwinRepository`. Nothing here
+/// promises anything about a provider's own retention.
 class ConsentStore extends ChangeNotifier {
-  ConsentStore([ConsentBackend? backend]) : _backend = backend ?? MemoryConsentBackend();
+  ConsentStore(this.repository) {
+    repository.addListener(notifyListeners);
+  }
 
-  final ConsentBackend _backend;
-  Map<String, bool> _outsideAi = {};
+  final TwinRepository repository;
   bool _aiHelper = false;
 
-  static Future<ConsentStore> open([ConsentBackend? backend]) async {
-    final s = ConsentStore(backend);
-    final text = await s._backend.read();
-    if (text != null) {
-      try {
-        final j = jsonDecode(text);
-        if (j is Map) {
-          s._outsideAi = {
-            for (final e in (j['outside_ai_consent'] as Map? ?? const {}).entries)
-              if (e.value is bool) '${e.key}': e.value as bool,
-          };
-        }
-      } on FormatException {
-        // An unreadable file is not guessed at: everything stays off.
-      }
-    }
-    return s;
+  @override
+  void dispose() {
+    repository.removeListener(notifyListeners);
+    super.dispose();
   }
 
   /// The AI helper for this conversation only.
@@ -121,26 +86,15 @@ class ConsentStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// True, false, or null when this provider has never been asked.
-  bool? outsideAiFor(String providerId) => _outsideAi[providerId];
+  /// True or false when this provider has been asked, null when it has not.
+  bool? outsideAiFor(String providerId) =>
+      repository.outsideAiProvider == providerId ? repository.outsideAiConsent : null;
 
   /// Personal suggestions may use outside AI only with a yes for this very provider.
-  bool mayShare(AiProvider? p) => p != null && p.configured && _outsideAi[p.id] == true;
+  bool mayShare(AiProvider? p) => p != null && p.configured && repository.outsideAiConsentFor(p.id).isNotEmpty;
 
   /// Ask (or ask again) when the provider is set up and this provider id has no answer.
-  bool needsAnswer(AiProvider? p) => p != null && p.configured && !_outsideAi.containsKey(p.id);
+  bool needsAnswer(AiProvider? p) => p != null && p.configured && repository.outsideAiProvider != p.id;
 
-  Future<void> setOutsideAi(String providerId, bool on) async {
-    _outsideAi = {..._outsideAi, providerId: on};
-    notifyListeners();
-    await _backend.write(jsonEncode({'outside_ai_consent': _outsideAi}));
-  }
-
-  /// "Delete my data": every consent goes, so the app asks again.
-  Future<void> clear() async {
-    _outsideAi = {};
-    _aiHelper = false;
-    notifyListeners();
-    await _backend.delete();
-  }
+  Future<void> setOutsideAi(String providerId, bool on) => repository.setOutsideAiConsent(on, provider: providerId);
 }

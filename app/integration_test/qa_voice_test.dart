@@ -38,15 +38,18 @@ Future<void> startVoice(WidgetTester t, VoiceRig r) async {
   await tapText(t, "Yes, I'll talk");
   await readQuestion(t);
   await tapText(t, 'Not now');
-  await waitFor(t, find.textContaining('How old are you?'));
+  // The memory question comes first. It is answered by voice with the "no" clip (no habit
+  // follow-ups come between the questions), and the age question follows.
+  await waitFor(t, find.textContaining(memoryQuestion));
   await settled(t);
+  await talkClip(t, r, 'diabetes', ageQuestion);
 }
 
 /// The first answer by voice is also photographed: listening, then its read-back.
 var _shotsTaken = false;
 
 /// Taps Talk, plays [clip] into the microphone, taps Talk again and waits for [want].
-Future<void> talkClip(WidgetTester t, VoiceRig r, String clip, String want) async {
+Future<void> talkClip(WidgetTester t, VoiceRig r, String clip, Pattern want) async {
   final c = r.controller;
   await waitFor(t, find.byType(TalkButton));
   r.mic.clip = clip;
@@ -83,42 +86,54 @@ void main() {
   ) async {
     final r = VoiceRig();
     await startVoice(t, r);
-    expect(r.output.spoken.last, contains('How old are you'));
+    expect(ageQuestion.hasMatch(r.output.spoken.last), isTrue, reason: r.output.spoken.last);
     await talkClip(t, r, 'born', 'right?');
     expect(r.controller.mascotLine, anyOf(contains('74'), contains('73')));
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     // By voice the quick answers sit with the controls.
     await tapText(t, 'Female');
     await waitFor(t, find.textContaining('female at birth'));
     await settled(t);
-    await yes(t, 'How tall');
-    for (final (clip, readBack, next) in [
-      ('height', '5 feet 4 inches', 'How much do you weigh'),
-      ('weight', '145 pounds', 'How many hours'),
-      ('sleep', '7 hours', 'minutes do you exercise'),
-      ('exercise', '150 minutes', 'Do you smoke'),
+    await yes(t, smokingQuestion);
+    await tapText(t, 'I never smoked');
+    await waitFor(t, find.textContaining('never smoked'));
+    await settled(t);
+    // Apple Health is offered next; by voice "no" declines it.
+    await yes(t, healthOffer);
+    await talkClip(t, r, 'diabetes', healthDeclined);
+    await waitFor(t, find.textContaining(heightQuestion));
+    await settled(t);
+    for (final (clip, readBack, next) in <(String, Pattern, Pattern)>[
+      ('height', '5 feet 4 inches', weightQuestion),
+      ('weight', '145 pounds', sleepQuestion),
+      ('sleep', '7 hours', healthQuestion),
+      ('health', 'your health is good', bloodPressureQuestion),
+      ('diabetes', 'not told you that you have high blood pressure', diabetesQuestion),
     ]) {
       await talkClip(t, r, clip, readBack);
       await yes(t, next);
     }
-    await tapText(t, 'I never smoked');
-    await waitFor(t, find.textContaining('never smoked'));
+    await tapText(t, 'No'); // the diabetes quick answer
+    await waitFor(t, find.textContaining('not told you that you have diabetes'));
     await settled(t);
-    await yes(t, 'alcoholic drinks');
-    for (var i = 0; i < 6 && find.text('Continue').evaluate().isEmpty; i++) {
-      await tapText(t, 'Skip this question');
-      await pumpFor(t, const Duration(milliseconds: 600));
-      await settled(t);
+    await yes(t, sittingQuestion);
+    for (final (clip, readBack, next) in <(String, Pattern, Pattern)>[
+      ('sleep', '7 hours', lighterQuestion), // "about seven hours" of sitting
+      ('exercise', '150 minutes', harderQuestion),
+      ('diabetes', 'no harder exercise', 'All done'), // "no"
+    ]) {
+      await talkClip(t, r, clip, readBack);
+      await yes(t, next);
     }
     await tapText(t, 'Continue');
     await askTheBall(t);
-    await waitFor(t, find.textContaining('were still living 5 years later'));
+    await waitFor(t, find.textContaining(forecastNumber));
     await pumpFor(t, const Duration(seconds: 3)); // the reveal, then the twin says it
     expect(r.output.spoken.last, contains('were still living 5 years later'));
     await tapRound(t, 'Back');
     await waitFor(t, find.byType(RoomScreen));
     await openFortune(t);
-    await waitFor(t, find.textContaining('were still living 5 years later'));
+    await waitFor(t, find.textContaining(forecastNumber));
     await tapRound(t, 'Back');
     await waitFor(t, find.byType(RoomScreen));
   });
@@ -140,7 +155,7 @@ void main() {
     await pumpFor(t, const Duration(seconds: 10));
     expect(c.phase, VoicePhase.idle);
     expect(await qaTurnActions(), hasLength(sent), reason: 'half-heard words were sent');
-    expect(find.textContaining('How old are you?'), findsWidgets);
+    expect(find.textContaining(ageQuestion), findsWidgets);
     await talkClip(t, r, 'born', 'right?');
   });
 }

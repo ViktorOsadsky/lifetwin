@@ -5,6 +5,8 @@ import 'checkin/change_chat.dart';
 import 'checkin/check_in.dart';
 import 'checkin/checkin_client.dart';
 import 'experiment/answers.dart';
+import 'health/health_sample.dart';
+import 'onboarding/voice_onboarding_controller.dart';
 import 'experiment/experiment_screen.dart';
 import 'experiment/room_pills.dart';
 import 'experiment/still_learning_screen.dart';
@@ -21,22 +23,49 @@ import 'voice/api_base.dart';
 /// `main.dart` creates one, calls [attach] when the repository has loaded, wraps the app with [wrap]
 /// and gives the Room `extraPills: agentic.pills(context)`. Tests pass fake clients.
 class AgenticRoutes {
-  AgenticRoutes({required this.look, required ApiBase api, CheckInClient? checkinClient, ChangeClient? changeClient})
-    : checkinClient = checkinClient ?? HttpCheckInClient(base: api),
-      changeClient = changeClient ?? HttpChangeClient(base: api);
+  AgenticRoutes({
+    required this.look,
+    required ApiBase api,
+    required this.voice,
+    CheckinGuide? guide,
+    ChangeClient? changeClient,
+    this.healthSamples,
+  }) : guide = guide ?? HttpCheckinClient(base: api),
+       changeClient = changeClient ?? HttpChangeClient(base: api);
 
   final ValueListenable<TwinAppearance> look;
-  final CheckInClient checkinClient;
+
+  /// The onboarding conversation, for its speech input and output and the person's choice of voice.
+  final VoiceOnboardingController Function() voice;
+  final CheckinGuide guide;
   final ChangeClient changeClient;
+
+  /// Apple Health samples already allowed by the person; null when Health is not connected.
+  final Future<List<HealthSample>> Function()? healthSamples;
   TwinRepository? repo;
 
   /// The repository has loaded.
-  void attach(TwinRepository r) => repo = r;
+  void attach(TwinRepository r) {
+    repo = r;
+    // The forecast follows what the check-ins and the stored days say.
+    r.refresh();
+  }
 
   /// Puts the check-in scope above the navigator, so every route can call `openCheckIn`.
   Widget wrap(BuildContext context, Widget? child) {
     final r = repo;
-    return r == null ? child! : CheckInScope(repository: r, client: checkinClient, appearance: look, child: child!);
+    if (r == null) return child!;
+    final v = voice();
+    return CheckInScope(
+      repository: r,
+      guide: guide,
+      speechInput: v.input,
+      speechOutput: v.output,
+      voiceUsable: () => v.voiceUsable,
+      healthSamples: healthSamples,
+      appearance: look,
+      child: child!,
+    );
   }
 
   /// The Room's pills ("Still learning N", "What I see", "Try a change").

@@ -9,7 +9,10 @@ import 'package:lifesim/ui/twin_appearance.dart';
 
 import '../support/app_fonts.dart';
 import '../support/assessments.dart';
-import '../support/fake_checkin_client.dart';
+
+import 'package:lifesim/voice/fakes.dart';
+
+import '../support/fake_weekly_guide.dart';
 import 'daily_checkin_test.dart' show profile;
 
 TwinAssessment at(double p5, {bool extrapolated = false}) {
@@ -85,7 +88,7 @@ void main() {
     });
   });
 
-  testWidgets('a weekly check-in: per-answer confirm stays, then the read-back, then the outlook update', (t) async {
+  testWidgets('a weekly check-in: the engine controller records it once, then the outlook update shows', (t) async {
     final repo = TwinRepository(
       model: model,
       store: await TwinStore.open(MemoryBackend()),
@@ -93,7 +96,7 @@ void main() {
     );
     await repo.saveConversationProfile(profile);
     final before = repo.current!.percentByYear[5]!;
-    final client = FakeCheckinClient(profileUpdate: {'sleep_hours': 5.0});
+    final guide = FakeWeeklyGuide();
     t.view.physicalSize = const Size(390, 844);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -102,7 +105,15 @@ void main() {
     await t.pumpWidget(
       MaterialApp(
         theme: lifeTwinTheme(),
-        builder: (c, child) => CheckInScope(repository: repo, client: client, appearance: look, child: child!),
+        builder: (c, child) => CheckInScope(
+          repository: repo,
+          guide: guide,
+          speechInput: FakeSpeechInput(),
+          speechOutput: FakeSpeechOutput(),
+          appearance: look,
+          now: () => DateTime(2026, 11, 1, 18),
+          child: child!,
+        ),
         home: Builder(
           builder: (context) => Scaffold(
             body: TextButton(
@@ -116,21 +127,16 @@ void main() {
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
     expect(find.text('Weekly check-in'), findsWidgets);
-    for (final a in ['5 hours', '150 minutes', 'Good']) {
-      await t.tap(find.text(a));
-      await t.pumpAndSettle();
-      // Weekly keeps the server's own per-answer read-back.
-      expect(find.text('Yes'), findsOneWidget);
-      await t.tap(find.text('Yes'));
-      await t.pumpAndSettle();
-    }
-    expect(find.text('Here’s what I heard.'), findsOneWidget);
+    await t.enterText(find.byType(TextField), '3 hours');
+    await t.testTextInput.receiveAction(TextInputAction.send);
+    await t.pumpAndSettle();
+    expect(find.text('Yes'), findsOneWidget);
     expect(repo.store.checkins, isEmpty);
-    expect(repo.profile['sleep_hours'], 7);
-    await t.tap(find.text('Looks right'));
+    expect(repo.profile['sedentary_min_day'], 360);
+    await t.tap(find.text('Yes'));
     await t.pumpAndSettle();
     expect(repo.store.checkins.single.kind, 'weekly');
-    expect(repo.profile['sleep_hours'], 5.0);
+    expect(repo.profile['sedentary_min_day'], 180);
     expect(find.text('Outlook updated'), findsOneWidget);
     final after = repo.current!.percentByYear[5]!;
     expect(after, isNot(before));

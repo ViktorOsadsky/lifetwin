@@ -73,12 +73,17 @@ class MemoryBackend implements StoreBackend {
 /// Everything LifeTwin keeps about the person, on the phone only (owner ruling: "history
 /// lives on your phone"). No sync and no network: nothing here is ever sent.
 ///
-/// - [profile]: the confirmed answers (app field names).
-/// - [checkins]: finished daily and weekly check-ins as confirmed.
-/// - [dailyLogs] / [weeklySummaries]: rows in the package's shapes (twin_history.dart).
-/// - [habitNotes]: free-form JSON from the conversation.
+/// - [profile]: the confirmed answers (server HealthProfile names; profile_mapping.dart).
+/// - [profileMeta]: per profile value, its source and whether it is an estimate.
+/// - [checkins]: finished quick, daily and weekly check-ins as confirmed.
+/// - [dayLogs]: one row per day in the package's `daily_logs` names, possibly partial;
+///   a missing value is unknown (null), never zero.
+/// - [historyEntries]: the person's history, appended as things happen (history_log.dart).
+/// - [habitNotes]: notes from the conversation, kept only with memory consent.
 /// - [twin]: cosmetic customization; never part of the health profile.
+/// - [checkinSettings]: reminder time and weekly day; a preference, not health data.
 /// - [memoryConsent]: the conversation's `memory_consent`; habit notes are kept only while true.
+/// - [outsideAiConsent]: the person's yes to outside-AI wording, for one provider; off by default.
 ///
 /// Reads are public. Writes are private to this library, so the only write paths are the
 /// [TwinRepository] methods the owner allows (see lib/README-model.md, "Who may write").
@@ -107,36 +112,60 @@ class TwinStore extends ChangeNotifier {
   }
 
   Map<String, dynamic> get profile => Map<String, dynamic>.from(_doc['profile'] as Map? ?? const {});
+
+  /// Per profile field: where its value came from, and whether it is an estimate.
+  Map<String, FieldProvenance> get profileMeta => {
+    for (final e in (_doc['profile_meta'] as Map? ?? const {}).entries)
+      if (e.value is Map) '${e.key}': FieldProvenance.fromJson(Map<String, dynamic>.from(e.value as Map)),
+  };
   bool get hasProfile => profile.values.any((v) => v != null);
 
-  List<CheckinRecord> get checkins => [for (final c in _list('checkins')) CheckinRecord.fromJson(c)];
-  List<Map<String, dynamic>> get dailyLogs => _list('daily_logs');
-  List<Map<String, dynamic>> get weeklySummaries => _list('weekly_summaries');
+  List<CheckinEntry> get checkins => [for (final c in _list('checkins')) CheckinEntry.fromJson(c)];
+  List<DayLog> get dayLogs => [for (final r in _list('daily_logs')) DayLog.fromJson(r)];
+  List<HistoryEntry> get historyEntries => [for (final e in _list('history')) HistoryEntry.fromJson(e)];
   List<Map<String, dynamic>> get habitNotes => _list('habit_notes');
   Map<String, dynamic>? get twin => _doc['twin'] == null ? null : Map<String, dynamic>.from(_doc['twin'] as Map);
   bool get memoryConsent => _doc['memory_consent'] == true;
+
+  /// The person's yes to outside-AI wording, and the provider it was given for
+  /// (`{provider, on}`); off when absent.
+  bool get outsideAiConsent => (_doc['outside_ai_consent'] as Map?)?['on'] == true;
+  String? get outsideAiProvider => (_doc['outside_ai_consent'] as Map?)?['provider'] as String?;
+  CheckinSettings get checkinSettings => _doc['checkin_settings'] is Map
+      ? CheckinSettings.fromJson(Map<String, dynamic>.from(_doc['checkin_settings'] as Map))
+      : const CheckinSettings();
 
   List<Map<String, dynamic>> _list(String key) => [
     for (final r in _doc[key] as List? ?? const [])
       if (r is Map) Map<String, dynamic>.from(r),
   ];
 
-  Future<void> _saveProfile(Map<String, dynamic> p) => _save('profile', {
-    for (final e in p.entries)
-      if (e.value != null) e.key: e.value,
+  /// The profile and, for the values just confirmed, where each came from. One write.
+  Future<void> _saveProfile(Map<String, dynamic> p, [Map<String, FieldProvenance> provenance = const {}]) => _saveAll({
+    'profile': {
+      for (final e in p.entries)
+        if (e.value != null) e.key: e.value,
+    },
+    if (provenance.isNotEmpty)
+      'profile_meta': {
+        for (final e in profileMeta.entries) e.key: e.value.toJson(),
+        for (final e in provenance.entries) e.key: e.value.toJson(),
+      },
   });
 
-  Future<void> _addCheckin(CheckinRecord r) => _save('checkins', [..._list('checkins'), r.toJson()]);
+  Future<void> _addCheckin(CheckinEntry r) => _save('checkins', [..._list('checkins'), r.toJson()]);
 
-  /// Adds or replaces the row for its `week_start`.
-  Future<void> _putWeeklySummary(Map<String, dynamic> row) => _save(
-    'weekly_summaries',
-    [
-      for (final r in weeklySummaries)
-        if (r['week_start'] != row['week_start']) r,
-      row,
-    ]..sort((a, b) => '${a['week_start']}'.compareTo('${b['week_start']}')),
-  );
+  /// Replaces the stored day rows (already merged by [mergeDayLogs]); only known values
+  /// are written, so a missing value stays missing.
+  Future<void> _putDayLogs(List<DayLog> rows) => _save('daily_logs', [for (final r in rows) r.toJson()]);
+
+  /// Appends one history entry. Entries are never edited or removed (except by Delete my data).
+  Future<void> _addHistory(HistoryEntry e) => _save('history', [..._list('history'), e.toJson()]);
+
+  Future<void> _saveCheckinSettings(CheckinSettings s) => _save('checkin_settings', s.toJson());
+
+  Future<void> _saveOutsideAiConsent(bool on, String provider) =>
+      _save('outside_ai_consent', {'provider': provider, 'on': on});
 
   Future<void> _addHabitNote(Map<String, dynamic> note, {DateTime? at}) => _save('habit_notes', [
     ...habitNotes,
@@ -155,14 +184,65 @@ class TwinStore extends ChangeNotifier {
   Future<void> _deleteAll() async {
     _doc = {};
     notifyListeners();
-    await (_writing = _writing.then((_) => _backend.delete()));
+    final delete = _writing.catchError((Object _) {}).then((_) => _backend.delete());
+    _writing = delete.catchError((Object _) {});
+    await delete;
   }
 
-  Future<void> _save(String key, Object value) {
-    _doc = {..._doc, 'version': schemaVersion, key: value};
+  Future<void> _save(String key, Object value) => _saveAll({key: value});
+
+  /// Set while a [_transaction] runs: its writes are collected and written once.
+  Map<String, Object>? _staged;
+
+  /// Runs [body] as one write: everything it saves reaches the file together, or (if the
+  /// write fails) nothing does and memory is put back, so a retry never duplicates a
+  /// check-in or a history entry. A transaction inside a transaction joins the outer one.
+  Future<T> _transaction<T>(Future<T> Function() body) async {
+    if (_staged != null) return body();
+    final previous = _doc;
+    _staged = {};
+    final T result;
+    try {
+      result = await body();
+    } catch (_) {
+      _staged = null;
+      _doc = previous;
+      notifyListeners();
+      rethrow;
+    }
+    final staged = _staged!;
+    _staged = null;
+    if (staged.isNotEmpty) {
+      notifyListeners();
+      await _write(previous, _doc);
+    }
+    return result;
+  }
+
+  Future<void> _saveAll(Map<String, Object> values) {
+    final previous = _doc;
+    _doc = {..._doc, 'version': schemaVersion, ...values};
+    if (_staged != null) {
+      _staged!.addAll(values);
+      return Future.value();
+    }
     notifyListeners();
-    final text = jsonEncode(_doc);
-    // One write at a time, in order.
-    return _writing = _writing.then((_) => _backend.write(text));
+    return _write(previous, _doc);
+  }
+
+  /// One write at a time, in order. A failed write doesn't block the later ones, and puts
+  /// memory back to [previous] unless something newer was saved since (that write carries
+  /// the whole document anyway).
+  Future<void> _write(Map<String, dynamic> previous, Map<String, dynamic> next) {
+    final text = jsonEncode(next);
+    final write = _writing.catchError((Object _) {}).then((_) => _backend.write(text));
+    _writing = write.catchError((Object _) {});
+    return write.catchError((Object e) {
+      if (identical(_doc, next)) {
+        _doc = previous;
+        notifyListeners();
+      }
+      throw e;
+    });
   }
 }

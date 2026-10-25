@@ -1,6 +1,6 @@
 // Shared helpers for the qa_* integration tests. They run against the real server
 // through support/qa_proxy.py, which the tests switch into fault modes:
-//   python3 integration_test/support/qa_proxy.py 8051 http://127.0.0.1:8050
+//   python3 integration_test/support/qa_proxy.py 8051 http://127.0.0.1:8099
 //   flutter test integration_test/qa_network_test.dart -d <sim> \
 //     --dart-define=API_BASE_URL=http://127.0.0.1:8051
 import 'dart:convert';
@@ -156,13 +156,13 @@ Future<void> typeAndSend(WidgetTester t, String text) async {
 }
 
 /// Types [answer], taps Send and waits for the mascot's words to contain [expect].
-Future<void> say(WidgetTester t, String answer, String expect) async {
+Future<void> say(WidgetTester t, String answer, Pattern expect) async {
   await typeAndSend(t, answer);
   await waitFor(t, find.textContaining(expect));
   await settled(t);
 }
 
-Future<void> yes(WidgetTester t, String expectNext) async {
+Future<void> yes(WidgetTester t, Pattern expectNext) async {
   await tapText(t, 'Yes');
   await waitFor(t, find.textContaining(expectNext));
   await settled(t);
@@ -171,38 +171,97 @@ Future<void> yes(WidgetTester t, String expectNext) async {
 /// The AI-helper question ignores taps for 0.7 s, so a double tap can't answer it.
 Future<void> readQuestion(WidgetTester t) => pumpFor(t, const Duration(milliseconds: 800));
 
-/// Opens the app, chooses typing, and waits for the first question.
-Future<void> startTyped(WidgetTester t, {bool aiHelper = false, Widget? app}) async {
+/// Mochi's wording varies by a per-session seed, so a question is found by words every
+/// wording shares, in any case.
+RegExp _words(String pattern) => RegExp(pattern, caseSensitive: false, dotAll: true);
+
+final ageQuestion = _words('how old are you');
+final sexQuestion = _words('female or male');
+final smokingQuestion = _words('do you smoke now');
+final heightQuestion = _words('how tall');
+final weightQuestion = _words('how much do you weigh');
+final sleepQuestion = _words('hours do you sleep');
+final healthQuestion = _words('excellent, very good, good, fair or poor');
+final bloodPressureQuestion = _words('told you that you have high blood pressure|said you have high blood pressure');
+final diabetesQuestion = _words('ever told you that you have diabetes');
+final sittingQuestion = _words('how many hours.*sit');
+final lighterQuestion = _words('lighter activity.*like brisk');
+final harderQuestion = _words('harder exercise|breathe hard');
+
+/// The memory question comes first (conversation v2).
+const memoryQuestion = 'Can I remember the little things you tell me';
+
+/// The Apple Health offer comes after age, sex and smoking.
+const healthOffer = 'Shall I fill in your height, weight, sleep and activity from Apple Health?';
+
+/// Said when the person declines the Apple Health offer.
+final healthDeclined = _words("i'll just ask you|we'll do it together");
+
+/// The forecast screen's sentence once every model input is known (a number, 1 to 5 years).
+final forecastNumber = RegExp(
+  r'Out of 100 people with answers like yours, about \d+ were still living \d+ years? later\.',
+);
+
+/// The sentence at the end of an optional habit follow-up.
+const followUpTail = 'Or we can move on.';
+
+/// Opens the app, chooses typing, and waits for the first question: whether Mochi may
+/// remember the little things. [memory] answers it by typing ("No thanks" by default, so
+/// no habit follow-ups come between the questions; pass 'Yes' to allow them), and the
+/// first real question (age) follows.
+Future<void> startTyped(WidgetTester t, {bool aiHelper = false, Widget? app, String memory = 'No thanks'}) async {
   await qaReset();
   await t.pumpWidget(app ?? const LifeTwinApp());
   await tapText(t, 'Talk');
   await tapText(t, "No, I'll type");
   await readQuestion(t);
   await tapText(t, aiHelper ? 'Yes, turn it on' : 'Not now');
-  await waitFor(t, find.textContaining('How old are you?'));
+  await waitFor(t, find.textContaining(memoryQuestion));
+  await settled(t);
+  await say(t, memory, ageQuestion);
+}
+
+/// Declines the Apple Health offer by typing, and waits for the height question.
+Future<void> declineHealth(WidgetTester t) async {
+  await waitFor(t, find.textContaining(healthOffer));
+  await settled(t);
+  await say(t, 'No thanks', healthDeclined);
+  await waitFor(t, find.textContaining(heightQuestion));
   await settled(t);
 }
 
-/// Typed answers for a whole supported intake, each read back and confirmed.
-const fullIntake = [
-  ('71', 'you are 71', 'What sex'),
-  ('female', 'female at birth', 'How tall'),
-  ('5 foot 4', '5 feet 4 inches', 'How much do you weigh'),
-  ('145 pounds', '145 pounds', 'How many hours'),
-  ('7 hours', '7 hours', 'minutes do you exercise'),
-  ('150 minutes', '150 minutes', 'Do you smoke'),
-  ('never', 'never smoked', 'alcoholic drinks'),
-  ('2 drinks', '2 drinks', 'diabetes'),
-  ('no', 'not told you', 'blood pressure'),
-  ('130 over 85', '130 over 85', 'All done'),
+/// Typed answers for a whole supported intake, each read back and confirmed: age, sex and
+/// smoking, the Apple Health offer (declined), then height, weight, sleep, general health,
+/// a diagnosis of high blood pressure, diabetes, sitting, lighter and harder activity.
+/// A null read-back stands for the Apple Health offer, which is declined, not read back.
+final fullIntake = <(String, Pattern?, Pattern)>[
+  ('71', 'you are 71', sexQuestion),
+  ('female', 'female at birth', smokingQuestion),
+  ('never', 'never smoked', healthOffer),
+  ('No thanks', null, heightQuestion),
+  ('5 foot 4', '5 feet 4 inches', weightQuestion),
+  ('145 pounds', '145 pounds', sleepQuestion),
+  ('7 hours', '7 hours', healthQuestion),
+  ('good', 'your health is good', bloodPressureQuestion),
+  ('no', 'not told you that you have high blood pressure', diabetesQuestion),
+  ('no', 'not told you that you have diabetes', sittingQuestion),
+  ('6 hours', 'sit 6 hours a day', lighterQuestion),
+  ('150 minutes', '150 minutes of lighter activity', harderQuestion),
+  ('none', 'no harder exercise', 'All done'),
 ];
 
-Future<void> answerAll(WidgetTester t, [List<(String, String, String)> steps = fullIntake]) async {
-  for (final (answer, readBack, next) in steps) {
+Future<void> answerAll(WidgetTester t, [List<(String, Pattern?, Pattern)>? steps]) async {
+  for (final (answer, readBack, next) in steps ?? fullIntake) {
+    if (readBack == null) {
+      await say(t, answer, healthDeclined);
+      await waitFor(t, find.textContaining(next));
+      await settled(t);
+      continue;
+    }
     await say(t, answer, readBack);
     await yes(t, next);
   }
-  if (identical(steps, fullIntake)) await waitFor(t, find.text('Continue'));
+  if (steps == null) await waitFor(t, find.text('Continue'));
 }
 
 /// Puts the keyboard away (with it up, progress and Settings are hidden to make room).

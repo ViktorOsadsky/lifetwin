@@ -8,7 +8,7 @@ import '../ui/widgets/widgets.dart' hide TwinMood;
 import '../widgets/whole_word_text.dart';
 import 'consent_screens.dart';
 import 'consents.dart';
-import 'reminders.dart';
+import 'checkin_reminders.dart' show reminderLines, reminderTitle;
 
 /// "My data" (Z-21): everything LifeTwin keeps is on this phone. Memory switch (`memory_consent`),
 /// Mochi's notebook (read only; there is no edit field), AI and privacy, Apple Health access (changed in
@@ -19,7 +19,6 @@ class MyDataScreen extends StatelessWidget {
     super.key,
     required this.repository,
     required this.consents,
-    required this.reminders,
     required this.onBack,
     required this.onAiPrivacy,
     required this.onDeleted,
@@ -29,7 +28,6 @@ class MyDataScreen extends StatelessWidget {
 
   final TwinRepository repository;
   final ConsentStore consents;
-  final ReminderPrefs reminders;
   final VoidCallback onBack;
   final VoidCallback onAiPrivacy;
 
@@ -38,11 +36,11 @@ class MyDataScreen extends StatelessWidget {
   final VoidCallback? onNotebook;
   final VoidCallback? onHealthSettings;
 
-  /// Wipes the phone: [TwinRepository.deleteMyData], consents, reminders. Apple Health is not touched.
+  /// Wipes the phone: [TwinRepository.deleteMyData] clears answers, history, notes, the outside-AI consent, the
+  /// twin look and the planned reminders; the conversation's AI helper choice goes too. Apple Health is not touched.
   Future<void> deleteEverything() async {
     await repository.deleteMyData();
-    await consents.clear();
-    await reminders.clear();
+    consents.setAiHelper(false);
   }
 
   Future<void> _memory(BuildContext context, bool on) async {
@@ -98,7 +96,7 @@ class MyDataScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([repository, consents, reminders]),
+    listenable: Listenable.merge([repository, consents]),
     builder: (context, _) {
       final memory = repository.store.memoryConsent;
       final notes = repository.store.habitNotes.length;
@@ -316,83 +314,95 @@ class _TwoStep extends StatelessWidget {
   );
 }
 
-/// "Reminders" (Z-18): whole-row switches, off until turned on; the permission is asked the first
-/// time one is turned on. Scheduled locally; the notification never carries health details.
+/// "Reminders" (Z-18): one daily reminder, off until turned on. The engine's `CheckinReminders` asks the phone
+/// for permission the first time it is turned on and plans local notifications; the preference is
+/// `TwinRepository.checkinSettings`. The notification never carries health details.
 class ReminderSettingsScreen extends StatelessWidget {
-  const ReminderSettingsScreen({super.key, required this.prefs, required this.onBack});
-  final ReminderPrefs prefs;
+  const ReminderSettingsScreen({super.key, required this.repository, required this.onBack, this.now});
+  final TwinRepository repository;
   final VoidCallback onBack;
+  final DateTime Function()? now;
+
+  DateTime _now() => (now ?? DateTime.now)();
+
+  Future<void> _set(bool on, {int? hour, int? minute}) async {
+    final reminders = repository.reminders;
+    if (reminders == null) return;
+    final s = repository.checkinSettings;
+    final next = on
+        ? await reminders.accept(s, localNow: _now(), history: repository.store.checkins, hour: hour, minute: minute)
+        : await reminders.turnOff(s);
+    await repository.saveCheckinSettings(next);
+  }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: prefs,
-    builder: (context, _) => ExperimentPage(
-      mode: LtMode.customize,
-      title: 'Reminders',
-      onBack: onBack,
-      backLabel: 'Back to settings',
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Semantics(
-            header: true,
-            child: Text('What it looks like', style: LtText.body(weight: FontWeight.w700)),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: LtColors.paper,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: LtColors.container, width: 1.5),
+    listenable: repository,
+    builder: (context, _) {
+      final s = repository.checkinSettings;
+      return ExperimentPage(
+        mode: LtMode.customize,
+        title: 'Reminders',
+        onBack: onBack,
+        backLabel: 'Back to settings',
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              header: true,
+              child: Text('What it looks like', style: LtText.body(weight: FontWeight.w700)),
             ),
-            child: Semantics(
-              label: 'Notification preview: LifeTwin. $reminderNotificationText',
-              excludeSemantics: true,
-              child: Row(
-                children: [
-                  const LeverIcon(Icons.notifications_none_rounded, size: 40),
-                  const SizedBox(width: 10),
-                  Expanded(child: WholeWordText(reminderNotificationText, style: LtText.body())),
-                ],
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: LtColors.paper,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: LtColors.container, width: 1.5),
+              ),
+              child: Semantics(
+                label: 'Notification preview: LifeTwin. $reminderTitle: ${reminderLines.first}',
+                excludeSemantics: true,
+                child: Row(
+                  children: [
+                    const LeverIcon(Icons.notifications_none_rounded, size: 40),
+                    const SizedBox(width: 10),
+                    Expanded(child: WholeWordText('$reminderTitle: ${reminderLines.first}', style: LtText.body())),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
-          _Row(
-            icon: Icons.wb_sunny_outlined,
-            title: 'Daily check-in',
-            sub: prefs.dailyOn ? 'At ${_time(prefs.dailyHour, prefs.dailyMinute)}' : 'Off',
-            toggle: prefs.dailyOn,
-            onTap: () => prefs.setDaily(!prefs.dailyOn),
-            semantic: 'Daily check-in reminder. ${prefs.dailyOn ? 'On' : 'Off'}',
-          ),
-          if (prefs.dailyOn) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                for (final (h, m, label) in [(9, 0, 'Morning 9:00'), (19, 30, 'Evening 7:30')])
-                  ChoiceChip(
-                    label: Text(label, style: LtText.body(weight: FontWeight.w700)),
-                    selected: prefs.dailyHour == h && prefs.dailyMinute == m,
-                    onSelected: (_) => prefs.setDailyTime(h, m),
-                  ),
-              ],
+            const SizedBox(height: 14),
+            _Row(
+              icon: Icons.wb_sunny_outlined,
+              title: 'Check-in reminder',
+              sub: s.remindersOn ? 'At ${_time(s.reminderHour, s.reminderMinute)}' : 'Off',
+              toggle: s.remindersOn,
+              onTap: repository.reminders == null ? null : () => _set(!s.remindersOn),
+              semantic: 'Check-in reminder. ${s.remindersOn ? 'On' : 'Off'}',
             ),
+            if (s.remindersOn) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final (h, m, label) in [
+                    (9, 0, 'Morning 9:00'),
+                    (10, 0, 'Morning 10:00'),
+                    (19, 30, 'Evening 7:30'),
+                  ])
+                    ChoiceChip(
+                      label: Text(label, style: LtText.body(weight: FontWeight.w700)),
+                      selected: s.reminderHour == h && s.reminderMinute == m,
+                      onSelected: (_) => _set(true, hour: h, minute: m),
+                    ),
+                ],
+              ),
+            ],
           ],
-          const SizedBox(height: 8),
-          _Row(
-            icon: Icons.calendar_today_outlined,
-            title: 'Weekly check-in',
-            sub: prefs.weeklyOn ? 'Sundays at 6:00 PM' : 'Off',
-            toggle: prefs.weeklyOn,
-            onTap: () => prefs.setWeekly(!prefs.weeklyOn),
-            semantic: 'Weekly check-in reminder. ${prefs.weeklyOn ? 'On' : 'Off'}',
-          ),
-        ],
-      ),
-    ),
+        ),
+      );
+    },
   );
 
   static String _time(int h, int m) {

@@ -12,18 +12,67 @@ import '../ui/twin_appearance.dart';
 import '../ui/widgets/widgets.dart' hide TwinMood;
 import '../voice/api_base.dart';
 import '../widgets/whole_word_text.dart';
-import 'checkin_client.dart';
 import 'emergency_card.dart';
+
+/// The profile fields the change conversation can change (`ChangeField`, the engine's final list).
+const changeFields = [
+  'age',
+  'sex',
+  'height_cm',
+  'weight_kg',
+  'sleep_hours',
+  'vigorous_recreation_min_week',
+  'moderate_recreation_min_week',
+  'sedentary_min_day',
+  'exercise_minutes_weekly',
+  'smoking_status',
+  'alcohol_drinks_weekly',
+  'diabetes',
+  'hypertension_diagnosed',
+  'general_health',
+  'systolic_bp',
+];
+
+/// A change-conversation reply (`contracts/change.schema.json`).
+class ChangeResponse {
+  ChangeResponse(this.raw);
+  final Map<String, dynamic> raw;
+
+  String get message => raw['message'] as String? ?? '';
+  Map<String, dynamic> get state => Map<String, dynamic>.from(raw['state'] as Map? ?? const {});
+  bool get complete => raw['complete'] == true;
+
+  /// A calm pause: nothing is saved, no next question (never auto-dial).
+  bool get emergency => raw['emergency'] == true;
+  String get phase => state['phase'] as String? ?? 'asking';
+
+  /// Non-null fields of `profile_update`: sent only on the yes turn.
+  Map<String, dynamic> get profileUpdate => {
+    for (final e in (raw['profile_update'] as Map? ?? const {}).entries)
+      if (e.value != null) '${e.key}': e.value,
+  };
+
+  /// `{field, text}`, only with memory consent.
+  Map<String, dynamic>? get habitNote =>
+      raw['habit_note'] is Map ? Map<String, dynamic>.from(raw['habit_note'] as Map) : null;
+}
+
+class ChangeFailure implements Exception {
+  const ChangeFailure(this.message);
+  final String message;
+  @override
+  String toString() => 'ChangeFailure($message)';
+}
 
 /// The change conversation (`POST /api/change/start` and `/turn`, live on main since #50): the
 /// only way a saved answer changes, apart from onboarding, check-ins, Apple Health import and Delete
 /// my data. Saved answers have no edit fields; "Change" opens this instead.
 abstract class ChangeClient {
   /// [field] is a profile field, or null for "What would you like to update?".
-  Future<CheckInResponse> start({required Map<String, dynamic> profile, String? field, required bool memoryConsent});
+  Future<ChangeResponse> start({required Map<String, dynamic> profile, String? field, required bool memoryConsent});
 
   /// [action]: reply | confirm | cancel | resume.
-  Future<CheckInResponse> turn({
+  Future<ChangeResponse> turn({
     required String action,
     required Map<String, dynamic> state,
     required Map<String, dynamic> profile,
@@ -39,11 +88,11 @@ class HttpChangeClient implements ChangeClient {
   final ApiBase base;
 
   @override
-  Future<CheckInResponse> start({required Map<String, dynamic> profile, String? field, required bool memoryConsent}) =>
+  Future<ChangeResponse> start({required Map<String, dynamic> profile, String? field, required bool memoryConsent}) =>
       _post('/api/change/start', {'profile': profile, 'field': ?field, 'memory_consent': memoryConsent});
 
   @override
-  Future<CheckInResponse> turn({
+  Future<ChangeResponse> turn({
     required String action,
     required Map<String, dynamic> state,
     required Map<String, dynamic> profile,
@@ -59,23 +108,23 @@ class HttpChangeClient implements ChangeClient {
     'input_mode': fromTranscript ? 'transcript' : 'text',
   });
 
-  Future<CheckInResponse> _post(String path, Map<String, dynamic> body) async {
+  Future<ChangeResponse> _post(String path, Map<String, dynamic> body) async {
     try {
       final url = await base.url();
       final r = await _client
           .post(Uri.parse('$url$path'), headers: {'content-type': 'application/json'}, body: jsonEncode(body))
           .timeout(const Duration(seconds: 20));
-      if (r.statusCode != 200) throw CheckInFailure('HTTP ${r.statusCode}');
+      if (r.statusCode != 200) throw ChangeFailure('HTTP ${r.statusCode}');
       final json = jsonDecode(utf8.decode(r.bodyBytes));
       if (json is! Map || json['state'] is! Map || json['message'] is! String) {
-        throw const CheckInFailure('unexpected reply');
+        throw const ChangeFailure('unexpected reply');
       }
-      return CheckInResponse(Map<String, dynamic>.from(json));
-    } on CheckInFailure {
+      return ChangeResponse(Map<String, dynamic>.from(json));
+    } on ChangeFailure {
       rethrow;
     } catch (e) {
       base.forget();
-      throw CheckInFailure('$e');
+      throw ChangeFailure('$e');
     }
   }
 }
@@ -100,7 +149,7 @@ class ChangeChatController extends ChangeNotifier {
   final String? field;
 
   final lines = <ChatLine>[];
-  CheckInResponse? response;
+  ChangeResponse? response;
   bool busy = false;
   String? error;
   bool emergency = false;
@@ -153,7 +202,7 @@ class ChangeChatController extends ChangeNotifier {
     );
   }
 
-  Future<void> _run(Future<CheckInResponse> Function() call, {bool first = false}) async {
+  Future<void> _run(Future<ChangeResponse> Function() call, {bool first = false}) async {
     if (busy) return;
     busy = true;
     error = null;
@@ -168,12 +217,12 @@ class ChangeChatController extends ChangeNotifier {
       final update = r.profileUpdate;
       if (!r.emergency && update.isNotEmpty) {
         // Only the yes turn carries a profile_update, so this runs only after "Yes, save".
-        await repository.saveConversationProfile({...repository.profile, ...update});
+        await repository.saveConversationProfile(update, kind: HistoryKind.mochiChange);
         saved.addAll(update);
       }
       final note = r.habitNote;
       if (note != null) await repository.addHabitNote(note);
-    } on CheckInFailure catch (e) {
+    } on ChangeFailure catch (e) {
       error = e.message;
     } finally {
       busy = false;
@@ -278,7 +327,7 @@ class _ChangeChatScreenState extends State<ChangeChatScreen> {
     },
   );
 
-  String _short(CheckInResponse r) => r.phase == 'choosing'
+  String _short(ChangeResponse r) => r.phase == 'choosing'
       ? 'What would you like to update?'
       : (r.phase == 'confirming' ? 'Did I get that right?' : 'What changed?');
 

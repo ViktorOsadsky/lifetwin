@@ -4,7 +4,6 @@ import 'package:lifesim/band/band_data.dart';
 import 'package:lifesim/band/band_screens.dart';
 import 'package:lifesim/band/band_service.dart';
 import 'package:lifesim/band/band_store.dart';
-import 'package:lifesim/band/provenance.dart';
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/ui/theme.dart';
@@ -83,7 +82,7 @@ void main() {
 
     test('only live band data, only with 4+ valid days, never the recorded demo', () async {
       final repo = await repoWith(30);
-      final s = BandService(repository: repo, provenance: AnswerProvenance(), now: () => today);
+      final s = BandService(repository: repo, now: () => today);
       expect(s.suggest(strong, live: true)?.estimate, 40);
       expect(s.suggest(strong, live: false), isNull, reason: 'the recorded demo offers nothing');
       final few = BandWeek.from(week([11, 11, 11, 3, 3, 3, 3], [6, 7, 6, 4, 0, 0, 0]), today);
@@ -93,7 +92,7 @@ void main() {
     test('showing it saves nothing; "Not now" hides it for a week', () async {
       final repo = await repoWith(30);
       var now = today;
-      final s = BandService(repository: repo, provenance: AnswerProvenance(), now: () => now);
+      final s = BandService(repository: repo, now: () => now);
       final offer = s.suggest(strong, live: true)!;
       expect(repo.profile['moderate_recreation_min_week'], 30);
       s.dismiss();
@@ -106,15 +105,14 @@ void main() {
     test('Yes, save writes the estimate as the person\'s answer, with the band provenance', () async {
       final repo = await repoWith(30);
       final before = repo.current!.percentByYear[5]!;
-      final prov = AnswerProvenance();
-      final s = BandService(repository: repo, provenance: prov, now: () => today);
+      final s = BandService(repository: repo, now: () => today);
       await s.confirm(s.suggest(strong, live: true)!);
       expect(repo.profile['moderate_recreation_min_week'], 40);
-      expect(prov.of(bandField).source, 'wristband');
-      expect(prov.of(bandField).estimated, isTrue);
-      expect(prov.of(bandField).label, 'From your band');
-      expect(prov.of(bandField).estimateLabel, 'Sensor estimate');
-      expect(prov.of(bandField).estimateDays, 4);
+      final p = repo.provenance(bandField)!;
+      expect(p.source, HistorySource.wristband);
+      expect(p.estimated, isTrue);
+      expect(p.sourceLabel, 'From your band');
+      expect(p.estimateText, isNotNull);
       // A confirmed band estimate counts as the answer and may change the outlook.
       expect(repo.current!.percentByYear[5], isNot(before));
       // Once saved, the same week is not offered again.
@@ -123,49 +121,46 @@ void main() {
 
     test('"Not quite": the person gives their own number and that is what is saved', () async {
       final repo = await repoWith(30);
-      final s = BandService(repository: repo, provenance: AnswerProvenance(), now: () => today);
+      final s = BandService(repository: repo, now: () => today);
       await s.confirm(s.suggest(strong, live: true)!, minutes: 60);
       expect(repo.profile['moderate_recreation_min_week'], 60);
     });
 
     test('lower estimate: kind two-choice, "Keep" changes nothing', () async {
       final repo = await repoWith(30);
-      final prov = AnswerProvenance();
-      final s = BandService(repository: repo, provenance: prov, now: () => today);
+      final s = BandService(repository: repo, now: () => today);
       final offer = s.suggest(weak, live: true)!;
       expect(offer.lower, isTrue);
       expect(offer.estimate, 10);
       expect(offer.question, 'Your band saw less this week. Keep 30, or use about 10?');
       s.keep();
       expect(repo.profile['moderate_recreation_min_week'], 30);
-      expect(prov.of(bandField).source, 'you_said');
+      expect(repo.provenance(bandField)?.source ?? HistorySource.said, HistorySource.said);
     });
 
     test('band answers never go to an outside AI provider; other answers do', () async {
       final repo = await repoWith(30);
-      final prov = AnswerProvenance();
-      final s = BandService(repository: repo, provenance: prov, now: () => today);
+      final s = BandService(repository: repo, now: () => today);
       await s.confirm(s.suggest(strong, live: true)!);
-      final out = prov.outsideAiProfile(repo.profile);
+      final out = repo.outsideAiProfile();
       expect(out.containsKey(bandField), isFalse);
       expect(out['age'], 55);
       // Changing it through Mochi later makes it the person's own again.
-      prov.set(bandField, const Provenance('mochi_change'));
-      expect(prov.of(bandField).label, 'Changed with Mochi');
-      expect(prov.outsideAiProfile(repo.profile).containsKey(bandField), isTrue);
+      await repo.saveConversationProfile({bandField: 90}, kind: HistoryKind.mochiChange);
+      expect(repo.provenance(bandField)!.sourceLabel, 'Mochi change');
+      expect(repo.outsideAiProfile().containsKey(bandField), isTrue);
     });
   });
 
   group('the band store', () {
     test('unpairing erases band days but leaves confirmed answers', () async {
       final repo = await repoWith(30);
-      final prov = AnswerProvenance();
       final store = BandStore(StubBandClient(), now: () => today);
       await store.pair(const BandDevice(name: 'LifeTwin Band'));
       for (final m in week([11, 11, 11, 11, 3, 3, 3], [6, 7, 6, 4, 0, 0, 0])) {
         store.addMinute(m);
       }
-      final svc = BandService(repository: repo, provenance: prov, now: () => today);
+      final svc = BandService(repository: repo, now: () => today);
       await svc.confirm(svc.suggest(store.week(), live: store.live)!);
       expect(store.minutes, isNotEmpty);
       await store.unpair();
@@ -179,7 +174,7 @@ void main() {
       final store = BandStore(StubBandClient(), now: () => today)..setDemo(true);
       expect(store.status, BandStatus.demo);
       expect(store.live, isFalse);
-      final svc = BandService(repository: repo, provenance: AnswerProvenance(), now: () => today);
+      final svc = BandService(repository: repo, now: () => today);
       expect(store.week().hasEstimate, isTrue);
       expect(svc.suggest(store.week(), live: store.live), isNull);
     });
@@ -276,8 +271,7 @@ void main() {
 
     testWidgets('read-back: disclosure inside the card, Yes, save is the only thing that saves', (t) async {
       final repo = await repoWith(30);
-      final prov = AnswerProvenance();
-      final svc = BandService(repository: repo, provenance: prov, now: () => today);
+      final svc = BandService(repository: repo, now: () => today);
       final offer = svc.suggest(
         BandWeek.from(week([11, 11, 11, 11, 3, 3, 3], [6, 7, 6, 4, 0, 0, 0]), today),
         live: true,
@@ -316,7 +310,7 @@ void main() {
 
     testWidgets('read-back, lower: two equal choices that name both values', (t) async {
       final repo = await repoWith(30);
-      final svc = BandService(repository: repo, provenance: AnswerProvenance(), now: () => today);
+      final svc = BandService(repository: repo, now: () => today);
       final offer = svc.suggest(
         BandWeek.from(week([11, 11, 11, 11, 3, 3, 3], [1, 1, 1, 0, 0, 0, 0]), today),
         live: true,
@@ -345,7 +339,7 @@ void main() {
         for (final m in week([8, 3, 3, 3, 3, 3, 3], [5, 0, 0, 0, 0, 0, 0])) {
           store.addMinute(m);
         }
-        final svc = BandService(repository: repo, provenance: AnswerProvenance(), now: () => today);
+        final svc = BandService(repository: repo, now: () => today);
         await pump(t, BandPanelScreen(store: store, service: svc, onBack: () {}, onSettings: () {}));
         expect(find.text('steps today'), findsOneWidget);
         expect(find.text('Sensor estimate'), findsOneWidget);

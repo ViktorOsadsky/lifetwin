@@ -1,5 +1,4 @@
 import 'package:lifesim/checkin/change_chat.dart';
-import 'package:lifesim/checkin/checkin_client.dart';
 
 /// A scripted `/api/change/*`: Mochi says the current value, asks what changed, reads the new number
 /// back, and returns `profile_update` ONLY on the confirm turn. `cancel` saves nothing.
@@ -8,14 +7,14 @@ class FakeChangeClient implements ChangeClient {
   final starts = <({String? field, bool memory})>[];
   Map<String, dynamic>? lastProfile;
 
-  CheckInResponse _r(
+  ChangeResponse _r(
     Map<String, dynamic> state,
     String message, {
     bool complete = false,
     bool emergency = false,
     Map<String, dynamic>? update,
     Map<String, dynamic>? note,
-  }) => CheckInResponse({
+  }) => ChangeResponse({
     'schema_version': '1',
     'message': message,
     'state': state,
@@ -35,7 +34,7 @@ class FakeChangeClient implements ChangeClient {
   });
 
   @override
-  Future<CheckInResponse> start({
+  Future<ChangeResponse> start({
     required Map<String, dynamic> profile,
     String? field,
     required bool memoryConsent,
@@ -52,7 +51,7 @@ class FakeChangeClient implements ChangeClient {
   }
 
   @override
-  Future<CheckInResponse> turn({
+  Future<ChangeResponse> turn({
     required String action,
     required Map<String, dynamic> state,
     required Map<String, dynamic> profile,

@@ -1,6 +1,5 @@
 import '../twin/twin_repository.dart';
 import 'band_data.dart';
-import 'provenance.dart';
 
 /// The field the band suggests, in the person's own words: "Moderate, like brisk walks".
 const bandField = 'moderate_recreation_min_week';
@@ -41,16 +40,14 @@ class BandSuggestion {
 /// - Offered at most once a week, only from live band data (never the recorded demo), and only with 4 or
 ///   more valid days (worn 10+ hours) in the last 7.
 /// - Nothing is saved by showing it. "Use this" opens a read-back; only the person's "Yes, save" (or "Use
-///   about N") writes the answer, as `moderate_recreation_min_week`, with provenance wristband +
-///   estimated. A confirmed band estimate IS the person's answer and may change the outlook (owner
+///   about N") writes the answer, as `moderate_recreation_min_week`, with the wristband source
+///   (`repository.provenance`: "From your band", an estimate). A confirmed band estimate IS the person's answer and may change the outlook (owner
 ///   ruling). It goes through `TwinRepository.saveConversationProfile` like any confirmed answer.
 /// - "Not now" dismisses it until next week. A band answer is never sent to an outside AI provider.
 class BandService {
-  BandService({required this.repository, required this.provenance, DateTime Function()? now})
-    : _now = now ?? DateTime.now;
+  BandService({required this.repository, DateTime Function()? now}) : _now = now ?? DateTime.now;
 
   final TwinRepository repository;
-  final AnswerProvenance provenance;
   final DateTime Function() _now;
 
   DateTime? _dismissedAt;
@@ -78,8 +75,13 @@ class BandService {
   /// "Yes, save" / "Use about N" with the estimate (or a number the person gave Mochi instead).
   Future<void> confirm(BandSuggestion s, {int? minutes}) async {
     final value = minutes ?? s.estimate;
-    await repository.saveConversationProfile({...repository.profile, bandField: value});
-    provenance.set(bandField, Provenance('wristband', estimated: true, estimateDays: s.validDays, confirmedAt: _now()));
+    // The band's number is saved with the wristband source ("From your band", an estimate). A number the
+    // person gave Mochi instead is simply their own answer.
+    await repository.saveConversationProfile(
+      {bandField: value},
+      kind: HistoryKind.mochiChange,
+      sources: {if (minutes == null) bandField: HistorySource.wristband},
+    );
     _offeredAt = _now();
   }
 

@@ -1,56 +1,74 @@
 /// The check-in seam: one entry point for the Home button and anything else that starts a check-in.
 ///
 /// ```dart
-/// // Home's primary "Daily check-in" button:
-/// onPressed: () => openCheckIn(context, kind: CheckInKind.daily),
+/// // Home's primary check-in button:
+/// onPressed: () => openCheckIn(context, kind: CheckInKind.quick),
 /// ```
 ///
-/// [openCheckIn] reads everything it needs from a [CheckInScope] above it in the tree
-/// (`main.dart` puts one above the `MaterialApp`'s home), so callers pass only the kind. It pushes
-/// the chat (`CheckInScreen`) and completes when the person leaves it. The daily check-in is the
-/// light 1-minute chat (about 3 questions: feeling, sleep, moving today; quick replies, voice or
-/// keyboard). The weekly check-in is the longer read-back of the week; when it finishes, it shows
-/// how the outlook moved. Both go through `TwinRepository.applyCheckin`.
+/// [openCheckIn] reads everything it needs from a [CheckInScope] above it in the tree (`AgenticRoutes.wrap`
+/// puts one above the `MaterialApp`'s navigator), so callers pass only the kind. It creates and owns the
+/// engine's `CheckinController` (server guide, speech, `TwinCheckinStore`), pushes the chat
+/// (`CheckInScreen`) and completes when the person leaves it. With no saved profile nothing opens: the
+/// intake comes first.
 ///
-/// Check-ins send answers to LifeTwin's server to be understood (`/api/checkin/*`); the server
-/// keeps nothing. They never send anything to an outside AI provider.
+/// The quick check-in is the core loop: one to three questions chosen from what the stored days are
+/// missing, about a minute. The weekly one asks the model's own inputs and, when it finishes, shows how
+/// the outlook moved. The store records a finished check-in exactly once (`TwinCheckinStore` ->
+/// `TwinRepository.applyCheckin`): nothing here calls `applyCheckin` again.
+///
+/// Check-ins send answers to LifeTwin's server to be understood (`/api/checkin/*`); the server keeps
+/// nothing. They never send anything to an outside AI provider.
 library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../experiment/widgets/source_link.dart';
+import '../health/health_sample.dart';
+import '../twin/twin_checkin_store.dart';
 import '../twin/twin_repository.dart';
 import '../ui/twin_appearance.dart';
+import '../voice/speech.dart';
 import 'checkin_client.dart';
 import 'checkin_controller.dart';
 import 'checkin_screen.dart';
+import '../experiment/widgets/source_link.dart';
 
-export 'checkin_client.dart' show CheckInKind;
+/// `quick` is the 1-minute daily chat; `weekly` is the longer one.
+enum CheckInKind { quick, weekly }
 
 /// What a check-in needs, provided once near the top of the app.
 class CheckInScope extends InheritedWidget {
   const CheckInScope({
     super.key,
     required this.repository,
-    required this.client,
+    required this.guide,
+    required this.speechInput,
+    required this.speechOutput,
     required this.appearance,
+    this.voiceUsable,
+    this.healthSamples,
     this.openUrl = defaultOpenUrl,
-    this.onTalk,
     this.now,
     required super.child,
   });
 
   final TwinRepository repository;
-  final CheckInClient client;
+
+  /// `HttpCheckinClient()`; tests pass a scripted guide.
+  final CheckinGuide guide;
+  final SpeechInput speechInput;
+  final SpeechOutput speechOutput;
   final ValueListenable<TwinAppearance> appearance;
+
+  /// Whether the person agreed to voice (asked at onboarding). Null: voice is not used, so typing.
+  final bool Function()? voiceUsable;
+
+  /// Apple Health samples already allowed by the person, for one-tap read-backs. Null: not connected.
+  final Future<List<HealthSample>> Function()? healthSamples;
   final OpenUrl openUrl;
 
   /// The clock for "due" (tests set it); the phone's clock by default.
   final DateTime Function()? now;
-
-  /// "Tap to talk" inside a check-in. Null until voice is wired to check-ins (the keyboard shows).
-  final VoidCallback? onTalk;
 
   static CheckInScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<CheckInScope>();
@@ -62,13 +80,24 @@ class CheckInScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(CheckInScope old) =>
-      repository != old.repository || client != old.client || appearance != old.appearance;
+      repository != old.repository || guide != old.guide || appearance != old.appearance;
 }
 
-/// Starts a [kind] check-in and completes when the person is back out of it.
+/// Starts a [kind] check-in and completes when the person is back out of it. Does nothing without a
+/// saved profile. If nothing is due (a quick check-in already done today) the screen says so.
 Future<void> openCheckIn(BuildContext context, {required CheckInKind kind}) {
   final scope = CheckInScope.of(context);
-  final controller = CheckinController(client: scope.client, repository: scope.repository, kind: kind);
+  if (!scope.repository.store.hasProfile) return Future.value();
+  final controller = CheckinController(
+    guide: scope.guide,
+    input: scope.speechInput,
+    output: scope.speechOutput,
+    store: TwinCheckinStore(scope.repository),
+    reminders: scope.repository.reminders,
+    healthSamples: scope.healthSamples,
+    clock: scope.now,
+    voiceUsable: scope.voiceUsable?.call() ?? false,
+  );
   return Navigator.of(context)
       .push<void>(
         MaterialPageRoute<void>(
@@ -76,9 +105,10 @@ Future<void> openCheckIn(BuildContext context, {required CheckInKind kind}) {
             valueListenable: scope.appearance,
             builder: (_, look, _) => CheckInScreen(
               controller: controller,
+              kind: kind,
+              repository: scope.repository,
               appearance: look,
               open: scope.openUrl,
-              onTalk: scope.onTalk,
               onDone: () => Navigator.of(route).pop(),
             ),
           ),

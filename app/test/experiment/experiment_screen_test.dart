@@ -182,7 +182,7 @@ void main() {
       final before = jsonEncode({
         'p': repo.profile,
         'c': repo.store.checkins.length,
-        'w': repo.store.weeklySummaries.length,
+        'w': repo.store.dayLogs.length,
       });
       await pumpHub(t, repo);
       await openLever(t, 'Sleep, today');
@@ -214,7 +214,7 @@ void main() {
       expect(find.text('8 h a night'), findsOneWidget);
       expect(find.byType(SamePill), findsNWidgets(4));
       expect(
-        jsonEncode({'p': repo.profile, 'c': repo.store.checkins.length, 'w': repo.store.weeklySummaries.length}),
+        jsonEncode({'p': repo.profile, 'c': repo.store.checkins.length, 'w': repo.store.dayLogs.length}),
         before,
       );
       h.dispose();
@@ -651,8 +651,8 @@ void main() {
       String snapshot() => jsonEncode({
         'profile': repo.profile,
         'checkins': repo.store.checkins.length,
-        'daily': repo.store.dailyLogs.length,
-        'weekly': repo.store.weeklySummaries.length,
+        'daily': repo.store.dayLogs.length,
+        'weekly': repo.store.dayLogs.length,
         'twin': repo.store.twin,
       });
       final before = snapshot();

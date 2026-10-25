@@ -3,14 +3,16 @@ import 'package:flutter/material.dart';
 import '../ui/theme.dart';
 import '../ui/widgets/widgets.dart';
 import 'check_in.dart';
+import 'checkin_models.dart';
 import 'checkin_scheduler.dart';
 
 /// The Room's check-in entry, self-contained: mount it with `const CheckInEntry()`.
 ///
-/// It reads [CheckInScope] and the [CheckinScheduler] itself, and shows nothing without a scope.
-/// Daily is the core loop: when one is due it is the most prominent control in the Room (a primary
-/// button, 64pt); a due weekly one sits under it. When nothing is due it is a quiet "Checked in today".
-/// It rebuilds when the repository changes, so finishing a check-in swaps the button for the quiet state.
+/// It reads [CheckInScope] and the engine's [CheckinScheduler] itself, and shows nothing without a scope or
+/// a saved profile. The quick check-in is the core loop: when one is due it is the most prominent control
+/// in the Room (a primary button, 64pt); a due weekly one sits under it (never instead of it). When
+/// nothing is due it is a quiet "Checked in today". It rebuilds when the repository changes, so finishing a
+/// check-in swaps the button for the quiet state.
 class CheckInEntry extends StatelessWidget {
   const CheckInEntry({super.key});
 
@@ -21,34 +23,42 @@ class CheckInEntry extends StatelessWidget {
     return ListenableBuilder(
       listenable: scope.repository,
       builder: (context, _) {
-        final scheduler = CheckinScheduler(scope.repository, now: scope.now);
-        final due = scheduler.dueKinds();
-        if (due.isEmpty) {
-          return scheduler.doneToday(CheckInKind.daily) ? const _CheckedInToday() : const SizedBox.shrink();
+        final repo = scope.repository;
+        if (!repo.store.hasProfile) return const SizedBox.shrink();
+        final now = (scope.now ?? DateTime.now)();
+        final days = repo.dayLogs(from: now.subtract(const Duration(days: 30)), to: now);
+        final due = const CheckinScheduler().due(
+          localNow: now,
+          history: repo.store.checkins,
+          days: days,
+          settings: repo.checkinSettings,
+        );
+        if (!due.any) {
+          final today = isoDay(dayOf(now));
+          final done = repo.store.checkins.any((c) => c.kind != 'weekly' && c.date == today);
+          return done ? const _CheckedInToday() : const SizedBox.shrink();
         }
-        final first = due.first;
+        final firstQuick = due.quick != null;
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               LipButton(
-                label: first == CheckInKind.daily ? 'Daily check-in' : 'Weekly check-in',
-                icon: first == CheckInKind.daily ? Icons.favorite_border_rounded : Icons.calendar_month_outlined,
+                label: firstQuick ? 'Check in' : 'Weekly check-in',
+                icon: firstQuick ? Icons.favorite_border_rounded : Icons.calendar_month_outlined,
                 fontSize: 24,
-                semanticLabel: first == CheckInKind.daily
-                    ? 'Daily check-in. A 1-minute chat.'
-                    : 'Weekly check-in. Ready now.',
-                onTap: () => openCheckIn(context, kind: first),
+                semanticLabel: firstQuick ? 'Check in. A 1-minute chat.' : 'Weekly check-in. Ready now.',
+                onTap: () => openCheckIn(context, kind: firstQuick ? CheckInKind.quick : CheckInKind.weekly),
               ),
-              if (due.length > 1) ...[
+              if (firstQuick && due.weekly) ...[
                 const SizedBox(height: 8),
                 LipButton(
                   label: 'Weekly check-in',
                   kind: LipKind.secondary,
                   height: 56,
                   fontSize: 20,
-                  onTap: () => openCheckIn(context, kind: due[1]),
+                  onTap: () => openCheckIn(context, kind: CheckInKind.weekly),
                 ),
               ],
             ],

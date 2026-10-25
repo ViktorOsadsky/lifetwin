@@ -34,7 +34,8 @@ void main() {
     await tapText(t, "Yes, I'll talk");
     await readQuestion(t);
     await tapText(t, 'Not now');
-    await waitFor(t, find.textContaining('How old are you?'));
+    // The memory question is spoken first; the microphone is tried on it.
+    await waitFor(t, find.textContaining(memoryQuestion));
     await settled(t);
     await t.tap(find.byType(TalkButton).first, warnIfMissed: false);
     await waitFor(t, find.text(micDeniedNotice));
@@ -44,8 +45,9 @@ void main() {
     expect(find.text('Open Settings'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
     await qaAction(t, 'shot', name: 'mic-denied', wait: const Duration(seconds: 1));
+    await say(t, 'No thanks', ageQuestion);
     await say(t, '71', 'you are 71');
-    await yes(t, 'What sex');
+    await yes(t, sexQuestion);
     // Talk again: same plain message, never stuck listening.
     await hideKeyboard(t);
     await tapText(t, 'Talk instead');
