@@ -8,8 +8,13 @@ from pydantic import Field, field_validator, model_validator
 
 from lifetwin.core.models import ApiModel
 
-QuizTopic = Literal["nutrition", "food_safety", "activity"]
+QuizTopic = Literal["nutrition", "food_safety", "activity", "sleep", "habits"]
 QuizDifficulty = Literal["moderate", "challenging"]
+SOURCE_HOSTS = {
+    "CDC": {"www.cdc.gov"},
+    "FDA": {"www.fda.gov"},
+    "NIH": {"www.nhlbi.nih.gov", "www.nia.nih.gov"},
+}
 QuestionId = Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]{2,60}\.v[1-9][0-9]{0,2}$")]
 
 
@@ -20,7 +25,7 @@ class QuizOption(ApiModel):
 
 class QuizSource(ApiModel):
     title: str = Field(min_length=1, max_length=200)
-    publisher: Literal["CDC", "FDA"]
+    publisher: Literal["CDC", "FDA", "NIH"]
     url: str = Field(min_length=1, max_length=500)
     accessed_on: date
 
@@ -30,7 +35,7 @@ class QuizSource(ApiModel):
         parsed = urlsplit(value)
         if (
             parsed.scheme != "https"
-            or parsed.hostname not in {"www.cdc.gov", "www.fda.gov"}
+            or parsed.hostname not in set().union(*SOURCE_HOSTS.values())
             or parsed.username
             or parsed.password
             or parsed.port not in {None, 443}
@@ -38,13 +43,14 @@ class QuizSource(ApiModel):
             or parsed.fragment
             or not parsed.path.startswith("/")
         ):
-            raise ValueError("Quiz citations must be canonical CDC or FDA HTTPS pages")
+            raise ValueError(
+                "Quiz citations must be canonical approved CDC, FDA or NIH HTTPS pages"
+            )
         return value
 
     @model_validator(mode="after")
     def publisher_matches_url(self) -> "QuizSource":
-        expected_host = {"CDC": "www.cdc.gov", "FDA": "www.fda.gov"}[self.publisher]
-        if urlsplit(self.url).hostname != expected_host:
+        if urlsplit(self.url).hostname not in SOURCE_HOSTS[self.publisher]:
             raise ValueError("Citation publisher must match its URL")
         return self
 

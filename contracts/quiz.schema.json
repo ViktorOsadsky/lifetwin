@@ -231,7 +231,9 @@
           "enum": [
             "nutrition",
             "food_safety",
-            "activity"
+            "activity",
+            "sleep",
+            "habits"
           ],
           "title": "Topic",
           "type": "string"
@@ -270,7 +272,8 @@
         "publisher": {
           "enum": [
             "CDC",
-            "FDA"
+            "FDA",
+            "NIH"
           ],
           "title": "Publisher",
           "type": "string"
