@@ -16,5 +16,6 @@ Start with [MASTER_PLAN.md](../MASTER_PLAN.md), the current product and agent im
 | [tracks/D-advisor-demo.md](tracks/D-advisor-demo.md) | AI advisor, safety copy, demo |
 | [ios-testing.md](ios-testing.md) | Running the app on the test iPhone and the simulator |
 | [model-sensitivity.md](model-sensitivity.md) | Which inputs move the packaged Cox model's 5-year estimate most, by age band and sex, with [machine-readable lever ranking](model-sensitivity.json); observational, not causal |
+| [document-upload.md](document-upload.md) | Health-document upload: on-device text recognition, `/api/documents/extract`, confirmation, privacy boundary, failure modes |
 | [apple-health.md](apple-health.md) | Apple Health import: what is read, read-back rules, privacy decisions, what is left |
 | [design/painted-card-direction.md](design/painted-card-direction.md) | UI remake direction: painted-card look, bear or human twin, final screens, art assets and pipeline, Flutter notes |

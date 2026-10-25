@@ -1,0 +1,53 @@
+Cedar Grove Primary Care
+15 Willow St, Hillcrest, NY 10099
+Tel (555) 010-7000
+OFFICE VISIT NOTE
+Patient name: Arthur Testwood
+DOB: 01/09/1950
+MRN 6612040
+Date of service: 08/11/2026
+Reason for visit
+Blood pressure follow-up
+Allergies: none known
+Vitals
+BP 130/78
+Weight 190 lb
+Height 5 ft 9 in
+Assessment
+Essential hypertension
+Social History
+Former smoker, quit 2001
+Medications
+Lisinopril 20 mg daily
+Plan
+Continue current medicines.
+Return in 6 months.
+Signed: Dr. Mina Calloway
+Page 1 of 2
+<<<PAGE>>>
+Cedar Grove Primary Care
+15 Willow St, Hillcrest, NY 10099
+Tel (555) 010-7000
+OFFICE VISIT NOTE
+Patient name: Beatrice Fakeley
+DOB: 07/22/1955
+MRN 6612077
+Date of service: 08/18/2026
+Reason for visit
+Diabetes follow-up
+Allergies: sulfa
+Vitals
+BP 126/74
+Weight 165 lb
+Height 5 ft 3 in
+Assessment
+Type 2 diabetes mellitus
+Social History
+Never smoker
+Medications
+Metformin 1000 mg twice daily
+Plan
+Repeat A1c in 3 months.
+Return in 3 months.
+Signed: Dr. Mina Calloway
+Page 2 of 2

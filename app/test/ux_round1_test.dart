@@ -43,8 +43,9 @@ class StepGuide implements ConversationGuide {
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
-    Map<String, num>? values,
+    Map<String, Object>? values,
     bool aiHelper = false,
+    String? importSource,
   }) async {
     calls.add({'action': action, 'text': ?text});
     if (gate != null) await gate!.future;

@@ -1985,5 +1985,178 @@
     "response_subset": {
       "code": "invalid_request"
     }
+  },
+  {
+    "name": "documents-extract-visit-summary",
+    "method": "POST",
+    "path": "/api/documents/extract",
+    "request_schema": "documents.extract.request.schema.json",
+    "request": {
+      "pages": [
+        "SYNTHETIC TEST CLINIC - AFTER VISIT SUMMARY\nPatient: Testy McFakeface    MRN: 00000001\nDOB: 01/01/1950\nDate of service: 09/14/2026\nVitals\nBP 138/86   Wt 182 lb   Ht 5' 6\"\nProblem List\nType 2 diabetes mellitus\nFamily History\nMother: hypertension\nSocial History\nFormer smoker, quit 2009\nPlan: goal weight 170 lb"
+      ]
+    },
+    "status": 200,
+    "response_schema": "documents.extract.schema.json",
+    "response_subset": {
+      "status": "found",
+      "candidates": [
+        {
+          "field": "height_cm",
+          "use": "model_input",
+          "value": 167.6,
+          "unit": "cm",
+          "date": "2026-09-14",
+          "date_basis": "document",
+          "source_text": "BP 138/86   Wt 182 lb   Ht 5' 6\"",
+          "page": 1,
+          "section": "Vitals",
+          "confidence": "high",
+          "method": "parser"
+        },
+        {
+          "field": "weight_kg",
+          "use": "model_input",
+          "value": 82.6,
+          "unit": "kg",
+          "date": "2026-09-14",
+          "date_basis": "document",
+          "source_text": "BP 138/86   Wt 182 lb   Ht 5' 6\"",
+          "page": 1,
+          "section": "Vitals",
+          "confidence": "high",
+          "method": "parser"
+        },
+        {
+          "field": "smoking_status",
+          "use": "model_input",
+          "value": "former",
+          "unit": null,
+          "date": "2026-09-14",
+          "date_basis": "document",
+          "source_text": "Former smoker, quit 2009",
+          "page": 1,
+          "section": "Social History",
+          "confidence": "high",
+          "method": "parser"
+        },
+        {
+          "field": "diabetes_diagnosed",
+          "use": "model_input",
+          "value": true,
+          "unit": null,
+          "date": "2026-09-14",
+          "date_basis": "document",
+          "source_text": "Type 2 diabetes mellitus",
+          "page": 1,
+          "section": "Problem List",
+          "confidence": "high",
+          "method": "parser"
+        },
+        {
+          "field": "blood_pressure",
+          "use": "information",
+          "value": "138/86",
+          "unit": "mmHg",
+          "date": "2026-09-14",
+          "date_basis": "document",
+          "source_text": "BP 138/86   Wt 182 lb   Ht 5' 6\"",
+          "page": 1,
+          "section": "Vitals",
+          "confidence": "high",
+          "method": "parser"
+        }
+      ],
+      "notices": [
+        "other_person_skipped"
+      ],
+      "provider_status": "not_requested"
+    }
+  },
+  {
+    "name": "documents-extract-unreadable",
+    "method": "POST",
+    "path": "/api/documents/extract",
+    "request_schema": "documents.extract.request.schema.json",
+    "request": {
+      "pages": [
+        "W?ght 1?4 lb\nB? 1?8/7?\n~~ ;; ::"
+      ]
+    },
+    "status": 200,
+    "response_schema": "documents.extract.schema.json",
+    "response_subset": {
+      "status": "unreadable",
+      "candidates": []
+    }
+  },
+  {
+    "name": "documents-extract-two-patients",
+    "method": "POST",
+    "path": "/api/documents/extract",
+    "request_schema": "documents.extract.request.schema.json",
+    "request": {
+      "pages": [
+        "Patient: Testy McFakeface\nWeight 182 lb",
+        "Patient: Mock Person\nWeight 140 lb"
+      ]
+    },
+    "status": 200,
+    "response_schema": "documents.extract.schema.json",
+    "response_subset": {
+      "status": "nothing_found",
+      "candidates": [],
+      "notices": [
+        "multiple_patients"
+      ]
+    }
+  },
+  {
+    "name": "documents-extract-too-many-pages",
+    "method": "POST",
+    "path": "/api/documents/extract",
+    "request_schema": "documents.extract.request.schema.json",
+    "request_schema_valid": false,
+    "request": {
+      "pages": [
+        "Weight 150 lb",
+        "Weight 150 lb",
+        "Weight 150 lb",
+        "Weight 150 lb",
+        "Weight 150 lb",
+        "Weight 150 lb",
+        "Weight 150 lb",
+        "Weight 150 lb",
+        "Weight 150 lb",
+        "Weight 150 lb",
+        "Weight 150 lb"
+      ]
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request",
+      "message": "That document has too many pages or too much text. Please choose up to 10 pages."
+    }
+  },
+  {
+    "name": "documents-extract-consent-not-boolean",
+    "method": "POST",
+    "path": "/api/documents/extract",
+    "request_schema": "documents.extract.request.schema.json",
+    "request_schema_valid": false,
+    "request": {
+      "pages": [
+        "Weight 150 lb"
+      ],
+      "outside_ai_consent": "yes"
+    },
+    "status": 422,
+    "response_schema": "error.schema.json",
+    "response_subset": {
+      "status": "error",
+      "code": "invalid_request"
+    }
   }
 ]
