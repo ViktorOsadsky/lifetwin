@@ -337,7 +337,7 @@ class MemoryInstruction(ApiModel):
 
 class CoachPlanResponse(ApiModel):
     schema_version: Literal["1.0"] = "1.0"
-    status: Literal["ok", "emergency"]
+    status: Literal["ok", "emergency", "under_age"]
     revision_id: str | None
     based_on: str | None
     local_date: str

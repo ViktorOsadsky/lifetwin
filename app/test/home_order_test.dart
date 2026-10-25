@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/main.dart';
+import 'package:lifesim/room/room_scene.dart';
+import 'package:lifesim/room/room_sim.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/ui/twin_assets.dart';
@@ -42,7 +44,7 @@ void main() {
 
   final key = GlobalKey();
 
-  Future<void> pumpHome(WidgetTester t, {double width = 390, double height = 844, double scale = 1}) async {
+  Future<void> pumpHome(WidgetTester t, {double width = 390, double height = 844, double scale = 1, double topInset = 0, double bottomInset = 0}) async {
     t.view.physicalSize = Size(width, height);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -52,7 +54,12 @@ void main() {
       RepaintBoundary(
         key: key,
         child: MediaQuery(
-          data: MediaQueryData(size: Size(width, height), textScaler: TextScaler.linear(scale)),
+          data: MediaQueryData(
+            size: Size(width, height),
+            textScaler: TextScaler.linear(scale),
+            padding: EdgeInsets.only(top: topInset, bottom: bottomInset),
+            viewPadding: EdgeInsets.only(top: topInset, bottom: bottomInset),
+          ),
           child: LifeTwinApp(
             controller: VoiceOnboardingController(
               guide: FakeConversationGuide(),
@@ -104,6 +111,9 @@ void main() {
     expect((t.getCenter(checkIn).dy - t.getCenter(today).dy).abs(), lessThan(30));
     expect(top(t, experiment), lessThan(top(t, find.text('Talk'))));
     expect(find.text('Fortune'), findsOneWidget);
+    for (final gone in ['Exercise', 'Eat', 'Sleep']) {
+      expect(find.text(gone), findsNothing, reason: 'no $gone row on Home');
+    }
     // Experiment is the biggest action after Check in: taller than Check in, far larger than the quiz chip.
     double h(Finder f) => t.getSize(find.ancestor(of: f, matching: find.byType(LipButton)).first).height;
     expect(h(experiment), greaterThanOrEqualTo(h(checkIn)));
@@ -121,9 +131,17 @@ void main() {
     });
   });
 
-  testWidgets('Mochi has a clear window: no Home card or button covers the twin at 390 x 844', (t) async {
-    await pumpHome(t);
+  for (final (w, h, top, bottom) in [(390.0, 844.0, 0.0, 0.0), (402.0, 874.0, 62.0, 34.0)]) {
+  testWidgets('Mochi has a clear window and the quiz chip is the topmost element at $w x $h (top inset $top)', (t) async {
+    await pumpHome(t, width: w, height: h, topInset: top, bottomInset: bottom);
     await loadArt(t);
+    // The quiz chip is the first element, one inset (safe area + 8) from the top; gaps below are 8.
+    final quizBox = t.getRect(find.ancestor(of: find.text('Quiz · play'), matching: find.byType(Semantics)).first);
+    expect(quizBox.top, top + 8);
+    final header = t.getRect(find.byTooltip('Settings'));
+    expect(header.top, greaterThanOrEqualTo(quizBox.bottom));
+    expect(t.getTopLeft(find.byType(HomeWellnessPanel)).dy - header.bottom, lessThanOrEqualTo(8.5));
+    expect(top, lessThan(quizBox.top));
     final twin = t.getRect(find.byType(TwinSprite).first);
     // The sprite box has transparent margins: test against the body (the middle of the box).
     final body = Rect.fromCenter(center: twin.center, width: twin.width * 0.5, height: twin.height * 0.7);
@@ -134,12 +152,55 @@ void main() {
       'check in': box(find.text('Check in'), LipButton),
       'today row': box(find.textContaining('Today', findRichText: true), WellnessCard),
       'experiment': box(find.text('Experiment with your twin'), LipButton),
-      'exercise': box(find.text('Exercise'), GestureDetector),
       'dock': t.getRect(find.text('Talk').first),
     };
     for (final e in boxes.entries) {
       expect(body.overlaps(e.value), isFalse, reason: '${e.key} ${e.value} covers the twin $body');
     }
+    if (h == 874.0) {
+      final shots = Directory('${Directory.current.path}/../../evidence_shots')..createSync(recursive: true);
+      await t.runAsync(() async {
+        final bnd = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+        final img = await bnd.toImage(pixelRatio: 2);
+        final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+        File('${shots.path}/home_top_17pro.png').writeAsBytesSync(bytes!.buffer.asUint8List());
+      });
+    }
+  });
+  }
+
+  testWidgets('the activity pill opens the chooser; choosing Sleep puts Mochi in bed', (t) async {
+    await pumpHome(t, width: 402, height: 874, topInset: 62, bottomInset: 34);
+    await loadArt(t);
+    final pill = find.byKey(const ValueKey('room-activity'));
+    expect(t.getSize(pill).height, greaterThanOrEqualTo(48));
+    expect(find.bySemanticsLabel(RegExp(r'is \w+\. Change what')), findsOneWidget);
+    await t.tap(pill);
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 400));
+    expect(find.text('What should Mochi do?'), findsOneWidget);
+    for (final label in ['Walk', 'Exercise', 'Eat', 'Sleep']) {
+      final h = t.getSize(find.ancestor(of: find.text(label), matching: find.byType(InkWell)).first).height;
+      expect(h, greaterThanOrEqualTo(48), reason: label);
+    }
+    // The current choice carries a check, not only a colour.
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    final shots = Directory('${Directory.current.path}/../../evidence_shots')..createSync(recursive: true);
+    await t.runAsync(() async {
+      final bnd = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final img = await bnd.toImage(pixelRatio: 2);
+      final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+      File('${shots.path}/home_pill_sheet.png').writeAsBytesSync(bytes!.buffer.asUint8List());
+    });
+    await t.tap(find.text('Sleep'));
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 400));
+    final sim = t.widget<RoomScene>(find.byType(RoomScene)).sim;
+    expect(sim.action, RoomAction.sleep);
+    for (var i = 0; i < 400 && !sim.inBed; i++) {
+      await t.pump(const Duration(milliseconds: 50));
+    }
+    expect(sim.inBed, isTrue);
   });
 
   for (final w in [390.0, 320.0]) {
@@ -150,12 +211,14 @@ void main() {
     });
   }
 
-  testWidgets('1.6x text: Home scrolls and nothing clips', (t) async {
+  testWidgets('1.6x text: nothing clips; Home scrolls only if it must and Experiment is reachable', (t) async {
     await pumpHome(t, scale: 1.6);
     expect(t.takeException(), isNull);
     final s = t.state<ScrollableState>(find.byType(Scrollable).first);
-    expect(s.position.maxScrollExtent, greaterThan(0));
-    await t.scrollUntilVisible(find.text('Experiment with your twin'), 200);
+    if (s.position.maxScrollExtent > 0) {
+      await t.scrollUntilVisible(find.text('Experiment with your twin'), 200);
+    }
+    expect(find.text('Experiment with your twin'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 }
