@@ -55,7 +55,7 @@ class HomeWellnessPanel extends StatelessWidget {
   final VoidCallback onEstimate;
 
   static const tagline = 'Feeling good now, and healthy years ahead.';
-  static const underAgeLine = 'Health tools start at 18. Until then, play, dress up and chat.';
+  static const underAgeLine = 'The health score is made for adults, ages 18 and over.';
 
   @override
   Widget build(BuildContext context) {

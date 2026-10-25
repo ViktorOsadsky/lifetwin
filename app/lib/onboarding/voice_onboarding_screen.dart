@@ -1021,15 +1021,14 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   }
 
   /// Ideas for you: "what should I do?" (`open_ideas`) shows today's idea; the finished intake closes with
-  /// Mochi's first ideas (adults only).
+  /// Mochi's first ideas.
   Widget? _ideasCard() {
     final access = IdeasScope.maybeOf(context);
     final turn = c.turn;
     if (access == null || turn == null || c.emergency) return null;
     if (c.phase == VoicePhase.done) {
-      final adult = ((c.confirmedProfile['age'] as num?) ?? 0) >= 18;
       final ideas = _tryIdeas(turn.recommendations);
-      if (!adult || ideas.isEmpty) return null;
+      if (ideas.isEmpty) return null;
       return Padding(
         padding: const EdgeInsets.only(top: 14),
         child: _pad(IdeasClosingCard(access: access, appearance: widget.appearance, ideas: ideas)),

@@ -223,8 +223,6 @@ SUPPLEMENTS = re.compile(
     r"protein (?:powders?|shakes?))\b"
 )
 IDEAS_LEAD = "I have an idea for you today. I'll show it to you now."
-IDEAS_LATER = "Once I know a little more about you, I'll have ideas."
-IDEAS_MIN_AGE = 18
 REQUEST = re.compile(
     r"^(?:please )?(?:recommend|suggest)\b|\b(?:can|could) you (?:recommend|suggest)\b"
 )
@@ -654,10 +652,7 @@ class ConversationService:
         if state.phase in {"idle", "cancelled"}:
             self._invalid("Please start the conversation first.")
         if action == "reply" and asks_for_ideas(text) and not urgent_reply:
-            age = state.confirmed_profile.age
-            if age is not None and age >= IDEAS_MIN_AGE:
-                return respond(IDEAS_LEAD + " " + self._prompt(state), client_action="open_ideas")
-            return respond(IDEAS_LATER + " " + self._prompt(state))
+            return respond(IDEAS_LEAD + " " + self._prompt(state), client_action="open_ideas")
         if action in {"reply", "skip"} and state.phase == "remembering":
             intent = control_intent(text) if action == "reply" else None
             # Politeness kept: "please do" is a yes here.

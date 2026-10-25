@@ -274,7 +274,7 @@ def test_statuses_and_missing_inputs(flow):
     assert recs["not_enough_information"]["status"] == "not_enough_information"
     assert recs["not_enough_information"]["recommendations"] == []
     assert recs["not_enough_information"]["missing_inputs"]
-    assert recs["under_age"]["status"] == "under_age"
+    assert recs["minor"]["status"] == "not_enough_information"
     # The app's own statuses for the same situations (lib/twin/twin_model.dart) include these.
     for status in ("missing_inputs", "under_age"):
         assert f"'{status}'" in DART_SOURCE
