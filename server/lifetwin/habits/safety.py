@@ -14,41 +14,100 @@ from lifetwin.onboarding.parsing import normalize_text
 
 SafetyKind = Literal["emergency", "eating_care", "supplement", "medical", "alcohol"]
 
-# Restricting, compensating or purging food. Food habits only ever add something.
-EATING_CARE = re.compile(
-    r"\bskip(?:ping|ped)? (?:a |my |the |all )?(?:meals?|breakfast|lunch|dinner|food|eating)\b|"
-    r"\b(?:stop|quit|stopped|avoid|avoiding) eating\b|\b(?:not|don't|do not|won't|never) eat(?:ing)?\b|"
-    r"\beat(?:ing)? (?:less|nothing|only|very little|as little)\b|\bno (?:food|eating)\b|"
-    r"\bstarv\w*|\bfast(?:ing|ed)\b|\bintermittent fast\w*|\b(?:do|doing|start) a fast\b|"
-    r"\bfast (?:until|till|for (?:a |the |\d+ |whole ))|\bcrash diet\w*|\bdieting\b|\bon a diet\b|"
-    r"\bcalorie\w*|\bcut (?:out|down on|back on) (?:carbs?|sugar|fats?|food|snacks?|sweets|bread|meals?)\b|"
-    r"\bno (?:carbs?|sugar|sweets|snacks|bread|fats?)\b|\bonly (?:water|juice|liquids?)\b|"
-    r"\b(?:detox|cleanse)\w*|\blaxatives?\b|\bdiuretics?\b|\bdiet pills?\b|\bappetite suppress\w*|"
-    r"\bpurg\w*|\bthrow(?:ing)? up\b|\bthrew up\b|\bvomit\w*|\bmake myself (?:sick|throw up|vomit)\b|"
-    r"\bearn(?:ing)? (?:my |the )?(?:food|meals?|dinner|lunch|dessert|treats?)\b|"
-    r"\bburn (?:it |that |them )?off\b|\bmake up for (?:eating|what i ate|food|dinner|lunch)\b|"
-    r"\b(?:lose|losing|drop|dropping|shed|shedding) (?:\d+ |a few |some |the )?(?:weight|pounds|lbs|kilos|kg|stone)\b|\bweight loss\b|"
-    r"\bhate (?:my|how my) (?:body|stomach|thighs|belly)\b|\b(?:too|so|look|looking|feel|feeling) fat\b|"
-    r"\bbody shape\b|\bbefore and after\b|\bthinner\b|\bskinn(?:y|ier)\b|\bthigh gap\b"
+
+def _any(*parts: str) -> re.Pattern[str]:
+    return re.compile("|".join(parts))
+
+
+# Self-harm phrasings the shared emergency check does not cover yet; same reply.
+SELF_HARM = _any(
+    r"\bbetter off without me\b",
+    r"\b(?:hurt|hurting|harm|harming|cut|cutting) myself\b",
+    r"\bself ?-?harm\w*",
+    r"\b(?:wanna|gonna) die\b",
+    r"\bunalive\b",
+    r"\b(?:not|never) (?:to )?wake up (?:tomorrow|again)\b",
+    r"\b(?:don't|do not) want to wake up\b",
+)
+# Restricting, compensating or purging food, and body-image distress. Food habits
+# only ever add something.
+EATING_CARE = _any(
+    # skipping or limiting meals
+    r"\bskip(?:ping|ped|s)? (?:a |my |the |all |of )?(?:meals?|breakfast|brekkie|brekky|lunch|"
+    r"dinner|tea|supper|food|eating)\b",
+    r"\b(?:stop|quit|stopped|avoid|avoiding) (?:eating|snacking)\b",
+    r"\b(?:not|don't|do not|won't|never) eat(?:ing)?\b",
+    r"\beat(?:ing)? (?:less|nothing|only|very little|as little|half|smaller)\b",
+    r"\bno (?:food|eating|breakfast|brekkie|lunch|dinner|supper|snack\w*)\b",
+    r"\bonly (?:have |eat |drink )?(?:water|juice|liquids?|coffee|tea|salad|one meal)\b",
+    r"\b(?:just|nothing but) (?:coffee|tea|water)\b",
+    r"\bwater only\b",
+    r"\bone meal a day\b|\bomad\b",
+    r"\bsmaller portions?\b|\bhalf (?:my|a) (?:usual )?(?:lunch|dinner|breakfast|meal|portion)\b",
+    r"\bgo(?:ing)? without (?:food|eating|meals?|breakfast|lunch|dinner)\b",
+    r"\bunder \d{3,4}\b",
+    r"\bmacros\b",
+    r"\b(?:16|18|20|23) (?:8|6|4|1)\b",  # "16:8" fasting, after punctuation is dropped
+    r"\bstarv\w*",
+    r"\bfast(?:ing|ed)\b|\b(?:water|juice) fast\b|\bintermittent fast\w*|\b(?:do|doing|start) a fast\b",
+    r"\bfast (?:until|till|for (?:a |the |\d+ |whole ))",
+    r"\bcrash diet\w*|\bdieting\b|\bon a diet\b|\bketo\b|\blow ?-?carb\w*",
+    r"\bcalorie\w*",
+    r"\bcut (?:out |down on |back on |down |back )?(?:the )?(?:carbs?|sugar|fats?|food|snacks?|"
+    r"sweets|bread|meals?|portions?)\b",
+    r"\bno (?:carbs?|sugar|sweets|snacks|bread|fats?)\b",
+    r"\blay off (?:the )?(?:sweets|snacks|carbs|biscuits|cake|chocolate|bread)\b",
+    r"\bignore (?:my |the )?hunger\b|\binstead of eating\b|\bto (?:avoid|stop) (?:snacking|eating)\b",
+    r"\b(?:detox|cleanse)\w*|\blaxatives?\b|\bdiuretics?\b|\bdiet pills?\b|\bappetite suppress\w*",
+    # purging
+    r"\bpurg\w*|\bthrow(?:ing)? up\b|\bthrew up\b|\bvomit\w*|\bmake myself (?:sick|throw up|vomit)\b",
+    r"\bsick it up\b|\bbring (?:it |up )?(?:up )?(?:my |the )?(?:dinner|food|lunch|meal)\b",
+    r"\bchew and spit\b",
+    # compensating for food
+    r"\bearn(?:ing)? (?:my |the )?(?:food|meals?|dinner|lunch|dessert|treats?)\b",
+    r"\b(?:burn|run|walk|work|sweat|exercise) (?:it |that |them |this )?off\b",
+    r"\bwork off\b|\b(?:balance|cancel) (?:it |that )?out\b",
+    r"\bmake up for (?:eating|what i ate|food|dinner|lunch)\b",
+    r"\bpunish(?:ing)? myself\b",
+    r"\b(?:run|walk|exercise|train) (?:extra|more|longer) (?:if|when|because) i (?:eat|ate)\b",
+    r"\b(?:don't|do not) deserve (?:to eat|food|dinner|lunch|breakfast|a meal)\b",
+    # weight and body image
+    r"\b(?:lose|losing|drop|dropping|shed|shedding) (?:\d+ |a few |some |the |my )?(?:belly )?"
+    r"(?:weight|pounds|lbs|kilos|kg|stone|fat)\b",
+    r"\bweight loss\b|\bbelly fat\b|\bslim (?:down|up)\b|\bshred(?:ding)? for\b|\bflat stomach\b",
+    r"\bhate (?:my|how my|how i look|myself)\b|\bfeel(?:ing)? (?:huge|disgusting|gross)\b",
+    r"\bdisgusting after eating\b",
+    r"\b(?:i'm|im|i am) (?:so |too |really )?(?:fat|big|huge)\b",
+    r"\b(?:ugly|gross|disgusting) and fat\b|\bfat and (?:ugly|gross|disgusting)\b",
+    r"\b(?:too|so|look|looking|feel|feeling) fat\b",
+    r"\bbe smaller\b|\bbody shape\b|\bbefore and after\b|\bthinner\b|\bskinn(?:y|ier)\b|\bthigh gap\b",
 )
 # Supplements and "energy" products, including stimulants. Coffee itself is an anchor
 # ("after my morning coffee") and is not blocked.
-SUPPLEMENT = re.compile(
-    r"\bsupplement\w*|\bvitamins?\b|\bmultivitamins?\b|\bprotein (?:powder|shakes?|bars?)\b|"
-    r"\bcreatine\b|\bpre ?-?workouts?\b|\benergy (?:drinks?|shots?|gels?|pills?)\b|"
-    r"\bred ?bull\b|\bmonster energy\b|\bcaffeine (?:pills?|tablets?|gum|powder)\b|"
-    r"\bfat burners?\b|\bmelatonin\b|\bmagnesium\b|\bfish oil\b|\bomega ?-?3s?\b|\bcollagen\b|"
-    r"\bashwagandha\b|\bnootropics?\b|\bgummies\b|\bcbd\b|\bkratom\b|\bbcaas?\b|\bzinc\b|"
-    r"\biron tablets?\b|\bherbal (?:pills?|remed\w*)\b|\bstimulants?\b"
+SUPPLEMENT = _any(
+    r"\bsupplement\w*|\bvit(?:amin)?s?\b(?: [a-e]\d*)?|\bvit(?:amin)? ?[a-e]\d*\b|\bb12\b",
+    r"\bmultivitamins?\b|\bmy multi\b|\bprotein (?:powder|shakes?|bars?)\b|\bwhey\b",
+    r"\bcrea?tine?\b|\bpre ?-?w\w*outs?\b|\benergy (?:drinks?|shots?|gels?|pills?|cans?)\b",
+    r"\b(?:zero sugar|sugar ?-?free) energy\b|\bred ?bull\b|\bmonster\b|\brockstar\b|\bbang energy\b|\bcelsius\b|\bc4\b|\b5 ?hour energy\b",
+    r"\bno ?-?doz\b|\badderall\b|\bmodafinil\b|\bcaffeine (?:pills?|tablets?|gum|powder)\b",
+    r"\bfat burners?\b|\bmelatonin\b|\bmagnesium\b|\bfish oil\b|\bomega\w*|\bcollagen\b",
+    r"\bashwagandha\b|\bnootropics?\b|\bgummies\b|\bcbd\b|\bkratom\b|\bbcaas?\b|\bzinc\b",
+    r"\biron tablets?\b|\bherbal (?:pills?|remed\w*)\b|\bstimulants?\b|\belectrolytes?\b",
+    r"\bcolostrum\b|\bprobiotics?\b|\bginseng\b|\btu?rmeric\b|\blion'?s mane\b|\bcapsules?\b",
 )
-MEDICAL = re.compile(
-    r"\bdos(?:e|es|age|ing)\b|\b\d+ ?mg\b|\bmilligrams?\b|\bmedications?\b|\bmedicines?\b|"
-    r"\bmeds\b|\bpills?\b|\btablets?\b|\binsulin\b|\bprescriptions?\b|\bantidepressants?\b|"
-    r"\bsleeping pills?\b|\bstatins?\b|\binhaler\b"
+MEDICAL = _any(
+    r"\bdos(?:e|es|age|ing)\b|\b\d+ ?mg\b|\bmilligrams?\b|\bmedications?\b|\bmedicines?\b",
+    r"\bmeds\b|\bpills?\b|\btablets?\b|\binsulin\b|\bprescriptions?\b|\bantidepressants?\b",
+    r"\bstatins?\b|\binhaler\b|\bibuprofen\b|\bparacetamol\b|\btylenol\b|\badvil\b|\baspirin\b",
+    r"\bantibiotics?\b|\bmetformin\b|\bozempic\b|\bwegovy\b|\bmounjaro\b|\bxanax\b",
+    r"\bpainkillers?\b|\bsleeping (?:pills?|tablets?)\b",
 )
-ALCOHOL = re.compile(
-    r"\balcohol\w*|\bwine\b|\bbeers?\b|\bcocktails?\b|\bvodka\b|\bwhiske?y\b|\bbooze\b|"
-    r"\bgin\b|\btequila\b|\brum\b|\bliquor\b|\bnightcap\b|\bdrunk\b|\bhangover\b"
+ALCOHOL = _any(
+    r"\balcohol\w*|\bwine\b|\bbeers?\b|\bcocktails?\b|\bvodka\b|\bwhiske?y\b|\bbooze\b",
+    r"\bgin\b|\btequila\b|\brum\b|\bliquor\b|\bnightcap\b|\bdrunk\b|\bhangover\b|\bpints?\b",
+    r"\bglass of (?:red|white|rose|bubbly|fizz)\b|\bprosecco\b|\blager\b|\bcider\b|\bchampagne\b",
+    r"\bhave a drink\b|\ba drink to\b|\b(?:cut (?:back|down) on|stop|quit|less) drinking\b",
+    r"\bdry january\b|\bsober\b|\bg and t\b|\bg t\b",
 )
 
 REPLIES: dict[SafetyKind, str] = {
@@ -82,9 +141,9 @@ def _words(text: str) -> str:
 
 def check(text: str) -> SafetyKind | None:
     """The first gate a text trips, most serious first; None when it is fine."""
-    if emergency(text):
-        return "emergency"
     words = _words(text)
+    if emergency(text) or SELF_HARM.search(words):
+        return "emergency"
     for kind, pattern in (
         ("eating_care", EATING_CARE),
         ("supplement", SUPPLEMENT),

@@ -1,0 +1,562 @@
+{
+ "blocked": [
+  {
+   "text": "I'll only have coffee till dinner",
+   "kind": "eating_care"
+  },
+  {
+   "text": "punish myself with a run for eating cake",
+   "kind": "eating_care"
+  },
+  {
+   "text": "run it off after pizza",
+   "kind": "eating_care"
+  },
+  {
+   "text": "work off the cake with a run",
+   "kind": "eating_care"
+  },
+  {
+   "text": "no dinner on weekdays",
+   "kind": "eating_care"
+  },
+  {
+   "text": "only one meal a day",
+   "kind": "eating_care"
+  },
+  {
+   "text": "OMAD",
+   "kind": "eating_care"
+  },
+  {
+   "text": "eat under 1200 a day",
+   "kind": "eating_care"
+  },
+  {
+   "text": "count my macros and stay under",
+   "kind": "eating_care"
+  },
+  {
+   "text": "skip breakfast",
+   "kind": "eating_care"
+  },
+  {
+   "text": "skipping brekkie",
+   "kind": "eating_care"
+  },
+  {
+   "text": "no lunch",
+   "kind": "eating_care"
+  },
+  {
+   "text": "go without food till evening",
+   "kind": "eating_care"
+  },
+  {
+   "text": "water fast",
+   "kind": "eating_care"
+  },
+  {
+   "text": "i want to be smaller",
+   "kind": "eating_care"
+  },
+  {
+   "text": "i feel disgusting after eating",
+   "kind": "eating_care"
+  },
+  {
+   "text": "i hate my body",
+   "kind": "eating_care"
+  },
+  {
+   "text": "hate how i look",
+   "kind": "eating_care"
+  },
+  {
+   "text": "I feel huge",
+   "kind": "eating_care"
+  },
+  {
+   "text": "i'm too big",
+   "kind": "eating_care"
+  },
+  {
+   "text": "lose a few kilos",
+   "kind": "eating_care"
+  },
+  {
+   "text": "slim down before the wedding",
+   "kind": "eating_care"
+  },
+  {
+   "text": "get skinny",
+   "kind": "eating_care"
+  },
+  {
+   "text": "sick it up after dinner",
+   "kind": "eating_care"
+  },
+  {
+   "text": "bring up my dinner",
+   "kind": "eating_care"
+  },
+  {
+   "text": "chew and spit",
+   "kind": "eating_care"
+  },
+  {
+   "text": "balance out a big meal with a long run",
+   "kind": "eating_care"
+  },
+  {
+   "text": "cancel out the biscuits with extra steps",
+   "kind": "eating_care"
+  },
+  {
+   "text": "run extra if I eat dessert",
+   "kind": "eating_care"
+  },
+  {
+   "text": "deserve to eat only if I exercise",
+   "kind": "eating_care"
+  },
+  {
+   "text": "burn off the calories",
+   "kind": "eating_care"
+  },
+  {
+   "text": "cheat day recovery by skipping meals",
+   "kind": "eating_care"
+  },
+  {
+   "text": "cut out carbs",
+   "kind": "eating_care"
+  },
+  {
+   "text": "cut carbs",
+   "kind": "eating_care"
+  },
+  {
+   "text": "no snacking after 6",
+   "kind": "eating_care"
+  },
+  {
+   "text": "stop snacking",
+   "kind": "eating_care"
+  },
+  {
+   "text": "eat smaller portions",
+   "kind": "eating_care"
+  },
+  {
+   "text": "smaller portions at dinner",
+   "kind": "eating_care"
+  },
+  {
+   "text": "eat half my usual lunch",
+   "kind": "eating_care"
+  },
+  {
+   "text": "lay off the sweets",
+   "kind": "eating_care"
+  },
+  {
+   "text": "cut sugar",
+   "kind": "eating_care"
+  },
+  {
+   "text": "go keto",
+   "kind": "eating_care"
+  },
+  {
+   "text": "low carb",
+   "kind": "eating_care"
+  },
+  {
+   "text": "I don't deserve dinner",
+   "kind": "eating_care"
+  },
+  {
+   "text": "starve it off",
+   "kind": "eating_care"
+  },
+  {
+   "text": "im fat",
+   "kind": "eating_care"
+  },
+  {
+   "text": "im so ugly and fat",
+   "kind": "eating_care"
+  },
+  {
+   "text": "shred for summer",
+   "kind": "eating_care"
+  },
+  {
+   "text": "get a flat stomach",
+   "kind": "eating_care"
+  },
+  {
+   "text": "only eat salad",
+   "kind": "eating_care"
+  },
+  {
+   "text": "just coffee for lunch",
+   "kind": "eating_care"
+  },
+  {
+   "text": "nothing but tea until dinner",
+   "kind": "eating_care"
+  },
+  {
+   "text": "ate too much so I'll walk it off",
+   "kind": "eating_care"
+  },
+  {
+   "text": "negative calories food",
+   "kind": "eating_care"
+  },
+  {
+   "text": "wanna get abs and lose belly fat",
+   "kind": "eating_care"
+  },
+  {
+   "text": "keep fasted till noon",
+   "kind": "eating_care"
+  },
+  {
+   "text": "16:8",
+   "kind": "eating_care"
+  },
+  {
+   "text": "water only till lunch",
+   "kind": "eating_care"
+  },
+  {
+   "text": "no breakfast no lunch",
+   "kind": "eating_care"
+  },
+  {
+   "text": "drink water instead of eating when hungry",
+   "kind": "eating_care"
+  },
+  {
+   "text": "ignore hunger",
+   "kind": "eating_care"
+  },
+  {
+   "text": "chewing gum to avoid snacking",
+   "kind": "eating_care"
+  },
+  {
+   "text": "take a laxative tea",
+   "kind": "eating_care"
+  },
+  {
+   "text": "I have chest pain right now",
+   "kind": "emergency"
+  },
+  {
+   "text": "my chest hurts and I can't breathe",
+   "kind": "emergency"
+  },
+  {
+   "text": "can't catch my breath",
+   "kind": "emergency"
+  },
+  {
+   "text": "i wanna kill myself",
+   "kind": "emergency"
+  },
+  {
+   "text": "i want to end it all",
+   "kind": "emergency"
+  },
+  {
+   "text": "I don't want to be alive",
+   "kind": "emergency"
+  },
+  {
+   "text": "everyone would be better off without me",
+   "kind": "emergency"
+  },
+  {
+   "text": "thinking about suicide",
+   "kind": "emergency"
+  },
+  {
+   "text": "im going to hurt myself",
+   "kind": "emergency"
+  },
+  {
+   "text": "I think I'm having a heart attack",
+   "kind": "emergency"
+  },
+  {
+   "text": "crushing pain in my chest",
+   "kind": "emergency"
+  },
+  {
+   "text": "i can not breathe",
+   "kind": "emergency"
+  },
+  {
+   "text": "self harm",
+   "kind": "emergency"
+  },
+  {
+   "text": "cutting myself",
+   "kind": "emergency"
+  },
+  {
+   "text": "sooo i wanna die",
+   "kind": "emergency"
+  },
+  {
+   "text": "unalive myself",
+   "kind": "emergency"
+  },
+  {
+   "text": "not wake up tomorrow",
+   "kind": "emergency"
+  },
+  {
+   "text": "pre workout",
+   "kind": "supplement"
+  },
+  {
+   "text": "c4 before the gym",
+   "kind": "supplement"
+  },
+  {
+   "text": "monster",
+   "kind": "supplement"
+  },
+  {
+   "text": "a nootropic stack",
+   "kind": "supplement"
+  },
+  {
+   "text": "Red Bull in the morning",
+   "kind": "supplement"
+  },
+  {
+   "text": "rockstar energy",
+   "kind": "supplement"
+  },
+  {
+   "text": "bang energy",
+   "kind": "supplement"
+  },
+  {
+   "text": "caffeine tablets",
+   "kind": "supplement"
+  },
+  {
+   "text": "no-doz",
+   "kind": "supplement"
+  },
+  {
+   "text": "adderall",
+   "kind": "supplement"
+  },
+  {
+   "text": "take a pre-wrkout",
+   "kind": "supplement"
+  },
+  {
+   "text": "preworkout",
+   "kind": "supplement"
+  },
+  {
+   "text": "energy drink",
+   "kind": "supplement"
+  },
+  {
+   "text": "zero sugar energy",
+   "kind": "supplement"
+  },
+  {
+   "text": "5 hour energy",
+   "kind": "supplement"
+  },
+  {
+   "text": "take vit D",
+   "kind": "supplement"
+  },
+  {
+   "text": "vitamin d",
+   "kind": "supplement"
+  },
+  {
+   "text": "probiotic",
+   "kind": "supplement"
+  },
+  {
+   "text": "electrolyte tablets",
+   "kind": "supplement"
+  },
+  {
+   "text": "protein shake after gym",
+   "kind": "supplement"
+  },
+  {
+   "text": "whey",
+   "kind": "supplement"
+  },
+  {
+   "text": "take my multi",
+   "kind": "supplement"
+  },
+  {
+   "text": "cold plunge and some lions mane",
+   "kind": "supplement"
+  },
+  {
+   "text": "matcha shot for focus",
+   "kind": "supplement"
+  },
+  {
+   "text": "modafinil",
+   "kind": "supplement"
+  },
+  {
+   "text": "Celsius",
+   "kind": "supplement"
+  },
+  {
+   "text": "take B12",
+   "kind": "supplement"
+  },
+  {
+   "text": "take omega threes",
+   "kind": "supplement"
+  },
+  {
+   "text": "cretine",
+   "kind": "supplement"
+  },
+  {
+   "text": "ginseng",
+   "kind": "supplement"
+  },
+  {
+   "text": "take a vitamin",
+   "kind": "supplement"
+  },
+  {
+   "text": "some tumeric capsules",
+   "kind": "supplement"
+  },
+  {
+   "text": "colostrum",
+   "kind": "supplement"
+  },
+  {
+   "text": "take ibuprofen",
+   "kind": "medical"
+  },
+  {
+   "text": "paracetamol before bed",
+   "kind": "medical"
+  },
+  {
+   "text": "take two tylenol",
+   "kind": "medical"
+  },
+  {
+   "text": "500 milligrams",
+   "kind": "medical"
+  },
+  {
+   "text": "antibiotics",
+   "kind": "medical"
+  },
+  {
+   "text": "metformin",
+   "kind": "medical"
+  },
+  {
+   "text": "ozempic",
+   "kind": "medical"
+  },
+  {
+   "text": "xanax",
+   "kind": "medical"
+  },
+  {
+   "text": "a glass of red with dinner",
+   "kind": "alcohol"
+  },
+  {
+   "text": "pint after work",
+   "kind": "alcohol"
+  },
+  {
+   "text": "have a drink to wind down",
+   "kind": "alcohol"
+  },
+  {
+   "text": "dry january",
+   "kind": "alcohol"
+  },
+  {
+   "text": "cut back on drinking",
+   "kind": "alcohol"
+  },
+  {
+   "text": "a G&T",
+   "kind": "alcohol"
+  },
+  {
+   "text": "prosecco",
+   "kind": "alcohol"
+  },
+  {
+   "text": "lager",
+   "kind": "alcohol"
+  },
+  {
+   "text": "whisky",
+   "kind": "alcohol"
+  },
+  {
+   "text": "sober October",
+   "kind": "alcohol"
+  }
+ ],
+ "allowed": [
+  "after my morning coffee",
+  "drink a glass of water",
+  "walk at a fast pace",
+  "add fruit at breakfast",
+  "stand during ads",
+  "take a 10 minute walk after lunch",
+  "add a handful of nuts to my afternoon",
+  "stretch before bed",
+  "eat a vegetable with dinner",
+  "have breakfast every day",
+  "drink tea after lunch",
+  "brush my teeth after coffee",
+  "do 10 squats while the kettle boils",
+  "go to bed at 10pm",
+  "call my mum on Sundays",
+  "read for 5 minutes",
+  "add a side salad to lunch",
+  "eat lunch away from my desk",
+  "take the stairs",
+  "walk the dog after work",
+  "have a cup of tea at 3pm",
+  "journal after dinner",
+  "drink water with each meal",
+  "put my phone away at night",
+  "do yoga on my lunch break",
+  "a fast walk to the bus stop",
+  "eat more protein at breakfast with eggs",
+  "fast forward through ads and stand up",
+  "stand when the phone rings",
+  "pill organiser by the sink? no, a water bottle by the sink",
+  "walk after dinner",
+  "eat an apple in the afternoon"
+ ]
+}

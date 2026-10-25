@@ -314,5 +314,675 @@
  {
   "text": "kind of, not really",
   "expected": null
+ },
+ {
+  "text": "yeah I did",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "ya",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "yis",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "aye",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "yea",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "yh",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "ye",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "totally",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "100%",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "I walked",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "did my walk",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "did the thing",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "all done",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "finished",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "nailed it",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "yes absolutely not a problem",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "yes no problem",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "yes, nothing stopped me",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "yes I didn't forget",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "I didn't skip it",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "didn't miss it",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "I did not miss today",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "not not today",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "no I did it",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "yes but only a bit",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "yes but not all of it",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "half",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "halfway through",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "sort of, no not really",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "no, not today",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "nope not today",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "didn't happen",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "not today sorry",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "nothing today",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "zero",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "too tired",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "no way",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "I was busy",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "skipped",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "skip today",
+  "expected": "unknown",
+  "set": "red_team"
+ },
+ {
+  "text": "I skipped it",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "don't remember",
+  "expected": "unknown",
+  "set": "red_team"
+ },
+ {
+  "text": "I can't remember",
+  "expected": "unknown",
+  "set": "red_team"
+ },
+ {
+  "text": "yes? no? idk",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "don't know if I did",
+  "expected": "unknown",
+  "set": "red_team"
+ },
+ {
+  "text": "kind of no",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "not really, but I did a bit",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "no problem, I did it",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "no worries, did it",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "no it was great",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "I did it no wait I didn't",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "yes I did it, not today though",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "yes tomorrow",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "I will tomorrow",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "yes I will do it later",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "not yet, later today",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "did it yesterday",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "I didn't do it yesterday but did today",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "no, I didn't skip",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "did not do it",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "didnt",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "didnt do it",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "i did not",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "i didnt manage",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "haven't yet",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "yes, I did half",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "did most of it",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "mostly",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "a bit",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "a little",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "some",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "not entirely",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "sort of yes",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "yeah nah",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "nah yeah",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "yes sure whatever",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "sure",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "sure, why not, I skipped it",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "ok",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "okay",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "fine",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "never",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "not once",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "not a chance",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "I really didn't want to but I did",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "did not want to, but did it",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "no excuses, did it",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "not bad",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "not bad, did it",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "not too bad, did half",
+  "expected": "partly",
+  "set": "red_team"
+ },
+ {
+  "text": "I wish",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "wish I had",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "should have",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "I should've but didn't",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "not today, but yes yesterday",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "hell yeah",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "hell no",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "yes!!",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "YEP DID IT",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "nope, did not",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "no, I skipped",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "i skipped it today",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "skipped today",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "yes pass",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "not feeling it",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "not feeling it so no",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "I would say yes",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "yes indeed",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "indeed",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "correct",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "negative",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "affirmative",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "si",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "oui",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "nee",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "the walk? yes",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "no walk",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "no walking today",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "no, it rained",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "it rained so no",
+  "expected": "not_today",
+  "set": "red_team"
+ },
+ {
+  "text": "rained",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "I did not forget",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "didn't forget",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "couldn't stop",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "I couldn't not do it",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "did it even though I didn't want to",
+  "expected": "done",
+  "set": "red_team"
+ },
+ {
+  "text": "nothing",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "do not remember doing it",
+  "expected": "unknown",
+  "set": "red_team"
+ },
+ {
+  "text": "I don't think so",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "don't think so",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "I didn't think so",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "I do not think I did",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "I did it I think",
+  "expected": null,
+  "set": "red_team"
+ },
+ {
+  "text": "I did not not do it",
+  "expected": null,
+  "set": "red_team"
  }
 ]

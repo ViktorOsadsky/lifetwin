@@ -28,8 +28,29 @@ BANNED_COPY = re.compile(
     r"lifespan|years? (?:added|longer)|calories|weight)\b",
     re.I,
 )
-# Known misses: an answer the reader leaves for Mochi to ask again. None so far.
-KNOWN_MISSES: set[str] = set()
+SAFETY_DATA = Path(__file__).parent / "data" / "habit_safety.json"
+# Known misses: answers the reader leaves for Mochi to ask again (safe, a little annoying).
+KNOWN_MISSES = {
+    "100%",
+    "I really didn't want to but I did",
+    "I walked",
+    "affirmative",
+    "did it even though I didn't want to",
+    "did not want to, but did it",
+    "do not remember doing it",
+    "don't know if I did",
+    "negative",
+    "not not today",
+    "not yet, later today",
+    "yis",
+    "zero",
+}
+# Safety lines the gates let through or block by design: matcha is a tea, and a pill
+# organiser mention gets the gentle medicines reply.
+SAFETY_KNOWN = {
+    "matcha shot for focus",
+    "pill organiser by the sink? no, a water bottle by the sink",
+}
 
 
 @pytest.fixture
@@ -96,7 +117,20 @@ def test_habit_answers_wrong_readings_are_zero_and_misses_are_known():
     print(f"habit answers: {len(passed)} pass, {len(misses)} miss, {len(wrong)} wrong")
     assert wrong == []
     assert set(misses) <= KNOWN_MISSES
-    assert len(cases) >= 70
+    assert len(cases) >= 200
+
+
+def test_red_team_safety_set():
+    data = json.loads(SAFETY_DATA.read_text())
+    caught = [case for case in data["blocked"] if check(case["text"]) == case["kind"]]
+    missed = [
+        case["text"]
+        for case in data["blocked"]
+        if check(case["text"]) != case["kind"] and case["text"] not in SAFETY_KNOWN
+    ]
+    blocked = [text for text in data["allowed"] if check(text) and text not in SAFETY_KNOWN]
+    print(f"habit safety: {len(caught)}/{len(data['blocked'])} caught, {len(blocked)} over-blocked")
+    assert missed == [] and blocked == []
 
 
 def test_skip_and_unknown_are_never_not_today(client):
