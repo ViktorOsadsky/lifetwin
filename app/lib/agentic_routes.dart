@@ -18,6 +18,7 @@ import 'wellness/plan_acceptance.dart';
 import 'wellness/today_card.dart';
 import 'checkin/check_in.dart';
 import 'checkin/checkin_client.dart';
+import 'checkin/checkin_reminders.dart' show ReminderCheckin, ReminderTapPort, reminderTapTarget;
 import 'checkin/consent_screens.dart';
 import 'checkin/consents.dart';
 import 'checkin/my_data_screen.dart';
@@ -155,6 +156,35 @@ class AgenticRoutes {
     bandService ??= BandService(repository: r);
     // The forecast follows what the check-ins and the stored days say.
     r.refresh();
+    _listenForReminderTaps(r);
+  }
+
+  /// Give it to `MaterialApp.navigatorKey`: a tapped reminder opens its check-in on this navigator.
+  final navigatorKey = GlobalKey<NavigatorState>();
+  bool _listening = false;
+
+  /// Reminder taps, while the app runs and the one that launched it, open their check-in ([openReminder]).
+  void _listenForReminderTaps(TwinRepository r) {
+    final port = r.reminders?.port;
+    if (_listening || port is! ReminderTapPort) return;
+    _listening = true;
+    (port as ReminderTapPort).listenForTaps((p) => openReminder(p).ignore()).then((launch) async {
+      if (launch == null) return;
+      // Cold start: the Room (and the check-in scope above it) is built first.
+      await WidgetsBinding.instance.endOfFrame;
+      await openReminder(launch);
+    }, onError: (Object e) => debugPrint('Reminder taps are not available: $e'));
+  }
+
+  /// A tapped check-in reminder: opens its check-in through [openCheckIn], as the Room's entry does (so
+  /// nothing without a saved profile). A weekly reminder opens the weekly only while the 7-day gate is open
+  /// ([TwinRepository.weeklyAvailable]), otherwise the daily. Other notifications just open the app.
+  Future<void> openReminder(String? payload) async {
+    final r = repo, context = navigatorKey.currentContext;
+    if (r == null || context == null || !context.mounted) return;
+    final target = reminderTapTarget(payload, weeklyOpen: r.weeklyAvailable);
+    if (target == null || CheckInScope.maybeOf(context) == null) return;
+    await openCheckIn(context, kind: target == ReminderCheckin.weekly ? CheckInKind.weekly : CheckInKind.quick);
   }
 
   /// Puts the check-in scope above the navigator, so every route can call `openCheckIn`.
@@ -377,7 +407,6 @@ class AgenticRoutes {
     consents?.setAiHelper(false);
     final r = repo;
     if (r != null) bandService = BandService(repository: r);
-    _lastPlan = null;
     planAcceptance.clear();
     _provider = null;
     _hub?.clear();
@@ -465,8 +494,25 @@ class AgenticRoutes {
     return answer;
   }
 
-  /// The latest plan the coach gave, so a later revision can say what changed.
-  DailyPlan? _lastPlan;
+  /// The latest plan the coach gave today, so a later revision can say what changed. Kept in the store
+  /// per local date ([TwinRepository.todayPlan]), so it survives a relaunch; Delete my data removes it.
+  DailyPlan? get _lastPlan {
+    final json = repo?.todayPlan;
+    if (json == null) return null;
+    try {
+      return DailyPlan.fromJson(json);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  Future<void> _keepPlan(DailyPlan plan) async {
+    try {
+      await repo?.saveTodayPlan(plan.json);
+    } catch (e) {
+      debugPrint('The plan could not be kept: $e');
+    }
+  }
 
   /// Items accepted on today's plan, kept on the phone per local date.
   final planAcceptance = PlanAcceptance()..load();
@@ -484,7 +530,7 @@ class AgenticRoutes {
       context['latest_revision_id'] = previous.revision;
     }
     final plan = await coach.plan(context);
-    _lastPlan = plan;
+    await _keepPlan(plan);
     String? line;
     for (final i in plan.items) {
       if (i['kind'] == 'encourage') line = i['message'] as String;
@@ -503,7 +549,7 @@ class AgenticRoutes {
         condensed: condensed,
         trailing: trailing,
         client: coach,
-        onPlan: (p) => _lastPlan = p,
+        onPlan: (p) => _keepPlan(p).ignore(),
         acceptance: planAcceptance,
         confirmedContext: () => coachContext(repo!),
         // No consent ask here: the card shows on Home, which can sit behind onboarding's last screen. The ask
@@ -523,7 +569,7 @@ class AgenticRoutes {
       MaterialPageRoute<void>(
         builder: (page) => DailyPlanScreen(
           client: coach,
-          onPlan: (p) async => _lastPlan = p,
+          onPlan: _keepPlan,
           acceptance: planAcceptance,
           onRemind: r.checkinSettings.remindersOn && r.reminders != null ? r.remindLater : null,
           confirmedContext: () => coachContext(r),
