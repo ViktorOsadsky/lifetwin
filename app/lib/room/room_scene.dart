@@ -234,7 +234,7 @@ class _RoomSceneState extends State<RoomScene> {
                 ..._twin(layout),
                 // On the bed, only the quilt edge tucks it in; behind the bed, the whole bed covers it.
                 if (sim.inBed)
-                  _layer(layout.fgBed, feather: 14)
+                  _layer(layout.fgBed, feather: 5)
                 else if (layout.covers(layout.footprints['bed']!, sim.pos))
                   _layer(layout.fgBedFull, key: const ValueKey('room-bed-over')),
                 // The table layer holds the bowl too: patch it again on top.
