@@ -90,19 +90,9 @@ void main() {
 
   const meta = AiProvider(id: 'muse', displayName: 'Meta Muse', configured: true);
 
-  testWidgets('My data opens from the Room pills; deleting wipes the phone, tells the shell and returns', (t) async {
+  testWidgets('My data opens from the Settings hub route; deleting wipes the phone, tells the shell and returns', (t) async {
     await pump(t);
-    // The temporary pill is offered by the routes' pills.
-    await t.pumpWidget(
-      MaterialApp(
-        theme: lifeTwinTheme(),
-        builder: routes.wrap,
-        home: Builder(
-          builder: (c) => Scaffold(body: Column(children: routes.pills(c))),
-        ),
-      ),
-    );
-    await t.tap(find.text('My data & privacy'));
+    routes.myData(home);
     await t.pumpAndSettle();
     expect(find.text('My data'), findsWidgets);
     await t.tap(find.text('Delete my data'));

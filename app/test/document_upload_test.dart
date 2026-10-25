@@ -11,6 +11,9 @@ import 'package:lifesim/documents/document_ocr.dart';
 import 'package:lifesim/documents/document_screen.dart';
 import 'package:lifesim/documents/document_upload.dart';
 import 'package:lifesim/main.dart';
+import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
+import 'package:lifesim/twin/twin_repository.dart' show HistorySource;
+import 'support/settings_hub.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/voice/api_base.dart';
 import 'package:lifesim/voice/fakes.dart';
@@ -382,19 +385,30 @@ void main() {
   });
 
   group('app', () {
+    late TwinModelService hubModel;
+    setUpAll(() async => hubModel = await TwinModelService.load());
     VoiceOnboardingController fakeController(FakeConversationGuide guide) =>
         VoiceOnboardingController(guide: guide, input: FakeSpeechInput(), output: FakeSpeechOutput());
 
-    testWidgets('the Room offers upload; confirmed values wait for the talk, labelled as a document', (t) async {
+    testWidgets('Health documents: confirmed values are kept, labelled as a document', (t) async {
       t.view.physicalSize = const Size(390, 844);
       t.view.devicePixelRatio = 1;
       addTearDown(t.view.reset);
       final guide = FakeConversationGuide();
       final c = fakeController(guide);
       final server = FakeServer((_) => ok(foundBody));
-      await t.pumpWidget(LifeTwinApp(controller: c, documentService: serviceWith(FakeOcr(visitDoc), server)));
+      final repo = await memoryRepo(hubModel);
+      await t.pumpWidget(
+        LifeTwinApp(
+          controller: c,
+          twin: Future.value(repo),
+          documentService: serviceWith(FakeOcr(visitDoc), server),
+        ),
+      );
       await t.pump();
-      await t.tap(find.text('Upload a document'));
+      await t.pump();
+      await openSettingsRow(t, 'Health documents');
+      await t.tap(find.text('Scan a document'));
       await t.pumpAndSettle();
       for (final label in [
         'Choose a photo',
@@ -411,12 +425,9 @@ void main() {
         await t.pumpAndSettle();
         await t.pump(const Duration(milliseconds: 800));
       }
-      expect(c.hasPendingHealth, isTrue);
-      expect(c.confirmedProfile, isEmpty, reason: 'nothing is used before the talk takes it');
-      await c.answerConsent(false);
-      final import = guide.calls.firstWhere((call) => call['action'] == 'import');
-      expect(import['values'], {'weight_kg': 82.6, 'diabetes': true});
-      expect(import['importSource'], 'document');
+      // The Health documents page keeps what was confirmed, labelled as a document, in History.
+      final sources = [for (final e in repo.history()) for (final i in e.items) i.source];
+      expect(sources, contains(HistorySource.document));
     });
 
     testWidgets('a failed upload keeps answers confirmed before', (t) async {

@@ -174,8 +174,7 @@ void main() {
       ),
     );
     await t.pumpAndSettle();
-    await t.ensureVisible(find.text('My history'));
-    await t.tap(find.text('My history'));
+    await t.tap(find.byTooltip('My history'));
     await t.pumpAndSettle();
     expect(find.byType(HistoryScreen), findsOneWidget);
     expect(find.text('Your history'), findsOneWidget);

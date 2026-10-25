@@ -143,7 +143,10 @@ class DocumentUploadService {
 
 /// What the person confirmed. Only [confirmed] values may be used.
 class DocumentImportResult {
-  const DocumentImportResult({this.confirmed = const [], this.toAsk = const []});
+  const DocumentImportResult({this.confirmed = const [], this.toAsk = const [], this.notices = const []});
+
+  /// The server's notices for this document (for example `conflicting_values`).
+  final List<String> notices;
 
   final List<DocumentCandidate> confirmed;
 
@@ -174,7 +177,9 @@ class DocumentImportResult {
 /// One question at a time: "Is this document about you?", then each candidate.
 /// No edits: "No" drops a value and Mochi asks for it instead.
 class DocumentConfirmation {
-  DocumentConfirmation(this.candidates);
+  DocumentConfirmation(this.candidates, {this.notices = const []});
+
+  final List<String> notices;
 
   final List<DocumentCandidate> candidates;
   bool? aboutYou;
@@ -201,7 +206,7 @@ class DocumentConfirmation {
   }
 
   DocumentImportResult get result {
-    if (aboutYou != true) return const DocumentImportResult();
+    if (aboutYou != true) return DocumentImportResult(notices: notices);
     final confirmed = <DocumentCandidate>[];
     final toAsk = <String>[];
     for (var i = 0; i < _answers.length; i++) {
@@ -212,7 +217,7 @@ class DocumentConfirmation {
         toAsk.add(c.field);
       }
     }
-    return DocumentImportResult(confirmed: confirmed, toAsk: toAsk);
+    return DocumentImportResult(confirmed: confirmed, toAsk: toAsk, notices: notices);
   }
 }
 

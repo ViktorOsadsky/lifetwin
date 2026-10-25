@@ -14,7 +14,6 @@ List<Widget> roomPills({
   required VoidCallback onExperiment,
   required VoidCallback onStillLearning,
   required VoidCallback onWellness,
-  VoidCallback? onMyData,
 }) {
   final repo = repository;
   if (repo == null) return const [];
@@ -55,14 +54,6 @@ List<Widget> roomPills({
               onTap: onExperiment,
             ),
     ),
-    // Temporary entry until the Settings hub lands.
-    if (onMyData != null)
-      RoomPill(
-        icon: Icons.lock_outline_rounded,
-        label: 'My data & privacy',
-        semantics: 'My data and privacy',
-        onTap: onMyData,
-      ),
   ];
 }
 

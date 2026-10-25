@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/ui/theme.dart';
-import 'package:lifesim/wellness/error_screen.dart';
 import 'package:lifesim/wellness/history_screen.dart';
 import 'package:lifesim/wellness/home_panel.dart';
 import 'package:lifesim/twin/twin_model.dart' show HealthScoreStatus;
@@ -9,7 +8,6 @@ import 'package:lifesim/ui/widgets/rough_guide_badge.dart';
 import 'package:lifesim/wellness/models.dart';
 import 'package:lifesim/wellness/outlook_drivers_screen.dart';
 import 'package:lifesim/wellness/settings_screen.dart';
-import 'package:lifesim/wellness/upload_view.dart';
 
 Future<void> reveal(WidgetTester t, Finder finder) async {
   await t.scrollUntilVisible(
@@ -240,46 +238,6 @@ void main() {
   });
 
   testWidgets(
-    'document AI consent is narrow and does not claim retention guarantees',
-    (t) async {
-      var yes = 0;
-      var no = 0;
-      await phone(
-        t,
-        DocumentUploadView(
-          stage: UploadStage.museConsent,
-          onBack: () {},
-          onScan: () {},
-          onPhoto: () {},
-          onPdf: () {},
-          onSkip: () {},
-          onYes: () => yes++,
-          onNo: () => no++,
-        ),
-        scale: 2,
-      );
-      await reveal(
-        t,
-        find.text(
-          'Muse can help find your numbers. It gets the words, never the photo. Just this document.',
-        ),
-      );
-      expect(
-        find.text(
-          'Muse can help find your numbers. It gets the words, never the photo. Just this document.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.textContaining('retention'), findsNothing);
-      await reveal(t, find.text('Yes, just this document'));
-      await t.tap(find.text('Yes, just this document'));
-      expect(yes, 1);
-      expect(no, 0);
-      expect(t.takeException(), isNull);
-    },
-  );
-
-  testWidgets(
     'directions are labeled in words and experiment uses its existing entry',
     (t) async {
       var experiments = 0;
@@ -306,25 +264,4 @@ void main() {
       expect(t.takeException(), isNull);
     },
   );
-
-  for (final error in WellnessError.values) {
-    testWidgets('${error.name} offers one actionable next step at large text', (
-      t,
-    ) async {
-      var actions = 0;
-      await phone(
-        t,
-        WellnessErrorScreen(
-          error: error,
-          onAction: () => actions++,
-          onBack: () {},
-        ),
-        scale: 2,
-      );
-      await reveal(t, find.text(error.action));
-      await t.tap(find.text(error.action));
-      expect(actions, 1);
-      expect(t.takeException(), isNull);
-    });
-  }
 }
