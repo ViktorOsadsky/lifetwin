@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
@@ -12,6 +14,30 @@ class Rig {
   final input = FakeSpeechInput();
   final output = FakeSpeechOutput();
   late final VoiceOnboardingController c;
+}
+
+class HeldFinishInput extends FakeSpeechInput {
+  final finished = Completer<String>();
+
+  @override
+  Future<String> finish() {
+    finishes++;
+    listening = false;
+    return finished.future;
+  }
+}
+
+class HeldCancelInput extends FakeSpeechInput {
+  final cancellations = <Completer<void>>[];
+
+  @override
+  Future<void> cancel() async {
+    cancels++;
+    final gate = Completer<void>();
+    cancellations.add(gate);
+    await gate.future;
+    listening = false;
+  }
 }
 
 void main() {
@@ -414,5 +440,209 @@ void main() {
     await r.c.setAiHelper(false);
     await r.c.submitTyped('70');
     expect(r.guide.calls.last['aiHelper'], isFalse);
+  });
+
+  group('Delete my data resets the conversation boundary', () {
+    for (final source in ['apple_health', 'document']) {
+      test('queued $source values cannot survive reset and a new consent/start', () async {
+        final r = Rig();
+        addTearDown(r.c.dispose);
+        if (source == 'apple_health') {
+          await r.c.importHealth({'moderate_recreation_min_week': 30});
+        } else {
+          await r.c.importDocument({'height_cm': 170});
+        }
+        expect(r.c.hasPendingHealth, isTrue);
+        expect(r.c.lastImport, isNotNull);
+        r.c.resetConversation();
+        expect(r.c.hasPendingHealth, isFalse);
+        expect(r.c.lastImport, isNull);
+        expect(r.c.phase, VoicePhase.consent);
+        await r.c.answerConsent(false);
+        expect(r.guide.calls.map((call) => call['action']), ['start']);
+        expect(r.c.confirmedProfile, isEmpty);
+      });
+    }
+
+    test('a completed session restarts at consent without profile or prior helper choice', () async {
+      final r = Rig();
+      addTearDown(r.c.dispose);
+      await r.c.answerConsent(false, aiHelper: true);
+      await r.c.submitTyped('70');
+      await r.c.confirm();
+      expect(r.c.phase, VoicePhase.done);
+      r.c.resetConversation();
+      expect(r.c.phase, VoicePhase.consent);
+      expect(r.c.aiHelper, isFalse);
+      expect(r.c.confirmedProfile, isEmpty);
+      await r.c.answerConsent(false);
+      expect(r.guide.calls.last['action'], 'start');
+      expect(r.guide.calls.last['state'], isNull);
+      expect(r.guide.calls.last['aiHelper'], isFalse);
+    });
+
+    for (final outcome in ['success', 'failure', 'rejection']) {
+      test('an in-flight import $outcome cannot restore deleted state or affect a new request', () async {
+        final r = Rig();
+        addTearDown(r.c.dispose);
+        await r.c.answerConsent(false);
+        final gate = r.guide.gate = Completer<void>();
+        final oldImport = r.c.importHealth({'moderate_recreation_min_week': 30});
+        await Future<void>.delayed(Duration.zero);
+        expect(r.c.phase, VoicePhase.interpreting);
+        r.c.resetConversation();
+        r.guide.gate = null;
+        await r.c.answerConsent(false);
+        final fresh = r.c.turn;
+        expect(fresh, isNotNull);
+        if (outcome == 'failure') r.guide.failNext = true;
+        if (outcome == 'rejection') r.guide.rejectNext = 'old rejected value';
+        gate.complete();
+        expect(await oldImport, isFalse);
+        expect(identical(r.c.turn, fresh), isTrue);
+        expect(r.c.confirmedProfile, isEmpty);
+        expect(r.c.notice, isNull);
+        expect(r.c.lastImport, isNull);
+        expect(r.c.canRetry, isFalse);
+        expect(r.c.phase, VoicePhase.idle);
+      });
+    }
+
+    for (final failure in [false, true]) {
+      test('a pending microphone finish after reset cannot submit old text (failure=$failure)', () async {
+        final guide = FakeConversationGuide();
+        final input = HeldFinishInput();
+        final c = VoiceOnboardingController(guide: guide, input: input, output: FakeSpeechOutput());
+        addTearDown(c.dispose);
+        await c.answerConsent(true);
+        await c.startTalk();
+        final oldFinish = c.stopTalk();
+        await Future<void>.delayed(Duration.zero);
+        expect(input.finishes, 1);
+        c.resetConversation();
+        await c.answerConsent(false);
+        final count = guide.calls.length;
+        if (failure) {
+          input.finished.completeError(const VoiceUnavailableException());
+        } else {
+          input.finished.complete('I am 70');
+        }
+        await oldFinish;
+        expect(guide.calls.length, count);
+        expect(c.confirmedProfile, isEmpty);
+        expect(c.caption, isEmpty);
+        expect(c.notice, isNull);
+        expect(c.phase, VoicePhase.idle);
+      });
+    }
+
+    test('old microphone callbacks and held speech cannot leave consent or restart listening', () async {
+      final r = Rig();
+      addTearDown(r.c.dispose);
+      await r.c.answerConsent(true);
+      await r.c.startTalk();
+      final oldCaption = r.input.onCaption!;
+      final oldDrop = r.input.onDropped!;
+      r.c.resetConversation();
+      await Future<void>.delayed(Duration.zero);
+      oldCaption('deleted words');
+      oldDrop(const VoiceFailure('old connection'));
+      expect(r.input.listening, isFalse);
+      expect(r.c.caption, isEmpty);
+      expect(r.c.phase, VoicePhase.consent);
+      expect(r.c.notice, isNull);
+      r.output.holdSpeech = true;
+      final speaking = r.c.answerConsent(true);
+      await Future<void>.delayed(Duration.zero);
+      expect(r.c.phase, VoicePhase.speaking);
+      r.c.resetConversation();
+      await speaking;
+      expect(r.output.speaking, isFalse);
+      expect(r.c.phase, VoicePhase.consent);
+      expect(r.c.turn, isNull);
+    });
+
+    test('reset drops a failed-request retry instead of resending deleted answers', () async {
+      final r = Rig();
+      addTearDown(r.c.dispose);
+      await r.c.answerConsent(false);
+      r.guide.failNext = true;
+      await r.c.submitTyped('70');
+      expect(r.c.canRetry, isTrue);
+      r.c.resetConversation();
+      expect(r.c.canRetry, isFalse);
+      final count = r.guide.calls.length;
+      await r.c.retry();
+      expect(r.guide.calls.length, count);
+      expect(r.c.phase, VoicePhase.consent);
+    });
+
+    for (final granted in [false, true]) {
+      test('an old microphone permission answer cannot change the new session (granted=$granted)', () async {
+        final r = Rig();
+        addTearDown(r.c.dispose);
+        await r.c.answerConsent(true);
+        final permission = r.input.permission = Completer<bool>();
+        final oldStart = r.c.startTalk();
+        await Future<void>.delayed(Duration.zero);
+        r.c.resetConversation();
+        await r.c.answerConsent(false);
+        permission.complete(granted);
+        await oldStart;
+        expect(r.input.starts, 0);
+        expect(r.input.listening, isFalse);
+        expect(r.c.phase, VoicePhase.idle);
+        expect(r.c.typing, isTrue);
+        expect(r.c.voiceUsable, isFalse);
+        expect(r.c.notice, isNull);
+      });
+    }
+
+    test('an old response cannot clear a fresh pending request or accept an extra reply', () async {
+      final r = Rig();
+      addTearDown(r.c.dispose);
+      await r.c.answerConsent(false);
+      final oldGate = r.guide.gate = Completer<void>();
+      final oldReply = r.c.submitTyped('70');
+      await Future<void>.delayed(Duration.zero);
+      r.c.resetConversation();
+      final freshGate = r.guide.gate = Completer<void>();
+      final freshStart = r.c.answerConsent(false);
+      await Future<void>.delayed(Duration.zero);
+      oldGate.complete();
+      await oldReply;
+      expect(r.c.phase, VoicePhase.interpreting);
+      expect(r.c.turn, isNull);
+      final count = r.guide.calls.length;
+      await r.c.submitTyped('deleted reply');
+      expect(r.guide.calls.length, count);
+      freshGate.complete();
+      await freshStart;
+      expect(r.c.phase, VoicePhase.idle);
+      expect(r.c.confirmedProfile, isEmpty);
+    });
+
+    test('repeated resets wait for earlier audio cleanup before starting fresh voice', () async {
+      final guide = FakeConversationGuide();
+      final input = HeldCancelInput();
+      final output = FakeSpeechOutput();
+      final c = VoiceOnboardingController(guide: guide, input: input, output: output);
+      addTearDown(c.dispose);
+      c.resetConversation();
+      c.resetConversation();
+      expect(input.cancellations, hasLength(2));
+      final freshStart = c.answerConsent(true);
+      input.cancellations[1].complete();
+      await Future<void>.delayed(Duration.zero);
+      expect(guide.calls, isEmpty);
+      expect(output.spoken, isEmpty);
+      expect(c.phase, VoicePhase.consent);
+      input.cancellations[0].complete();
+      await freshStart;
+      expect(guide.calls.single['action'], 'start');
+      expect(output.spoken, ['How old are you?']);
+      await c.startTalk();
+      expect(input.listening, isTrue);
+    });
   });
 }
