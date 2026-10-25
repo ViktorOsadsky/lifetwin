@@ -9,7 +9,7 @@ Result and files changed:
 - Customize now offers Twin name above the existing appearance choices. Use name previews a trimmed nickname of up to 24 characters; Save look commits it through the existing cosmetic persistence path. Cancel discards the dialog edit; Back from Customize discards the draft. A blank name restores My twin. No real name is requested or included in a health profile, history event or API request.
 - Existing name-aware banners and twin displays read the saved appearance. The fixed mascot guide name, Mochi, continues to identify the guide.
 
-PR URL / merge state / merge commit: [#210](https://github.com/ViktorOsadsky/lifetwin/pull/210), open pending repository checks and backend deployment [#204](https://github.com/ViktorOsadsky/lifetwin/pull/204). No merge commit yet. This change does not deploy or replace the backend.
+PR URL / merge state / merge commit: [#210](https://github.com/ViktorOsadsky/lifetwin/pull/210) records the final merge state and commit. Backend deployment [#204](https://github.com/ViktorOsadsky/lifetwin/pull/204) merged at `4400c6b`; this branch integrates that main revision and preserves its API clients, document context and the owners' microphone/PDF consent changes. This change does not deploy or replace the backend.
 
 Contract or model versions affected: no HTTP or model change. Existing cosmetic `twin.name` is used; the local repository gains `continueAsGuest()` and the optional store preference. See `app/lib/README-model.md`.
 
@@ -21,4 +21,4 @@ Follow-up visual review replaced the nickname field's floating label with a fixe
 
 Known limits / blockers: no account sync or remote login is implemented or implied. Native physical-iPhone and VoiceOver acceptance remain separate; Daniel owns the physical test device. The UI retains the existing light painted-card theme under either system appearance.
 
-Next dependent task: merge after backend deployment checks and the UI PR's applicable repository checks pass; run the guest → consent → intake flow on the owner's test phone.
+Next dependent task: run the guest → consent → intake flow on the owner's test phone after the UI PR's applicable repository checks and normal merge.
