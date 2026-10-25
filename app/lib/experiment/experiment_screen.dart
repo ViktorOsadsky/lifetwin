@@ -125,7 +125,10 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
         ),
       };
     }
-    return ListenableBuilder(listenable: exp, builder: (context, _) => _hub(context, exp));
+    return ListenableBuilder(
+      listenable: exp,
+      builder: (context, _) => _hub(context, exp),
+    );
   }
 
   List<ExperimentLever> _levers(TwinExperiment exp) => [
@@ -159,7 +162,12 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
             divider: true,
             twins: [
               TwinSlot(state: today, x: 0.27, height: 160),
-              TwinSlot(state: whatIfTwinState(today, display), x: 0.73, halo: moved.isNotEmpty, height: 160),
+              TwinSlot(
+                state: whatIfTwinState(today, display),
+                x: 0.73,
+                halo: moved.isNotEmpty,
+                height: 160,
+              ),
             ],
             overlay: const Stack(
               children: [
@@ -172,7 +180,9 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
           ResultCard(
             display: display,
             leverName: _name,
-            summary: counted > 0 && display.hasNumber ? _together(counted) : null,
+            summary: counted > 0 && display.hasNumber
+                ? _together(counted)
+                : null,
             celebrate: true,
           ),
           if (widget.onIdeas != null) ...[
@@ -188,12 +198,23 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: Semantics(header: true, child: Text(ExperimentCopy.tryAChange, style: LtText.display(28))),
+                      child: Semantics(
+                        header: true,
+                        child: Text(
+                          ExperimentCopy.tryAChange,
+                          style: LtText.display(28),
+                        ),
+                      ),
                     ),
                     if (moved.isNotEmpty)
                       Text(
-                        moved.length == 1 ? '1 change' : '${moved.length} changes',
-                        style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary),
+                        moved.length == 1
+                            ? '1 change'
+                            : '${moved.length} changes',
+                        style: LtText.body(
+                          weight: FontWeight.w700,
+                          color: LtColors.secondary,
+                        ),
                       ),
                   ],
                 ),
@@ -222,11 +243,17 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
     );
   }
 
-  static String _together(int n) => n == 1 ? 'This change' : 'All $n changes together';
+  static String _together(int n) =>
+      n == 1 ? 'This change' : 'All $n changes together';
 
   String _name(String id) => LeverCopy.of(id)?.full ?? 'This change';
 
-  void _openLever(BuildContext context, TwinExperiment exp, String id, {double? preset}) => Navigator.of(context).push(
+  void _openLever(
+    BuildContext context,
+    TwinExperiment exp,
+    String id, {
+    double? preset,
+  }) => Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (_) => LeverDetailScreen(
         repository: widget.repository,
@@ -239,16 +266,17 @@ class _ExperimentScreenState extends State<ExperimentScreen> {
     ),
   );
 
-  void _open(BuildContext context, TwinExperiment exp) => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => SideBySideScreen(
-        repository: widget.repository,
-        whatIf: exp,
-        appearance: widget.appearance,
-        open: widget.openUrl,
-      ),
-    ),
-  );
+  void _open(BuildContext context, TwinExperiment exp) =>
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => SideBySideScreen(
+            repository: widget.repository,
+            whatIf: exp,
+            appearance: widget.appearance,
+            open: widget.openUrl,
+          ),
+        ),
+      );
 }
 
 /// "Ideas for you": a row on the hub that opens the ideas list.
@@ -275,10 +303,23 @@ class _IdeasRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.lightbulb_outline_rounded, size: 28, color: LtColors.ink),
+            const Icon(
+              Icons.lightbulb_outline_rounded,
+              size: 28,
+              color: LtColors.ink,
+            ),
             const SizedBox(width: 12),
-            Expanded(child: WholeWordText('Ideas for you', style: LtText.body(size: 18, weight: FontWeight.w700))),
-            const Icon(Icons.chevron_right_rounded, size: 28, color: LtColors.ink),
+            Expanded(
+              child: WholeWordText(
+                'Ideas for you',
+                style: LtText.body(size: 18, weight: FontWeight.w700),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 28,
+              color: LtColors.ink,
+            ),
           ],
         ),
       ),

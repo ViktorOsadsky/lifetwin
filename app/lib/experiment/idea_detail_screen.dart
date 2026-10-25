@@ -50,7 +50,12 @@ class IdeaDetailScreen extends StatelessWidget {
       dock: onTry == null
           ? null
           : Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, 14 + MediaQuery.paddingOf(context).bottom),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                14 + MediaQuery.paddingOf(context).bottom,
+              ),
               child: LipButton(
                 label: 'Try it with my twin',
                 icon: Icons.eco_outlined,
@@ -72,35 +77,60 @@ class IdeaDetailScreen extends StatelessWidget {
                   color: const Color(0xFFE3F5EC),
                   border: Border.all(color: LtColors.control, width: 2),
                 ),
-                child: Icon(copy?.icon ?? Icons.eco_outlined, size: 30, color: LtColors.ink),
+                child: Icon(
+                  copy?.icon ?? Icons.eco_outlined,
+                  size: 30,
+                  color: LtColors.ink,
+                ),
               ),
               const SizedBox(width: 12),
-              Expanded(child: Semantics(header: true, child: WholeWordText(idea.title, style: LtText.display(28)))),
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: WholeWordText(idea.title, style: LtText.display(28)),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
           WholeWordText.rich(
             TextSpan(
               children: [
-                TextSpan(text: 'Why? ', style: LtText.body(size: 18, weight: FontWeight.w700)),
+                TextSpan(
+                  text: 'Why? ',
+                  style: LtText.body(size: 18, weight: FontWeight.w700),
+                ),
                 TextSpan(text: why, style: LtText.body(size: 18)),
               ],
             ),
           ),
           const SizedBox(height: 12),
-          WholeWordText(basedOn(idea), style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary)),
+          WholeWordText(
+            basedOn(idea),
+            style: LtText.body(
+              weight: FontWeight.w700,
+              color: LtColors.secondary,
+            ),
+          ),
           if (word != null) ...[
             const SizedBox(height: 14),
             Semantics(
               container: true,
-              label: 'What the model says: $word. $effectNote. Linked, not proven.',
+              label:
+                  'What the model says: $word. $effectNote. Linked, not proven.',
               excludeSemantics: true,
               child: Sheet(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    WholeWordText('What the model says', style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary)),
+                    WholeWordText(
+                      'What the model says',
+                      style: LtText.body(
+                        weight: FontWeight.w700,
+                        color: LtColors.secondary,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -115,9 +145,13 @@ class IdeaDetailScreen extends StatelessWidget {
                     WholeWordText.rich(
                       TextSpan(
                         children: [
-                          TextSpan(text: 'Linked, not proven. ', style: LtText.body(weight: FontWeight.w700)),
                           TextSpan(
-                            text: 'See your own numbers in Try it with my twin.',
+                            text: 'Linked, not proven. ',
+                            style: LtText.body(weight: FontWeight.w700),
+                          ),
+                          TextSpan(
+                            text:
+                                'See your own numbers in Try it with my twin.',
                             style: LtText.body(color: LtColors.secondary),
                           ),
                         ],
@@ -127,7 +161,10 @@ class IdeaDetailScreen extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: TextButton(
                         onPressed: () => showEffectSheet(context, idea.effect!),
-                        child: Text('What does this mean?', style: LtText.body(weight: FontWeight.w700)),
+                        child: Text(
+                          'What does this mean?',
+                          style: LtText.body(weight: FontWeight.w700),
+                        ),
                       ),
                     ),
                   ],
@@ -138,7 +175,8 @@ class IdeaDetailScreen extends StatelessWidget {
           if (url != null) ...[
             const SizedBox(height: 14),
             SourceLink(
-              label: '${idea.sourceTitle ?? SourceLink.siteName(url)}${idea.sourceDomain.isEmpty ? '' : ' (${idea.sourceDomain})'}',
+              label:
+                  '${idea.sourceTitle ?? SourceLink.siteName(url)}${idea.sourceDomain.isEmpty ? '' : ' (${idea.sourceDomain})'}',
               url: url,
               open: open,
             ),

@@ -100,7 +100,13 @@ class OutlookDriversScreen extends StatelessWidget {
       LipButton(label: 'Explore an experiment', onTap: onExperiment),
       if (onIdeas != null) ...[
         const SizedBox(height: 12),
-        LipButton(label: 'See ideas', kind: LipKind.secondary, height: 56, fontSize: 20, onTap: onIdeas),
+        LipButton(
+          label: 'See ideas',
+          kind: LipKind.secondary,
+          height: 56,
+          fontSize: 20,
+          onTap: onIdeas,
+        ),
       ],
     ],
   );

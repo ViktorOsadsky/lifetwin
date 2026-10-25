@@ -64,7 +64,10 @@ class EffectMeter extends StatelessWidget {
               decoration: BoxDecoration(
                 color: i < on ? LtColors.teal : LtColors.paper,
                 borderRadius: BorderRadius.circular(3),
-                border: Border.all(color: i < on ? const Color(0xFF17594A) : LtColors.control, width: 2),
+                border: Border.all(
+                  color: i < on ? const Color(0xFF17594A) : LtColors.control,
+                  width: 2,
+                ),
               ),
             ),
           ],
@@ -112,7 +115,11 @@ class EffectCue extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(word, style: LtText.body(weight: FontWeight.w700)),
                   const SizedBox(width: 8),
-                  const Icon(Icons.info_outline_rounded, size: 20, color: LtColors.secondary),
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 20,
+                    color: LtColors.secondary,
+                  ),
                 ],
               ),
             ),
@@ -150,7 +157,9 @@ class IdeaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final copy = idea.leverId == null ? null : LeverCopy.of(idea.leverId!);
-    final iconSize = MediaQuery.textScalerOf(context).scale(1) >= 1.5 ? 56.0 : 48.0;
+    final iconSize = MediaQuery.textScalerOf(context).scale(1) >= 1.5
+        ? 56.0
+        : 48.0;
     return Semantics(
       container: true,
       explicitChildNodes: true,
@@ -159,7 +168,10 @@ class IdeaCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: LtColors.paper,
           borderRadius: BorderRadius.circular(LtRadii.panel),
-          border: Border.all(color: LtColors.container, width: LtBorders.container),
+          border: Border.all(
+            color: LtColors.container,
+            width: LtBorders.container,
+          ),
           boxShadow: LtShadows.soft,
         ),
         child: Material(
@@ -185,13 +197,30 @@ class IdeaCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: const Color(0xFFE3F5EC),
-                            border: Border.all(color: LtColors.control, width: 2),
+                            border: Border.all(
+                              color: LtColors.control,
+                              width: 2,
+                            ),
                           ),
-                          child: Icon(copy?.icon ?? Icons.eco_outlined, size: iconSize * 0.54, color: LtColors.ink),
+                          child: Icon(
+                            copy?.icon ?? Icons.eco_outlined,
+                            size: iconSize * 0.54,
+                            color: LtColors.ink,
+                          ),
                         ),
                         const SizedBox(width: 12),
-                        Expanded(child: WholeWordText(idea.title, style: LtText.display(22))),
-                        if (!top) const Icon(Icons.chevron_right_rounded, size: 28, color: LtColors.ink),
+                        Expanded(
+                          child: WholeWordText(
+                            idea.title,
+                            style: LtText.display(22),
+                          ),
+                        ),
+                        if (!top)
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 28,
+                            color: LtColors.ink,
+                          ),
                       ],
                     ),
                   ),
@@ -202,7 +231,10 @@ class IdeaCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   WholeWordText(why, style: LtText.body(size: 18)),
                   const SizedBox(height: 4),
-                  WholeWordText(basedOn(idea), style: LtText.body(color: LtColors.secondary)),
+                  WholeWordText(
+                    basedOn(idea),
+                    style: LtText.body(color: LtColors.secondary),
+                  ),
                   if (onTry != null) ...[
                     const SizedBox(height: 8),
                     if (top)
