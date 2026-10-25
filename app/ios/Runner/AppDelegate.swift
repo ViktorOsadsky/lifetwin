@@ -19,6 +19,9 @@ import UIKit
       let channel = FlutterMethodChannel(name: "lifetwin/protected_store", binaryMessenger: registrar.messenger())
       channel.setMethodCallHandler(ProtectedStore.handle)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "BandFileBridge") {
+      BandFileBridge.register(with: registrar.messenger())
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DocumentScanner") {
       documentScanner = DocumentScanner.register(with: registrar.messenger())
     }
