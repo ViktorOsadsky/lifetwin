@@ -1,6 +1,6 @@
 # LifeTwin submission draft
 
-Updated October 24, 2026 for [#76](https://github.com/ViktorOsadsky/lifetwin/issues/76). Writing only: this does not publish to Devpost, create slides, change sharing, or claim the final demo was rehearsed. Daniel owns final names, stage timings/ratings and submission. The earlier draft lived on the design-handoff branch; this version brings the updated copy onto main.
+Updated October 24, 2026 for [#76](https://github.com/ViktorOsadsky/lifetwin/issues/76). Writing only: this does not publish to Devpost, create slides, change sharing, or claim the final demo was rehearsed. The user supplied the final public team names and Devpost handles below; Daniel owns stage timings/ratings and final submission. The earlier draft lived on the design-handoff branch; this version brings the updated copy onto main.
 
 Sources of truth: [approved design handoff](design/agentic/agentic-handoff.md), [current demo script](demo-script.md), [packaged model card](../model_handoff/lifetwin_on_device/MODEL_CARD.md), [app model integration](../app/lib/README-model.md), [one-time lifespan method and owner override](lifespan-estimate.md) and [backend guide](../server/README.md). Design approvals describe the intended experience; the running demo must establish which screens are ready.
 
@@ -28,7 +28,7 @@ Health documents produce dated candidates for review; a lab reading is not autom
 
 ### How we built it
 
-The app is Flutter/Dart, with locally bundled character art, Lottie motion, native iOS integrations and an on-device Cox survival model. Profile/history storage and model inference run on the phone; a FastAPI/Pydantic server supports conversations, extraction and educational planning. [App dependencies](../app/pubspec.yaml), [model package](../model_handoff/lifetwin_on_device/README.md), [backend guide](../server/README.md)
+The app is Flutter/Dart, with locally bundled character art, Lottie motion, native iOS integrations and an on-device Cox survival model. Profile/history storage and model inference run on the phone; a FastAPI/Pydantic server supports conversations, extraction and educational planning. [App dependencies](../app/pubspec.yaml), [bundled app model package](../app/packages/lifetwin_on_device/README.md), [backend guide](../server/README.md)
 
 Muse is the current outside-AI option. Claude is reserved behind the same provider-consent interface and is not wired yet. The app names the configured provider and requests that provider's consent. Typing and deterministic fallbacks cover supported paths when outside AI is declined or unavailable. Provider keys stay server-side, and raw band records are not sent to outside AI. We make no unverified provider retention or training promise. [Provider adapters](../server/lifetwin/personalize/providers.py), [consent and data controls](../MASTER_PLAN.md)
 
@@ -74,22 +74,22 @@ We committed screen references, source HTML and sprite layers so implementers co
 
 Agents implemented the Flutter experience and its data adapters, while the packaged Cox model supplies supported outlooks on-device. FastAPI handles conversations and planning; optional outside-AI wording requires consent. Unit, widget and native integration checks cover data confirmation, game-health separation and failure paths. Code moves through short branches and checked PRs. Final on-device demonstration belongs to Daniel; neither a screen mockup nor synthetic acceptance data establishes a measured user outcome. [Development rules](../AGENTS.md), [demo dependencies](demo-script.md)
 
-## Team — Daniel to confirm
+## Team
 
-Do not infer a Devpost team list from GitHub assignees or commit authors. Confirm public names, handles, membership and contributions with Daniel; the rows below are placeholders, not assignments.
+Public names, membership and Devpost handles were supplied by the user on October 24, including explicit confirmation of Shivam's hardware contribution. The other summaries describe documented work, rather than assigning new responsibilities: [product-refinement meeting](meetings/2026-10-23-product-refinement.md), [model track](tracks/A-data-model.md) and [design handoff](design/agentic/agentic-handoff.md).
 
 | Public name | Devpost handle | Contribution |
 |---|---|---|
-| [fill in] | [fill in] | [fill in] |
-| [fill in] | [fill in] | [fill in] |
-| [fill in] | [fill in] | [fill in] |
-| [fill in] | [fill in] | [fill in] |
+| Justin Wu | [@justin-wu-ok](https://devpost.com/justin-wu-ok) | Product vision refinement |
+| Viktor Osadsky | [@viktor-osadsky](https://devpost.com/viktor-osadsky) | Survival model and model evaluation |
+| Daniel Qi | [@d-q222](https://devpost.com/d-q222) | Flutter app, UI and design integration |
+| Shivam Vishal Patel | [@shivamp795](https://devpost.com/shivamp795) | Activity-band hardware prototyping |
 
 ## Final review for Daniel
 
-- Fill team membership/contributions, stage minutes and ratings; remove unused team rows.
+- Review the contribution summaries with the team and fill stage minutes and ratings.
 - Confirm the submission age wording: #76 requests the 30–85 rough-guide frame, while current app code also extrapolates ages 18–29. Neither extends the model's checked 35–79 range.
-- Check every demo step against the merged app. The demo script includes pending-screen fallbacks; the band handoff separately records simulator Inbox success and remaining Files/Share/device acceptance.
+- Check every demo step against the merged app. The demo script includes pending-screen fallbacks; the band handoff separately records simulator Inbox, real Files-picker and cold Share success, with final designed-route/device acceptance still pending.
 - Use the model card's measured figures verbatim and the demo engine's actual values on screen; do not reuse an illustrative personal number. Keep the selected package's one-to-five-year survival results separate from the one-time life-table wrapper. Label that reveal as a rough proof of concept with its caveat, never an exact date or a validated personal lifespan.
 - Keep seeded history, synthetic usability sessions and fake document uploads labeled as demonstrations. A demo is not a real older-adult study.
 - Add the final demo video, Figma Slides deck and design links, verify current track requirements and judge access, and submit from Daniel's account. These artifacts/account actions were not performed here.
