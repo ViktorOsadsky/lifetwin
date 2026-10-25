@@ -77,8 +77,10 @@ def score_heldout(path: Path = HELDOUT) -> dict:
             tally["error"] += 1
             notes.append(("ERROR", case["text"], type(exc).__name__))
             continue
+        # Heard (quick and daily) or read back (weekly); a value the check question is
+        # about ("Did I hear 15 hours of sleep?") is not heard yet.
         got = result.state.pending.model_dump(exclude_none=True)
-        got |= {k: v for k, v in result.state.confirmed.model_dump(exclude_none=True).items()}
+        got = {k: v for k, v in got.items() if k not in result.state.checking}
         expected = {k: v for k, v in (case["expected"] or {}).items() if k in fields}
         if case["expected"] is None:
             outcome = "pass" if not got else "wrong"

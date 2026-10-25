@@ -21,6 +21,7 @@ from lifetwin.checkin.models import (
     QuickPlan,
 )
 from lifetwin.checkin.scripts import (
+    CLOSINGS,
     GREETINGS,
     QUESTIONS,
     SITTING_PROXIES,
@@ -146,14 +147,11 @@ def test_quick_questions_are_short_and_never_mention_streaks_or_scores():
 def test_out_of_breath_up_the_hill_is_vigorous():
     result = say(at(V), "I got out of breath walking up the hill for 20 minutes", "transcript")
     assert pending(result) == {V: 20}
-    assert result.message == (
-        "I heard you did 20 minutes of activity that got you out of breath yesterday. "
-        "Is that right?"
-    )
-    # The easy part is asked next, as its own short follow-up.
-    after = turn(result, "yes")
-    assert after.state.current_field == M
-    assert after.message == "Got it. " + QUESTIONS["quick"][M]["follow"].format(day="yesterday")
+    # Heard and echoed; the easy part is asked next, as its own short follow-up.
+    assert result.state.current_field == M
+    assert result.message == "20 minutes out of breath, got it. " + QUESTIONS["quick"][M][
+        "follow"
+    ].format(day="yesterday")
 
 
 def test_pottering_all_afternoon_is_easy_activity_and_asks_how_long():
@@ -165,10 +163,9 @@ def test_pottering_all_afternoon_is_easy_activity_and_asks_how_long():
     )
     hours = turn(result, "oh, a good two hours")
     assert pending(hours) == {M: 120}
-    confirmed = turn(hours, "yes")
     # Then the out-of-breath part, which pottering didn't answer.
-    assert confirmed.state.current_field == V
-    assert "out of breath" in confirmed.message
+    assert hours.state.current_field == V
+    assert "out of breath" in hours.message
 
 
 def test_sitting_most_of_the_day_watching_the_game_asks_for_hours():
@@ -254,8 +251,16 @@ def test_another_day_says_which_day_is_asked_about():
 
 def test_a_correction_in_the_read_back_replaces_that_pace():
     result = say(at(V), "an easy walk for half an hour")
-    corrected = turn(result, "no, it was 45 minutes")
-    assert pending(corrected) == {M: 45}
+    # At the end: "no, it was 45 minutes" changes the one activity answer.
+    end = turn(turn(turn(result, "no, nothing"), "<skip>"), "<skip>")
+    assert end.state.phase == "confirming" and end.state.current_field is None
+    corrected = turn(end, "no, the walk was 45 minutes")
+    assert pending(corrected) == {V: 0, M: 45}
+    # Right after the echo, an unclear change is asked about, never guessed.
+    unclear = turn(result, "no, it was 45 minutes")
+    assert pending(unclear) == {M: 30}
+    back = turn(turn(result, "go back"), "45 minutes, all easy")
+    assert pending(back) == {M: 45}
 
 
 def test_skipping_the_activity_question_skips_both_paces():
@@ -273,16 +278,21 @@ def test_more_than_a_whole_day_is_asked_about():
 # --- Apple Health read-backs ---------------------------------------------------------------
 
 
-def test_apple_health_sleep_is_read_back_and_never_saved_without_a_yes():
+def test_apple_health_sleep_is_offered_and_never_saved_without_a_yes():
     result = start(suggested={"sleep_hours_last_night": 7.5})
-    assert result.state.phase == "confirming" and result.state.from_health
+    # Offered in the question itself; only the read-back at the end saves it.
+    assert result.state.phase == "asking" and result.state.from_health
     assert result.message.endswith(
-        "Apple Health says you slept about 7.5 hours last night. Looks right?"
+        "Apple Health says you slept about 7.5 hours last night. Does that sound right?"
     )
-    assert result.state.confirmed.sleep_hours_last_night is None
     yes = turn(result, "yes")
-    assert yes.state.confirmed.sleep_hours_last_night == 7.5
-    assert not yes.state.from_health
+    assert pending(yes) == {"sleep_hours_last_night": 7.5}
+    assert yes.state.confirmed.sleep_hours_last_night is None
+    assert not yes.state.from_health and yes.state.current_field == V
+    tapped = turn(result, "<confirm>")  # the "Looks right" button
+    assert pending(tapped) == {"sleep_hours_last_night": 7.5}
+    other = turn(result, "more like 6 hours")
+    assert pending(other) == {"sleep_hours_last_night": 6}
 
 
 def test_a_no_to_apple_health_asks_the_question_itself():
@@ -326,11 +336,9 @@ def test_suggestions_must_match_the_plan():
 
 
 def test_the_catch_up_is_last_optional_and_kind():
-    result, messages = run(
-        ["7 hours", "yes", "<skip>", "<skip>", "about six hours", "yes"], catch_up=True
-    )
-    assert messages[4] == SKIPPED + QUESTIONS["quick"]["sleep_hours_night_before"]["ask"]
-    assert "Yesterday was a bit of a blank." in messages[4]
+    result, messages = run(["7 hours", "<skip>", "<skip>", "about six hours", "yes"], catch_up=True)
+    assert messages[3] == SKIPPED + QUESTIONS["quick"]["sleep_hours_night_before"]["ask"]
+    assert "Yesterday was a bit of a blank." in messages[3]
     assert not re.search(r"\bmissed\b|\bstreak\b", " ".join(messages))
     assert result.complete
     assert [row.model_dump(exclude_none=True) for row in result.daily_logs] == [
@@ -351,13 +359,10 @@ def test_a_morning_check_in_fills_yesterdays_activity_and_todays_sleep():
     result, messages = run(
         [
             "~um about seven hours I think",
-            "yes",
             "~I walked up the hill to the shops, got a bit puffed, maybe fifteen minutes",
-            "yes",
             "~and then a gentle stroll back, twenty minutes",
-            "yes",
             "about 6 hours",
-            "that's right",
+            "that's right",  # the one read-back at the end
         ]
     )
     assert result.complete and result.state.phase == "ready"
@@ -380,13 +385,12 @@ def test_a_morning_check_in_fills_yesterdays_activity_and_todays_sleep():
     ]
     assert set(rows[0]) == {"date", *DailyLogPart.model_fields} - {"date"} | {"date"}
     assert result.profile_update.model_dump(exclude_none=True) == {}
-    assert messages[-1] == "Got it. That's all. Thank you for checking in with me!"
+    assert messages[-2].startswith("6 hours sitting, got it. Before I save anything, ")
+    assert messages[-1] == CLOSINGS["quick"]["default"]
 
 
 def test_an_evening_check_in_fills_one_row():
-    result, _ = run(
-        ["7 hours", "yes", "no, nothing", "yes", "5 hours", "yes"], activity_day="today"
-    )
+    result, _ = run(["7 hours", "no, nothing", "5 hours", "yes"], activity_day="today")
     assert [row.model_dump(exclude_none=True) for row in result.daily_logs] == [
         {
             "date": "2026-10-24",
@@ -418,10 +422,7 @@ def test_emergency_pauses_and_resume_goes_on():
 def test_feeling_closes_kindly():
     result, messages = run(["not great today", "yes"], topics=["feeling"])
     assert result.complete
-    assert (
-        messages[-1]
-        == "Got it. Thank you for telling me. I hope the rest of the day is gentle with you."
-    )
+    assert messages[-1] == CLOSINGS["quick"]["not_great"]
 
 
 # --- Weekly: the model's own names, and "not sure" never overwrites -------------------------------
@@ -490,12 +491,12 @@ def test_quick_api_round_trip(client):
         json={"action": "reply", "text": "an easy walk, 30 minutes", "state": state},
     ).json()
     assert reply["state"]["pending"]["moderate_recreation_min"] == 30
-    done = client.post("/api/checkin/turn", json={"action": "confirm", "state": reply["state"]})
-    follow = done.json()
-    assert follow["state"]["current_field"] == "vigorous_recreation_min"
+    assert reply["state"]["current_field"] == "vigorous_recreation_min"  # the follow-up
     no = client.post(
-        "/api/checkin/turn", json={"action": "reply", "text": "no", "state": follow["state"]}
+        "/api/checkin/turn", json={"action": "reply", "text": "no", "state": reply["state"]}
     ).json()
+    # The one read-back at the end: phase confirming, no open question.
+    assert no["state"]["phase"] == "confirming" and no["state"]["current_field"] is None
     last = client.post("/api/checkin/turn", json={"action": "confirm", "state": no["state"]}).json()
     assert last["complete"]
     assert last["daily_logs"] == [
