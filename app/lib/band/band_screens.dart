@@ -128,7 +128,10 @@ class _BandPairScreenState extends State<BandPairScreen> {
         return [
           WholeWordText('Mochi uses Bluetooth to find your band.', style: LtText.body()),
           const SizedBox(height: 8),
-          WholeWordText('Strap it around your leg, just above the ankle.', style: LtText.body()),
+          WholeWordText(
+            'Slip it into your front trouser pocket so it rests against your thigh, or strap it snugly around your thigh. Wear it the same way every day.',
+            style: LtText.body(),
+          ),
           const SizedBox(height: 8),
           WholeWordText(
             'No band yet? Try a recorded demo band, or import a file from your band.',
@@ -565,7 +568,7 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 0, 12),
             child: WholeWordText(
-              'The band is worn on your leg. It counts your steps and sees whether you are sitting '
+              'The band rests against your thigh, in a front trouser pocket or strapped on. It counts your steps and sees whether you are sitting '
               'or lying, standing, or walking. It does not see your heart or what you are doing. '
               'Every number is an estimate.${widget.store.demo ? ' These days are demo data.' : ''}',
               style: LtText.body(color: LtColors.secondary),

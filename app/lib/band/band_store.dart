@@ -164,10 +164,13 @@ class BandStore extends ChangeNotifier {
   }
 
   /// Validates the entire delivery before changing state. Same reports are no-ops;
-  /// replacing a date with different data needs an explicit caller decision.
+  /// replacing a date with different data needs an explicit caller decision, except with
+  /// [replaceGrown], where a report that has grown (more recorded minutes, exported no earlier, as
+  /// the band's today does between syncs) replaces the stored one.
   bool importReports(
     List<BandDayReport> reports, {
     bool replaceExisting = false,
+    bool replaceGrown = false,
   }) {
     if (reports.isEmpty) return false;
     final incoming = <String, BandDayReport>{};
@@ -191,8 +194,10 @@ class BandStore extends ChangeNotifier {
       }
       final old = _reports[report.day];
       final liveOverlap = _minutes.any((m) => _day(m.at) == report.day);
-      if (!replaceExisting &&
-          (old != null && old.contentKey != report.contentKey || liveOverlap)) {
+      final changed = old != null &&
+          old.contentKey != report.contentKey &&
+          !(replaceGrown && _grown(old, report));
+      if (!replaceExisting && (changed || liveOverlap)) {
         throw const BandFileFailure(
           'This date already has different data. Choose whether to replace it.',
         );
@@ -225,7 +230,11 @@ class BandStore extends ChangeNotifier {
     return true;
   }
 
-  static String _day(DateTime d) =>
+  static bool _grown(BandDayReport old, BandDayReport now) =>
+      now.recordedMinutes >= old.recordedMinutes &&
+      !now.generatedAt.isBefore(old.generatedAt);
+
+    static String _day(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   BandDay get today => week().days.last;
 
@@ -253,11 +262,7 @@ class BandStore extends ChangeNotifier {
     final wasDemo = _builtInDemo;
     try {
       if (!await client.pair(d)) return false;
-      final days = await client.fetchDays();
-      if (days.isNotEmpty) {
-        if (wasDemo) setDemo(false); // real band days replace the built-in recorded demo
-        importReports(days);
-      }
+      await sync();
     } on Exception catch (e) {
       if (wasDemo && !demo) setDemo(true);
       pairProblem = e is BandFileFailure
@@ -275,7 +280,18 @@ class BandStore extends ChangeNotifier {
     return true;
   }
 
-  /// A minute record arrived.
+  /// Fetches the linked band's days and imports them as one delivery. The band re-sends its newest
+  /// 14 days every time, today included: identical days are no-ops and a grown day replaces the
+  /// stored one; any other difference refuses the whole delivery. Throws like [importReports] and
+  /// [BandClient.fetchDays]; true when something changed.
+  Future<bool> sync() async {
+    final days = await client.fetchDays();
+    if (days.isEmpty) return false;
+    if (_builtInDemo) setDemo(false); // real band days replace the built-in recorded demo
+    return importReports(days, replaceGrown: true);
+  }
+
+    /// A minute record arrived.
   void addMinute(BandMinute m) {
     if (_reports.containsKey(_day(m.at))) {
       return; // A whole-day file already owns this date.

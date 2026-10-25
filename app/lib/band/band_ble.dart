@@ -6,21 +6,31 @@ import 'band_data.dart';
 import 'band_file.dart';
 import 'band_store.dart';
 
-/// The band's Bluetooth layout as observed on the real band (docs/band-ble-contract.md). The band's
-/// firmware is not in this repo; what is unconfirmed is marked, and lives in [lifeTwinBandProfile].
+/// The band's Bluetooth layout as observed on the real band, and what its firmware side told us
+/// (docs/band-ble-contract.md). The firmware is not in this repo; unconfirmed parts are the constants
+/// below, all used through [lifeTwinBandProfile].
 const _base = '-7b2a-4f0e-9a51-0d1e2c3b4a50';
 
-/// UNCONFIRMED: what the phone does to make the band send its stored days. The owner is asking the
-/// firmware builder; set these two once known. Until then the phone writes nothing and only listens
-/// (an unknown command is never written to the band).
+/// UNCONFIRMED: what makes the band send its days. Until the firmware side gives the exact bytes the
+/// phone writes nothing and only listens (an unknown command is never written to the band).
 const String bandSendCharacteristic = '4c540003$_base';
 const List<int>? bandSendCommand = null;
+
+/// UNCONFIRMED: the band has no clock, so the phone writes the time and time zone on every connection,
+/// before the send command; the band builds no day files until then. Null skips the write.
+const String bandClockCharacteristic = '4c540003$_base';
+const List<int> Function(DateTime now)? bandClockCommand = null;
+
+/// After the file the band sends these 5 characters as one last notification.
+const bandEndMarker = [0x3C, 0x45, 0x4F, 0x46, 0x3E]; // <EOF>
 
 const lifeTwinBandProfile = BandBleProfile(
   service: '4c540001$_base',
   info: '4c540002$_base',
   send: bandSendCharacteristic,
   sendCommand: bandSendCommand,
+  clock: bandClockCharacteristic,
+  clockCommand: bandClockCommand,
   data: '4c540005$_base',
   live: '4c540007$_base',
 );
@@ -30,9 +40,6 @@ enum BandFraming {
   /// UTF-8 JSON split across notifications (or one per notification); a value ends when its braces
   /// balance. Bytes outside a value are skipped.
   jsonStream,
-
-  /// Each JSON value is followed by [BandBleProfile.terminator].
-  terminated,
 
   /// Each JSON value is preceded by its length, [BandBleProfile.lengthBytes] little-endian bytes.
   lengthPrefixed,
@@ -50,9 +57,11 @@ class BandBleProfile {
     this.send,
     this.sendCommand,
     this.readToSend = false,
+    this.clock,
+    this.clockCommand,
     this.live,
     this.framing = BandFraming.jsonStream,
-    this.terminator = const [0x0A],
+    this.endMarker = bandEndMarker,
     this.lengthBytes = 4,
     this.mtu = 256,
   });
@@ -67,10 +76,16 @@ class BandBleProfile {
   final List<int>? sendCommand;
   final bool readToSend;
 
+  /// Written with [clockCommand] of the phone's time on every connection, before the send command.
+  final String? clock;
+  final List<int> Function(DateTime now)? clockCommand;
+
   /// Optional live counters (notify): raw bytes only until their layout is known.
   final String? live;
   final BandFraming framing;
-  final List<int> terminator;
+
+  /// The notification that ends a delivery; null: a delivery ends when the band goes quiet.
+  final List<int>? endMarker;
   final int lengthBytes;
   final int mtu;
 
@@ -124,34 +139,48 @@ abstract class BleLink {
 
 // --- Reassembly. ---
 
-/// Collects notifications into complete JSON values, per [BandFraming]. Throws on oversize.
+const _tooBig = BandTransferFailure('The band sent more than one delivery can hold.');
+
+/// Collects notifications into complete JSON values, per [BandFraming], and notices the end marker.
+/// Throws on oversize.
 class BandJsonAssembler {
   BandJsonAssembler(this.profile, {this.maxBytes = bandBleMaxBytes});
   final BandBleProfile profile;
   final int maxBytes;
-  final _buf = BytesBuilder(copy: false);
   final _value = <int>[];
+  final _pending = <int>[];
   int _total = 0, _depth = 0;
   bool _inString = false, _escape = false;
   int? _need;
 
+  /// The end marker arrived.
+  bool ended = false;
+
   /// Bytes of a value have arrived but the value has not ended.
-  bool get midValue => switch (profile.framing) {
-    BandFraming.jsonStream => _value.isNotEmpty,
-    BandFraming.terminated => _value.any((b) => b > 0x20),
-    BandFraming.lengthPrefixed => _value.isNotEmpty || _need != null,
-  };
+  bool get midValue => _value.isNotEmpty || _need != null;
 
   List<Uint8List> add(List<int> chunk) {
     _total += chunk.length;
-    if (_total > maxBytes) {
-      throw const BandTransferFailure('The band sent more than one delivery can hold.');
+    if (_total > maxBytes) throw _tooBig;
+    final marker = profile.endMarker;
+    if (marker != null && _equals(chunk, marker)) {
+      ended = true;
+      return const [];
     }
-    return switch (profile.framing) {
-      BandFraming.jsonStream => _stream(chunk),
-      BandFraming.terminated => _terminated(chunk),
-      BandFraming.lengthPrefixed => _prefixed(chunk),
-    };
+    final out = profile.framing == BandFraming.jsonStream ? _stream(chunk) : _prefixed(chunk);
+    // The marker glued to the end of the last data notification, outside any value.
+    if (marker != null && !midValue && chunk.length > marker.length) {
+      ended = _equals(chunk.sublist(chunk.length - marker.length), marker);
+    }
+    return out;
+  }
+
+  static bool _equals(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   List<Uint8List> _stream(List<int> chunk) {
@@ -185,81 +214,64 @@ class BandJsonAssembler {
     return out;
   }
 
-  List<Uint8List> _terminated(List<int> chunk) {
-    final out = <Uint8List>[];
-    final end = profile.terminator;
-    for (final b in chunk) {
-      _value.add(b);
-      final n = _value.length;
-      if (n >= end.length && _endsWith(end)) {
-        final body = _value.sublist(0, n - end.length);
-        _value.clear();
-        if (body.any((c) => c > 0x20)) out.add(Uint8List.fromList(body));
-      }
-    }
-    return out;
-  }
-
-  bool _endsWith(List<int> end) {
-    for (var i = 0; i < end.length; i++) {
-      if (_value[_value.length - end.length + i] != end[i]) return false;
-    }
-    return true;
-  }
-
   List<Uint8List> _prefixed(List<int> chunk) {
     final out = <Uint8List>[];
-    _buf.add(chunk);
-    final bytes = _buf.takeBytes();
+    _pending.addAll(chunk);
     var i = 0;
     while (true) {
       if (_need == null) {
-        if (bytes.length - i < profile.lengthBytes) break;
+        if (_pending.length - i < profile.lengthBytes) break;
         var n = 0;
         for (var k = profile.lengthBytes - 1; k >= 0; k--) {
-          n = (n << 8) | bytes[i + k];
+          n = (n << 8) | _pending[i + k];
         }
         i += profile.lengthBytes;
-        if (n > maxBytes) throw const BandTransferFailure('The band sent more than one delivery can hold.');
+        if (n > maxBytes) throw _tooBig;
         _need = n;
       }
-      final take = (_need! - _value.length).clamp(0, bytes.length - i);
-      _value.addAll(bytes.sublist(i, i + take));
+      final take = (_need! - _value.length).clamp(0, _pending.length - i).toInt();
+      _value.addAll(_pending.sublist(i, i + take));
       i += take;
       if (_value.length < _need!) break;
       out.add(Uint8List.fromList(_value));
       _value.clear();
       _need = null;
     }
-    if (i < bytes.length) _buf.add(bytes.sublist(i));
+    _pending.removeRange(0, i);
     return out;
   }
 }
 
-/// More than 14 compact days, far below the 5 MB file limit.
+/// More than 14 compact days (~3.9 KB each), far below the 5 MB file limit.
 const bandBleMaxBytes = 256 * 1024;
 
 class _Incomplete implements Exception {
   const _Incomplete();
 }
 
-/// The activity band over Bluetooth: scan by the service UUID and name, connect, fetch the band's
-/// JSON days from [BandBleProfile.data], then the same `parseBandFile` validation as a band file.
-/// Nothing received is stored or sent anywhere; the store imports it into phone memory only.
+/// The activity band over Bluetooth: scan by the service UUID and name, connect, set the band's
+/// clock, fetch the band's JSON days from [BandBleProfile.data], then the same `parseBandFile`
+/// validation as a band file. Nothing received is stored or sent anywhere; the store imports it into
+/// phone memory only.
 class BleBandClient implements BandClient {
   BleBandClient(
     this.radio, {
     this.profile = lifeTwinBandProfile,
+    DateTime Function()? now,
     this.scanWindow = const Duration(seconds: 8),
     this.connectTimeout = const Duration(seconds: 15),
     this.firstByteTimeout = const Duration(seconds: 10),
-    this.idleGap = const Duration(seconds: 2),
+    this.gapTimeout = const Duration(seconds: 12),
     this.maxBytes = bandBleMaxBytes,
-  });
+  }) : _now = now ?? DateTime.now;
 
   final BleRadio radio;
   final BandBleProfile profile;
-  final Duration scanWindow, connectTimeout, firstByteTimeout, idleGap;
+  final DateTime Function() _now;
+
+  /// [firstByteTimeout]: from the send command to the first notification. [gapTimeout]: the longest
+  /// silence between notifications. There is no total cap: 14 days take ~8–70 s depending on MTU.
+  final Duration scanWindow, connectTimeout, firstByteTimeout, gapTimeout;
   final int maxBytes;
 
   BleLink? _link;
@@ -300,7 +312,8 @@ class BleBandClient implements BandClient {
     return byId.values.toList()..sort((a, b) => b.strength.compareTo(a.strength));
   }
 
-  /// Connects and turns on the day notifications. Throws [BandTransferFailure] when it cannot.
+  /// Connects, turns on the day notifications and sets the band's clock (every connection). Throws
+  /// [BandTransferFailure] when it cannot.
   @override
   Future<bool> pair(BandDevice device) async {
     await _drop();
@@ -309,6 +322,9 @@ class BleBandClient implements BandClient {
       _link = link;
       if (profile.info case final c?) info = await link.read(c);
       _data = await link.subscribe(profile.data);
+      if ((profile.clock, profile.clockCommand) case (final c?, final command?)) {
+        await link.write(c, command(_now()));
+      }
       return true;
     } catch (_) {
       await _drop();
@@ -317,8 +333,8 @@ class BleBandClient implements BandClient {
   }
 
   /// One whole delivery: every JSON value the band sends after the trigger, as one band file.
-  /// Incomplete, garbled or rejected data is asked for once more, then fails; nothing is returned
-  /// partially.
+  /// Incomplete, garbled or rejected data is asked for once more, then fails; a band that stops or
+  /// disconnects fails at once. Nothing is returned partially.
   @override
   Future<List<BandDayReport>> fetchDays() async {
     final link = _link, data = _data;
@@ -335,8 +351,8 @@ class BleBandClient implements BandClient {
           throw const BandTransferFailure('The band’s data arrived incomplete. Try again.');
         }
       } on BandFileFailure {
-        // Without a length or checksum from the band, a lost notification can still leave balanced
-        // JSON that the parser then rejects: ask once more before blaming the data.
+        // There is no length or checksum, so a lost notification can still leave balanced JSON that
+        // the parser then rejects: ask once more before blaming the data.
         if (attempt == 1) rethrow;
       }
     }
@@ -364,10 +380,11 @@ class BleBandClient implements BandClient {
                 ? values
                 : const BandTransferFailure('The band didn’t answer. Keep it close and try again.'),
           );
-        } else if (assembler.midValue) {
-          finish(const _Incomplete());
+        } else if (profile.endMarker != null) {
+          // The band gives up by going quiet: abandon, import nothing.
+          finish(const BandTransferFailure('The band stopped sending. Keep it close and try again.'));
         } else {
-          finish(values);
+          finish(assembler.midValue ? const _Incomplete() : values);
         }
       });
     }
@@ -380,7 +397,11 @@ class BleBandClient implements BandClient {
         finish(e);
         return;
       }
-      arm(idleGap);
+      if (assembler.ended) {
+        finish(assembler.midValue ? const _Incomplete() : values);
+      } else {
+        arm(gapTimeout);
+      }
     });
     unawaited(
       link.disconnected.then(
