@@ -37,6 +37,10 @@ abstract class BandClient {
   /// The whole days the linked band sends, validated as one delivery by `parseBandFile`. Throws
   /// [BandTransferFailure] or [BandFileFailure]; empty when it has nothing to send.
   Future<List<BandDayReport>> fetchDays();
+
+  /// Asks the linked band to save its standing or sitting position (so it can tell them apart);
+  /// false when it cannot.
+  Future<bool> savePosition({required bool standing});
   Future<void> unpair();
 
   /// Minute records, as they arrive (buffered minutes resume from the last unsent one).
@@ -76,6 +80,9 @@ class StubBandClient implements BandClient {
 
   @override
   Future<List<BandDayReport>> fetchDays() async => days;
+
+  @override
+  Future<bool> savePosition({required bool standing}) async => false;
 
   @override
   Future<void> unpair() async {}

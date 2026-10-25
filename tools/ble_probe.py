@@ -12,6 +12,11 @@ Usage:
     ble_probe.py --connect NAME --write UUID VALUE
                                          the same, plus ONE write after subscribing. VALUE is `hex:0a0b...` or
                                          `text:...` (a bare value is sent as UTF-8 text). Only when asked.
+    ble_probe.py --connect "LifeTwin Band" --sync
+                                         the band's real day sync (firmware 0.8, LifeTwin-band-full-code/docs/
+                                         band-ble-contract.md): read Info, write the clock, subscribe to 0008,
+                                         write 0D (index), then 0C + date for each of the newest 14 days; saves
+                                         index.json and day_YYYY-MM-DD.json. It never writes 0E (delete).
     ble_probe.py --replay LOG.jsonl [--strip N]
                                          re-run JSON reassembly on a saved log, optionally dropping the first
                                          N bytes of every notification (a sequence/header prefix)
@@ -226,6 +231,85 @@ async def connect(args, log: Log) -> None:
     print(f"{log.payloads} JSON payloads. Log: {log.out / 'log.jsonl'}")
 
 
+BASE = "-7b2a-4f0e-9a51-0d1e2c3b4a50"
+INFO, CLOCK, CONTROL, SUMMARY = (f"4c54000{n}{BASE}" for n in (2, 3, 4, 8))
+EOF = b"<EOF>"
+
+
+async def sync(args, log: Log) -> None:
+    import struct
+    import time
+
+    from bleak import BleakClient
+
+    device = await _find(args.connect, args.scan_seconds)
+    if device is None:
+        sys.exit(f"No device named or addressed {args.connect!r} found in {args.scan_seconds:.0f} s.")
+    async with BleakClient(device) as client:
+        log.event("connected", name=device.name, address=device.address, mtu=client.mtu_size)
+        info = bytes(await client.read_gatt_char(INFO))
+        log.bytes_event("read", INFO, info)
+        if len(info) < 10:
+            sys.exit("Info is shorter than 10 bytes: not firmware 0.8.")
+        fw = (info[0], info[1])
+        print(f"Info: firmware {fw[0]}.{fw[1]}, record format {info[2]}, record size {info[3]}, "
+              f"capacity {info[4] | info[5] << 8}, stored minutes {info[6] | info[7] << 8}, "
+              f"posture state {info[8]:#04x} (positions saved: {bool(info[8] & 4)}), step settings {info[9]:#04x}")
+        if info[2] != 2 or fw < (0, 8):
+            sys.exit("This band needs firmware 0.8 or later (record format 2) for day files over Bluetooth.")
+
+        zone_min = int(dt.datetime.now().astimezone().utcoffset().total_seconds() // 60)  # minutes east of UTC
+        clock = struct.pack("<Ih", int(time.time()), zone_min)
+        log.bytes_event("write", CLOCK, clock)
+        await client.write_gatt_char(CLOCK, clock, response=True)
+        await asyncio.sleep(0.4)
+
+        queue: asyncio.Queue[bytes] = asyncio.Queue()
+
+        def on_notify(char, data: bytearray) -> None:
+            log.bytes_event("notify", char.uuid, bytes(data))
+            queue.put_nowait(bytes(data))
+
+        await client.start_notify(SUMMARY, on_notify)
+
+        async def fetch(command: bytes, name: str) -> object | None:
+            while not queue.empty():
+                queue.get_nowait()
+            log.bytes_event("write", CONTROL, command)
+            await client.write_gatt_char(CONTROL, command, response=True)
+            buf = bytearray()
+            try:
+                while True:
+                    chunk = await asyncio.wait_for(queue.get(), timeout=12 if buf else 10)
+                    if chunk == EOF:
+                        break
+                    buf += chunk
+                    if buf.endswith(EOF):
+                        del buf[-len(EOF):]
+                        break
+            except asyncio.TimeoutError:
+                print(f"{name}: no <EOF> ({len(buf)} bytes, then silence); abandoned")
+                return None
+            path = log.out / f"{name}.json"
+            path.write_bytes(bytes(buf))
+            try:
+                value = json.loads(buf.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as e:
+                print(f"{name}: {len(buf)} bytes, not valid JSON ({e}); saved raw to {path}")
+                return None
+            print(f"{name}: {len(buf)} bytes -> {path}")
+            return value
+
+        index = await fetch(b"\x0d", "index")
+        days = index.get("days") if isinstance(index, dict) else None
+        if not isinstance(days, list):
+            sys.exit("The index has no days list.")
+        for day in sorted(set(days))[-14:]:
+            await fetch(b"\x0c" + day.encode("ascii"), f"day_{day}")
+        log.event("done", days=len(days))
+    print(f"Done. Files in {log.out}. Check one with the app parser or tools/hex_to_json.py.")
+
+
 def replay(path: Path, strip: int, log: Log) -> None:
     streams: dict[str, Reassembler] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -244,16 +328,19 @@ def main() -> None:
     p.add_argument("--seconds", type=float, default=60, help="listen time after subscribing (default 60)")
     p.add_argument("--scan-seconds", type=float, default=20, help="scan time (default 20)")
     p.add_argument("--write", nargs=2, metavar=("UUID", "VALUE"), help="one write after subscribing")
+    p.add_argument("--sync", action="store_true", help="with --connect: the band's day sync (firmware 0.8)")
     p.add_argument("--replay", type=Path, metavar="LOG.jsonl")
     p.add_argument("--strip", type=int, default=0, help="with --replay: drop N leading bytes per notification")
     p.add_argument("--out", type=Path, help="output directory (default ./ble-probe/<timestamp>)")
     args = p.parse_args()
-    if args.write and not args.connect:
-        p.error("--write needs --connect")
+    if (args.write or args.sync) and not args.connect:
+        p.error("--write and --sync need --connect")
     out = args.out or Path("ble-probe") / dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     log = Log(out)
     if args.replay:
         replay(args.replay, args.strip, log)
+    elif args.sync:
+        asyncio.run(sync(args, log))
     elif args.connect:
         asyncio.run(connect(args, log))
     else:

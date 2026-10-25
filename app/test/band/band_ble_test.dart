@@ -8,22 +8,10 @@ import 'package:lifesim/band/band_ble.dart';
 import 'package:lifesim/band/band_file.dart';
 import 'package:lifesim/band/band_store.dart';
 
-// The real band's layout (4c5400XX…), with send and clock commands set, since the real ones are not
-// known yet.
-final _real = lifeTwinBandProfile;
-List<int> _clock(DateTime now) =>
-    utf8.encode('time ${now.millisecondsSinceEpoch ~/ 1000} ${now.timeZoneOffset.inMinutes}');
-final _profile = BandBleProfile(
-  service: _real.service,
-  info: _real.info,
-  send: _real.send,
-  sendCommand: utf8.encode('send'),
-  clock: '4c540004-7b2a-4f0e-9a51-0d1e2c3b4a50',
-  clockCommand: _clock,
-  data: _real.data,
-  live: _real.live,
-);
-const _infoBytes = [0x00, 0x07, 0x02, 0x0c, 0xa0, 0x05, 0x0e, 0x00, 0x07, 0x0b];
+// Firmware 0.8 Info: fw 0.8, record format 2, 12-byte records, capacity 1440, 47 stored minutes,
+// no positions saved, step settings 0x0b.
+const _info08 = [0x00, 0x08, 0x02, 0x0c, 0xa0, 0x05, 0x2f, 0x00, 0x00, 0x0b];
+const _info07 = [0x00, 0x07, 0x02, 0x0c, 0xa0, 0x05, 0x2f, 0x00, 0x07, 0x0b]; // the band probed on 2026-10-25
 final _now = DateTime(2026, 10, 25, 12);
 const _eof = [0x3C, 0x45, 0x4F, 0x46, 0x3E];
 const _device = BandDevice(name: 'LifeTwin Band', id: 'band-1');
@@ -37,48 +25,84 @@ Map<String, dynamic> _day(String date) {
     ..['generated_at'] = '${date}T23:59:00-07:00';
 }
 
-final _threeDays = [
-  for (final d in ['2026-10-22', '2026-10-23', '2026-10-24']) _day(d),
-];
+Map<String, Map<String, dynamic>> _days(List<String> dates) => {for (final d in dates) d: _day(d)};
+final _three = ['2026-10-22', '2026-10-23', '2026-10-24'];
 
-/// One JSON value per day, back to back, cut into notifications of MTU − 3 bytes, then `<EOF>`.
-List<List<int>> _frames(List<Map<String, dynamic>> days, {int size = 253, bool eof = true}) {
-  final bytes = utf8.encode(days.map(jsonEncode).join());
-  return [
-    for (var i = 0; i < bytes.length; i += size) bytes.sublist(i, i + size > bytes.length ? bytes.length : i + size),
-    if (eof) _eof,
-  ];
-}
-
-/// A fake band: answers the send command with [answer]'s frames for that attempt (null: silence).
+/// A fake band running firmware 0.8: Info on 0002, clock on 0003, control on 0004, and every file
+/// as chunks of ≤ 180 bytes on 0008 followed by `<EOF>`.
 class FakeBand implements BleLink {
-  FakeBand({this.answer, this.dropAfter});
-  List<List<int>>? Function(int attempt)? answer;
+  FakeBand({
+    Map<String, Map<String, dynamic>>? days,
+    this.info = _info08,
+    this.tamper,
+    this.dropAfter,
+    this.extraIndex = const [],
+  }) : days = days ?? _days(_three);
 
-  /// Disconnects after sending this many frames.
+  Map<String, Map<String, dynamic>> days;
+  List<int> info;
+
+  /// Dates the index lists that have no file (the band answers no_file_for_that_date).
+  List<String> extraIndex;
+
+  /// Changes the frames of a file ('index' or a date) on a given attempt; null: silence.
+  List<List<int>>? Function(String file, int attempt, List<List<int>> frames)? tamper;
+
+  /// Disconnects after sending this many frames in total.
   int? dropAfter;
+  Duration frameDelay = Duration.zero;
   final writes = <(String, List<int>)>[];
-  final _data = StreamController<List<int>>.broadcast();
+  final _attempts = <String, int>{};
+  final _summary = StreamController<List<int>>.broadcast();
   final _gone = Completer<void>();
   bool get connected => !_gone.isCompleted;
-  int _attempt = 0;
+  int _sent = 0;
+
+  List<int> get commands => [
+    for (final (c, v) in writes)
+      if (c == BandGatt.control) v.first,
+  ];
+  int asked(String file) => _attempts[file] ?? 0;
 
   @override
-  Future<List<int>> read(String c) async => c == _real.info ? _infoBytes : List.filled(20, 0);
+  Future<List<int>> read(String c) async => c == BandGatt.info ? info : const [];
 
   @override
   Future<void> write(String c, List<int> value) async {
     writes.add((c, value));
-    if (c != _profile.send) return;
-    final frames = answer?.call(_attempt++);
-    if (frames == null) return;
+    if (c != BandGatt.control) return;
+    final (String file, Object body) = switch (value.first) {
+      bandSendIndex => (
+        'index',
+        {
+          'schema': 'lifetwin.band_index.v0',
+          'firmware': '0.8',
+          'timezone_offset_minutes': -420,
+          'days': [...days.keys, ...extraIndex],
+        },
+      ),
+      bandSendDay => (
+        ascii.decode(value.sublist(1)),
+        days[ascii.decode(value.sublist(1))] ?? {'error': 'no_file_for_that_date'},
+      ),
+      _ => ('', const {}),
+    };
+    if (file.isEmpty) return;
+    final attempt = _attempts[file] ?? 0;
+    _attempts[file] = attempt + 1;
+    final bytes = utf8.encode(jsonEncode(body));
+    final frames = <List<int>>[
+      for (var i = 0; i < bytes.length; i += 180) bytes.sublist(i, i + 180 > bytes.length ? bytes.length : i + 180),
+      _eof,
+    ];
+    final send = tamper == null ? frames : tamper!(file, attempt, frames);
+    if (send == null) return;
     unawaited(() async {
-      var sent = 0;
-      for (final f in frames) {
-        await Future<void>.delayed(Duration.zero);
+      for (final f in send) {
+        await Future<void>.delayed(frameDelay);
         if (!connected) return;
-        _data.add(f);
-        if (++sent == dropAfter) {
+        _summary.add(f);
+        if (++_sent == dropAfter) {
           _gone.complete();
           return;
         }
@@ -87,7 +111,7 @@ class FakeBand implements BleLink {
   }
 
   @override
-  Future<Stream<List<int>>> subscribe(String c) async => c == _real.data ? _data.stream : const Stream.empty();
+  Future<Stream<List<int>>> subscribe(String c) async => c == BandGatt.summary ? _summary.stream : const Stream.empty();
 
   @override
   Future<void> get disconnected => _gone.future;
@@ -99,17 +123,14 @@ class FakeBand implements BleLink {
 }
 
 class FakeRadio implements BleRadio {
-  FakeRadio(this.band, {this.state = BleAdapterState.on, List<BleAdvert>? adverts})
-    : adverts =
-          adverts ??
-          [
-            BleAdvert(id: 'band-1', name: 'LifeTwin Band', rssi: -50, services: [_real.service.toUpperCase()]),
-            const BleAdvert(id: 'speaker', name: 'Kitchen speaker', rssi: -40, services: ['180d']),
-            BleAdvert(id: 'other', name: 'Someone else', rssi: -30, services: [_real.service]),
-          ];
+  FakeRadio(this.band, {this.state = BleAdapterState.on});
   final FakeBand band;
   BleAdapterState state;
-  List<BleAdvert> adverts;
+  final adverts = [
+    const BleAdvert(id: 'band-1', name: 'LifeTwin Band', rssi: -50, services: ['4C540001-7B2A-4F0E-9A51-0D1E2C3B4A50']),
+    const BleAdvert(id: 'speaker', name: 'Kitchen speaker', rssi: -40, services: ['180d']),
+    const BleAdvert(id: 'other', name: 'Someone else', rssi: -30, services: [BandGatt.service]),
+  ];
   String? scannedFor, connectedTo;
   bool failConnect = false;
 
@@ -130,40 +151,47 @@ class FakeRadio implements BleRadio {
   }
 }
 
-BleBandClient _client(FakeRadio radio, {BandBleProfile? profile, int maxBytes = bandBleMaxBytes}) => BleBandClient(
+BleBandClient _client(FakeRadio radio, {int maxFileBytes = bandBleMaxFileBytes}) => BleBandClient(
   radio,
-  profile: profile ?? _profile,
   now: () => _now,
+  clockSettle: Duration.zero,
   firstByteTimeout: const Duration(milliseconds: 200),
   gapTimeout: const Duration(milliseconds: 100),
-  maxBytes: maxBytes,
+  maxFileBytes: maxFileBytes,
 );
 
-BandStore _store(FakeBand band, {int maxBytes = bandBleMaxBytes}) =>
-    BandStore(_client(FakeRadio(band), maxBytes: maxBytes), now: () => _now);
+BandStore _store(FakeBand band, {int maxFileBytes = bandBleMaxFileBytes}) =>
+    BandStore(_client(FakeRadio(band), maxFileBytes: maxFileBytes), now: () => _now);
+
+List<List<int>> _drop(List<List<int>> frames, int i) => [...frames]..removeAt(i);
 
 void main() {
-  group('BleBandClient with a fake band', () {
-    test('scan -> connect -> info -> clock -> fetch 3 days -> import', () async {
-      final band = FakeBand(answer: (_) => _frames(_threeDays));
+  group('BleBandClient against a firmware 0.8 fake band', () {
+    test('scan -> connect -> Info -> clock -> index -> 3 days -> import', () async {
+      final band = FakeBand();
       final radio = FakeRadio(band);
       final store = BandStore(_client(radio), now: () => _now);
 
       expect(await store.client.bluetooth(), BluetoothState.on);
       final found = await store.client.scan();
-      expect(radio.scannedFor, _real.service);
+      expect(radio.scannedFor, BandGatt.service);
       expect(found.map((d) => d.name), ['LifeTwin Band'], reason: 'service UUID and name prefix both filter');
 
-      expect(await store.pair(found.single), isTrue);
+      expect(await store.pair(found.single), isTrue, reason: '${store.pairProblem}');
       expect(radio.connectedTo, 'band-1');
-      expect((store.client as BleBandClient).info, _infoBytes);
-      expect(band.writes.map((w) => w.$1), [_profile.clock, _profile.send], reason: 'the clock first, then send');
-      expect(utf8.decode(band.writes.first.$2), _clock(_now).map(String.fromCharCode).join());
+      final info = (store.client as BleBandClient).info!;
+      expect((info.fwMajor, info.fwMinor, info.recordFormat, info.capacity, info.storedMinutes), (0, 8, 2, 1440, 47));
+      expect(info.positionsSaved, isFalse);
+      expect(band.writes.first.$1, BandGatt.clock, reason: 'the clock first, every connection');
+      expect(band.writes.first.$2, bandClockBytes(_now));
+      expect(band.commands, [bandSendIndex, bandSendDay, bandSendDay, bandSendDay]);
+      expect([
+        for (final (c, v) in band.writes)
+          if (c == BandGatt.control && v.first == bandSendDay) ascii.decode(v.sublist(1)),
+      ], _three);
+      expect(band.commands, isNot(contains(0x0E)), reason: 'never deletes days on the band');
       expect(store.paired, isTrue);
-      expect(store.pairProblem, isNull);
-      expect(store.fileReports.map((r) => r.day), ['2026-10-22', '2026-10-23', '2026-10-24']);
-      expect(store.demo, isFalse);
-      expect(store.live, isTrue);
+      expect(store.fileReports.map((r) => r.day), _three);
       expect(store.sourceLabel, 'Bluetooth');
 
       await store.unpair();
@@ -171,101 +199,114 @@ void main() {
       expect(store.fileReports, isEmpty);
     });
 
-    test('one band_days bundle in a single value, <EOF> glued to the last notification', () async {
-      final bundle = utf8.encode(jsonEncode({'schema': 'lifetwin.band_days.v0', 'days': _threeDays}));
-      final band = FakeBand(
-        answer: (_) => [
-          bundle.sublist(0, 100),
-          [...bundle.sublist(100), ..._eof],
-        ],
-      );
-      final store = _store(band);
-      expect(await store.pair(_device), isTrue);
-      expect(store.fileReports, hasLength(3));
+    test('clock bytes: unix seconds u32 LE, then minutes east of UTC i16 LE', () {
+      final t = DateTime.utc(2026, 10, 25, 19, 0, 0);
+      final secs = t.millisecondsSinceEpoch ~/ 1000;
+      expect(bandClockBytes(t), [secs & 0xff, secs >> 8 & 0xff, secs >> 16 & 0xff, secs >> 24 & 0xff, 0, 0]);
+      final local = DateTime(2026, 10, 25, 12);
+      final zone = ByteData.sublistView(Uint8List.fromList(bandClockBytes(local))).getInt16(4, Endian.little);
+      expect(zone, local.timeZoneOffset.inMinutes);
     });
 
-    test('each sync re-sends the newest days: identical days are no-ops, a grown today replaces', () async {
-      final today = _day('2026-10-25')..['generated_at'] = '2026-10-25T09:00:00-07:00';
-      final hours = (today['hourly'] as List).cast<Map<String, dynamic>>();
-      // Today so far: only the hours up to 08:00, the rest not yet recorded.
-      final early = jsonDecode(jsonEncode(today)) as Map<String, dynamic>;
-      _truncate(early, hours.where((h) => (h['hour'] as int) <= 8).toList());
-      final deliveries = [
-        [..._threeDays, early],
-        [..._threeDays, early],
-        [..._threeDays, today..['generated_at'] = '2026-10-25T23:59:00-07:00'],
-      ];
-      final band = FakeBand(answer: (attempt) => _frames(deliveries[attempt]));
+    test('only the newest 14 days are asked for; a listed day with no file is skipped', () async {
+      final dates = [for (var d = 8; d <= 24; d++) '2026-10-${d.toString().padLeft(2, '0')}']; // 17 days
+      final band = FakeBand(days: _days(dates.where((d) => d != '2026-10-20').toList()), extraIndex: ['2026-10-20']);
       final store = _store(band);
-      expect(await store.pair(_device), isTrue);
+      expect(await store.pair(_device), isTrue, reason: '${store.pairProblem}');
+      expect(band.commands.where((c) => c == bandSendDay), hasLength(14));
+      expect(store.fileReports.first.day, '2026-10-11');
+      expect(store.fileReports, hasLength(13));
+      expect(store.fileReports.map((r) => r.day), isNot(contains('2026-10-20')));
+    });
+
+    for (final (name, info) in [
+      ('firmware 0.7 (the probed band)', _info07),
+      ('record format 3', [0x00, 0x08, 0x03, 0x0c, 0xa0, 0x05, 0, 0, 0, 0]),
+      ('a short Info', [0x00, 0x08]),
+    ]) {
+      test('$name: a plain firmware update message, nothing written', () async {
+        final band = FakeBand(info: info);
+        final store = _store(band);
+        expect(await store.pair(_device), isFalse);
+        expect(store.pairProblem, contains('needs a firmware update'));
+        expect(store.pairProblem, contains('0.8'));
+        expect(band.writes, isEmpty);
+        expect(band.connected, isFalse);
+      });
+    }
+
+    test('each sync re-sends the newest days: identical days are no-ops, a grown today replaces', () async {
+      final today = _day('2026-10-25');
+      final early = jsonDecode(jsonEncode(today)) as Map<String, dynamic>;
+      _truncate(early, 8);
+      early['generated_at'] = '2026-10-25T09:00:00-07:00';
+      final band = FakeBand(days: {..._days(_three), '2026-10-25': early});
+      final store = _store(band);
+      expect(await store.pair(_device), isTrue, reason: '${store.pairProblem}');
       final first = store.fileReports.last;
       expect(await store.sync(), isFalse, reason: 'identical re-import is a no-op');
+      band.days['2026-10-25'] = today..['generated_at'] = '2026-10-25T23:59:00-07:00';
       expect(await store.sync(), isTrue, reason: 'today grew');
       expect(store.fileReports, hasLength(4));
       expect(store.fileReports.last.recordedMinutes, greaterThan(first.recordedMinutes));
     });
 
     test('a day that changed without growing refuses the whole delivery and keeps what was there', () async {
-      // Same minutes, a few more steps in one hour, exported earlier: changed, not grown.
-      final changed = _day('2026-10-23')..['generated_at'] = '2026-10-23T23:59:00-07:00';
-      changed['steps'] = (changed['steps'] as int) + 5;
-      final hour = (changed['hourly'] as List).cast<Map<String, dynamic>>().firstWhere((h) => (h['steps'] as int) > 0);
-      hour['steps'] = (hour['steps'] as int) + 5;
-      final stored = _day('2026-10-23')..['generated_at'] = '2026-10-24T08:00:00-07:00';
       final band = FakeBand(
-        answer: (attempt) => _frames([_threeDays[0], attempt == 0 ? stored : changed, _threeDays[2]]),
+        days: {..._days(_three), '2026-10-23': _day('2026-10-23')..['generated_at'] = '2026-10-24T08:00:00-07:00'},
       );
       final store = _store(band);
       expect(await store.pair(_device), isTrue);
       final before = store.fileReports.map((r) => r.contentKey).toList();
+      final changed = _day('2026-10-23'); // same minutes, a few more steps in one hour, exported earlier
+      changed['steps'] = (changed['steps'] as int) + 5;
+      final hour = (changed['hourly'] as List).cast<Map<String, dynamic>>().firstWhere((h) => (h['steps'] as int) > 0);
+      hour['steps'] = (hour['steps'] as int) + 5;
+      band.days['2026-10-23'] = changed;
       await expectLater(store.sync(), throwsA(isA<BandFileFailure>()));
       expect(store.fileReports.map((r) => r.contentKey), before);
     });
 
     test('minutes with no saved positions still import, with their steps (posture unknown)', () async {
-      final days = [for (final d in _threeDays) _unsaved(d)];
-      final store = _store(FakeBand(answer: (_) => _frames(days)));
+      final band = FakeBand(days: {for (final d in _three) d: _unsaved(_day(d))});
+      final store = _store(band);
       expect(await store.pair(_device), isTrue, reason: '${store.pairProblem}');
       final report = store.fileReports.first;
-      expect(report.steps, days.first['steps']);
       expect(report.steps, greaterThan(0));
-      final day = store.week().days.firstWhere((d) => d.date == DateTime(2026, 10, 22));
-      expect(day.steps, report.steps);
+      expect(store.week().days.firstWhere((d) => d.date == DateTime(2026, 10, 22)).steps, report.steps);
       expect(store.week().hasUnknownActivityCoverage, isTrue);
     });
 
     test('pairing replaces the built-in recorded demo only once the band data checks out', () async {
-      final store = _store(FakeBand(answer: (_) => _frames(_threeDays)))..setDemo(true);
+      final store = _store(FakeBand())..setDemo(true);
       expect(await store.pair(_device), isTrue);
       expect(store.demo, isFalse);
       expect(store.fileReports, hasLength(3));
 
-      final failing = _store(FakeBand(answer: (_) => null))..setDemo(true);
+      final failing = _store(FakeBand(tamper: (_, _, _) => null))..setDemo(true);
       expect(await failing.pair(_device), isFalse);
       expect(failing.demo, isTrue, reason: 'a failed pairing leaves the demo as it was');
     });
 
-    test('a lost frame is asked for again once, then succeeds', () async {
-      final frames = _frames(_threeDays);
-      final band = FakeBand(answer: (attempt) => attempt == 0 ? ([...frames]..removeAt(3)) : frames);
+    test('a lost frame in one day: that day is asked for once more, then succeeds', () async {
+      final band = FakeBand(tamper: (file, attempt, f) => file == '2026-10-23' && attempt == 0 ? _drop(f, 3) : f);
       final store = _store(band);
       expect(await store.pair(_device), isTrue, reason: '${store.pairProblem}');
-      expect(band.writes.where((w) => w.$1 == _profile.send), hasLength(2));
+      expect(band.asked('2026-10-23'), 2);
+      expect(band.asked('2026-10-22'), 1);
       expect(store.fileReports, hasLength(3));
     });
 
     test('lost and out-of-order frames twice: an error, nothing imported', () async {
-      final frames = _frames(_threeDays);
       final band = FakeBand(
-        answer: (attempt) =>
-            attempt == 0 ? ([...frames]..removeAt(5)) : [frames[0], frames[2], frames[1], ...frames.skip(3)],
+        tamper: (file, attempt, f) =>
+            file != '2026-10-23' ? f : (attempt == 0 ? _drop(f, 5) : [f[0], f[2], f[1], ...f.skip(3)]),
       );
       final store = _store(band);
       expect(await store.pair(_device), isFalse);
-      expect(band.writes.where((w) => w.$1 == _profile.send), hasLength(2), reason: 'retried exactly once');
+      expect(band.asked('2026-10-23'), 2, reason: 'retried exactly once');
       expect(store.pairProblem, isNotNull);
-      expect(store.paired, isFalse);
-      expect(store.fileReports, isEmpty);
+      expect(store.fileReports, isEmpty, reason: 'the good days are not imported either');
       expect(band.connected, isFalse);
     });
 
@@ -287,8 +328,8 @@ void main() {
       expect(store.pairProblem, isNot(contains('band-1')));
     });
 
-    test('timeout: the band never answers the send command', () async {
-      final band = FakeBand(answer: (_) => null);
+    test('timeout: the band never answers', () async {
+      final band = FakeBand(tamper: (_, _, _) => null);
       final store = _store(band);
       expect(await store.pair(_device), isFalse);
       expect(store.pairProblem, contains('didn’t answer'));
@@ -297,41 +338,23 @@ void main() {
     });
 
     test('the band stops without <EOF>: abandoned after the gap, nothing imported, not asked again', () async {
-      final band = FakeBand(answer: (_) => _frames(_threeDays, eof: false));
+      final band = FakeBand(tamper: (file, _, f) => file == '2026-10-23' ? f.sublist(0, f.length - 1) : f);
       final store = _store(band);
       expect(await store.pair(_device), isFalse);
       expect(store.pairProblem, contains('stopped sending'));
-      expect(band.writes.where((w) => w.$1 == _profile.send), hasLength(1));
+      expect(band.asked('2026-10-23'), 1);
       expect(store.fileReports, isEmpty);
     });
 
     test('a slow transfer is fine: only the gap between notifications is limited', () async {
-      final frames = _frames(_threeDays);
-      final band = FakeBand(answer: (_) => frames);
-      final client = BleBandClient(
-        FakeRadio(band),
-        profile: _profile,
-        now: () => _now,
-        firstByteTimeout: const Duration(milliseconds: 200),
-        gapTimeout: const Duration(milliseconds: 100),
-      );
-      // Slower overall than any single gap: frames spaced 30 ms apart, ~15 frames per day.
-      band.answer = (_) => null;
-      await client.pair(_device);
-      Future<void> send() async {
-        for (final f in frames) {
-          await Future<void>.delayed(const Duration(milliseconds: 30));
-          band._data.add(f);
-        }
-      }
-
-      final fetched = client.fetchDays();
-      await send();
-      expect(await fetched, hasLength(3));
+      final band = FakeBand()..frameDelay = const Duration(milliseconds: 30); // ~22 frames a day: ~0.7 s each
+      final store = _store(band);
+      expect(await store.pair(_device), isTrue, reason: '${store.pairProblem}');
+      expect(store.fileReports, hasLength(3));
     });
 
     test('disconnect mid-transfer: nothing imported', () async {
-      final band = FakeBand(answer: (_) => _frames(_threeDays), dropAfter: 10);
+      final band = FakeBand(dropAfter: 30);
       final store = _store(band);
       expect(await store.pair(_device), isFalse);
       expect(store.pairProblem, contains('disconnected'));
@@ -339,84 +362,74 @@ void main() {
       expect(store.paired, isFalse);
     });
 
-    test('an oversize payload is rejected without asking again', () async {
-      final band = FakeBand(answer: (_) => _frames(_threeDays));
-      final store = _store(band, maxBytes: 4000);
+    test('an oversize file is rejected without asking again', () async {
+      final band = FakeBand();
+      final store = _store(band, maxFileBytes: 1000);
       expect(await store.pair(_device), isFalse);
-      expect(band.writes.where((w) => w.$1 == _profile.send), hasLength(1));
+      expect(band.asked('2026-10-22'), 1);
       expect(store.pairProblem, contains('more than one delivery'));
       expect(store.fileReports, isEmpty);
     });
 
     test('one day the parser rejects rejects the whole delivery', () async {
-      final days = [..._threeDays];
-      days[1] = {...days[1], 'steps': (days[1]['steps'] as int) + 1}; // totals no longer match
-      final band = FakeBand(answer: (_) => _frames(days));
+      final bad = _day('2026-10-23');
+      bad['steps'] = (bad['steps'] as int) + 1; // totals no longer match
+      final band = FakeBand(days: {..._days(_three), '2026-10-23': bad});
       final store = _store(band);
       expect(await store.pair(_device), isFalse);
       expect(store.pairProblem, contains('nothing was added'));
-      expect(band.writes.where((w) => w.$1 == _profile.send), hasLength(2), reason: 'asked once more');
+      expect(band.asked('2026-10-23'), 2, reason: 'asked once more in case a notification was lost');
       expect(store.fileReports, isEmpty, reason: 'the two good days are not imported either');
       expect(band.connected, isFalse);
     });
 
-    test('with no commands known (the default), nothing is written and silence means no days', () async {
-      expect(lifeTwinBandProfile.trigger, BandTrigger.none);
-      expect(lifeTwinBandProfile.clockCommand, isNull);
-      expect(lifeTwinBandProfile.endMarker, utf8.encode('<EOF>'));
-      final band = FakeBand();
-      final store = BandStore(_client(FakeRadio(band), profile: lifeTwinBandProfile), now: () => _now);
+    test('an empty index: paired, no days', () async {
+      final store = _store(FakeBand(days: {}));
       expect(await store.pair(_device), isTrue);
-      expect(band.writes, isEmpty, reason: 'no blind commands to the real band');
       expect(store.fileReports, isEmpty);
     });
 
-    test('live counters are passed through raw', () async {
-      final client = _client(FakeRadio(FakeBand(answer: (_) => _frames(_threeDays))));
+    test('save standing and sitting positions: control 05 and 06', () async {
+      final band = FakeBand(days: {});
+      final client = _client(FakeRadio(band));
+      expect(await client.savePosition(standing: true), isFalse, reason: 'not linked yet');
       await client.pair(_device);
-      expect(await client.liveBytes(), isA<Stream<List<int>>>());
+      expect(await client.savePosition(standing: true), isTrue);
+      expect(await client.savePosition(standing: false), isTrue);
+      expect(band.commands, [bandSaveStanding, bandSaveSitting]);
+      expect(BandInfo(const [0, 8, 2, 12, 0xa0, 5, 0, 0, 7, 0]).positionsSaved, isTrue);
     });
   });
 
   group('BandJsonAssembler', () {
     final a = utf8.encode('{"a":"}{\\"<EOF>","b":[1,{"c":2}]}');
-    final b = utf8.encode('{"d":1}');
 
-    test('JSON stream: values split anywhere, junk between them skipped, <EOF> ends it', () {
-      final asm = BandJsonAssembler(_profile);
+    test('values split anywhere; <EOF> in a string does not end it; <EOF> as a notification does', () {
+      final asm = BandJsonAssembler();
       final out = <Uint8List>[];
-      final all = [...a, 0x0A, 0x00, ...b];
-      for (var i = 0; i < all.length; i += 3) {
-        out.addAll(asm.add(all.sublist(i, i + 3 > all.length ? all.length : i + 3)));
-        expect(asm.ended, isFalse, reason: '<EOF> inside a string does not end the delivery');
+      for (var i = 0; i < a.length; i += 3) {
+        out.addAll(asm.add(a.sublist(i, i + 3 > a.length ? a.length : i + 3)));
+        expect(asm.ended, isFalse);
       }
-      expect(out.map(utf8.decode), [utf8.decode(a), utf8.decode(b)]);
-      expect(asm.midValue, isFalse);
+      expect(out.map(utf8.decode), [utf8.decode(a)]);
       asm.add(_eof);
       expect(asm.ended, isTrue);
     });
 
-    test('length-prefixed', () {
-      final asm = BandJsonAssembler(
-        const BandBleProfile(service: 's', data: 'd', framing: BandFraming.lengthPrefixed, lengthBytes: 2),
-        maxBytes: 1000,
-      );
-      List<int> le(int n) => [n & 0xff, n >> 8];
-      final all = [...le(a.length), ...a, ...le(b.length), ...b];
-      final out = [...asm.add(all.sublist(0, 1)), ...asm.add(all.sublist(1, 9)), ...asm.add(all.sublist(9))];
-      expect(out.map(utf8.decode), [utf8.decode(a), utf8.decode(b)]);
-      expect(() => asm.add(le(60000)), throwsA(isA<BandTransferFailure>()), reason: 'declared size over the cap');
+    test('<EOF> glued to the end of the last chunk', () {
+      final asm = BandJsonAssembler();
+      expect(asm.add([...a, ..._eof]).map(utf8.decode), [utf8.decode(a)]);
+      expect(asm.ended, isTrue);
     });
-  });
 
-  test('parseBandFile is still the only validation', () {
-    expect(() => parseBandFile(Uint8List.fromList(utf8.encode('{"schema":"x"}'))), throwsA(isA<BandFileFailure>()));
+    test('oversize', () {
+      expect(() => BandJsonAssembler(maxBytes: 10).add(a), throwsA(isA<BandTransferFailure>()));
+    });
   });
 }
 
 /// The day with every worn minute's posture unknown (no saved positions): steps kept.
-Map<String, dynamic> _unsaved(Map<String, dynamic> day) {
-  final d = jsonDecode(jsonEncode(day)) as Map<String, dynamic>;
+Map<String, dynamic> _unsaved(Map<String, dynamic> d) {
   final m = d['minutes'] as Map<String, dynamic>;
   final wear = (d['coverage'] as Map<String, dynamic>)['wear_minutes'] as int;
   for (final k in [
@@ -441,12 +454,11 @@ Map<String, dynamic> _unsaved(Map<String, dynamic> day) {
   return d;
 }
 
-/// Keeps only [keep] hours of [day] (the rest zero), and makes its totals and coverage agree.
-void _truncate(Map<String, dynamic> day, List<Map<String, dynamic>> keep) {
-  final hours = {for (final h in keep) h['hour'] as int};
+/// Keeps hours 0..[lastHour] of [day] (the rest zero) and makes its totals and coverage agree.
+void _truncate(Map<String, dynamic> day, int lastHour) {
   final hourly = (day['hourly'] as List).cast<Map<String, dynamic>>();
   for (final h in hourly) {
-    if (!hours.contains(h['hour'])) h.updateAll((k, v) => k == 'hour' ? v : 0);
+    if ((h['hour'] as int) > lastHour) h.updateAll((k, v) => k == 'hour' ? v : 0);
   }
   int sum(String k) => hourly.fold(0, (a, h) => a + (h[k] as int));
   final sit = sum('sitting_lying_min'), stand = sum('standing_min'), walk = sum('walking_min');
@@ -464,7 +476,6 @@ void _truncate(Map<String, dynamic> day, List<Map<String, dynamic>> keep) {
   };
   day['moderate_vigorous_minutes'] = run;
   day['steps'] = sum('steps');
-  final lastHour = hours.reduce((a, b) => a > b ? a : b);
   day['coverage'] = {
     'minutes_recorded': recorded,
     'wear_minutes': recorded - off,

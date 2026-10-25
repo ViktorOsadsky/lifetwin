@@ -10,6 +10,7 @@ import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart' hide TwinMood;
 import '../widgets/whole_word_text.dart';
+import 'band_ble.dart';
 import 'band_charts.dart';
 import 'band_data.dart';
 import 'band_service.dart';
@@ -75,7 +76,21 @@ class _BandPairScreenState extends State<BandPairScreen> {
     widget.onSeeToday();
   }
 
-  Future<void> _pair(BandDevice d) async {
+  String? _positionNote;
+
+  Future<void> _savePosition(bool standing) async {
+    final ok = await widget.store.client.savePosition(standing: standing);
+    if (!mounted) return;
+    setState(
+      () => _positionNote = !ok
+          ? 'Mochi couldn’t reach the band. Try again.'
+          : standing
+          ? 'Stand up straight. In about 5 seconds the band saves it: hold still 3 more seconds.'
+          : 'Sit down as usual. In about 5 seconds the band saves it: hold still 3 more seconds.',
+    );
+  }
+
+    Future<void> _pair(BandDevice d) async {
     setState(() => _step = _Step.linking);
     final ok = await widget.store.pair(d);
     if (!mounted) return;
@@ -213,6 +228,20 @@ class _BandPairScreenState extends State<BandPairScreen> {
                 ],
               ),
             ),
+          // The band tells sitting from standing only after both positions are saved (control 05/06).
+          if (widget.store.client case BleBandClient(info: final info?) when !info.positionsSaved) ...[
+            const SizedBox(height: 8),
+            WholeWordText(
+              'So Mochi can tell sitting from standing, save both positions once:',
+              style: LtText.body(weight: FontWeight.w700),
+            ),
+            for (final (standing, label) in const [(true, 'Save standing position'), (false, 'Save sitting position')])
+              TextButton(
+                onPressed: () => _savePosition(standing),
+                child: Text(label, style: LtText.body(weight: FontWeight.w700)),
+              ),
+            if (_positionNote case final note?) WholeWordText(note, style: LtText.body(color: LtColors.secondary)),
+          ],
         ];
     }
   }
