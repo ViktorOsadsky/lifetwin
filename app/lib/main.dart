@@ -19,6 +19,7 @@ import 'room/room_screen.dart';
 import 'quiz/quiz_game.dart';
 import 'quiz/quiz_screen.dart';
 import 'wellness/home_panel.dart' show HealthScoreSummary;
+import 'wellness/lifespan_block.dart';
 import 'wellness/models.dart';
 import 'wellness/widgets.dart' show WellnessCard;
 import 'wellness/repository_adapter.dart';
@@ -294,6 +295,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// Completes when the person is back on the Room.
   Future<void> _ceremony(BuildContext context, {bool fromTalk = false}) {
     final nav = Navigator.of(context);
+    final snap = _wellness?.snapshot;
+    final reveal = fromTalk && snap?.lifespan != null && !(snap?.lifespanRevealSeen ?? true);
+    if (reveal) _wellness?.markLifespanRevealSeen();
     final route = MaterialPageRoute<void>(
       builder: (ceremonyContext) => FortuneCeremonyScreen(
         appearance: _look.value,
@@ -310,7 +314,16 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
                 if (f.supported) _outlook.value = f;
               },
               scoreCard: switch (_wellness?.snapshot) {
-                final score? when !score.underAge => WellnessCard(child: HealthScoreSummary(snapshot: score)),
+                final score? when !score.underAge => WellnessCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      HealthScoreSummary(snapshot: score, emphasis: reveal),
+                      // The estimate: once, after onboarding; later only on "See your estimate".
+                      if (reveal || !fromTalk) LifespanBlock(lifespan: score.lifespan),
+                    ],
+                  ),
+                ),
                 _ => null,
               },
               // The mascot speaks only if the person chose voice and it still works.

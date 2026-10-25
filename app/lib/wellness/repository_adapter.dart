@@ -18,7 +18,20 @@ class RepositoryWellness extends ChangeNotifier {
     status: repository.healthScoreStatus,
     ageGroupPercentile: repository.ageGroupPercentile,
     message: repository.healthScoreMessage,
+    // TODO(engine #52): lifespan: repository.lifespanEstimate mapped to LifespanReveal (roughGuide when the
+    // age is outside 35-79) and lifespanRevealSeen: repository.lifespanRevealSeen. Until it lands the
+    // lifespan block stays hidden.
+    lifespan: null,
+    lifespanRevealSeen: _revealSeen,
   );
+
+  bool _revealSeen = false;
+
+  /// The reveal after onboarding was shown; the estimate then appears only on "See your estimate".
+  /// TODO(engine #52): persist with repository.setLifespanRevealSeen().
+  void markLifespanRevealSeen() {
+    _revealSeen = true;
+  }
 
   List<WellnessDay> historyDays({DateTime? from, DateTime? to}) {
     final byDay = <DateTime, List<HistoryValue>>{};
