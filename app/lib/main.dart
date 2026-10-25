@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+
+import 'band/band_file_session.dart';
 
 import 'checkin/checkin_reminders.dart';
 import 'checkin/consents.dart' show AiProvider;
@@ -215,6 +218,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   @override
   void initState() {
     super.initState();
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      BandFileSession.instance.start().ignore();
+    }
     _agentic.provider().then((p) => _aiProvider = p, onError: (Object _) {});
     _twin.then((repo) {
       if (!mounted) return;
@@ -285,6 +291,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     _wellness?.repository.removeListener(_syncOutlook);
     _controller.removeListener(_intakeChanged);
     _wellness?.dispose();
+    BandFileSession.disposeIfCreated();
     _controller.dispose();
     if (widget.appearance == null) _look.dispose();
     _outlook.dispose();

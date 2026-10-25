@@ -27,6 +27,7 @@ class BandPairScreen extends StatefulWidget {
     required this.onClose,
     required this.onSeeToday,
     this.onOpenSettings,
+    this.onImportFile,
   });
 
   final BandStore store;
@@ -36,6 +37,9 @@ class BandPairScreen extends StatefulWidget {
 
   /// "Open Settings" when Bluetooth is not allowed (the app's own settings page).
   final VoidCallback? onOpenSettings;
+
+  /// "Import band file" on the first screen: a file instead of Bluetooth. Hidden when null.
+  final Future<void> Function()? onImportFile;
 
   @override
   State<BandPairScreen> createState() => _BandPairScreenState();
@@ -198,6 +202,11 @@ class _BandPairScreenState extends State<BandPairScreen> {
       case _Step.before:
         return col([
           LipButton(label: 'Find my band', icon: Icons.bluetooth_rounded, fontSize: 24, onTap: _search),
+          if (widget.onImportFile != null)
+            TextButton(
+              onPressed: () => widget.onImportFile!(),
+              child: Text('Import band file', style: LtText.body(weight: FontWeight.w700)),
+            ),
           TextButton(
             onPressed: widget.onClose,
             child: Text('Not now', style: LtText.body(weight: FontWeight.w700)),
@@ -882,9 +891,22 @@ class BandSuggestScreen extends StatelessWidget {
 /// switch, and Unpair, which erases band days on this phone while confirmed answers stay. Nothing from
 /// the band goes to an outside AI provider.
 class BandSettingsScreen extends StatelessWidget {
-  const BandSettingsScreen({super.key, required this.store, required this.onBack});
+  const BandSettingsScreen({
+    super.key,
+    required this.store,
+    required this.onBack,
+    this.onImportFile,
+    this.onForget,
+  });
   final BandStore store;
   final VoidCallback onBack;
+
+  /// "Import band file": picks a `lifetwin.band_day.v0` file and feeds the band days (the weekly suggestion
+  /// and its confirmation follow as usual). Hidden when null.
+  final Future<void> Function()? onImportFile;
+
+  /// What "Unpair" does when given (it forgets imported files too); the store's own unpair otherwise.
+  final Future<void> Function()? onForget;
 
   Future<void> _unpair(BuildContext context) async {
     final ok = await showModalBottomSheet<bool>(
@@ -922,7 +944,7 @@ class BandSettingsScreen extends StatelessWidget {
         ),
       ),
     );
-    if (ok == true) await store.unpair();
+    if (ok == true) await (onForget?.call() ?? store.unpair());
   }
 
   @override
@@ -985,13 +1007,23 @@ class BandSettingsScreen extends StatelessWidget {
               onChanged: (_) => store.setDemo(!store.demo),
             ),
           ),
+          if (onImportFile != null) ...[
+            const SizedBox(height: 8),
+            LipButton(
+              label: 'Import band file',
+              kind: LipKind.secondary,
+              height: 56,
+              fontSize: 21,
+              onTap: () => onImportFile!(),
+            ),
+          ],
           const SizedBox(height: 8),
           LipButton(
             label: 'Unpair band',
             kind: LipKind.secondary,
             height: 56,
             fontSize: 21,
-            onTap: store.paired || store.demo ? () => _unpair(context) : null,
+            onTap: store.paired || store.demo || store.hasImportedFile ? () => _unpair(context) : null,
           ),
         ],
       ),
