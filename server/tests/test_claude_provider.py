@@ -257,9 +257,12 @@ async def test_a_slow_reply_falls_back_to_the_template():
 
 async def test_structured_reply_is_used_and_an_unsafe_line_falls_back():
     good = ClaudePersonalizer(
-        api_key="k", client=FakeClient(message('{"line": "And how tall are you, friend?"}'))
+        api_key="k", client=FakeClient(message('{"line": "Take your time. How tall are you?"}'))
     )
-    assert await phrase_question(good, "How tall are you?", None) == "And how tall are you, friend?"
+    assert (
+        await phrase_question(good, "How tall are you?", None)
+        == "Take your time. How tall are you?"
+    )
     unsafe = ClaudePersonalizer(
         api_key="k",
         client=FakeClient(message('{"line": "How tall are you? This adds years to your life?"}')),
@@ -309,27 +312,43 @@ CARE = (
 
 
 @pytest.mark.parametrize(
-    ("consent", "reply", "reworded"),
+    ("consent", "reply", "choice"),
     [
-        ({}, CARE, False),
-        ({"muse": True}, CARE, False),
-        ({"claude": True}, CARE, True),
-        ({"claude": True}, "I'm so sorry today feels awful. I'm right here with you.", False),
-        ({"claude": True}, CARE.replace("gently", "gently, maybe try a supplement"), False),
+        ({}, CARE, None),
+        ({"muse": True}, CARE, None),
+        ({"claude": True}, "approved:0", 0),
+        ({"claude": True}, "approved:1", 1),
+        ({"claude": True}, CARE, None),  # benign but unrecognized prose falls back
+        ({"claude": True}, "I'm so sorry today feels awful. I'm right here with you.", None),
+        ({"claude": True}, CARE.replace("gently", "gently, maybe try a supplement"), None),
     ],
 )
 def test_checkin_care_reply_is_reworded_only_with_claude_consent_and_the_safety_line(
-    consent, reply, reworded
+    consent, reply, choice
 ):
     app = app_for(ANTHROPIC_API_KEY="k")
     with TestClient(app) as client:
-        fake = _care_client(app, message(json.dumps({"line": reply})))
+        if choice is not None:
+
+            async def choose():
+                facts = json.loads(fake.calls[-1]["messages"][0]["content"])
+                return message(json.dumps({"line": facts["approved_wordings"][choice]}))
+
+            fake = _care_client(app, choose)
+        else:
+            fake = _care_client(app, message(json.dumps({"line": reply})))
         state = _wellbeing_state(client)
         body = {"action": "reply", "state": state, "text": "awful", "outside_ai_consent": consent}
+        baseline = client.post("/api/checkin/turn", json={**body, "outside_ai_consent": {}}).json()
         out = client.post("/api/checkin/turn", json=body).json()
+    assert out["state"] == baseline["state"]
     assert out["state"]["care_line_shown"] is True
     assert out["message"].count("911") == 1
-    assert out["message"].startswith(CARE) is reworded
+    if choice is None:
+        assert out["message"] == baseline["message"]
+    else:
+        facts = json.loads(fake.calls[0]["messages"][0]["content"])
+        assert out["message"].startswith(facts["approved_wordings"][choice])
     assert len(fake.calls) == (1 if consent.get("claude") else 0)
 
 
