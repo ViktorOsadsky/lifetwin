@@ -1,20 +1,18 @@
 # LifeTwin on-device Flutter package
 
-This package runs the trained LifeTwin Cox model **inside the Flutter app on iOS**. The app bundle contains `model.json` (learned coefficients and baseline survival) and `support_reference.f64.gz` (encoded training reference vectors for the model's input-support check). Inference uses Dart only. There is no Python interpreter, HTTP request, backend process, internet connection, TensorFlow, Core ML, or TFLite at runtime.
+This package runs the trained LifeTwin Cox model **inside the Flutter app on iOS**. The app bundle contains `model.json` (learned coefficients and baseline survival), `support_reference.f64.gz` (encoded training reference vectors for the input-support check), and `neural_model.json` (the frozen research neural hazard model). Inference uses Dart only. There is no Python interpreter, HTTP request, backend process, internet connection, TensorFlow, Core ML, or TFLite at runtime.
 
-## Current app and conditional PR #126 proposal
+## Current app contract
 
-The current bundled app snapshot exposes a Cox score equal to `−log_relative_hazard_score` (higher is better), plus the same-sex, nearby-age survey percentile. Main still uses the CDC life-table reveal. The root research package has a separate experimental API; adopting it is an explicit adapter change, not an automatic package copy. [Current integration](../../lib/README-model.md).
+Main at `9ace866` includes [#126](https://github.com/ViktorOsadsky/lifetwin/pull/126)'s reveal and [#138](https://github.com/ViktorOsadsky/lifetwin/pull/138)'s centred score:
 
-[PR #126](https://github.com/ViktorOsadsky/lifetwin/pull/126), reviewed at `787e71a`, is **open and held for owner confirmation**. If approved and merged, its latest proposal would:
+- `healthScore = median band s − s(profile)`, where `s` excludes Cox age/sex terms and uses the same-sex, nearby-age survey group. **0 is the middle; positive is healthier and higher is better.** This is the log of the former hazard ratio, not a probability. The percentile remains “Healthier than X of 100 people your age,” qualified as people like you in the survey. There is no separate lower-is-better hazard-index getter.
+- The rough reveal blends CDC age summaries with repeated one-year Cox projection summaries, assuming other inputs stay fixed. Projection weight is zero through 35, rises linearly to 1 at 45, stays 1 through 70, and fades linearly to zero at 79. Projection contributes its 50% crossing and 75%/25% crossing range; CDC contributes its mean and percentile ages. This mixed summary is not mean life expectancy.
+- An unreached projection threshold uses sentinel 110. Its `p25OpenEnded`, `openEnded` or `p75OpenEnded` flag survives only if the associated blended value stays at least 110; a retained flag shows **110+**, not a measured crossing or guaranteed age. Rough guide applies where CDC has the majority weight (completed ages 18–39 and 75–85). A fractional age runs projection at its floor while the weight uses the fractional age. Under 18, over 85 and unsupported/missing inputs remain unavailable.
+- Blending resolves the earlier hard-switch steps but retains a known trend issue: remaining years increase at 35–45 and expected age falls at 70–79. These blends and trends remain unvalidated. CDC is still a current component, rather than wholly historical.
+- Displayed score/reveal outputs use Cox. The shared lab still loads and computes neural output that the app does not read. The neural asset loads through bytes and explicit UTF-8 decoding; that loading fix changes no model values.
 
-- Replace the displayed score with `exp(median band s − s(profile))`, where `s` excludes the Cox age/sex terms and the reference is the same-sex, nearby-age survey band. **1.0 is the median; higher is better.** The percentile remains “Healthier than X of 100 people your age,” qualified as people like you in the survey. There is no separate lower-is-better hazard-index getter.
-- Blend CDC age summaries with repeated one-year Cox projection summaries, assuming other inputs stay fixed. Projection weight is zero through 35, rises linearly to 1 at 45, stays 1 through 70, and fades linearly to zero at 79. It remains zero outside those ages. The projection component's age is the 50% crossing and its range the 75%/25% crossings; CDC contributes its mean and percentile ages. This mixed summary is not mean life expectancy.
-- Mark unreached projection thresholds at 110 as open-ended, but retain `p25OpenEnded`, `openEnded` or `p75OpenEnded` only if the corresponding blended value stays at least 110; retained flags show **110+**, never a measured crossing or guaranteed age. Rough guide applies where CDC has the majority weight (completed ages 18–39 and 75–85). Fractional ages with positive projection weight return null; under 18, over 85 and unsupported/missing profiles remain unavailable.
-- Resolve the earlier hard-switch steps while retaining a known trend issue: remaining years increase at 35–45 and expected age falls at 70–79. The CDC component is not wholly historical. These blends and trends remain unvalidated.
-- Keep displayed score/reveal outputs Cox-based. The shared projection lab would still load and compute a neural output that the app does not read; neural execution/artifacts are not removed by that product choice.
-
-The measured Cox scope remains supported assessment ages 35–79 and years 1–5. Neither repeated lifetime projection, blending nor open-ended display extends that validation; nothing past 79 is validated in the rough guide. No exact date, clinical prediction or causal years gained is supported. [Source model card](../../../model_handoff/lifetwin_on_device/MODEL_CARD.md), [current/proposed contract handoff](../../../docs/handoffs/hazard-projection-docs.md).
+The measured Cox scope remains assessment ages 35–79 and years 1–5. Repeated lifetime projection, blending and open-ended display do not extend that validation; nothing past 79 is validated in the rough guide. No exact date, clinical prediction or causal years gained is supported. [Source model card](../../../model_handoff/lifetwin_on_device/MODEL_CARD.md), [current integration](../../lib/README-model.md), [contract handoff](../../../docs/handoffs/hazard-projection-docs.md).
 
 ## Add it to the iOS Flutter app
 
@@ -28,7 +26,7 @@ dependencies:
     path: packages/lifetwin_on_device
 ```
 
-Then run `flutter pub get`. The package's own `pubspec.yaml` declares the two model assets, so Flutter embeds them automatically in the built application. No iOS permissions or network entitlement are needed for model inference. See [Flutter's package asset documentation](https://docs.flutter.dev/ui/assets/assets-and-images#assets-in-package-dependencies).
+Then run `flutter pub get`. The package's own `pubspec.yaml` declares these model assets, so Flutter embeds them automatically in the built application. No iOS permissions or network entitlement are needed for model inference. See [Flutter's package asset documentation](https://docs.flutter.dev/ui/assets/assets-and-images#assets-in-package-dependencies).
 
 Load the model **once**, such as during app startup or on first opening the LifeTwin screen:
 
