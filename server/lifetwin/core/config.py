@@ -8,7 +8,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", populate_by_name=True)
+    model_config = SettingsConfigDict(
+        env_file=".env", extra="ignore", populate_by_name=True, hide_input_in_errors=True
+    )
 
     app_env: Literal["development", "test", "production"] = "development"
     openai_api_key: SecretStr = SecretStr("")

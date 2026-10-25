@@ -1,5 +1,10 @@
 # LifeTwin backend
 
+The hosted backend now uses [Supabase Edge Functions](../supabase/functions/lifetwin-api/README.md),
+per the owner's October 25 deployment choice. This guide describes the Python/FastAPI
+reference implementation. The two deployments have different prediction/planner
+capabilities; the linked Edge guide states its limits and live validation.
+
 This implements the backend requested after the [master guide](../MASTER_PLAN.md). All credential values in [`.env.example`](../.env.example) remain blank. No API key is needed to start or test it. `POST /api/predict` serves Track A's trained survival model (see Survival forecast below). Training, comparison math and sensitivity scanning are intentionally unimplemented; those routes return HTTP 501 with null prediction/model fields, without mock health estimates.
 
 For the audited functionality inventory, verified refinements and specific remaining backend tasks, read [backend status and remaining work](../docs/backend-status.md).

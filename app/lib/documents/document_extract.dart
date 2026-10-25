@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 
 /// One suggested value from a document. Shapes match contracts/documents.extract.schema.json.
 /// Nothing here is used until the person confirms it.
@@ -113,7 +114,7 @@ abstract class DocumentExtractor {
 /// POST /api/documents/extract. Stateless: the server keeps nothing.
 class HttpDocumentExtractor implements DocumentExtractor {
   HttpDocumentExtractor({http.Client? client, ApiBase? base})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       base = base ?? ApiBase(apiBaseUrl, client);
 
   final http.Client _client;

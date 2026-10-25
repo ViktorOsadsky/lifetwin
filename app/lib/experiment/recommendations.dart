@@ -7,6 +7,7 @@ import '../twin/twin_experiment.dart';
 import '../twin/twin_model.dart';
 import '../twin/twin_repository.dart';
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 import '../wellness/coach_client.dart' show coachRequestBody;
 import '../wellness/coach_context.dart';
 
@@ -128,7 +129,7 @@ Map<String, dynamic> recommendationsRequestBody(TwinRepository repo) {
 /// gentle line and the app goes on.
 class HttpRecommendations implements RecommendationsSource {
   HttpRecommendations(this.repository, {ApiBase? base, http.Client? client})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       base = base ?? ApiBase();
   final TwinRepository repository;
   final ApiBase base;

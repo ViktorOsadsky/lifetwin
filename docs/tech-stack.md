@@ -52,6 +52,15 @@ Use strict structured results for extraction and planning, handle refusals/incom
 
 ## Deployment and verification
 
+**Owner deployment choice, October 25:** deploy the app-facing API on Supabase
+Edge Functions with TypeScript/Deno and backend-only provider credentials. The
+earlier Railway proposal below is superseded for hosting. Python/FastAPI remains
+the local reference; server prediction is explicitly unavailable on the Edge
+deployment, while Flutter retains its on-device model. See the [deployed API
+guide](../supabase/functions/lifetwin-api/README.md) for covered routes and parity
+limits. Provider configuration is encrypted in Vault with service-role-only
+retrieval; no durable health-data storage is introduced.
+
 | Layer | Proposed default | Purpose and boundary |
 | --- | --- | --- |
 | Backend deploy | **Docker on Railway**, one CPU service initially | Reproducible Python dependencies and model artifact, HTTPS API, environment secrets, health/readiness checks. Deployment is a later implementation task; no account/budget assumed. [Railway FastAPI guide](https://docs.railway.com/guides/fastapi). |

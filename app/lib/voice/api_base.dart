@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:http/http.dart' as http;
 
+import 'backend_http_client.dart';
+
 /// One address, or several separated by commas, tried in parallel.
 const apiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8000');
 
@@ -16,7 +18,7 @@ class ApiBase {
         for (final u in urls.split(','))
           if (u.trim().isNotEmpty) u.trim(),
       ],
-      _client = client ?? http.Client();
+      _client = client ?? BackendHttpClient();
 
   final List<String> candidates;
   final http.Client _client;

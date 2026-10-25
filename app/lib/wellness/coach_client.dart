@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 
 class CoachFailure implements Exception {
   const CoachFailure(this.statusCode);
@@ -162,7 +163,7 @@ abstract class CoachClient {
 
 class HttpCoachClient implements CoachClient {
   HttpCoachClient({ApiBase? base, http.Client? client})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       _ownsClient = client == null,
       base = base ?? ApiBase();
   final ApiBase base;
