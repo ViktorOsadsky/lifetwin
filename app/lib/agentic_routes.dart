@@ -5,6 +5,10 @@ import 'band/band_screens.dart';
 import 'band/band_service.dart';
 import 'band/band_store.dart';
 import 'checkin/change_chat.dart';
+import 'wellness/coach_client.dart';
+import 'wellness/coach_context.dart';
+import 'wellness/daily_plan_screen.dart';
+import 'wellness/today_card.dart';
 import 'checkin/check_in.dart';
 import 'checkin/checkin_client.dart';
 import 'checkin/consent_screens.dart';
@@ -47,12 +51,15 @@ class AgenticRoutes {
     CheckinGuide? guide,
     ChangeClient? changeClient,
     this.healthSamples,
+    CoachClient? coach,
     CapabilitiesClient? capabilities,
     BandClient? bandClient,
     this.onDeleted,
     // ignore: prefer_initializing_formals
   }) : _guide = guide,
        _api = api,
+       // ignore: prefer_initializing_formals
+       _coach = coach,
        changeClient = changeClient ?? HttpChangeClient(base: api),
        capabilities = capabilities ?? HttpCapabilitiesClient(base: api),
        _bandClient = bandClient ?? StubBandClient();
@@ -63,6 +70,10 @@ class AgenticRoutes {
   final VoiceOnboardingController Function() voice;
   final CheckinGuide? _guide;
   final ApiBase _api;
+
+  /// Today's plan (`POST /api/coach/plan`); tests pass a fake.
+  late final CoachClient coach = _coach ?? HttpCoachClient(base: _api);
+  final CoachClient? _coach;
 
   /// The check-in server; it is told the profile's age so Mochi's examples fit.
   late final CheckinGuide guide = _guide ?? HttpCheckinClient(base: _api, age: () => repo?.profile['age']);
@@ -112,6 +123,7 @@ class AgenticRoutes {
         voiceUsable: () => v.voiceUsable,
         healthSamples: healthSamples,
         appearance: look,
+        todayPlan: TodayPlanHook(encouragement: _encouragement, open: (c) => todayPlan(c)),
         child: child!,
       ),
     );
@@ -302,6 +314,45 @@ class AgenticRoutes {
     if (answer == null) return false;
     await c.setOutsideAi(p.id, answer);
     return answer;
+  }
+
+  /// The coach's `encourage` line for today (null when the coach cannot be reached).
+  Future<String?> _encouragement() async {
+    final r = repo;
+    if (r == null) return null;
+    final plan = await coach.plan(coachContext(r));
+    for (final i in plan.items) {
+      if (i['kind'] == 'encourage') return i['message'] as String;
+    }
+    return null;
+  }
+
+  /// "Today with Mochi" for Home: mount it where the Today card goes. It asks the outside-AI consent once
+  /// before the first plan (the coach may use the same provider), and opens the full plan on a tap.
+  Widget todayCard(BuildContext context, {VoidCallback? onTalk}) => TodayWithMochiCard(
+    client: coach,
+    confirmedContext: () => coachContext(repo!),
+    beforeFirstPlan: () => ensureOutsideAiConsent(context),
+    onOpen: () => todayPlan(context, onTalk: onTalk),
+  );
+
+  /// The full daily plan (`DailyPlanScreen`).
+  void todayPlan(BuildContext context, {VoidCallback? onTalk}) {
+    final r = repo;
+    if (r == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (page) => DailyPlanScreen(
+          client: coach,
+          confirmedContext: () => coachContext(r),
+          onBack: () => Navigator.of(page).pop(),
+          onTalk: () {
+            Navigator.of(page).pop();
+            onTalk?.call();
+          },
+        ),
+      ),
+    );
   }
 
   void experiment(BuildContext context) {

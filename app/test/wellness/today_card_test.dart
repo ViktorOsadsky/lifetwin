@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lifesim/checkin/check_in.dart';
+import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
+import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/ui/theme.dart';
+import 'package:lifesim/ui/twin_appearance.dart';
+import 'package:lifesim/voice/fakes.dart';
 import 'package:lifesim/wellness/coach_client.dart';
 import 'package:lifesim/wellness/today_card.dart';
 
 import '../support/app_fonts.dart';
+import '../checkin/daily_checkin_test.dart' show profile;
+import '../checkin/readback_flow_test.dart' show ContractGuide;
 import 'coach_test.dart' show FakeCoach;
 
 Map<String, dynamic> item(String id, String kind, String title, {int? minutes, String tod = 'morning'}) => {
@@ -121,5 +128,57 @@ void main() {
     expect(find.text('Today with Mochi'), findsOneWidget);
     expect(find.text(todayFallbackLine), findsOneWidget);
     expect(find.text('Why?'), findsNothing);
+  });
+
+  testWidgets('after a check-in: Mochi\'s encouragement and Here\'s today\'s plan', (t) async {
+    final repo = TwinRepository(model: await TwinModelService.load(), store: await TwinStore.open(MemoryBackend()));
+    await repo.saveConversationProfile(profile);
+    final coach = FakeCoach()..responses.add(fourSlots());
+    var opened = 0;
+    t.view.physicalSize = const Size(390, 844);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final look = ValueNotifier(const TwinAppearance(name: 'Mochi'));
+    addTearDown(look.dispose);
+    await t.pumpWidget(
+      MaterialApp(
+        theme: lifeTwinTheme(),
+        builder: (c, child) => CheckInScope(
+          repository: repo,
+          guide: ContractGuide(),
+          speechInput: FakeSpeechInput(),
+          speechOutput: FakeSpeechOutput(),
+          appearance: look,
+          todayPlan: TodayPlanHook(
+            encouragement: () async =>
+                (await coach.plan({})).items.firstWhere((i) => i['kind'] == 'encourage')['message'] as String,
+            open: (_) => opened++,
+          ),
+          child: child!,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => openCheckIn(context, kind: CheckInKind.quick),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await t.tap(find.text('open'));
+    await t.pumpAndSettle();
+    await t.enterText(find.byType(TextField), '7 hours');
+    await t.testTextInput.receiveAction(TextInputAction.send);
+    await t.pumpAndSettle();
+    await t.tap(find.text('About 6 hours'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Looks right'));
+    await t.pumpAndSettle();
+    expect(find.text('You are doing great, gently.'), findsOneWidget);
+    await t.tap(find.text('Here’s today’s plan'));
+    await t.pumpAndSettle();
+    expect(opened, 1);
+    expect(find.text('open'), findsOneWidget, reason: 'back on the screen the check-in was opened from');
   });
 }

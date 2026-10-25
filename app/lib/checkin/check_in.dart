@@ -36,6 +36,14 @@ import '../experiment/widgets/source_link.dart';
 /// `quick` is the 1-minute daily chat; `weekly` is the longer one.
 enum CheckInKind { quick, weekly }
 
+/// After a check-in finishes: Mochi's encouragement (the coach's `encourage` slot; null means use the built-in
+/// line) and "Here's today's plan", which opens the plan (the Home screen's Today card).
+class TodayPlanHook {
+  const TodayPlanHook({required this.encouragement, required this.open});
+  final Future<String?> Function() encouragement;
+  final void Function(BuildContext context) open;
+}
+
 /// What a check-in needs, provided once near the top of the app.
 class CheckInScope extends InheritedWidget {
   const CheckInScope({
@@ -49,6 +57,7 @@ class CheckInScope extends InheritedWidget {
     this.healthSamples,
     this.openUrl = defaultOpenUrl,
     this.now,
+    this.todayPlan,
     required super.child,
   });
 
@@ -69,6 +78,9 @@ class CheckInScope extends InheritedWidget {
 
   /// The clock for "due" (tests set it); the phone's clock by default.
   final DateTime Function()? now;
+
+  /// Encouragement and "Here's today's plan" on the finished check-in. Null: neither is shown.
+  final TodayPlanHook? todayPlan;
 
   static CheckInScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<CheckInScope>();
@@ -110,6 +122,7 @@ Future<void> openCheckIn(BuildContext context, {required CheckInKind kind}) {
               repository: scope.repository,
               appearance: look,
               open: scope.openUrl,
+              todayPlan: scope.todayPlan,
               onDone: () => Navigator.of(route).pop(),
             ),
           ),

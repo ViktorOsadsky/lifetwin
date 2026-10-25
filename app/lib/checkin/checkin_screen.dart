@@ -56,10 +56,14 @@ class CheckInScreen extends StatefulWidget {
     required this.onDone,
     this.open = defaultOpenUrl,
     this.readback = const ServerReadback(),
+    this.todayPlan,
   });
 
   final CheckinController controller;
   final CheckInKind kind;
+
+  /// Encouragement and "Here's today's plan" once the check-in is done. Null: neither.
+  final TodayPlanHook? todayPlan;
   final TwinRepository repository;
   final TwinAppearance appearance;
   final VoidCallback onDone;
@@ -288,6 +292,10 @@ class _CheckInScreenState extends State<CheckInScreen> {
             child: Text('Your confirmed week', style: LtText.body(weight: FontWeight.w700)),
           ),
           ConfirmedWeek(confirmed: confirmed),
+        ],
+        if (widget.todayPlan case final hook?) ...[
+          const SizedBox(height: 12),
+          _Encouragement(hook: hook, onDone: widget.onDone),
         ],
         if (c.progress != null && c.progress!.goodWeeks > 0) ...[
           const SizedBox(height: 10),
@@ -609,6 +617,49 @@ class _AnswerList extends StatelessWidget {
                   ),
                 ),
         ),
+    ],
+  );
+}
+
+/// Mochi's encouragement after a check-in, and "Here's today's plan" (back to Home, then the plan).
+class _Encouragement extends StatefulWidget {
+  const _Encouragement({required this.hook, required this.onDone});
+  final TodayPlanHook hook;
+  final VoidCallback onDone;
+
+  static const fallback = 'Nice work today. A small step counts.';
+
+  @override
+  State<_Encouragement> createState() => _EncouragementState();
+}
+
+class _EncouragementState extends State<_Encouragement> {
+  // Asked once, not on every rebuild.
+  late final Future<String?> _line = widget.hook.encouragement().catchError((Object _) => null);
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      FutureBuilder<String?>(
+        future: _line,
+        builder: (_, snap) => Semantics(
+          liveRegion: true,
+          child: WholeWordText(snap.data ?? _Encouragement.fallback, style: LtText.body(weight: FontWeight.w700)),
+        ),
+      ),
+      const SizedBox(height: 8),
+      LipButton(
+        label: 'Here’s today’s plan',
+        kind: LipKind.secondary,
+        height: 56,
+        fontSize: 20,
+        onTap: () {
+          final nav = Navigator.of(context);
+          widget.onDone();
+          widget.hook.open(nav.context);
+        },
+      ),
     ],
   );
 }
