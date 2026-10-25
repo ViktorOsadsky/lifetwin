@@ -40,7 +40,11 @@ VIGOROUS = (
     r"\b(?:out of breath|breathless\w*|puff\w*|huff\w*|winded|pant\w*|gasp\w*|"
     r"hard to (?:talk|breathe)|couldn't (?:talk|catch my breath)|sweat\w*|uphill|up (?:the|a|some) hills?|hills|hilly|"
     r"steep|jog\w*|run|ran|running|laps|hard|harder|strenuous|vigorous\w*|"
-    r"intense|shovel\w* snow|spin class|fast)\b"
+    r"intense|shovel\w* snow|spin class|fast|"
+    # The gym and sport: nearly always out of breath for the people who say them.
+    r"gym|hiit|crossfit|spin|spinning|circuits?|boot ?camp|sprint\w*|intervals|workout|"
+    r"football|soccer|basketball|squash|rugby|hockey|netball|tennis|badminton|"
+    r"(?:5|five) a side|boxing|kickboxing|martial arts|bouldering|rowing machine)\b"
 )
 # "I didn't get out of breath", "nothing that made me breathless": none of the hard kind.
 NOT_VIGOROUS = (
@@ -54,7 +58,9 @@ NOT_VIGOROUS = (
 MODERATE = (
     r"\b(?:easy|easily|gentle|gently|leisurely|stroll\w*|ambl\w*|potter\w*|garden\w*|"
     r"housework|house work|vacuum\w*|hoover\w*|cleaning|chores|yoga|tai chi|water aerobics|"
-    r"golf|slow\w*|light|flat|bowling|stretch\w*|doubles|walk\w*|dog walk\w*)\b"
+    r"golf|slow\w*|light|flat|bowling|stretch\w*|doubles|walk\w*|dog walk\w*|"
+    r"chas\w* (?:after )?(?:the |my |our )?(?:kids|children|grandkids|grandchildren|toddlers?|"
+    r"little ones)|play\w* with (?:the |my |our )?(?:kids|children|grandkids|grandchildren))\b"
 )
 ZERO_BOTH = (
     r"^(?:no|nope|nah|none|nothing|zero|not really|not a thing|not at all)"
@@ -133,15 +139,51 @@ WISH = (
 # Figures of speech that sound like running: "the grandkids ran me ragged".
 IDIOMS = (
     r"\b(?:ran|run|running)\s+(?:me|us|myself)?\s*(?:ragged|off (?:my|our) feet)\b|"
-    r"\b(?:ran|run|running)\s+(?:errands|around after \w+|late|out of)\b"
+    r"\b(?:ran|run|running)\s+(?:errands|around after \w+|late|out of)\b|"
+    r"\bschool runs?\b|\b(?:a|quick) run (?:to|into) (?:the )?(?:shops?|store|town)\b"
 )
 # "Nine and a bit hours": more than the number, by how much is not said.
 MORE_THAN = r"\band a (?:bit|little)\b|\b(?:\d+|an?) (?:minute|hour)s? (?:plus|or more)\b|\bodd\b"
 
 
+# A change of mind inside one answer: "ran 20 min, no wait 25", "7, actually 8",
+# "8, no, more like 7". The number said last replaces the one before it.
+SELF_CORRECTION = re.compile(
+    r"(?P<old>(?<![\d.])\d+(?:\.\d+)?)(?P<unit> ?(?:minute|hour)s?\b)?"
+    r"[\s,.;:!-]+(?:(?:no|nope|sorry|oh|um|er|uh)[\s,.;:!-]+)*"
+    r"(?:wait|actually|i mean|i meant|make that|scratch that|correction|hang on|hold on|"
+    r"no no|or rather|rather|more like)[\s,.;:!-]+"
+    r"(?:(?:no|it was|it's|more like|like|about|maybe|probably|closer to)[\s,.;:!-]+)*"
+    r"(?P<new>(?<![\d.])\d+(?:\.\d+)?)(?P<newunit> ?(?:minute|hour)s?\b)?"
+)
+
+
+def last_said(text: str) -> str:
+    """The answer with each change of mind applied: the last number said wins, in the
+    unit said with it (or the first number's unit)."""
+    plain = _canonical(normalize_text(text))
+
+    def keep(match: re.Match) -> str:
+        unit = match.group("newunit") or match.group("unit") or ""
+        return match.group("new") + unit
+
+    for _ in range(3):  # "7, no wait 8, actually 9"
+        plain, changed = SELF_CORRECTION.subn(keep, plain)
+        if not changed:
+            break
+    return plain
+
+
 def _plain(text: str) -> str:
-    text = _canonical(normalize_text(text))
+    text = last_said(text)
     text = re.sub(IDIOMS, " ", text)
+    # "Chased the kids for an hour": the person's own activity, the kids are only in it.
+    text = re.sub(
+        r"\b(chas\w*(?: after)?|play\w* with) (?:the |my |our )?(?:kids|children|grandkids|"
+        r"grandchildren|toddlers?|little ones)\b",
+        r"\1 the little ones",
+        text,
+    )
     # "between 20 and 30 minutes" is the range "20 to 30 minutes".
     text = re.sub(r"\bbetween (\d+(?:\.\d+)?) and (?=\d)", r"\1 to ", text)
     # "maybe 25 minutes", "seven hours maybe": an estimate, read back as "about".
@@ -176,7 +218,9 @@ ACTIVITY = (
     r"\b(?:walk\w*|stroll\w*|garden\w*|potter\w*|housework|vacuum\w*|hoover\w*|clean\w*|"
     r"chores|yoga|tai chi|golf|swim\w*|swam|laps|jog\w*|run|ran|running|bik\w*|cycl\w*|"
     r"rode|ride|danc\w*|hik\w*|tennis|bowl\w*|aerobics|exercis\w*|class|stairs|treadmill|"
-    r"shovel\w*|dog|stretch\w*|gym|workout|mow\w*|digging|dug)\b"
+    r"shovel\w*|dog|stretch\w*|gym|workout|mow\w*|digging|dug|hiit|crossfit|spin\w*|"
+    r"circuits?|football|soccer|basketball|squash|rugby|hockey|netball|badminton|boxing|"
+    r"commut\w*|chas\w*|play\w*|sports?|bouldering|rowing)\b"
 )
 PIECES = r"[;,]|\b(?:and then|then|and|but|after that|plus)\b"
 
@@ -288,6 +332,9 @@ def read_activity(
         if paced is not None:
             return paced
 
+    if re.search(STEPS, plain) and not _durations(plain):
+        # "12k steps", "3 miles": a distance is not a time, so the minutes are asked.
+        return ActivityRead(hint="Thank you. About how many minutes was that, all together?")
     timed = _durations(plain) > 0 or bool(re.search(r"\d", plain))
     if not timed and re.search(COMPARED, plain) and not week:
         return ActivityRead(hint="More or less is fine, but I need a number. ")
@@ -317,10 +364,20 @@ def read_activity(
 
     if _doubtful(plain):
         return ActivityRead()
+    if len(open_paces) == 1 and re.match(r"(?:no|nope|nah)\b", plain) and not _paces(plain):
+        # "No, it was 45 minutes" to the follow-up: none of it, or a change to the other
+        # part? Asked again, never guessed.
+        return ActivityRead()
     values: dict = {}
     if re.search(NOT_VIGOROUS, plain) and "vigorous" in open_paces:
         values[vig] = 0
-    paces = _paces(plain)
+    segments = _segments(plain)
+    paces = set().union(*(named for named, _ in segments))
+    timed_parts = [named for named, words in segments if re.search(r"\d", words)]
+    if paces and len(timed_parts) > 1 and not all(timed_parts):
+        # "45 minutes of something, and I walked 20": a time without a pace is never
+        # added to the other part's pace.
+        return ActivityRead()
     if len(paces) <= 1:
         minutes = _amount(plain, week, today)
         if minutes is None:

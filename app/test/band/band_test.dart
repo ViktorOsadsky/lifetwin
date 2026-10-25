@@ -147,7 +147,7 @@ void main() {
       expect(out['age'], 55);
       // Changing it through Mochi later makes it the person's own again.
       await repo.saveConversationProfile({bandField: 90}, kind: HistoryKind.mochiChange);
-      expect(repo.provenance(bandField)!.sourceLabel, 'Mochi change');
+      expect(repo.provenance(bandField)!.sourceLabel, 'Changed with Mochi');
       expect(repo.outsideAiProfile().containsKey(bandField), isTrue);
     });
   });

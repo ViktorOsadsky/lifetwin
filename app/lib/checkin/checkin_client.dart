@@ -30,8 +30,31 @@ class CheckinTurn {
   String get kind => '${state['kind']}';
   String? get currentField => state['current_field'] as String?;
 
-  /// The value being read back came from Apple Health ("Looks right?").
+  /// Apple Health's value is offered (quick: in the question, "Does that sound right?"),
+  /// or the held exercise minutes came from it.
   bool get fromHealth => state['from_health'] == true;
+
+  /// Answers heard but not saved yet (quick and daily: everything said so far; weekly:
+  /// the answer being read back). Null values are left out.
+  Map<String, dynamic> get pending => {
+    for (final e in Map<String, dynamic>.from(state['pending'] as Map? ?? const {}).entries)
+      if (e.value != null) e.key: e.value,
+  };
+
+  /// Quick and daily: the fields of [pending] the check question is about ("Did I hear
+  /// 15 hours of sleep? That's a lot for one night...").
+  List<String> get checking => [for (final f in state['checking'] as List? ?? const []) '$f'];
+
+  /// Quick and daily: the one read-back of every answer at the end (no open question).
+  bool get isFinalReadback => isConfirming && currentField == null;
+
+  /// Quick and daily: a yes/no check about one unusual answer, mid check-in.
+  bool get isCheckQuestion => isConfirming && checking.isNotEmpty;
+
+  /// Quick: Apple Health's value is offered in the open question; "Looks right" is the
+  /// `confirm` action, and any other answer replaces it.
+  bool get offersHealthValue =>
+      phase == 'asking' && fromHealth && currentField != null && (state['suggested'] as Map?)?[currentField] != null;
 
   /// `slower` or `louder`, when the person asked for it.
   String? get speechHint => raw['speech_hint'] as String?;
@@ -56,10 +79,13 @@ class CheckinTurn {
       if (e.value != null) e.key: e.value,
   };
 
-  /// Questions answered or skipped (for "question 2 of 3"), not counting the open one.
+  /// Questions answered (saved or heard) or skipped (for "question 2 of 3"), not counting
+  /// the open one.
   Set<String> get doneFields => {
     for (final e in Map<String, dynamic>.from(state['confirmed'] as Map? ?? const {}).entries)
       if (e.value != null) e.key,
+    for (final f in pending.keys)
+      if (!checking.contains(f)) f,
     for (final f in state['skipped_fields'] as List? ?? const []) '$f',
   }..remove(currentField);
 
