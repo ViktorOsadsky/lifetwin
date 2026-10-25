@@ -83,17 +83,45 @@ def test_reference_makes_mean_hr_about_one(inputs: lr.Inputs) -> None:
         assert sum(hrs) / len(hrs) == pytest.approx(1.0, abs=0.03)
 
 
+def test_band_adjustment_matches_cox_five_year_survival(inputs: lr.Inputs) -> None:
+    """After the per-band hazard factor, mean life-table S5 == mean Cox S5 within 0.5 pp."""
+    s0_5 = inputs.model["baseline_survival"][4]
+    for sex in ("male", "female"):
+        qx = inputs.life_table[sex]["qx"]
+        for band, (lo, hi) in enumerate(lr.CALIBRATION_BANDS):
+            sel = [r for r in inputs.rows if r["sex"] == sex and lo <= r["age"] <= hi]
+            cox = sum(s0_5 ** math.exp(r["full"]) for r in sel) / len(sel)
+            c = inputs.band_log_adjustment[sex][band]
+            lt = sum(
+                lr.five_year_survival(
+                    qx,
+                    int(r["age"]),
+                    r["risk"] - lr.reference_score(inputs.reference[sex], r["age"]) + c,
+                )
+                for r in sel
+            ) / len(sel)
+            assert abs(100 * (lt - cox)) < 0.5
+
+
+def test_extrapolated_ages_use_the_nearest_band(inputs: lr.Inputs) -> None:
+    assert [lr.band_index(a) for a in (18, 34, 35, 44, 45, 79, 80, 85)] == [0, 0, 0, 0, 1, 4, 4, 4]
+    p = lr.EXAMPLE_PROFILES["female_20_typical"]
+    assert lr.log_hazard_ratio(inputs, p) - lr.log_hazard_ratio(inputs, p, adjusted=False) == (
+        pytest.approx(inputs.band_log_adjustment["female"][0])
+    )
+
+
 def test_headline_wording_and_calendar_year(inputs: lr.Inputs) -> None:
     g = lr.build_golden(inputs)["calendar_example"]
     assert g["headline"].startswith("You're likely to live to about ")
     assert "die" not in g["headline"]
-    assert g["expected_calendar_year"] == 2066
+    assert g["expected_calendar_year"] == 2065
 
 
 def test_profile_checks() -> None:
     p = lr.EXAMPLE_PROFILES["male_45_readme"]
     for bad in (
-        {"age": 29},
+        {"age": 17},
         {"age": 86},
         {"bmi": None},
         {"smoking_status": 3},

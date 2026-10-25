@@ -1,7 +1,7 @@
 """Reference implementation of the LifeTwin expected-lifespan research prototype.
 
-Not wired into any app screen or API. It exists so the owner can decide whether and how
-to show a lifespan estimate; see docs/lifespan-estimate.md.
+A rough, proof-of-concept estimate behind the app's one-time lifespan reveal
+(TwinRepository.lifespanEstimate; owner override 2026-10-24). See docs/lifespan-estimate.md.
 
 Method (relative-risk-adjusted period life table):
 
@@ -13,6 +13,10 @@ Method (relative-risk-adjusted period life table):
   sex (both are already in the sex-specific life table). The reference is the
   log-mean-hazard of NHANES training profiles of the same sex and similar age, so the
   average hazard among people of your age and sex is HR = 1.
+* Age-band calibration: per sex and age band, one multiplicative hazard factor k so the
+  mean life-table 5-year survival of the NHANES training profiles in that band equals the
+  Cox model's own mean 5-year survival. Ages 18-34 and 80-85 use the nearest band's k
+  (held constant). The adjusted log HR is log HR + log k.
 * Proportional hazards: within the life-table year starting at age y the person's
   survival is ((1 - v*q_y) / (1 - u*q_y)) ** HR_y, and above 100 it is exp(-HR*t/e100).
   HR = 1 reproduces the table exactly.
@@ -64,7 +68,9 @@ VALIDATED_YEARS = 5.0
 DEFAULT_HALF_LIFE = 20.0
 REFERENCE_BANDWIDTH = 5.0
 CHECKED_AGES = (35, 79)
-PROFILE_AGES = (30, 85)
+PROFILE_AGES = (18, 85)  # the health score's extrapolated range (twin_model.dart)
+# Age bands for the per-band hazard calibration (assessment age; outside, the nearest band).
+CALIBRATION_BANDS = ((35, 44), (45, 54), (55, 64), (65, 74), (75, 79))
 DAYS_PER_YEAR = 365.2425
 MILESTONES = (80, 90, 100)
 CURVE_END_AGE = 110
@@ -202,6 +208,77 @@ def build_reference_scores(model: dict, support: list[list[float]]) -> dict[str,
     return out
 
 
+def support_rows(model: dict, support: list[list[float]]) -> list[dict]:
+    """Training profiles as (sex, whole age, risk score, full centred Cox score)."""
+    cols = risk_columns(model)
+    coefs = [model["coefficients"][c] for c in cols]
+    beta, center = model["coefficients"], model["feature_center"]
+    rows = []
+    for r in support:
+        full = sum(b * (x - c) for b, x, c in zip(beta, r, center, strict=True))
+        age = 55 + 10 * r[0]
+        if abs(age - round(age)) > 1e-6:
+            raise ValueError("support ages are expected to be whole years")
+        rows.append({
+            "sex": "female" if r[8] == 1.0 else "male",
+            "age": float(round(age)),
+            "risk": risk_score([r[c] for c in cols], coefs),
+            "full": full,
+        })  # fmt: skip
+    return rows
+
+
+def five_year_survival(qx: list[float], age: int, log_hr: float) -> float:
+    """Life-table survival from whole `age` to age + 5 (no attenuation inside 5 years)."""
+    hr = math.exp(log_hr)
+    s = 1.0
+    for y in range(age, age + 5):
+        s *= math.pow(1 - qx[y], hr)
+    return s
+
+
+def band_index(age: float) -> int:
+    """Calibration band for an assessment age; nearest band outside 35-79."""
+    for i, (_, hi) in enumerate(CALIBRATION_BANDS):
+        if age < hi + 1:
+            return i
+    return len(CALIBRATION_BANDS) - 1
+
+
+def build_band_adjustment(
+    model: dict,
+    life_table: dict,
+    reference: dict[str, list[float]],
+    rows: list[dict],
+) -> dict[str, list[float]]:
+    """Per sex, per band: log k such that mean life-table S5 (HR x k) == mean Cox S5."""
+    s0_5 = model["baseline_survival"][4]
+    out: dict[str, list[float]] = {}
+    for sex in ("male", "female"):
+        qx = life_table[sex]["qx"]
+        logs = []
+        for lo, hi in CALIBRATION_BANDS:
+            sel = [r for r in rows if r["sex"] == sex and lo <= r["age"] <= hi]
+            target = sum(s0_5 ** math.exp(r["full"]) for r in sel) / len(sel)
+            lhrs = [
+                (int(r["age"]), r["risk"] - reference_score(reference[sex], r["age"])) for r in sel
+            ]
+
+            def mean_s5(c: float, lhrs=lhrs, qx=qx) -> float:
+                return sum(five_year_survival(qx, a, lhr + c) for a, lhr in lhrs) / len(lhrs)
+
+            lo_c, hi_c = -3.0, 3.0  # mean S5 falls as c rises
+            for _ in range(100):
+                mid = 0.5 * (lo_c + hi_c)
+                if mean_s5(mid) > target:
+                    lo_c = mid
+                else:
+                    hi_c = mid
+            logs.append(0.5 * (lo_c + hi_c))
+        out[sex] = logs
+    return out
+
+
 class Inputs:
     """Everything the calculation needs, loaded once."""
 
@@ -210,14 +287,19 @@ class Inputs:
         self.life_table = load_life_table()
         self.columns = risk_columns(self.model)
         self.coefficients = [self.model["coefficients"][c] for c in self.columns]
-        self.reference = build_reference_scores(self.model, read_support())
+        support = read_support()
+        self.reference = build_reference_scores(self.model, support)
+        self.rows = support_rows(self.model, support)
+        self.band_log_adjustment = build_band_adjustment(
+            self.model, self.life_table, self.reference, self.rows
+        )
 
 
 # --------------------------------------------------------------------------- math
 
 
 def reference_score(table: list[float], age: float) -> float:
-    """Linear interpolation over integer ages 35..79, held flat outside (ages 30-34, 80-85)."""
+    """Linear interpolation over integer ages 35..79, held flat outside (ages 18-34, 80-85)."""
     lo, hi = CHECKED_AGES
     if age <= lo:
         return table[0]
@@ -228,11 +310,16 @@ def reference_score(table: list[float], age: float) -> float:
     return table[i - lo] + frac * (table[i + 1 - lo] - table[i - lo])
 
 
-def log_hazard_ratio(inputs: Inputs, profile: dict) -> float:
+def log_hazard_ratio(inputs: Inputs, profile: dict, adjusted: bool = True) -> float:
+    """log HR versus same-sex, same-age peers; plus the band's log k when `adjusted`."""
     check_profile(profile)
     sex = SEXES[profile["sex_nhanes"]]
+    age = float(profile["age"])
     score = risk_score(encode_risk(profile), inputs.coefficients)
-    return score - reference_score(inputs.reference[sex], float(profile["age"]))
+    lhr = score - reference_score(inputs.reference[sex], age)
+    if adjusted:
+        lhr += inputs.band_log_adjustment[sex][band_index(age)]
+    return lhr
 
 
 def attenuation(years_from_now: float, half_life: float | None) -> float:
@@ -335,12 +422,11 @@ def headline(result: dict) -> str:
 
 
 def expected_calendar_year(as_of: dt.date, life_expectancy_years: float) -> int:
-    """Calendar year of as_of + remaining life expectancy (whole days, rounded half-up).
+    """The current year + remaining life expectancy, rounded to a whole year.
 
-    Secondary view only; the product shows no exact day or date (owner ruling).
+    A year, never a day or date (owner ruling): a date would be false precision.
     """
-    days = math.floor(life_expectancy_years * DAYS_PER_YEAR + 0.5)
-    return (as_of + dt.timedelta(days=days)).year
+    return as_of.year + round_half_up(life_expectancy_years)
 
 
 def exact_age(birth: dt.date, as_of: dt.date) -> float:
@@ -404,7 +490,7 @@ def render_dart_data(inputs: Inputs) -> str:
     lt = inputs.life_table
     parts = [
         "// GENERATED by server/tools/lifespan_reference.py build. Do not edit by hand.",
-        "// Research prototype data for lifespan.dart; not used by any app screen.",
+        "// Data for lifespan.dart (rough, proof-of-concept lifespan reveal).",
         "// dart format off",
         "",
         f"/// {LIFE_TABLE_SOURCE}",
@@ -425,6 +511,11 @@ def render_dart_data(inputs: Inputs) -> str:
         f"const referenceScoreMale = <double>{_dart_list(inputs.reference['male'])};",
         f"const referenceScoreFemale = <double>{_dart_list(inputs.reference['female'])};",
         "",
+        "/// Per-band log hazard factor (calibrates life-table S5 to the Cox model), bands",
+        f"/// {', '.join(f'{lo}-{hi}' for lo, hi in CALIBRATION_BANDS)}; ages outside use the nearest band.",
+        f"const bandLogAdjustmentMale = <double>{_dart_list(inputs.band_log_adjustment['male'])};",
+        f"const bandLogAdjustmentFemale = <double>{_dart_list(inputs.band_log_adjustment['female'])};",
+        "",
         "/// q(x), ages 0..99; and e(100) for the open 100+ interval.",
         f"const qxMale = <double>{_dart_list(lt['male']['qx'])};",
         f"const qxFemale = <double>{_dart_list(lt['female']['qx'])};",
@@ -440,6 +531,12 @@ def render_dart_data(inputs: Inputs) -> str:
 
 
 EXAMPLE_PROFILES: dict[str, dict] = {
+    "female_20_typical": {
+        "age": 20, "sex_nhanes": 2, "bmi": 22.0, "sleep_hours": 8,
+        "vigorous_recreation_min_week": 90, "moderate_recreation_min_week": 60,
+        "sedentary_min_day": 480, "smoking_status": 0, "diabetes_diagnosed": 0,
+        "hypertension_diagnosed": 0, "general_health": 2,
+    },
     "male_30_typical": {
         "age": 30, "sex_nhanes": 1, "bmi": 27.5, "sleep_hours": 7,
         "vigorous_recreation_min_week": 60, "moderate_recreation_min_week": 60,

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/twin/lifespan.dart';
@@ -14,7 +15,7 @@ Map<String, dynamic> loadGolden() =>
 
 double? _halfLife(Object? v) => v == null ? null : (v as num).toDouble();
 
-void expectMatches(LifespanEstimate r, Map<String, dynamic> g) {
+void expectMatches(LifespanCurve r, Map<String, dynamic> g) {
   expect(
     r.lifeExpectancyYears,
     closeTo((g['life_expectancy_years'] as num).toDouble(), tol),
@@ -114,7 +115,7 @@ void main() {
       r.lifeExpectancyYears,
       closeTo((c['life_expectancy_years'] as num).toDouble(), tol),
     );
-    expect(r.expectedCalendarYear(asOf), c['expected_calendar_year']);
+    expect(r.expectedYear(asOf.year), c['expected_calendar_year']);
     expect(r.headline, c['headline']);
     expect(r.headline, isNot(contains('die')));
   });
@@ -220,13 +221,13 @@ void main() {
     }
   });
 
-  test('profiles outside 30-85 or incomplete are refused', () {
+  test('profiles outside 18-85 or incomplete are refused', () {
     final p = Map<String, dynamic>.from(
       (golden['profiles'] as List).cast<Map<String, dynamic>>().first['profile']
           as Map,
     );
     expect(
-      () => lifespanLogHazardRatio({...p, 'age': 29}),
+      () => lifespanLogHazardRatio({...p, 'age': 17}),
       throwsFormatException,
     );
     expect(
@@ -242,5 +243,143 @@ void main() {
       throwsFormatException,
     );
     expect(math.exp(lifespanLogHazardRatio(p)), greaterThan(0));
+  });
+
+  final readme = Map<String, dynamic>.from(
+    (golden['profiles'] as List).cast<Map<String, dynamic>>().firstWhere(
+          (p) => p['name'] == 'male_45_readme',
+        )['profile']
+        as Map,
+  );
+
+  test('after the band adjustment, 5-year survival matches the Cox model within 0.5 points per band', () {
+    final model = jsonDecode(
+      File('packages/lifetwin_on_device/assets/model.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final beta = (model['coefficients'] as List).cast<num>();
+    final center = (model['feature_center'] as List).cast<num>();
+    final s0 = ((model['baseline_survival'] as List)[4] as num).toDouble();
+    final bytes = gzip.decode(
+      File('packages/lifetwin_on_device/assets/support_reference.f64.gz')
+          .readAsBytesSync(),
+    );
+    final values = Uint8List.fromList(bytes).buffer.asFloat64List();
+    final riskCols = [
+      for (var j = 0; j < 17; j++)
+        if (j != 0 && j != 8) j,
+    ];
+    const bands = [(35, 44), (45, 54), (55, 64), (65, 74), (75, 79)];
+    for (final sex in LifespanSex.values) {
+      for (final (lo, hi) in bands) {
+        var cox = 0.0, table = 0.0, n = 0;
+        for (var i = 0; i < values.length; i += 17) {
+          final r = values.sublist(i, i + 17);
+          if ((r[8] == 1.0) != (sex == LifespanSex.female)) continue;
+          final age = (55 + 10 * r[0]).roundToDouble();
+          if (age < lo || age > hi) continue;
+          var full = 0.0, risk = 0.0;
+          for (var j = 0; j < 17; j++) {
+            full += beta[j] * (r[j] - center[j]);
+          }
+          for (var k = 0; k < riskCols.length; k++) {
+            risk += riskCoefficients[k] * r[riskCols[k]];
+          }
+          final logHr =
+              risk - referenceScore(sex, age) + bandLogAdjustment(sex, age);
+          final curve = estimateLifespan(
+            sex: sex,
+            age: age,
+            logHazardRatio: logHr,
+            halfLifeYears: null,
+          ).survivalCurve;
+          cox += math.pow(s0, math.exp(full)).toDouble();
+          table += curve.firstWhere((p) => (p.$1 - (age + 5)).abs() < 1e-9).$2;
+          n++;
+        }
+        expect(n, greaterThan(50));
+        expect(
+          100 * (table - cox) / n,
+          closeTo(0, 0.5),
+          reason: '$sex $lo-$hi',
+        );
+      }
+    }
+  });
+
+  test('a healthier profile gives a higher expected age', () {
+    final worse = {
+      ...readme,
+      'smoking_status': 2,
+      'diabetes_diagnosed': 1,
+      'general_health': 4,
+    };
+    final healthy = LifespanEstimate.forProfile(readme, currentYear: 2026)!;
+    final unhealthy = LifespanEstimate.forProfile(worse, currentYear: 2026)!;
+    expect(healthy.expectedAge, greaterThan(unhealthy.expectedAge));
+    expect(healthy.expectedYear, greaterThan(unhealthy.expectedYear));
+  });
+
+  test('under 18 (or over 85) has no estimate', () {
+    expect(
+      LifespanEstimate.forProfile({...readme, 'age': 17}, currentYear: 2026),
+      isNull,
+    );
+    expect(
+      LifespanEstimate.forProfile({...readme, 'age': 86}, currentYear: 2026),
+      isNull,
+    );
+    expect(
+      LifespanEstimate.forProfile({...readme, 'bmi': null}, currentYear: 2026),
+      isNull,
+    );
+    expect(
+      LifespanEstimate.forProfile({...readme, 'age': 18}, currentYear: 2026),
+      isNotNull,
+    );
+  });
+
+  test('extrapolated ages are marked and use the nearest band', () {
+    for (final (age, status) in [
+      (18, LifespanStatus.extrapolated),
+      (34, LifespanStatus.extrapolated),
+      (35, LifespanStatus.available),
+      (79, LifespanStatus.available),
+      (80, LifespanStatus.extrapolated),
+      (85, LifespanStatus.extrapolated),
+    ]) {
+      final e = LifespanEstimate.forProfile({
+        ...readme,
+        'age': age,
+      }, currentYear: 2026)!;
+      expect(e.status, status, reason: 'age $age');
+      expect(e.extrapolated, status == LifespanStatus.extrapolated);
+      expect(e.caveat, contains('Proof of concept'));
+      expect(e.caveat.contains('even rougher'), e.extrapolated);
+    }
+    expect(
+      bandLogAdjustment(LifespanSex.male, 18),
+      bandLogAdjustmentMale.first,
+    );
+    expect(
+      bandLogAdjustment(LifespanSex.male, 44.9),
+      bandLogAdjustmentMale.first,
+    );
+    expect(bandLogAdjustment(LifespanSex.male, 45), bandLogAdjustmentMale[1]);
+    expect(
+      bandLogAdjustment(LifespanSex.female, 85),
+      bandLogAdjustmentFemale.last,
+    );
+  });
+
+  test('expectedYear is the current year plus the rounded remaining years', () {
+    final e = LifespanEstimate.forProfile(readme, currentYear: 2026)!;
+    expect(e.expectedYear, 2026 + (e.expectedAge - 45 + 0.5).floor());
+    expect(
+      LifespanEstimate.forProfile(readme, currentYear: 2030)!.expectedYear,
+      e.expectedYear + 4,
+    );
+    expect(e.p25Age, lessThan(e.expectedAge + 5));
+    expect(e.p25Age, lessThan(e.p75Age));
+    expect(e.headline, isNot(contains('die')));
   });
 }

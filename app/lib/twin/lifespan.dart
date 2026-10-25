@@ -1,5 +1,5 @@
-// Expected-lifespan research prototype. NOT wired into any screen: the owner has not yet
-// decided how (or whether) to show it. See docs/lifespan-estimate.md.
+// Expected lifespan: a rough, proof-of-concept estimate for the one-time lifespan reveal
+// (owner override 2026-10-24; TwinRepository.lifespanEstimate). See docs/lifespan-estimate.md.
 //
 // Method: relative-risk-adjusted period life table.
 //   * Population: CDC/NCHS United States Life Tables, 2024, by sex ([lifeTableSource]).
@@ -8,36 +8,48 @@
 //   * Personal hazard ratio: the LifeTwin Cox model's terms except age and sex (both are
 //     already in the sex-specific table), relative to the log-mean hazard of NHANES
 //     training profiles of the same sex and similar age. HR = 1 is the average hazard.
+//   * Age-band calibration: one multiplicative hazard factor k per sex and age band (35–44,
+//     45–54, 55–64, 65–74, 75–79) so the life-table 5-year survival of the NHANES training
+//     profiles matches the Cox model's within each band. Ages 18–34 and 80–85 use the
+//     nearest band's k, held constant ([bandLogAdjustment]).
 //   * Proportional hazards: in the year starting at age y, survival from y + u to y + v is
 //     ((1 - v q) / (1 - u q)) ^ HR.
 //   * Attenuation: log HR holds for the model's validated 5 years, then halves every
 //     [defaultHalfLifeYears] years; pass `halfLifeYears: null` to turn it off.
 //
-// Presentation (owner ruling): headline = expected age rounded to a whole year, range =
-// 25th–75th percentile ages; see [LifespanEstimate.headline]. No exact days or dates.
+// Presentation (owner ruling): an expected YEAR and age, with the 25th–75th percentile ages
+// as the range; see [LifespanEstimate]. Never a day or date.
 //
 // The same operations, in the same order, are in server/tools/lifespan_reference.py;
 // test/twin/lifespan_test.dart checks the two agree to 1e-9.
 //
 // Callers must only use a profile the packaged model itself accepts (status 'available'
-// or the app's 30–85 age extension). This file does not repeat the model's support check.
+// or the app's 18–85 age extension). This file does not repeat the model's support check.
 
 import 'dart:math' as math;
 
 import 'lifespan_data.dart';
+import 'twin_model.dart' show checkedAgeRange, extrapolatedAgeRange;
 
 const defaultHalfLifeYears = 20.0;
 const validatedYears = 5.0;
 const daysPerYear = 365.2425;
-const lifespanProfileAges = (low: 30, high: 85);
-const _checkedAges = (low: 35, high: 79);
+
+/// The health score's ages (owner ruling); under 18 gives no estimate.
+const lifespanProfileAges = extrapolatedAgeRange;
+const _checkedAges = checkedAgeRange;
+
+/// Upper ages of the calibration bands 35–44, 45–54, 55–64, 65–74, 75–79.
+const _bandHighAges = [44, 54, 64, 74, 79];
 const _milestones = [80, 90, 100];
 const _curveEndAge = 110;
 
 enum LifespanSex { male, female }
 
-class LifespanEstimate {
-  const LifespanEstimate({
+/// The full calculation (survival curve, moments, percentiles). The app reads the
+/// summary [LifespanEstimate]; this is for the "How?" view and the tests.
+class LifespanCurve {
+  const LifespanCurve({
     required this.age,
     required this.logHazardRatio,
     required this.halfLifeYears,
@@ -91,23 +103,101 @@ class LifespanEstimate {
       "You're likely to live to about $headlineAge. "
       'Most people like you live to between $rangeLowAge and $rangeHighAge.';
 
-  /// Calendar year in which [expectedAgeAtDeath] falls, counted from [asOf]. Available for
-  /// a secondary view only, not the headline; the SD is [sdYears] years.
-  int expectedCalendarYear(DateTime asOf) =>
-      _expectedDay(asOf, lifeExpectancyYears).year;
+  /// [currentYear] + the remaining life expectancy, rounded to a whole year. A year, not
+  /// a day: the SD is [sdYears] years, so a date would be false precision.
+  int expectedYear(int currentYear) =>
+      currentYear + _roundHalfUp(lifeExpectancyYears);
 }
 
 const lifespanRoughEstimateNote =
     'A rough estimate from people with a similar profile, not a prediction for you.';
 
-int _roundHalfUp(double x) => (x + 0.5).floor();
+/// Shown with every [LifespanEstimate] (owner ruling: a proof of concept).
+const lifespanCaveat =
+    'Proof of concept: a rough estimate, not a prediction for you. It extends the '
+    "survey model's 5-year risk with the 2024 US life table, so it can never be truly "
+    'accurate. LifeTwin then focuses on your relative health score.';
+const lifespanExtrapolationCaveat =
+    'Your age is outside the ages the model was checked on (35–79), so this is even rougher.';
 
-/// [asOf] plus [years], rounded half-up to whole days. Internal only: owner ruling is no
-/// exact dates in the product.
-DateTime _expectedDay(DateTime asOf, double years) {
-  final day = DateTime.utc(asOf.year, asOf.month, asOf.day);
-  return day.add(Duration(days: (years * daysPerYear + 0.5).floor()));
+enum LifespanStatus {
+  /// Ages 35–79, where the model and the band calibration were checked.
+  available,
+
+  /// Ages 18–34 or 80–85: the reference and band factor are the nearest band's.
+  extrapolated,
 }
+
+/// What the app shows once (the lifespan reveal): an expected age and YEAR with the
+/// 25th–75th percentile range. No day or date.
+class LifespanEstimate {
+  const LifespanEstimate({
+    required this.expectedAge,
+    required this.p25Age,
+    required this.p75Age,
+    required this.expectedYear,
+    required this.status,
+    required this.caveat,
+    required this.curve,
+  });
+
+  /// From a model profile (package codes; the profile the model accepted) in [currentYear].
+  /// Null under 18, above 85, or for an incomplete profile.
+  static LifespanEstimate? forProfile(
+    Map<String, dynamic> profile, {
+    required int currentYear,
+  }) {
+    final age = profile['age'];
+    if (age is! num ||
+        age < lifespanProfileAges.low ||
+        age > lifespanProfileAges.high)
+      return null;
+    final LifespanCurve curve;
+    try {
+      curve = estimateLifespanForProfile(profile);
+    } on FormatException {
+      return null;
+    }
+    final extrapolated = age < _checkedAges.low || age > _checkedAges.high;
+    return LifespanEstimate(
+      expectedAge: curve.expectedAgeAtDeath,
+      p25Age: curve.age25thPercentile,
+      p75Age: curve.age75thPercentile,
+      expectedYear: curve.expectedYear(currentYear),
+      status: extrapolated
+          ? LifespanStatus.extrapolated
+          : LifespanStatus.available,
+      caveat: extrapolated
+          ? '$lifespanCaveat $lifespanExtrapolationCaveat'
+          : lifespanCaveat,
+      curve: curve,
+    );
+  }
+
+  /// Expected age at death (unrounded; show it rounded, see [headline]).
+  final double expectedAge;
+
+  /// Age by which 25% / 75% of people like this have died.
+  final double p25Age;
+  final double p75Age;
+
+  /// Current year + (expectedAge − current age), rounded to a year.
+  final int expectedYear;
+  final LifespanStatus status;
+
+  /// "Proof of concept / rough estimate" text; show it with the number.
+  final String caveat;
+
+  /// The full calculation, for a "How?" view.
+  final LifespanCurve curve;
+
+  bool get extrapolated => status == LifespanStatus.extrapolated;
+
+  /// "You're likely to live to about 85. Most people like you live to between 79 and 92."
+  String get headline => curve.headline;
+}
+
+int _roundHalfUp(double x) => (x + 0.5).floor();
 
 double exactAgeYears(DateTime birth, DateTime asOf) {
   final b = DateTime.utc(birth.year, birth.month, birth.day);
@@ -123,7 +213,7 @@ double _attenuation(double yearsFromNow, double? halfLife) {
 double _pow(double x, double y) => math.pow(x, y).toDouble();
 
 /// Survival from exact [age] under hazard HR(t) × population hazard(age + t).
-LifespanEstimate estimateLifespan({
+LifespanCurve estimateLifespan({
   required LifespanSex sex,
   required double age,
   required double logHazardRatio,
@@ -139,7 +229,7 @@ LifespanEstimate estimateLifespan({
   );
 }
 
-LifespanEstimate estimateFromTable({
+LifespanCurve estimateFromTable({
   required List<double> qx,
   required double e100,
   required double age,
@@ -201,7 +291,7 @@ LifespanEstimate estimateFromTable({
     curve.add((end.toDouble(), survival * math.exp(-rate * (end - 100))));
   }
   final variance = 2 * second - mean * mean;
-  return LifespanEstimate(
+  return LifespanCurve(
     age: age,
     logHazardRatio: logHr,
     halfLifeYears: halfLifeYears,
@@ -285,7 +375,7 @@ List<double> encodeRisk(Map<String, dynamic> p) {
   ];
 }
 
-/// Linear interpolation over integer ages 35..79, held flat outside (30–34, 80–85).
+/// Linear interpolation over integer ages 35..79, held flat outside (18–34, 80–85).
 double referenceScore(LifespanSex sex, double age) {
   final table = sex == LifespanSex.female
       ? referenceScoreFemale
@@ -298,8 +388,23 @@ double referenceScore(LifespanSex sex, double age) {
   return table[i - lo] + frac * (table[i + 1 - lo] - table[i - lo]);
 }
 
-/// log HR versus the average hazard of people of the same sex and age.
-double lifespanLogHazardRatio(Map<String, dynamic> profile) {
+/// The calibration band's log k for an assessment [age]; the nearest band outside 35–79.
+double bandLogAdjustment(LifespanSex sex, double age) {
+  final table = sex == LifespanSex.female
+      ? bandLogAdjustmentFemale
+      : bandLogAdjustmentMale;
+  for (var i = 0; i < _bandHighAges.length; i++) {
+    if (age < _bandHighAges[i] + 1) return table[i];
+  }
+  return table.last;
+}
+
+/// log HR versus the average hazard of people of the same sex and age, plus the band's
+/// calibration factor log k when [adjusted].
+double lifespanLogHazardRatio(
+  Map<String, dynamic> profile, {
+  bool adjusted = true,
+}) {
   _checkProfile(profile);
   final x = encodeRisk(profile);
   var score = 0.0;
@@ -309,10 +414,13 @@ double lifespanLogHazardRatio(Map<String, dynamic> profile) {
   final sex = profile['sex_nhanes'] == 2
       ? LifespanSex.female
       : LifespanSex.male;
-  return score - referenceScore(sex, _num(profile, 'age'));
+  final age = _num(profile, 'age');
+  return score -
+      referenceScore(sex, age) +
+      (adjusted ? bandLogAdjustment(sex, age) : 0.0);
 }
 
-LifespanEstimate estimateLifespanForProfile(
+LifespanCurve estimateLifespanForProfile(
   Map<String, dynamic> profile, {
   double? halfLifeYears = defaultHalfLifeYears,
 }) {

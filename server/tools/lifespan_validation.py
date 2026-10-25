@@ -10,7 +10,7 @@ import statistics
 
 import lifespan_reference as lr
 
-BANDS = ((35, 44), (45, 54), (55, 64), (65, 74), (75, 79))
+BANDS = lr.CALIBRATION_BANDS
 # Published age-adjusted-ish all-cause hazard ratios used only as a cross-check.
 LITERATURE_HR = {
     # Jha et al., NEJM 2013;368:341-50: current vs never smokers, women 3.0, men 2.8.
@@ -38,16 +38,7 @@ def recompute_ex(qx: list[float], e100: float) -> list[float]:
 
 def decoded_rows(inputs: lr.Inputs) -> list[dict]:
     """Support rows as (sex, age, risk score, full Cox score)."""
-    model = inputs.model
-    beta, center = model["coefficients"], model["feature_center"]
-    rows = []
-    for r in lr.read_support():
-        full = sum(b * (x - c) for b, x, c in zip(beta, r, center, strict=True))
-        sex = "female" if r[8] == 1.0 else "male"
-        age = 55 + 10 * r[0]
-        risk = lr.risk_score([r[c] for c in inputs.columns], inputs.coefficients)
-        rows.append({"sex": sex, "age": age, "risk": risk, "full": full})
-    return rows
+    return inputs.rows
 
 
 def _fmt(x: float, digits: int = 2) -> str:
@@ -116,31 +107,37 @@ def calibration_section(inputs: lr.Inputs, rows: list[dict]) -> list[str]:
     out = ["## 3. Five-year survival: Cox model vs. life-table version", ""]
     out.append(
         "Same NHANES training profiles. Cox = the packaged model (NHANES 2007-2012, deaths "
-        "to 2019). Life table = this method (2024 US period table x personal HR). "
-        "Gap = life table - Cox, percentage points."
+        "to 2019). Life table = this method (2024 US period table x personal HR), before and "
+        "after the per-band hazard factor k. Gap = life table - Cox, percentage points."
     )
     out.append("")
     out.append(
-        "| Sex | Ages | n | mean Cox S5 % | mean life-table S5 % | gap pp | rank correlation |"
+        "| Sex | Ages | n | mean Cox S5 % | life-table S5 % before | gap before pp | k | "
+        "life-table S5 % after | gap after pp | rank correlation |"
     )
-    out.append("|---|---|---|---|---|---|---|")
+    out.append("|---|---|---|---|---|---|---|---|---|---|")
     s0_5 = inputs.model["baseline_survival"][4]
     for sex in ("male", "female"):
         t = inputs.life_table[sex]
-        for lo, hi in BANDS:
+        for band, (lo, hi) in enumerate(BANDS):
             sel = [r for r in rows if r["sex"] == sex and lo <= r["age"] <= hi]
-            cox, lt = [], []
+            c = inputs.band_log_adjustment[sex][band]
+            cox, lt, adj = [], [], []
             for r in sel:
                 cox.append(s0_5 ** math.exp(r["full"]))
                 lhr = r["risk"] - lr.reference_score(inputs.reference[sex], r["age"])
-                est = lr.estimate(t["qx"], t["e100"], r["age"], lhr, None)
                 five = r["age"] + 5
-                lt.append(_survival_at(est["survival_curve"], five))
-            gap = 100 * (statistics.fmean(lt) - statistics.fmean(cox))
-            rho = _spearman(cox, lt)
+                for target, shift in ((lt, 0.0), (adj, c)):
+                    est = lr.estimate(t["qx"], t["e100"], r["age"], lhr + shift, None)
+                    target.append(_survival_at(est["survival_curve"], five))
+            mc = statistics.fmean(cox)
+            gap = 100 * (statistics.fmean(lt) - mc)
+            gap_after = 100 * (statistics.fmean(adj) - mc)
+            rho = _spearman(cox, adj)
             out.append(
-                f"| {sex} | {lo}-{hi} | {len(sel)} | {100 * statistics.fmean(cox):.2f} | "
-                f"{100 * statistics.fmean(lt):.2f} | {gap:+.2f} | {rho:.3f} |"
+                f"| {sex} | {lo}-{hi} | {len(sel)} | {100 * mc:.2f} | "
+                f"{100 * statistics.fmean(lt):.2f} | {gap:+.2f} | {math.exp(c):.3f} | "
+                f"{100 * statistics.fmean(adj):.2f} | {gap_after:+.2f} | {rho:.3f} |"
             )
     out.append("")
     return out
@@ -245,7 +242,7 @@ def edges_section(inputs: lr.Inputs) -> list[str]:
     q = lr.EXAMPLE_PROFILES["female_55_former_smoker_htn"]
     out.append("| Age | avg man | README man (HR) | avg woman | 55F profile (HR) |")
     out.append("|---|---|---|---|---|")
-    for age in (30, 31, 32, 33, 34, 35, 36, 78, 79, 80, 81, 82, 83, 84, 85):
+    for age in (18, 19, 30, 34, 35, 36, 44, 45, 78, 79, 80, 81, 84, 85):
         row = [str(age)]
         for sex, prof in (("male", p), ("female", q)):
             t = inputs.life_table[sex]
