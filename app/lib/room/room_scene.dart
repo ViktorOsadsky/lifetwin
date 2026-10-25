@@ -490,7 +490,8 @@ class _RoomSceneState extends State<RoomScene> {
       height: 48,
       child: Semantics(
         button: tap != null,
-        liveRegion: true,
+        // Idle wandering is ambient animation, not a status announcement. The
+        // current activity stays available when the person focuses this control.
         label: tap == null
             ? '$who is ${label.toLowerCase()}'
             : '$who is ${label.toLowerCase()}. Change what $who does.',
