@@ -1,0 +1,10 @@
+{
+  "kind": "source-palette contrast samples; not exhaustive pixel or sunlight audit",
+  "source": "app/lib/ui/theme.dart at1a648bd",
+  "ratios": {
+    "ink/paper": 11.979,
+    "secondary/paper": 7.395,
+    "ink/mint": 7.647,
+    "ink/lavender": 6.291
+  }
+}

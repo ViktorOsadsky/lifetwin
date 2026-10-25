@@ -5,6 +5,13 @@ oracles pass. The separate endpoint supplement still reproduces the known recomm
 [#124](https://github.com/ViktorOsadsky/lifetwin/issues/124); this is not an overall product-safety pass.
 No app, engine, UI or contract code changed in this acceptance branch.
 
+**Historical model evidence:** later main `1a86d9a` replaces the artifact/reference with
+`personal-cox-bmi35-v3-20261024` and changes history tagging to `cox_centered_bmi35_v2`.
+The values and parity results below do not accept that replacement. Reproduce this
+record from `1a648bd`, where the committed capture and its matching canonical model
+coexist. The old harness hardcodes the BMI-27 reference encoding and old engine tag;
+update those before any v3 rerun, then recheck values, support masks and history isolation.
+
 ## Exact release and scope
 
 Tested source is merged main **`9ace866404bb8df89de673dd299041e25791ccad`**, including the owner-approved
