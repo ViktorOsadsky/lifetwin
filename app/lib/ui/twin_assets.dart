@@ -19,11 +19,15 @@ enum TwinType { bear, human }
 
 /// The twin's signature look. `plain` is Figma's `look=default`.
 enum TwinLook {
-  plain('default'),
-  calHat('cal_hat');
+  plain('default', 'pose_nohat'),
+  calHat('cal_hat', 'pose'),
+  stanfordHat('stanford_hat', 'pose_stanford');
 
-  const TwinLook(this.slug);
+  const TwinLook(this.slug, this.poseDir);
   final String slug;
+
+  /// The folder under `assets/twin/{bear,human}/` holding this look's poses.
+  final String poseDir;
 }
 
 /// Poses. Both twins have every pose, with and without the Cal hat.
@@ -135,13 +139,17 @@ enum TwinPose {
 /// pose in both looks; the room keeps its fallback chain for future looks.
 bool twinHasPose(TwinType type, TwinLook look, TwinPose pose) => true;
 
-/// The sprite for a twin: the Cal-hat pose, or the same pose without the hat.
+/// The sprite for a twin: the pose in its hat, or the same pose without one.
+/// Every look shares one canvas per pose, so changing hats never moves the body.
 String twinAsset(TwinType type, TwinLook look, [TwinPose pose = TwinPose.stand]) =>
-    'assets/twin/${type.name}/${look == TwinLook.calHat ? 'pose' : 'pose_nohat'}/${pose.slug}.png';
+    'assets/twin/${type.name}/${look.poseDir}/${pose.slug}.png';
 
 /// The Cal hat on its own (Customize tile; not an overlay for the bear,
 /// whose ears go through the hat).
 const String calHatAsset = 'assets/twin/accessory/hat/cal.png';
+
+/// The Stanford hat on its own (Customize tile): the Cal hat's model in cardinal and white.
+const String stanfordHatAsset = 'assets/twin/accessory/hat/stanford.png';
 
 /// Calm scene plates (390 × 585 at 1x). The fortune screens composite the
 /// twin on [night]; the older baked-bear plates (`fortune_reveal`,
@@ -177,7 +185,11 @@ const String ballGlowLottie = 'assets/lottie/ball_glow.json';
 
 /// Plain words for screen readers.
 String twinDescription(TwinType type, TwinLook look) =>
-    'Your ${type == TwinType.bear ? 'bear' : 'human'} twin${look == TwinLook.calHat ? ' in the Cal hat' : ''}';
+    'Your ${type == TwinType.bear ? 'bear' : 'human'} twin${switch (look) {
+      TwinLook.plain => '',
+      TwinLook.calHat => ' in the Cal hat',
+      TwinLook.stanfordHat => ' in the Stanford hat',
+    }}';
 
 /// Each sprite's 1x size (`size1x` in `assets/twin/manifest.json`), for
 /// layouts that size the painted content itself (the room). The `base/`
@@ -186,11 +198,11 @@ final Map<String, Size> twinSpriteSize1x = {
   for (final t in TwinType.values) ...{
     for (final look in TwinLook.values) 'assets/twin/${t.name}/base/${look.slug}.png': _size(t, TwinPose.stand),
     for (final p in TwinPose.values) ...{
-      'assets/twin/${t.name}/pose/${p.slug}.png': _size(t, p),
-      'assets/twin/${t.name}/pose_nohat/${p.slug}.png': _size(t, p),
+      for (final look in TwinLook.values) twinAsset(t, look, p): _size(t, p),
     },
   },
   calHatAsset: const Size(180, 180),
+  stanfordHatAsset: const Size(180, 180),
 };
 
 Size _size(TwinType t, TwinPose p) => t == TwinType.bear ? p.bearSize1x : p.humanSize1x;

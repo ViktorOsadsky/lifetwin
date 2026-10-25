@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lifesim/experiment/ideas_hub.dart';
+import 'package:lifesim/experiment/recommendations.dart';
 import 'package:lifesim/forecast/forecast_client.dart';
 import 'package:lifesim/forecast/fortune_ceremony_screen.dart';
 import 'package:lifesim/health/health_sample.dart';
@@ -77,6 +80,8 @@ Finder image(String asset) =>
 
 TwinPose twinPose(WidgetTester t) => t.widget<TwinSprite>(find.byType(TwinSprite)).pose;
 
+final roomShotKey = GlobalKey();
+
 Future<ValueNotifier<TwinAppearance>> pumpRoom(
   WidgetTester t, {
   TwinAppearance look = const TwinAppearance(),
@@ -85,6 +90,7 @@ Future<ValueNotifier<TwinAppearance>> pumpRoom(
   Size size = const Size(390, 844),
   double textScale = 1,
   bool hasProfile = true,
+  IdeasAccess? ideas,
 }) async {
   setPhone(t, size);
   final notifier = ValueNotifier(look);
@@ -93,12 +99,16 @@ Future<ValueNotifier<TwinAppearance>> pumpRoom(
     MaterialApp(
       home: MediaQuery(
         data: MediaQueryData(size: size, disableAnimations: reduced, textScaler: TextScaler.linear(textScale)),
-        child: RoomScreen(
-          appearance: notifier,
-          onTalk: () {},
-          onCustomize: () {},
-          outlook: outlook,
-          hasProfile: hasProfile,
+        child: RepaintBoundary(
+          key: roomShotKey,
+          child: RoomScreen(
+            appearance: notifier,
+            onTalk: () {},
+            onCustomize: () {},
+            outlook: outlook,
+            hasProfile: hasProfile,
+            ideas: ideas,
+          ),
         ),
       ),
     ),
@@ -178,7 +188,7 @@ void main() {
     expect(status('Hanging out'), findsOneWidget);
     expect(find.text('Talk with Mochi to see it'), findsOneWidget); // no forecast yet: no number
     expect(find.textContaining('in 100'), findsNothing);
-    for (final label in ['Customize', 'Talk']) {
+    for (final label in ['Customize', 'Talk', 'Ideas']) {
       expect(find.text(label), findsOneWidget);
     }
     // The old Exercise / Eat / Sleep row is gone: they are in the activity pill's chooser.
@@ -646,7 +656,7 @@ void main() {
 
   testWidgets('button labels never break inside a word (test font, 390 wide)', (t) async {
     await pumpRoom(t);
-    for (final label in ['Customize']) {
+    for (final label in ['Customize', 'Ideas']) {
       expectOneLine(t, label, checkFloor: false);
     }
   });
@@ -712,10 +722,53 @@ void main() {
 
     testWidgets('Exercise and Customize fit one line at 17 px on a 390 phone', (t) async {
       await pumpRoom(t);
-      for (final label in ['Customize']) {
+      for (final label in ['Customize', 'Ideas']) {
         expectOneLine(t, label);
         expect(t.getRect(find.text(label)).height, closeTo(17 * 1.35, 0.5), reason: '$label is not scaled down');
       }
+    });
+
+    testWidgets('dock: Customize, Talk, Ideas in order; sides equal, Talk centred, no wrapping, Ideas opens', (t) async {
+      final hub = IdeasHub(source: _NoIdeas());
+      addTearDown(hub.dispose);
+      final opened = <String>[];
+      final access = IdeasAccess(
+        hub: hub,
+        openIdea: (c, i) {},
+        openList: (c, {required origin, levers}) => opened.add(origin),
+      );
+      for (final (size, scale) in [
+        (const Size(390, 844), 1.0),
+        (const Size(390, 844), 2.0),
+        (const Size(320, 640), 1.0),
+      ]) {
+        await pumpRoom(t, size: size, textScale: scale, ideas: access);
+        final c = t.getRect(find.text('Customize')), tk = t.getRect(find.text('Talk')), i = t.getRect(find.text('Ideas'));
+        expect(c.center.dx < tk.center.dx && tk.center.dx < i.center.dx, isTrue, reason: 'order at $size x$scale');
+        final cItem = t.getRect(find.ancestor(of: find.text('Customize'), matching: find.byType(ConstrainedBox)).first);
+        final iItem = t.getRect(find.ancestor(of: find.text('Ideas'), matching: find.byType(ConstrainedBox)).first);
+        expect(cItem.width, closeTo(iItem.width, 0.5), reason: 'equal sides at $size x$scale');
+        final dock = t.getRect(find.byType(Sheet).last);
+        final talkBtn = t.getRect(find.byType(LipButton));
+        expect((talkBtn.center.dx - dock.center.dx).abs(), lessThanOrEqualTo(1), reason: 'Talk centred at $size x$scale');
+        expect(iItem.height, greaterThanOrEqualTo(56));
+        for (final label in ['Customize', 'Ideas']) {
+          final circle = t.getRect(find.descendant(of: find.ancestor(of: find.text(label), matching: find.byType(ConstrainedBox)).first, matching: find.byType(Container)).first);
+          expect((talkBtn.center.dy - circle.center.dy).abs(), lessThanOrEqualTo(1), reason: 'Talk level with $label circle at $size x$scale');
+        }
+        for (final label in ['Customize', 'Ideas']) {
+          final para = t.renderObject<RenderParagraph>(find.text(label));
+          expect(t.widget<Text>(find.text(label)).maxLines, 1);
+          final lineH = para.text.style!.fontSize! * para.textScaler.scale(1) * para.text.style!.height!;
+          expect(para.size.height, lessThan(lineH * 1.5), reason: '$label on one line at $size x$scale');
+        }
+        expect(find.bySemanticsLabel('Ideas'), findsOneWidget);
+        expect(t.takeException(), isNull);
+      }
+      await pumpRoom(t, ideas: access);
+      await t.tap(find.text('Ideas'));
+      expect(opened, ['room']);
+      await shotRoom(t, 'room_dock_after');
     });
 
     testWidgets('375 x 667: the twin stays clear of the dock during Exercise', (t) async {
@@ -737,10 +790,32 @@ void main() {
 
     testWidgets('labels stay on one line at 15 px or more on 375 x 667 with 1.3x text', (t) async {
       await pumpRoom(t, size: const Size(375, 667), textScale: 1.3);
-      for (final label in ['Customize']) {
+      for (final label in ['Customize', 'Ideas']) {
         expectOneLine(t, label);
       }
       expect(t.takeException(), isNull);
     });
+  });
+}
+
+class _NoIdeas implements RecommendationsSource {
+  @override
+  Future<List<Recommendation>> load() async => const [];
+}
+
+Future<void> shotRoom(WidgetTester t, String name) async {
+  final dir = Platform.environment['EVIDENCE_DIR'];
+  if (dir == null) return;
+  await t.runAsync(() async {
+    final c = t.element(find.byType(Scaffold).first);
+    await precacheImage(AssetImage(roomLayout.bgAsset), c);
+  });
+  await t.pump(const Duration(milliseconds: 400));
+  await t.runAsync(() async {
+    Directory(dir).createSync(recursive: true);
+    final b = roomShotKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final img = await b.toImage(pixelRatio: 2);
+    final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+    File('$dir/$name.png').writeAsBytesSync(bytes!.buffer.asUint8List());
   });
 }

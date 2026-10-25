@@ -126,7 +126,7 @@ double roomAlignmentY(RoomLayout layout, Size box, EdgeInsets clear) {
 const _sceneDrop = 16.0;
 
 const _eyes = [Offset(0.4123, 0.2959), Offset(0.6007, 0.2932)];
-const _standAssets = {'assets/twin/bear/pose/stand.png', 'assets/twin/bear/pose_nohat/stand.png'};
+final _standAssets = {for (final look in TwinLook.values) twinAsset(TwinType.bear, look)};
 
 class _RoomSceneState extends State<RoomScene> {
   void _tapTwin() {

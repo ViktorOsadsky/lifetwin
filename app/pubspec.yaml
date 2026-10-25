@@ -85,9 +85,11 @@ flutter:
     - assets/twin/bear/base/
     - assets/twin/bear/pose/
     - assets/twin/bear/pose_nohat/
+    - assets/twin/bear/pose_stanford/
     - assets/twin/human/base/
     - assets/twin/human/pose/
     - assets/twin/human/pose_nohat/
+    - assets/twin/human/pose_stanford/
     - assets/twin/accessory/hat/
     - assets/scene/
     - assets/fonts/fredoka/OFL.txt

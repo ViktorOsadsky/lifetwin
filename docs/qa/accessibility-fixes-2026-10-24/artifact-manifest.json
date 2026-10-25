@@ -1,0 +1,181 @@
+{
+  "README.md": {
+    "sha256": "c0f395bb2cf5157e2a428656340e46d39e543b4233844d41decf306c3da26674",
+    "bytes": 7126
+  },
+  "ax5/ax5-checkin-draft-after-scroll.png": {
+    "sha256": "91bb7b938b0aeae012eb18035119b351f902a73cca3b8fb21cb39d59ece25f30",
+    "bytes": 400597,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "ax5/ax5-checkin-keyboard.png": {
+    "sha256": "b0eed37963de47f8c075d41b0ccac2322367cb09fff93bcfaf5e8da0f8c48d01",
+    "bytes": 416698,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "ax5/ax5-experiment-body1.png": {
+    "sha256": "9269efcaa6fd55dc4a8dfa9c201f99c600437b0d23233a59eea51d4a609b49fe",
+    "bytes": 469479,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "ax5/ax5-experiment-dock-scrolled.png": {
+    "sha256": "3b9ce073a6c6c8137edb30f7d198f544516fbe3ee03c3104f305864b7ac62f07",
+    "bytes": 409774,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "ax5/ax5-experiment-hub.png": {
+    "sha256": "6806662d19805f74e0e55546043ca0d99b17a6bd74799b8d6f074ebbf2ac8b39",
+    "bytes": 953239,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "ax5/ax5-home-scroll1.png": {
+    "sha256": "47b36b20bbc307d8a94d6114c7cd80e00c4e69bdeec41520720e24d31f1faa3c",
+    "bytes": 523945,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "ax5/ax5-home-scroll2.png": {
+    "sha256": "4b694151b5a56aafab103cdc9972b9cb305efc8eb619a3e198c6b2121bd0ed3f",
+    "bytes": 690028,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "ax5/ax5-home.png": {
+    "sha256": "751eb0bfe77ddeab48803e5e4c7eb92133220b16edeb9564be0583ae10cd2cf8",
+    "bytes": 474795,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "ax5/ax5-score-info-scroll1.png": {
+    "sha256": "7ee9d69857c372737c6eed95190d60d4aedcbc2a613b8afd3c61e40877d3e091",
+    "bytes": 600176,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "ax5/ax5-score-info-scroll2.png": {
+    "sha256": "c937b8822d9eaefed796e947e5d6a6f9015fd1fa9523233b493631f39cde1653",
+    "bytes": 597064,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "ax5/ax5-score-info.png": {
+    "sha256": "8faf9360decc246a91f707946751704346b29bcd6d372d0d777873a618de0616",
+    "bytes": 572515,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "ax5/font-readback.json": {
+    "sha256": "135a9041cc75f0dea4d87fb75f253177bf54e889b587e9c83bef8d5851b09f1d",
+    "bytes": 126
+  },
+  "composed-host-source.json": {
+    "sha256": "5cb7c421a09dd9df66834099def8773e1ee411bd73577ea4d6a3eb2bb7471a34",
+    "bytes": 1461
+  },
+  "harness/A11y134UITests.m": {
+    "sha256": "06a2b4d72ecbcf81225004f258db1efd0aa28f2dfc42b9c1290506af48840e56",
+    "bytes": 8509
+  },
+  "native-log-excerpts.txt": {
+    "sha256": "6b3fa4230e03fc84e6f40ed342c4469a2a1c063aa89d7b4e3c4b9d963c1aadad",
+    "bytes": 3467
+  },
+  "results.json": {
+    "sha256": "0a122ed1eb7cc4819d0b004e6be691bd00e2782abaebbfbdb97b327464aa69cb",
+    "bytes": 4221
+  },
+  "scale16/font-readback.json": {
+    "sha256": "f60621e9124d609cfb07f297ea130e8745dc2d9d1d8c0d93e55b60a30691695a",
+    "bytes": 116
+  },
+  "scale16/scale16-checkin-draft-after-scroll.png": {
+    "sha256": "00320e2aa929638a44bc6d58cc57438434cb4df908e081cf1129ddac0c9f2878",
+    "bytes": 416218,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "scale16/scale16-checkin-keyboard.png": {
+    "sha256": "9558322b6e012730c7e7534749e9c96a847f55dab4ffd019cdabc3f074e63fe2",
+    "bytes": 758331,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "scale16/scale16-experiment-hub.png": {
+    "sha256": "96ca673c26c2de109c34a96e454f64efd4ba2d2af00232fec99223e444161ca2",
+    "bytes": 1086104,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "scale16/scale16-home.png": {
+    "sha256": "38c35356f9da6dc47bfd6c47f7159ad5464c16d3885065b1d217d50699a05767",
+    "bytes": 665037,
+    "dimensions": [
+      1206,
+      2622
+    ],
+    "original_pixels_unedited": true
+  },
+  "scale16-voiceover-actual-trace.txt": {
+    "sha256": "cadb9dcb9302611548fe71d96f3997ccab803a3f63153248cbf74338466638f6",
+    "bytes": 240
+  },
+  "scale16-voiceover-restoration.txt": {
+    "sha256": "8ec46a7be89a9394a114eaec9cf4d1ec5a8b4a3cd635d904e39c72bad67b7a50",
+    "bytes": 17
+  },
+  "scale16-voiceover-result.txt": {
+    "sha256": "42b0fe4cc457962e01523fce6f9104465de22d7e0d982423d381149b7a9f7d7c",
+    "bytes": 116
+  },
+  "source-manifest.json": {
+    "sha256": "ec4f1e529711ea579678faa5738dec57d84aec862eb513bacaafe2ad13eb19f4",
+    "bytes": 59565
+  }
+}
