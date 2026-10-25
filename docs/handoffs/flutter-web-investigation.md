@@ -1,7 +1,8 @@
 # Flutter web deployment handoff — October 25, 2026
 
 Track / task: C, Flutter web compatibility and delivery. The owner-authorized
-release is live at [lifetwin-tau.vercel.app](https://lifetwin-tau.vercel.app).
+release is live at [www.lifetwin.me](https://www.lifetwin.me), with
+[lifetwin-tau.vercel.app](https://lifetwin-tau.vercel.app) retained as an alternative.
 Browser feature parity remains incomplete; the boundaries below still apply.
 The static landing and recorded demo in [draft #230](https://github.com/ViktorOsadsky/lifetwin/pull/230)
 are a separate product surface; do not replace or publish that branch.
@@ -47,8 +48,8 @@ file is 7,284,602 bytes. The small scaffold removes Flutter placeholder icons. N
 private env files nor source maps appeared in the inspected output. The deployed
 archive contains 462 release files: the generated `.last_build_id` was excluded.
 The initial investigation changed no live services; the subsequent authorized
-Vercel deployment and exact-origin Supabase update are recorded below. No iPhone,
-Xcode settings or DNS changes are part of this delivery.
+Vercel deployment and exact-origin Supabase update are recorded below. No native
+app source or DNS changes were required; the later simulator restart is recorded below.
 
 ## Reproducible builds
 
@@ -81,7 +82,7 @@ releases; give long cache lifetimes only to versioned assets. Test a fresh brows
 and a reload after every deployment. [Flutter deployment guidance](https://docs.flutter.dev/deployment/web),
 [base paths and URL strategy](https://docs.flutter.dev/ui/navigation/url-strategies).
 
-## Verified Vercel deployment
+## Initial verified Vercel deployment
 
 The user selected **Vercel through the separate MCP Bridge connection**. OAuth
 completed and root used the authenticated Vercel MCP tools to upload the compiled
@@ -184,12 +185,44 @@ warnings. A real 375 × 667 iframe rendered the guest screen with its button
 visible. The compiled Dart and model assets are byte-identical to the original
 release; only `index.html` and `flutter_bootstrap.js` changed. The deployment can
 reuse the original uploaded archive parts and copy these two updated files into
-`public/` after unpacking. The follow-up PR records its deployment result.
+`public/` after unpacking.
+
+[#238](https://github.com/ViktorOsadsky/lifetwin/pull/238) merged at
+`d098408ace679e7dd86c8433aef0a6bbf0553dbe` after all checks passed. Its production
+deployment, `dpl_9yqnBXGVKTjgEA4uBHwoEPi4pEFf`, is `READY`. Live index, bootstrap
+and Dart bytes match the tested release, and the custom-domain browser view
+measures 430 × 720 within a 1280 × 720 window.
+
+### Custom-domain connection fix and native restart
+
+The browser's local preview (`http://127.0.0.1:41937`) is outside the production
+CORS allowlist. During the deployment, the existing Vercel project also acquired
+verified custom domains: `lifetwin.me` redirects with HTTP 308 to
+`https://www.lifetwin.me`, which serves this app. The new origin initially received
+no allow-origin header, causing its browser to report that LifeTwin was unreachable.
+
+The configuration now retains `https://lifetwin-tau.vercel.app` and additionally
+permits only `https://www.lifetwin.me`, preserving all provider settings. The
+redirect-only apex and the local preview were not added. Use a live app URL for
+connected browser testing; local visual previews do not establish API acceptance.
+No Vercel domain, redirect or deployment protection setting was changed here.
+
+Both allowed origins return HTTP 200 for a synthetic onboarding start with their
+own exact allow-origin header. Custom-domain OPTIONS returns 204 with its exact
+header; an unrelated origin receives none. The actual custom-domain browser
+loaded guest entry, typing and the live onboarding question with empty error and
+warning logs. No real health data or provider consent was used for this check.
+
+The same merged checkout was built and launched on the existing iPhone 18 Pro
+simulator (`AD68AA8D-3700-4E9C-B1E9-FE441057C67B`) through Flutter/Xcode. The Xcode
+build completed in 13.3 seconds, installation/file sync succeeded, and a simulator
+screenshot verified the running consent screen. Existing Xcode edits and simulator
+data were preserved. This is simulator acceptance, not physical-device testing.
 
 | Area | Observed boundary / next change |
 | --- | --- |
 | Live API | The selected canonical origin is configured and CORS probes pass. Keep JWT verification, public anon headers and the exact-origin allowlist; additional aliases need a separately coordinated update. |
-| Config update | The backend provisioning helper **replaces the entire config**. Add the chosen origin to the complete protected configuration while retaining all provider keys/models; do not provision an origin-only file. It can take 60 seconds to refresh. See [credential procedure](../backend-credentials.md). The current allowed origin is `https://lifetwin-tau.vercel.app` (no path). |
+| Config update | The backend provisioning helper **replaces the entire config**. Add the chosen origin to the complete protected configuration while retaining all provider keys/models; do not provision an origin-only file. It can take 60 seconds to refresh. See [credential procedure](../backend-credentials.md). Current origins: `https://www.lifetwin.me` and `https://lifetwin-tau.vercel.app`, without paths. |
 | Health probe | `/health` returns before loading the origin config, so it currently sends no CORS headers even after an origin is set. A single `API_BASE_URL` skips the app's health race; use one URL. Coordinate a backend change before relying on cross-origin health probes/multiple candidates. |
 | Documents | `ChannelDocumentOcr` / `PdfPicker` call iOS `lifetwin/documents`; there is no browser picker or Vision OCR. Add a bounded browser PDF picker that returns in-memory bytes to the existing per-document consent and `/api/documents/read` flow. Preserve page/size/password/error handling. Local OCR decline needs a supported browser alternative or an honest unavailable state. Apple Vision camera/photos do not work on the web. |
 | Apple Health | The health plugin and custom workout channel have no web HealthKit implementation. Hide/disable the import with a clear explanation; typing/PDF remain alternatives. |
