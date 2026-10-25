@@ -87,6 +87,7 @@ void main() {
           repo.store.twin == null &&
           !repo.store.memoryConsent &&
           !repo.store.lifespanRevealSeen &&
+          repo.todayPlan == null &&
           !repo.store.outsideAiConsent,
       'current': repo.current,
       'backend': backend.text,
@@ -139,6 +140,7 @@ void main() {
     await repo.saveTwinLook({'type': 'bear', 'look': 'calHat', 'name': 'Mochi', 'room': 'original'});
     await repo.saveCheckinSettings(repo.checkinSettings.copyWith(remindersOn: true, reminderHour: 7));
     await repo.markLifespanRevealSeen();
+    await repo.saveTodayPlan({'schema_version': '1.0', 'status': 'ok', 'items': []});
     port.scheduled.add(DateTime(2026, 10, 25, 7));
     look.value = const TwinAppearance(name: 'Biscuit');
   }
@@ -196,6 +198,7 @@ void main() {
         'lifespan_reveal_seen',
         'outside_ai_consent',
         'checkin_settings',
+        'last_plan',
       ]),
     );
     await deleteMyData(t);
@@ -205,6 +208,7 @@ void main() {
     expect(reopened.checkinSettings.remindersOn, isFalse);
     expect(reopened.twin, isNull);
     expect(reopened.outsideAiProvider, isNull);
+    expect(reopened.lastPlan, isNull);
 
     await repo.deleteMyData();
     await repo.deleteMyData();

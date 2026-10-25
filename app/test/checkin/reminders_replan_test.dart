@@ -148,6 +148,7 @@ class _ThrowingPort implements NotificationPort {
     required DateTime localWallTime,
     required String title,
     required String body,
+    String? payload,
   }) async => throw StateError('no notifications');
   @override
   Future<void> cancelAll() async => throw StateError('no notifications');
