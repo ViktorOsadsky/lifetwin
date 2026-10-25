@@ -20,7 +20,8 @@ class HealthImportResult {
   /// the mascot asks these in conversation.
   final List<HealthField> toAsk;
 
-  /// Raw samples for the agents (sent through the server once the contract lands).
+  /// Transient on-phone samples retained for the existing local caller contract.
+  /// This screen sends no raw data; workout suggestions use bounded aggregates.
   final List<HealthSample> samples;
 }
 
@@ -69,7 +70,7 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
       await _reader.requestAccess();
       final now = _now;
       _samples = await _reader.read(now: now);
-      _candidates = summarize(_samples, now);
+      _candidates = (await _reader.readSummary(now: now, samples: _samples)).candidates;
     } catch (_) {
       _samples = const [];
       _candidates = const [];

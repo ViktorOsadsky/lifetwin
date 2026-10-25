@@ -86,9 +86,10 @@ class HealthReader {
   /// Native mean-MET estimates are separate from the plugin's generic samples.
   /// They are confirm-only: readBack explicitly asks about recreational context
   /// and representativeness. Errors preserve the existing generic suggestions.
-  /// The existing read()/summarize() path is unchanged; sitting stays unavailable.
-  Future<HealthSummary> readSummary({required DateTime now}) async {
-    final samples = await read(now: now);
+  /// Callers that already read generic samples may pass them to avoid a second query.
+  /// Samples remain local; sitting stays unavailable.
+  Future<HealthSummary> readSummary({required DateTime now, List<HealthSample>? samples}) async {
+    final localSamples = samples ?? await read(now: now);
     WorkoutAverages? averages;
     var unavailable = false;
     try {
@@ -102,7 +103,12 @@ class HealthReader {
     } on TimeoutException {
       unavailable = true;
     }
-    return summarizeWithAvailability(samples, now, workoutAverages: averages, workoutEstimateUnavailable: unavailable);
+    return summarizeWithAvailability(
+      localSamples,
+      now,
+      workoutAverages: averages,
+      workoutEstimateUnavailable: unavailable,
+    );
   }
 }
 
