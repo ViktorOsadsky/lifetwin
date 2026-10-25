@@ -64,8 +64,9 @@ def play_onboarding(case: dict) -> tuple[dict, list, str | None, list[str]]:
     )
     messages = []
     for turn in turns:
-        if state.phase == "asking" and state.current_field != turn["asked"]:
-            state.current_field = turn["asked"]
+        if state.phase in {"asking", "offering"} and state.current_field != turn["asked"]:
+            # The test names the open question; Apple Health's offer is not part of it.
+            state.phase, state.current_field = "asking", turn["asked"]
         response = asyncio.run(
             service.turn(TurnRequest(action="reply", state=state, text=turn["text"]))
         )
