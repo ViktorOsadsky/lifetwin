@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10600000000000000000003 /* HealthActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10600000000000000000004 /* HealthActivityTests.swift */; };
+		A10600000000000000000001 /* HealthActivityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10600000000000000000002 /* HealthActivityBridge.swift */; };
 		B67000000000000000000001 /* BandFileBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B67000000000000000000002 /* BandFileBridge.swift */; };
 		09AE4DF29122C47B4ED0DCEB /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729E81A20265BBE3567AAE1C /* Pods_Runner.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
@@ -46,6 +48,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A10600000000000000000004 /* HealthActivityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthActivityTests.swift; sourceTree = "<group>"; };
+		A10600000000000000000002 /* HealthActivityBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthActivityBridge.swift; sourceTree = "<group>"; };
 		B67000000000000000000002 /* BandFileBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BandFileBridge.swift; sourceTree = "<group>"; };
 		014268AE306105D702C48094 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
@@ -100,6 +104,7 @@
 			isa = PBXGroup;
 			children = (
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
+				A10600000000000000000004 /* HealthActivityTests.swift */,
 			);
 			path = RunnerTests;
 			sourceTree = "<group>";
@@ -150,6 +155,7 @@
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				B67000000000000000000002 /* BandFileBridge.swift */,
 				D0C5CA011EC3CC0400C636F2 /* DocumentScanner.swift */,
+				A10600000000000000000002 /* HealthActivityBridge.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
@@ -389,6 +395,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */,
+				A10600000000000000000003 /* HealthActivityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -401,6 +408,7 @@
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				B67000000000000000000001 /* BandFileBridge.swift in Sources */,
 				D0C5CA001EC3CC0700C636F2 /* DocumentScanner.swift in Sources */,
+				A10600000000000000000001 /* HealthActivityBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

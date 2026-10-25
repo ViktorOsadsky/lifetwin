@@ -149,6 +149,25 @@ class _RoomScreenState extends State<RoomScreen> {
     _sim.press(a);
   }
 
+  /// The activity pill's chooser: "What should Mochi do?" Walk (let it roam), Exercise, Eat, Sleep. Each
+  /// goes through the same [_press] path the old row used, so the bed tuck, climb and get-up are unchanged.
+  Future<void> _chooseActivity() async {
+    final current = _sim.inBed
+        ? RoomAction.sleep
+        : (_sim.action == RoomAction.fortune ? null : _sim.action);
+    final picked = await showModalBottomSheet<RoomAction?>(
+      context: context,
+      useSafeArea: true,
+      builder: (c) => _ActivityChooser(current: current, onPick: (a) => Navigator.of(c).pop(a), onWalk: () => Navigator.of(c).pop(null)),
+    );
+    if (!mounted) return;
+    if (picked != null) {
+      if (_sim.action != picked) _press(picked);
+    } else if (_sim.action != null && _sim.action != RoomAction.fortune) {
+      _press(_sim.action!); // Walk: stop what it is doing; Mochi roams again
+    }
+  }
+
   /// Fortune and the outlook card: with no finished conversation nothing opens and the
   /// twin says why, as on main.
   void _fortune() {
@@ -195,7 +214,13 @@ class _RoomScreenState extends State<RoomScreen> {
                 child: ValueListenableBuilder<TwinAppearance>(
                   valueListenable: widget.appearance,
                   builder: (context, look, _) => RoomTwinState(
-                    builder: (state) => RoomScene(sim: _sim, appearance: look, clear: _clear, twinState: state),
+                    builder: (state) => RoomScene(
+                      sim: _sim,
+                      appearance: look,
+                      clear: _clear,
+                      twinState: state,
+                      onActivityTap: _chooseActivity,
+                    ),
                   ),
                 ),
               ),
@@ -218,8 +243,8 @@ class _RoomScreenState extends State<RoomScreen> {
                               valueListenable: widget.appearance,
                               builder: (context, look, _) => NameBanner(name: look.name),
                             ),
-                            quiz: widget.onQuiz == null ? null : _QuizChip(onTap: widget.onQuiz!),
                             actions: [
+                              if (widget.onQuiz != null) _QuizIcon(onTap: widget.onQuiz!),
                               if (widget.onBand != null)
                                 _HeaderIcon(icon: Icons.directions_walk_rounded, label: 'Add band', onTap: widget.onBand!),
                               if (widget.onHistory != null)
@@ -271,10 +296,8 @@ class _RoomScreenState extends State<RoomScreen> {
                                           fontSize: 22,
                                           onTap: widget.onExperiment,
                                         ),
-                                        const SizedBox(height: 6),
+                                        const SizedBox(height: 8),
                                       ],
-                                      _ActivityRow(sim: _sim, press: _press),
-                                      const SizedBox(height: 10),
                                       _Dock(
                                         frame: f,
                                         onTalk: widget.onTalk,
@@ -317,35 +340,34 @@ class _HeaderIcon extends StatelessWidget {
   );
 }
 
-/// The quiz entry: small and secondary, under the header, above the score card.
-class _QuizChip extends StatelessWidget {
-  const _QuizChip({required this.onTap});
+/// The quiz entry: a small round icon, the first (leftmost) of the header icons, in the gold accent.
+class _QuizIcon extends StatelessWidget {
+  const _QuizIcon({required this.onTap});
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: 'Quiz. Play',
-    excludeSemantics: true,
-    onTap: onTap,
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
+  Widget build(BuildContext context) => Tooltip(
+    message: 'Quiz',
+    excludeFromSemantics: true,
+    child: Semantics(
+      button: true,
+      label: 'Quiz. Play a round.',
+      excludeSemantics: true,
       onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 48),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: LtColors.night,
-          borderRadius: BorderRadius.circular(LtRadii.chip),
-          boxShadow: LtShadows.small,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.quiz_outlined, color: LtColors.gold, size: 22),
-            const SizedBox(width: 6),
-            Text('Quiz · play', style: LtText.body(size: 16, weight: FontWeight.w700, color: LtColors.cream)),
-          ],
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(color: LtColors.night, shape: BoxShape.circle),
+              child: const Icon(Icons.quiz_outlined, color: LtColors.gold, size: 22),
+            ),
+          ),
         ),
       ),
     ),
@@ -355,9 +377,8 @@ class _QuizChip extends StatelessWidget {
 /// The banner and the outlook card side by side, stacked when the screen is
 /// narrow or the text is large (so nothing wraps letter by letter).
 class _TopBar extends StatelessWidget {
-  const _TopBar({super.key, required this.banner, required this.card, this.actions = const [], this.quiz});
+  const _TopBar({super.key, required this.banner, required this.card, this.actions = const []});
   final Widget banner;
-  final Widget? quiz;
   final List<Widget> actions;
   final Widget card;
 
@@ -377,14 +398,14 @@ class _TopBar extends StatelessWidget {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // The header row (My twin + icons, quiz first) is the first row on Home.
                 Row(
                   children: [
                     Expanded(child: Align(alignment: Alignment.centerLeft, child: banner)),
                     ...actions,
                   ],
                 ),
-                if (quiz != null) Align(alignment: Alignment.centerRight, child: quiz),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 card,
               ],
             ),
@@ -500,92 +521,6 @@ class _OneLine extends StatelessWidget {
 
 /// Exercise · Eat · Sleep: compact toggles above the dock. Each gets the
 /// width its label needs, and the spare width is shared out evenly.
-class _ActivityRow extends StatelessWidget {
-  const _ActivityRow({required this.sim, required this.press});
-  final RoomSim sim;
-  final void Function(RoomAction) press;
-
-  static const _items = [
-    (RoomAction.exercise, 'Exercise', Icons.fitness_center_rounded),
-    (RoomAction.eat, 'Eat', Icons.restaurant_rounded),
-    (RoomAction.sleep, 'Sleep', Icons.bedtime_rounded),
-  ];
-  static const _gap = 8.0, _padX = 6.0, _icon = 24.0, _iconGap = 4.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final style = LtText.body(weight: FontWeight.w700);
-    Widget item(RoomAction a, String label, IconData icon, bool showIcon) {
-      final on = sim.action == a;
-      return Semantics(
-        button: true,
-        toggled: on,
-        label: label,
-        excludeSemantics: true,
-        onTap: () => press(a),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => press(a),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 48),
-            padding: const EdgeInsets.symmetric(horizontal: _padX, vertical: 4),
-            decoration: BoxDecoration(
-              color: on ? LtColors.mint : LtColors.paper,
-              borderRadius: BorderRadius.circular(LtRadii.chip),
-              border: Border.all(color: on ? LtColors.controlOnMint : LtColors.control, width: LtBorders.control),
-              boxShadow: LtShadows.small,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (showIcon) ...[Icon(icon, size: _icon, color: LtColors.ink), const SizedBox(width: _iconGap)],
-                Flexible(child: _OneLine(label, style: style)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (context, box) {
-        final labels = [for (final (_, label, _) in _items) _labelWidth(context, label, style)];
-        final avail = box.maxWidth - _gap * (_items.length - 1);
-        // Slot widths for the labels plus [extra] each; spare width shared evenly.
-        List<double> slots(double extra) {
-          final need = [for (final l in labels) l + extra];
-          final total = need.fold(0.0, (a, b) => a + b);
-          return [
-            for (final n in need)
-              (total <= avail ? n + (avail - total) / need.length : n * avail / total).floorToDouble(),
-          ];
-        }
-
-        const box0 = _padX * 2 + LtBorders.control * 2;
-        var showIcon = true;
-        var widths = slots(box0 + _icon + _iconGap);
-        // Below the 15 px floor with icons? Drop the icons to widen the labels.
-        final floor = _labelFloor(context);
-        for (var i = 0; i < labels.length; i++) {
-          if ((widths[i] - box0 - _icon - _iconGap) / labels[i] < floor) {
-            showIcon = false;
-            widths = slots(box0);
-            break;
-          }
-        }
-        return Row(
-          children: [
-            for (var i = 0; i < _items.length; i++) ...[
-              if (i > 0) const SizedBox(width: _gap),
-              SizedBox(width: widths[i], child: item(_items[i].$1, _items[i].$2, _items[i].$3, showIcon)),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
 class _Dock extends StatelessWidget {
   const _Dock({required this.frame, required this.onTalk, required this.onCustomize, required this.onFortune});
   final SwooshRoomFrame frame;
@@ -716,3 +651,52 @@ class _DockItem extends StatelessWidget {
   }
 }
 
+/// "What should Mochi do?": four 48 pt options; the current one carries a check, not only a colour.
+class _ActivityChooser extends StatelessWidget {
+  const _ActivityChooser({required this.current, required this.onPick, required this.onWalk});
+  final RoomAction? current;
+  final void Function(RoomAction) onPick;
+  final VoidCallback onWalk;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget option(String label, IconData icon, bool selected, VoidCallback onTap) => Semantics(
+      button: true,
+      selected: selected,
+      label: selected ? '$label, selected' : label,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          color: selected ? LtColors.mintWash : null,
+          child: Row(
+            children: [
+              Icon(icon, size: 24, color: LtColors.ink),
+              const SizedBox(width: 14),
+              Expanded(child: Text(label, style: LtText.body(weight: FontWeight.w700))),
+              if (selected) const Icon(Icons.check_rounded, size: 24, color: LtColors.ink),
+            ],
+          ),
+        ),
+      ),
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+          child: Semantics(header: true, child: Text('What should Mochi do?', style: LtText.display(24))),
+        ),
+        option('Walk', Icons.directions_walk_rounded, current == null, onWalk),
+        option('Exercise', Icons.fitness_center_rounded, current == RoomAction.exercise, () => onPick(RoomAction.exercise)),
+        option('Eat', Icons.restaurant_rounded, current == RoomAction.eat, () => onPick(RoomAction.eat)),
+        option('Sleep', Icons.bedtime_rounded, current == RoomAction.sleep, () => onPick(RoomAction.sleep)),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+}

@@ -11,7 +11,7 @@ import 'models.dart';
 import 'widgets.dart';
 
 /// Home's health score card (design K-4), compact: a ring gauge on the higher = better scale with the
-/// signed number inside, the age-group line with a thin percentile bar, the recent trend, and one chip into
+/// signed score inside, the age-group line with a thin percentile bar, the recent trend, and one chip into
 /// the estimate. "What moves it" is the circled i at the top right. The check-in entry is #58's
 /// `CheckInEntry`, mounted by the Room, never a second one here.
 class HomeWellnessPanel extends StatelessWidget {
@@ -223,8 +223,8 @@ class _EstimateChip extends StatelessWidget {
 }
 
 /// A ring gauge on the higher = better scale: the arc runs from "Higher risk" (start, bottom left) to
-/// "Better health" (end, bottom right), the dot sits where the score falls (clamped to -3..+3), and the
-/// signed number is inside. No colour by value.
+/// "Better health" (end, bottom right), the dot sits where the score falls (see [ScoreScale.position]), and the
+/// signed score is inside. No colour by value.
 class ScoreRing extends StatelessWidget {
   const ScoreRing({super.key, required this.score, this.size = 84});
   final double score;
@@ -510,15 +510,18 @@ class _ScoreDisc extends StatelessWidget {
   }
 }
 
-/// "Higher risk ‹ · Average · › Better health": a bar with the marker where the score falls (clamped
-/// to the model's usual -3 to +3), no colour by value.
+/// "Higher risk ‹ · Average · › Better health": a bar with the marker where the score falls (the
+/// centred score, clamped to ±ln 3), no colour by value.
 class ScoreScale extends StatelessWidget {
   const ScoreScale({super.key, required this.score});
   final double score;
 
-  static const range = 3.0;
+  /// The score shown at the far right; its negative is at the far left (ln 3: a hazard a
+  /// third of, or three times, the middle of the group).
+  static final range = math.log(3);
 
-  /// 0 (far left, higher risk) to 1 (far right, better health); 0.5 is average.
+  /// 0 (far left, higher risk) to 1 (far right, better health); 0.5 is the score 0, the
+  /// middle of the age group.
   static double position(double score) =>
       ((score.clamp(-range, range) + range) / (2 * range)).toDouble();
 

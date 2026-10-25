@@ -330,7 +330,7 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: widget.store,
+    listenable: Listenable.merge([widget.store, widget.service]),
     builder: (context, _) {
       final s = widget.store;
       final w = s.week();
@@ -504,6 +504,12 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
             icon: Icons.chat_bubble_outline_rounded,
             fontSize: 20,
             onTap: () => widget.onUseSuggestion!(suggestion),
+          ),
+        ] else if (widget.service.savedMinutes case final saved?) ...[
+          const SizedBox(height: 12),
+          Semantics(
+            liveRegion: true,
+            child: Text('Saved: about $saved minutes a week', style: LtText.body(weight: FontWeight.w700)),
           ),
         ],
       ],

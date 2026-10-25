@@ -27,8 +27,8 @@ void main() {
       expect(formatHealthScore(0.04), '+0.04');
       expect(formatHealthScore(-1.5), '−1.50');
       expect(formatHealthScore(0.001), '0.00');
-      expect(healthScoreSemantics(0.04), 'Health score plus 0.04. Higher is better. 0 is average.');
-      expect(healthScoreSemantics(-0.5), 'Health score minus 0.50. Higher is better. 0 is average.');
+      expect(healthScoreSemantics(0.04), 'Health score plus 0.04. Higher is better. 0 is the middle of people your age.');
+      expect(healthScoreSemantics(-0.5), 'Health score minus 0.50. Higher is better. 0 is the middle of people your age.');
     });
 
     test('the marker sits by the public value: better health is to the right', () {

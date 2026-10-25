@@ -19,7 +19,7 @@ import 'twin_model.dart';
 import 'twin_state.dart';
 
 export 'history_log.dart';
-export 'lifespan.dart' show LifespanEstimate, LifespanStatus;
+export 'lifespan.dart' show LifespanEstimate, LifespanStatus, LifespanPoint;
 
 part 'twin_store.dart';
 
@@ -100,13 +100,17 @@ class TwinRepository extends ChangeNotifier {
   /// The confirmed profile on the phone.
   Map<String, dynamic> get profile => store.profile;
 
-  /// The health score: HIGHER IS BETTER (owner ruling 2026-10-24), 0 is the average survey
-  /// participant, typically about −3 to +3; includes age and sex. It is the negated
-  /// [rawLogRelativeHazard] (one adapter, [healthScoreFromRaw]). Null unless the model gave
-  /// a number; see [healthScoreStatus].
+  /// The health score, the Cox HEALTH INDEX: 1.0 is the middle of people your age and sex
+  /// in the survey (the same people as [ageGroupPercentile]), HIGHER IS BETTER, above 1
+  /// exactly when the percentile is above 50. See [TwinAssessment.healthScore]. Null unless
+  /// the model gave a number; see [healthScoreStatus].
   double? get healthScore => _current?.healthScore;
 
-  /// The model's own `log_relative_hazard_score`, unchanged (lower is lower modelled risk).
+  /// The group [healthScore] compares with, as the band actually used, e.g. `women 59–69`.
+  String? get healthGroupLabel => _current?.healthGroupLabel;
+
+  /// The model's own `log_relative_hazard_score`, unchanged (lower is lower modelled risk;
+  /// includes age and sex). For internal use; the person sees [healthScore].
   double? get rawLogRelativeHazard => _current?.rawLogRelativeHazard;
 
   /// Healthier than this share (0–100) of people like you in the survey (same sex, nearby
@@ -117,14 +121,17 @@ class TwinRepository extends ChangeNotifier {
   int? get ageGroupWidth => _current?.ageGroupWidth;
   bool? get ageGroupNearestBand => _current?.ageGroupNearestBand;
 
+
   /// The one-time lifespan reveal (owner override 2026-10-24): a rough, proof-of-concept
-  /// expected age and YEAR (never a date) from the current profile; see
-  /// docs/lifespan-estimate.md. Null when there is no health score (no profile, missing
-  /// inputs, unsupported profile, under 18 or over 85).
+  /// age and YEAR (never a date) from the current profile: the model owner's yearly Cox
+  /// projection blended with the life table at the seams (Rough guide where the life table
+  /// has the larger weight); see
+  /// [LifespanEstimate]. Null when there is no health score (no profile, missing inputs,
+  /// unsupported profile, under 18 or over 85).
   LifespanEstimate? get lifespanEstimate {
     final a = _current;
     if (a == null || a.rawLogRelativeHazard == null) return null;
-    return LifespanEstimate.forProfile(a.profileUsed, currentYear: _clock().year);
+    return LifespanEstimate.forProfile(a.profileUsed, currentYear: _clock().year, lab: model.projection);
   }
 
   /// True once the person has seen the lifespan reveal; the UI then de-emphasises it.
@@ -147,11 +154,16 @@ class TwinRepository extends ChangeNotifier {
   /// The score history between [from] and [to] (local dates, inclusive; open-ended when
   /// null), oldest first. Appended whenever an assessment is made after a Mochi
   /// conversation, a check-in that feeds the forecast, a day correction or an import.
-  List<HealthScorePoint> healthScoreHistory({DateTime? from, DateTime? to}) {
+  /// Only points of [engine] (the current [healthScoreEngine] by default) are returned, so
+  /// scales from different engines never mix.
+  List<HealthScorePoint> healthScoreHistory({DateTime? from, DateTime? to, String engine = healthScoreEngine}) {
     final lo = from == null ? null : isoDate(from), hi = to == null ? null : isoDate(to);
     return [
       for (final p in store.healthScorePoints)
-        if ((lo == null || p.date.compareTo(lo) >= 0) && (hi == null || p.date.compareTo(hi) <= 0)) p,
+        if (p.engine == engine &&
+            (lo == null || p.date.compareTo(lo) >= 0) &&
+            (hi == null || p.date.compareTo(hi) <= 0))
+          p,
     ];
   }
 
@@ -709,6 +721,7 @@ class TwinRepository extends ChangeNotifier {
     HealthScorePoint(
       at: _clock(),
       rawLogRelativeHazard: a.rawLogRelativeHazard,
+      score: a.healthScore,
       status: a.healthScoreStatus,
       ageGroupPercentile: a.ageGroupPercentile,
       ageGroupSize: a.ageGroupSize,

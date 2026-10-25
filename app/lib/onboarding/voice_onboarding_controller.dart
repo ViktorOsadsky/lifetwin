@@ -389,11 +389,11 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   /// Every caption (a new partial or final) restarts the end-of-turn wait, once a word is heard.
   void _armEndOfTurn(String text) {
-    if (text.trim().isEmpty) return;
+    if (_disposed || text.trim().isEmpty) return;
     _endOfTurnTimer?.cancel();
     _endOfTurnTimer = Timer(endOfTurn, () {
       _endOfTurnTimer = null;
-      if (phase == VoicePhase.listening) unawaited(stopTalk());
+      if (!_disposed && phase == VoicePhase.listening) unawaited(stopTalk());
     });
   }
 

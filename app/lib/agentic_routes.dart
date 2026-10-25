@@ -26,6 +26,8 @@ import 'health/health_reader.dart';
 import 'health/health_sample.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'experiment/experiment_screen.dart';
+import 'experiment/ideas_list_screen.dart';
+import 'experiment/recommendations.dart';
 import 'experiment/room_pills.dart';
 import 'experiment/still_learning_screen.dart';
 import 'experiment/weight_screen.dart';
@@ -42,7 +44,9 @@ Future<List<HealthSample>> Function() connectedHealthSamples(
   bool Function() connected, {
   DateTime Function()? now,
 }) =>
-    () async => connected() ? reader.read(now: (now ?? DateTime.now)(), days: 3) : const <HealthSample>[];
+    () async => connected()
+    ? reader.read(now: (now ?? DateTime.now)(), days: 3)
+    : const <HealthSample>[];
 
 /// Everything the agentic screens need from the app shell, in one place so `main.dart` stays small:
 /// the scope that lets any screen call `openCheckIn`, the Room's pills, and the routes behind them
@@ -61,6 +65,7 @@ class AgenticRoutes {
     this.documentService,
     CoachClient? coach,
     CapabilitiesClient? capabilities,
+    this.ideasSource,
     BandClient? bandClient,
     BandFilePicker? bandFilePicker,
     this.onDeleted,
@@ -90,8 +95,12 @@ class AgenticRoutes {
   late final CoachClient coach = _coach ?? HttpCoachClient(base: _api);
   final CoachClient? _coach;
 
+  /// Ideas for you (`POST /api/recommendations`); tests pass a fake.
+  final RecommendationsSource Function(TwinRepository repo)? ideasSource;
+
   /// The check-in server; it is told the profile's age so Mochi's examples fit.
-  late final CheckinGuide guide = _guide ?? HttpCheckinClient(base: _api, age: () => repo?.profile['age']);
+  late final CheckinGuide guide =
+      _guide ?? HttpCheckinClient(base: _api, age: () => repo?.profile['age']);
   final ChangeClient changeClient;
 
   /// Apple Health samples already allowed by the person; null when Health is not connected.
@@ -109,10 +118,14 @@ class AgenticRoutes {
   ConsentStore? consents;
 
   /// The wristband (recorded demo only until a Bluetooth plugin exists) and what it suggests.
-  late final BandStore band = _bandClientGiven ? BandStore(_bandClient) : BandFileSession.instance.store;
+  late final BandStore band = _bandClientGiven
+      ? BandStore(_bandClient)
+      : BandFileSession.instance.store;
 
   /// Band files (`lifetwin.band_day.v0`): the shared phone-only import session unless a test gave a client.
-  late final BandFileIntake intake = _bandClientGiven ? BandFileIntake(store: band, picker: _bandFilePicker) : BandFileSession.instance.intake;
+  late final BandFileIntake intake = _bandClientGiven
+      ? BandFileIntake(store: band, picker: _bandFilePicker)
+      : BandFileSession.instance.intake;
   late final bool _bandClientGiven = _bandClientParam != null;
   BandService? bandService;
   Future<AiProvider?>? _provider;
@@ -144,7 +157,10 @@ class AgenticRoutes {
         voiceUsable: () => v.voiceUsable,
         healthSamples: healthSamples,
         appearance: look,
-        todayPlan: TodayPlanHook(update: _planUpdate, open: (c) => todayPlan(c)),
+        todayPlan: TodayPlanHook(
+          update: _planUpdate,
+          open: (c) => todayPlan(c),
+        ),
         child: child!,
       ),
     );
@@ -165,7 +181,8 @@ class AgenticRoutes {
   Future<bool> importBandFile(BuildContext context) async {
     await intake.importFromFiles();
     final o = intake.outcome;
-    final ok = o != null && o.error == null && !o.cancelled && o.reportCount > 0;
+    final ok =
+        o != null && o.error == null && !o.cancelled && o.reportCount > 0;
     if (context.mounted && o != null && !o.cancelled) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
@@ -238,7 +255,9 @@ class AgenticRoutes {
           onSeeToday: () => panel(Navigator.of(page), replace: true),
           onImportFile: () async {
             // A file instead of Bluetooth: once days are in, the panel (and the weekly suggestion) follow.
-            if (await importBandFile(page) && page.mounted) panel(Navigator.of(page), replace: true);
+            if (await importBandFile(page) && page.mounted) {
+              panel(Navigator.of(page), replace: true);
+            }
           },
         ),
       ),
@@ -250,13 +269,20 @@ class AgenticRoutes {
   void changeWithMochi(BuildContext context, String? field) {
     final r = repo;
     if (r == null) return;
-    final controller = ChangeChatController(client: changeClient, repository: r, field: field);
+    final controller = ChangeChatController(
+      client: changeClient,
+      repository: r,
+      field: field,
+    );
     Navigator.of(context)
         .push<void>(
           MaterialPageRoute<void>(
             fullscreenDialog: true,
-            builder: (c) =>
-                ChangeChatScreen(controller: controller, appearance: look.value, onClose: () => Navigator.of(c).pop()),
+            builder: (c) => ChangeChatScreen(
+              controller: controller,
+              appearance: look.value,
+              onClose: () => Navigator.of(c).pop(),
+            ),
           ),
         )
         .whenComplete(controller.dispose);
@@ -292,7 +318,10 @@ class AgenticRoutes {
     if (r == null) return;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (page) => ReminderSettingsScreen(repository: r, onBack: () => Navigator.of(page).pop()),
+        builder: (page) => ReminderSettingsScreen(
+          repository: r,
+          onBack: () => Navigator.of(page).pop(),
+        ),
       ),
     );
   }
@@ -338,7 +367,8 @@ class AgenticRoutes {
   void changeAnswer(BuildContext context) => changeWithMochi(context, null);
 
   /// The weekly check-in, whether or not the schedule says one is due.
-  Future<void> weeklyCheckIn(BuildContext context) => openCheckIn(context, kind: CheckInKind.weekly);
+  Future<void> weeklyCheckIn(BuildContext context) =>
+      openCheckIn(context, kind: CheckInKind.weekly);
 
   /// Asks for the outside-AI consent when this provider has no answer yet (or a new provider has taken
   /// over), and completes with whether Personal suggestions may use it now. Call it before the first plan or
@@ -389,26 +419,38 @@ class AgenticRoutes {
     }
     return TodayUpdate(
       encouragement: line,
-      changes: previous == null ? null : (plan.reusedPrevious ? const [] : plan.changedLines),
+      changes: previous == null
+          ? null
+          : (plan.reusedPrevious ? const [] : plan.changedLines),
     );
   }
 
   /// "Today with Mochi" for Home: mount it where the Today card goes. It asks the outside-AI consent once
   /// before the first plan (the coach may use the same provider), and opens the full plan on a tap.
-  Widget todayCard(BuildContext context, {VoidCallback? onTalk, bool condensed = false, Widget? trailing}) => TodayWithMochiCard(
+  Widget todayCard(
+    BuildContext context, {
+    VoidCallback? onTalk,
+    bool condensed = false,
+    Widget? trailing,
+  }) => TodayWithMochiCard(
     condensed: condensed,
     trailing: trailing,
     client: coach,
     onPlan: (p) => _lastPlan = p,
     confirmedContext: () => coachContext(repo!),
-    beforeFirstPlan: () => ensureOutsideAiConsent(context),
+    // No consent ask here: the card shows on Home, which can sit behind onboarding's last screen. The ask
+    // comes from the person's tap (opening the plan, or Ideas).
+    onIdeas: ideasAllowed ? () => ideas(context, origin: 'Today') : null,
     onOpen: () => todayPlan(context, onTalk: onTalk),
   );
 
   /// The full daily plan (`DailyPlanScreen`).
-  void todayPlan(BuildContext context, {VoidCallback? onTalk}) {
+  Future<void> todayPlan(BuildContext context, {VoidCallback? onTalk}) async {
     final r = repo;
     if (r == null) return;
+    // The person tapped: now is the time to ask about the outside AI, once.
+    await ensureOutsideAiConsent(context);
+    if (!context.mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (page) => DailyPlanScreen(
@@ -416,10 +458,49 @@ class AgenticRoutes {
           onPlan: (p) async => _lastPlan = p,
           confirmedContext: () => coachContext(r),
           onBack: () => Navigator.of(page).pop(),
+          onIdeas: ideasAllowed ? () => ideas(page, origin: 'Today') : null,
           onTalk: () {
             Navigator.of(page).pop();
             onTalk?.call();
           },
+        ),
+      ),
+    );
+  }
+
+  /// Ideas for you are for people 18 and over; under 18 (or no age) there is no entry point and
+  /// the server is never asked.
+  bool get ideasAllowed => ((repo?.profile['age'] as num?) ?? 0) >= 18;
+
+  /// "Ideas for you": up to three ideas from `/api/recommendations`. [origin] names where it was
+  /// opened from for the back button ("Back to {origin}"). Asks the outside-AI consent first, if it
+  /// has not been answered (the person just tapped, so it is not a surprise).
+  Future<void> ideas(BuildContext context, {required String origin}) async {
+    final r = repo;
+    if (r == null || !ideasAllowed) return;
+    final may = await ensureOutsideAiConsent(context);
+    final p = may ? await provider() : null;
+    if (!context.mounted) return;
+    final missing = (r.current ?? r.assess(const {})).missingInputs;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (c) => IdeasListScreen(
+          source: ideasSource?.call(r) ?? HttpRecommendations(r, base: _api),
+          appearance: look.value,
+          origin: origin,
+          missingInputs: missing,
+          worded: p,
+          onBack: () => Navigator.of(c).pop(),
+          onAnswerMore: () {
+            Navigator.of(c).pop();
+            changeWithMochi(context, null);
+          },
+          onTry: (idea) => experiment(
+            c,
+            presetLever: idea.leverId,
+            presetValue: idea.leverValue,
+            backLabel: 'Back to ideas',
+          ),
         ),
       ),
     );
@@ -431,12 +512,18 @@ class AgenticRoutes {
     if (r == null) return;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (c) => _HealthDocumentsHost(routes: this, repository: r, parent: context),
+        builder: (c) =>
+            _HealthDocumentsHost(routes: this, repository: r, parent: context),
       ),
     );
   }
 
-  void experiment(BuildContext context) {
+  void experiment(
+    BuildContext context, {
+    String? presetLever,
+    double? presetValue,
+    String backLabel = 'Back to room',
+  }) {
     final r = repo;
     if (r == null) return;
     Navigator.of(context).push(
@@ -444,6 +531,10 @@ class AgenticRoutes {
         builder: (c) => ExperimentScreen(
           repository: r,
           appearance: look.value,
+          presetLever: presetLever,
+          presetValue: presetValue,
+          backLabel: backLabel,
+          onIdeas: ideasAllowed ? () => ideas(c, origin: 'Experiment') : null,
           onBack: () => Navigator.of(c).pop(),
           onTellMochi: (field) {
             Navigator.of(c).pop();
@@ -464,7 +555,9 @@ class AgenticRoutes {
         if (c.level == 'strength' || c.level == 'opportunity')
           OutlookDriver(
             label: c.title,
-            direction: c.level == 'strength' ? DriverDirection.higher : DriverDirection.lower,
+            direction: c.level == 'strength'
+                ? DriverDirection.higher
+                : DriverDirection.lower,
             reason: c.message,
           ),
     ];
@@ -473,7 +566,10 @@ class AgenticRoutes {
         builder: (c) => OutlookDriversScreen(
           drivers: drivers,
           onBack: () => Navigator.of(c).pop(),
-          onExperiment: () => experiment(c),
+          onExperiment: () => experiment(c, backLabel: 'Back to what moves it'),
+          onIdeas: ideasAllowed
+              ? () => ideas(c, origin: 'what moves it')
+              : null,
         ),
       ),
     );
@@ -484,7 +580,10 @@ class AgenticRoutes {
     final r = repo;
     if (r == null) return;
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (c) => NotebookScreen(repository: r, onBack: () => Navigator.of(c).pop())),
+      MaterialPageRoute<void>(
+        builder: (c) =>
+            NotebookScreen(repository: r, onBack: () => Navigator.of(c).pop()),
+      ),
     );
   }
 
@@ -552,7 +651,12 @@ class AgenticRoutes {
 /// to the foreground (the date may have moved on, so a daily window ends on a different day and today's
 /// check-in is due again) it calls `repo.refresh()` and plans the reminders again.
 class ResumeRefresh extends StatefulWidget {
-  const ResumeRefresh({super.key, required this.repository, required this.child, this.now});
+  const ResumeRefresh({
+    super.key,
+    required this.repository,
+    required this.child,
+    this.now,
+  });
   final TwinRepository repository;
   final Widget child;
 
@@ -563,7 +667,8 @@ class ResumeRefresh extends StatefulWidget {
   State<ResumeRefresh> createState() => _ResumeRefreshState();
 }
 
-class _ResumeRefreshState extends State<ResumeRefresh> with WidgetsBindingObserver {
+class _ResumeRefreshState extends State<ResumeRefresh>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -579,13 +684,8 @@ class _ResumeRefreshState extends State<ResumeRefresh> with WidgetsBindingObserv
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    final repo = widget.repository;
-    repo.refresh();
-    final reminders = repo.reminders;
-    final settings = repo.checkinSettings;
-    if (reminders != null && settings.remindersOn) {
-      reminders.reschedule(settings, localNow: (widget.now ?? DateTime.now)(), history: repo.store.checkins).ignore();
-    }
+    // refresh() also plans the reminders again, so they are planned once per resume.
+    widget.repository.refresh();
   }
 
   @override
@@ -593,7 +693,11 @@ class _ResumeRefreshState extends State<ResumeRefresh> with WidgetsBindingObserv
 }
 
 class _HealthDocumentsHost extends StatefulWidget {
-  const _HealthDocumentsHost({required this.routes, required this.repository, required this.parent});
+  const _HealthDocumentsHost({
+    required this.routes,
+    required this.repository,
+    required this.parent,
+  });
   final AgenticRoutes routes;
   final TwinRepository repository;
   final BuildContext parent;
@@ -610,13 +714,19 @@ class _HealthDocumentsHostState extends State<_HealthDocumentsHost> {
       builder: (c) => DocumentUploadScreen(
         service:
             widget.routes.documentService?.call() ??
-            liveDocumentService(extractor: HttpDocumentExtractor(base: widget.routes._api)),
+            liveDocumentService(
+              extractor: HttpDocumentExtractor(base: widget.routes._api),
+            ),
         onDone: (result) async {
           Navigator.of(c).pop();
           final r = widget.repository;
           final values = result.profileValues;
-          if (values.isNotEmpty) await r.recordImport(values, source: HistorySource.document);
-          if (result.notes.isNotEmpty) await r.recordDocumentReadings(result.notes);
+          if (values.isNotEmpty) {
+            await r.recordImport(values, source: HistorySource.document);
+          }
+          if (result.notes.isNotEmpty) {
+            await r.recordDocumentReadings(result.notes);
+          }
           if (mounted) setState(() => _notices = result.notices);
         },
       ),
@@ -629,6 +739,7 @@ class _HealthDocumentsHostState extends State<_HealthDocumentsHost> {
     onBack: () => Navigator.of(context).pop(),
     onUpload: _upload,
     notices: _notices,
-    onTellMochiWeight: () => widget.routes.changeWithMochi(context, 'weight_kg'),
+    onTellMochiWeight: () =>
+        widget.routes.changeWithMochi(context, 'weight_kg'),
   );
 }

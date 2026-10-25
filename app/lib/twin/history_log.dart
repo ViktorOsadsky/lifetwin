@@ -3,7 +3,7 @@
 /// appended as it happens and never edited. Read it with `TwinRepository.history()`.
 library;
 
-import 'twin_model.dart' show HealthScoreStatus, healthScoreFromRaw, isoDate;
+import 'twin_model.dart' show HealthScoreStatus, healthScoreEngine, isoDate, legacyHealthScoreEngine;
 
 /// Entry kinds.
 abstract final class HistoryKind {
@@ -34,22 +34,29 @@ abstract final class HistoryKind {
 /// changed its inputs. Appended on the phone, never edited. [score] is null when the model
 /// gave no number ([status] says why).
 ///
-/// Stored as the model's raw `log_relative_hazard_score` (JSON key `score`, unchanged, so
-/// existing history stays valid); [score] is computed on read, higher is better.
+/// [score] is the centred health score (JSON key `centered_score`, positive is healthier, 0 is the
+/// middle of the age group) and [engine] names its scale. A point stored before the tag
+/// existed reads as [legacyHealthScoreEngine] (the old −log-hazard scale, no centred score), and
+/// `TwinRepository.healthScoreHistory` leaves out every point not of [healthScoreEngine].
+/// The raw Cox log relative hazard stays under the JSON key `score`, as before.
 class HealthScorePoint {
   const HealthScorePoint({
     required this.at,
     required this.rawLogRelativeHazard,
+    required this.score,
     required this.status,
     required this.modelVersion,
     this.ageGroupPercentile,
     this.ageGroupSize,
     this.ageGroupBand,
+    this.engine = healthScoreEngine,
   });
 
   factory HealthScorePoint.fromJson(Map<String, dynamic> j) => HealthScorePoint(
+    engine: '${j['engine'] ?? legacyHealthScoreEngine}',
     at: DateTime.tryParse('${j['at']}') ?? DateTime.fromMillisecondsSinceEpoch(0),
     rawLogRelativeHazard: (j['score'] as num?)?.toDouble(),
+    score: (j['centered_score'] as num?)?.toDouble(),
     status: HealthScoreStatus.fromWire(j['status']),
     modelVersion: '${j['model_version'] ?? ''}',
     ageGroupPercentile: (j['age_group_percentile'] as num?)?.toDouble(),
@@ -59,11 +66,14 @@ class HealthScorePoint {
 
   final DateTime at;
 
-  /// The model's own number as stored (lower is lower modelled risk).
+  /// The engine (scale) of [score], e.g. `cox_centered_v1`; readers filter on it.
+  final String engine;
+
+  /// The model's own number as stored (lower is lower modelled risk). Internal use.
   final double? rawLogRelativeHazard;
 
-  /// The displayed health score: higher is better (see [healthScoreFromRaw]).
-  double? get score => healthScoreFromRaw(rawLogRelativeHazard);
+  /// The displayed health score, centred: positive is healthier, 0 is the middle.
+  final double? score;
   final HealthScoreStatus status;
   final String modelVersion;
 
@@ -78,6 +88,8 @@ class HealthScorePoint {
   Map<String, dynamic> toJson() => {
     'at': at.toIso8601String(),
     'date': date,
+    'engine': engine,
+    'centered_score': score,
     'score': rawLogRelativeHazard,
     'status': status.wire,
     'model_version': modelVersion,
