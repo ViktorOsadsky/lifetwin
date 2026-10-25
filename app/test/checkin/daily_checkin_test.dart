@@ -101,15 +101,13 @@ void main() {
             client: client,
             appearance: look,
             openUrl: (u) async => opened.add(u),
+            now: () => now,
             child: child!,
           ),
           home: Builder(
             builder: (context) => RoomScreen(
               appearance: look,
               hasProfile: true,
-              twin: repo,
-              checkins: CheckinScheduler(repo, now: () => now),
-              onCheckIn: (kind) => openCheckIn(context, kind: kind),
               onTalk: () {},
               onCustomize: () {},
               onFortune: () async {},

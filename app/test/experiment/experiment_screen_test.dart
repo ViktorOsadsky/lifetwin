@@ -7,6 +7,7 @@ import 'package:lifesim/experiment/experiment_screen.dart';
 import 'package:lifesim/experiment/ideas_screen.dart';
 import 'package:lifesim/experiment/lever_copy.dart';
 import 'package:lifesim/experiment/recommendations.dart';
+import 'package:lifesim/experiment/room_pills.dart';
 import 'package:lifesim/experiment/result_display.dart';
 import 'package:lifesim/experiment/side_by_side_screen.dart';
 import 'package:lifesim/experiment/wellness_panel.dart';
@@ -561,10 +562,12 @@ void main() {
           onTalk: () {},
           onCustomize: () {},
           onFortune: () async {},
-          twin: repo,
-          onStillLearning: () => learning++,
-          onWellness: () => cards++,
-          onExperiment: () => tried++,
+          extraPills: roomPills(
+            repository: repo,
+            onExperiment: () => tried++,
+            onStillLearning: () => learning++,
+            onWellness: () => cards++,
+          ),
         ),
       );
       await pumpRoom(missing);

@@ -37,6 +37,7 @@ class CheckInScope extends InheritedWidget {
     required this.appearance,
     this.openUrl = defaultOpenUrl,
     this.onTalk,
+    this.now,
     required super.child,
   });
 
@@ -44,6 +45,9 @@ class CheckInScope extends InheritedWidget {
   final CheckInClient client;
   final ValueListenable<TwinAppearance> appearance;
   final OpenUrl openUrl;
+
+  /// The clock for "due" (tests set it); the phone's clock by default.
+  final DateTime Function()? now;
 
   /// "Tap to talk" inside a check-in. Null until voice is wired to check-ins (the keyboard shows).
   final VoidCallback? onTalk;
