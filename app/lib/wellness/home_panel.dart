@@ -68,12 +68,19 @@ class HomeWellnessPanel extends StatelessWidget {
             icon: const Icon(Icons.chevron_right_rounded, color: LtColors.ink, size: 28),
             onPressed: onDrivers,
           );
-    final label = Semantics(
-      header: true,
-      child: WholeWordText(
-        'Health score',
-        style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary),
-      ),
+    final label = Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 10,
+      children: [
+        Semantics(
+          header: true,
+          child: WholeWordText(
+            'Health score',
+            style: LtText.body(weight: FontWeight.w700, color: LtColors.secondary),
+          ),
+        ),
+        if (stateLine != null) WholeWordText(stateLine!, style: LtText.body()),
+      ],
     );
     final stat = percentile == null
         ? null
@@ -117,16 +124,25 @@ class HomeWellnessPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  flex: 5,
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [label, number]),
-                ),
-                if (stat != null) ...[
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 6,
-                    child: Padding(padding: const EdgeInsets.only(top: 2), child: stat),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      label,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          number,
+                          if (stat != null) ...[
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Padding(padding: const EdgeInsets.only(top: 2), child: stat),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                   ),
-                ],
+                ),
                 chevron,
               ],
             );
@@ -135,7 +151,7 @@ class HomeWellnessPanel extends StatelessWidget {
         ? Expanded(child: ScoreSparkline(values: snapshot.history))
         : const Spacer();
     return WellnessCard(
-      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+      padding: const EdgeInsets.fromLTRB(14, 8, 8, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -160,17 +176,15 @@ class HomeWellnessPanel extends StatelessWidget {
             ),
           if (!big && score != null)
             Padding(
-              padding: const EdgeInsets.only(right: 6, top: 2),
-              child: WholeWordText(HomeWellnessPanel.tagline, style: LtText.body()),
-            ),
-          if (stateLine != null)
-            Padding(
               padding: const EdgeInsets.only(right: 6),
-              child: WholeWordText(stateLine!, style: LtText.body()),
+              child: WholeWordText(HomeWellnessPanel.tagline, style: LtText.body()),
             ),
           Padding(
             padding: const EdgeInsets.only(right: 6, top: 4),
-            child: big
+            // The Home card is compact: the chip only (design K-HZ-1 has no trend line).
+            child: compact
+                ? Align(alignment: Alignment.centerLeft, child: chip)
+                : big
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -264,7 +278,12 @@ Future<void> showHealthScoreSheet(BuildContext context, WellnessSnapshot snapsho
                 const SizedBox(height: 10),
                 WholeWordText(healthScoreSheetLinked, style: LtText.body(weight: FontWeight.w700)),
                 const SizedBox(height: 16),
-                LipButton(label: 'Got it', fontSize: 24, onTap: () => Navigator.of(context).pop()),
+                LipButton(
+                  label: 'Got it',
+                  fontSize: 24,
+                  kind: LipKind.secondary,
+                  onTap: () => Navigator.of(context).pop(),
+                ),
               ],
             ),
           ),
@@ -293,30 +312,30 @@ class _EstimateChip extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(LtRadii.chip),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 48),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: LtColors.paper,
-            borderRadius: BorderRadius.circular(LtRadii.chip),
-            border: Border.all(color: LtColors.control, width: LtBorders.control),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(label, style: LtText.body(weight: FontWeight.w700)),
-                    if (l != null) Text(lifespanCaption, style: LtText.body(color: LtColors.secondary)),
-                  ],
-                ),
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          children: [
+            Container(
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.only(left: 12),
+              decoration: BoxDecoration(
+                color: LtColors.paper,
+                borderRadius: BorderRadius.circular(LtRadii.chip),
+                border: Border.all(color: LtColors.control, width: LtBorders.control),
               ),
-              const Icon(Icons.chevron_right_rounded, color: LtColors.ink),
-            ],
-          ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(label, style: LtText.body(weight: FontWeight.w700)),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: LtColors.ink),
+                ],
+              ),
+            ),
+            if (l != null) Text(lifespanCaption, style: LtText.body(color: LtColors.secondary)),
+          ],
         ),
       ),
     );

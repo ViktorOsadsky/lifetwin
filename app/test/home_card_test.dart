@@ -77,7 +77,7 @@ void main() {
       );
       expect(t.takeException(), isNull);
       expect(find.text('+0.35'), findsOneWidget);
-      expect(find.byType(ScoreSparkline), findsOneWidget);
+      expect(find.byType(ScoreSparkline), findsNothing, reason: 'the Home card has no trend line (K-HZ-1)');
       expect(find.byTooltip('What moves your score'), findsOneWidget);
       final info = t.getSize(find.byTooltip('What moves your score'));
       expect(info.width >= 48 && info.height >= 48, isTrue);
