@@ -121,12 +121,10 @@ def test_source_domain():
     assert {r.source_domain for r in recs} == {"cdc.gov"}
 
 
-def test_under_age(client):
+def test_under_18_is_treated_normally(client):
     out = post(client, {"age": 17, "smoking_status": "current"})
-    assert out["status"] == "under_age"
-    assert out["recommendations"] == []
-    assert out["message"] and out["missing_inputs"] == []
-    assert post(client, {"age": 18, "smoking_status": "current"})["status"] == "ok"
+    assert out["status"] == "ok"
+    assert out["recommendations"]
 
 
 def test_existing_fields_unchanged(client):
@@ -158,3 +156,19 @@ def test_missing_current_value_gives_null_target_not_a_default():
         None,
     )
     assert targets(smoking_status="current")["quit_smoking"] == ("smoking_status", "former")
+
+
+def test_document_context_is_accepted_and_changes_nothing(client):
+    profile = {"age": 50, "smoking_status": "current"}
+    context = {
+        "readings": [
+            {"field": "a1c", "value": 6.1, "unit": "%", "date": "2026-09-14", "source": "document"}
+        ],
+        "diagnoses": ["diabetes"],
+    }
+    plain = client.post("/api/recommendations", json={"profile": profile})
+    with_context = client.post(
+        "/api/recommendations", json={"profile": profile, "document_context": context}
+    )
+    assert with_context.status_code == 200
+    assert with_context.json() == plain.json()
