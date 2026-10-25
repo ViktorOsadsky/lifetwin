@@ -57,6 +57,17 @@ Future<void> frames(WidgetTester t, double seconds) async {
 /// The room's own status line (no longer a pill on Home): matches while the sim says [text].
 Finder status(String text) => find.byWidgetPredicate((w) => w is RoomScene && w.sim.status == text);
 
+/// Mochi's activity pill opens "What should Mochi do?"; this picks one option (it replaced the old row).
+Future<void> choose(WidgetTester t, String label) async {
+  await t.tap(find.byKey(const ValueKey('room-activity')));
+  await t.pump();
+  await t.pump(const Duration(milliseconds: 400));
+  expect(find.text('What should Mochi do?'), findsOneWidget);
+  await t.tap(find.text(label));
+  await t.pump();
+  await t.pump(const Duration(milliseconds: 400));
+}
+
 Finder image(String asset) =>
     find.byWidgetPredicate((w) => w is Image && w.image is AssetImage && (w.image as AssetImage).assetName == asset);
 
@@ -165,15 +176,14 @@ void main() {
     expect(status('Hanging out'), findsOneWidget);
     expect(find.text('Ask the ball'), findsOneWidget); // no forecast yet: no number
     expect(find.textContaining('in 100'), findsNothing);
-    for (final label in ['Exercise', 'Eat', 'Sleep', 'Customize', 'Talk', 'Fortune']) {
+    for (final label in ['Customize', 'Talk', 'Fortune']) {
       expect(find.text(label), findsOneWidget);
     }
+    // The old Exercise / Eat / Sleep row is gone: they are in the activity pill's chooser.
     for (final label in ['Exercise', 'Eat', 'Sleep']) {
-      expect(
-        t.getSize(find.ancestor(of: find.text(label), matching: find.byType(GestureDetector)).first).height,
-        greaterThanOrEqualTo(48),
-      );
+      expect(find.text(label), findsNothing);
     }
+    expect(t.getSize(find.byKey(const ValueKey('room-activity'))).height, greaterThanOrEqualTo(48));
     expect(t.takeException(), isNull);
   });
 
@@ -192,7 +202,7 @@ void main() {
 
   testWidgets('Exercise walks to the mat and loops stretch and jump, then finishes', (t) async {
     await pumpRoom(t);
-    await t.tap(find.text('Exercise'));
+    await choose(t, 'Exercise');
     await t.pump();
     expect(status('Off to the mat'), findsOneWidget);
     await pumpUntil(t, status('Jumping jacks!'));
@@ -207,7 +217,7 @@ void main() {
 
   testWidgets('Eat walks to the table and eats', (t) async {
     await pumpRoom(t);
-    await t.tap(find.text('Eat'));
+    await choose(t, 'Eat');
     await t.pump();
     expect(status('Snack time!'), findsOneWidget);
     await pumpUntil(t, status('Crunch, crunch!'));
@@ -222,17 +232,17 @@ void main() {
     expect(pill, findsOneWidget);
     expect(find.descendant(of: pill, matching: find.text('Relaxing')), findsOneWidget);
     expect(find.descendant(of: pill, matching: find.byIcon(Icons.weekend_rounded)), findsOneWidget);
-    await t.tap(find.text('Sleep'));
+    await choose(t, 'Sleep');
     await pumpUntil(t, status('Sleeping. Tap to wake'));
     await t.pump(const Duration(milliseconds: 100));
     expect(find.descendant(of: pill, matching: find.text('Sleeping')), findsOneWidget);
     expect(find.descendant(of: pill, matching: find.byIcon(Icons.bedtime_rounded)), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp(r'is sleeping$')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'is sleeping\. Change what')), findsOneWidget);
   });
 
   testWidgets('Sleep climbs into bed under the quilt with z\'s; a tap wakes', (t) async {
     await pumpRoom(t);
-    await t.tap(find.text('Sleep'));
+    await choose(t, 'Sleep');
     await t.pump();
     expect(status('Off to bed'), findsOneWidget);
     await pumpUntil(t, status('Sleeping. Tap to wake'));
@@ -461,7 +471,7 @@ void main() {
 
   testWidgets('reduced motion: long walks become a crossfade, loops are shorter, no tilt', (t) async {
     await pumpRoom(t, reduced: true);
-    await t.tap(find.text('Exercise'));
+    await choose(t, 'Exercise');
     await t.pump();
     // A crossfade of about half a second instead of a walk across the room.
     await pumpUntil(t, status('Jumping jacks!'), seconds: 1.5);
@@ -482,7 +492,7 @@ void main() {
     expect(resolveRoomPose(human, RoomPose.think).$1, TwinPose.think);
     expect(resolveRoomPose(const TwinAppearance(look: TwinLook.plain), RoomPose.sleep).$1, TwinPose.sleep);
     await pumpRoom(t, look: human);
-    await t.tap(find.text('Sleep'));
+    await choose(t, 'Sleep');
     await pumpUntil(t, status('Sleeping. Tap to wake'));
     await t.pump(const Duration(milliseconds: 300));
     final sprite = t.widget<TwinSprite>(find.byType(TwinSprite));
@@ -491,7 +501,7 @@ void main() {
 
   testWidgets('a twin without the hat sleeps in its no-hat pose', (t) async {
     await pumpRoom(t, look: const TwinAppearance(look: TwinLook.plain));
-    await t.tap(find.text('Sleep'));
+    await choose(t, 'Sleep');
     await pumpUntil(t, status('Sleeping. Tap to wake'));
     await t.pump(const Duration(milliseconds: 300));
     final sprite = t.widget<TwinSprite>(find.byType(TwinSprite));
@@ -520,7 +530,7 @@ void main() {
     await t.pump(const Duration(milliseconds: 50));
     expect(find.byKey(const ValueKey('room-fx')), findsOneWidget);
     await frames(t, 1.5);
-    await t.tap(find.text('Exercise'));
+    await choose(t, 'Exercise');
     await pumpUntil(t, status('Jumping jacks!'));
     await t.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const ValueKey('room-fx')), findsOneWidget);
@@ -558,7 +568,7 @@ void main() {
   testWidgets('Eat takes the apple out of the bowl and pops it back after', (t) async {
     await pumpRoom(t);
     expect(image(roomLayout.bowlEmpty.asset), findsNothing);
-    await t.tap(find.text('Eat'));
+    await choose(t, 'Eat');
     await pumpUntil(t, status('Crunch, crunch!'));
     await t.pump(const Duration(milliseconds: 100));
     expect(image(roomLayout.bowlEmpty.asset), findsWidgets); // the apple is out
@@ -573,7 +583,7 @@ void main() {
 
   testWidgets('reduced motion: the apple comes back at once, with no effects', (t) async {
     await pumpRoom(t, reduced: true);
-    await t.tap(find.text('Eat'));
+    await choose(t, 'Eat');
     await pumpUntil(t, status('Crunch, crunch!'));
     await t.pump(const Duration(milliseconds: 100));
     expect(image(roomLayout.bowlEmpty.asset), findsWidgets);
@@ -631,7 +641,7 @@ void main() {
 
   testWidgets('button labels never break inside a word (test font, 390 wide)', (t) async {
     await pumpRoom(t);
-    for (final label in ['Exercise', 'Eat', 'Sleep', 'Customize', 'Fortune']) {
+    for (final label in ['Customize', 'Fortune']) {
       expectOneLine(t, label, checkFloor: false);
     }
   });
@@ -697,18 +707,18 @@ void main() {
 
     testWidgets('Exercise and Customize fit one line at 17 px on a 390 phone', (t) async {
       await pumpRoom(t);
-      for (final label in ['Exercise', 'Eat', 'Sleep', 'Customize', 'Fortune']) {
+      for (final label in ['Customize', 'Fortune']) {
         expectOneLine(t, label);
         expect(t.getRect(find.text(label)).height, closeTo(17 * 1.35, 0.5), reason: '$label is not scaled down');
       }
     });
 
-    testWidgets('375 x 667: the twin stays clear of the activity row and dock during Exercise', (t) async {
+    testWidgets('375 x 667: the twin stays clear of the dock during Exercise', (t) async {
       for (final scale in [1.0, 1.3]) {
         await pumpRoom(t, size: const Size(375, 667), textScale: scale);
-        await t.tap(find.text('Exercise'));
+        await choose(t, 'Exercise');
         await pumpUntil(t, status('Jumping jacks!'));
-        final row = boxOf(t, 'Exercise');
+        final row = boxOf(t, 'Customize');
         for (var i = 0; i < 30; i++) {
           await t.pump(const Duration(milliseconds: 50));
           final twin = t.getRect(find.byKey(const ValueKey('room-twin')));
@@ -722,7 +732,7 @@ void main() {
 
     testWidgets('labels stay on one line at 15 px or more on 375 x 667 with 1.3x text', (t) async {
       await pumpRoom(t, size: const Size(375, 667), textScale: 1.3);
-      for (final label in ['Exercise', 'Eat', 'Sleep', 'Customize', 'Fortune']) {
+      for (final label in ['Customize', 'Fortune']) {
         expectOneLine(t, label);
       }
       expect(t.takeException(), isNull);
