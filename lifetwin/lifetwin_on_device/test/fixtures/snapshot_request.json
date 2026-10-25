@@ -1,0 +1,17 @@
+{
+  "as_of_date": "2026-10-24",
+  "profile": {
+    "age": 45,
+    "sex_nhanes": 1,
+    "height_cm": 175,
+    "weight_kg": 76.6,
+    "sleep_hours": 7,
+    "smoking_status": 0,
+    "diabetes_diagnosed": 0,
+    "hypertension_diagnosed": 0,
+    "general_health": 2,
+    "vigorous_recreation_min_week": 60,
+    "moderate_recreation_min_week": 120,
+    "sedentary_min_day": 360
+  }
+}
