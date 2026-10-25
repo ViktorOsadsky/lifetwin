@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/checkin/checkin_reminders.dart';
 import 'package:lifesim/checkin/my_data_screen.dart';
+import 'package:lifesim/documents/document_extract.dart' show DocumentCandidate;
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/room/room_screen.dart';
@@ -13,6 +14,7 @@ import 'package:lifesim/twin/twin_model.dart' show TwinModelService;
 import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/ui/twin_appearance.dart';
 import 'package:lifesim/voice/fakes.dart';
+import 'package:lifesim/wellness/coach_context.dart';
 
 import 'checkin_controller_test.dart' show FakePort;
 import 'forecast_screen_test.dart' show FakeForecastClient, supportedJson;
@@ -136,6 +138,20 @@ void main() {
     }, localDate: '2026-10-24');
     await repo.applyMemoryConsent(true);
     await repo.addHabitNote({'topic': 'walks', 'text': 'I walk the dog'});
+    // Long-term document context (readings and a diagnosis) is part of the same store.
+    await repo.recordImport({'hypertension_diagnosed': true}, source: HistorySource.document);
+    await repo.recordDocumentReadings([
+      DocumentCandidate(
+        field: 'hba1c',
+        value: 6.1,
+        unit: '%',
+        date: DateTime(2026, 9, 14),
+        modelInput: false,
+        sourceText: 'line',
+        page: 1,
+      ),
+    ]);
+    expect(coachContext(repo)['document_context'], isNotNull);
     await repo.setOutsideAiConsent(true, provider: 'muse');
     await repo.saveTwinLook({'type': 'bear', 'look': 'calHat', 'name': 'Mochi', 'room': 'original'});
     await repo.saveCheckinSettings(repo.checkinSettings.copyWith(remindersOn: true, reminderHour: 7));
@@ -203,6 +219,8 @@ void main() {
     );
     await deleteMyData(t);
     expect(backend.text, isNull, reason: 'the whole store document is removed, no key is left behind');
+    expect(coachContext(repo)['document_context'], isNull);
+    expect(repo.readings(), isEmpty);
     final reopened = await TwinStore.open(backend);
     expect(reopened.hasProfile, isFalse);
     expect(reopened.checkinSettings.remindersOn, isFalse);

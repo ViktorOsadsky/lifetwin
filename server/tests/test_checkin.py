@@ -1413,3 +1413,14 @@ def test_restart_keeps_memory_consent():
 def test_someone_elses_weight_given_possessively_is_refused():
     result = say(at("weekly", "weight_kg"), "her weight is 150 pounds")
     assert pending(result) == {}
+
+
+def test_a_16_year_old_can_check_in(client):
+    start = client.post("/api/checkin/start", json={"kind": "daily", "age": 16})
+    assert start.status_code == 200
+    state = start.json()["state"]
+    turn = client.post(
+        "/api/checkin/turn", json={"action": "reply", "text": "what should I do?", "state": state}
+    )
+    assert turn.status_code == 200
+    assert turn.json()["client_action"] == "open_ideas"

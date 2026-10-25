@@ -205,6 +205,7 @@ Map<String, dynamic> recommendationsRequestBody(
   return {
     'profile': context['profile'],
     'habit_notes': notes.skip(notes.length > 10 ? notes.length - 10 : 0).toList(),
+    if (context['document_context'] != null) 'document_context': context['document_context'],
     'outside_ai_consent': context['outside_ai_consent'],
     'local_date': ?localDate,
     if (excludedIds.isNotEmpty) 'excluded_ids': excludedIds,

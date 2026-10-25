@@ -134,7 +134,7 @@ class HttpCheckinClient implements CheckinGuide {
   final http.Client _client;
   final ApiBase base;
 
-  /// The profile's age, sent with the start request so Mochi's everyday examples fit (optional; only 18 to 120).
+  /// The profile's age, sent with the start request so Mochi's everyday examples fit (optional; 1 to 120).
   final Object? Function()? age;
 
   /// The person's outside-AI consent for the current provider (e.g. `{"claude": true}`), sent with
@@ -152,7 +152,7 @@ class HttpCheckinClient implements CheckinGuide {
     'local_date': localDate,
     'previous': previous,
     if (quick != null) 'quick': quick.toJson(),
-    if (age?.call() case final num a when a >= 18 && a <= 120) 'age': a.round(),
+    if (age?.call() case final num a when a >= 1 && a <= 120) 'age': a.round(),
   });
 
   @override
