@@ -54,6 +54,7 @@ from lifetwin.coach.safety import (
     words,
 )
 from lifetwin.onboarding.intents import EMERGENCY_MESSAGE
+from lifetwin.recommendations.levers import MIN_ADULT_AGE, UNDER_AGE
 
 LEVER_SOURCE = "docs/model-sensitivity.json (personal-cox-v2-20261024T182404Z)"
 LEVER_ORDER = (
@@ -1339,6 +1340,8 @@ class Planner:
         texts = [self.req.said] + [f.reason for f in self.feedback.values()]
         if any(is_emergency(t) for t in texts):
             return self.emergency_plan()
+        if self.profile.age is not None and self.profile.age < MIN_ADULT_AGE:
+            return self.under_age_plan()
         self.read_said()
         self.read_readings()
         self.read_feedback_and_notes()
@@ -1559,6 +1562,37 @@ class Planner:
         out.extend(shown[: max(0, 10 - len(out) - len(items))])
         out.extend(item.message for item in items)
         return out[:10]
+
+    def under_age_plan(self) -> Plan:
+        self.trace.append(
+            TraceStep(
+                item_id="plan",
+                facts=[fact("profile.age", self.profile.age)],
+                rule="under_age_gate: the same adults-only reply as the recommendations; no plan",
+                evidence="server/lifetwin/recommendations/service.py (UNDER_AGE)",
+                action="adults-only reply, no plan",
+            )
+        )
+        return Plan(
+            status="under_age",
+            revision_id=None,
+            based_on=None,
+            inputs=None,
+            plan_type=None,
+            reused_previous=False,
+            clarify=None,
+            reply=UNDER_AGE,
+            lines=[UNDER_AGE],
+            items=[],
+            changes=[],
+            trace=self.trace,
+            mood="cozy",
+            emergency=False,
+            movement_paused=self.req.movement_paused,
+            memory_instruction=None,
+            drafts=[],
+            provider_blocked=True,
+        )
 
     def emergency_plan(self) -> Plan:
         self.trace.append(

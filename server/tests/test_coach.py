@@ -1099,7 +1099,7 @@ def test_a_70_year_old_with_knee_pain_gets_seated_or_gentle_only():
         assert w["intensity"] != "vigorous"
 
 
-@pytest.mark.parametrize("age", [None, 17, 25, 50, 70, 85])
+@pytest.mark.parametrize("age", [None, 25, 50, 70, 85])
 @pytest.mark.parametrize("limit", cat.LIMITS)
 @pytest.mark.parametrize("level", [0, 60, 300])
 def test_limits_override_the_band(age, limit, level):

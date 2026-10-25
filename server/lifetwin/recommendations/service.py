@@ -14,8 +14,10 @@ gave any. Rules (owner and model-sensitivity rulings):
 """
 
 import math
+import re
 from urllib.parse import urlparse
 
+from lifetwin.coach.safety import safe_slot
 from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.model_inputs import character_hints
 from lifetwin.onboarding.models import HabitNote, Recommendation
@@ -26,6 +28,7 @@ from lifetwin.recommendations.levers import (
     LEVER_ORDER,
     MIN_ADULT_AGE,
     MODEL_VERSION,
+    UNDER_AGE,
     effect_category,
 )
 from lifetwin.recommendations.models import (
@@ -48,10 +51,6 @@ SOURCES = {
     "smoking": ("CDC: Smoking and tobacco use", "https://www.cdc.gov/tobacco/about/"),
 }
 LEAD = "Here are a few ideas from what you told me."
-UNDER_AGE = (
-    "I'm only able to share ideas with adults for now. "
-    "A parent, guardian or your doctor is the best person to ask about healthy habits."
-)
 # One plain sentence per lever and template: no numbers, no promise of benefit (max 90).
 WHY_SHORT = {
     "quit_smoking": "Support is there whenever you feel ready to quit.",
@@ -145,6 +144,11 @@ def _smoking(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation |
     return _rec("quit_smoking", "smoking", "Support for quitting", text, based)
 
 
+def _slot(value: str | None) -> bool:
+    """The coach's slot filter, except that a note may name vitamin D (well known, low risk)."""
+    return bool(value) and safe_slot(re.sub(r"\bvitamin d\b", "walk", value, flags=re.I))
+
+
 def _activity_minutes(profile: HealthProfile) -> int | None:
     moderate, vigorous = profile.moderate_recreation_min_week, profile.vigorous_recreation_min_week
     if moderate is None and vigorous is None:
@@ -155,13 +159,13 @@ def _activity_minutes(profile: HealthProfile) -> int | None:
 def _activity(profile: HealthProfile, notes: list[HabitNote]) -> Recommendation | None:
     minutes = _activity_minutes(profile)
     note = _note(notes, "exercise")
-    kind = note.kind if note and note.kind else None
+    kind = note.kind if note and _slot(note.kind) else None
     company = (
         f" with your {note.with_}"
-        if note and note.with_ and note.with_ not in {"alone", "a class", "a group"}
+        if note and _slot(note.with_) and note.with_ not in {"alone", "a class", "a group"}
         else ""
     )
-    barrier = note.barrier if note and note.barrier else None
+    barrier = note.barrier if note and _slot(note.barrier) else None
     gentle = barrier is not None and any(word in barrier for word in GENTLE_BARRIERS)
     fields = [
         f
