@@ -112,16 +112,29 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// The outside AI provider (for the training line on the AI-helper question), once known.
   AiProvider? _aiProvider;
 
-  /// "Delete my data" wiped the phone: forget what this session held in memory too.
-  void _afterDelete() => setState(() {
-    _stored = null;
-    _healthKeys.clear();
-    _healthValues.clear();
-    _healthEstimatedKeys.clear();
-    _documentValues.clear();
-    _outlook.value = null;
-    _controller.resetConversation();
-  });
+  /// "Delete my data" wiped the phone: forget what this session held in memory too, so the app is
+  /// as on a fresh install (the Room with no profile; Talk starts at the voice question).
+  void _afterDelete() {
+    _look.removeListener(_saveLook); // the default look must not be written back to the phone
+    _look.value = const TwinAppearance();
+    _look.addListener(_saveLook);
+    _quiz?.dispose();
+    _quiz = null;
+    _openingQuiz = false;
+    _reminderOffer = null;
+    _aiProvider = null;
+    _agentic.provider().then((p) => _aiProvider = p, onError: (Object _) {});
+    setState(() {
+      _stored = null;
+      _saved = false;
+      _healthKeys.clear();
+      _healthValues.clear();
+      _healthEstimatedKeys.clear();
+      _documentValues.clear();
+      _outlook.value = null;
+      _controller.resetConversation();
+    });
+  }
 
   /// The profile saved on the phone by an earlier session, once the store is open.
   Map<String, dynamic>? _stored;

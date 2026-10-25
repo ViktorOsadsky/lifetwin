@@ -312,13 +312,24 @@ class AgenticRoutes {
           onReminders: () => reminders(page),
           onNotebook: () => notebook(page),
           onDeleted: () {
-            intake.forgetImports().ignore();
-            onDeleted?.call();
+            forgetEverything();
             Navigator.of(page).popUntil((route) => route.isFirst);
           },
         ),
       ),
     );
+  }
+
+  /// After "Delete my data": drop every cache this shell holds, as on a fresh install, then tell the
+  /// app shell. Safe to call twice.
+  void forgetEverything() {
+    intake.forgetImports().ignore();
+    consents?.setAiHelper(false);
+    final r = repo;
+    if (r != null) bandService = BandService(repository: r);
+    _lastPlan = null;
+    _provider = null;
+    onDeleted?.call();
   }
 
   /// "Check-in reminders": whether and when the phone nudges, and which days.
