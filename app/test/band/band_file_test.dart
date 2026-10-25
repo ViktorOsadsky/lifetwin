@@ -136,6 +136,27 @@ void main() {
         throwsA(isA<BandFileFailure>()),
       );
     });
+    test('known wear with unknown posture cannot yield a weekly estimate', () {
+      final days = <BandDay>[];
+      for (var back = 0; back < 4; back++) {
+        final data = sample();
+        data['date'] = '2026-10-${24 - back}';
+        data['minutes']['positions_not_saved'] = 120;
+        data['coverage']['wear_minutes'] += 120;
+        data['coverage']['minutes_recorded'] += 120;
+        days.add(BandDay.fromReport(parseBandFile(bytes(data)).single));
+      }
+      final week = BandWeek(days);
+      expect(week.validCount, 4, reason: 'Known wear is still displayed.');
+      expect(
+        week.validModerate,
+        greaterThan(0),
+        reason: 'Observed counts remain.',
+      );
+      expect(week.hasUnknownActivityCoverage, isTrue);
+      expect(week.hasEstimate, isFalse);
+      expect(week.estimateMinutesPerWeek, isNull);
+    });
   });
 
   group('phone import and existing band flow', () {

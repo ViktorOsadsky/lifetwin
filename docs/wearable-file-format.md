@@ -34,6 +34,8 @@ The existing band policy counts at least 600 worn minutes as a valid day and req
 
 Existing `BandDay.moderateMinutes`/`BandWeek` retain their legacy **combined MVPA** meaning. `BandDayReport` additionally preserves separate moderate/vigorous observations and unknown posture. The existing `BandService` maps its combined suggestion to `moderate_recreation_min_week` only after read-back, saving `source: wristband`, `estimated: true` through `TwinRepository`; `outsideAiProfile()` excludes it. This pre-existing mapping remains a model-owner limitation: confirmation alone does not establish recreational context or calibration. Do not present the importer as resolving it. Sitting/lying is not mapped to a profile field.
 
+Weekly suggestions are also withheld when any otherwise valid day used by the week contains `positions_not_saved`: known wear does not establish zero movement during unclassified time. `BandWeek.hasUnknownActivityCoverage` exposes that reason to the UI owner; observed daily counts and wear status remain available. This conservative guard does not calibrate the sensor or resolve recreational context.
+
 One real day cannot establish a measured week. User-authorized extrapolation must add `synthetic_demo: true` and use a separate demo store. Synthetic and measured report imports cannot mix, and recorded-demo stores never qualify as live data or save a band suggestion.
 
 ## Native delivery and route integration
