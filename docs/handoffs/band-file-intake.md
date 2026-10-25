@@ -4,11 +4,11 @@ Track / task: C native/data intake, #67. Daniel retains UI ownership.
 
 Result: strict daily/hourly `lifetwin.band_day.v0` parser, synthetic contract examples, atomic/idempotent in-memory store import, fake-picker coverage, native iOS Files/Open-in bridge, and shared root session. See [format and route integration](../wearable-file-format.md). The real user-supplied file was read locally and passed parser consistency checks; it is not in Git.
 
-PR: [#73](https://github.com/ViktorOsadsky/lifetwin/pull/73), draft; not merged at this handoff. No server/model version change. The app-only `lifetwin.band_days.v0` wrapper supports multiple dated daily reports. The obsolete proposed minute format is removed.
+PR: [#73](https://github.com/ViktorOsadsky/lifetwin/pull/73), implementation ready for review; not merged at this handoff. No server/model version change. The app-only `lifetwin.band_days.v0` wrapper supports multiple dated daily reports. The obsolete proposed minute format is removed.
 
 Validation actually run:
 
-- 51 band tests and the full 565-test Flutter suite passed (before the latest main merge), including existing screen/confirmation tests and new malformed, low-wear, unknown-time, calendar, repeated-import, cancellation, startup and demo-isolation cases.
+- 51 band tests passed; the full Flutter suite passed all 594 tests after merging current main, including existing screen/confirmation tests and new malformed, low-wear, unknown-time, calendar, repeated-import, cancellation, startup and demo-isolation cases.
 - Dart analysis of band code, main bootstrap, new unit tests and device test passed.
 - Unsigned physical-iOS-target debug build of `integration_test/band_file_device_test.dart` passed, including native Swift compilation.
 - Xcode project and Info.plist passed `plutil -lint`; `git diff --check` passed.
