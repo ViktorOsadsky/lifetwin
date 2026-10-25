@@ -26,4 +26,4 @@ if [[ $info == *"Developer Mode Status: Disabled"* ]]; then
   exit 1
 fi
 
-exec flutter run -d "$DEVICE" "$@"
+exec bash ../scripts/run-app.sh -d "$DEVICE" "$@"
