@@ -1,0 +1,151 @@
+{
+  "model_version": "personal-cox-bmi35-v3-20261024",
+  "training_n": 9109,
+  "validation": {
+    "n": 2570,
+    "deaths": 352,
+    "c_index": 0.7975427585599666,
+    "ipcw_brier_by_year": [
+      0.007192196127334096,
+      0.01592267945308851,
+      0.02611617237452556,
+      0.03593897828038236,
+      0.041211287780678375
+    ],
+    "mean_ipcw_brier": 0.025276262803201777,
+    "five_year_calibration": {
+      "all": {
+        "n": 2570,
+        "predicted_5y_survival": 0.9442006932415224,
+        "observed_5y_survival": 0.9521400778210117
+      },
+      "35-49": {
+        "n": 959,
+        "predicted_5y_survival": 0.9846664660368559,
+        "observed_5y_survival": 0.9864442127215844
+      },
+      "50-64": {
+        "n": 934,
+        "predicted_5y_survival": 0.9499292026067168,
+        "observed_5y_survival": 0.961456102783726
+      },
+      "65-79": {
+        "n": 677,
+        "predicted_5y_survival": 0.8789760198917195,
+        "observed_5y_survival": 0.8906942392909899
+      },
+      "male": {
+        "n": 1272,
+        "predicted_5y_survival": 0.9343708050800326,
+        "observed_5y_survival": 0.9433962264150941
+      },
+      "female": {
+        "n": 1298,
+        "predicted_5y_survival": 0.9538336807156478,
+        "observed_5y_survival": 0.9607087827426816
+      },
+      "risk_quintile_1": {
+        "n": 514,
+        "predicted_5y_survival": 0.9923598335664826,
+        "observed_5y_survival": 0.996108949416342
+      },
+      "risk_quintile_2": {
+        "n": 514,
+        "predicted_5y_survival": 0.9830346894459652,
+        "observed_5y_survival": 0.9824902723735408
+      },
+      "risk_quintile_3": {
+        "n": 514,
+        "predicted_5y_survival": 0.9677201208835948,
+        "observed_5y_survival": 0.9824902723735408
+      },
+      "risk_quintile_4": {
+        "n": 514,
+        "predicted_5y_survival": 0.9375540463821278,
+        "observed_5y_survival": 0.9474708171206221
+      },
+      "risk_quintile_5": {
+        "n": 514,
+        "predicted_5y_survival": 0.8403347759294412,
+        "observed_5y_survival": 0.8521400778210115
+      }
+    }
+  },
+  "later_cycle_test": {
+    "n": 3826,
+    "deaths": 260,
+    "c_index": 0.7913744895901877,
+    "ipcw_brier_by_year": [
+      0.007016637356680474,
+      0.017151341129838744,
+      0.028318041595415018,
+      0.03657999406880724,
+      0.046861620497360756
+    ],
+    "mean_ipcw_brier": 0.027185526929620445,
+    "five_year_calibration": {
+      "all": {
+        "n": 3826,
+        "predicted_5y_survival": 0.9427749313479161,
+        "observed_5y_survival": 0.9466732197770623
+      },
+      "35-49": {
+        "n": 1463,
+        "predicted_5y_survival": 0.9841132060196786,
+        "observed_5y_survival": 0.9828993884961179
+      },
+      "50-64": {
+        "n": 1433,
+        "predicted_5y_survival": 0.9446909356580204,
+        "observed_5y_survival": 0.947657594789485
+      },
+      "65-79": {
+        "n": 930,
+        "predicted_5y_survival": 0.8747926410025745,
+        "observed_5y_survival": 0.8881720430107526
+      },
+      "male": {
+        "n": 1809,
+        "predicted_5y_survival": 0.9308248861509596,
+        "observed_5y_survival": 0.9391805346315806
+      },
+      "female": {
+        "n": 2017,
+        "predicted_5y_survival": 0.9534926466485084,
+        "observed_5y_survival": 0.9533922453453391
+      },
+      "risk_quintile_1": {
+        "n": 766,
+        "predicted_5y_survival": 0.9921985822828583,
+        "observed_5y_survival": 0.9934674248444259
+      },
+      "risk_quintile_2": {
+        "n": 765,
+        "predicted_5y_survival": 0.9826636394433127,
+        "observed_5y_survival": 0.9882248966348299
+      },
+      "risk_quintile_3": {
+        "n": 765,
+        "predicted_5y_survival": 0.9666530513571272,
+        "observed_5y_survival": 0.9712418300653596
+      },
+      "risk_quintile_4": {
+        "n": 765,
+        "predicted_5y_survival": 0.9369208655715907,
+        "observed_5y_survival": 0.9359348246340785
+      },
+      "risk_quintile_5": {
+        "n": 765,
+        "predicted_5y_survival": 0.8353739120050383,
+        "observed_5y_survival": 0.8444444444444444
+      }
+    }
+  },
+  "bmi_coefficients": {
+    "bmi_below23": 0.6731867172806494,
+    "bmi_above35": 0.03480659241232421
+  },
+  "fit_bmi_max": 84.87,
+  "fit_bmi_above35_n": 1566,
+  "fit_bmi_above35_deaths": 243
+}
