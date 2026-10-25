@@ -8,6 +8,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'cartesia_wire.dart';
 import 'speech.dart';
+import 'voice_log.dart';
 import 'voice_token.dart';
 
 typedef SocketConnector = WebSocketChannel Function(Uri uri);
@@ -99,6 +100,7 @@ class FlutterPcmSoundPlayer implements PcmPlayer {
     _frames = 0;
     _drain.reset();
     if (_sessionRate == sampleRate && _sessionMic == _micStarts) return;
+    voiceLog('tts', 'session_setup', 'playback ${sampleRate}Hz');
     // `playback` uses the loudspeaker. The plugin sets `playAndRecord` without
     // `defaultToSpeaker`, which iOS routes to the quiet phone-call earpiece.
     // The microphone (record package) sets its own playAndRecord + defaultToSpeaker,
@@ -134,6 +136,7 @@ class FlutterPcmSoundPlayer implements PcmPlayer {
     // by releasing.
     if (idle && _sessionRate != null) return;
     _sessionRate = null;
+    voiceLog('tts', 'session_release');
     FlutterPcmSound.setFeedCallback(null);
     await FlutterPcmSound.release();
   }
@@ -188,7 +191,9 @@ class CartesiaSpeechOutput implements SpeechOutput {
     required bool forceNewToken,
     void Function()? onAudio,
   }) async {
+    final clock = Stopwatch()..start();
     final token = await tokens.get(forceNew: forceNewToken);
+    voiceLog('tts', 'token', '+${clock.elapsedMilliseconds}ms${forceNewToken ? ' new' : ''}');
     final done = Completer<void>();
     _stopped = done;
     final ch = _channel = _connect(CartesiaWire.ttsUri(token));
@@ -200,6 +205,7 @@ class CartesiaSpeechOutput implements SpeechOutput {
       _lastRate = token.ttsSampleRate;
       // The socket opens while the player sets up.
       await Future.wait([ch.ready.timeout(readyLimit), _player.begin(token.ttsSampleRate)]);
+      voiceLog('tts', 'socket_ready', '+${clock.elapsedMilliseconds}ms');
       if (_contextId != id) return;
       final finished = Completer<void>();
       // A stream that goes quiet must not leave the mascot "speaking" until the caller's limit.
@@ -207,6 +213,7 @@ class CartesiaSpeechOutput implements SpeechOutput {
         silence?.cancel();
         silence = Timer(silenceLimit, () {
           if (finished.isCompleted) return;
+          voiceLog('tts', 'quiet_end', gotAudio ? 'after audio' : 'no audio');
           gotAudio ? finished.complete() : finished.completeError(const VoiceFailure('tts: no audio'));
         });
       }
@@ -222,12 +229,15 @@ class CartesiaSpeechOutput implements SpeechOutput {
               if (_contextId == id) {
                 final first = onAudio;
                 onAudio = null;
+                if (first != null) voiceLog('tts', 'audio', '+${clock.elapsedMilliseconds}ms');
                 first?.call();
                 await _player.feed(pcm);
               }
             case TtsDone():
+              voiceLog('tts', 'stream_done', '+${clock.elapsedMilliseconds}ms');
               if (!finished.isCompleted) finished.complete();
             case TtsError(:final message):
+              voiceLog('tts', 'error', message);
               if (!finished.isCompleted) finished.completeError(VoiceFailure(message));
             case TtsIgnored():
               break;
@@ -244,13 +254,16 @@ class CartesiaSpeechOutput implements SpeechOutput {
       armSilence();
       await Future.any([finished.future, done.future]);
       if (_contextId == id && gotAudio) {
+        final audioMs = audio.length * 500 ~/ token.ttsSampleRate; // PCM16 mono
         _last
           ..clear()
           ..add(audio.takeBytes());
         _hasLast = true;
         await Future.any([_player.finish(), done.future]);
+        voiceLog('tts', 'played', '+${clock.elapsedMilliseconds}ms audio=${audioMs}ms${done.isCompleted ? ' stopped' : ''}');
       }
     } catch (e) {
+      voiceLog('tts', 'error', '$e');
       if (e is VoiceFailure) rethrow;
       throw VoiceFailure('$e');
     } finally {
@@ -353,6 +366,7 @@ class CartesiaSpeechInput implements SpeechInput {
   Future<void> start(void Function(String text) onCaption, {void Function(Object error)? onDropped}) async {
     await _teardown();
     final gen = _gen;
+    final clock = Stopwatch()..start();
     if (!await _recorder.hasPermission()) throw const MicDeniedException();
     if (gen != _gen) return; // cancelled meanwhile
     _onCaption = onCaption;
@@ -384,15 +398,18 @@ class CartesiaSpeechInput implements SpeechInput {
       return;
     }
     _micSub = stream.listen(_onMic);
+    voiceLog('stt', 'recorder_started', '+${clock.elapsedMilliseconds}ms');
     try {
       final token = await tokens.get(forceNew: _forceNewToken); // may throw VoiceUnavailableException
       if (gen != _gen) return; // cancelled meanwhile; cancel() stopped the mic
       _forceNewToken = false;
       await _open(token, gen);
+      voiceLog('stt', 'socket_ready', '+${clock.elapsedMilliseconds}ms');
     } on VoiceUnavailableException {
       if (gen == _gen) await cancel();
       rethrow;
     } catch (e) {
+      voiceLog('stt', 'error', 'start $e');
       if (gen == _gen) await cancel();
       if (e is VoiceFailure) rethrow;
       throw VoiceFailure('$e');
@@ -403,6 +420,7 @@ class CartesiaSpeechInput implements SpeechInput {
   /// Before the socket is open, a failure fails [start] instead.
   void _drop(Object e) {
     final cb = _onDropped;
+    voiceLog('stt', 'socket_lost', '$e finishing=$_finishing ready=$_ready');
     if (_finishing || !_ready || cb == null) return;
     _onDropped = null;
     _error ??= '$e';
@@ -447,6 +465,7 @@ class CartesiaSpeechInput implements SpeechInput {
             // to pause finalizes before Stop find nobody waiting.
             _endFlush();
           case SttError(:final message):
+            voiceLog('stt', 'error', message);
             _error = message;
             _endFlush();
           case SttIgnored():
@@ -500,6 +519,7 @@ class CartesiaSpeechInput implements SpeechInput {
     }
     final text = _caption;
     final error = _error;
+    voiceLog('stt', 'finished', '${text.length} chars${error != null ? ' error=$error' : ''}');
     await _teardown();
     if (text.isEmpty && error != null) {
       _forceNewToken = true;
