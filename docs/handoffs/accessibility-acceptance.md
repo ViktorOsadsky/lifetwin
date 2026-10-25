@@ -13,6 +13,11 @@ middle; the circled information action now opens **About the health score**, rat
 the older drivers route. Earlier issue/preflight expectations 1.65/1.81 are superseded.
 Historical 9ace captures are not current-main layout acceptance.
 
+Later main `1a86d9a71943a869ee34348526652208bb2096f9` replaces the Cox model,
+support reference, sensitivity data and lifespan integration. This record remains
+evidence for `1a648bd`; it does not validate the replacement model or its numbers.
+Recheck affected output and history behavior before accepting that newer build.
+
 The isolated production app ran on iPhone 18 Pro, iOS 27.0 / Xcode 27.0, simulator
 `AD68AA8D-3700-4E9C-B1E9-FE441057C67B`, bundle `com.danielqi.lifesim.a11y134`, with
 production `DEMO_SEED=1` synthetic data. A keyless localhost 8134 server supplied real
