@@ -7,9 +7,9 @@ import '../ui/widgets/widgets.dart';
 import '../widgets/whole_word_text.dart';
 import 'experiment_page.dart';
 import 'ideas_list_screen.dart' show showEffectSheet;
-import 'lever_copy.dart';
 import 'recommendations.dart';
 import 'widgets/idea_card.dart';
+import 'widgets/idea_scene.dart';
 import 'widgets/widgets.dart';
 
 /// One idea in full (I-2): the why line (the server's `why_short`, never cut), what it is based
@@ -36,11 +36,20 @@ class IdeaDetailScreen extends StatelessWidget {
   final AiProvider? worded;
   final OpenUrl open;
 
+  /// Mochi's bubble: the server's own line when it is short (its first sentence if that is);
+  /// otherwise Mochi stands without one.
+  static String? _short(String text) {
+    final t = text.trim();
+    if (t.isNotEmpty && t.length <= 60) return t;
+    final first = RegExp(r'^[^.!?]+[.!?]').firstMatch(t)?.group(0);
+    return first != null && first.length <= 60 ? first : null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final copy = idea.leverId == null ? null : LeverCopy.of(idea.leverId!);
     final why = idea.whyShort.isNotEmpty ? idea.whyShort : idea.tip;
     final word = effectWord(idea.effect);
+    final bubble = _short(idea.tip);
     final url = idea.sourceUrl;
     final training = worded?.trainingLine;
     return ExperimentPage(
@@ -67,30 +76,18 @@ class IdeaDetailScreen extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFE3F5EC),
-                  border: Border.all(color: LtColors.control, width: 2),
-                ),
-                child: Icon(
-                  copy?.icon ?? Icons.eco_outlined,
-                  size: 30,
-                  color: LtColors.ink,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Semantics(
-                  header: true,
-                  child: WholeWordText(idea.title, style: LtText.display(28)),
-                ),
-              ),
-            ],
+          // Mochi in the pose for the idea's kind, with a short line from the server's own words.
+          IdeaScene(
+            key: ValueKey('scene-${idea.id}'),
+            appearance: appearance,
+            kind: idea.kind,
+            bubble: bubble,
+            x: bubble == null ? 0.5 : 0.3,
+          ),
+          const SizedBox(height: 14),
+          Semantics(
+            header: true,
+            child: WholeWordText(idea.title, style: LtText.display(28)),
           ),
           const SizedBox(height: 14),
           WholeWordText.rich(
@@ -112,7 +109,10 @@ class IdeaDetailScreen extends StatelessWidget {
               color: LtColors.secondary,
             ),
           ),
-          if (word != null) ...[
+          if (word == null) ...[
+            const SizedBox(height: 10),
+            const Align(alignment: Alignment.centerLeft, child: GuidelineChip()),
+          ] else ...[
             const SizedBox(height: 14),
             Semantics(
               container: true,

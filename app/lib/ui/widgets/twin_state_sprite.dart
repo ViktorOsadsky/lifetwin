@@ -13,17 +13,20 @@ import '../twin_pose_map.dart';
 /// or hop. The sizes are the 2.0x files' (`TwinPose.bearNative`), not the 1x ones, which
 /// are each shrunk to the same long side.
 class TwinStateSprite extends StatelessWidget {
-  const TwinStateSprite({super.key, required this.state, required this.appearance, this.height = 196});
+  const TwinStateSprite({super.key, required this.state, required this.appearance, this.height = 196, this.pose});
 
   final TwinState state;
   final TwinAppearance appearance;
+
+  /// A pose of its own (an idea's), instead of the one the state picks.
+  final TwinPose? pose;
 
   /// How tall the standing pose is, in logical pixels.
   final double height;
 
   @override
   Widget build(BuildContext context) {
-    final pose = poseForTwinState(state);
+    final pose = this.pose ?? poseForTwinState(state);
     final type = appearance.type;
     Size native(TwinPose p) => type == TwinType.bear ? p.bearNative : p.humanNative;
     final scale = height / native(TwinPose.stand).height;

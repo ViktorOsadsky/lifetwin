@@ -153,13 +153,19 @@ class _ExperimentPageState extends State<ExperimentPage> {
 /// One twin standing in a plate window: its state, where across the window it stands, and
 /// whether a lilac halo blooms behind it (the what-if twin).
 class TwinSlot {
-  const TwinSlot({required this.state, required this.x, this.halo = false, this.height = 196});
+  const TwinSlot({required this.state, required this.x, this.halo = false, this.height = 196, this.pose, this.hop});
   final TwinState state;
 
   /// Where the feet are across the window, 0 to 1.
   final double x;
   final bool halo;
   final double height;
+
+  /// A pose of its own (an idea's), instead of the one the state picks.
+  final TwinPose? pose;
+
+  /// Lifts the twin by this many logical pixels (negative is up) while it plays; null: still.
+  final Animation<double>? hop;
 }
 
 /// A plate window (233 high) with the `{ Name }` banner, [twins] standing on the meadow, and
@@ -220,7 +226,14 @@ class ExperimentPlate extends StatelessWidget {
                             height: h * 1.2,
                             child: const LottieBurst.whatIfAppear(),
                           ),
-                        TwinStateSprite(state: t.state, appearance: appearance, height: h),
+                        if (t.hop == null)
+                          TwinStateSprite(state: t.state, appearance: appearance, height: h, pose: t.pose)
+                        else
+                          AnimatedBuilder(
+                            animation: t.hop!,
+                            builder: (_, child) => Transform.translate(offset: Offset(0, t.hop!.value), child: child),
+                            child: TwinStateSprite(state: t.state, appearance: appearance, height: h, pose: t.pose),
+                          ),
                       ],
                     ),
                   );
