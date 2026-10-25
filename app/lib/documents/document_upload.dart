@@ -238,7 +238,7 @@ String documentReadBack(DocumentCandidate c, {required bool imperial, required D
   final date = c.date;
   final when = date == null ? '' : ' That was ${c.dateFromLine ? 'on' : 'from'} ${spokenDate(date, now)}.';
   if (!c.modelInput) {
-    return "Your document shows $said.$when This reading doesn't change your forecast and is not saved yet. Is this right?";
+    return "Your document shows $said.$when This reading doesn't change your forecast. It is saved in your history only. Is this right?";
   }
   final old = date == null || now.difference(date).inDays > 365;
   return 'Your document says $said.$when ${old ? 'Is it still right today?' : 'Is this right?'}';

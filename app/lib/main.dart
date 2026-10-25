@@ -319,6 +319,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
             _twin.then((repo) => repo.recordImport(values, source: HistorySource.document)).ignore();
             _documentValues.addAll(values);
           }
+          // Information notes (blood pressure, A1c, LDL) go to History only, never the forecast.
+          if (result.notes.isNotEmpty) _twin.then((repo) => repo.recordDocumentReadings(result.notes)).ignore();
           if (mounted && context.mounted) _talk(context);
         },
       ),
