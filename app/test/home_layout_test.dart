@@ -80,15 +80,26 @@ void main() {
     }
   });
 
-  testWidgets('the twin activity row (Exercise, Eat, Sleep) is on Home above the dock', (t) async {
+  testWidgets('Exercise, Eat and Sleep live in Mochi\'s activity pill chooser; no separate row above the dock', (t) async {
     await pumpHome(t);
     for (final label in ['Exercise', 'Eat', 'Sleep']) {
+      expect(find.text(label), findsNothing, reason: '$label is not a row on Home');
+    }
+    // The pill sits near the twin (above the dock) and opens the four options.
+    final pill = find.byKey(const ValueKey('room-activity'));
+    expect(pill, findsOneWidget);
+    final dock = t.getRect(find.text('Talk'));
+    expect(t.getRect(pill).bottom, lessThan(dock.top));
+    final twin = t.getRect(find.byKey(const ValueKey('room-twin')));
+    expect((t.getRect(pill).center.dx - twin.center.dx).abs(), lessThan(40));
+    expect(t.getRect(pill).height, greaterThanOrEqualTo(48));
+    await t.tap(pill);
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 400));
+    expect(find.text('What should Mochi do?'), findsOneWidget);
+    for (final label in ['Walk', 'Exercise', 'Eat', 'Sleep']) {
       expect(find.text(label), findsOneWidget, reason: label);
     }
-    final dock = t.getRect(find.text('Talk'));
-    expect(t.getRect(find.text('Exercise')).bottom, lessThan(dock.top));
-    final rows = {for (final l in ['Exercise', 'Eat', 'Sleep']) t.getRect(find.text(l)).center.dy.round()};
-    expect(rows, hasLength(1), reason: 'one row');
   });
 
   testWidgets('the health score is the focus: titled, above Check in, no death date or exact date', (t) async {
