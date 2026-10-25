@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/agentic_routes.dart';
 import 'package:lifesim/band/band_file_intake.dart';
 import 'package:lifesim/band/band_file_session.dart';
+import 'package:lifesim/band/band_screens.dart';
+import 'package:lifesim/band/band_service.dart';
 import 'package:lifesim/band/band_store.dart';
 import 'package:lifesim/checkin/check_in_entry.dart';
 import 'package:lifesim/checkin/checkin_screen.dart' show CheckInScreen;
@@ -90,7 +92,9 @@ void main() {
 
   const meta = AiProvider(id: 'muse', displayName: 'Meta Muse', configured: true);
 
-  testWidgets('My data opens from the Settings hub route; deleting wipes the phone, tells the shell and returns', (t) async {
+  testWidgets('My data opens from the Settings hub route; deleting wipes the phone, tells the shell and returns', (
+    t,
+  ) async {
     await pump(t);
     routes.myData(home);
     await t.pumpAndSettle();
@@ -257,8 +261,6 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('Import band file'));
     await t.pumpAndSettle();
-    // (Today's card for an imported day overflows by about 5 px at 390 wide with the real font: not mine to fix here.)
-    t.takeException();
     expect(routes.band.hasImportedFile, isTrue);
     expect(find.text('Added 1 day from the file.'), findsOneWidget);
     // The panel followed; settings has the row and Unpair forgets the files.
@@ -287,5 +289,34 @@ void main() {
     await t.pumpAndSettle();
     expect(files.clears, 2);
     expect(routes.band.hasImportedFile, isFalse);
+  });
+
+  testWidgets('the band panel Today card fits at 390 and 320 wide, and at 1.6x text', (t) async {
+    await pump(t);
+    final files = FakeFiles()..chosen = [bytes(sample())];
+    final store = BandStore(StubBandClient());
+    await BandFileIntake(store: store, picker: files).importFromFiles();
+    expect(store.hasImportedFile, isTrue);
+    for (final (width, scale) in [(390.0, 1.0), (320.0, 1.0), (390.0, 1.6), (320.0, 1.6)]) {
+      t.view.physicalSize = Size(width, 844);
+      await t.pumpWidget(
+        MaterialApp(
+          theme: lifeTwinTheme(),
+          builder: (c, child) => MediaQuery(
+            data: MediaQuery.of(c).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: BandPanelScreen(
+            store: store,
+            service: BandService(repository: repo),
+            onBack: () {},
+            onSettings: () {},
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull, reason: '$width wide at $scale x');
+      expect(find.textContaining('min moderate'), findsOneWidget);
+    }
   });
 }

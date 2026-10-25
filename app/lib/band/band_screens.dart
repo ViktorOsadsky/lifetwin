@@ -394,15 +394,31 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
           const SizedBox(height: 10),
           _HourBars(hours: d.stepsByHour),
           const SizedBox(height: 8),
-          Row(
+          // Wraps (never overflows) at narrow widths and large text.
+          Wrap(
+            spacing: 16,
+            runSpacing: 6,
             children: [
-              const Icon(Icons.directions_run_rounded, size: 22),
-              const SizedBox(width: 6),
-              Text('${d.moderateMinutes} min moderate', style: LtText.body(weight: FontWeight.w700)),
-              const SizedBox(width: 16),
-              const Icon(Icons.watch_outlined, size: 22),
-              const SizedBox(width: 6),
-              Text('$hours hours worn', style: LtText.body(weight: FontWeight.w700)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.directions_run_rounded, size: 22),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text('${d.moderateMinutes} min moderate', style: LtText.body(weight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.watch_outlined, size: 22),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text('$hours hours worn', style: LtText.body(weight: FontWeight.w700)),
+                  ),
+                ],
+              ),
             ],
           ),
           if (!d.isValid) ...[
@@ -417,8 +433,8 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
             children: [
               const Icon(Icons.favorite_border_rounded, size: 22, color: LtColors.secondary),
               const SizedBox(width: 6),
-              Text('Heart rate', style: LtText.body(color: LtColors.secondary)),
-              const Spacer(),
+              Expanded(child: Text('Heart rate', style: LtText.body(color: LtColors.secondary))),
+              const SizedBox(width: 8),
               const ModeTag(text: 'Coming soon'),
             ],
           ),
@@ -891,13 +907,7 @@ class BandSuggestScreen extends StatelessWidget {
 /// switch, and Unpair, which erases band days on this phone while confirmed answers stay. Nothing from
 /// the band goes to an outside AI provider.
 class BandSettingsScreen extends StatelessWidget {
-  const BandSettingsScreen({
-    super.key,
-    required this.store,
-    required this.onBack,
-    this.onImportFile,
-    this.onForget,
-  });
+  const BandSettingsScreen({super.key, required this.store, required this.onBack, this.onImportFile, this.onForget});
   final BandStore store;
   final VoidCallback onBack;
 

@@ -138,6 +138,23 @@ class DailyPlan {
   };
 }
 
+/// The coach's request wants `general_health` as a label; the phone keeps the model's 1-5.
+/// 1 excellent, 2 very good, 3 good, 4 fair, 5 poor. A label already there is passed through unchanged.
+const _generalHealthLabels = {1: 'excellent', 2: 'very_good', 3: 'good', 4: 'fair', 5: 'poor'};
+
+Map<String, dynamic> coachRequestBody(Map<String, dynamic> context) {
+  final profile = context['profile'];
+  if (profile is! Map) return context;
+  final health = profile['general_health'];
+  final number = health is num && health == health.roundToDouble() ? health.toInt() : null;
+  final label = number == null ? null : _generalHealthLabels[number];
+  if (label == null) return context;
+  return {
+    ...context,
+    'profile': {...profile, 'general_health': label},
+  };
+}
+
 abstract class CoachClient {
   Future<DailyPlan> plan(Map<String, dynamic> confirmedContext);
   void close() {}
@@ -160,7 +177,7 @@ class HttpCoachClient implements CoachClient {
           .post(
             Uri.parse('$url/api/coach/plan'),
             headers: {'content-type': 'application/json'},
-            body: jsonEncode(confirmedContext),
+            body: jsonEncode(coachRequestBody(confirmedContext)),
           )
           .timeout(const Duration(seconds: 30));
       if (response.statusCode != 200) throw CoachFailure(response.statusCode);

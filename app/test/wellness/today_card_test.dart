@@ -230,4 +230,28 @@ void main() {
     });
     expect(plan.changedLines, ['You said a brisk walk hurt your knee, so today is swimming.']);
   });
+
+  test('the coach request maps the phone\'s 1-5 general health to the server labels, and passes labels through', () {
+    for (final (n, label) in [(1, 'excellent'), (2, 'very_good'), (3, 'good'), (4, 'fair'), (5, 'poor')]) {
+      final body = coachRequestBody({
+        'profile': {'age': 64, 'general_health': n},
+      });
+      expect((body['profile'] as Map)['general_health'], label);
+    }
+    expect(
+      (coachRequestBody({
+            'profile': {'general_health': 'good'},
+          })['profile']
+          as Map)['general_health'],
+      'good',
+    );
+    expect(
+      (coachRequestBody({
+            'profile': {'general_health': 7},
+          })['profile']
+          as Map)['general_health'],
+      7,
+    );
+    expect(coachRequestBody({'local_date': 'x'}), {'local_date': 'x'});
+  });
 }

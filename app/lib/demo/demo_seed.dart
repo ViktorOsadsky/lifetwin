@@ -61,7 +61,7 @@ const rosaProfile = <String, dynamic>{
   'smoking_status': 'never',
   'diabetes': false,
   'hypertension_diagnosed': false,
-  'general_health': 'good',
+  'general_health': 3,
   'sedentary_min_day': 480,
   'moderate_recreation_min_week': 90,
   'vigorous_recreation_min_week': 0,
