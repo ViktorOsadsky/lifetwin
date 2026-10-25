@@ -30,7 +30,12 @@ from lifetwin.documents import router as documents_router
 from lifetwin.onboarding import ChatCompletionsExtractor, ConversationService, OpenAIExtractor
 from lifetwin.onboarding import router as onboarding_router
 from lifetwin.onboarding.probes import MAX_PROBES
-from lifetwin.personalize.providers import DISPLAY_NAMES, ClaudePersonalizer, MusePersonalizer
+from lifetwin.personalize.providers import (
+    COMPANIES,
+    DISPLAY_NAMES,
+    ClaudePersonalizer,
+    MusePersonalizer,
+)
 from lifetwin.prediction import load_model
 from lifetwin.prediction.models import PredictionResponse
 from lifetwin.quiz.router import router as quiz_router
@@ -244,6 +249,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "personalize": {
                 "provider": personalizer.name,
                 "display_name": DISPLAY_NAMES[personalizer.name],
+                "company": COMPANIES[personalizer.name],
                 "configured": personalizer.configured,
                 "may_train_on_content": personalizer.may_train_on_content,
             },
@@ -254,6 +260,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "personalize": {
                     "provider": personalizer.name,
                     "display_name": DISPLAY_NAMES[personalizer.name],
+                    "company": COMPANIES[personalizer.name],
                     "configured": personalizer.configured,
                     "may_train_on_content": personalizer.may_train_on_content,
                     "daily_cap_per_client": settings.coach_llm_daily_cap,

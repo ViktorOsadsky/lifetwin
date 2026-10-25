@@ -19,6 +19,7 @@ DISPLAY_NAMES: dict[ProviderName, str] = {
     "muse": "Muse by Meta",
     "claude": "Claude by Anthropic",
 }
+COMPANIES: dict[ProviderName, str] = {"muse": "Meta", "claude": "Anthropic"}
 
 
 class PhrasingUnavailable(Exception):

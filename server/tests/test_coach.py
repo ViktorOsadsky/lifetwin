@@ -1013,6 +1013,7 @@ def test_contributor_model_needs_opt_in_and_is_disclosed(model, allow, configure
     for block in (caps["personalize"], caps["coach"]["personalize"]):
         assert block["configured"] is configured
         assert block["may_train_on_content"] is trains
+        assert block["company"] == "Meta"
     assert caps["llm_configured"] is configured
 
 
