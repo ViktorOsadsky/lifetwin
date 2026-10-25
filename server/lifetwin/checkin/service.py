@@ -64,15 +64,20 @@ from lifetwin.checkin.understanding import (
 from lifetwin.core.models import CheckinValues
 from lifetwin.onboarding.habits import merge, read_notes
 from lifetwin.onboarding.intents import (
+    CARE_QUESTION,
     EMERGENCY_MESSAGE,
     RESUME_LEAD,
+    SAFETY_PHRASE,
     asks_back,
+    care_choice,
+    care_reply,
     clean_reply,
     control_intent,
     dont_know,
     emergency,
     focus,
     keeps_answer,
+    low_mood,
     read_back_reply,
     resumes,
     same_as_before,
@@ -459,12 +464,21 @@ def _fresh(state: CheckinState, **changes) -> CheckinState:
         activity_day=state.activity_day,
         memory_consent=state.memory_consent,
         age_band=state.age_band,
+        care_line_shown=state.care_line_shown,
         **changes,
     )
 
 
 class CheckinService:
-    def __init__(self, *, clock: Callable[[], date] = date.today):
+    def __init__(
+        self,
+        *,
+        clock: Callable[[], date] = date.today,
+        care_rewriter: Callable[[str, str], str | None] | None = None,
+    ):
+        # care_rewriter(template, reply) -> reworded text: the plug-in point for a later
+        # Muse/Claude rewording of the care reply. None (the default): templates only.
+        self.care_rewriter = care_rewriter
         # The habit rotation and spoken dates are read against today; tests fix the day.
         self.clock = clock
 
@@ -518,6 +532,40 @@ class CheckinService:
     # -- turns -------------------------------------------------------------------
 
     def turn(self, request: CheckinTurnRequest) -> CheckinResponse:
+        response = self._turn(request)
+        before, after = request.state, response.state
+        if (
+            request.action == "reply"
+            and before.kind != "weekly"
+            and not before.care_line_shown
+            and not response.emergency
+            and SAFETY_PHRASE not in response.message
+            and before.current_field == "wellbeing"
+            and low_mood(request.text or "")
+        ):
+            # Empathy, gentle support, the safety line softly, then one question. Once per
+            # check-in, and the check-in is not paused.
+            day = date.fromisoformat(before.local_date) if before.local_date else self.clock()
+            message = care_reply(request.text or "", day.toordinal())
+            if self.care_rewriter:
+                # Hook for a Muse/Claude rewording: it may only change the words, and the
+                # safety phrase must survive, or the template stands.
+                reworded = self.care_rewriter(message, request.text or "")
+                message = reworded if reworded and SAFETY_PHRASE in reworded else message
+            message += " " + CARE_QUESTION
+            events = [e.model_copy(update={"caption": message}) for e in response.mascot_events]
+            response = response.model_copy(
+                update={
+                    "message": message,
+                    "mascot_events": events,
+                    "state": after.model_copy(
+                        update={"care_line_shown": True, "care_question_open": True}
+                    ),
+                }
+            )
+        return response
+
+    def _turn(self, request: CheckinTurnRequest) -> CheckinResponse:
         state = request.state.model_copy(deep=True)
         action = request.action
         text = clean_reply(normalize_text(request.text or ""))
@@ -529,6 +577,26 @@ class CheckinService:
         if action == "reply" and state.phase != "cancelled" and _safe(emergency, text):
             # The check-in pauses on the same question: no value, no next question.
             return self._respond(state, EMERGENCY_MESSAGE, urgent=True)
+
+        if state.care_question_open:
+            # "Keep going or stop here for today?" The next reply answers it; anything
+            # else is an ordinary turn.
+            state.care_question_open = False
+            choice = care_choice(text) if action == "reply" else None
+            if choice == "keep":
+                return respond("Okay, let's keep going. " + self._prompt(state))
+            if choice == "stop":
+                for name in state.questions:
+                    answered = any(
+                        getattr(state.pending, n) is not None
+                        for n in ([name, PAIRS[name]] if name in PAIRS else [name])
+                    )
+                    if not answered and not self._saved(state, name):
+                        if name not in state.skipped_fields:
+                            state.skipped_fields.append(name)
+                state.probe_topic = None
+                self._advance(state)
+                return respond("Okay, we'll stop here for today. " + self._prompt(state))
 
         if action == "cancel":
             state = _fresh(state, phase="cancelled")

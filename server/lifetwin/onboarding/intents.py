@@ -1215,6 +1215,83 @@ def emergency(text: str) -> bool:
     return False
 
 
+# A warm reply to a low mood answer in a check-in: empathy, gentle support, then the
+# safety line softly. It is no pause: the check-in goes on if the person wants. (The
+# emergency check above runs first and takes priority.) Templates only; see the rewording
+# hook in CheckinService.
+SAFETY_PHRASE = "hurting yourself, please call 911."
+CARE_TEMPLATES = (
+    "I'm really sorry today's been so hard. Thank you for telling me. You don't have to carry "
+    "it alone. If it would help, we can just take this slowly. And if you're ever thinking "
+    "about " + SAFETY_PHRASE,
+    "That sounds like a heavy day, and I'm glad you said so. There's no rush here, and we can "
+    "go as gently as you like. And if you're ever thinking about " + SAFETY_PHRASE,
+    "Thank you for being honest with me. I'm sorry things feel this hard right now. You're not "
+    "on your own with it. If you're ever thinking about " + SAFETY_PHRASE,
+    "I'm sorry you're having such a rough time. It's okay to feel this way, and it's okay to "
+    "take things slowly. I'm here with you. If you're ever thinking about " + SAFETY_PHRASE,
+    "I'm glad you told me, even though it's hard to say. You don't have to have it all worked "
+    "out. We can keep this very simple today. And if you're ever thinking about " + SAFETY_PHRASE,
+)
+CARE_QUESTION = "Would you like to keep going with the check-in, or stop here for today?"
+# What the person named, reflected back in their own words (no advice, no diagnosis).
+_REFLECT = (
+    ("lonely", "Feeling lonely is really hard."),
+    ("empty", "Feeling empty is really hard."),
+    ("hopeless", "Feeling hopeless is really hard."),
+    ("awful", "Feeling awful is really hard."),
+    ("terrible", "Feeling terrible is really hard."),
+    ("down", "Feeling down is really hard."),
+    ("struggling", "Struggling like that is really hard."),
+    ("cope", "Feeling like you can't cope is really hard."),
+)
+_TAIL = (
+    r"(?: (?:today|at the moment|right now|lately|actually|really|thanks|thank you|to be honest))*"
+)
+_LEAD = (
+    r"(?:(?:i'm|i am|i feel|i've been feeling|i have been feeling|feeling|just|pretty|really|"
+    r"so|very|quite|a bit|bit) )*"
+)
+LOW_MOOD = re.compile(
+    rf"{_LEAD}(?:awful|terrible|hopeless|lonely|empty|struggling|really down|feeling down|"
+    rf"not (?:so |that |very )?(?:great|good)){_TAIL}"
+    r"|(?:i feel|i'm feeling|i am feeling|feeling|i'm|i am) (?:\w+ )?(?:awful|terrible|hopeless|"
+    rf"lonely|empty|really down|struggling|so down|not (?:so )?great){_TAIL}"
+    rf"|(?:i'm|i am|i've been|i have been) struggling(?: a lot| lately){_TAIL}"
+    r"|(?:i )?(?:can't|cannot|can not) cope"
+)
+
+
+def low_mood(text: str) -> bool:
+    """A mood answer that is clearly low ("awful", "really down", "I can't cope"). Weather,
+    traffic and the like are no match: only a short answer about oneself counts."""
+    words = " ".join(re.sub(r"[^\w'\s]", " ", normalize_text(text).lower()).split())
+    return bool(LOW_MOOD.fullmatch(words))
+
+
+def care_reply(text: str, day_number: int) -> str:
+    """The template for the day, with the person's own word reflected first."""
+    words = normalize_text(text).lower()
+    reflect = next((line + " " for key, line in _REFLECT if key in words), "")
+    return reflect + CARE_TEMPLATES[day_number % len(CARE_TEMPLATES)]
+
+
+_STOP = re.compile(r"\b(?:stop|end|finish|quit|done|enough|not now|call it a day|no more)\b")
+_KEEP = re.compile(
+    r"\b(?:keep going|keep on|continue|carry on|go on|go ahead|yes|yeah|yep|sure|okay|ok|fine)\b"
+)
+
+
+def care_choice(text: str) -> str | None:
+    """The answer to CARE_QUESTION: "keep" going, "stop", or None (anything else)."""
+    words = " ".join(re.sub(r"[^\w'\s]", " ", normalize_text(text).lower()).split())
+    if len(words.split()) > 8:
+        return None
+    if _STOP.search(words) and not re.search(r"\b(?:don't|do not|not) (?:want to )?stop", words):
+        return "stop"
+    return "keep" if _KEEP.search(words) or _STOP.search(words) else None
+
+
 def resumes(text: str) -> bool:
     """ "Continue", "let's carry on": go on with the question that was paused."""
     return _full(RESUME, phrase(text))

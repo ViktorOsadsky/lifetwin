@@ -30,7 +30,8 @@ from lifetwin.checkin.scripts import (
 )
 from lifetwin.checkin.service import CheckinService
 from lifetwin.core.config import Settings
-from lifetwin.onboarding.intents import EMERGENCY_MESSAGE, RESUME_LEAD
+from lifetwin.core.models import CheckinValues
+from lifetwin.onboarding.intents import CARE_QUESTION, EMERGENCY_MESSAGE, RESUME_LEAD, care_reply
 from lifetwin.onboarding.service import SKIPPED
 
 TODAY = date(2026, 10, 24)
@@ -420,7 +421,7 @@ def test_emergency_pauses_and_resume_goes_on():
 
 
 def test_feeling_closes_kindly():
-    result, messages = run(["not great today", "yes"], topics=["feeling"])
+    result, messages = run(["not great today", "keep going", "yes"], topics=["feeling"])
     assert result.complete
     assert messages[-1] == CLOSINGS["quick"]["not_great"]
 
@@ -534,3 +535,134 @@ def test_quick_api_rejects_a_plan_for_another_kind(client):
 )
 def test_held_out_defects_stay_fixed(field, text, expected):
     assert pending(say(at(field), text)) == expected
+
+
+# --- The warm care reply after a low mood answer (not the emergency pause) ------------------
+
+SAFETY = "please call 911"
+LOW = [
+    "not great",
+    "Awful",
+    "I feel terrible",
+    "really down",
+    "hopeless",
+    "I can't cope",
+    "I'm struggling",
+    "so lonely",
+    "feeling empty",
+]
+NOT_LOW = [
+    "good",
+    "okay",
+    "tired but fine",
+    "not great weather today",
+    "pretty great",
+    "dying to go on holiday",
+    "terrible traffic this morning",
+    "the weather was awful",
+    "struggling to find my keys",
+]
+
+
+def mood_state(**values) -> CheckinState:
+    questions = list(quick_script(["feeling"], False))
+    return CheckinState(
+        kind="quick",
+        questions=questions,
+        current_field="wellbeing",
+        local_date="2026-10-24",
+        activity_day="yesterday",
+        **values,
+    )
+
+
+@pytest.mark.parametrize("text", LOW)
+def test_a_low_mood_gets_a_warm_reply_with_the_safety_line_once(text):
+    result = say(mood_state(), text)
+    assert result.message.count(SAFETY) == 1 and result.message.endswith(CARE_QUESTION)
+    assert result.message.index("sorry") < result.message.index(SAFETY)  # empathy comes first
+    assert "988" not in result.message and not result.emergency
+    assert result.state.care_line_shown and result.state.care_question_open
+    assert result.mascot_events[0].caption == result.message
+
+
+def test_what_the_person_named_is_reflected_back_in_their_words():
+    assert "Feeling lonely is really hard." in say(mood_state(), "so lonely").message
+    assert "Feeling empty is really hard." in say(mood_state(), "feeling empty").message
+
+
+def test_the_wording_varies_by_day_and_is_stable_for_a_day():
+    texts = {care_reply("awful", n) for n in range(10)}
+    assert len(texts) >= 4 and care_reply("awful", 3) == care_reply("awful", 3)
+
+
+def test_a_second_low_answer_in_the_same_check_in_does_not_repeat_it():
+    first = say(mood_state(), "awful")
+    state = first.state.model_copy(
+        update={
+            "pending": CheckinValues(),
+            "current_field": "wellbeing",
+            "phase": "asking",
+            "care_question_open": False,
+        }
+    )
+    again = say(state, "not great")
+    assert SAFETY not in again.message and again.state.care_line_shown
+
+
+@pytest.mark.parametrize("text", NOT_LOW)
+def test_neutral_positive_and_look_alike_moods_show_nothing(text):
+    result = say(mood_state(), text)
+    assert SAFETY not in result.message and not result.state.care_line_shown
+    assert not result.state.care_question_open
+
+
+def test_an_explicit_crisis_still_pauses_and_takes_priority():
+    result = say(mood_state(), "I feel awful, I don't want to be here anymore")
+    assert result.emergency and result.message == EMERGENCY_MESSAGE
+    assert not result.state.care_line_shown
+
+
+def two_topics() -> CheckinState:
+    """Sleep already confirmed, now the feeling question."""
+    questions = list(quick_script(["sleep", "feeling"], False))
+    return CheckinState(
+        kind="quick",
+        questions=questions,
+        current_field="wellbeing",
+        local_date="2026-10-24",
+        activity_day="yesterday",
+        confirmed=CheckinValues(sleep_hours_last_night=6),
+    )
+
+
+@pytest.mark.parametrize("answer", ["keep going", "yes", "let's continue"])
+def test_keep_going_goes_on_with_the_next_question(answer):
+    result = say(say(two_topics(), "awful").state, answer)
+    assert result.message.startswith("Okay, let's keep going.")
+    assert not result.state.care_question_open and result.state.care_line_shown
+
+
+@pytest.mark.parametrize("answer", ["stop", "let's stop here", "I'd like to stop"])
+def test_stopping_ends_the_check_in_and_keeps_what_was_confirmed(answer):
+    result = say(say(two_topics(), "awful").state, answer)
+    assert result.message.startswith("Okay, we'll stop here for today.")
+    assert result.state.confirmed.sleep_hours_last_night == 6
+    assert result.state.phase == "confirming" and result.state.current_field is None
+    done = SERVICE.turn(CheckinTurnRequest(action="confirm", state=result.state))
+    assert done.complete and done.state.confirmed.wellbeing == "not_great"
+    assert done.state.confirmed.sleep_hours_last_night == 6
+
+
+def test_an_unrelated_reply_to_the_question_is_an_ordinary_turn():
+    state = say(mood_state(), "awful").state
+    result = say(state, "go back")
+    assert not result.state.care_question_open
+
+
+def test_the_rewording_hook_must_keep_the_safety_line():
+    keep = CheckinService(clock=lambda: TODAY, care_rewriter=lambda t, r: "Gentler. " + t)
+    drop = CheckinService(clock=lambda: TODAY, care_rewriter=lambda t, r: "No safety here.")
+    request = CheckinTurnRequest(action="reply", state=mood_state(), text="awful")
+    assert keep.turn(request).message.startswith("Gentler. ")
+    assert SAFETY in drop.turn(request).message

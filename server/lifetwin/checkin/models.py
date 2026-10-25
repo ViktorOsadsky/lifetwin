@@ -42,6 +42,11 @@ class CheckinState(ApiModel):
     # follow-ups and no habit notes.
     memory_consent: bool = False
     probe_asked: bool = False
+    # Quick and daily: Mochi already added the soft "please call 911" line after a low
+    # mood answer, so it is not said again in this check-in.
+    care_line_shown: bool = False
+    # The care reply ended with "keep going or stop here?": the next reply answers it.
+    care_question_open: bool = False
     probe_topic: Literal["exercise", "sleep"] | None = None
     habit_notes: list[HabitNote] = Field(default_factory=list, max_length=5)
     # Quick only. The phone's date when the check-in started, and the day the activity
