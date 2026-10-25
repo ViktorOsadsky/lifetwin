@@ -1,11 +1,11 @@
 {
   "source": "1a648bd405df4c76b5c1dea3339194c31201913c",
-  "result": "PASS: silent continuous UI route under 180 seconds",
+  "result": "PASS: readability-paced silent continuous UI route under 180 seconds",
   "native_test_count": 1,
-  "native_test_duration_seconds_including_preparation": 221.322,
-  "timed_route_seconds": 178.0056055416644,
+  "native_test_duration_seconds_including_preparation": 221.267,
+  "timed_route_seconds": 178.00494262500433,
   "data": "Fictional Rosa, synthetic daily answers and built-in recorded band",
-  "mode": "silent native UI rehearsal; template server; no live provider",
+  "mode": "readability-paced silent native UI rehearsal; template server; no live provider",
   "off_camera_setup": "Recorded band enabled; actual Talk typing intake confirms first 11 answers; clock starts before final harder-exercise answer",
   "same_repository_continuous": true,
   "profile_reset_during_timed_segment": false,
@@ -37,6 +37,7 @@
     "16-close-home.png"
   ],
   "remaining_acceptance": [
+    "Later model sync review/CI and new recording-build actual-score/route check",
     "Daniel spoken recording and human read-aloud timing",
     "continuous video capture",
     "live Muse/Cartesia",
@@ -46,5 +47,38 @@
     "reduced motion and reconnect",
     "physical phone"
   ],
-  "temporary_source_exception": "Only isolated SDK floor ^3.13.7→^3.13.0, bundle identity/display name and native UI test instrumentation; repository product code unchanged"
+  "temporary_source_exception": "Only isolated SDK floor ^3.13.7→^3.13.0, bundle identity/display name and native UI test instrumentation; repository product code unchanged",
+  "visible_dwells": [
+    {
+      "elapsed": 23.00504679165897,
+      "end": 52.15289345833298,
+      "screen": "reveal-caveat",
+      "start": 29.147846666674013
+    },
+    {
+      "elapsed": 8.003904249999323,
+      "end": 88.29256937500031,
+      "screen": "daily-readback",
+      "start": 80.28866512500099
+    },
+    {
+      "elapsed": 2.005019958334742,
+      "end": 125.80031158334168,
+      "screen": "ideas-list",
+      "start": 123.79529162500694
+    },
+    {
+      "elapsed": 14.003879958341713,
+      "end": 141.58399645834288,
+      "screen": "idea-detail",
+      "start": 127.58011650000117
+    }
+  ],
+  "earlier_mechanical_take": "178.00560554166441 seconds; separate mechanical-timing.json and mechanical-native-result.txt; insufficient detail/readback dwell for final script",
+  "later_main_model_sync": {
+    "commit": "1a86d9a",
+    "acceptance": "NOT TESTED by this rehearsal",
+    "changes": "App Cox artifact/support reference, sensitivity/lifespan data and TwinModelService",
+    "next_gate": "Review new model/CI and recheck actual displayed score and route on chosen recording build; do not reuse +0.59 as a generic expected score"
+  }
 }

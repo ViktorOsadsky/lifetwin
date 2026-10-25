@@ -65,6 +65,14 @@ final class Demo133UITests: XCTestCase {
     let start=ProcessInfo.processInfo.systemUptime
     let utc=ISO8601DateFormatter().string(from:Date())
     var metrics=[[String:Any]]()
+    var dwells=[[String:Any]]()
+    func dwell(_ screen:String,_ seconds:TimeInterval) {
+      let a=ProcessInfo.processInfo.systemUptime-start
+      Thread.sleep(forTimeInterval:seconds)
+      let b=ProcessInfo.processInfo.systemUptime-start
+      dwells.append(["screen":screen,"start":a,"end":b,"elapsed":b-a])
+      print("DEMO133_DWELL \(screen) \(a) \(b)")
+    }
     func beat(_ name:String,_ target:TimeInterval,_ body:() -> Void) {
       let a=ProcessInfo.processInfo.systemUptime-start
       body()
@@ -85,7 +93,7 @@ final class Demo133UITests: XCTestCase {
     }
     beat("reveal",55) {
       tap("Ask the ball");tap("About this estimate",timeout:15)
-      shot("04-reveal-caveat");Thread.sleep(forTimeInterval:23);tap("Close")
+      shot("04-reveal-caveat");dwell("reveal-caveat",23);tap("Close")
       shot("05-reveal")
     }
     beat("home",72) {
@@ -97,7 +105,7 @@ final class Demo133UITests: XCTestCase {
       tap("Check in.");type("7 hours",confirm:false);type("0 minutes hard and 20 minutes easy",confirm:false)
       type("420 minutes",confirm:false)
       XCTAssertTrue(button("Looks right").waitForExistence(timeout:10));shot("07-checkin-readback")
-      Thread.sleep(forTimeInterval:2);tap("Looks right")
+      dwell("daily-readback",8);tap("Looks right")
       XCTAssertTrue(button("Back to my room").waitForExistence(timeout:15));shot("08-checkin-saved")
       tap("Back to my room")
     }
@@ -109,11 +117,11 @@ final class Demo133UITests: XCTestCase {
       tapElement(use.firstMatch,name:"Use selected duration in my what-if")
       XCTAssertTrue(button("Ideas for you").waitForExistence(timeout:10));shot("10-experiment-result")
     }
-    beat("ideas",142) {
+    beat("ideas",148) {
       tap("Ideas for you")
       let idea=app.buttons.matching(NSPredicate(format:"label ENDSWITH %@",". Open details")).firstMatch
-      XCTAssertTrue(idea.waitForExistence(timeout:15));shot("11-ideas")
-      tapElement(idea,name:"Open first idea details");XCTAssertTrue(button("Back to ideas").waitForExistence(timeout:10));shot("12-idea-detail")
+      XCTAssertTrue(idea.waitForExistence(timeout:15));shot("11-ideas");dwell("ideas-list",2)
+      tapElement(idea,name:"Open first idea details");XCTAssertTrue(button("Back to ideas").waitForExistence(timeout:10));shot("12-idea-detail");dwell("idea-detail",14)
       tap("Back to ideas");tap("Back to Experiment");tap("Back to room")
     }
     beat("band-demo",168) {
@@ -125,7 +133,7 @@ final class Demo133UITests: XCTestCase {
       tap("Close");tap("Back to room");XCTAssertTrue(button("Experiment with your twin").waitForExistence(timeout:10));shot("16-close-home")
     }
     let total=ProcessInfo.processInfo.systemUptime-start
-    let data=try JSONSerialization.data(withJSONObject:["source":"1a648bd","utc_start":utc,"total_seconds":total,"mode":"silent native UI rehearsal; template server; no live provider","beats":metrics],options:[.sortedKeys])
+    let data=try JSONSerialization.data(withJSONObject:["source":"1a648bd","utc_start":utc,"total_seconds":total,"mode":"readability-paced silent native UI rehearsal; template server; no live provider","beats":metrics,"visible_dwells":dwells],options:[.sortedKeys])
     let json=String(data:data,encoding:.utf8)!
     print("DEMO133_TIMING_JSON "+json)
     let dir=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("demo133")
