@@ -22,13 +22,9 @@ import 'quiz/quiz_screen.dart';
 import 'wellness/home_panel.dart' show HealthScoreSummary;
 import 'wellness/models.dart';
 import 'wellness/settings_screen.dart';
-import 'wellness/today_placeholder.dart';
 import 'wellness/widgets.dart' show WellnessCard;
 import 'wellness/repository_adapter.dart';
 import 'wellness/history_screen.dart';
-import 'wellness/daily_plan_screen.dart';
-import 'wellness/coach_client.dart';
-import 'wellness/coach_context.dart';
 import 'twin/twin_repository.dart';
 import 'ui/swoosh_route.dart';
 import 'ui/theme.dart';
@@ -402,33 +398,6 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     return fromTalk ? nav.pushAndRemoveUntil(route, (r) => r.isFirst) : nav.push(route);
   }
 
-  Future<void> _plan(BuildContext context) async {
-    final repo = await _twin;
-    if (!context.mounted) return;
-    // Ask for the outside-AI consent before the first plan request; a configured provider the person
-    // declined gets nothing sent.
-    final provider = await _agentic.provider();
-    if (!context.mounted) return;
-    if (provider != null && provider.configured && !await _agentic.ensureOutsideAiConsent(context)) return;
-    if (!context.mounted) return;
-    final client = HttpCoachClient(base: _api);
-    try {
-      await Navigator.of(context).push<void>(MaterialPageRoute(
-        builder: (pageContext) => DailyPlanScreen(
-          client: client,
-          confirmedContext: () => coachContext(repo),
-          onBack: () => Navigator.of(pageContext).pop(),
-          onTalk: () {
-            Navigator.of(pageContext).pop();
-            _talk(context);
-          },
-        ),
-      ));
-    } finally {
-      client.close();
-    }
-  }
-
   /// The Settings hub: choices, My data, reminders, AI and memory privacy, changing an answer, and the
   /// places that left Home (Apple Health, Health documents, What I see, Still learning, the wristband).
   void _settings(BuildContext context) {
@@ -458,8 +427,10 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
               onBack: () => Navigator.of(c).pop(),
               entries: [
                 SettingsEntry(label: 'Change an answer', description: 'Tell Mochi what changed', open: () => _agentic.changeAnswer(c)),
+                SettingsEntry(label: 'Weekly check-in', description: 'A few questions about your week', open: () => _agentic.weeklyCheckIn(c)),
                 SettingsEntry(label: 'Apple Health', description: 'Bring in values you check', open: () => _health(c)),
                 SettingsEntry(label: 'Health documents', description: 'Upload a visit summary or lab report', open: () => _documents(c)),
+                SettingsEntry(label: 'Try a change', description: 'Explore what could move your outlook', open: () => _agentic.experiment(c)),
                 SettingsEntry(label: 'What I see', description: 'Your wellness cards, with sources', open: () => _agentic.wellness(c)),
                 SettingsEntry(label: 'Still learning', description: 'Answers Mochi still needs', open: () => _agentic.stillLearning(c)),
                 SettingsEntry(label: 'Wristband', description: 'Pair or try the recorded demo', open: () => _agentic.bandFlow(c)),
@@ -508,12 +479,13 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onDrivers: () => _agentic.drivers(context),
           onSettings: _wellness == null ? null : () => _settings(context),
           stateLine: _stillLearning(),
-          today: _wellness == null
+          // The whole card opens the plan; its own buttons (Why?, thumbs) win the tap.
+          today: _wellness == null || (_profile?['age'] as num? ?? 0) < 18
               ? null
-              : TodayWithMochiPlaceholder(
-                  onPlan: (_profile?['age'] as num? ?? 0) >= 18 ? () => _plan(context) : null,
-                  onTryChange: () => _agentic.experiment(context),
-                  onWhy: () => _agentic.wellness(context),
+              : GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () => _agentic.todayPlan(context, onTalk: () => _talk(context)),
+                  child: _agentic.todayCard(context, onTalk: () => _talk(context)),
                 ),
         ),
       ),
