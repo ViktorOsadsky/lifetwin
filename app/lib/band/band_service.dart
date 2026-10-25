@@ -12,6 +12,7 @@ class BandSuggestion {
     required this.current,
     required this.validDays,
     required this.validMinutes,
+    this.demo = false,
   });
 
   /// The band's estimate, minutes a week (rounded to 10).
@@ -21,6 +22,11 @@ class BandSuggestion {
   final num current;
   final int validDays;
   final int validMinutes;
+
+  /// From the recorded demo, not measured: labelled "Demo data" everywhere, and still needs the person's yes.
+  final bool demo;
+
+  static const demoLabel = 'Demo data';
 
   bool get lower => estimate < current;
 
@@ -53,15 +59,22 @@ class BandService {
   DateTime? _dismissedAt;
   DateTime? _offeredAt;
 
-  /// The suggestion for [week], or null. [live] is false for the recorded demo.
-  BandSuggestion? suggest(BandWeek week, {required bool live}) {
-    if (!live || !week.hasEstimate) return null;
+  /// The suggestion for [week], or null. [live] is false for the recorded demo; [demo] allows ONE labelled
+  /// suggestion from it (only when nothing live or imported is in play).
+  BandSuggestion? suggest(BandWeek week, {required bool live, bool demo = false}) {
+    if (!(live || demo) || !week.hasEstimate) return null;
     final saved = repository.profile[bandField];
     if (saved is! num) return null;
     if (_inCooldown(_dismissedAt) || _inCooldown(_offeredAt, acceptedOnly: true)) return null;
     final est = week.estimateMinutesPerWeek!;
     if (est == saved.round()) return null;
-    return BandSuggestion(estimate: est, current: saved, validDays: week.validCount, validMinutes: week.validModerate);
+    return BandSuggestion(
+      estimate: est,
+      current: saved,
+      validDays: week.validCount,
+      validMinutes: week.validModerate,
+      demo: !live,
+    );
   }
 
   bool _inCooldown(DateTime? at, {bool acceptedOnly = false}) {
