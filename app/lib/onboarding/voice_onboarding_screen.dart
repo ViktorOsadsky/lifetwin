@@ -847,11 +847,12 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     w,
     title: 'Let an AI helper read hard answers?',
     offerImport: true,
+    // Names the conversation provider from /api/capabilities (Claude today).
     body:
-        "If I can't understand an answer, an AI service can read your words. "
-        "It's off unless you say yes. You can change this in Settings.",
+        "If I can't understand an answer, ${widget.aiProvider?.helper.displayName ?? 'an AI service'} "
+        "can read your words. It's off unless you say yes. You can change this in Settings.",
     buttons: [
-      if (widget.aiProvider?.trainingLine case final line?) TrainingLine(line),
+      if (widget.aiProvider?.helper.trainingLine case final line?) TrainingLine(line),
       LipButton(
         label: 'Yes, turn it on',
         icon: Icons.check_rounded,

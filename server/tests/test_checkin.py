@@ -626,10 +626,12 @@ def test_moving_without_minutes_asks_how_long(text):
     assert result.message == "Good for you! About how many minutes did you move today?"
 
 
-def test_an_hour_for_the_week_asks_how_often():
+def test_an_hour_for_the_week_is_the_weeks_total():
+    # Owner (2026-10-25): "2 hours cannot be translated into 120 minutes". Hours said to
+    # the weekly question are the week's total, as in onboarding; no "each time?" any more.
     result = say(at("weekly", V), "about an hour")
-    assert pending(result) == {}
-    assert "each time" in result.message
+    assert "each time" not in result.message
+    assert 60 in (result.state.held_minutes, *pending(result).values())
 
 
 # --- Smoking and blood pressure ---------------------------------------------------------
