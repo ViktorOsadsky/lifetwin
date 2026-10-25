@@ -3,13 +3,15 @@
 Track / task: B, deploy an app backend with server-side provider keys using MCP Bridge.
 
 Result: LifeTwin project `plpywefoeepfunptjujc`, function `lifetwin-api`, JWT required.
-The API is live at
+Version 2 is ACTIVE with JWT verification enabled; all 12 deployed source hashes
+match this implementation. The API is live at
 `https://plpywefoeepfunptjujc.supabase.co/functions/v1/lifetwin-api`.
 The owner chose Edge Functions because no Python hosting account was available.
 The original FastAPI backend remains a local reference; no model artifacts were
 changed. See [deployment guide](../../supabase/functions/lifetwin-api/README.md).
 
-PR / merge state: deployment branch `codex/b-supabase-deploy`; PR pending.
+PR / merge state: [#204](https://github.com/ViktorOsadsky/lifetwin/pull/204), branch
+`codex/b-supabase-deploy`. The PR records final checks and the merge commit.
 
 Contracts: existing 28 JSON schemas retained, with an explicit hosted exception:
 all three server prediction/compare/sensitivity routes return 501. Flutter uses
@@ -28,7 +30,7 @@ Validation observed:
 
 - Full Python suite: 4,322 passed, 5 skipped, 12 expected failures; 28 exported
   schemas and 92 reference API fixtures passed in-process.
-- Deno entrypoint type check and 103 tests passed, including deadline cancellation. Integration tests cover all 92 fixture
+- Deno entrypoint type check and 106 tests passed, including deadline cancellation. Integration tests cover all 92 fixture
   statuses/response schemas, with the hosted prediction exception explicit.
 - Flutter focused client/consent/document/coach checks: 67 passed; full analysis
   clean in a temporary validation copy. Only that copy's SDK floor was lowered to
@@ -39,7 +41,10 @@ Validation observed:
   age without changing the confirmed profile. Meta and Anthropic model-list
   access succeeded for the configured models; live Claude Messages unverified.
 - Anonymous config getter/setter access denied; unauthenticated function calls
-  rejected with 401. Supabase advisories were checked before/after provisioning.
+  rejected with 401. Supabase advisories were checked before/after provisioning: no WARN/ERROR
+  findings remain. The aggregate private counter intentionally has deny-all RLS
+  and no client policies (the remaining informational advisory). Actual daily/
+  minute budget enforcement passed a rolled-back database check.
 
 Limitations: bounded Edge port, not complete Python behavior parity. Advanced
 transcript parsing, proxy estimates, optional habit probes, completion

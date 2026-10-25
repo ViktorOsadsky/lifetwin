@@ -249,6 +249,8 @@ def deployment_arguments(directory: Path = FUNCTION_DIRECTORY) -> dict:
     return {
         "name": "lifetwin-api",
         "entrypoint_path": "index.ts",
+        # Updates otherwise retain the previous deployment's absolute temp path.
+        "import_map_path": "deno.json",
         "verify_jwt": True,
         "files": files,
     }

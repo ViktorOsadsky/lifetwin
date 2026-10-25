@@ -62,7 +62,7 @@ shared app session, and have `project_ref=plpywefoeepfunptjujc` in its official
 Supabase MCP URL. The updater refuses other projects and never changes the
 connection, extracts its credential, or falls back to a direct session.
 
-Apply the repository's `20261025083000_backend_credentials.sql` migration before
+Apply the repository's `20261025082417_lifetwin_backend_credentials.sql` migration before
 first provisioning. This helper deliberately does not create or migrate schema.
 To replace the server configuration using a complete protected file:
 
@@ -90,7 +90,9 @@ uv run python scripts/supabase_bridge.py --deploy
 Deployment keeps JWT verification enabled, includes production TypeScript, JSON
 assets and Deno configuration, and excludes tests, env files and the local
 `deno.lock` (its format can be newer than the hosted bundler). Direct npm imports
-remain pinned to exact versions in `deno.json`. Both actions
+remain pinned to exact versions in the source imports. The helper explicitly
+selects `deno.json` as the import-map/configuration path on every deploy, avoiding
+a stale absolute configuration path retained from a previous deployment. Both actions
 inspect live tool schemas and withhold raw tool output. A successful command
 means Bridge accepted the operation; verify remote health, provider readiness and
 contracts afterward. A timeout or failure can follow an upstream mutation: the

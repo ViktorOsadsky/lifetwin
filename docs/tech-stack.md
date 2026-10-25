@@ -63,14 +63,14 @@ retrieval; no durable health-data storage is introduced.
 
 | Layer | Proposed default | Purpose and boundary |
 | --- | --- | --- |
-| Backend deploy | **Docker on Railway**, one CPU service initially | Reproducible Python dependencies and model artifact, HTTPS API, environment secrets, health/readiness checks. Deployment is a later implementation task; no account/budget assumed. [Railway FastAPI guide](https://docs.railway.com/guides/fastapi). |
+| Backend deploy | **Supabase Edge Functions**, TypeScript/Deno | Hosted stateless API with backend-only Vault credentials and shared provider budgets. The Docker/FastAPI implementation remains a local reference. Server prediction is deferred on Edge; Flutter retains its existing model. [Deployment guide](../supabase/functions/lifetwin-api/README.md). |
 | App delivery | **Local iPhone/simulator first**, TestFlight later if needed | Follow [ios-testing.md](ios-testing.md). Backend gets a deployed URL. Whether a public Flutter web demo is required remains open in [prd-reconciliation.md](prd-reconciliation.md). |
 | Flutter checks | **`dart format`, `flutter analyze`, `flutter test`, `integration_test`** | Meaningful conversation/game-state tests, API parsing and actual rendered device review. Test the Lottie export on device before asset production. |
 | Python checks | **pytest, HTTPX test client, Ruff**, contract checker | Validation/error paths, deterministic model adapter, scan budget/directions, grounded output and extraction fixtures. |
 | CI and source control | **GitHub Actions + PR merges** | Run applicable Flutter/Python/contracts checks when implementations exist; keep provider-backed tests opt-in. GitGuardian currently checks this docs PR but does not replace app tests. |
 | Diagnostics | **Structured redacted server events + request IDs** | Track latency, provider failures and scan budget without raw health/audio/transcript payloads. Add third-party crash/analytics tools only with an explicit data-scrubbing design. |
 
-Expected backend configuration: `OPENAI_API_KEY`, `OPENAI_MODEL`, `TAVILY_API_KEY`, `MODEL_ARTIFACT_PATH`, and `APP_ENV`. Flutter gets only the public `API_BASE_URL` and mode flags. Commit an `.env.example` with placeholders during implementation, never actual keys. Public provider-backed routes need server-side rate/concurrency limits and budget caps before external demonstration.
+Expected backend configuration: `OPENAI_API_KEY`, `OPENAI_MODEL`, `TAVILY_API_KEY`, `MODEL_ARTIFACT_PATH`, and `APP_ENV`. Flutter gets the public `API_BASE_URL`, public `SUPABASE_ANON_KEY`, optional `SUPABASE_GATEWAY_URL`, and mode flags. Commit an `.env.example` with placeholders during implementation, never actual keys. Public provider-backed routes need server-side rate/concurrency limits and budget caps before external demonstration.
 
 ## Decisions still needed
 

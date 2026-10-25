@@ -24,6 +24,7 @@ def schema(name, *, project_id=False):
         else {
             "name": {"type": "string"},
             "entrypoint_path": {"type": "string"},
+            "import_map_path": {"type": "string"},
             "verify_jwt": {"type": "boolean"},
             "files": {"type": "array"},
         }
@@ -244,6 +245,7 @@ def test_bundle_includes_runtime_assets_and_excludes_tests_or_private_files(tmp_
         (tmp_path / name).write_text(content)
     args = bridge.deployment_arguments(tmp_path)
     assert args["verify_jwt"] is True
+    assert args["import_map_path"] == "deno.json"
     assert {file["name"] for file in args["files"]} == {
         "index.ts",
         "providers.ts",
