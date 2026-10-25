@@ -6,6 +6,7 @@ import '../twin/profile_mapping.dart';
 import '../twin/twin_experiment.dart';
 import '../twin/twin_repository.dart';
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 import '../wellness/coach_client.dart' show coachRequestBody;
 import '../wellness/coach_context.dart';
 
@@ -204,6 +205,7 @@ Map<String, dynamic> recommendationsRequestBody(
   return {
     'profile': context['profile'],
     'habit_notes': notes.skip(notes.length > 10 ? notes.length - 10 : 0).toList(),
+    if (context['document_context'] != null) 'document_context': context['document_context'],
     'outside_ai_consent': context['outside_ai_consent'],
     'local_date': ?localDate,
     if (excludedIds.isNotEmpty) 'excluded_ids': excludedIds,
@@ -218,7 +220,7 @@ String dayKey(DateTime d) =>
 /// gentle line and the app goes on.
 class HttpRecommendations implements RecommendationsSource, FullIdeasSource {
   HttpRecommendations(this.repository, {ApiBase? base, http.Client? client, DateTime Function()? now})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       _now = now ?? DateTime.now,
       base = base ?? ApiBase();
   final TwinRepository repository;

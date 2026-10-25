@@ -640,7 +640,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           ideas: _agentic.ideasAccess,
           onAnswerMissing: _wellness == null ? null : () => _agentic.answerMissing(context),
           // The whole card opens the plan; its own buttons (Why?, thumbs) win the tap.
-          today: _wellness == null || (_profile?['age'] as num? ?? 0) < 18
+          today: _wellness == null
               ? null
               : GestureDetector(
                   behavior: HitTestBehavior.translucent,

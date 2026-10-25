@@ -446,7 +446,8 @@ def test_featured_is_stable_for_the_day_and_one_of_the_ids():
 def test_featured_is_null_unless_ok():
     c = client()
     assert post(c, {"profile": {}})["featured"] is None
-    assert post(c, {"profile": {"age": 16, "sleep_hours": 5}})["featured"] is None
+    assert post(c, {"profile": {"age": 16}})["featured"] is None
+    assert post(c, {"profile": {"age": 16, "sleep_hours": 5}})["featured"] is not None
 
 
 @pytest.mark.parametrize("bad", ["2026-02-30", "24/10/2026", "tomorrow", 20261024])

@@ -426,13 +426,12 @@ void main() {
     );
   });
 
-  group('entry points and the age gate', () {
+  group('entry points (no age gate)', () {
     testWidgets(
-      'under 18: not allowed, no entry point, and the endpoint is never called',
+      'under 18 is treated like everyone: the drivers ideas row opens the list',
       (t) async {
-        final src = FakeSource([pace]);
+        final src = FakeSource([pace, sleep]);
         final a = await routes({...older, 'age': 16}, source: src);
-        expect(a.ideasAllowed, isFalse);
         await pumpIn(
           t,
           Builder(
@@ -444,11 +443,12 @@ void main() {
         );
         await t.tap(find.text('go'));
         await t.pumpAndSettle();
-        expect(find.text('Ideas linked to a healthier score'), findsNothing);
-        await a.ideas(t.element(find.byType(Scaffold)), origin: 'room');
+        await t.scrollUntilVisible(find.text('Ideas linked to a healthier score'), 200);
+        await t.pump();
+        await t.tap(find.text('Ideas linked to a healthier score'));
         await t.pumpAndSettle();
-        expect(find.byType(IdeasListScreen), findsNothing);
-        expect(src.calls, 0);
+        expect(find.byType(IdeasListScreen), findsOneWidget);
+        expect(src.calls, greaterThan(0));
       },
     );
 
@@ -483,7 +483,7 @@ void main() {
     );
 
     testWidgets(
-      'the Today card: More ideas in the full card only when allowed',
+      'the Today card: More ideas in the full card, at any age',
       (t) async {
         final coach = FakeCoach()..responses.addAll([fourSlots(), fourSlots()]);
         final a = await routes(older, coach: coach);
@@ -504,7 +504,7 @@ void main() {
           ),
         );
         await t.pumpAndSettle();
-        expect(find.text('More ideas ›'), findsNothing);
+        expect(find.text('More ideas ›'), findsOneWidget);
       },
     );
   });

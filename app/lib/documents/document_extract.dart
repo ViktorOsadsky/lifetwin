@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 
 /// One suggested value from a document. Shapes match contracts/documents.extract.schema.json.
 /// Nothing here is used until the person confirms it.
@@ -115,7 +116,7 @@ abstract class DocumentExtractor {
 /// POST /api/documents/extract. Stateless: the server keeps nothing.
 class HttpDocumentExtractor implements DocumentExtractor {
   HttpDocumentExtractor({http.Client? client, ApiBase? base})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       base = base ?? ApiBase(apiBaseUrl, client);
 
   final http.Client _client;
@@ -166,6 +167,7 @@ class PdfReaderInfo {
     this.company,
     this.maxBytes = 10 * 1024 * 1024,
     this.maxPages = 20,
+    this.mayTrainOnContent = false,
   });
 
   /// The consent key, e.g. `claude`.
@@ -174,6 +176,13 @@ class PdfReaderInfo {
   final String? company;
   final int maxBytes;
   final int maxPages;
+
+  /// `documents.pdf.may_train_on_content`: absent or false means no training line is shown.
+  final bool mayTrainOnContent;
+
+  /// "Anthropic may use what you share to improve its AI." Only when the server says so.
+  String? get trainingLine =>
+      mayTrainOnContent && company != null ? '$company may use what you share to improve its AI.' : null;
 
   /// Null unless the server says a provider is set up to read PDFs.
   static PdfReaderInfo? fromCapabilities(Object? json) {
@@ -189,6 +198,7 @@ class PdfReaderInfo {
       company: company is String && company.isNotEmpty ? company : null,
       maxBytes: maxBytes is int && maxBytes > 0 ? maxBytes : 10 * 1024 * 1024,
       maxPages: maxPages is int && maxPages > 0 ? maxPages : 20,
+      mayTrainOnContent: p['may_train_on_content'] == true,
     );
   }
 }
@@ -205,7 +215,7 @@ abstract class PdfDocumentReader {
 /// `POST /api/documents/read` with the PDF as base64. The server holds it for that request only.
 class HttpPdfDocumentReader implements PdfDocumentReader {
   HttpPdfDocumentReader({http.Client? client, ApiBase? base})
-    : _client = client ?? http.Client(),
+    : _client = client ?? BackendHttpClient(),
       base = base ?? ApiBase(apiBaseUrl, client);
 
   final http.Client _client;

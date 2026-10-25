@@ -13,6 +13,7 @@ import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/widgets/widgets.dart' hide TwinMood;
 import '../voice/api_base.dart';
+import '../voice/backend_http_client.dart';
 import '../widgets/whole_word_text.dart';
 import 'emergency_card.dart';
 
@@ -88,7 +89,7 @@ abstract class ChangeClient {
 }
 
 class HttpChangeClient implements ChangeClient {
-  HttpChangeClient({http.Client? client, ApiBase? base}) : _client = client ?? http.Client(), base = base ?? ApiBase();
+  HttpChangeClient({http.Client? client, ApiBase? base}) : _client = client ?? BackendHttpClient(), base = base ?? ApiBase();
   final http.Client _client;
   final ApiBase base;
 

@@ -176,6 +176,11 @@ class CheckinController extends ChangeNotifier {
   static const _startRetries = 3;
   Timer? _startRetry;
   bool _paused = false;
+
+  /// The person closed the microphone (separate from [_paused], so coming back on screen never
+  /// reopens it). Nothing opens it by itself until [turnMicOn].
+  bool _micOff = false;
+  bool get micOff => _micOff;
   bool _firstLine = true;
   Stopwatch? _openedAt;
   static const firstAudioLimit = voiceFirstAudioLimit;
@@ -275,6 +280,7 @@ class CheckinController extends ChangeNotifier {
       plan = scheduler.due(localNow: now, history: history, days: days, health: await _health()).quick;
       if (plan == null) return false;
     }
+    _micOff = false;
     this.kind = kind;
     localDate = today;
     final previous = _previous(kind, history, days);
@@ -354,6 +360,8 @@ class CheckinController extends ChangeNotifier {
     final t = turn;
     final why = _paused
         ? 'paused'
+        : _micOff
+        ? 'mic_off'
         : _busy
         ? 'busy'
         : typing
@@ -384,6 +392,27 @@ class CheckinController extends ChangeNotifier {
     await cancelTalk();
     await _stopSpeech();
     if (!_paused) _listenAgain(); // back in sight meanwhile
+  }
+
+  /// "Turn off mic": words already heard go as the answer right away (as at the end-of-turn
+  /// silence); with none, the microphone just closes. It then stays off until [turnMicOn].
+  Future<void> turnMicOff() async {
+    if (_micOff || _disposed) return;
+    _set(() => _micOff = true);
+    _hf('mic_off');
+    _startRetry?.cancel();
+    _startRetry = null;
+    if (phase != CheckinPhase.listening && _starting == null) return;
+    if (caption.trim().isNotEmpty) return stopTalk();
+    await cancelTalk();
+  }
+
+  /// "Turn on mic": hands-free listens again by itself.
+  void turnMicOn() {
+    if (!_micOff) return;
+    _set(() => _micOff = false);
+    _hf('mic_on');
+    _listenAgain();
   }
 
   /// The screen is in sight again: hands-free listens again by itself.

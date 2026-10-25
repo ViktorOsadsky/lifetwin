@@ -23,9 +23,6 @@ import 'widgets/widgets.dart';
 /// (I-3) when there is nothing to say yet.
 ///
 /// With `featured` null (a server that does not send it) there is no hero and the list is set I.
-///
-/// The person's age is the caller's business: under 18 this screen is never built (it would
-/// never call the server), and no entry point to it exists.
 class IdeasListScreen extends StatefulWidget {
   const IdeasListScreen({
     super.key,

@@ -1,0 +1,1408 @@
+{
+  "onboarding": {
+    "NOT_SURE": "Not sure",
+    "HEALTH_STEP": "apple_health",
+    "HEALTH_FIELDS": [
+      "height_cm",
+      "weight_kg",
+      "sleep_hours",
+      "exercise_minutes_weekly"
+    ],
+    "HEALTH_OFFER": "Shall I fill in your height, weight, sleep and activity from Apple Health?",
+    "HEALTH_OFFER_REPLIES": [
+      "Yes, use Apple Health",
+      "No thanks"
+    ],
+    "HEALTH_OPEN": "Lovely. Check each reading in Apple Health, then come back to me.",
+    "HEALTH_DECLINED": [
+      "No problem, I'll just ask you.",
+      "That's fine, we'll do it together."
+    ],
+    "ORDER": [
+      "age",
+      "sex",
+      "smoking_status",
+      "apple_health",
+      "height_cm",
+      "weight_kg",
+      "sleep_hours",
+      "general_health",
+      "hypertension_diagnosed",
+      "diabetes",
+      "sedentary_min_day",
+      "moderate_recreation_min_week",
+      "vigorous_recreation_min_week"
+    ],
+    "ASKED": [
+      "age",
+      "sex",
+      "smoking_status",
+      "height_cm",
+      "weight_kg",
+      "sleep_hours",
+      "general_health",
+      "hypertension_diagnosed",
+      "diabetes",
+      "sedentary_min_day",
+      "moderate_recreation_min_week",
+      "vigorous_recreation_min_week"
+    ],
+    "GREETING": "Hi, I'm Mochi! You can talk or type, skip anything, or say \"I don't know\". ",
+    "MEMORY_ASK": "Can I remember the little things you tell me, like your walks? It helps me make better suggestions. You can change this any time.",
+    "MEMORY_REPLIES": [
+      "Yes, remember",
+      "No thanks"
+    ],
+    "MEMORY_YES": "Thank you!",
+    "MEMORY_NO": "That's fine, just your answers then.",
+    "MEMORY_WHY": "If you tell me you walk your dog in the mornings, I can suggest something that fits your day. It stays on your phone, and you can change your mind any time. ",
+    "SUPPLEMENT_REPLY": "That's a good one to ask your pharmacist or doctor. Bring your bottles to your next visit so they can check them with your other medicines.",
+    "ACKS": [
+      "Got it.",
+      "Thank you.",
+      "Lovely.",
+      "Okay.",
+      "Thanks."
+    ],
+    "UNKNOWN_ACKS": [
+      "That's okay, we'll leave it out.",
+      "No problem, I'll leave that blank.",
+      "That's fine, we'll skip it."
+    ],
+    "UNKNOWN_FIRST": " Your twin will say it's still learning.",
+    "SMALL_TALK": [
+      "That sounds nice.",
+      "How lovely.",
+      "I'm glad you told me."
+    ],
+    "STEER_BACK": [
+      "Now, ",
+      "So, ",
+      "Back to you: "
+    ],
+    "HOW_ARE_YOU": "I'm doing well, thank you for asking!",
+    "PROBE_SKIPPED": [
+      "Of course.",
+      "That's fine."
+    ],
+    "PROBE_THANKS": [
+      "Thank you, that helps.",
+      "Thanks for telling me."
+    ],
+    "PROBE_OPTIONAL": " Or we can move on.",
+    "ESTIMATE_NOTE": " That's a rough estimate from what you said.",
+    "BP_READING": "Thanks, {reading}. A single reading isn't the same as a diagnosis, so I'll just ask: ",
+    "SITTING_SHARES": [
+      [
+        "\\b(?:on my feet|up and about|on the go|moving around|up and down|not much|hardly|rarely|very little)\\b",
+        0.25,
+        "on your feet most of the day"
+      ],
+      [
+        "\\b(?:half|in between|in the middle|bit of both|50 50|some of the day)\\b",
+        0.5,
+        "about half"
+      ],
+      [
+        "\\b(?:most|mostly|all day|nearly all|almost all|the whole day|a lot|lots|sitting)\\b",
+        0.625,
+        "most of the day sitting"
+      ]
+    ],
+    "HEALTH_WORDS": [
+      [
+        "\\b(?:not so good|not too good|not very good|not great|not good|so so|so-so)\\b",
+        "fair",
+        "not so good"
+      ],
+      [
+        "\\b(?:poorly|poor|bad|awful|terrible|unwell|rough|lousy)\\b",
+        "poor",
+        "poorly"
+      ],
+      [
+        "\\b(?:pretty good|quite good|very good|really good|good mostly)\\b",
+        "very_good",
+        "pretty good"
+      ],
+      [
+        "\\b(?:great|wonderful|fantastic|excellent|brilliant|marvellous|marvelous)\\b",
+        "excellent",
+        "great"
+      ],
+      [
+        "\\b(?:okay|ok|alright|all right|fine|not bad|average|good)\\b",
+        "good",
+        "okay"
+      ]
+    ],
+    "STEERS": [
+      [
+        "\\b(?:walk\\w*|stroll\\w*|garden\\w*|golf\\w*|danc\\w*|swim\\w*|yoga|tai chi|bik\\w*|cycl\\w*|hik\\w*|tennis|gym|pickleball|bowling)\\b",
+        "moderate_recreation_min_week"
+      ],
+      [
+        "\\b(?:sleep\\w*|slept|tired|exhausted|insomnia|nap\\w*|bedtime)\\b",
+        "sleep_hours"
+      ],
+      [
+        "\\b(?:tv|television|telly|sit|sitting|couch|recliner|computer)\\b",
+        "sedentary_min_day"
+      ],
+      [
+        "\\b(?:smok\\w*|cigar\\w*)\\b",
+        "smoking_status"
+      ],
+      [
+        "\\b(?:blood pressure|hypertension)\\b",
+        "hypertension_diagnosed"
+      ],
+      [
+        "\\b(?:diabet\\w*|blood sugar)\\b",
+        "diabetes"
+      ],
+      [
+        "\\b(?:knees?|hips?|arthritis|aches?|pains?|my health)\\b",
+        "general_health"
+      ]
+    ],
+    "STEER_LEADS": [
+      "You mentioned {said}.",
+      "You said {said}."
+    ],
+    "LATER": [
+      "Lovely, we'll come to that in a moment.",
+      "I'll come back to that."
+    ],
+    "FLIP": {
+      "i": "you",
+      "i'm": "you're",
+      "im": "you're",
+      "i've": "you've",
+      "i'd": "you'd",
+      "i'll": "you'll",
+      "me": "you",
+      "my": "your",
+      "mine": "yours",
+      "myself": "yourself",
+      "am": "are"
+    }
+  },
+  "questions": {
+    "age": {
+      "field": "age",
+      "label": "age",
+      "ask": [
+        "How old are you?",
+        "To start, how old are you?"
+      ],
+      "help": "I'm asking how many years old you are today. For example, say \"I'm 72\". You can also tell me the year you were born.",
+      "example": "\"I'm 72\"",
+      "quick_replies": [],
+      "proxy": null,
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": true
+    },
+    "sex": {
+      "field": "sex",
+      "label": "sex",
+      "ask": [
+        "What sex were you at birth: female or male?",
+        "Were you born female or male?"
+      ],
+      "help": "I'm asking whether you were born female or male, because health numbers differ between the two. Just say \"female\" or \"male\".",
+      "example": "\"female\"",
+      "quick_replies": [
+        "Female",
+        "Male"
+      ],
+      "proxy": null,
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": true
+    },
+    "smoking_status": {
+      "field": "smoking_status",
+      "label": "smoking",
+      "ask": [
+        "Do you smoke now, did you smoke before, or have you never smoked?",
+        "Do you smoke now, did you use to, or have you never smoked?"
+      ],
+      "help": "I'm asking about smoking cigarettes. Say \"never\" if you never smoked, \"I quit\" if you smoked in the past, or \"I smoke\" if you smoke now.",
+      "example": "\"I never smoked\"",
+      "quick_replies": [
+        "Never",
+        "I quit",
+        "I smoke now"
+      ],
+      "proxy": null,
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": true
+    },
+    "height_cm": {
+      "field": "height_cm",
+      "label": "height",
+      "ask": [
+        "How tall are you? For example, 5 feet 10 inches."
+      ],
+      "help": "I'm asking how tall you are, standing without shoes. For example, \"5 feet 10 inches\" or \"178 cm\". A close guess is fine.",
+      "example": "\"5 feet 10 inches\"",
+      "quick_replies": [
+        "Not sure"
+      ],
+      "proxy": null,
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": "5 feet 10 inches",
+      "onboarding": true
+    },
+    "weight_kg": {
+      "field": "weight_kg",
+      "label": "weight",
+      "ask": [
+        "How much do you weigh? For example, 160 pounds.",
+        "And about how much do you weigh? For example, 160 pounds."
+      ],
+      "help": "I'm asking how much you weigh. For example, \"160 pounds\" or \"72 kg\". A close guess is fine. I'll read it back to you.",
+      "example": "\"160 pounds\"",
+      "quick_replies": [
+        "Not sure"
+      ],
+      "proxy": null,
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": "160 pounds",
+      "onboarding": true
+    },
+    "sleep_hours": {
+      "field": "sleep_hours",
+      "label": "sleep",
+      "ask": [
+        "How many hours do you sleep on a usual night?",
+        "On a usual night, about how many hours do you sleep?"
+      ],
+      "help": "I'm asking how many hours you sleep on a usual night. For example, \"7 hours\", or \"from 11 at night to 6 in the morning\".",
+      "example": "\"7 hours\"",
+      "quick_replies": [
+        "6 hours",
+        "7 hours",
+        "8 hours",
+        "9 hours",
+        "Not sure"
+      ],
+      "proxy": "That's okay. What time do you usually go to bed, and when do you get up?",
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": true
+    },
+    "general_health": {
+      "field": "general_health",
+      "label": "health",
+      "ask": [
+        "How would you rate your health: excellent, very good, good, fair or poor?",
+        "Overall, is your health excellent, very good, good, fair or poor?"
+      ],
+      "help": "I'm asking how you'd rate your own health in general. There's no right answer. Just pick one: excellent, very good, good, fair or poor.",
+      "example": "\"good\"",
+      "quick_replies": [
+        "Excellent",
+        "Very good",
+        "Good",
+        "Fair",
+        "Poor",
+        "Not sure"
+      ],
+      "proxy": "That's fine. On most days, do you feel great, pretty good, okay, not so good, or poorly?",
+      "proxy_replies": [
+        "Great",
+        "Pretty good",
+        "Okay",
+        "Not so good",
+        "Poorly"
+      ],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": true
+    },
+    "hypertension_diagnosed": {
+      "field": "hypertension_diagnosed",
+      "label": "high blood pressure",
+      "ask": [
+        "Has a doctor ever told you that you have high blood pressure?",
+        "Has a doctor ever said you have high blood pressure?"
+      ],
+      "help": "I'm asking whether a doctor has ever told you that you have high blood pressure, also called hypertension. A single reading doesn't count. Say yes, no, or \"not sure\".",
+      "example": "\"yes\" or \"no\"",
+      "quick_replies": [
+        "Yes",
+        "No",
+        "Not sure"
+      ],
+      "proxy": null,
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": true
+    },
+    "diabetes": {
+      "field": "diabetes",
+      "label": "diabetes",
+      "ask": [
+        "Has a doctor ever told you that you have diabetes?",
+        "And has a doctor ever told you that you have diabetes?"
+      ],
+      "help": "I'm asking if a doctor has ever told you that you have diabetes, also called high blood sugar. Say \"yes\", \"no\", or \"I'm not sure\".",
+      "example": "\"I don't have diabetes\"",
+      "quick_replies": [
+        "Yes",
+        "No",
+        "Not sure"
+      ],
+      "proxy": null,
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": true
+    },
+    "sedentary_min_day": {
+      "field": "sedentary_min_day",
+      "label": "sitting time",
+      "ask": [
+        "About how many hours a day do you spend sitting? TV and driving count.",
+        "On a usual day, how many hours do you sit? TV and driving count."
+      ],
+      "help": "I'm asking how long you sit on a usual day while you're awake: at the table, in a chair, in the car. A rough guess is fine, like \"6 hours\".",
+      "example": "\"6 hours\"",
+      "quick_replies": [
+        "2 hours",
+        "4 hours",
+        "6 hours",
+        "8 hours",
+        "10 hours",
+        "Not sure"
+      ],
+      "proxy": "That's okay. Do you sit most of the day, about half, or are you on your feet most of the day?",
+      "proxy_replies": [
+        "Mostly sitting",
+        "About half",
+        "On my feet most of the day"
+      ],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": true
+    },
+    "moderate_recreation_min_week": {
+      "field": "moderate_recreation_min_week",
+      "label": "lighter activity",
+      "ask": [
+        "In a usual week, how many minutes of lighter activity do you do, like brisk walking or gardening?",
+        "How many minutes a week of lighter activity, like brisk walking or gardening?"
+      ],
+      "help": "I'm asking about activity that gets you a little out of breath, like a brisk walk, gardening or dancing. Add up a usual week. A 30-minute walk, 5 days a week, is 150 minutes. If you don't do any, say \"none\".",
+      "example": "\"150 minutes a week\"",
+      "quick_replies": [
+        "None",
+        "30 minutes a week",
+        "1 hour a week",
+        "2 hours a week",
+        "5 hours a week",
+        "Not sure"
+      ],
+      "proxy": "That's okay. Do you walk, garden or dance at all?",
+      "proxy_replies": [
+        "Yes",
+        "No"
+      ],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": true
+    },
+    "vigorous_recreation_min_week": {
+      "field": "vigorous_recreation_min_week",
+      "label": "harder exercise",
+      "ask": [
+        "And harder exercise that makes you breathe hard, like jogging or tennis? How many minutes a week?",
+        "Any harder exercise, like jogging or tennis? How many minutes a week?"
+      ],
+      "help": "I'm asking about exercise that makes you breathe hard and talk only in short bursts, like jogging, fast cycling or singles tennis. \"None\" is a fine answer.",
+      "example": "\"none\"",
+      "quick_replies": [
+        "None",
+        "30 minutes a week",
+        "1 hour a week",
+        "2 hours a week",
+        "Not sure"
+      ],
+      "proxy": "That's okay. Do you ever do anything that leaves you out of breath?",
+      "proxy_replies": [
+        "Yes",
+        "No"
+      ],
+      "with_health": "Apple Health shows about {total} of activity a week. How much of it makes you breathe hard, like jogging?",
+      "example_value": null,
+      "onboarding": true
+    },
+    "exercise_minutes_weekly": {
+      "field": "exercise_minutes_weekly",
+      "label": "exercise",
+      "ask": [
+        "About how many minutes do you exercise in a week? A 30-minute walk, 5 days a week, is 150 minutes."
+      ],
+      "help": "I'm asking how many minutes you move on purpose in a whole week, like walking, swimming or gardening. For example, a 30-minute walk 5 days a week is \"150 minutes\". If you don't exercise, say \"none\".",
+      "example": "\"150 minutes a week\"",
+      "quick_replies": [],
+      "proxy": null,
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": "150 minutes",
+      "onboarding": false
+    },
+    "alcohol_drinks_weekly": {
+      "field": "alcohol_drinks_weekly",
+      "label": "alcohol",
+      "ask": [
+        "How many alcoholic drinks do you have in a week? Say none if you don't drink."
+      ],
+      "help": "I'm asking how many drinks of beer, wine or liquor you have in a usual week. One beer or one glass of wine is one drink. For example, \"3 drinks\", or \"none\".",
+      "example": "\"3 drinks a week\"",
+      "quick_replies": [],
+      "proxy": null,
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": false
+    },
+    "systolic_bp": {
+      "field": "systolic_bp",
+      "label": "top blood pressure number",
+      "ask": [
+        "What is your blood pressure? For example, 120 over 80."
+      ],
+      "help": "I'm asking for your blood pressure: the two numbers a blood pressure cuff shows, the bigger one first. For example, \"120 over 80\". If you don't know it, say \"I don't know\".",
+      "example": "\"120 over 80\"",
+      "quick_replies": [],
+      "proxy": null,
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": false
+    },
+    "diastolic_bp": {
+      "field": "diastolic_bp",
+      "label": "bottom blood pressure number",
+      "ask": [
+        "What is the bottom number of your blood pressure? For example, the 80 in 120 over 80."
+      ],
+      "help": "I'm asking for the bottom, smaller number of your blood pressure. For example, the 80 in \"120 over 80\". If you don't know it, say \"I don't know\".",
+      "example": "\"80\"",
+      "quick_replies": [],
+      "proxy": null,
+      "proxy_replies": [],
+      "with_health": null,
+      "example_value": null,
+      "onboarding": false
+    }
+  },
+  "checkin": {
+    "DAILY": [
+      "sleep_hours_last_night",
+      "exercise_minutes_today",
+      "wellbeing"
+    ],
+    "DAILY_WITH_HABIT": [
+      "sleep_hours_last_night",
+      "exercise_minutes_today",
+      "alcohol_drinks_yesterday",
+      "wellbeing"
+    ],
+    "WEEKLY": [
+      "sleep_hours",
+      "vigorous_recreation_min_week",
+      "moderate_recreation_min_week",
+      "sedentary_min_day",
+      "alcohol_drinks_weekly",
+      "smoking_status",
+      "weight_kg",
+      "systolic_bp",
+      "wellbeing"
+    ],
+    "QUICK_TOPICS": {
+      "sleep": [
+        "sleep_hours_last_night"
+      ],
+      "activity": [
+        "vigorous_recreation_min",
+        "moderate_recreation_min"
+      ],
+      "sitting": [
+        "sedentary_min_day"
+      ],
+      "feeling": [
+        "wellbeing"
+      ]
+    },
+    "CATCH_UP": [
+      "sleep_hours_night_before"
+    ],
+    "QUICK_MAX_TOPICS": 3,
+    "SCRIPTS": {
+      "daily": [
+        [
+          "sleep_hours_last_night",
+          "exercise_minutes_today",
+          "wellbeing"
+        ],
+        [
+          "sleep_hours_last_night",
+          "exercise_minutes_today",
+          "alcohol_drinks_yesterday",
+          "wellbeing"
+        ]
+      ],
+      "weekly": [
+        [
+          "sleep_hours",
+          "vigorous_recreation_min_week",
+          "moderate_recreation_min_week",
+          "sedentary_min_day",
+          "alcohol_drinks_weekly",
+          "smoking_status",
+          "weight_kg",
+          "systolic_bp",
+          "wellbeing"
+        ]
+      ],
+      "quick": [
+        [
+          "sleep_hours_last_night"
+        ],
+        [
+          "sleep_hours_last_night",
+          "sleep_hours_night_before"
+        ],
+        [
+          "vigorous_recreation_min",
+          "moderate_recreation_min"
+        ],
+        [
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sleep_hours_night_before"
+        ],
+        [
+          "sedentary_min_day"
+        ],
+        [
+          "sedentary_min_day",
+          "sleep_hours_night_before"
+        ],
+        [
+          "wellbeing"
+        ],
+        [
+          "wellbeing",
+          "sleep_hours_night_before"
+        ],
+        [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min"
+        ],
+        [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sleep_hours_night_before"
+        ],
+        [
+          "sleep_hours_last_night",
+          "sedentary_min_day"
+        ],
+        [
+          "sleep_hours_last_night",
+          "sedentary_min_day",
+          "sleep_hours_night_before"
+        ],
+        [
+          "sleep_hours_last_night",
+          "wellbeing"
+        ],
+        [
+          "sleep_hours_last_night",
+          "wellbeing",
+          "sleep_hours_night_before"
+        ],
+        [
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day"
+        ],
+        [
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day",
+          "sleep_hours_night_before"
+        ],
+        [
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "wellbeing"
+        ],
+        [
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "wellbeing",
+          "sleep_hours_night_before"
+        ],
+        [
+          "sedentary_min_day",
+          "wellbeing"
+        ],
+        [
+          "sedentary_min_day",
+          "wellbeing",
+          "sleep_hours_night_before"
+        ],
+        [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day"
+        ],
+        [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day",
+          "sleep_hours_night_before"
+        ],
+        [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "wellbeing"
+        ],
+        [
+          "sleep_hours_last_night",
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "wellbeing",
+          "sleep_hours_night_before"
+        ],
+        [
+          "sleep_hours_last_night",
+          "sedentary_min_day",
+          "wellbeing"
+        ],
+        [
+          "sleep_hours_last_night",
+          "sedentary_min_day",
+          "wellbeing",
+          "sleep_hours_night_before"
+        ],
+        [
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day",
+          "wellbeing"
+        ],
+        [
+          "vigorous_recreation_min",
+          "moderate_recreation_min",
+          "sedentary_min_day",
+          "wellbeing",
+          "sleep_hours_night_before"
+        ],
+        [
+          "sleep_hours_night_before"
+        ]
+      ]
+    },
+    "PAIRS": {
+      "systolic_bp": "diastolic_bp",
+      "vigorous_recreation_min": "moderate_recreation_min",
+      "vigorous_recreation_min_week": "moderate_recreation_min_week"
+    },
+    "PACES": {
+      "vigorous_recreation_min": "vigorous",
+      "moderate_recreation_min": "moderate",
+      "vigorous_recreation_min_week": "vigorous",
+      "moderate_recreation_min_week": "moderate"
+    },
+    "GREETINGS": {
+      "daily": "Hi, it's Mochi! Time for our little daily check-in. It's just a few quick questions, and you can skip any of them.",
+      "weekly": "Hi, it's Mochi! It's time for our weekly check-in. It takes a few minutes, and you can skip any question.",
+      "quick": "Hi, it's Mochi! Just a quick check-in, under a minute. You can skip anything."
+    },
+    "SITTING_PROXIES": [
+      "About how many hours did you spend sitting {day}? Count reading, TV, meals and time in the car.",
+      "Thinking of {day}, about how many hours were you sitting down, like watching TV, reading or at the table?",
+      "Roughly how many hours did you sit {day}, all together? Things like TV, puzzles, meals or driving all count."
+    ],
+    "QUESTIONS": {
+      "daily": {
+        "sleep_hours_last_night": {
+          "ask": "How many hours did you sleep last night?",
+          "again": "Last time you slept {value}. How many hours did you sleep last night?",
+          "again_none": "Last time you hardly slept at all. How many hours did you sleep last night?"
+        },
+        "exercise_minutes_today": {
+          "ask": "Did you move or exercise today, like a walk or a bike ride? About how many minutes?",
+          "again": "Last time you moved for {value}. How about today? About how many minutes did you move or exercise?",
+          "again_none": "Last time you didn't get to exercise. How about today? Did you move or exercise, and for about how many minutes?"
+        },
+        "alcohol_drinks_yesterday": {
+          "ask": "How many alcoholic drinks did you have yesterday? Say none if you had none.",
+          "again": "Last time you had {value}. How many alcoholic drinks did you have yesterday?",
+          "again_none": "Last time you had no alcoholic drinks. How many did you have yesterday? Say none if you had none."
+        },
+        "wellbeing": {
+          "ask": "And how are you feeling today: good, okay, or not great?",
+          "again": "Last time you were feeling {value}. How are you feeling today: good, okay, or not great?"
+        }
+      },
+      "weekly": {
+        "sleep_hours": {
+          "ask": "Let's start with sleep. On a usual night this week, how many hours did you sleep?",
+          "again": "Last week you said about {value} of sleep a night. How has sleep been this week? About how many hours on a usual night?",
+          "again_none": "Last week you said you hardly slept at all. How has sleep been this week? About how many hours on a usual night?"
+        },
+        "vigorous_recreation_min_week": {
+          "ask": "Now activity this week. Did anything get you out of breath, like brisk walking uphill? And easier things, like gentle walks? About how many minutes of each?",
+          "again": "Last week you did {value}. How about this week? About how many minutes of each?",
+          "follow": "And did anything this week get you out of breath, like brisk walking uphill? About how many minutes, all together?"
+        },
+        "moderate_recreation_min_week": {
+          "ask": "And easier activity this week, like gentle walks or housework? About how many minutes, all together?",
+          "follow": "And easier activity this week, like gentle walks or housework? About how many minutes, all together?"
+        },
+        "sedentary_min_day": {
+          "ask": "On a usual day this week, about how many hours did you spend sitting? Count reading, TV, meals and time in the car.",
+          "again": "Last week you sat for about {value} on a usual day. How about this week? About how many hours a day?"
+        },
+        "alcohol_drinks_weekly": {
+          "ask": "How many alcoholic drinks did you have this week? Say none if you had none.",
+          "again": "Last week you had about {value}. How many alcoholic drinks did you have this week?",
+          "again_none": "Last week you had no alcoholic drinks. How about this week? Say none if you had none."
+        },
+        "smoking_status": {
+          "ask": "Do you smoke at all these days?",
+          "again_current": "Last week you told me you smoke. Do you still smoke these days?",
+          "again_former": "Last week you told me you used to smoke. Do you smoke at all these days?"
+        },
+        "weight_kg": {
+          "ask": "What do you weigh these days? For example, 160 pounds.",
+          "again": "Last week you weighed about {value}. What do you weigh now?"
+        },
+        "systolic_bp": {
+          "ask": "Have you had your blood pressure checked lately? If you know the numbers, tell me, like 120 over 80. If not, just say no.",
+          "again": "Last time your blood pressure was {value}. Do you have a newer reading? If not, just say no."
+        },
+        "wellbeing": {
+          "ask": "Last one: how did this week go for you: good, okay, or not great?",
+          "again": "Last one. Last week you said your week was {value}. How did this week go: good, okay, or not great?"
+        }
+      },
+      "quick": {
+        "sleep_hours_last_night": {
+          "ask": "How did you sleep last night? About how many hours?",
+          "again": "Last time you slept {value}. How about last night? About how many hours?",
+          "again_none": "Last time you hardly slept at all. How about last night? About how many hours?",
+          "health": "Apple Health says you slept about {value} last night. Does that sound right?"
+        },
+        "vigorous_recreation_min": {
+          "ask": "Did you get out and about {day}? Tell me if anything got you out of breath, like brisk walking uphill, or if it was easy, like a gentle walk, and for about how long.",
+          "again": "Last time you did {value}. How about {day}? Did anything get you out of breath, like brisk walking uphill, or was it easy, like a gentle walk? And for about how long?",
+          "follow": "And did anything {day} get you out of breath, like brisk walking uphill? If so, for about how long?",
+          "health": "Apple Health shows about {value} of exercise {day}. Did any of it get you out of breath, or was it all at an easy pace?"
+        },
+        "moderate_recreation_min": {
+          "ask": "And anything easier {day}, like an easy walk or some housework? About how long?",
+          "follow": "And anything easier {day}, like an easy walk or some housework? About how long?"
+        },
+        "sedentary_min_day": {
+          "ask": "About how many hours did you spend sitting {day}? Count reading, TV, meals and time in the car.",
+          "again": "Last time you sat for about {value}. How about {day}? About how many hours, all together?"
+        },
+        "wellbeing": {
+          "ask": "And how are you feeling today: good, okay, or not great?",
+          "again": "Last time you were feeling {value}. How are you feeling today: good, okay, or not great?"
+        },
+        "sleep_hours_night_before": {
+          "ask": "One more, only if you like. Yesterday was a bit of a blank. How did you sleep the night before? If you can't remember, just say skip.",
+          "health": "One more, only if you like. Yesterday was a bit of a blank, but Apple Health says you slept about {value} the night before. Does that sound right?"
+        }
+      }
+    },
+    "HELP": {
+      "daily": {
+        "sleep_hours_last_night": "I'm asking how many hours you slept last night. For example, \"7 hours\", or \"from 11 to 6\". A close guess is fine.",
+        "exercise_minutes_today": "I'm asking how many minutes you moved on purpose today, like walking, swimming or cycling. For example, \"20 minutes\". If you didn't, just say no.",
+        "alcohol_drinks_yesterday": "I'm asking how many drinks of beer, wine or liquor you had yesterday. One beer or one glass of wine is one drink. If you had none, say none.",
+        "wellbeing": "I'm asking how you feel today, in a word. Just say good, okay, or not great."
+      },
+      "weekly": {
+        "sleep_hours": "I'm asking how many hours you slept on a usual night this week. For example, \"7 hours\". A close guess is fine.",
+        "vigorous_recreation_min_week": "I'm asking about activity that got you out of breath this week, like brisk walking uphill, and easier activity, like gentle walks. For example, \"an hour of hard walking and two hours of easy walks\". If you didn't, say none.",
+        "moderate_recreation_min_week": "I'm asking about easier activity this week, like gentle walks or housework, all together. For example, \"2 hours\". If you didn't, say none.",
+        "sedentary_min_day": "I'm asking how many hours you sat on a usual day this week, while awake: reading, TV, meals, driving. For example, \"about 6 hours\". A close guess is fine.",
+        "alcohol_drinks_weekly": "I'm asking how many drinks of beer, wine or liquor you had this week. One beer or one glass of wine is one drink. For example, \"3 drinks\", or \"none\".",
+        "smoking_status": "I'm asking whether you smoke cigarettes these days. Just say yes or no. If you quit, you can say \"I quit\".",
+        "weight_kg": "I'm asking what you weigh now. For example, \"160 pounds\". A close guess is fine.",
+        "systolic_bp": "I'm asking for a recent blood pressure reading, if you have one: the two numbers, bigger one first, like \"120 over 80\". If you haven't had it checked, just say no.",
+        "wellbeing": "I'm asking how this week went for you, in a word. Just say good, okay, or not great."
+      },
+      "quick": {
+        "sleep_hours_last_night": "I'm asking how many hours you slept last night. For example, \"7 hours\", or \"from 11 to 6\". A close guess is fine.",
+        "vigorous_recreation_min": "I'm asking what you did to move about, and whether any of it got you out of breath. For example, \"20 minutes up the hill, out of breath\", or \"an easy walk for half an hour\". If you didn't, just say no.",
+        "moderate_recreation_min": "I'm asking about easy activity, like a gentle walk or housework. For example, \"30 minutes\". If you didn't, just say no.",
+        "sedentary_min_day": "I'm asking how many hours you were sitting while awake: reading, TV, meals, driving. For example, \"about 6 hours\". A close guess is fine.",
+        "wellbeing": "I'm asking how you feel today, in a word. Just say good, okay, or not great.",
+        "sleep_hours_night_before": "I missed you yesterday, so I'm asking about the night before yesterday: about how many hours did you sleep? For example, \"7 hours\". If you can't remember, say skip."
+      }
+    },
+    "CLOSINGS": {
+      "daily": {
+        "default": "All saved. Nice work taking a minute for yourself today! See you tomorrow.",
+        "not_great": "Thank you for telling me. I hope tomorrow feels a little better. See you then."
+      },
+      "quick": {
+        "default": "All saved. Nice work taking a minute for yourself today!",
+        "not_great": "Thank you for telling me. I hope the rest of the day is gentle with you."
+      },
+      "weekly": {
+        "default": "That's everything for this week. Thank you, it's always nice to catch up! I'll check in again next week.",
+        "not_great": "Thank you for sharing your week with me. I hope next week is kinder to you. I'll check in again soon."
+      }
+    },
+    "DONE_AGAIN": "We're all done for now. Thank you!",
+    "SAME_LEAD": "Same as last time, then. ",
+    "NO_PREVIOUS": "I don't have your last answer to go by. ",
+    "WHY_NOTES": {
+      "quick": "A few words each day help your twin keep up with how you sleep, move and sit. Your check-ins stay on your phone. Nothing is saved until you say yes.",
+      "daily": "I ask so your twin can keep up with how you're doing. Your check-ins stay on your phone. Nothing is saved until you say yes.",
+      "weekly": "I ask so your twin can keep your forecast up to date. Your check-ins stay on your phone. Nothing is saved until you say yes."
+    },
+    "PRIVATE_NOTE": "Your check-ins stay on your phone. LifeTwin's server doesn't keep them. Nothing is saved until you say yes.",
+    "HOW_ARE_YOU": "I'm a happy bear, thank you for asking! ",
+    "AGE_FORMS": {
+      "older": {
+        "daily": {
+          "exercise_minutes_today": {
+            "ask": "Did you move or exercise today, like a walk or some gardening? About how many minutes?"
+          }
+        },
+        "weekly": {
+          "moderate_recreation_min_week": {
+            "ask": "And easier activity this week, like gentle walks, gardening or housework? About how many minutes, all together?",
+            "follow": "And easier activity this week, like gentle walks, gardening or housework? About how many minutes, all together?"
+          }
+        },
+        "quick": {
+          "moderate_recreation_min": {
+            "ask": "And anything easier {day}, like an easy walk or pottering about? About how long?",
+            "follow": "And anything easier {day}, like an easy walk or pottering about? About how long?"
+          }
+        }
+      },
+      "younger": {
+        "daily": {
+          "exercise_minutes_today": {
+            "ask": [
+              "Did you move or exercise today, like the gym, a run or cycling to work? About how many minutes?",
+              "Did you get some exercise today, like a workout, a game of football or a walk to work? About how many minutes?"
+            ]
+          }
+        },
+        "weekly": {
+          "vigorous_recreation_min_week": {
+            "ask": "Now activity this week. Did anything get you out of breath, like running, the gym or cycling hard? And easier things, like walking to work? About how many minutes of each?",
+            "follow": "And did anything this week get you out of breath, like running, the gym or cycling hard? About how many minutes, all together?"
+          },
+          "moderate_recreation_min_week": {
+            "ask": "And easier activity this week, like walking to work or an easy bike ride? About how many minutes, all together?",
+            "follow": "And easier activity this week, like walking to work or an easy bike ride? About how many minutes, all together?"
+          },
+          "sedentary_min_day": {
+            "ask": "On a usual day this week, about how many hours did you spend sitting? Count desk time, the commute, meals and screens."
+          }
+        },
+        "quick": {
+          "vigorous_recreation_min": {
+            "ask": [
+              "Did you get out and about {day}? Tell me if anything got you out of breath, like a run or a gym class, or if it was easy, like walking to work, and for about how long.",
+              "Did you get moving {day}? Tell me if anything got you out of breath, like a spin class or a game of football, or if it was easy, like an easy bike ride, and for about how long.",
+              "Did you get out and about {day}? Tell me if anything got you out of breath, like HIIT or cycling hard, or if it was easy, like a walk at lunch, and for about how long."
+            ],
+            "follow": "And did anything {day} get you out of breath, like a run, the gym or cycling hard? If so, for about how long?"
+          },
+          "moderate_recreation_min": {
+            "ask": "And anything easier {day}, like walking to work or an easy bike ride? About how long?",
+            "follow": "And anything easier {day}, like walking to work or an easy bike ride? About how long?"
+          },
+          "sedentary_min_day": {
+            "ask": [
+              "About how many hours did you spend sitting {day}? Count desk time, the commute, meals and screens.",
+              "Thinking of {day}, about how many hours were you sitting down, like at a desk, in meetings or gaming?",
+              "Roughly how many hours did you sit {day}, all together? Desk time, the commute and TV all count."
+            ]
+          }
+        }
+      }
+    },
+    "AGE_HELP": {
+      "older": {
+        "daily": {
+          "exercise_minutes_today": "I'm asking how many minutes you moved on purpose today, like walking, swimming or gardening. For example, \"20 minutes\". If you didn't, just say no."
+        },
+        "quick": {
+          "moderate_recreation_min": "I'm asking about easy activity, like a gentle walk, gardening or housework. For example, \"30 minutes\". If you didn't, just say no."
+        }
+      },
+      "younger": {
+        "daily": {
+          "exercise_minutes_today": "I'm asking how many minutes you moved on purpose today, like the gym, a run or cycling to work. For example, \"45 minutes\". If you didn't, just say no."
+        },
+        "quick": {
+          "vigorous_recreation_min": "I'm asking what you did to move about, and whether any of it got you out of breath. For example, \"45 minutes at the gym\", or \"an easy walk to work, 20 minutes\". If you didn't, just say no.",
+          "moderate_recreation_min": "I'm asking about easy activity, like walking to work or an easy bike ride. For example, \"30 minutes\". If you didn't, just say no.",
+          "sedentary_min_day": "I'm asking how many hours you were sitting while awake: desk time, the commute, meals, screens. For example, \"about 8 hours\". A close guess is fine."
+        }
+      }
+    }
+  },
+  "change": {
+    "LB_PER_KG": 0.45359237,
+    "GREETING": "Hi, it's Mochi! What would you like to update?",
+    "WHAT_CHANGED": "What's changed?",
+    "CHOOSE_AGAIN": "Sorry, I didn't catch that. You can update your weight, height, sleep, exercise, drinks, smoking, blood pressure, diabetes or age. What would you like to update?",
+    "ONE_AT_A_TIME": "Let's do one at a time. Which would you like to update first: {}?",
+    "ALSO": "You also mentioned your {}. Would you like to update that too?",
+    "RESTART": "Okay, let's start again. Nothing has changed. What would you like to update?",
+    "DELETE_NOTE": "To remove all your answers, use \"Delete my data\" in Settings.",
+    "CHANGE_THANKS": "Thanks for telling me. ",
+    "PROBE": "Thank you. Before I read it back: did something change, like a new routine?",
+    "NOTED": "Thank you, I'll remember that. ",
+    "NOT_NOTED": "Okay. ",
+    "SAVED": "Got it. I've updated your {}.",
+    "SAVED_NAMES": {
+      "smoking_status": "smoking answer",
+      "alcohol_drinks_weekly": "drinks answer",
+      "diabetes": "diabetes answer",
+      "exercise_minutes_weekly": "exercise answer",
+      "sleep_hours": "sleep answer",
+      "vigorous_recreation_min_week": "harder activity answer",
+      "moderate_recreation_min_week": "lighter activity answer",
+      "sedentary_min_day": "sitting answer",
+      "hypertension_diagnosed": "high blood pressure answer",
+      "general_health": "health rating"
+    },
+    "SAME": "That's the same as what I have, so nothing needs to change.",
+    "KEPT": "Okay, I'll leave it as it is. Nothing has changed.",
+    "NOTHING_CHANGED": "Okay, nothing has changed.",
+    "DONE_AGAIN": "We're all done. If something else changes, just tap Update.",
+    "CANCELLED": "Okay, we'll leave it there. Nothing has changed.",
+    "OTHERS": "I can only change your own answers, not anyone else's.",
+    "SEX_FIXED": "Sex at birth can't be changed here. Your twin's forecast is built on it, so it stays as you first told me. If it was saved by mistake, \"Delete my data\" in Settings lets you start fresh.",
+    "ANYTHING_ELSE": "Is there anything else you'd like to update?",
+    "AGE_RULE": "Your age only changes on your birthday, so I can't change it from {old} to {new}. If you've had a birthday, just tell me, and I'll make it {next}.",
+    "BIRTHDAY": "Happy birthday! ",
+    "DOCTOR_QUESTION": "Did a doctor tell you that you have diabetes?",
+    "DIABETES_NO_DOCTOR": "Okay. I only add diabetes when a doctor has told you, so I'll leave it as it is. If you're worried, your doctor can check. Nothing has changed.",
+    "DIABETES_STAYS": "This answer is about whether a doctor has ever told you that you have diabetes, so it stays the same even when it's well managed. Nothing has changed.",
+    "BP_NO_READING": "That's okay. When you have a new reading, we can update it. Nothing has changed.",
+    "BP_TALK": "Thanks for telling me. I keep your blood pressure as its two numbers. ",
+    "BOTH_BP": "Please tell me both blood pressure numbers, for example \"135 over 85\".",
+    "WHY_NOTE": "I check every change with you, so your twin uses what's true for you now. Your answers stay on your phone, and LifeTwin's server doesn't keep them. Nothing changes until you say yes.",
+    "PRIVATE_NOTE": "Your answers stay on your phone. LifeTwin's server uses them for your forecast but doesn't keep them. Nothing changes until you say yes.",
+    "MEMORY_NOTE": "I'll only remember why it changed because you said that's okay.",
+    "HELP_CHOOSING": "Tell me what's different, like \"I lost some weight\" or \"I quit smoking\". I'll read it back to you before anything changes.",
+    "HELP_PROBING": "I'd like to know what's behind the change, like a new routine or a doctor's advice. If you'd rather not say, just say \"skip\".",
+    "HELP_CONFIRMING": "I'm checking that I heard you right before I change anything. {} If that's right, say \"yes\". If not, say \"no\" and then the right answer.",
+    "NEVER_MIND": " If nothing has changed, just say \"never mind\".",
+    "LABELS": {
+      "age": "age",
+      "sex": "sex at birth",
+      "height_cm": "height",
+      "weight_kg": "weight",
+      "sleep_hours": "sleep",
+      "exercise_minutes_weekly": "exercise",
+      "smoking_status": "smoking",
+      "alcohol_drinks_weekly": "drinks",
+      "diabetes": "diabetes",
+      "systolic_bp": "blood pressure",
+      "vigorous_recreation_min_week": "harder activity",
+      "moderate_recreation_min_week": "lighter activity",
+      "sedentary_min_day": "sitting time",
+      "hypertension_diagnosed": "high blood pressure answer",
+      "general_health": "health rating"
+    },
+    "NEW_VALUE": {
+      "age": "How old are you now?",
+      "sex": "What sex were you at birth: female or male?",
+      "height_cm": "How tall are you now? For example, 5 feet 6 inches.",
+      "weight_kg": "What do you weigh now?",
+      "sleep_hours": "About how many hours do you sleep on a usual night now?",
+      "exercise_minutes_weekly": "About how many minutes do you exercise in a usual week now? A 30-minute walk, 5 days a week, is 150 minutes.",
+      "smoking_status": "Do you smoke now, did you smoke before, or have you never smoked?",
+      "alcohol_drinks_weekly": "How many alcoholic drinks do you have in a usual week now? Say none if you don't drink.",
+      "diabetes": "Has a doctor told you that you have diabetes?",
+      "systolic_bp": "What was your latest blood pressure reading? For example, 135 over 85.",
+      "vigorous_recreation_min_week": "In a usual week now, about how many minutes of activity make you breathe hard, like brisk walking uphill or jogging? Say none if there isn't any.",
+      "moderate_recreation_min_week": "In a usual week now, about how many minutes of lighter activity do you do, like an easy walk or gardening?",
+      "sedentary_min_day": "On a usual day now, about how many hours do you sit? TV and driving count.",
+      "hypertension_diagnosed": "Has a doctor told you that you have high blood pressure?",
+      "general_health": "How would you rate your health now: excellent, very good, good, fair or poor?"
+    },
+    "HELP": {
+      "age": "Your age goes up by one on your birthday. If you've had one, just tell me.",
+      "sex": "I'm asking whether you were born female or male. Just say \"female\" or \"male\".",
+      "height_cm": "Tell me how tall you are now, standing without shoes, like \"5 feet 6 inches\".",
+      "weight_kg": "Tell me what you weigh now, like \"155 pounds\". A close guess is fine.",
+      "sleep_hours": "Tell me how many hours you sleep on a usual night now, like \"7 hours\".",
+      "exercise_minutes_weekly": "Tell me how many minutes you move on purpose in a usual week now, like walking or gardening. For example, \"30 minutes, 5 days a week\".",
+      "smoking_status": "Tell me if you smoke now, like \"I quit\" or \"I started again\".",
+      "alcohol_drinks_weekly": "Tell me how many beers, glasses of wine or other drinks you have in a usual week, like \"2 drinks a week\", or \"none\".",
+      "diabetes": "I'm asking if a doctor has told you that you have diabetes. Say yes or no.",
+      "systolic_bp": "Tell me both numbers from your latest blood pressure reading, like \"135 over 85\".",
+      "vigorous_recreation_min_week": "Tell me how many minutes a week you do something that makes you breathe hard, like \"30 minutes of brisk walking uphill\", or \"none\".",
+      "moderate_recreation_min_week": "Tell me how many minutes a week of easier activity you do, like \"an hour of gardening\".",
+      "sedentary_min_day": "Tell me about how many hours you sit on a usual day, like \"6 hours\".",
+      "hypertension_diagnosed": "I'm asking if a doctor has told you that you have high blood pressure. Say yes or no.",
+      "general_health": "Just pick one: \"excellent\", \"very good\", \"good\", \"fair\" or \"poor\"."
+    },
+    "HEALTH_WORDS": {
+      "excellent": "excellent",
+      "very_good": "very good",
+      "good": "good",
+      "fair": "fair",
+      "poor": "poor"
+    },
+    "WEEKLY_ACTIVITY": {
+      "vigorous_recreation_min_week": "of activity that makes you breathe hard",
+      "moderate_recreation_min_week": "of lighter activity"
+    },
+    "SMOKING_NOW": {
+      "current": "you smoke now",
+      "former": "you don't smoke now, but you used to",
+      "never": "you have never smoked",
+      "unknown": "you're not sure about smoking"
+    },
+    "SMOKING_HAD": {
+      "current": "that you smoke",
+      "former": "that you used to smoke but don't now",
+      "never": "that you've never smoked",
+      "unknown": "that you're not sure about smoking"
+    },
+    "SMOKING_TOLD": {
+      "current": "you smoke",
+      "former": "you used to smoke",
+      "never": "you had never smoked",
+      "unknown": "you weren't sure about smoking"
+    },
+    "SMOKING_SO": {
+      "current": "you smoke now",
+      "former": "you used to smoke, but you don't now",
+      "never": "you have never smoked at all",
+      "unknown": "you're not sure about smoking"
+    }
+  },
+  "profile": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "diabetes": null,
+    "systolic_bp": null,
+    "diastolic_bp": null,
+    "general_health": null,
+    "hypertension_diagnosed": null,
+    "sedentary_min_day": null,
+    "moderate_recreation_min_week": null,
+    "vigorous_recreation_min_week": null
+  },
+  "values": {
+    "sleep_hours_last_night": null,
+    "exercise_minutes_today": null,
+    "alcohol_drinks_yesterday": null,
+    "sleep_hours_night_before": null,
+    "vigorous_recreation_min": null,
+    "moderate_recreation_min": null,
+    "sedentary_min_day": null,
+    "vigorous_recreation_min_week": null,
+    "moderate_recreation_min_week": null,
+    "wellbeing": null,
+    "sleep_hours": null,
+    "exercise_minutes_weekly": null,
+    "smoking_status": null,
+    "alcohol_drinks_weekly": null,
+    "weight_kg": null,
+    "systolic_bp": null,
+    "diastolic_bp": null
+  },
+  "onboardingState": {
+    "phase": "idle",
+    "confirmed_profile": {
+      "age": null,
+      "sex": null,
+      "height_cm": null,
+      "weight_kg": null,
+      "sleep_hours": null,
+      "exercise_minutes_weekly": null,
+      "smoking_status": null,
+      "alcohol_drinks_weekly": null,
+      "diabetes": null,
+      "systolic_bp": null,
+      "diastolic_bp": null,
+      "general_health": null,
+      "hypertension_diagnosed": null,
+      "sedentary_min_day": null,
+      "moderate_recreation_min_week": null,
+      "vigorous_recreation_min_week": null
+    },
+    "pending_profile": {
+      "age": null,
+      "sex": null,
+      "height_cm": null,
+      "weight_kg": null,
+      "sleep_hours": null,
+      "exercise_minutes_weekly": null,
+      "smoking_status": null,
+      "alcohol_drinks_weekly": null,
+      "diabetes": null,
+      "systolic_bp": null,
+      "diastolic_bp": null,
+      "general_health": null,
+      "hypertension_diagnosed": null,
+      "sedentary_min_day": null,
+      "moderate_recreation_min_week": null,
+      "vigorous_recreation_min_week": null
+    },
+    "current_field": null,
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "estimated_fields": [],
+    "proxy_field": null,
+    "proxies_asked": [],
+    "pending_estimate": null,
+    "steer_field": null,
+    "steer_lead": null,
+    "health_offered": false,
+    "health_reasked": false,
+    "current_probe": null,
+    "probes_asked": [],
+    "habit_notes": [],
+    "memory_consent": null,
+    "seed": 0,
+    "small_talk": false,
+    "ask_only": null,
+    "missing_offered": false
+  },
+  "changeState": {
+    "phase": "choosing",
+    "field": null,
+    "pending": {
+      "age": null,
+      "sex": null,
+      "height_cm": null,
+      "weight_kg": null,
+      "sleep_hours": null,
+      "exercise_minutes_weekly": null,
+      "smoking_status": null,
+      "alcohol_drinks_weekly": null,
+      "diabetes": null,
+      "systolic_bp": null,
+      "diastolic_bp": null,
+      "general_health": null,
+      "hypertension_diagnosed": null,
+      "sedentary_min_day": null,
+      "moderate_recreation_min_week": null,
+      "vigorous_recreation_min_week": null
+    },
+    "saved": {
+      "age": null,
+      "sex": null,
+      "height_cm": null,
+      "weight_kg": null,
+      "sleep_hours": null,
+      "exercise_minutes_weekly": null,
+      "smoking_status": null,
+      "alcohol_drinks_weekly": null,
+      "diabetes": null,
+      "systolic_bp": null,
+      "diastolic_bp": null,
+      "general_health": null,
+      "hypertension_diagnosed": null,
+      "sedentary_min_day": null,
+      "moderate_recreation_min_week": null,
+      "vigorous_recreation_min_week": null
+    },
+    "options": [],
+    "probed": false,
+    "metric": false,
+    "doctor_said": false,
+    "note": null
+  },
+  "habitNote": {
+    "topic": "exercise",
+    "kind": null,
+    "with": null,
+    "time_of_day": null,
+    "frequency": null,
+    "barrier": null,
+    "bedtime": null,
+    "wake_time": null,
+    "wakes_for": null,
+    "naps": null,
+    "smoked_years": null,
+    "tried_quitting": null,
+    "quit_aid": null,
+    "quit_ago": null,
+    "feeling": null,
+    "concern": null,
+    "reading": null,
+    "estimate_for": null,
+    "estimate": null,
+    "source": "said"
+  },
+  "checkinState": {
+    "kind": "daily",
+    "phase": "asking",
+    "questions": [
+      "sleep_hours_last_night",
+      "exercise_minutes_today",
+      "wellbeing"
+    ],
+    "current_field": "sleep_hours_last_night",
+    "previous": {
+      "sleep_hours_last_night": null,
+      "exercise_minutes_today": null,
+      "alcohol_drinks_yesterday": null,
+      "sleep_hours_night_before": null,
+      "vigorous_recreation_min": null,
+      "moderate_recreation_min": null,
+      "sedentary_min_day": null,
+      "vigorous_recreation_min_week": null,
+      "moderate_recreation_min_week": null,
+      "wellbeing": null,
+      "sleep_hours": null,
+      "exercise_minutes_weekly": null,
+      "smoking_status": null,
+      "alcohol_drinks_weekly": null,
+      "weight_kg": null,
+      "systolic_bp": null,
+      "diastolic_bp": null
+    },
+    "confirmed": {
+      "sleep_hours_last_night": null,
+      "exercise_minutes_today": null,
+      "alcohol_drinks_yesterday": null,
+      "sleep_hours_night_before": null,
+      "vigorous_recreation_min": null,
+      "moderate_recreation_min": null,
+      "sedentary_min_day": null,
+      "vigorous_recreation_min_week": null,
+      "moderate_recreation_min_week": null,
+      "wellbeing": null,
+      "sleep_hours": null,
+      "exercise_minutes_weekly": null,
+      "smoking_status": null,
+      "alcohol_drinks_weekly": null,
+      "weight_kg": null,
+      "systolic_bp": null,
+      "diastolic_bp": null
+    },
+    "pending": {
+      "sleep_hours_last_night": null,
+      "exercise_minutes_today": null,
+      "alcohol_drinks_yesterday": null,
+      "sleep_hours_night_before": null,
+      "vigorous_recreation_min": null,
+      "moderate_recreation_min": null,
+      "sedentary_min_day": null,
+      "vigorous_recreation_min_week": null,
+      "moderate_recreation_min_week": null,
+      "wellbeing": null,
+      "sleep_hours": null,
+      "exercise_minutes_weekly": null,
+      "smoking_status": null,
+      "alcohol_drinks_weekly": null,
+      "weight_kg": null,
+      "systolic_bp": null,
+      "diastolic_bp": null
+    },
+    "early": {
+      "sleep_hours_last_night": null,
+      "exercise_minutes_today": null,
+      "alcohol_drinks_yesterday": null,
+      "sleep_hours_night_before": null,
+      "vigorous_recreation_min": null,
+      "moderate_recreation_min": null,
+      "sedentary_min_day": null,
+      "vigorous_recreation_min_week": null,
+      "moderate_recreation_min_week": null,
+      "wellbeing": null,
+      "sleep_hours": null,
+      "exercise_minutes_weekly": null,
+      "smoking_status": null,
+      "alcohol_drinks_weekly": null,
+      "weight_kg": null,
+      "systolic_bp": null,
+      "diastolic_bp": null
+    },
+    "skipped_fields": [],
+    "unknown_fields": [],
+    "memory_consent": false,
+    "probe_asked": false,
+    "care_line_shown": false,
+    "care_question_open": false,
+    "probe_topic": null,
+    "habit_notes": [],
+    "local_date": null,
+    "activity_day": null,
+    "suggested": {
+      "sleep_hours_last_night": null,
+      "exercise_minutes_today": null,
+      "alcohol_drinks_yesterday": null,
+      "sleep_hours_night_before": null,
+      "vigorous_recreation_min": null,
+      "moderate_recreation_min": null,
+      "sedentary_min_day": null,
+      "vigorous_recreation_min_week": null,
+      "moderate_recreation_min_week": null,
+      "wellbeing": null,
+      "sleep_hours": null,
+      "exercise_minutes_weekly": null,
+      "smoking_status": null,
+      "alcohol_drinks_weekly": null,
+      "weight_kg": null,
+      "systolic_bp": null,
+      "diastolic_bp": null
+    },
+    "suggested_activity_min": null,
+    "from_health": false,
+    "one_pace": false,
+    "held_minutes": null,
+    "checking": [],
+    "reopened": false,
+    "age_band": null
+  },
+  "emergency": "I'm sorry you're going through that. If you need help right now, please call 911. We can carry on whenever you're ready.",
+  "safety": {
+    "EMERGENCY": "\\bchest pains?\\b|\\bpains? in (?:my|the) chest\\b|\\btightness in my chest\\b|\\bmy chest (?:hurts|is hurting|has been hurting|keeps hurting|won't stop hurting|is (?:really |so |very )?tight|feels (?:tight|heavy))\\b|\\b(?:can't|cannot|can not|couldn't|could not) (?:breathe|catch my breath|get my breath)\\b|\\b(?:struggling|trouble|hard|difficulty) (?:to )?breath(?:e|ing)\\b|\\bhaving a (?:heart attack|stroke)\\b|\\b(?:think|feel like) (?:i'm|i am|it's|it is) (?:a |having a )?(?:heart attack|stroke)\\b|\\b(?:fell|fallen|had a fall|took a fall)\\b[^.;!?]{0,60}?\\b(?:can't|cannot|can not|couldn't|could not) get (?:back )?up\\b|\\b(?:took|taken|swallowed|had) (?:way )?too many (?:of )?(?:my )?(?:pills|tablets|meds|medicines?|medications?|sleeping pills|painkillers)\\b|\\boverdos\\w*|\\b(?:i think|i feel like) (?:i'm|i am) dying\\b|\\b(?:won't|will not|can't|cannot) stop (?:the )?bleeding\\b|\\b(?:call|need|get me|send) (?:an ambulance|911|nine one one)\\b",
+    "SELF_HARM": "\\b(?:don't|do not|can't|cannot) see the point (?:in|of) (?:living|going on|life|being alive)\\b|\\bno point (?:in )?(?:living|going on|carrying on|keeping going|being alive|being here)\\b|\\bno reason to (?:live|keep going|go on|carry on|be here|be alive|stay)\\b|\\b(?:want|wanna|wants|wanted) to die\\b|\\bwant to be dead\\b|\\bwish i (?:was|were) dead\\b|\\bkill(?:ing)? myself\\b(?! laughing)|\\bkms\\b|\\bunaliv\\w*|\\bsuicid\\w*|\\b(?:end|ending|take|taking) my (?:own )?life\\b|\\bend(?:ing)? it all\\b|\\b(?:thinking|thought|think|thinkin) (?:about|of|abt) (?:ending (?:it|things)|not being (?:here|around|alive))\\b(?! with\\b)|\\b(?:want|wanna|going|gonna|ready) to end (?:it|things)\\b(?! with\\b)|\\bbetter off dead\\b|\\bbetter off without me\\b|\\b(?:don't|do not|didn't) want to (?:live|be alive|exist|wake up)(?: anymore| any more)?\\b|\\b(?:don't|do not|didn't) want to be here\\b(?! (?:any ?more )?(?:at|in|on|with|for|doing|working|when|while|after|during|without)\\b)|\\b(?:don't|do not|didn't) want to be around (?:any ?more|for much longer)\\b|\\b(?:don't|do not|didn't) want to be around$|\\b(?:rather|want to|wanna) not (?:be here|be around|exist|be alive|wake up)\\b|\\bwish i (?:could )?(?:just )?(?:wasn't here|weren't here|wasn't alive|could disappear|not wake up|didn't wake up|wouldn't wake up|never woke up|could sleep and not wake up)\\b|\\b(?:not|isn't|is not|ain't) worth living\\b|\\bgive(?:n)? up on (?:life|living)\\b|\\b(?:can't|cannot) (?:go on|keep going|carry on) (?:any ?more|like this)\\b|\\bself (?:harm\\w*|injur\\w*)\\b|\\bharm(?:ing)? myself\\b|\\b(?:want|wanna|urge|urges|going|gonna|thinking (?:about|of)|thought (?:about|of)) (?:to )?(?:hurt|hurting|cut|cutting) myself\\b|\\b(?:i'm|i am|feel like|feel|i feel) (?:such |just |only )?a burden\\b|\\b(?:don't|do not|can't) see the point (?:any ?more|in anything|of anything)\\b|\\bwhat's (?:even )?the point (?:any ?more|of (?:anything|living|going on|it all)|in (?:anything|living|going on))\\b|\\b(?:want|wanna) to disappear\\b|\\bhope i (?:don't|never) wake up\\b|\\b(?:sleep|go to sleep) and (?:not|never) wake up\\b|\\b(?:tired|sick) of (?:living|being alive|life|it all)\\b|\\bwill to live\\b|\\bbetter off if i (?:was|were|wasn't|weren't) (?:gone|here|around|dead|alive)\\b|\\brather be dead\\b|\\bwant (?:it all|everything) to (?:stop|end)\\b|\\b(?:want|wanna|going|gonna|thinking (?:about|of)|thought (?:about|of)) (?:to )?(?:take|taking|swallow\\w*) all (?:of )?my (?:pills|tablets|meds)\\b|\\bswallowed all (?:of )?my (?:pills|tablets|meds)\\b|\\bsewer ?slide\\b|\\boff myself\\b|\\b(?:sav(?:ed|ing)(?: \\w+)? up|been saving|stockpil\\w*|hoard\\w*|stash\\w*|squirrel\\w* away|put(?:ting)? aside|set aside)\\b[^.;!?]{0,30}\\b(?:pills|tablets|meds|medications?|painkillers)\\b|\\b(?:pills|tablets|meds|medications?|painkillers)\\b[^.;!?]{0,20}\\b(?:sav(?:ed|ing) up|stockpiled|hoarded|stashed|put aside|set aside)\\b|\\b(?:got|have|keep\\w*|kept|sav\\w*)\\b[^.;!?]{0,40}\\bfor when (?:it|things|life|i) (?:gets?|get|becomes?|am|can't|cannot)(?: too)? (?:bad|worse|much|unbearable|hard|enough|take it|cope|ready)\\b|\\b(?:got|have) the means\\b|\\b(?:thinking|thought|think|dream\\w*|wish\\w*|wouldn't mind|would be nice|rather|want|wanna|okay with|ok with|fine with|happy with|pray\\w*|hope|hoping) (?:about |of )?(?:just )?(?:not|never) wak(?:e|ing)\\b(?! (?:up )?(?:so |too )?(?:early|late|at|till|until|before|in time|on time|for)\\b)|\\b(?:no|what's the|what is the) point (?:in |of )?(?:me|my) (?:being here|being around|being alive|existing|living|going on|carrying on)\\b|\\b(?:would|'d|will) (?:cope|manage|get on|get by|be fine|be okay|be ok|be happier|be better)(?: fine| better| okay)?\\b[^.;!?]{0,20}\\bwithout me\\b(?! (?:for|at|on|in|today|tomorrow|tonight|this|next|while)\\b)|\\b(?:would|'d|will) (?:cope|manage|be fine|be okay)(?: fine| just fine)?(?: if i (?:was|were|wasn't|weren't) (?:gone|here|around))\\b",
+    "SELF_HARM_PAST": "\\b(?:years ago|when i was (?:young|younger|a (?:teen\\w*|kid|child|student))|as a (?:teen\\w*|kid|child)|in (?:19|20)\\d\\d)\\b",
+    "HISTORY": "(?<!'ve )(?<!have )(?<!has )\\bhad\\b|\\b(?:was|were|ago|used to|back in|history of|after my|since my|when i was|survived|recovered|years|last (?:year|month|week))\\b|\\bin (?:19|20)\\d\\d\\b",
+    "HAPPENING_NOW": "\\b(?:now|right now|today|tonight|this (?:morning|afternoon|evening)|all (?:day|morning|night)|just now|still|again|has been|have been|keeps?|won't stop|since (?:last|this|yesterday))\\b"
+  }
+}
