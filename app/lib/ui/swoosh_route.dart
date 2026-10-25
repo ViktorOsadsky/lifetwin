@@ -37,6 +37,8 @@ import 'dart:ui' show PathMetric;
 
 import 'package:flutter/material.dart';
 
+import 'twin_assets.dart';
+
 // ---------------------------------------------------------------------------
 // Timing and curves
 // ---------------------------------------------------------------------------
@@ -709,11 +711,11 @@ class SwooshTint extends StatelessWidget {
 // Bear hero
 // ---------------------------------------------------------------------------
 
-/// Bear sprite paths (same scheme as `twinAsset()` in `twin_assets.dart`).
+/// The Cal-hat bear's sprite paths, from `twinAsset()` in `twin_assets.dart`.
 abstract final class SwooshBearAssets {
-  static const String stand = 'assets/twin/bear/pose/stand.png';
-  static const String wave = 'assets/twin/bear/pose/wave.png';
-  static const String jump = 'assets/twin/bear/pose/jump.png';
+  static final String stand = twinAsset(TwinType.bear, TwinLook.calHat, TwinPose.stand);
+  static final String wave = twinAsset(TwinType.bear, TwinLook.calHat, TwinPose.wave);
+  static final String jump = twinAsset(TwinType.bear, TwinLook.calHat, TwinPose.jump);
 }
 
 /// The bear as a shared element. Put one in each page, inside the plate
@@ -766,7 +768,7 @@ class SwooshBearSprite extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const List<String> poses = <String>[
+    final List<String> poses = <String>[
       SwooshBearAssets.stand,
       SwooshBearAssets.wave,
       SwooshBearAssets.jump,
@@ -979,7 +981,7 @@ class SwooshOnboardingSketch extends StatelessWidget {
                           top: bear.top - w.top - inset,
                           width: bear.width,
                           height: bear.height,
-                          child: const SwooshBearHero(resting: SwooshBearAssets.wave, isRoom: false),
+                          child: SwooshBearHero(resting: SwooshBearAssets.wave, isRoom: false),
                         ),
                       ],
                     ),

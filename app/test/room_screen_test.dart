@@ -177,6 +177,8 @@ void main() {
     await t.pump();
     expect(find.text('about 91 in 100'), findsOneWidget);
     expect(find.text('Your 5-yr look'), findsOneWidget);
+    // Survival is labelled on the Room card too.
+    expect(find.text('Modeled survival of similar people'), findsOneWidget);
   });
 
   testWidgets('Exercise walks to the mat and loops stretch and jump, then finishes', (t) async {
