@@ -277,8 +277,14 @@ final _dateLike = [
 /// denies a date; it is the one place those words may appear.
 final _disclaimer = RegExp(r'\bnot an? (individual )?death date', caseSensitive: false);
 
+/// The one-time lifespan reveal ("Around 2045"), allowed by the owner override of 2026-10-24
+/// (AGENTS.md, docs/lifespan-estimate.md); every other date is still a problem.
+final _lifespanReveal = RegExp(r'\bAround (19|20|21)\d\d\b');
+
 List<String> dateProblems(String text) {
-  final checked = text.replaceAll(_disclaimer, 'not an individual [disclaimer]');
+  final checked = text
+      .replaceAll(_disclaimer, 'not an individual [disclaimer]')
+      .replaceAll(_lifespanReveal, 'Around [lifespan reveal]');
   return [for (final r in _dateLike) ...r.allMatches(checked).map((m) => m[0]!)];
 }
 
@@ -433,20 +439,21 @@ void main() {
         );
       }
 
-      // ---- The opening (3fc79e9): no Health button on the first question, one plain "Try saying" line;
-      // Apple Health and documents are in the "Fill this in faster" pill, which waits for question 3 ----
+      // ---- The opening (3fc79e9, 15b442a): no Health button on the first question, one plain "Try saying"
+      // line; Apple Health and documents are in the one "Fill from Apple Health or a document" control,
+      // visible from the first question on ----
       {
         await pumpFor(t, const Duration(milliseconds: 800));
         final text = screenText();
         final noButton = !shows(find.widgetWithText(LipButton, 'Use my Apple Health'));
-        final noPill = !shows(find.byType(FasterPill));
+        final importControl = shows(find.byType(ImportControl));
         final trySaying = text.contains('Try saying');
         final onMemory = c.mascotLine.contains(memoryQuestion);
-        final ok = noButton && noPill && trySaying && onMemory;
+        final ok = noButton && importControl && trySaying && onMemory;
         await record(
-          'Opening: no first-question Health button, pill waits',
+          'Opening: no first-question Health button, one import control',
           ok,
-          'noHealthButton=$noButton noPillYet=$noPill trySaying=$trySaying onMemory=$onMemory',
+          'noHealthButton=$noButton importControl=$importControl trySaying=$trySaying onMemory=$onMemory',
           ok ? '' : 'screen: $text',
         );
       }
@@ -524,13 +531,22 @@ void main() {
       await answer('sex', 'female', ['female at birth']);
       await answer('smoking_status', 'I used to smoke but I quit years ago', ['smoked in the past']);
 
-      // ---- the Apple Health offer: the button opens Health (cancelled), then "No thanks" ----
+      // ---- the Apple Health offer: the import control opens Health (cancelled), then "No thanks" ----
       {
         await waitUntil(t, () => c.phase != VoicePhase.interpreting, seconds: 30);
         final offered = serverPhase(c) == 'offering' && c.mascotLine.contains(healthOfferLine) && c.healthOffer;
         final before = c.turn;
         await pumpFor(t, const Duration(milliseconds: 800)); // the button ignores taps right after a new turn
-        final opened = await tapButton(t, 'Use my Apple Health', seconds: 3);
+        // 15b442a: the offer points at the one import control; its sheet has "Use Apple Health".
+        final sheet =
+            await tapFinder(t, find.byType(ImportControl), seconds: 3) &&
+            await waitUntil(
+              t,
+              () => shows(find.text('Mochi asks fewer questions when you add health data.')),
+              seconds: 5,
+            );
+        await pumpFor(t, const Duration(milliseconds: 800)); // let the sheet finish sliding up
+        final opened = sheet && await tapButton(t, 'Use Apple Health', seconds: 3);
         final intro = await waitUntil(t, () => shows(find.text('Use Apple Health?')), seconds: 5);
         final cancelled = await tapButton(t, "No thanks, I'll answer myself", seconds: 5);
         final back = await waitUntil(
@@ -542,7 +558,7 @@ void main() {
         final stillOffer = identical(c.turn, before) && c.mascotLine.contains(healthOfferLine);
         final okOffer = offered && opened && intro && cancelled && back && stillOffer;
         await record(
-          'Apple Health offer: button opens Health, cancel returns to the offer',
+          'Apple Health offer: import control opens Health, cancel returns to the offer',
           okOffer,
           'offered=$offered opened=$opened intro=$intro cancelled=$cancelled backOnOffer=$stillOffer '
               'notice="${c.notice}"',
@@ -770,6 +786,7 @@ void main() {
       // ---- the fortune: Continue -> ceremony -> Ask the ball -> result ----
       var shownOutOf100 = -1;
       var shownYears = 5;
+      var shownPercentile = -1;
       {
         await pumpFor(t, const Duration(milliseconds: 500));
         await tapButton(t, 'Continue', seconds: 5);
@@ -809,6 +826,7 @@ void main() {
         final bears = find.byType(BearHeadArray);
         final bearFilled = shows(bears) ? t.widget<BearHeadArray>(bears).filled : -1;
         final problems = dateProblems(text);
+        shownPercentile = int.tryParse(RegExp(r'Healthier than (\d+) of 100').firstMatch(text)?[1] ?? '') ?? -1;
         // Every model input was answered, so the phone must show a number.
         final consistent =
             supported &&
@@ -929,12 +947,13 @@ void main() {
         );
         await pumpFor(t, const Duration(milliseconds: 800));
         final roomText = screenText();
-        final card = RegExp(r'about (\d+) in 100').firstMatch(roomText);
-        final cardOk = !supported || (card != null && int.parse(card[1]!) == shownOutOf100);
+        // Home's score card (the outlook card left Home): the same "Healthier than N of 100" as the result.
+        final card = RegExp(r'Healthier than (\d+) of 100').firstMatch(roomText);
+        final cardOk = !supported || (card != null && int.parse(card[1]!) == shownPercentile);
         await record(
           'back to the Room',
           room && cardOk,
-          'room=$room outlookCard="${card?[0]}" matches=$cardOk',
+          'room=$room scoreCard="${card?[0]}" forecast=$shownPercentile matches=$cardOk',
           room && cardOk ? '' : 'screen: $roomText',
         );
       }
@@ -1001,27 +1020,26 @@ void main() {
         );
       }
 
-      // ---- "Use my Apple Health" from the Room: open, then cancel ----
+      // ---- Apple Health from the Room (now Settings -> Apple Health; Home has no pills): open, then cancel ----
       {
-        final pill = find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'Use my Apple Health');
-        final there = await waitUntil(t, () => shows(pill), seconds: 3);
-        if (there) {
-          await t.ensureVisible(pill.first);
-          await t.pump();
-          await t.tap(pill.first, warnIfMissed: false);
-        }
+        final settings = await tapFinder(t, find.byTooltip('Settings'), seconds: 5);
+        await pumpFor(t, const Duration(milliseconds: 800));
+        final there = settings && await tapFinder(t, find.text('Apple Health', findRichText: true), seconds: 5);
         final intro = await waitUntil(t, () => shows(find.text('Use Apple Health?')), seconds: 5);
         final cancelled = await tapButton(t, "No thanks, I'll answer myself", seconds: 5);
         final room = await waitUntil(
           t,
-          () => !shows(find.byType(HealthImportScreen)) && shows(find.widgetWithText(LipButton, 'Talk')),
+          () => !shows(find.byType(HealthImportScreen)) && shows(find.text('Choices', findRichText: true)),
           seconds: 5,
         );
-        final ok = there && intro && cancelled && room;
+        // Back to the Room from Settings.
+        await tapFinder(t, find.byType(RoundBackButton), seconds: 3);
+        await pumpFor(t, const Duration(milliseconds: 800));
+        final ok = there && intro && cancelled && room && shows(find.widgetWithText(LipButton, 'Talk'));
         await record(
           'Apple Health from the Room: open + cancel',
           ok,
-          'pill=$there intro=$intro cancelled=$cancelled backOnRoom=$room',
+          'settingsRow=$there intro=$intro cancelled=$cancelled backOnSettings=$room',
           ok ? '' : 'screen: ${screenText()}',
         );
       }
