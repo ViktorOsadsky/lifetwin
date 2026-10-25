@@ -237,6 +237,11 @@ def _duration(text: str, field: str) -> Reading:
 def _height(text: str) -> Reading:
     if _minutes(text) or POUNDS.search(text) or KILOS.search(text):
         return Reading(None, "wrong_unit")
+    said = FEET.search(text) or CM.search(text) or METRES.search(text) or INCHES.search(text)
+    if said and re.search(r"\d", text[: said.start()] + " " + text[said.end() :]):
+        # "5 foot 4, well, probably 5 3 and a half": a second height. The rules read the
+        # correction; the reader never picks one of the two.
+        return Reading(None, "ambiguous")
     if feet := FEET.search(text):
         inches = float(feet.group("i") or 0)
         if inches >= 12:

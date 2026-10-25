@@ -121,16 +121,20 @@ async def phrase_question(
 
 async def phrase_care(
     personalizer: Personalizer, line: str, said: str, timeout: float = 6
-) -> str | None:
-    """Select a whole care template, preserving its final safety sentence."""
+) -> tuple[str | None, bool | None]:
+    """Select a whole care template, preserving its final safety sentence.
+
+    Returns the chosen wording or None, and whether the provider answered (None: it was
+    not asked).
+    """
     choices = wording_choices(line, care=True)
     if not choices:
-        return None
+        return None, None
     facts = {"line": line, "said": said, "approved_wordings": list(choices)}
     try:
         async with asyncio.timeout(timeout):
             reply = await personalizer.phrase(CARE, facts)
     except (PhrasingUnavailable, TimeoutError):
-        return None
+        return None, False
     text = reply.get("line") if isinstance(reply, dict) else None
-    return grounded_line(text, choices)
+    return grounded_line(text, choices), True

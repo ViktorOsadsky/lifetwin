@@ -316,7 +316,13 @@ class CheckinResponse(ApiModel):
     state: CheckinState
     message: str = Field(min_length=1, max_length=1500)
     guide_mode: Literal["guided"] = "guided"
-    provider_status: Literal["not_configured"] = "not_configured"
+    # As in onboarding: "used" when Claude read a read-back reply or worded the care line,
+    # "unavailable" when it was asked and gave nothing, "consent_required" when it would
+    # have been asked without the person's yes, "not_needed" when a provider is set up
+    # but the rules sufficed, "not_configured" when none is.
+    provider_status: Literal[
+        "not_configured", "consent_required", "used", "unavailable", "not_needed"
+    ] = "not_configured"
     # Always false here: check-in replies are read by rules (see TurnResponse.off_topic).
     off_topic: bool = False
     voice_status: Literal["deferred", "available", "unavailable"] = "deferred"

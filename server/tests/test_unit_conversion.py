@@ -45,7 +45,9 @@ def test_the_question_period_is_only_for_the_asked_question():
 
 def test_a_frequency_without_a_count_is_still_asked_about():
     assert read("a 45 minute class", MOD) == {}
-    assert read("an hour, sometimes more", MOD) == {}
+    assert read("an hour sometimes", MOD) == {}
+    # A closing "sometimes more" qualifies the hour without blocking it (#244).
+    assert read("an hour, sometimes more", MOD) == {MOD: 60}
 
 
 # (b) Word numbers and fractions.
