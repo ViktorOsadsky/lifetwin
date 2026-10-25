@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/experiment/experiment_copy.dart';
 import 'package:lifesim/experiment/result_display.dart';
+import 'package:lifesim/experiment/widgets/experiment_curve.dart';
+import 'package:lifesim/ui/widgets/survival_curve.dart';
 import 'package:lifesim/twin/twin_experiment.dart';
 import 'package:lifesim/twin/twin_model.dart';
 
@@ -15,6 +17,14 @@ ExperimentResult available(double d5, {double current = 89.46, bool extrapolated
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('survival is labelled and a comparison is labelled, in words a screen reader hears too', () {
+    final rows = ResultDisplay.of(available(4.15)).rows;
+    expect(ExperimentCurve.describe(rows), startsWith('Modeled survival of similar people. '));
+    expect(SurvivalCurve.describe({1: 0.98, 5: 0.9}), startsWith('Modeled survival of similar people. '));
+    expect(ExperimentCopy.subtitle, 'Modeled difference between profiles');
+    expect(ResultDisplay.title, 'Modeled difference between profiles');
+  });
 
   group('rounding rule (design y_gen.py)', () {
     test('half-up, on one decimal and on whole numbers', () {

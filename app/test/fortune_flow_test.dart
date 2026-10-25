@@ -87,7 +87,7 @@ void main() {
     expect(curve.curve, hasLength(6)); // now, then years 1-5
     expect(
       find.bySemanticsLabel(
-        'Out of 100 people with answers like yours: about 99 after 1 year, about 97 after 2 years, '
+        'Modeled survival of similar people. Out of 100 people with answers like yours: about 99 after 1 year, about 97 after 2 years, '
         'about 95 after 3 years, about 93 after 4 years, about 91 after 5 years.',
       ),
       findsOneWidget,

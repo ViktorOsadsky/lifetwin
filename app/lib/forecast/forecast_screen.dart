@@ -5,7 +5,7 @@ import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart';
 import '../twin/profile_mapping.dart' show joinPlain;
-import '../twin/twin_model.dart' show extrapolationCaveat;
+import '../twin/twin_model.dart' show TwinAssessment, extrapolationCaveat;
 import '../voice/speech.dart';
 import '../widgets/whole_word_text.dart';
 import 'forecast_client.dart';
@@ -307,6 +307,8 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
           header: true,
           child: WholeWordText('Your look ahead', style: LtText.display(22, color: LtColors.gold)),
         ),
+        // Wherever survival is shown it is labelled (UI rule).
+        WholeWordText(TwinAssessment.survivalTitle, style: LtText.body(color: LtColors.cream)),
         const SizedBox(height: 8),
         WholeWordText.rich(
           TextSpan(

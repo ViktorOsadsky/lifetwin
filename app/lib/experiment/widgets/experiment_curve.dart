@@ -3,6 +3,7 @@ import 'dart:ui' show PathMetric;
 
 import 'package:flutter/material.dart';
 
+import '../../twin/twin_model.dart' show TwinAssessment;
 import '../../ui/theme.dart';
 import '../result_display.dart';
 
@@ -25,7 +26,7 @@ class ExperimentCurve extends StatelessWidget {
   }
 
   static String describe(List<YearRow> rows) => [
-    'Out of 100 people like you, still alive each year.',
+    '${TwinAssessment.survivalTitle}. Out of 100 people like you, still alive each year.',
     for (final r in rows) 'Year ${r.year}: today ${r.today}, what-if ${r.whatIf}.',
   ].join(' ');
 
