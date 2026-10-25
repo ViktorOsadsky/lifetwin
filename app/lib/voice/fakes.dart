@@ -62,6 +62,7 @@ class FakeSpeechInput implements SpeechInput {
   int starts = 0;
   int finishes = 0;
   int cancels = 0;
+  int disposals = 0;
 
   /// Set to hold the "Allow microphone?" answer until it is completed.
   Completer<bool>? permission;
@@ -92,7 +93,9 @@ class FakeSpeechInput implements SpeechInput {
   }
 
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() async {
+    disposals++;
+  }
 }
 
 /// A small scripted conversation: asks age, then height, then asks to confirm.
