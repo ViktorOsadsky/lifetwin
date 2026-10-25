@@ -33,6 +33,9 @@ enum VoiceLook {
   /// Nothing is happening for a moment (between Mochi's line and the microphone opening).
   /// Shown as [typing] if it lasts, so a closed microphone is never dressed up as anything else.
   between,
+
+  /// The person closed the microphone; it stays closed until they turn it on.
+  micOff,
 }
 
 /// Colours from the VCN-1 contrast table (WCAG 2.1 AA).
@@ -257,6 +260,7 @@ class VoicePill extends StatelessWidget {
       VoiceLook.listening => (reduced ? 'Listening' : 'Listening…', 'Listening'),
       VoiceLook.thinking => (reduced ? 'Thinking' : 'Thinking…', 'Mochi is thinking'),
       VoiceLook.waiting => ('Waiting for your tap', 'Waiting for your tap'),
+      VoiceLook.micOff => ('Mic off', 'Mic off'),
       _ => ('Not listening', 'Not listening'),
     };
     final content = Container(
@@ -385,6 +389,8 @@ class _Glyph extends StatelessWidget {
           duration: const Duration(milliseconds: 1200),
           builder: (context, t) => dots((i) => 0.5 - 0.5 * math.cos(2 * math.pi * (t - i * 0.125))),
         );
+      case VoiceLook.micOff:
+        return const Icon(Icons.mic_off_rounded, size: 24, color: LtColors.ink);
       default:
         return Container(
           width: 16,
