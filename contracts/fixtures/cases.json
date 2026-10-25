@@ -2112,7 +2112,7 @@
     }
   },
   {
-    "name": "recommendations-under-age",
+    "name": "recommendations-under-18-treated-normally",
     "method": "POST",
     "path": "/api/recommendations",
     "request_schema": "recommendations.request.schema.json",
@@ -2125,9 +2125,38 @@
     "status": 200,
     "response_schema": "recommendations.schema.json",
     "response_subset": {
-      "status": "under_age",
-      "recommendations": [],
-      "missing_inputs": []
+      "status": "ok"
+    }
+  },
+  {
+    "name": "recommendations-with-document-context",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 50,
+        "smoking_status": "current"
+      },
+      "document_context": {
+        "readings": [
+          {
+            "field": "a1c",
+            "value": 6.1,
+            "unit": "%",
+            "date": "2026-09-14",
+            "source": "document"
+          }
+        ],
+        "diagnoses": [
+          "hypertension"
+        ]
+      }
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok"
     }
   },
   {

@@ -274,7 +274,7 @@ def test_older_smokers_get_a_bigger_cue_than_young_ones():
 # --- Response over HTTP --------------------------------------------------------------------------
 
 
-def test_under_18_gets_no_ideas_and_the_provider_is_never_asked():
+def test_under_18_gets_ideas_like_everyone():
     class Spy:
         name = "muse"
         configured = True
@@ -287,14 +287,13 @@ def test_under_18_gets_no_ideas_and_the_provider_is_never_asked():
 
     spy_client = make_client(Spy())
     body = post(spy_client, {"age": 17, "smoking_status": "current"}, consent={"muse": True})
-    assert body["status"] == "under_age" and body["recommendations"] == []
-    assert Spy.calls == 0
+    assert body["status"] == "ok" and body["recommendations"]
+    assert Spy.calls == 1
     assert not FORBIDDEN.search(body["message"])
-    assert "smok" not in body["message"].lower()
 
 
-def test_age_zero_is_under_age_not_a_crash(client):
-    assert post(client, {"age": 0})["status"] == "under_age"
+def test_age_zero_is_not_a_crash(client):
+    assert post(client, {"age": 0})["status"] in {"ok", "not_enough_information"}
 
 
 def test_unknown_age_still_gets_ideas_without_an_age_claim(client):

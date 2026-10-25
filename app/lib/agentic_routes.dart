@@ -545,7 +545,7 @@ class AgenticRoutes {
   /// before the first plan (the coach may use the same provider), and opens the full plan on a tap.
   Widget todayCard(BuildContext context, {VoidCallback? onTalk, bool condensed = false, Widget? trailing}) =>
       TodayWithMochiCard(
-        ideas: ideasAllowed ? ideasAccess : null,
+        ideas: ideasAccess,
         condensed: condensed,
         trailing: trailing,
         client: coach,
@@ -554,7 +554,7 @@ class AgenticRoutes {
         confirmedContext: () => coachContext(repo!),
         // No consent ask here: the card shows on Home, which can sit behind onboarding's last screen. The ask
         // comes from the person's tap (opening the plan, or Ideas).
-        onIdeas: ideasAllowed ? () => ideas(context, origin: 'Today') : null,
+        onIdeas: () => ideas(context, origin: 'Today'),
         onOpen: () => todayPlan(context, onTalk: onTalk),
       );
 
@@ -574,7 +574,7 @@ class AgenticRoutes {
           onRemind: r.checkinSettings.remindersOn && r.reminders != null ? r.remindLater : null,
           confirmedContext: () => coachContext(r),
           onBack: () => Navigator.of(page).pop(),
-          onIdeas: ideasAllowed ? () => ideas(page, origin: 'Today') : null,
+          onIdeas: () => ideas(page, origin: 'Today'),
           onTalk: () {
             Navigator.of(page).pop();
             onTalk?.call();
@@ -591,11 +591,10 @@ class AgenticRoutes {
   IdeasHub get ideasHub => _hub ??= IdeasHub(
     source: ideasSource?.call(repo!) ?? HttpRecommendations(repo!, base: _api),
     repo: repo,
-    allowed: () => ideasAllowed,
   );
 
   /// What the ways in to Ideas need (null before the phone's data has loaded). Each way in still
-  /// hides itself when the hub has no idea for today or the person is under 18.
+  /// hides itself when the hub has no idea for today.
   IdeasAccess? get ideasAccess => repo == null
       ? null
       : _access ??= IdeasAccess(
@@ -617,7 +616,7 @@ class AgenticRoutes {
 
   /// One idea in full (from Home, the check-in, onboarding, voice). "Try it with my twin" opens Experiment.
   Future<void> ideaDetail(BuildContext context, Recommendation idea) async {
-    if (repo == null || !ideasAllowed) return;
+    if (repo == null) return;
     final worded = await _wordedProvider();
     if (!context.mounted) return;
     Navigator.of(context).push(
@@ -641,16 +640,12 @@ class AgenticRoutes {
     );
   }
 
-  /// Ideas for you are for people 18 and over; under 18 (or no age) there is no entry point and
-  /// the server is never asked.
-  bool get ideasAllowed => ((repo?.profile['age'] as num?) ?? 0) >= 18;
-
   /// "Ideas for you": up to three ideas from `/api/recommendations`. [origin] names where it was
   /// opened from for the back button ("Back to {origin}"). Asks the outside-AI consent first, if it
   /// has not been answered (the person just tapped, so it is not a surprise).
   Future<void> ideas(BuildContext context, {required String origin, Set<String>? levers}) async {
     final r = repo;
-    if (r == null || !ideasAllowed) return;
+    if (r == null) return;
     final may = await ensureOutsideAiConsent(context);
     final p = may ? await provider() : null;
     if (!context.mounted) return;
@@ -704,8 +699,8 @@ class AgenticRoutes {
           presetLever: presetLever,
           presetValue: presetValue,
           backLabel: backLabel,
-          onIdeas: ideasAllowed ? () => ideas(c, origin: 'Experiment') : null,
-          ideas: ideasAllowed ? ideasAccess : null,
+          onIdeas: () => ideas(c, origin: 'Experiment'),
+          ideas: ideasAccess,
           onBack: () => Navigator.of(c).pop(),
           onTellMochi: (field) {
             Navigator.of(c).pop();
@@ -736,7 +731,7 @@ class AgenticRoutes {
           drivers: drivers,
           onBack: () => Navigator.of(c).pop(),
           onExperiment: () => experiment(c, backLabel: 'Back to what moves it'),
-          onIdeas: ideasAllowed ? () => ideas(c, origin: 'what moves it') : null,
+          onIdeas: () => ideas(c, origin: 'what moves it'),
         ),
       ),
     );

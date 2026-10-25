@@ -261,11 +261,21 @@ pickers are native sheets and were not driven by the test.
 ## Not done yet, and open questions
 
 - Showing the "Document" source label in the forecast screens (the source is recorded: `recordImport(..., source: 'document')` and a `document` history entry).
-- Storing confirmed information notes (blood pressure, A1c, LDL) on the phone, once local history exists.
 
 - **Ruled:** document text may go to Muse with the person's consent (owner, 2026-10-24). Muse's retention terms are
   still unverified; the consent copy must not claim any retention promise until they are checked.
-- **Tier-1:** should confirmed information notes (blood pressure, labs) be kept in on-phone history, and for how long?
+- **Ruled (Tier-1, owner, 2026-10-25): document notes are long-term context.** "Keep document notes into
+  long-term context (most of it stays in the onboarding info)."
+  - Confirmed model values still flow into the profile, as before.
+  - Everything else confirmed from a document is kept on the phone in History with **no expiry, until Delete my
+    data**: informational readings (blood pressure, HbA1c, LDL, each with its unit and the document's date),
+    the diagnoses mentioned (diabetes, hypertension), and the source label ("Document"). They are never edited
+    or pruned by age.
+  - They are available like habit notes: `coachContext` adds `document_context` (`readings`, `diagnoses`) to the
+    coach plan request and the ideas request, only while memory consent is on. Without consent, only the
+    blood pressure `readings` the coach already used for its crisis line and trends are sent. The server
+    accepts the field, never uses it as a model input, and never sends it to a provider.
+  - Delete my data removes them with the rest of the store (`delete_full_reset_test.dart` seeds and checks them).
 - The server must run behind TLS in deployment, since the text crosses the network.
 - On-device validation: the real photo library, Files and document camera, with real paper documents and older
   users. The simulator test uses a rendered synthetic document.

@@ -1353,13 +1353,18 @@
     "The server keeps nothing. Habit notes and history stay on your phone."
    ]
   },
-  "under_age": {
+  "minor": {
    "schema_version": "1.0",
-   "status": "under_age",
-   "message": "I'm only able to share ideas with adults for now. A parent, guardian or your doctor is the best person to ask about healthy habits.",
+   "status": "not_enough_information",
+   "message": "Once I know a little more about your days, I'll have some ideas for you. There's no rush.",
    "recommendations": [],
    "featured": null,
-   "missing_inputs": [],
+   "missing_inputs": [
+    "vigorous_recreation_min_week",
+    "moderate_recreation_min_week",
+    "sleep_hours",
+    "sedentary_min_day"
+   ],
    "character_hints": {
     "mood": null,
     "energy": null

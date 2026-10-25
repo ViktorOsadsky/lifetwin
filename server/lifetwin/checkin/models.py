@@ -258,7 +258,7 @@ class CheckinStartRequest(ApiModel):
     memory_consent: bool = False
     # The profile's age, if known: only which everyday examples Mochi uses (60 and over:
     # gardening and pottering about; younger: the gym, running, the commute, desk time).
-    age: Annotated[int | None, WholeNumber] = Field(default=None, ge=18, le=120)
+    age: Annotated[int | None, WholeNumber] = Field(default=None, ge=1, le=120)
     # Quick only: what to ask (the defaults ask sleep, activity and sitting).
     quick: QuickPlan | None = None
 
