@@ -1315,6 +1315,19 @@
       "title": "Accepted Input Modes",
       "type": "array"
     },
+    "client_action": {
+      "anyOf": [
+        {
+          "const": "open_ideas",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Client Action"
+    },
     "complete": {
       "title": "Complete",
       "type": "boolean"
@@ -1414,6 +1427,7 @@
     "provider_status",
     "voice_status",
     "speech_hint",
+    "client_action",
     "emergency",
     "profile_update",
     "daily_logs",

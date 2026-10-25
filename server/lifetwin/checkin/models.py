@@ -305,6 +305,9 @@ class CheckinResponse(ApiModel):
     provider_status: Literal["not_configured"] = "not_configured"
     voice_status: Literal["deferred", "available", "unavailable"] = "deferred"
     speech_hint: Literal["slower", "louder"] | None = None
+    # "open_ideas": the person asked for ideas; the app shows today's idea. The state is
+    # unchanged and the same question comes back in the message.
+    client_action: Literal["open_ideas"] | None = None
     # The reply said something urgent is happening: the check-in is paused on the same
     # question. The app shows a "Call 911" button the person taps themselves, and
     # "Continue" (action "resume", or any reply) goes on where it stopped.

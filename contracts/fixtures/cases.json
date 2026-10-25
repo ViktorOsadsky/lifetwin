@@ -2925,5 +2925,41 @@
         ]
       }
     }
+  },
+  {
+    "name": "checkin-ideas-request",
+    "method": "POST",
+    "path": "/api/checkin/turn",
+    "request_schema": "checkin.turn.request.schema.json",
+    "request": {
+      "action": "reply",
+      "text": "any ideas what I should do today?",
+      "state": {
+        "kind": "daily",
+        "phase": "asking",
+        "questions": [
+          "sleep_hours_last_night",
+          "exercise_minutes_today",
+          "wellbeing"
+        ],
+        "current_field": "exercise_minutes_today",
+        "pending": {
+          "sleep_hours_last_night": 7.0
+        }
+      }
+    },
+    "status": 200,
+    "response_schema": "checkin.schema.json",
+    "response_subset": {
+      "client_action": "open_ideas",
+      "complete": false,
+      "state": {
+        "phase": "asking",
+        "current_field": "exercise_minutes_today",
+        "pending": {
+          "exercise_minutes_today": null
+        }
+      }
+    }
   }
 ]
