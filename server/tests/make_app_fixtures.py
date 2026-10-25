@@ -13,6 +13,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from lifetwin.app import create_app
+from lifetwin.checkin.service import CheckinService
 from lifetwin.core.config import Settings
 from lifetwin.onboarding import ConversationService, get_service
 
@@ -69,6 +70,8 @@ def client() -> TestClient:
     app = create_app(settings)
     service = ConversationService(clock=lambda: TODAY, seed=lambda: 0)
     app.dependency_overrides[get_service] = lambda: service
+    # Check-ins pick their care wording from the date, so the fixtures pin it too.
+    app.state.checkin_service = CheckinService(clock=lambda: TODAY)
     return TestClient(app)
 
 

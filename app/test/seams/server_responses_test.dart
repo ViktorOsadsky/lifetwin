@@ -21,6 +21,7 @@ import 'package:lifesim/checkin/checkin_store.dart';
 import 'package:lifesim/checkin/consent_screens.dart';
 import 'package:lifesim/checkin/consents.dart';
 import 'package:lifesim/documents/document_extract.dart';
+import 'package:lifesim/experiment/recommendations.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart' show noNetworkNotice;
 import 'package:lifesim/twin/twin_checkin_store.dart';
 import 'package:lifesim/twin/twin_model.dart';
@@ -247,29 +248,37 @@ void main() {
       }
     });
 
-    test('recommendations: effect, effect_note, experiment_lever, experiment_target, why_short, source_domain, '
-        'under_age, missing_inputs reach the person', () {
-      // The app has no /api/recommendations client, and HttpConversationGuide.parseTurn drops
-      // the `recommendations` of the completing turn (see GuideTurn). Un-skip once it reads them.
-      final turn = HttpConversationGuide.parseTurn(at('onboarding_ready'));
-      final dynamic any = turn;
-      expect(any.recommendations, isNotEmpty);
-    }, skip: 'BUG (app): recommendations are never parsed: no client for POST /api/recommendations, '
-        'GuideTurn drops the completing turn\'s `recommendations`, and lib/experiment/recommendations.dart '
-        'is a stub built from wellness cards, so the six new item fields, missing_inputs and '
-        'status under_age are read nowhere');
+    test('recommendations: every real server item parses, with its new fields', () {
+      for (final entry in (seam['recommendations'] as Map).entries) {
+        final items = (entry.value as Map)['recommendations'] as List;
+        for (final raw in items) {
+          final json = Map<String, dynamic>.from(raw as Map);
+          for (final r in [Recommendation.fromJson(json), Recommendation.fromJson(extras(json))]) {
+            expect(r.tip, json['message'], reason: entry.key);
+            expect(r.whyShort, json['why_short'], reason: entry.key);
+            expect(r.effect, json['effect'], reason: entry.key);
+            expect(r.sourceDomain, json['source_domain'], reason: entry.key);
+            // A lever only with a target the app can hold; a missing current value never presets 0.
+            if (json['experiment_target'] == null) expect(r.leverValue, isNull, reason: entry.key);
+          }
+        }
+      }
+    });
 
-    test('recommendations: experiment_target must be a number the lever can hold', () {
+    test('recommendations: every experiment_target becomes a number the lever can hold', () {
       final targets = [
         for (final r in (seam['recommendations'] as Map).values)
           for (final item in (r as Map)['recommendations'] as List)
-            if ((item as Map)['experiment_target'] != null) item['experiment_target'],
+            if ((item as Map)['experiment_target'] != null) Map<String, dynamic>.from(item),
       ];
       expect(targets, isNotEmpty);
-      // ExperimentLever.value and Recommendation.leverValue are doubles (smoking: 0/1/2).
-      expect(targets.every((t) => t is num), isTrue);
-    }, skip: 'BUG (seam): the server sends experiment_target "former" for smoking_status; '
-        'the app\'s smoking lever and Recommendation.leverValue are numeric');
+      expect(targets.any((t) => t['experiment_target'] == 'former'), isTrue, reason: 'covers the smoking string');
+      for (final t in targets) {
+        final r = Recommendation.fromJson(t);
+        expect(r.leverId, t['experiment_lever']);
+        expect(r.leverValue, isA<double>(), reason: '${t['experiment_lever']}: ${t['experiment_target']}');
+      }
+    });
   });
 
   group('4. error paths: a gentle message, no crash, and recovery', () {
@@ -448,10 +457,27 @@ void main() {
       expect(script.steps, isEmpty);
     });
 
-    test('recommendations: 422, 429, 503 and a timeout show a gentle message', () {
-      fail('there is no client to call');
-    }, skip: 'BUG (app): nothing calls POST /api/recommendations, so there is no error handling to test; '
-        'when the client lands it needs the same 422/429/503/timeout behaviour as the coach');
+    test('recommendations: 422, 429, 503 and a timeout are a RecommendationsFailure, never a crash', () async {
+      final model = await TwinModelService.load();
+      final repo = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()));
+      addTearDown(repo.dispose);
+      final errors = seam['errors'] as Map;
+      for (final code in [422, 429, 503]) {
+        final body = jsonEncode(errors['$code'] ?? {});
+        final source = HttpRecommendations(repo,
+            base: ApiBase('http://test'), client: MockClient((_) async => http.Response(body, code)));
+        await expectLater(source.load(),
+            throwsA(isA<RecommendationsFailure>().having((f) => f.statusCode, 'code', code)));
+      }
+      fakeAsync((async) {
+        final source = HttpRecommendations(repo,
+            base: ApiBase('http://test'), client: MockClient((_) => Completer<http.Response>().future));
+        Object? error;
+        source.load().catchError((Object e) { error = e; return <Recommendation>[]; });
+        async.elapse(const Duration(seconds: 31));
+        expect(error, isA<RecommendationsFailure>());
+      });
+    });
   });
 
   group('5. privacy seam: the consent copy for outside AI', () {

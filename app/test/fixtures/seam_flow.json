@@ -4851,7 +4851,7 @@
     "reopened": false,
     "age_band": null
    },
-   "message": "I'm sorry you're having such a rough time. It's okay to feel this way, and it's okay to take things slowly. I'm here with you. If you're ever thinking about hurting yourself, please call 911. Would you like to keep going with the check-in, or stop here for today?",
+   "message": "I'm really sorry today's been so hard. Thank you for telling me. You don't have to carry it alone. If it would help, we can just take this slowly. And if you're ever thinking about hurting yourself, please call 911. Would you like to keep going with the check-in, or stop here for today?",
    "guide_mode": "guided",
    "provider_status": "not_configured",
    "voice_status": "deferred",
@@ -4883,7 +4883,7 @@
    "mascot_events": [
     {
      "state": "confirming",
-     "caption": "I'm sorry you're having such a rough time. It's okay to feel this way, and it's okay to take things slowly. I'm here with you. If you're ever thinking about hurting yourself, please call 911. Would you like to keep going with the check-in, or stop here for today?"
+     "caption": "I'm really sorry today's been so hard. Thank you for telling me. You don't have to carry it alone. If it would help, we can just take this slowly. And if you're ever thinking about hurting yourself, please call 911. Would you like to keep going with the check-in, or stop here for today?"
     }
    ],
    "complete": false,
