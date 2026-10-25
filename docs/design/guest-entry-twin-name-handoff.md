@@ -17,6 +17,8 @@ Checks actually run and results: full Flutter suite **1,466 passed**; `flutter a
 
 Real, fixture, or unavailable integrations: guest entry uses local protected storage, not server authentication. Tests use the real bundled on-device model with in-memory storage and fake conversation/forecast clients. Non-iOS platforms retain the existing session-only fallback where protected storage is unavailable. No email or OAuth provider is configured.
 
+Follow-up visual review replaced the nickname field's floating label with a fixed visible label and an explicit input accessibility label. The large-text keyboard screenshot was recaptured and inspected; all eleven focused tests and analysis passed after this presentation change.
+
 Known limits / blockers: no account sync or remote login is implemented or implied. Native physical-iPhone and VoiceOver acceptance remain separate; Daniel owns the physical test device. The UI retains the existing light painted-card theme under either system appearance.
 
 Next dependent task: merge after backend deployment checks and the UI PR's applicable repository checks pass; run the guest → consent → intake flow on the owner's test phone.

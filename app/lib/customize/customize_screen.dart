@@ -264,10 +264,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
   Widget _rooms() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      WholeWordText(
-        'A light for your room',
-        style: LtText.body(size: 19, weight: FontWeight.w700),
-      ),
+      WholeWordText('A light for your room', style: LtText.body(size: 19, weight: FontWeight.w700)),
       const SizedBox(height: 10),
       Wrap(
         spacing: 12,
@@ -329,21 +326,28 @@ class _TwinNameDialogState extends State<_TwinNameDialog> {
       children: [
         Text('A nickname for your twin, just on this phone.', style: LtText.body()),
         const SizedBox(height: 16),
-        TextField(
-          key: const ValueKey('twin-name-field'),
-          controller: _text,
-          autofocus: true,
-          maxLength: 24,
-          inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[\x00-\x1F\x7F]'))],
-          textCapitalization: TextCapitalization.words,
-          textInputAction: TextInputAction.done,
-          decoration: const InputDecoration(
-            labelText: 'Twin name',
-            helperText: 'Up to 24 characters. Leave blank for My twin.',
-            helperMaxLines: 3,
-            counterText: '',
+        ExcludeSemantics(
+          child: Text('Twin name', style: LtText.body(weight: FontWeight.w700)),
+        ),
+        const SizedBox(height: 8),
+        Semantics(
+          label: 'Twin name',
+          child: TextField(
+            key: const ValueKey('twin-name-field'),
+            controller: _text,
+            autofocus: true,
+            maxLength: 24,
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[\x00-\x1F\x7F]'))],
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.done,
+            decoration: const InputDecoration(
+              hintText: 'My twin',
+              helperText: 'Up to 24 characters. Leave blank for My twin.',
+              helperMaxLines: 3,
+              counterText: '',
+            ),
+            onSubmitted: (_) => _save(),
           ),
-          onSubmitted: (_) => _save(),
         ),
       ],
     ),

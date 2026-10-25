@@ -274,9 +274,14 @@ void main() {
     await t.tap(find.text('Twin name'));
     await t.pumpAndSettle();
     final field = find.byKey(const ValueKey('twin-name-field'));
-    await t.ensureVisible(field);
+    await t.ensureVisible(find.text('Twin name').last);
     await t.enterText(field, 'Fern');
     await t.pump();
+    expect(t.getSemantics(field).getSemanticsData().label, contains('Twin name'));
+    expect(
+      t.getTopLeft(find.text('Twin name').last).dy,
+      greaterThanOrEqualTo(t.getTopLeft(find.byType(AlertDialog)).dy),
+    );
     await _capture(t, 'rename-keyboard-large', target: field);
     expect(t.getBottomRight(find.text('Use name')).dy, lessThanOrEqualTo(367));
     await t.tap(find.text('Use name'));
