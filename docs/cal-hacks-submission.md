@@ -28,7 +28,7 @@ Health documents produce dated candidates for review; a lab reading is not autom
 
 ### How we built it
 
-The app is Flutter/Dart, with locally bundled character art, Lottie motion, native iOS integrations and an on-device Cox survival model. Profile/history storage and model inference run on the phone; a FastAPI/Pydantic server supports conversations, extraction and educational planning. [App dependencies](../app/pubspec.yaml), [model package](../model_handoff/lifetwin_on_device/README.md), [backend guide](../server/README.md)
+The app is Flutter/Dart, with locally bundled character art, Lottie motion, native iOS integrations and an on-device Cox survival model. Profile/history storage and model inference run on the phone; a FastAPI/Pydantic server supports conversations, extraction and educational planning. [App dependencies](../app/pubspec.yaml), [bundled app model package](../app/packages/lifetwin_on_device/README.md), [backend guide](../server/README.md)
 
 Muse is the current outside-AI option. Claude is reserved behind the same provider-consent interface and is not wired yet. The app names the configured provider and requests that provider's consent. Typing and deterministic fallbacks cover supported paths when outside AI is declined or unavailable. Provider keys stay server-side, and raw band records are not sent to outside AI. We make no unverified provider retention or training promise. [Provider adapters](../server/lifetwin/personalize/providers.py), [consent and data controls](../MASTER_PLAN.md)
 
