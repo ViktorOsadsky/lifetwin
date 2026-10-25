@@ -624,7 +624,7 @@ class Planner:
     ) -> tuple[cat.Activity, CoachNote | None]:
         pool = [
             cat.ACTIVITIES[a]
-            for a in cat.POOLS[level]
+            for a in cat.pool_for(level, self.profile.age)
             if a not in avoid
             and cat.allowed(cat.ACTIVITIES[a], self.limits, age=self.profile.age)
             and (not indoor or cat.ACTIVITIES[a].indoor)
@@ -776,7 +776,11 @@ class Planner:
                     minutes, change = bigger, "stepped_up"
                     why = f"You did {old}. Nice work! Today let's try {minutes} minutes."
                     rule = "done: small step up (+5 minutes, within the item's range)"
-                elif nxt and cat.allowed(nxt, self.limits, age=age) and nxt.id in cat.POOLS[level]:
+                elif (
+                    nxt
+                    and cat.allowed(nxt, self.limits, age=age)
+                    and nxt.id in cat.pool_for(level, age)
+                ):
                     activity, minutes, change = nxt, nxt.min_minutes, "stepped_up"
                     why = f"You did {old} at its longest. Ready for {nxt.title.lower()}?"
                     rule = "done at the top of the range: next item on the ladder"
@@ -854,15 +858,34 @@ class Planner:
         lever = {"vigorous": "vigorous_plus_60", "moderate": "moderate_plus_90"}.get(
             activity.counts_as
         )
-        if activity.component in {"balance", "strength"}:
-            why = "Strength and balance moves help keep you steady on your feet."
+        older = cat.band(self.profile.age) == "older"
+        if activity.component == "flexibility":
+            why = "Moving your joints through their full range keeps you loose and comfortable."
+        elif activity.component in {"balance", "strength"} and (
+            older or activity.position != "standing" or activity.intensity == "light"
+        ):
+            why = (
+                "Strength and balance moves help keep you steady on your feet."
+                if older
+                else "Strength and balance moves keep your body strong and steady."
+            )
+        elif activity.component == "strength":
+            why = "Strength work on two days a week is part of the guidelines for adults."
         else:
             why = {
-                "light": "A gentle start you can do at home. Every bit of movement counts.",
+                "light": "A gentle start you can do at home. Every bit of movement counts."
+                if older
+                else "An easy way to get going. Every bit of movement counts.",
                 "moderate": "Moving at an easy pace on most days is what the guidelines for "
-                "older adults ask for.",
-                "vigorous": "You're already active, and a harder session now and then is part "
-                "of the guidelines.",
+                "older adults ask for."
+                if older
+                else "About 150 minutes a week of moderate activity is what the guidelines "
+                "for adults ask for.",
+                "vigorous": "A harder session now and then is part of the guidelines, and "
+                "vigorous minutes count double."
+                if not older
+                else "You're already active, and a harder session now and then is part of the "
+                "guidelines.",
             }[activity.intensity]
         self.trace.append(
             TraceStep(
@@ -921,7 +944,11 @@ class Planner:
             order.remove(self.food_first)
             order.insert(0, self.food_first)
             facts.append(fact("readings", f"trend -> {self.food_first}"))
-        prev_card = cat.DIET.get(prev_ref.catalog_id) if prev_ref else None
+        prev_card = (
+            cat.DIET[prev_ref.catalog_id].for_band(self.profile.age)
+            if (prev_ref and prev_ref.catalog_id in cat.DIET)
+            else None
+        )
         dismissed = bool(fb and fb.status == "dismissed")
         if fb:
             facts.append(fact("feedback.food", fb.status + (f": {fb.reason}" if fb.reason else "")))
@@ -944,18 +971,21 @@ class Planner:
                         order.insert(0, card_id)
                         break
         if gate is not None:
-            card = cat.DIET[gate]
+            card = cat.DIET[gate].for_band(self.profile.age)
             if dismissed and prev_card and prev_card.id == gate:
-                card = cat.DIET["fluids"]
+                card = cat.DIET["fluids"].for_band(self.profile.age)
             change = (
                 "new" if prev_card is None else ("kept" if prev_card.id == card.id else "swapped")
             )
             rule = "condition_gate: diabetes or kidney -> care team or dietitian (report §2)"
         elif prev_card is None or prev_card.fixed:
-            card, change = cat.DIET[order[0]], "new" if prev_card is None else "swapped"
+            card, change = (
+                cat.DIET[order[0]].for_band(self.profile.age),
+                "new" if prev_card is None else "swapped",
+            )
             rule = "pattern_order: first pattern for this profile"
         elif dismissed:
-            card = cat.DIET[next(c for c in order if c != prev_card.id)]
+            card = cat.DIET[next(c for c in order if c != prev_card.id)].for_band(self.profile.age)
             change, rule = "swapped", "dismissed: next food pattern"
         else:
             card, change, rule = prev_card, "kept", f"{fb.status if fb else 'no feedback'}: keep"
@@ -1179,15 +1209,41 @@ class Planner:
     ) -> PlanItem:
         done = [titles[s] for s, f in self.feedback.items() if f.status == "done" and s in titles]
         days = this_week or 0
-        text = {
-            "concerned": "I'm sorry you're not feeling your best. Rest is fine, and gentle is good.",
-            "celebrate": "You did everything on the last plan. That's worth a little dance!",
-            "proud": f"You did {done[0].lower() if done else 'your plan'}. Nice work!",
-            "happy": f"You moved on {days} {'day' if days == 1 else 'days'} this week. "
-            "Your legs will thank you.",
-            "cozy": "Some weeks are like that. Want to pick one small thing for today?",
-            "waiting": "Nice to hear from you. How have you been?",
+        plan = done[0].lower() if done else "your plan"
+        day_word = f"{days} {'day' if days == 1 else 'days'}"
+        lines = {
+            "concerned": (
+                "I'm sorry you're not feeling your best. Rest is fine, and gentle is good.",
+                "That sounds like a rough one. Rest counts too, and I'm here when you're ready.",
+            ),
+            "celebrate": (
+                "You did everything on the last plan. That's worth a little dance!",
+                "You finished the whole plan. That's a proper win.",
+                "Every item done. Take a moment to enjoy that.",
+            ),
+            "proud": (
+                f"You did {plan}. Nice work!",
+                f"{plan[0].upper()}{plan[1:]} is done. Good going!",
+                f"You showed up and did {plan}. That's what counts.",
+            ),
+            "happy": (
+                f"You moved on {day_word} this week. Your legs will thank you.",
+                f"You moved on {day_word} this week. Nice rhythm!",
+                f"{day_word.capitalize()} of movement this week. Keep that going.",
+            ),
+            "cozy": (
+                "Some weeks are like that. Want to pick one small thing for today?",
+                "Busy weeks happen. One small thing today is plenty.",
+                "No pressure. Want to try one small thing and see how it feels?",
+            ),
+            "waiting": (
+                "Nice to hear from you. How have you been?",
+                "Good to see you. How's your week going?",
+            ),
         }[mood]
+        # The first line is the long-standing one; the rest rotate by date, so a day's
+        # plan always reads the same when it is rebuilt.
+        text = lines[0] if self.profile.age is None else lines[int(str(self.today).replace("-", "")) % len(lines)]
         if mood in {"happy", "proud", "celebrate"} and good_weeks >= 2:
             text += f" That makes {good_weeks} good weeks lately."
         goal = next((g for g in self.req.goals if self.goal_ok(g)), None)
@@ -1295,7 +1351,7 @@ class Planner:
                     facts=facts,
                     rule="fallback: nothing confirmed yet, so a labelled general plan with the "
                     "safest seated start",
-                    evidence=cat.CDC_OLDER[1],
+                    evidence=cat.WHO_2020[1],
                     action="general plan",
                 )
             )
@@ -1397,7 +1453,7 @@ class Planner:
                     )
                 )
             elif ref.id == "food" and ref.catalog_id in cat.DIET:
-                card = cat.DIET[ref.catalog_id]
+                card = cat.DIET[ref.catalog_id].for_band(self.profile.age)
                 items.append(
                     self.food_item(
                         card,

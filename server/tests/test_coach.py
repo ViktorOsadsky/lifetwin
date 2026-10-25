@@ -384,11 +384,26 @@ def test_note_words_with_numbers_or_supplements_never_fill_a_slot():
 
 def test_catalogue_sources_come_from_the_report_or_wellness_cards():
     wellness = {cat.CDC_SLEEP[1], cat.CDC_TOBACCO[1]}
+    # Added for the younger age bands: the CDC adults page the wellness card already cites,
+    # plus NHS, Dietary Guidelines and NIDDK pages.
+    all_ages = {
+        s[1]
+        for s in (
+            cat.CDC_ADULTS,
+            cat.NHS_ADULTS,
+            cat.DGA,
+            cat.NHS_WATER,
+            cat.NIDDK_DIABETES_FOOD,
+            cat.NIDDK_KIDNEY_FOOD,
+        )
+    }
+    cards = list(cat.DIET.values()) + list(cat.HABITS.values())
     urls = {a.source[1] for a in cat.ACTIVITIES.values()}
-    urls |= {c.source[1] for c in list(cat.DIET.values()) + list(cat.HABITS.values())}
-    for url in urls - wellness:
+    urls |= {c.source[1] for c in cards}
+    urls |= {c.younger["source"][1] for c in cards if "source" in c.younger}
+    for url in urls - wellness - all_ages:
         assert url.replace("https://", "") in REPORT, url
-    assert 15 <= len(cat.ACTIVITIES) <= 20
+    assert 15 <= len(cat.ACTIVITIES) <= 28
 
 
 @pytest.mark.parametrize("limit", cat.LIMITS)
@@ -1023,3 +1038,120 @@ def test_contributor_extractor_refused_without_flag():
     kw = dict(base_url="https://x/v1", api_key="k", model="muse-spark-1.3-contributor")
     assert not ChatCompletionsExtractor(**kw).configured
     assert ChatCompletionsExtractor(**kw, allow_contributor=True).configured
+
+
+# ---------------------------------------------------------------------------
+# Age bands: wording and workouts fit every adult, and limits always win
+# ---------------------------------------------------------------------------
+
+OLDER_WORDS = re.compile(r"\bolder (?:adults|people)\b|\bseniors?\b|\belderly\b|\bwith age\b", re.I)
+
+
+def plan_for(profile: dict, **extra):
+    client, _ = make_client()
+    return post(client, {"local_date": "2026-10-26", "profile": profile, **extra})
+
+
+@pytest.mark.parametrize("age", [18, 25, 39, 40, 50, 64])
+@pytest.mark.parametrize("level", [0, 60, 300])
+def test_under_65_never_hears_older_adult_wording(age, level):
+    body = plan_for(
+        {"age": age, "exercise_minutes_weekly": level, "sleep_hours": 6, "sedentary_min_day": 480}
+    )
+    assert not OLDER_WORDS.search(spoken(body)), spoken(body)
+    assert all(i["source_url"] for i in body["items"])
+
+
+def test_a_25_year_old_gets_young_adult_workouts():
+    ids = set()
+    for minutes in (0, 60, 300):
+        body = plan_for({"age": 25, "exercise_minutes_weekly": minutes})
+        w = workout(body)
+        ids.add(w["catalog_id"])
+        assert w["catalog_id"] not in {"chair_march", "seated_leg_lifts", "seated_arm_raises"}
+    assert ids & {"jog_walk", "bodyweight_circuit", "sport_friends", "cycling", "stairs"}
+    active = workout(plan_for({"age": 25, "exercise_minutes_weekly": 300}))
+    assert active["catalog_id"] == "bodyweight_circuit"
+    assert active["intensity"] == "vigorous"
+
+
+def test_a_50_year_old_gets_mid_life_workouts():
+    some = workout(plan_for({"age": 50, "exercise_minutes_weekly": 60}))
+    assert some["catalog_id"] == "walk_brisk"
+    active = workout(plan_for({"age": 50, "exercise_minutes_weekly": 300}))
+    assert active["catalog_id"] == "strength_twice"
+
+
+def test_a_70_year_old_keeps_the_gentle_set_and_older_adult_wording():
+    body = plan_for({"age": 70, "exercise_minutes_weekly": 0})
+    assert workout(body)["catalog_id"] == "walk_short"
+    protein = plan_for({"age": 70})
+    food = next(i for i in protein["items"] if i["kind"] == "diet")
+    assert food["catalog_id"] == "protein_each_meal"
+    assert "older adults" in food["why"]
+
+
+def test_a_70_year_old_with_knee_pain_gets_seated_or_gentle_only():
+    for minutes in (0, 60, 300):
+        body = plan_for({"age": 70, "exercise_minutes_weekly": minutes}, limits=["knee_pain"])
+        w = workout(body)
+        assert w["position"] in {"seated", "water"}, w
+        assert w["intensity"] != "vigorous"
+
+
+@pytest.mark.parametrize("age", [None, 17, 25, 50, 70, 85])
+@pytest.mark.parametrize("limit", cat.LIMITS)
+@pytest.mark.parametrize("level", [0, 60, 300])
+def test_limits_override_the_band(age, limit, level):
+    profile = {"exercise_minutes_weekly": level}
+    if age is not None:
+        profile["age"] = age
+    w = workout(plan_for(profile, limits=[limit]))
+    activity = cat.ACTIVITIES[w["catalog_id"]]
+    assert cat.allowed(activity, {limit}, age=age), (age, limit, w["catalog_id"])
+    if limit == "knee_pain":
+        assert w["position"] in {"seated", "water"}
+    if limit == "seated_only":
+        assert w["position"] == "seated" and w["catalog_id"] not in {"cycling", "stationary_bike"}
+    if limit in {"walking_aid", "fall_risk"}:
+        assert w["catalog_id"] not in cat.UNSTEADY | cat.UNSUPPORTED
+    if limit == "cardio_caution":
+        assert w["intensity"] in {"light"} or w["catalog_id"] == "walk_short"
+
+
+def test_unknown_age_gets_neutral_wording_and_no_vigorous_pick():
+    body = plan_for({"exercise_minutes_weekly": 300})
+    assert not OLDER_WORDS.search(spoken(body)), spoken(body)
+    assert workout(body)["intensity"] != "vigorous"
+    general = post(make_client()[0], {"local_date": "2026-10-26"})
+    assert not OLDER_WORDS.search(spoken(general)), spoken(general)
+
+
+def test_diabetes_and_kidney_cards_drop_medicare_for_younger_people():
+    for profile in ({"age": 30, "diabetes": True}, {"age": 55, "diabetes": True}):
+        food = next(i for i in plan_for(profile)["items"] if i["kind"] == "diet")
+        assert "medicare" not in (food["message"] + food["why"]).lower()
+        assert "niddk" in food["source_url"]
+    old = next(i for i in plan_for({"age": 70, "diabetes": True})["items"] if i["kind"] == "diet")
+    assert "Medicare" in old["message"]
+
+
+def test_encouragement_varies_by_date_and_stays_plain():
+    seen = set()
+    for day in range(20, 30):
+        body = plan_for({"age": 25}, local_date=f"2026-10-{day}")
+        cheer = next(i for i in body["items"] if i["kind"] == "encourage")
+        seen.add(cheer["message"])
+        assert "grandma" not in cheer["message"].lower()
+    assert len(seen) >= 2
+
+
+def test_new_catalogue_text_never_mentions_supplements_or_stimulants():
+    banned = re.compile(
+        r"supplement|energy drink|pre-?workout|caffeine|creatine|protein (?:shake|powder)", re.I
+    )
+    for activity in cat.ACTIVITIES.values():
+        assert not banned.search(activity.steps + activity.title), activity.id
+    for card in list(cat.DIET.values()) + list(cat.HABITS.values()):
+        text = " ".join([card.message, card.why, *map(str, card.younger.values())])
+        assert not banned.search(text), card.id
