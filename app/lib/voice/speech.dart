@@ -94,6 +94,7 @@ class GuideTurn {
     this.modelInputs,
     this.clientAction,
     this.emergency = false,
+    this.recommendations = const [],
   });
 
   final Map<String, dynamic> state;
@@ -110,8 +111,11 @@ class GuideTurn {
   final Map<String, dynamic>? modelInputs;
 
   /// What the server asks the app to do now: `open_health_import` after a yes to the
-  /// Apple Health offer.
+  /// Apple Health offer, `open_ideas` after "what should I do?".
   final String? clientAction;
+
+  /// The ideas the server attaches to the turn that finishes the intake (raw items, up to three).
+  final List<Map<String, dynamic>> recommendations;
 
   /// Something urgent was said: pause calmly, show "Call 911" and Continue (which sends `resume`).
   final bool emergency;

@@ -130,6 +130,10 @@ class TwinStore extends ChangeNotifier {
   bool get memoryConsent => _doc['memory_consent'] == true;
   bool get lifespanRevealSeen => _doc['lifespan_reveal_seen'] == true;
 
+  /// Ideas for you, kept for the day on the phone: the last good answer (`date`, `response`), the ideas
+  /// hidden today (`hidden_date`, `hidden_ids`) and the day Mochi's bubble last showed (`bubble_date`).
+  Map<String, dynamic> get ideasState => Map<String, dynamic>.from(_doc['ideas'] as Map? ?? const {});
+
   /// The local date (`YYYY-MM-DD`) onboarding was first completed; set once. The weekly
   /// check-in opens 7 days after it. A date, not health data.
   /// When the pending "Remind me later" notification fires (local wall time, ISO), if any.
@@ -189,6 +193,8 @@ class TwinStore extends ChangeNotifier {
   ]);
 
   Future<void> _saveTwin(Map<String, dynamic> look) => _save('twin', look);
+
+  Future<void> _saveIdeasState(Map<String, dynamic> state) => _save('ideas', state);
 
   Future<void> _setRemindLater(String? at) async {
     if (at != null || remindLater != null) await _save('remind_later', at ?? '');

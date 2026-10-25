@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../widgets/whole_word_text.dart';
 
 import '../ui/theme.dart';
+import '../experiment/widgets/idea_scene.dart' show IdeasLinkRow;
 import '../ui/widgets/widgets.dart';
 import 'widgets.dart';
 
@@ -44,7 +45,7 @@ class OutlookDriversScreen extends StatelessWidget {
   /// The Experiment screen belongs to codex/c-agentic-ui.
   final VoidCallback onExperiment;
 
-  /// "See ideas": the Ideas for you list (null hides it: under 18).
+  /// "Ideas linked to a healthier score ›": the Ideas for you list (null hides it: under 18).
   final VoidCallback? onIdeas;
 
   @override
@@ -100,13 +101,7 @@ class OutlookDriversScreen extends StatelessWidget {
       LipButton(label: 'Explore an experiment', onTap: onExperiment),
       if (onIdeas != null) ...[
         const SizedBox(height: 12),
-        LipButton(
-          label: 'See ideas',
-          kind: LipKind.secondary,
-          height: 56,
-          fontSize: 20,
-          onTap: onIdeas,
-        ),
+        IdeasLinkRow(label: 'Ideas linked to a healthier score', onTap: onIdeas!),
       ],
     ],
   );
