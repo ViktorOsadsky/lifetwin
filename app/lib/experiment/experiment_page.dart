@@ -225,6 +225,7 @@ class ExperimentPlate extends StatelessWidget {
         ),
         overlay: LayoutBuilder(
           builder: (context, box) => Stack(
+            clipBehavior: Clip.none, // the voice pill hangs over the bottom edge
             children: [
               ?overlay,
               if (bubble != null)
