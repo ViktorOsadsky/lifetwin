@@ -1,22 +1,27 @@
 // The connected DEMO flow, end to end, with real widgets and the live server, starting from
 // the demo seed (Rosa, 64, about two weeks of history; lib/demo/demo_seed.dart), at 390 x 844:
-//   1. Home shows only Mochi, the compact score card (a signed number, the percentile line, Higher risk /
-//      Better health, "Healthier than X of 100", sparkline, the info icon to the drivers, the
-//      "Your estimate" / "Around {year}" chip), ONE Check in, the "Today with Mochi" card, the
-//      activity pill and the History, Settings and Add band icons; nothing scrolls.
-//   2. The Today card: Why? and a source per row, the daily plan from the coach, and
-//      "Not for me" on the workout revises the plan.
+//   1. Home shows only Mochi, the compact score card, expanded (a signed number, the percentile line,
+//      Higher risk / Better health, "Healthier than X of 100", the info icon to the drivers, the
+//      "Your estimate" / "Around {year}" chip, no sparkline), ONE Check in, the "Today with Mochi"
+//      card, the activity pill and the History, Settings and Add band icons; nothing scrolls. The
+//      score card collapses to the score chip and expands again (#165).
+//   2. The Today card: Why? and a source per row, the daily plan from the coach, Skip and
+//      "Not done" on the workout revise the plan, "Yes to all" -> "You’re set for today ✓" (#177).
 //   3. The quick check-in, typed: ONE read-back, Looks right, then the plan line and
-//      "Here's today's plan".
-//   4. The weekly check-in on demand (Settings): "not great", the care reply once, Stop, Yes.
+//      "Here's today's plan"; the voice indicator says "Not listening" while typing (#167).
+//   4. The weekly check-in on demand (Settings; the seed joined 16 days ago): "not great", the care
+//      reply once, Stop, Yes.
 //   5. History with sources; Health documents readings (BP, A1c); Mochi's notebook.
 //   6. Every Settings hub row opens; AI and privacy names Meta, consent stays off.
 //   7. The band: the recorded demo gives ONE "Demo data" suggestion, saved as wristband,
 //      estimated; the copy says leg / Activity band, never wrist.
-//   8. Experiment: one lever changed, a result.
-//   9. Onboarding on a fresh store: the import control at question 1 (Not now collapses it to
-//      a reachable icon), "Talk or type", the typed answers, save, the reveal with its caveat,
-//      the reminder offer.
+//   8. Experiment: one lever changed, a result, the new-score pill (#178).
+//   9. Delete my data (#164): two confirmations, then the Mochi wave and onboarding by itself (#169).
+//  10. Onboarding on a fresh store: the wave and auto-start, the import control at question 1 (Not
+//      now collapses it to a reachable icon), "Talk or type", the typed answers with sleep skipped,
+//      save, the reveal with its caveat, the reminder offer.
+//  11. "Answer 1 more question" (#168) asks only the skipped answer; then the score, no rough flag.
+//  12. The weekly gate (#180): the new profile's Settings row says when its first weekly opens.
 // The outside-AI consent ("Personal suggestions?") is always answered "No thanks".
 //
 // Runs in the simulator or on a phone (as typed_device_test.dart):
@@ -26,7 +31,8 @@
 //
 // The test keeps its data in memory (its own TwinRepository on a MemoryBackend, seeded the
 // way the app seeds an empty store with DEMO_SEED=1), so it never reads or writes the
-// owner's LifeTwin data. The test sets the answer box's text itself after tapping into it
+// owner's LifeTwin data; shared_preferences is in memory too, and Delete my data's native
+// band-file clear is answered by the test. The test sets the answer box's text itself after tapping into it
 // (in a Profile build `tester.enterText` is ignored).
 import 'dart:async';
 import 'dart:convert';
@@ -40,9 +46,11 @@ import 'package:lifesim/checkin/checkin_screen.dart';
 import 'package:lifesim/demo/demo_seed.dart';
 import 'package:lifesim/experiment/experiment_screen.dart';
 import 'package:lifesim/main.dart';
+import 'package:lifesim/band/band_file_intake.dart' show NativeBandFiles;
 import 'package:lifesim/band/band_screens.dart';
 import 'package:lifesim/checkin/checkin_reminders.dart';
 import 'package:lifesim/checkin/consent_screens.dart';
+import 'package:lifesim/checkin/my_data_screen.dart';
 import 'package:lifesim/checkin/notebook_screen.dart';
 import 'package:lifesim/experiment/room_pills.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
@@ -53,6 +61,7 @@ import 'package:lifesim/wellness/daily_plan_screen.dart';
 import 'package:lifesim/wellness/home_panel.dart';
 import 'package:lifesim/wellness/today_card.dart';
 import 'package:lifesim/wellness/widgets.dart' show WellnessCard;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'typed_device_test.dart' as typed;
 
@@ -184,6 +193,9 @@ String answerFor(String? field) {
 
 const careQuestion = 'Would you like to keep going with the check-in, or stop here for today?';
 const safetyPhrase = 'hurting yourself, please call 911.';
+
+/// The onboarding answer left out, then asked again through "Answer 1 more question".
+const skipField = 'sleep_hours';
 final resultHeadline = RegExp(r'About \d+ more in 100|Less than 1 more in 100|About the same|About \d+ fewer in 100');
 
 /// The server's `personalize` capabilities.
@@ -261,6 +273,44 @@ Future<void> scrollThrough(WidgetTester t, Finder scrollable, bool Function() do
   }
 }
 
+/// The voice indicator (#167) now: `look:pill text:ring=look` (by their keys), or "none".
+String voicePillNow() {
+  String? keyed(String prefix) {
+    for (final e in find.byWidgetPredicate((w) => w.key is ValueKey<String>).evaluate()) {
+      final v = (e.widget.key! as ValueKey<String>).value;
+      if (v.startsWith(prefix)) return v.substring(prefix.length);
+    }
+    return null;
+  }
+
+  final look = keyed('voice-pill-');
+  if (look == null) return 'none';
+  final text = find
+      .descendant(of: find.byKey(ValueKey('voice-pill-$look')).first, matching: find.byType(RichText))
+      .evaluate()
+      .map((e) => (e.widget as RichText).text.toPlainText().trim())
+      .where((x) => x.length > 1)
+      .join(' ');
+  return '$look:$text:ring=${keyed('voice-ring-') ?? 'absent'}';
+}
+
+/// The typed onboarding answers, by the field asked.
+String onboardingWords(String field) => switch (field) {
+  'age' => "I'm 64",
+  'sex' => 'female',
+  'smoking_status' => 'never',
+  'height_cm' => 'five foot four',
+  'weight_kg' => 'a hundred and forty five pounds',
+  'sleep_hours' => 'about seven hours',
+  'general_health' => 'good',
+  'hypertension_diagnosed' => 'no',
+  'diabetes' => 'no',
+  'sedentary_min_day' => 'about six hours',
+  'moderate_recreation_min_week' => 'I walk thirty minutes five days a week',
+  'vigorous_recreation_min_week' => 'none',
+  _ => 'Sure',
+};
+
 /// The Today card's rows (workout, food, habit, encouragement) by their icons.
 const todayRows = {
   'workout': Icons.directions_walk_rounded,
@@ -284,6 +334,9 @@ final aroundYear = RegExp(r'Around (20|21)\d\d');
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
+  // Preferences in memory too: the owner's Home settings (a collapsed score card, plan choices)
+  // neither leak into the test nor get overwritten by it.
+  SharedPreferences.setMockInitialValues({});
 
   testWidgets('connected demo flow', timeout: const Timeout(Duration(minutes: 20)), (t) async {
     var pass = 0;
@@ -341,7 +394,8 @@ void main() {
           await log(
             'START harness=$harnessUrl api=$apiBase seededHistory=$seededHistory view=${screen.width}x${screen.height}',
           );
-          await t.pumpWidget(LifeTwinApp(twin: Future.value(repo)));
+          // As main() runs it: onboarding starts by itself when there is no profile (#169).
+          await t.pumpWidget(LifeTwinApp(twin: Future.value(repo), autoStartOnboarding: true));
           await tick(t);
           // What the server says when the app first asks (the app keeps the provider it got then).
           final capsAtLaunch = await capabilities();
@@ -363,18 +417,25 @@ void main() {
 
             final mochi = find.byKey(const ValueKey('room-twin'));
             final percentileLine = find.descendant(
-                of: find.byType(HomeWellnessPanel), matching: find.textContaining('Healthier than', findRichText: true));
+              of: find.byType(HomeWellnessPanel),
+              matching: find.textContaining('Healthier than', findRichText: true),
+            );
             final panelTexts = inside<HomeWellnessPanel>(find.byType(RichText))
                 .evaluate()
                 .map((e) => (e.widget as RichText).text.toPlainText().trim())
                 .toList();
             final signed = panelTexts.firstWhere(signedScore.hasMatch, orElse: () => '');
+            // The score's spoken label (healthScoreSemantics): which way is better.
             final higherBetter = shows(
-              find.byWidgetPredicate((w) => w is Semantics && (w.properties.label ?? '').contains('Higher is better')),
+              find.byWidgetPredicate(
+                (w) => w is Semantics && (w.properties.label ?? '').contains('Above 0 is healthier'),
+              ),
             );
             final labels = shows(find.textContaining('Higher risk')) && shows(find.textContaining('Better health'));
             final percentile = RegExp(r'Healthier than \d+ of 100 people your age').hasMatch(text);
+            // The compact Home card has no sparkline (#165); it must not come back on Home.
             final spark = find.byType(ScoreSparkline);
+            final expanded = find.byKey(const ValueKey('score-expanded'));
             final info = find.byTooltip('What moves your score');
             final revealSeen = repo.lifespanRevealSeen;
             final chip = revealSeen ? find.textContaining(aroundYear) : txt('Your estimate');
@@ -386,7 +447,9 @@ void main() {
             final cardTitle = shows(inside<TodayWithMochiCard>(find.textContaining('Today: ')));
             final cardLine = todayCardText();
             final cardRect = shows(card) ? t.getRect(card.first) : Rect.zero;
-            await log('  TODAY-CARD height=${cardRect.height.toStringAsFixed(1)} pt width=${cardRect.width.toStringAsFixed(1)} line="$cardLine"');
+            await log(
+              '  TODAY-CARD height=${cardRect.height.toStringAsFixed(1)} pt width=${cardRect.width.toStringAsFixed(1)} line="$cardLine"',
+            );
             final cardTitles = cardLine.split(' · ').length >= 3;
             final activity = find.byKey(const ValueKey('room-activity'));
             final activityIcon = shows(find.descendant(of: activity, matching: find.byType(Icon)));
@@ -415,7 +478,8 @@ void main() {
               'higherIsBetter': higherBetter,
               'riskBetterLabels': labels,
               'percentile': percentile,
-              'sparkline': shows(spark),
+              'expandedByDefault': shows(expanded),
+              'noSparkline': !shows(spark),
               'info': shows(info),
               'chip(${revealSeen ? 'Around' : 'Your estimate'})': shows(chip),
               'oneCheckIn($checkIns)': checkIns == 1 && !otherCheckIn,
@@ -445,7 +509,6 @@ void main() {
             final targets = <String, Finder>{
               'mochi': mochi,
               'percentileLine': percentileLine,
-              'sparkline': spark,
               'info': info,
               'chip': chip,
               'checkIn': checkIn,
@@ -497,6 +560,57 @@ void main() {
               dOk,
               'opened=$opened drivers=$drivers driverLine=$hasDriver backHome=$home',
               dOk ? '' : 'screen: $dText',
+            );
+
+            // The collapsible score card (#165): collapse to the chip (the signed score only), tap
+            // the chip to expand again. Preferences are in memory, so the owner's choice is untouched.
+            final collapsedChip = find.byKey(const ValueKey('score-collapsed'));
+            final collapseTap = await tapFinder(t, find.byTooltip('Collapse health score'), seconds: 3);
+            final isCollapsed = await waitUntil(t, () => shows(collapsedChip) && !shows(expanded), seconds: 5);
+            await pumpFor(t, const Duration(milliseconds: 600));
+            final chipTexts = shows(collapsedChip)
+                ? find
+                      .descendant(of: collapsedChip, matching: find.byType(RichText))
+                      .evaluate()
+                      .map((e) => (e.widget as RichText).text.toPlainText().trim())
+                      .toList()
+                : const <String>[];
+            final chipScore = chipTexts.firstWhere(signedScore.hasMatch, orElse: () => '');
+            final chipLabel = shows(
+              find.byWidgetPredicate(
+                (w) =>
+                    w is Semantics &&
+                    RegExp(r'^Health score .+, collapsed\. Tap to expand\.$').hasMatch(w.properties.label ?? ''),
+              ),
+            );
+            final cText = screenText();
+            final hiddenWhenCollapsed = !shows(percentileLine) && !shows(info) && !cText.contains('Higher risk');
+            final stillCheckIn = shows(find.widgetWithText(LipButton, 'Check in'));
+            // The chip's row is full width; the tap target is the chip itself (its InkWell).
+            final expandTap =
+                isCollapsed &&
+                await tapFinder(t, find.descendant(of: collapsedChip, matching: find.byType(InkWell)), seconds: 3);
+            final reExpanded = await waitUntil(
+              t,
+              () => shows(expanded) && !shows(collapsedChip) && shows(percentileLine) && shows(info),
+              seconds: 5,
+            );
+            await pumpFor(t, const Duration(milliseconds: 600));
+            final cOk =
+                collapseTap &&
+                isCollapsed &&
+                chipScore == signed &&
+                chipLabel &&
+                hiddenWhenCollapsed &&
+                stillCheckIn &&
+                expandTap &&
+                reExpanded;
+            await record(
+              '1 home: the score card collapses to the score chip and expands again',
+              cOk,
+              'collapse=$collapseTap collapsed=$isCollapsed chipScore="$chipScore" (expanded "$signed") chipLabel=$chipLabel '
+                  'detailsHidden=$hiddenWhenCollapsed checkIn=$stillCheckIn expandTap=$expandTap expanded=$reExpanded',
+              cOk ? '' : 'collapsed screen: $cText',
             );
           });
 
@@ -597,6 +711,45 @@ void main() {
                 revised ? '' : 'workout unchanged',
               );
             }
+
+            // "Yes to all" (#177): every item accepted, then "You’re set for today ✓" and Back to Home.
+            final yesAll = inside<DailyPlanScreen>(find.widgetWithText(LipButton, 'Yes to all'));
+            const setForToday = 'You’re set for today ✓';
+            final yesStart = DateTime.now();
+            // It sits under the items, by "Why this plan?": scroll the lazy list down to it.
+            try {
+              await t.scrollUntilVisible(yesAll, 250, scrollable: planScroll.first, maxScrolls: 30);
+            } catch (_) {}
+            await pumpFor(t, const Duration(milliseconds: 400));
+            var yesTapped = await tapFinder(t, yesAll, seconds: 10);
+            var set = yesTapped && await waitUntil(t, () => shows(find.text(setForToday)), seconds: 20);
+            if (yesTapped && !set && shows(yesAll)) {
+              // The button is disabled while a revision is still on its way: one more tap once it settles.
+              yesTapped = await tapFinder(t, yesAll, seconds: 5);
+              set = await waitUntil(t, () => shows(find.text(setForToday)), seconds: 20);
+            }
+            timings.add('  Yes to all: ${DateTime.now().difference(yesStart).inMilliseconds} ms');
+            await pumpFor(t, const Duration(milliseconds: 600));
+            final yesText = screenText();
+            final buttonGone = !shows(yesAll);
+            final backHome = find.widgetWithText(LipButton, 'Back to Home');
+            final hasBackHome = shows(backHome);
+            final cardOnce = occurrences(setForToday) == 1;
+            final wentHome =
+                hasBackHome &&
+                await tapFinder(t, backHome, seconds: 3) &&
+                await waitUntil(
+                  t,
+                  () => !shows(find.byType(DailyPlanScreen)) && shows(find.byType(HomeWellnessPanel)),
+                  seconds: 6,
+                );
+            final yOk = yesTapped && set && cardOnce && buttonGone && wentHome;
+            await record(
+              '2 plan: "Yes to all" -> "You’re set for today ✓", then Back to Home',
+              yOk,
+              'tapped=$yesTapped setForToday=$set once=$cardOnce yesToAllGone=$buttonGone backToHome=$hasBackHome home=$wentHome',
+              yOk ? '' : 'screen: $yesText',
+            );
             await goHome(t);
           });
 
@@ -611,6 +764,8 @@ void main() {
             }
             await settled(t, c);
             final asked = <String>[];
+            // The voice indicator (#167) after each typed answer: "Not listening", no ring.
+            final typingPill = <String>[];
             var readbacks = 0;
             var finalSeen = false;
             for (var i = 0; i < 10 && !(c.turn?.complete ?? false); i++) {
@@ -628,11 +783,18 @@ void main() {
               final field = c.turn?.currentField;
               final words = answerFor(field);
               final ms = await typeAnswer(t, c, words);
+              typingPill.add(voicePillNow());
               asked.add('$field="$words"');
               timings.add('  quick send "$words" ($field): ${ms ?? 'no box'} ms');
               if (ms == null) break;
             }
             final headers = find.text('Here’s what I heard').evaluate().length;
+            final pillOk = typingPill.isNotEmpty && typingPill.every((p) => p == 'typing:Not listening:ring=none');
+            await record(
+              '3 quick: voice indicator says "Not listening" while typing',
+              pillOk,
+              'afterEachAnswer=$typingPill',
+            );
             final ok = finalSeen && readbacks == 0 && headers == 1;
             await record(
               '3 quick: typed answers, ONE read-back at the end',
@@ -937,7 +1099,16 @@ void main() {
               await tapButton(t, 'Use this', seconds: 5);
               await pumpFor(t, const Duration(milliseconds: 600));
               copy.add(screenText());
-              await tapButton(t, 'Yes, save', seconds: 5);
+              // "Yes, save", or "Use about N" when the suggestion carries an estimate.
+              await tapFinder(
+                t,
+                find.byWidgetPredicate(
+                  (w) =>
+                      (w is LipButton && (w.label == 'Yes, save' || w.label.startsWith('Use about '))) ||
+                      (w is Text && (w.data ?? '').startsWith('Use about ')),
+                ),
+                seconds: 5,
+              );
               saved = await waitUntil(t, () => shows(find.text('Saved.')), seconds: 10);
               copy.add(screenText());
             }
@@ -1011,6 +1182,24 @@ void main() {
             final shown = await waitUntil(t, () => resultHeadline.hasMatch(screenText()), seconds: 10);
             timings.add('  experiment result after +: ${DateTime.now().difference(started).inMilliseconds} ms');
             final detail = screenText();
+            // The new-score pill (#178): "Health score A →", then the word, the new score and the change.
+            final pillMatch = RegExp(
+              r'Health score ([+\-−]?\d+\.\d\d) → \| (▲ Better|▼ Lower|About the same) \| ([+\-−]?\d+\.\d\d)( \| \(([+\-−]\d+\.\d\d)\))?',
+            ).firstMatch(detail);
+            final pillLabel = shows(
+              find.byWidgetPredicate(
+                (w) => w is Semantics && (w.properties.label ?? '').startsWith('New health score '),
+              ),
+            );
+            final pillWord = pillMatch?.group(2);
+            final pillOk =
+                pillMatch != null && pillLabel && (pillWord == 'About the same') == (pillMatch.group(5) == null);
+            await record(
+              '8 experiment: the new-score pill on the result',
+              pillOk,
+              'pill="${pillMatch?.group(0)}" word=$pillWord semantics=$pillLabel',
+              pillOk ? '' : 'detail: $detail',
+            );
             final used = await tapButton(t, 'Use in my what-if', seconds: 3);
             await pumpFor(t, const Duration(milliseconds: 900));
             final hubText = screenText();
@@ -1032,21 +1221,98 @@ void main() {
             await goHome(t);
           });
 
-          // ---- 9. Onboarding on a fresh store ----
-          await step('9 onboarding', () async {
+          // ---- 9. Delete my data (#164): both confirmations, then the Mochi wave and onboarding by itself ----
+          await step('9 delete my data', () async {
+            // Delete also clears the band-file inbox through the native channel: answer that here, so
+            // the owner's files on the phone are never touched (the test's store is in memory anyway).
+            var nativeClears = 0;
+            t.binding.defaultBinaryMessenger.setMockMethodCallHandler(NativeBandFiles.channel, (call) async {
+              if (call.method == 'clear') nativeClears++;
+              return null;
+            });
+            try {
+              final row = await openSettingsRow(t, 'My data');
+              final screenUp = await waitUntil(t, () => shows(find.byType(MyDataScreen)), seconds: 8);
+              final del = screenUp && await tapFinder(t, inside<MyDataScreen>(txt('Delete my data')), seconds: 5);
+              final sheet1 = await waitUntil(t, () => shows(txt('Delete your data?')), seconds: 5);
+              await pumpFor(t, const Duration(milliseconds: 500));
+              final everything = sheet1 && await tapText(t, 'Delete everything', seconds: 3);
+              final sheet2 = await waitUntil(t, () => shows(txt('Delete everything now?')), seconds: 5);
+              await pumpFor(t, const Duration(milliseconds: 500));
+              final sheet2Text = screenText();
+              final cantUndo = sheet2Text.contains('It can’t be undone.');
+              final yes = sheet2 && await tapText(t, 'Yes, delete', seconds: 3);
+              final deletedAt = DateTime.now();
+              final wave = find.byKey(const ValueKey('autostart-wave'));
+              final waved = await waitUntil(t, () => shows(wave), seconds: 8);
+              final hi = shows(find.text("Hi! I'm Mochi."));
+              final waveMs = DateTime.now().difference(deletedAt).inMilliseconds;
+              final onboarding = await waitUntil(
+                t,
+                () => shows(find.byType(VoiceOnboardingScreen)) && shows(find.text('Talk with me?')),
+                seconds: 10,
+              );
+              final startMs = DateTime.now().difference(deletedAt).inMilliseconds;
+              timings.add('  delete -> wave $waveMs ms, -> onboarding $startMs ms');
+              await pumpFor(t, const Duration(milliseconds: 600));
+              final wiped = !repo.store.hasProfile && repo.history().isEmpty && repo.store.checkins.isEmpty;
+              final ok =
+                  row &&
+                  screenUp &&
+                  del &&
+                  sheet1 &&
+                  everything &&
+                  sheet2 &&
+                  cantUndo &&
+                  yes &&
+                  waved &&
+                  hi &&
+                  onboarding &&
+                  wiped;
+              await record(
+                '9 delete my data: two confirmations, then the Mochi wave and onboarding starts by itself',
+                ok,
+                'row=$row screen=$screenUp delete=$del sheet1=$sheet1 everything=$everything sheet2=$sheet2 '
+                    'cantUndo=$cantUndo yes=$yes wave=$waved hi=$hi onboarding=$onboarding wiped=$wiped '
+                    'history=${repo.history().length} nativeClearAnswered=$nativeClears',
+                ok ? '' : 'screen: ${screenText()} || sheet2: $sheet2Text',
+              );
+            } finally {
+              await pumpFor(t, const Duration(milliseconds: 500));
+              t.binding.defaultBinaryMessenger.setMockMethodCallHandler(NativeBandFiles.channel, null);
+            }
+          });
+
+          // ---- 10. Onboarding on a fresh store ----
+          // The fresh store of steps 10-12.
+          late final TwinRepository repo2;
+          await step('10 onboarding', () async {
             // As the app opens it (reminders included, so the one-time offer can come), without the seed.
-            final repo2 = await openTwin(
+            repo2 = await openTwin(
               backend: MemoryBackend(),
               demo: false,
               reminders: CheckinReminders(LocalNotificationPort()),
             );
             await t.pumpWidget(const SizedBox());
             await tick(t);
-            await t.pumpWidget(LifeTwinApp(twin: Future.value(repo2)));
+            await t.pumpWidget(LifeTwinApp(twin: Future.value(repo2), autoStartOnboarding: true));
             await tick(t);
-            final room = await waitUntil(t, () => shows(find.widgetWithText(LipButton, 'Talk')), seconds: 20);
-            await tapButton(t, 'Talk');
-            await pumpFor(t, const Duration(milliseconds: 1000));
+            // First run (#169): the Mochi wave, then the conversation opens by itself (no Talk tap).
+            final launched = DateTime.now();
+            final waved = await waitUntil(t, () => shows(find.byKey(const ValueKey('autostart-wave'))), seconds: 20);
+            final room = await waitUntil(
+              t,
+              () => shows(find.byType(VoiceOnboardingScreen)) && shows(find.text('Talk with me?')),
+              seconds: 15,
+            );
+            timings.add('  first run -> wave + onboarding: ${DateTime.now().difference(launched).inMilliseconds} ms');
+            await record(
+              '10 onboarding: first run waves, then onboarding starts by itself',
+              waved && room,
+              'wave=$waved talkWithMe=$room',
+              waved && room ? '' : 'screen: ${screenText()}',
+            );
+            await pumpFor(t, const Duration(milliseconds: 800));
             final typedOk = await tapButton(t, "No, I'll type");
             await pumpFor(t, const Duration(milliseconds: 800));
             await tapButton(t, 'Not now');
@@ -1091,48 +1357,41 @@ void main() {
             }
             final ctlOk = room && typedOk && first && q1 && visible && sheet && notNow && collapsed && reachable;
             await record(
-              '9 onboarding: Q1 shows "Fill from Apple Health or a document"; Not now collapses it to a reachable icon',
+              '10 onboarding: Q1 shows "Fill from Apple Health or a document"; Not now collapses it to a reachable icon',
               ctlOk,
               'q1=$q1 visible=$visible sheet=$sheet notNow=$notNow collapsed=$collapsed '
                   'icon=${collapsedRect.size.width.round()}x${collapsedRect.size.height.round()} reopens=$reachable',
               ctlOk ? '' : 'screen: ${screenText()}',
             );
-            // "Talk or type": the opening button, with typing switched back to talking.
-            // Talking needs its own yes ("Talk with me?"); typing comes back with "Type instead".
+            // Talk or type: typing switched back to talking, then back to typing. Talking needs its own
+            // yes ("Talk with me?"). Hands-free voice (#167, #172) opens the microphone at once, so the
+            // opening "Talk or type" button gives way to the listening state: either one counts.
             final talk = await tapFinder(t, find.widgetWithText(LinkButton, 'Talk instead'), seconds: 3);
             await pumpFor(t, const Duration(milliseconds: 700));
             final talkYes = await tapButton(t, "Yes, I'll talk", seconds: 3);
-            final talkOrType = await waitUntil(t, () => shows(find.text('Talk or type')), seconds: 5);
+            var talkLook = '';
+            final talkOrType = await waitUntil(t, () {
+              talkLook = voicePillNow();
+              return shows(find.text('Talk or type')) || talkLook.startsWith('listening:Listening');
+            }, seconds: 5);
             final talkText = screenText();
             final backToTyping = await tapFinder(t, find.widgetWithText(LinkButton, 'Type instead'), seconds: 3);
             await pumpFor(t, const Duration(milliseconds: 700));
             if (shows(find.text('Talk with me?'))) await tapButton(t, 'Keep typing', seconds: 3);
             final typingAgain = await waitUntil(t, () => shows(find.byKey(const ValueKey('answer-field'))), seconds: 5);
             await record(
-              '9 onboarding: "Talk or type" is there',
+              '10 onboarding: "Talk or type" is there',
               talkOrType,
-              'talkInstead=$talk yesTalk=$talkYes talkOrType=$talkOrType typeInstead=$backToTyping typingAgain=$typingAgain',
+              'talkInstead=$talk yesTalk=$talkYes talkOrType=$talkOrType look=$talkLook typeInstead=$backToTyping typingAgain=$typingAgain',
               talkOrType ? '' : 'screen: $talkText',
             );
 
             // The typed answers.
-            String words(String field) => switch (field) {
-              'age' => "I'm 64",
-              'sex' => 'female',
-              'smoking_status' => 'never',
-              'height_cm' => 'five foot four',
-              'weight_kg' => 'a hundred and forty five pounds',
-              'sleep_hours' => 'about seven hours',
-              'general_health' => 'good',
-              'hypertension_diagnosed' => 'no',
-              'diabetes' => 'no',
-              'sedentary_min_day' => 'about six hours',
-              'moderate_recreation_min_week' => 'I walk thirty minutes five days a week',
-              'vigorous_recreation_min_week' => 'none',
-              _ => 'Sure',
-            };
             final started = DateTime.now();
             final answered = <String>[];
+            bool? skipped;
+            var skips = 0;
+            final typingPill = <String>[];
             for (var i = 0; i < 45 && c.phase != VoicePhase.done; i++) {
               await waitUntil(t, () => c.phase != VoicePhase.interpreting, seconds: 30);
               if (c.phase == VoicePhase.done) break;
@@ -1142,18 +1401,41 @@ void main() {
               }
               final phase = typed.serverPhase(c);
               final field = typed.fieldOf(c);
-              final say = phase == 'offering' ? 'No thanks' : (phase == 'probing' ? "let's move on" : words(field));
+              if (field == skipField && phase == 'asking' && skips < 3) {
+                // Leave one answer out, for "Answer 1 more question" (step 11); skipped again if asked again.
+                skips++;
+                await pumpFor(t, const Duration(milliseconds: 800)); // the links ignore taps right after a new turn
+                final (went, _) = await typed.tapAndWait(t, 'Skip this question', link: true);
+                skipped = (skipped ?? true) && went && typed.fieldOf(c) != skipField;
+                answered.add('$field=skipped:$skipped');
+                continue;
+              }
+              final say = phase == 'offering'
+                  ? 'No thanks'
+                  : (phase == 'probing' ? "let's move on" : onboardingWords(field));
               final r = await typed.type(t, say);
+              if (phase == 'asking') typingPill.add(voicePillNow());
               answered.add('$field=${r.error ?? 'ok'}');
               if (r.error != null) await typed.recover(t);
             }
             final done = c.phase == VoicePhase.done;
+            await record(
+              '10 onboarding: "$skipField" skipped',
+              skipped == true,
+              'skipped=$skipped skips=$skips answers=$answered',
+            );
+            final pillOk = typingPill.isNotEmpty && typingPill.every((p) => p == 'typing:Not listening:ring=none');
+            await record(
+              '10 onboarding: voice indicator says "Not listening" while typing',
+              pillOk,
+              'afterEachAnswer=${typingPill.toSet()} handsFree=${c.handsFree}',
+            );
             timings.add('  onboarding typed answers: ${DateTime.now().difference(started).inMilliseconds} ms');
             await pumpFor(t, const Duration(milliseconds: 800));
             final consentOverDone = shows(find.byType(OutsideAiConsentScreen));
             final doneText = screenText();
             await record(
-              '9 onboarding: done screen after the typed answers (not covered)',
+              '10 onboarding: done screen after the typed answers (not covered)',
               done && !consentOverDone && shows(find.widgetWithText(LipButton, 'Continue')),
               'done=$done answers=${answered.length} consentScreenOverDone=$consentOverDone',
               done && !consentOverDone ? '' : 'answers=$answered screen: $doneText',
@@ -1172,7 +1454,8 @@ void main() {
             await pumpFor(t, const Duration(milliseconds: 900));
             final rText = screenText();
             final score = rText.contains('Health score') && RegExp(r'Healthier than \d+ of 100').hasMatch(rText);
-            final age = RegExp(r'about age \d+, most likely \d+–\d+').hasMatch(rText);
+            // The age range under the year (#168 copy): "age 85–95", or "age 90–110+" at the top.
+            final age = RegExp(r'(^| \| )age \d+–\d+\+? \| ').hasMatch(rText);
             final caveatBtn = await tapFinder(t, find.byTooltip('About this estimate'), seconds: 3);
             final caveat = await waitUntil(
               t,
@@ -1183,7 +1466,7 @@ void main() {
             await pumpFor(t, const Duration(milliseconds: 600));
             final rOk = cont && savedProfile && ball && reveal && score && age && caveatBtn && caveat;
             await record(
-              '9 onboarding: save, then the reveal (score + "around {year}" with a caveat)',
+              '10 onboarding: save, then the reveal (score + "around {year}" with a caveat)',
               rOk,
               'continue=$cont saved=$savedProfile ball=$ball around="${aroundYear.firstMatch(rText)?.group(0)}" score=$score '
                   'ageRange=$age caveat=$caveat revealSeen=${repo2.lifespanRevealSeen}',
@@ -1207,11 +1490,120 @@ void main() {
               seconds: 10,
             );
             await record(
-              '9 onboarding: then the reminder offer; Home chip says "Around {year}"',
+              '10 onboarding: then the reminder offer; Home chip says "Around {year}"',
               toRoom && offer && offerButtons && chip,
               'toRoom=$toRoom offer=$offer buttons=$offerButtons homeChip=$chip',
               offer ? '' : 'screen: $offerText',
             );
+          });
+
+          // ---- 11. The skipped answer (#168): "Answer 1 more question" asks only it, then the full score ----
+          await step('11 answer missing', () async {
+            await goHome(t);
+            await pumpFor(t, const Duration(milliseconds: 800));
+            final action = inside<HomeWellnessPanel>(find.widgetWithText(LipButton, 'Answer 1 more question'));
+            final onHome = await waitUntil(t, () => shows(action), seconds: 10);
+            final roughBefore = shows(txt('Rough guide: 1 answer missing'));
+            final homeBefore = screenText();
+            final opened = onHome && await tapFinder(t, action, seconds: 3);
+            final up = opened && await waitUntil(t, () => shows(find.byType(VoiceOnboardingScreen)), seconds: 8);
+            await pumpFor(t, const Duration(milliseconds: 800));
+            // Typing, whatever the conversation opens with.
+            if (shows(find.widgetWithText(LipButton, "No, I'll type"))) {
+              await tapButton(t, "No, I'll type", seconds: 3);
+              await pumpFor(t, const Duration(milliseconds: 800));
+            }
+            if (shows(find.widgetWithText(LipButton, 'Not now'))) await tapButton(t, 'Not now', seconds: 3);
+            if (!shows(find.byKey(const ValueKey('answer-field'))) &&
+                shows(find.widgetWithText(LinkButton, 'Type instead'))) {
+              await tapFinder(t, find.widgetWithText(LinkButton, 'Type instead'), seconds: 3);
+              await pumpFor(t, const Duration(milliseconds: 700));
+              if (shows(find.text('Talk with me?'))) await tapButton(t, 'Keep typing', seconds: 3);
+            }
+            final asked = <String>[];
+            final errors = <String>[];
+            final started = DateTime.now();
+            if (up) {
+              final c = typed.ctl(t);
+              await waitUntil(t, () => c.turn != null && c.phase != VoicePhase.interpreting, seconds: 40);
+              for (var i = 0; i < 12 && c.phase != VoicePhase.done; i++) {
+                await waitUntil(t, () => c.phase != VoicePhase.interpreting, seconds: 30);
+                if (c.phase == VoicePhase.done) break;
+                if (c.confirming) {
+                  await typed.tapAndWait(t, 'Yes');
+                  continue;
+                }
+                final phase = typed.serverPhase(c);
+                final field = typed.fieldOf(c);
+                if (phase == 'asking') asked.add(field);
+                final say = phase == 'offering'
+                    ? 'No thanks'
+                    : (phase == 'probing' ? "let's move on" : onboardingWords(field));
+                final r = await typed.type(t, say);
+                if (r.error != null) {
+                  errors.add('$field: ${r.error}');
+                  await typed.recover(t);
+                }
+              }
+            }
+            final done = up && typed.ctl(t).phase == VoicePhase.done;
+            timings.add('  answer missing: ${DateTime.now().difference(started).inMilliseconds} ms');
+            await pumpFor(t, const Duration(milliseconds: 800));
+            final cont = done && await tapButton(t, 'Continue', seconds: 5);
+            final back = await waitUntil(
+              t,
+              () => !shows(find.byType(VoiceOnboardingScreen)) && shows(find.byType(HomeWellnessPanel)),
+              seconds: 15,
+            );
+            final saved = await waitUntil(t, () => repo2.profile[skipField] != null, seconds: 10);
+            final scored = await waitUntil(
+              t,
+              () =>
+                  inside<HomeWellnessPanel>(find.byType(RichText))
+                      .evaluate()
+                      .any((e) => signedScore.hasMatch((e.widget as RichText).text.toPlainText().trim())) &&
+                  !shows(txt('Rough guide: 1 answer missing')) &&
+                  !shows(find.widgetWithText(LipButton, 'Answer 1 more question')),
+              seconds: 15,
+            );
+            await pumpFor(t, const Duration(milliseconds: 600));
+            final homeAfter = screenText();
+            final onlyIt = asked.isNotEmpty && asked.every((f) => f == skipField);
+            final ok =
+                onHome && roughBefore && up && onlyIt && errors.isEmpty && done && cont && back && saved && scored;
+            await record(
+              '11 answer missing: "Answer 1 more question" asks only $skipField, then the score without the rough flag',
+              ok,
+              'action=$onHome roughBefore=$roughBefore opened=$up asked=$asked errors=$errors done=$done continue=$cont '
+                  'backHome=$back saved=$saved(${repo2.profile[skipField]}) scoreNoRoughFlag=$scored',
+              ok ? '' : 'home before: $homeBefore || now: $homeAfter',
+            );
+          });
+
+          // ---- 12. The weekly gate (#180): a new profile's weekly opens a week after joining ----
+          await step('12 weekly gate', () async {
+            await goHome(t);
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const months = [
+              'January', 'February', 'March', 'April', 'May', 'June', //
+              'July', 'August', 'September', 'October', 'November', 'December',
+            ];
+            final opens = DateTime.now().add(const Duration(days: 7));
+            final expected =
+                'Your first weekly check-in opens on ${days[opens.weekday - 1]}, ${months[opens.month - 1]} ${opens.day}';
+            final row = await openSettingsRow(t, 'Weekly check-in');
+            await pumpFor(t, const Duration(milliseconds: 1500));
+            final text = screenText();
+            final gate = text.contains(expected);
+            final noWeekly = !shows(find.byType(CheckInScreen));
+            final ok = row && gate && noWeekly;
+            await record(
+              '12 weekly gate: a new profile sees when its first weekly opens, and no weekly starts',
+              ok,
+              'row=$row gate=$gate noWeekly=$noWeekly firstJoined=${repo2.firstJoined} expected="$expected"',
+              ok ? '' : 'screen: $text',
+            );
+            await goHome(t);
           });
         } catch (e, s) {
           fail++;
