@@ -27,10 +27,12 @@ The binding rules in `MASTER_PLAN.md` ("Health-document intake (planned)") also 
 3. The app sends **only the recognised text** to `POST /api/documents/extract`. The server removes identifiers, then a
    deterministic parser proposes candidate values. Muse by Meta may help with messy text only with consent (below).
 4. The app asks "Is this document about you?". It then reads back each candidate in a compact way: value, units,
-   date and the line it came from. Only "Yes, that's right" keeps it. "No, that's not right" drops it, and Mochi asks
-   for that answer in the conversation, where the person corrects it by talking or typing.
+   date and the line it came from. Only "Keep" keeps it. "Change with Mochi" drops it, and Mochi asks for that answer
+   in the conversation, where the person corrects it by talking or typing. "Skip" drops it without a question.
 5. Confirmed model inputs go into the conversation as an `import` (the same path as Apple Health), so the mascot skips
-   those questions and asks only for what is still missing. Unconfirmed values are dropped.
+   those questions and asks only for what is still missing. Unconfirmed values are dropped. Kept blood pressure, A1c
+   and LDL values are recorded as dated readings in the history (`recordDocumentReadings`): information only, never
+   model inputs.
 6. The image, PDF and text are discarded as soon as extraction returns.
 
 ## Supported inputs and limits
@@ -228,7 +230,7 @@ Values confirmed earlier (Apple Health, earlier answers) are never lost: an uplo
 - **Progress** while recognising and extracting.
 - **"Is this document about you?"**
 - **Candidate read-back**, one per screen and compact: value in everyday units, date, the source line in large print;
-  "Yes, that's right", "No, that's not right", "Go back". There is no edit field. "No" hands that answer to Mochi.
+  "Keep", "Change with Mochi", "Skip", "Go back". There is no edit field. "Change with Mochi" hands that answer to Mochi.
 - **Muse consent prompt**, shown only on `consent_required`.
 - **Summary**, then hand off to the conversation with the confirmed values. The conversation asks only for the rest.
 - **Failure screens:** unreadable, not English, more than one person, too large or too many pages, server

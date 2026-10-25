@@ -8,6 +8,7 @@ import '../checkin/checkin_models.dart' show CheckinSettings, DayLog, shiftDay;
 import '../checkin/checkin_reminders.dart' show CheckinReminders;
 import '../checkin/checkin_store.dart' show mergeDayLogs;
 import '../checkin/daily_logs.dart' show weekProgress;
+import '../documents/document_extract.dart' show DocumentCandidate;
 import 'checkin_applier.dart';
 import 'history_log.dart';
 import 'profile_mapping.dart' show toModelProfile;
@@ -538,8 +539,16 @@ class TwinRepository extends ChangeNotifier {
     ];
   }
 
-  /// Confirmed blood pressure readings over time, oldest first: information for the
-  /// person and the coach, never a model input.
+  /// Confirmed readings over time, oldest first: information for the person and the coach,
+  /// never a model, forecast or health score input. They are the `reading` entries of
+  /// [history], and their items are:
+  /// - `systolic_bp`, `diastolic_bp` (mmHg, whole numbers) from weekly check-ins, Mochi
+  ///   changes and documents;
+  /// - `hba1c` (%, 3-20) and `ldl_cholesterol` (mg/dL, 20-400), from documents only.
+  ///
+  /// Date: an item's `date` is the document's own date (YYYY-MM-DD) when it had one; a
+  /// check-in reading has no item date. Otherwise the entry's `at` is the confirmation time
+  /// and, for a document, [HistoryEntry.dateNotOnDocument] is true.
   List<HistoryEntry> readings() => [
     for (final e in history().reversed)
       if (e.kind == HistoryKind.reading) e,
@@ -645,6 +654,47 @@ class TwinRepository extends ChangeNotifier {
             HistoryItem(field: f, value: values[f], source: source),
       ],
     );
+  }
+
+  /// The blood pressure, A1c and LDL values the person kept ("Keep") from a document,
+  /// each its own `reading` entry item with its unit and the document's date (none when
+  /// the document had none). Values outside the plausible range are dropped, never clamped.
+  /// History only: nothing here reaches the profile, the forecast or the health score.
+  Future<void> recordDocumentReadings(Iterable<DocumentCandidate> kept) => _atomically(() async {
+    for (final c in kept) {
+      final items = _documentReadingItems(c);
+      if (items.isEmpty) continue;
+      await _record(kind: HistoryKind.reading, source: HistorySource.document, items: items);
+    }
+    notifyListeners();
+  });
+
+  List<HistoryItem> _documentReadingItems(DocumentCandidate c) {
+    final date = c.date == null ? null : isoDate(c.date!);
+    HistoryItem item(String f, Object v) =>
+        HistoryItem(field: f, value: v, source: HistorySource.document, date: date);
+    final v = c.value;
+    switch (c.field) {
+      case 'blood_pressure':
+        final m = v is String ? RegExp(r'^(\d{2,3})/(\d{2,3})$').firstMatch(v) : null;
+        if (m == null) return const [];
+        final sys = int.parse(m.group(1)!), dia = int.parse(m.group(2)!);
+        return [
+          if (profileSchema['systolic_bp']!(sys)) item('systolic_bp', sys),
+          if (profileSchema['diastolic_bp']!(dia)) item('diastolic_bp', dia),
+        ];
+      case 'hba1c':
+        if (v is! num || (c.unit != null && c.unit != '%') || !readingSchema['hba1c']!(v)) return const [];
+        return [item('hba1c', v)];
+      case 'ldl_cholesterol':
+        if (v is! num) return const [];
+        // mmol/L is converted; the stored unit is always mg/dL.
+        final mg = c.unit == 'mmol/L' ? (v * 38.67).roundToDouble() : v;
+        if (!readingSchema['ldl_cholesterol']!(mg)) return const [];
+        return [item('ldl_cholesterol', mg)];
+      default:
+        return const [];
+    }
   }
 
   /// One write per event (see `TwinStore._transaction`); if it fails, memory and the
