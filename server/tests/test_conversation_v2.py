@@ -819,6 +819,8 @@ def test_capabilities_name_the_provider_that_would_be_called(setting, name):
     assert personalize == {
         "provider": name,
         "display_name": DISPLAY_NAMES[name],
+        "may_train_on_content": False,
+        "company": {"muse": "Meta", "claude": "Anthropic"}[name],
         "configured": False,
     }
     assert app.state.personalizer.name == name
