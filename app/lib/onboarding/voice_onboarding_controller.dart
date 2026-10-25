@@ -106,7 +106,9 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   /// The microphone closes by itself after this long with no new words, or
   /// after [listenLimit] in all, so it is never left open by mistake.
-  static const silenceLimit = Duration(seconds: 8);
+  static const silenceLimit = voiceQuietClose; // before the first word
+  static const endOfTurn = voiceEndOfTurn; // after a word: send once this quiet
+  Timer? _endOfTurnTimer;
   static const listenLimit = Duration(seconds: 30);
   Timer? _listenClock;
   int _listenedSeconds = 0;
@@ -207,6 +209,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       typing = !yes;
       this.aiHelper = aiHelper;
     });
+    if (yes) _warmUp(); // the token is ready by the time the first question is spoken
     await _send('start');
   }
 
@@ -314,7 +317,8 @@ class VoiceOnboardingController extends ChangeNotifier {
           .start((text) {
             if (text != caption) _silentSeconds = 0;
             _set(() => caption = text);
-          })
+            _armEndOfTurn(text);
+          }, onDropped: (_) => _inputDropped())
           .timeout(_micStartLimit);
       if (phase == VoicePhase.listening) _startListenClock();
     } on MicDeniedException {
@@ -328,15 +332,32 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() {
         phase = VoicePhase.idle;
         typing = true;
-        voiceUsable = false;
-        notice = voiceOffNotice;
+        _voiceOut();
       });
+    } on TimeoutException {
+      _set(() {
+        phase = VoicePhase.idle;
+        notice = voiceTroubleNotice;
+      });
+      try {
+        await input.cancel().timeout(_quickLimit); // a start that never answered must not leave the mic on
+      } catch (_) {}
     } catch (_) {
       _set(() {
         phase = VoicePhase.idle;
         notice = voiceTroubleNotice;
       });
     }
+  }
+
+  /// The connection was lost while listening. The input has already stopped the mic.
+  void _inputDropped() {
+    if (phase != VoicePhase.listening) return;
+    _stopListenClock();
+    _set(() {
+      phase = VoicePhase.idle;
+      notice = voiceTroubleNotice;
+    });
   }
 
   void _startListenClock() {
@@ -359,6 +380,18 @@ class VoiceOnboardingController extends ChangeNotifier {
   void _stopListenClock() {
     _listenClock?.cancel();
     _listenClock = null;
+    _endOfTurnTimer?.cancel();
+    _endOfTurnTimer = null;
+  }
+
+  /// Every caption (a new partial or final) restarts the end-of-turn wait, once a word is heard.
+  void _armEndOfTurn(String text) {
+    if (text.trim().isEmpty) return;
+    _endOfTurnTimer?.cancel();
+    _endOfTurnTimer = Timer(endOfTurn, () {
+      _endOfTurnTimer = null;
+      if (phase == VoicePhase.listening) unawaited(stopTalk());
+    });
   }
 
   /// Closes the microphone and sends what was heard.
@@ -374,8 +407,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() {
         phase = VoicePhase.idle;
         typing = true;
-        voiceUsable = false;
-        notice = voiceOffNotice;
+        _voiceOut();
       });
       return;
     } catch (_) {
@@ -503,6 +535,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() => askingVoice = true);
       return;
     }
+    if (!value) _warmUp();
     if (value) {
       if (phase == VoicePhase.listening) await cancelTalk();
       await _stopSpeech();
@@ -520,8 +553,10 @@ class VoiceOnboardingController extends ChangeNotifier {
         voiceUsable = true;
         typing = false;
         notice = null;
+        _clearOutage();
       }
     });
+    if (yes) _warmUp();
   }
 
   Future<void> hearAgain() async {
@@ -547,6 +582,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       return _send('start');
     }
     _busy = true;
+    _tryVoiceAgain();
     if (action == 'reply' && text != null) _lastReply = (text, fromTranscript);
     // After "No, change it" the next answer is a correction. Otherwise a reply
     // to a read-back goes as a reply, so the server can hear "yes", "no" or a new value.
@@ -590,6 +626,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     }
     _busy = false;
     _set(() {
+      if (_voiceBack) _voiceIn();
       correcting = false;
       turn = t;
       mascotLine = t.message;
@@ -604,7 +641,52 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (!typing && voiceUsable && !screenReader) await _speak(t.message);
   }
 
+  // ---- voice outage ----------------------------------------------------------
+
+  /// Voice was switched off because the server said it is unavailable (not by the person).
+  bool _voiceOutage = false;
+
+  /// A token was minted since the outage: voice comes back on the next turn.
+  bool _voiceBack = false;
+  Future<void>? _recovering;
+
+  /// Shows the "voice unavailable" notice and switches to typing; call inside [_set].
+  /// A token is retried in the background, and again with every turn.
+  void _voiceOut() {
+    typing = true;
+    voiceUsable = false;
+    notice = voiceOffNotice;
+    _voiceOutage = true;
+    _voiceBack = false;
+    _tryVoiceAgain();
+  }
+
+  void _tryVoiceAgain() {
+    if (!_voiceOutage || _voiceBack || _recovering != null || _disposed) return;
+    _recovering = input
+        .warmUp()
+        .then((_) => _voiceBack = _voiceOutage, onError: (Object _) => false)
+        .whenComplete(() => _recovering = null);
+  }
+
+  /// Voice works again: back to talking, as before the outage. Call inside [_set].
+  void _voiceIn() {
+    voiceUsable = true;
+    typing = false;
+    _voiceOutage = false;
+    _voiceBack = false;
+  }
+
+  /// The person chose voice again themselves; no outage to recover from.
+  void _clearOutage() {
+    _voiceOutage = false;
+    _voiceBack = false;
+  }
+
   // ---- speaking --------------------------------------------------------------
+
+  /// Gets voice ready in the background; any problem shows up when voice is used.
+  void _warmUp() => input.warmUp().ignore();
 
   Future<void> _stopOutput() async {
     try {
@@ -639,8 +721,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (gen == _speechGen && mascotLine) {
         _set(() {
           typing = true;
-          voiceUsable = false;
-          notice = voiceOffNotice;
+          _voiceOut();
         });
       }
     } catch (_) {
