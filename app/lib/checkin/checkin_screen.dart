@@ -119,8 +119,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
   /// Back to the Room; after "Stop for today" Mochi says it is okay.
   void _leave() {
     if (_stopped && _finished) {
-      ScaffoldMessenger.maybeOf(context)
-          ?.showSnackBar(const SnackBar(content: Text('That’s okay. I saved what you told me.')));
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('That’s okay. I saved what you told me.'), duration: Duration(seconds: 2)),
+      );
     }
     widget.onDone();
   }
