@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../voice/speech.dart';
+import '../voice/voice_log.dart';
 import '../voice/spoken_text.dart';
 
 enum VoicePhase {
@@ -131,8 +132,17 @@ class VoiceOnboardingController extends ChangeNotifier {
   bool _nudged = false;
 
   /// Hands-free: connections lost in a row before anything was heard (restarted out of sight).
+  /// A listen that stays up for [_healthyListen] starts the count again, so a recognizer
+  /// that ends now and then during a long quiet is always restarted.
   int _drops = 0;
   static const _dropRestarts = 3;
+  static const _healthyListen = 10; // seconds
+
+  /// Hands-free: a microphone that failed to open (socket, token, recorder) is tried again,
+  /// still "Listening", after 1 s, 2 s, then 3 s. Only then does the trouble notice show.
+  int _startFailures = 0;
+  static const _startRetries = 3;
+  Timer? _startRetry;
 
   /// The screen is out of sight (left, or the app is in the background): nothing opens by itself.
   bool _paused = false;
@@ -221,6 +231,8 @@ class VoiceOnboardingController extends ChangeNotifier {
     change();
     if (!_disposed) notifyListeners();
   }
+
+  void _hf(String name, [String detail = '']) => voiceLog('onb', name, detail);
 
   // ---- consent -----------------------------------------------------------
 
@@ -366,10 +378,30 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// before both the voice consent and the phone's microphone permission were given (the
   /// permission is asked by the first listen itself, and a no switches to typing for good).
   void _listenAgain() {
-    if (!continuous || _disposed || _paused || _busy || typing || !voiceUsable || askingVoice) return;
+    if (!continuous || _disposed) return;
     final t = turn;
-    if (t == null || t.complete || t.emergency || _retry != null || phase != VoicePhase.idle) return;
-    if (!(mayListen?.call() ?? true)) return;
+    final why = _paused
+        ? 'paused'
+        : _busy
+        ? 'busy'
+        : typing
+        ? 'typing'
+        : !voiceUsable
+        ? 'voice_off'
+        : askingVoice
+        ? 'asking_voice'
+        : t == null || t.complete
+        ? 'no_question'
+        : t.emergency
+        ? 'emergency'
+        : _retry != null
+        ? 'retry_shown'
+        : phase != VoicePhase.idle
+        ? 'phase_${phase.name}'
+        : !(mayListen?.call() ?? true)
+        ? 'not_on_screen'
+        : null;
+    if (why != null) return _hf('listen_skip', why);
     unawaited(startTalk(auto: true));
   }
 
@@ -397,34 +429,47 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (phase != VoicePhase.listening) return; // cancelled (or the app left) meanwhile
       await input
           .start((text) {
-            if (text != caption) _silentSeconds = 0;
+            if (text != caption) {
+              _silentSeconds = 0;
+              _hf('partial', heardForLog(text));
+            }
             _set(() => caption = text);
             _armEndOfTurn(text);
-          }, onDropped: (_) => _inputDropped())
+          }, onDropped: (e) => _inputDropped(e))
           .timeout(_micStartLimit);
-      if (phase == VoicePhase.listening && !_paused) _startListenClock();
+      if (phase == VoicePhase.listening && !_paused) {
+        _hf('mic_open');
+        _startFailures = 0;
+        _startListenClock();
+      }
     } on MicDeniedException {
+      _hf('error', 'mic_denied');
       _set(() {
         phase = VoicePhase.idle;
         typing = true;
         notice = micDeniedNotice;
       });
       await _speakNotice(micDeniedNotice);
-    } on VoiceUnavailableException {
+    } on VoiceUnavailableException catch (e) {
+      _hf('error', 'mic_start ${e.reason}');
       _set(() {
         phase = VoicePhase.idle;
         typing = true;
         _voiceOut();
       });
     } on TimeoutException {
+      _hf('error', 'mic_start timeout');
+      try {
+        await input.cancel().timeout(_quickLimit); // a start that never answered must not leave the mic on
+      } catch (_) {}
+      if (_retryStart()) return;
       _set(() {
         phase = VoicePhase.idle;
         notice = voiceTroubleNotice;
       });
-      try {
-        await input.cancel().timeout(_quickLimit); // a start that never answered must not leave the mic on
-      } catch (_) {}
-    } catch (_) {
+    } catch (e) {
+      _hf('error', 'mic_start $e');
+      if (_retryStart()) return;
       _set(() {
         phase = VoicePhase.idle;
         notice = voiceTroubleNotice;
@@ -432,16 +477,42 @@ class VoiceOnboardingController extends ChangeNotifier {
     }
   }
 
+  /// Hands-free: a microphone that failed to open is opened again a little later, out of
+  /// sight. False when it is not hands-free now or the retries are used up.
+  bool _retryStart() {
+    if (!continuous || _paused || _disposed || phase != VoicePhase.listening) return false;
+    if (_startFailures >= _startRetries) return false;
+    _startFailures++;
+    _hf('recognizer_restart', 'after_start_error $_startFailures');
+    _startRetry?.cancel();
+    _startRetry = Timer(Duration(seconds: _startFailures), () {
+      _startRetry = null;
+      if (phase == VoicePhase.listening && !_paused && !_disposed) _restartMic(stopFirst: false);
+    });
+    return true;
+  }
+
   /// The connection was lost while listening. The input has already stopped the mic.
   /// Hands-free, before anything was heard, the recognizer is simply started again.
-  void _inputDropped() {
+  void _inputDropped(Object error) {
+    _hf('dropped', '$error phase=${phase.name} heard=${caption.trim().isNotEmpty} drops=$_drops');
     if (phase != VoicePhase.listening) return;
     _stopListenClock();
-    if (continuous && !_paused && caption.trim().isEmpty && _drops < _dropRestarts) {
+    final heard = caption.trim();
+    if (continuous && !_paused && heard.isEmpty && _drops < _dropRestarts) {
       _drops++;
+      _hf('recognizer_restart', 'after_drop');
       _restartMic(stopFirst: false);
       return;
     }
+    if (continuous && !_paused && heard.isNotEmpty) {
+      // Words were heard before the connection went: they are the answer, as after a pause.
+      _hf('mic_close', 'dropped_send');
+      _set(() => phase = VoicePhase.idle);
+      unawaited(_send('reply', text: heard, fromTranscript: true));
+      return;
+    }
+    _hf('mic_close', 'dropped');
     _set(() {
       phase = VoicePhase.idle;
       notice = voiceTroubleNotice;
@@ -456,6 +527,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (phase != VoicePhase.listening) return _stopListenClock();
       _listenedSeconds++;
       _silentSeconds++;
+      if (_listenedSeconds >= _healthyListen) _drops = 0;
       if (continuous && caption.trim().isEmpty) {
         // Quiet never closes a hands-free microphone: one nudge, then the recognizer restarts
         // before the phone's session limit.
@@ -464,6 +536,7 @@ class VoiceOnboardingController extends ChangeNotifier {
           unawaited(_nudge());
         } else if (_listenedSeconds >= sessionRestart.inSeconds) {
           _stopListenClock();
+          _hf('recognizer_restart', 'session ${_listenedSeconds}s');
           _restartMic();
         }
         return;
@@ -471,12 +544,14 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (continuous) {
         if (_listenedSeconds >= listenLimit.inSeconds) {
           _stopListenClock();
+          _hf('mic_close', 'listen_limit');
           unawaited(stopTalk());
         }
         return;
       }
       if (_silentSeconds >= silenceLimit.inSeconds || _listenedSeconds >= listenLimit.inSeconds) {
         _stopListenClock();
+        _hf('mic_close', _silentSeconds >= silenceLimit.inSeconds ? 'quiet' : 'listen_limit');
         unawaited(stopTalk());
       } else if (listenSecondsLeft != null) {
         _set(() {});
@@ -487,6 +562,8 @@ class VoiceOnboardingController extends ChangeNotifier {
   void _stopListenClock() {
     _listenClock?.cancel();
     _listenClock = null;
+    _startRetry?.cancel();
+    _startRetry = null;
     _endOfTurnTimer?.cancel();
     _endOfTurnTimer = null;
   }
@@ -509,6 +586,8 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// Hands-free, after a long quiet: "Take your time, I'm listening." once, then listening again.
   Future<void> _nudge() async {
     _nudged = true;
+    _hf('nudge', 'quiet ${_silentSeconds}s');
+    _hf('mic_close', 'nudge');
     try {
       await input.cancel().timeout(_quickLimit);
     } catch (_) {}
@@ -524,7 +603,10 @@ class VoiceOnboardingController extends ChangeNotifier {
     _endOfTurnTimer?.cancel();
     _endOfTurnTimer = Timer(endOfTurn, () {
       _endOfTurnTimer = null;
-      if (!_disposed && phase == VoicePhase.listening) unawaited(stopTalk());
+      if (!_disposed && phase == VoicePhase.listening) {
+        _hf('end_of_turn');
+        unawaited(stopTalk());
+      }
     });
   }
 
@@ -533,18 +615,29 @@ class VoiceOnboardingController extends ChangeNotifier {
     await _starting;
     if (phase != VoicePhase.listening) return;
     _stopListenClock();
+    _hf('mic_close', 'finish');
     _set(() => phase = VoicePhase.interpreting);
     String text;
     try {
       text = (await input.finish().timeout(_micFinishLimit)).trim();
+      _hf('final', heardForLog(text));
     } on VoiceUnavailableException {
+      _hf('error', 'finish voice_unavailable');
       _set(() {
         phase = VoicePhase.idle;
         typing = true;
         _voiceOut();
       });
       return;
-    } catch (_) {
+    } catch (e) {
+      _hf('error', 'finish $e');
+      final heard = caption.trim();
+      if (continuous && !_paused) {
+        // Hands-free: what was heard is still the answer; with nothing heard it just listens on.
+        _set(() => phase = VoicePhase.idle);
+        if (heard.isNotEmpty) return _send('reply', text: heard, fromTranscript: true);
+        return _listenAgain();
+      }
       _set(() {
         phase = VoicePhase.idle;
         notice = voiceTroubleNotice;
@@ -580,6 +673,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     }
     if (phase != VoicePhase.listening) return;
     _stopListenClock();
+    _hf('mic_close', 'cancel');
     try {
       await input.cancel().timeout(_quickLimit);
     } catch (_) {}
@@ -748,6 +842,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       notice = null;
       _retry = null;
     });
+    _hf('send', action == 'reply' && text != null ? '$wire ${heardForLog(text)}' : wire);
     final GuideTurn t;
     try {
       t = await guide
@@ -763,6 +858,7 @@ class VoiceOnboardingController extends ChangeNotifier {
           .timeout(_turnLimit);
     } on GuideRejected catch (e) {
       // The server explained what is wrong; show its words. Nothing was changed.
+      _hf('error', 'turn rejected');
       _busy = false;
       _set(() {
         phase = turn?.complete == true ? VoicePhase.done : VoicePhase.idle;
@@ -770,6 +866,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       });
       return;
     } catch (e) {
+      _hf('error', 'turn $e');
       _busy = false;
       _set(() {
         phase = VoicePhase.idle;
@@ -781,6 +878,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       return;
     }
     _busy = false;
+    _hf('turn', 'field=${t.state['current_field']} phase=${t.phase} complete=${t.complete}');
     _set(() {
       if (_voiceBack) _voiceIn();
       correcting = false;
@@ -876,6 +974,7 @@ class VoiceOnboardingController extends ChangeNotifier {
   Future<bool> _speak(String line, {bool replay = false, bool mascotLine = true, bool first = false}) async {
     final gen = ++_speechGen;
     _spokeMascotLine = mascotLine;
+    _hf('tts_start', '${mascotLine ? 'line' : 'notice'}${first ? ' first' : ''}${replay ? ' replay' : ''}');
     _set(() => phase = VoicePhase.speaking);
     // The first line: if no audio has started within [firstAudioLimit], its words are on
     // screen, so speech stops and the microphone opens instead of leaving dead air.
@@ -888,13 +987,13 @@ class VoiceOnboardingController extends ChangeNotifier {
       wait?.cancel();
       final at = _openedAt;
       _openedAt = null;
-      if (at != null) debugPrint('LifeTwin voice: first audio ${at.elapsedMilliseconds} ms after the conversation opened');
+      _hf('first_audio', at == null ? '' : 'opened+${at.elapsedMilliseconds}ms');
     }
 
     if (first && continuous) {
       wait = Timer(firstAudioLimit, () {
         if (heard || gen != _speechGen || _disposed) return;
-        debugPrint('LifeTwin voice: no audio ${firstAudioLimit.inMilliseconds} ms after the first line came; listening instead');
+        _hf('error', 'no audio ${firstAudioLimit.inMilliseconds} ms after the first line came; listening instead');
         _openedAt = null;
         late.complete();
       });
@@ -904,12 +1003,15 @@ class VoiceOnboardingController extends ChangeNotifier {
       await Future.any([speech, late.future]).timeout(_speakLimit);
       if (late.isCompleted) {
         await _stopOutput();
+        _hf('tts_end', 'gave_up_first');
         if (gen == _speechGen && phase == VoicePhase.speaking) {
           _set(() => phase = turn?.complete == true ? VoicePhase.done : VoicePhase.idle);
         }
         return gen == _speechGen;
       }
+      _hf('tts_end', gen == _speechGen ? 'done' : 'stopped');
     } on VoiceUnavailableException {
+      _hf('tts_end', 'error voice_unavailable');
       // A notice that could not be said aloud is still on screen; replacing it (say, "can't
       // reach LifeTwin" with "couldn't say that") would hide what went wrong.
       if (gen == _speechGen && mascotLine) {
@@ -918,7 +1020,8 @@ class VoiceOnboardingController extends ChangeNotifier {
           _voiceOut();
         });
       }
-    } catch (_) {
+    } catch (e) {
+      _hf('tts_end', 'error $e');
       if (gen == _speechGen && mascotLine) _set(() => notice = speakTroubleNotice);
     } finally {
       wait?.cancel();
