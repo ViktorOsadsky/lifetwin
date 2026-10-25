@@ -336,8 +336,11 @@ class _RoomSceneState extends State<RoomScene> {
     final az = layout.cameraAzimuth;
     // The billboard leans back toward the camera; lying down, it faces it.
     final lean = (shape == RoomPose.sleep ? layout.cameraPitchDeg : layout.leanDeg) * math.pi / 180;
-    final h = layout.bearHeight * (_poseHeight[shape] ?? 1) * moodScale;
-    final feet = proj.project(x, y, z);
+    // The sleeping human is a little smaller and sits left, so its shoes stay inside the mattress.
+    final humanInBed = shape == RoomPose.sleep && widget.appearance.type == TwinType.human;
+    final h = layout.bearHeight * (_poseHeight[shape] ?? 1) * moodScale * (humanInBed ? 0.92 : 1);
+    final feet0 = proj.project(x, y, z);
+    final feet = humanInBed ? feet0.translate(-4, 0) : feet0;
     final head = proj.project(
       x - math.sin(lean) * math.sin(az) * h,
       y + math.cos(lean) * h,
