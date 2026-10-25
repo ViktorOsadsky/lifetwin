@@ -393,6 +393,7 @@ def test_unread_server_fields_are_the_known_ones(flow):
             "age_band",
             "caption",
             "care_line_shown",
+            "early",
             "guide_mode",
             "limitations",
             "one_pace",

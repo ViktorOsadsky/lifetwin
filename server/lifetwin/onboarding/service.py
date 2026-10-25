@@ -259,12 +259,26 @@ HEALTH_DECLINE_LEAD = re.compile(
     r"(?:answer|tell)(?: you| it| myself)?|(?:let's|lets) just talk)?[\s,.:;!-]*",
     re.IGNORECASE,
 )
+# "Yes, and I'm 72": the consent word first, an answer after it.
+CONSENT_LEAD = re.compile(
+    r"^\W*(?P<word>yes|yeah|yep|sure|of course|okay|ok|please do|go ahead|no|nope|nah)\b"
+    r"[\s,.!;:-]*(?:(?:and|but|also|oh and)\b[\s,]*)?(?P<rest>\S.*)$",
+    re.IGNORECASE | re.DOTALL,
+)
+CONSENT_NO_WORDS = {"no", "nope", "nah"}
+# A yes to a read-back with another answer after it.
+YES_AND = re.compile(
+    r"^\W*(?:yes|yeah|yep|yup|that's right|correct|right)\b[\s,.!;:-]*(?:and|also|plus|oh and)\b"
+    r"[\s,]*(?P<rest>\S.*)$",
+    re.IGNORECASE | re.DOTALL,
+)
 # Words that mean a reply is about the person's own height, weight, sleep or activity.
-PROFILE_TALK = re.compile(
-    r"\d|\b(?:tall|height|weigh|weight|pounds?|lbs?|kilos?|kg|feet|foot|ft|inches|cm|sleep|"
+PROFILE_WORDS = re.compile(
+    r"\b(?:tall|height|weigh|weight|pounds?|lbs?|kilos?|kg|feet|foot|ft|inches|cm|sleep|"
     r"sleeping|slept|hours?|sit|sitting|walk|walking|walks|run|running|jog|swim|swimming|"
     r"exercise|workout|gym|yoga|bike|biking|cycling|active|steps)\b"
 )
+PROFILE_TALK = re.compile(r"\d|" + PROFILE_WORDS.pattern)
 
 
 ESTIMATED = {
@@ -617,11 +631,47 @@ class ConversationService:
                     state.memory_consent = False
                     self._advance(state)
                     return respond(MEMORY_NO + " " + self._prompt(state))
+                lead = CONSENT_LEAD.match(text)
+                if action == "reply" and lead and self._says_answers(lead.group("rest"), today):
+                    # "Yes, and I'm 72": the consent is answered, the rest is an answer.
+                    state.memory_consent = lead.group("word").lower() not in CONSENT_NO_WORDS
+                    self._advance(state)
+                    answered = await self._turn(
+                        TurnRequest(
+                            action="reply",
+                            state=state,
+                            text=lead.group("rest"),
+                            input_mode=request.input_mode,
+                            provider_consent=request.provider_consent,
+                        )
+                    )
+                    note = MEMORY_YES if state.memory_consent else MEMORY_NO
+                    return answered.model_copy(update={"message": f"{note} {answered.message}"})
                 return respond(NOT_CAUGHT + ' Just say "yes" or "no". ' + MEMORY_ASK)
         if action == "reply" and state.phase == "probing":
             intent = control_intent(text)
             if intent is None or intent.kind in {"skip", "ask"}:
-                return respond(self._probe_reply(state, raw_text))
+                said = self._probe_reply(state, raw_text)
+                if state.phase == "asking" and state.current_field:
+                    # "I walk the dog, and I sit about 6 hours": the answer to a later
+                    # question is read, recorded and its question skipped.
+                    found = _safe(parse_reply, text, state.current_field, today=today) or {}
+                    # Only when it names the topic: "about 40 years" is no height or sleep.
+                    if PROFILE_WORDS.search(text.lower()) and any(
+                        self._open(state, f) for f in found
+                    ):
+                        answered = await self._turn(
+                            TurnRequest(
+                                action="reply",
+                                state=state,
+                                text=text,
+                                input_mode=request.input_mode,
+                                provider_consent=request.provider_consent,
+                            )
+                        )
+                        lead = said.removesuffix(" " + self._prompt(state))
+                        return answered.model_copy(update={"message": f"{lead} {answered.message}"})
+                return respond(said)
         if action == "skip" and state.phase == "probing":
             return respond(self._end_probe(state, pick(PROBE_SKIPPED, state.seed, "skip")))
         if action == "resume" or (
@@ -767,6 +817,24 @@ class ConversationService:
                             return answered
                     return respond(message)
         from_read_back = False
+        if action == "reply" and state.phase == "confirming" and read_back is None:
+            early = YES_AND.match(text)
+            if early and self._says_answers(early.group("rest"), today):
+                # "Yes, and I also sleep 7 hours": the yes confirms, the rest is an answer.
+                confirmed = await self._turn(
+                    TurnRequest(action="confirm", state=state, input_mode=request.input_mode)
+                )
+                if confirmed.state.phase in {"asking", "offering"}:
+                    return await self._turn(
+                        TurnRequest(
+                            action="reply",
+                            state=confirmed.state,
+                            text=early.group("rest"),
+                            input_mode=request.input_mode,
+                            provider_consent=request.provider_consent,
+                        )
+                    )
+                return confirmed
         if action == "reply" and state.phase == "confirming":
             # Only an unmistakable yes confirms; a no never does, and a correction
             # replaces only the answer being read back.
@@ -1327,6 +1395,18 @@ class ConversationService:
                 "are you sitting while you're awake?"
             )
         return None
+
+    @staticmethod
+    def _says_answers(text: str, today) -> bool:
+        """The reply carries a profile answer (a value, or talk of height, sleep, activity)."""
+        if not text:
+            return False
+        if PROFILE_TALK.search(text.lower()):
+            return True
+        return any(
+            _safe(parse_reply, text, field, today=today)
+            for field in ("age", "sex", "smoking_status", "general_health")
+        )
 
     def _decline_health(self, state: ConversationState) -> str:
         state.health_offered = True
