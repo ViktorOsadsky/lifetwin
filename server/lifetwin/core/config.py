@@ -20,6 +20,15 @@ class Settings(BaseSettings):
     llm_api_key: SecretStr = SecretStr("")
     # Reasoning models (e.g. Muse) spend the token budget thinking unless effort is limited.
     llm_reasoning_effort: Literal["", "minimal", "low", "medium", "high"] = "minimal"
+    # Outside-AI wording for Mochi's lines and suggestions, used only with the person's
+    # consent for this provider. "muse" reuses the LLM_* key and model; "claude" is a
+    # placeholder until it is switched on.
+    personalize_provider: Literal["muse", "claude"] = "muse"
+    # Short onboarding demo: at most one habit follow-up. Same questions, same order, the
+    # memory question and the Apple Health offer after age, sex and smoking stay.
+    onboarding_demo: bool = False
+    anthropic_api_key: SecretStr = SecretStr("")
+    claude_model: str = ""
     tavily_api_key: SecretStr = SecretStr("")
     cartesia_api_key: SecretStr = SecretStr("")
     cartesia_version: str = "2026-08-14"

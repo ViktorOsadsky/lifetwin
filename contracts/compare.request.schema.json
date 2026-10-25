@@ -72,6 +72,25 @@
           "default": null,
           "title": "Exercise Minutes Weekly"
         },
+        "general_health": {
+          "anyOf": [
+            {
+              "enum": [
+                "excellent",
+                "very_good",
+                "good",
+                "fair",
+                "poor"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "General Health"
+        },
         "height_cm": {
           "anyOf": [
             {
@@ -85,6 +104,46 @@
           ],
           "default": null,
           "title": "Height Cm"
+        },
+        "hypertension_diagnosed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hypertension Diagnosed"
+        },
+        "moderate_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate Recreation Min Week"
+        },
+        "sedentary_min_day": {
+          "anyOf": [
+            {
+              "maximum": 1439,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sedentary Min Day"
         },
         "sex": {
           "anyOf": [
@@ -147,6 +206,20 @@
           ],
           "default": null,
           "title": "Systolic Bp"
+        },
+        "vigorous_recreation_min_week": {
+          "anyOf": [
+            {
+              "maximum": 10080,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigorous Recreation Min Week"
         },
         "weight_kg": {
           "anyOf": [
