@@ -69,7 +69,7 @@ void main() {
           return;
         }
         if (hasNumber) {
-          expect(find.text('0.67'), findsOneWidget, reason: 'the index, two decimals');
+          expect(find.text('+0.67'), findsOneWidget, reason: 'the score, signed, two decimals');
           expect(find.textContaining('Better health'), findsOneWidget);
           expect(find.textContaining('Higher risk'), findsOneWidget);
         } else {
@@ -108,18 +108,18 @@ void main() {
   });
 
   testWidgets('higher is better: a higher score sits further along the Better health direction', (t) async {
-    await pump(t, const WellnessSnapshot(healthScore: 0.5, status: HealthScoreStatus.available));
-    expect(ScoreScale.position(0.5), lessThan(ScoreScale.position(2)));
-    expect(ScoreScale.position(1), 0.5); // 1.0 is the middle of the age group
-    expect(find.text('0.50'), findsOneWidget);
-    await pump(t, const WellnessSnapshot(healthScore: 2, status: HealthScoreStatus.available));
-    expect(find.text('2.00'), findsOneWidget);
+    await pump(t, const WellnessSnapshot(healthScore: -0.5, status: HealthScoreStatus.available));
+    expect(ScoreScale.position(-0.5), lessThan(ScoreScale.position(0.7)));
+    expect(ScoreScale.position(0), 0.5); // 0 is the middle of the age group
+    expect(find.text('−0.50'), findsOneWidget);
+    await pump(t, const WellnessSnapshot(healthScore: 0.7, status: HealthScoreStatus.available));
+    expect(find.text('+0.70'), findsOneWidget);
     final l = t.getRect(find.textContaining('Higher risk')), r = t.getRect(find.textContaining('Better health'));
     expect(l.left, lessThan(r.left), reason: 'risk on the left, better health on the right');
   });
 
   testWidgets('the number is not coloured by value (no red for low, green for high)', (t) async {
-    for (final (score, text) in [(0.4, '0.40'), (2.5, '2.50')]) {
+    for (final (score, text) in [(-0.4, '−0.40'), (0.9, '+0.90')]) {
       await pump(t, WellnessSnapshot(healthScore: score, status: HealthScoreStatus.available));
       final colour = t.widget<Text>(find.text(text)).style?.color;
       expect(colour == null || colour == LtColors.ink, isTrue, reason: 'score $score coloured $colour');
@@ -129,24 +129,34 @@ void main() {
   testWidgets('scores beyond the usual range still draw and print (clamped marker, true number)', (t) async {
     await pump(t, const WellnessSnapshot(healthScore: 9.87, status: HealthScoreStatus.available));
     expectSane(t);
-    expect(find.text('9.87'), findsOneWidget);
+    expect(find.text('+9.87'), findsOneWidget);
     expect(ScoreScale.position(9.87), 1.0);
-    await pump(t, const WellnessSnapshot(healthScore: 0.05, status: HealthScoreStatus.available));
-    expect(find.text('0.05'), findsOneWidget);
-    expect(ScoreScale.position(0.05), 0.0);
+    await pump(t, const WellnessSnapshot(healthScore: -5.05, status: HealthScoreStatus.available));
+    expect(find.text('−5.05'), findsOneWidget);
+    expect(ScoreScale.position(-5.05), 0.0);
   });
 
-  test('formatting edge cases: two decimals, never a sign (the index is a positive ratio); the semantics say higher is better', () {
-    expect(formatHealthScore(0.994), '0.99');
-    expect(formatHealthScore(1.004), '1.00');
-    expect(formatHealthScore(1.006), '1.01');
-    expect(formatHealthScore(0.5), isNot(contains(RegExp('[+−-]'))));
-    expect(healthScoreSemantics(0.5), isNot(contains('minus')));
-    expect(healthScoreSemantics(1.5), contains('Higher is better'));
+  test('formatting edge cases: signed two decimals, a real minus, no sign at zero; the semantics say plus/minus', () {
+    expect(formatHealthScore(0.994), '+0.99');
+    expect(formatHealthScore(-0.006), '−0.01');
+    expect(formatHealthScore(0), '0.00');
+    expect(formatHealthScore(-0.004), '0.00', reason: 'never "−0.00"');
+    expect(formatHealthScore(-0.4), contains('−'));
+    expect(formatHealthScore(-0.4), isNot(contains('-')));
+    expect(healthScoreSemantics(0.5), contains('plus 0.50'));
+    expect(healthScoreSemantics(-0.4), contains('minus 0.40'));
+    expect(healthScoreSemantics(0), startsWith('Health score 0.00.'));
+    expect(healthScoreSemantics(1.5), contains('Above 0 is healthier'));
   });
 
-  testWidgets('the info button ("What moves your score") opens at every state that shows a number or a line', (t) async {
-    for (final status in [HealthScoreStatus.available, HealthScoreStatus.extrapolated, HealthScoreStatus.missingInputs]) {
+  testWidgets('the info button ("What moves your score") opens at every state that shows a number or a line', (
+    t,
+  ) async {
+    for (final status in [
+      HealthScoreStatus.available,
+      HealthScoreStatus.extrapolated,
+      HealthScoreStatus.missingInputs,
+    ]) {
       var opened = 0;
       await pump(
         t,

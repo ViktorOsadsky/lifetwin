@@ -12,7 +12,7 @@ import '../ui/widgets/rough_guide_badge.dart';
 import 'models.dart';
 import 'widgets.dart';
 
-/// Home's health score card (design KN-HZ, K-HZ-1): one number (the health index, two decimals),
+/// Home's health score card (design KN-HZ, K-HZ-1): one number (the signed health score, two decimals),
 /// "Healthier than X of 100 people your age", a Higher risk / Average / Better health scale with
 /// the marker at the percentile, a circled i that opens the sheet, and a chip into the estimate.
 /// The chevron opens "What moves your score". The check-in entry is #58's `CheckInEntry`, mounted
@@ -141,7 +141,10 @@ class HomeWellnessPanel extends StatelessWidget {
         children: [
           top,
           if (snapshot.roughGuide)
-            const Align(alignment: Alignment.centerLeft, child: RoughGuideBadge(caveat: extrapolationCaveat)),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: RoughGuideBadge(caveat: extrapolationCaveat),
+            ),
           if (score != null)
             Padding(
               padding: const EdgeInsets.only(right: 6, top: 4),
@@ -481,7 +484,7 @@ class _ScoreDisc extends StatelessWidget {
 
 /// "Higher risk ‹ · Average · › Better health": a bar with one constant-colour marker. With a
 /// [percentile] the marker sits there (58 is 58% along the track, the tick in the middle is the
-/// average); without one it falls back to the index on a log scale, clamped to 1/3 to 3.
+/// average); without one it falls back to the centred score itself, clamped to -ln 3 .. +ln 3.
 class ScoreScale extends StatelessWidget {
   const ScoreScale({super.key, required this.score, this.percentile});
   final double score;
@@ -489,15 +492,14 @@ class ScoreScale extends StatelessWidget {
 
   double get markerPosition => percentile == null ? position(score) : (percentile! / 100).clamp(0.0, 1.0);
 
-  /// The index shown at the far right; its inverse is at the far left.
-  static const range = 3.0;
+  /// The score shown at the far right; its negative is at the far left (an index of 3 and 1/3).
+  static final double range = math.log(3);
 
-  /// 0 (far left, higher risk) to 1 (far right, better health); 0.5 is the index 1.0, the
-  /// middle of the age group. Symmetric in log(index), since the index is a ratio.
+  /// 0 (far left, higher risk) to 1 (far right, better health); 0.5 is the score 0, the middle of
+  /// the age group.
   static double position(double score) {
-    if (!(score > 0)) return 0;
-    final r = math.log(range);
-    return ((math.log(score).clamp(-r, r) + r) / (2 * r)).toDouble();
+    if (score.isNaN) return 0.5;
+    return ((score.clamp(-range, range) + range) / (2 * range)).toDouble();
   }
 
   @override

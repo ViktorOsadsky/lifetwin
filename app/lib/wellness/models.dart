@@ -103,9 +103,9 @@ class LifespanReveal {
 /// Shown on every lifespan surface, whatever the engine's rough flag says.
 const lifespanCaption = 'Estimate, rough guide';
 
-/// The health score as the repository gives it (`repo.healthScore`, the health index):
-/// higher is better, 1.0 is the middle of people your age and sex, always above 0. Never
-/// derived, inverted, rescaled or banded here.
+/// The health score as the repository gives it (`repo.healthScore`, the centred score): 0 is the
+/// middle of people your age and sex, above 0 is healthier, below 0 less healthy. Never derived,
+/// inverted, rescaled or banded here.
 @immutable
 class WellnessSnapshot {
   const WellnessSnapshot({
@@ -136,7 +136,7 @@ class WellnessSnapshot {
   /// Healthier than this many (0-100) of people your age in the survey.
   final double? ageGroupPercentile;
 
-  /// `repo.healthGroupLabel`, e.g. "women 59–69": the group 1.0 is the middle of.
+  /// `repo.healthGroupLabel`, e.g. "women 59–69": the group 0 is the middle of.
   final String? groupLabel;
 
   /// The model's message when there is no number.
@@ -148,10 +148,25 @@ class WellnessSnapshot {
   bool get underAge => status == HealthScoreStatus.underAge;
 }
 
-/// The health index, two decimals, no sign: 1.653 -> "1.65". The one formatter for a score.
-String formatHealthScore(double score) => score.toStringAsFixed(2);
+/// The health score (the centred score, ln of the index): signed, two decimals, with a real minus
+/// sign. 0 is the middle of the person's group; above 0 is healthier. 0.5 -> "+0.50", -0.4 ->
+/// "−0.40", exactly 0 (or anything that rounds to it) -> "0.00", no sign. The one formatter for a
+/// score value.
+String formatHealthScore(double score) {
+  final n = score.abs().toStringAsFixed(2);
+  if (n == '0.00') return n;
+  return '${score < 0 ? '−' : '+'}$n';
+}
 
-/// A change in the index: a sign and two decimals ("+0.05", "−0.03", with a real minus sign), or
+/// The score for a screen reader: "plus 0.50", "minus 0.40", "0.00".
+String spokenHealthScore(double score) {
+  final t = formatHealthScore(score);
+  if (t.startsWith('+')) return 'plus ${t.substring(1)}';
+  if (t.startsWith('−')) return 'minus ${t.substring(1)}';
+  return t;
+}
+
+/// A change in the score: a sign and two decimals ("+0.05", "−0.03", with a real minus sign), or
 /// "No change" when it rounds to 0.
 String formatScoreDelta(double delta) {
   final n = delta.abs().toStringAsFixed(2);
@@ -159,29 +174,28 @@ String formatScoreDelta(double delta) {
   return '${delta < 0 ? '−' : '+'}$n';
 }
 
-/// "Health score 1.65. Higher is better; 1.0 is the middle of people your age. Healthier than 79
-/// of 100 people your age." (the last sentence only with a [percentile]).
+/// "Health score plus 0.50. Above 0 is healthier; 0 is the middle of people your age. Healthier
+/// than 79 of 100 people your age." (the last sentence only with a [percentile]).
 String healthScoreSemantics(double score, {double? percentile}) =>
-    'Health score ${formatHealthScore(score)}. Higher is better; 1.0 is the middle of people your age.'
+    'Health score ${spokenHealthScore(score)}. Above 0 is healthier; 0 is the middle of people your age.'
     '${percentile == null ? '' : ' Healthier than ${percentile.round()} of 100 people your age.'}';
 
 /// The Experiment's line above the survival rows: "Health score 1.65 → 1.70 (+0.05)".
 String scoreChangeLine(double from, double delta) =>
     'Health score ${formatHealthScore(from)} → ${formatHealthScore(from + delta)} (${formatScoreDelta(delta)})';
 
-/// "Health score would go from 1.65 to 1.70, up 0.05." (or "down", or "would not change").
+/// "Health score would go from plus 0.50 to plus 0.55, up 0.05." (or "down", or "would stay at").
 String scoreChangeSemantics(double from, double delta) {
-  final to = formatHealthScore(from + delta);
   final d = formatScoreDelta(delta);
-  final f = formatHealthScore(from);
-  if (d == 'No change') return 'Health score would stay at $f.';
-  return 'Health score would go from $f to $to, ${delta < 0 ? 'down' : 'up'} ${d.substring(1)}.';
+  if (d == 'No change') return 'Health score would stay at ${spokenHealthScore(from)}.';
+  return 'Health score would go from ${spokenHealthScore(from)} to ${spokenHealthScore(from + delta)}, '
+      '${delta < 0 ? 'down' : 'up'} ${d.substring(1)}.';
 }
 
 /// The sheet behind the card's circled i.
 String healthScoreSheetBody(String? groupLabel) =>
-    '1.0 is the middle of ${groupLabel ?? 'people your age'} in the study. Higher is better. '
-    'It compares risk; it is not a chance of living or dying.';
+    '0 is the middle of ${groupLabel ?? 'people your age'} in the study. Above 0 is healthier, below 0 is less '
+    'healthy. It compares risk; it is not a chance of living or dying.';
 const healthScoreSheetNote = 'Habit ticks and check-ins don’t change it; your confirmed answers do.';
 const healthScoreSheetLinked = 'Linked, not proven.';
 

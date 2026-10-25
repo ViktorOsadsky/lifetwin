@@ -24,28 +24,36 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   group('health score: higher is better', () {
     test('two decimals and the accessible name come from the value (the index, 1 is the middle)', () {
-      expect(formatHealthScore(1.04), '1.04');
-      expect(formatHealthScore(0.5), '0.50');
-      expect(formatHealthScore(1.001), '1.00');
-      expect(healthScoreSemantics(1.04), 'Health score 1.04. Higher is better; 1.0 is the middle of people your age.');
+      expect(formatHealthScore(0.504), '+0.50');
+      expect(formatHealthScore(-0.4), '−0.40');
+      expect(formatHealthScore(0), '0.00');
       expect(
-        healthScoreSemantics(1.653, percentile: 78.6),
-        'Health score 1.65. Higher is better; 1.0 is the middle of people your age. '
+        healthScoreSemantics(0.504),
+        'Health score plus 0.50. Above 0 is healthier; 0 is the middle of people your age.',
+      );
+      expect(
+        healthScoreSemantics(0.504, percentile: 78.6),
+        'Health score plus 0.50. Above 0 is healthier; 0 is the middle of people your age. '
         'Healthier than 79 of 100 people your age.',
+      );
+      expect(
+        healthScoreSemantics(-0.4, percentile: 30),
+        'Health score minus 0.40. Above 0 is healthier; 0 is the middle of people your age. '
+        'Healthier than 30 of 100 people your age.',
       );
     });
 
-    test('the marker sits by the public value: better health is to the right, 1.0 in the middle', () {
-      expect(ScoreScale.position(1.0), 0.5);
-      expect(ScoreScale.position(1.5), greaterThan(0.5));
-      expect(ScoreScale.position(1 / 1.5), lessThan(0.5));
-      expect(ScoreScale.position(1.5) - 0.5, closeTo(0.5 - ScoreScale.position(1 / 1.5), 1e-12)); // a ratio
+    test('the fallback marker sits by the value: better health is to the right, 0 in the middle', () {
+      expect(ScoreScale.position(0), 0.5);
+      expect(ScoreScale.position(0.4), greaterThan(0.5));
+      expect(ScoreScale.position(-0.4), lessThan(0.5));
+      expect(ScoreScale.position(0.4) - 0.5, closeTo(0.5 - ScoreScale.position(-0.4), 1e-12));
       expect(ScoreScale.position(99), 1);
-      expect(ScoreScale.position(0.01), 0);
+      expect(ScoreScale.position(-99), 0);
     });
 
     testWidgets('the card reads Higher risk, Average, Better health and names the score', (t) async {
-      for (final score in [1.04, 0.3]) {
+      for (final score in [0.04, -0.3]) {
         await pump(
           t,
           HealthScoreSummary(
@@ -60,7 +68,7 @@ void main() {
         // The marker is on the side the value says.
         final marker = t.getCenter(find.byKey(const ValueKey('score-marker'))).dx;
         final bar = t.getCenter(find.text('Average')).dx;
-        expect(score > 1 ? marker > bar - 40 : marker < bar, isTrue);
+        expect(score > 0 ? marker > bar - 40 : marker < bar, isTrue);
       }
     });
   });
