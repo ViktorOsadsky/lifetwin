@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../checkin/consents.dart' show AiProvider;
 import '../health/readback.dart' show usesImperial;
 import '../ui/theme.dart';
 import '../twin/history_log.dart' show valueText;
@@ -18,6 +19,7 @@ class DocumentUploadScreen extends StatefulWidget {
     required this.onDone,
     this.now,
     this.confirmedValues = const {},
+    this.provider,
   });
 
   final DocumentUploadService service;
@@ -27,6 +29,9 @@ class DocumentUploadScreen extends StatefulWidget {
   final void Function(DocumentImportResult result) onDone;
   final DateTime Function()? now;
   final Map<String, dynamic> confirmedValues;
+
+  /// The outside AI provider from `/api/capabilities`. Null or not configured: the question is never asked.
+  final AiProvider? provider;
 
   @override
   State<DocumentUploadScreen> createState() => _DocumentUploadScreenState();
@@ -73,11 +78,16 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
   void _show(DocumentReading r, {bool askedMuse = false}) {
     if (!mounted) return;
+    if (r.museCouldHelp && !askedMuse && widget.provider?.configured != true) {
+      widget.service.discard();
+    }
     setState(() {
       _reading = r;
       if (r.status == DocumentReadStatus.cancelled) {
         _step = _Step.intro;
-      } else if (r.museCouldHelp && !askedMuse) {
+      } else if (r.museCouldHelp &&
+          !askedMuse &&
+          widget.provider?.configured == true) {
         _step = _Step.muse;
       } else if (r.candidates.isEmpty) {
         _step = _Step.failed;
@@ -133,7 +143,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
       ]),
       _Step.muse => _page(
         'Some lines were hard to read',
-        'Muse can help find your numbers. It gets the words, never the photo. Just this document.',
+        '${widget.provider!.displayName} can help find your numbers. It gets the words, never the photo. Just this document.',
         [
           ('Yes, just this document', () => _museAnswer(true)),
           ('No thanks', () => _museAnswer(false)),
