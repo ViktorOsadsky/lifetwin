@@ -57,6 +57,11 @@ ExperimentResult _result({double? current = 0.504, double? delta = 0.0436}) => E
   scoreDelta: delta,
 );
 
+Color? _pillFill(WidgetTester t, String word) {
+  final box = t.widget<Container>(find.ancestor(of: find.text(word), matching: find.byType(Container)).first);
+  return (box.decoration as BoxDecoration).color;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadAppFonts);
@@ -72,9 +77,13 @@ void main() {
     expect(formatScoreDelta(0), 'No change');
     expect(formatScoreDelta(0.004), 'No change');
     expect(formatScoreDelta(-0.004), 'No change');
-    expect(scoreChangeLine(0.5, 0.05), 'Health score +0.50 → +0.55 (+0.05)');
-    expect(scoreChangeSemantics(0.5, 0.05), 'Health score would go from plus 0.50 to plus 0.55, up 0.05.');
-    expect(scoreChangeSemantics(0.02, -0.05), 'Health score would go from plus 0.02 to minus 0.03, down 0.05.');
+    expect(newScoreSemantics(0.5, 0.05), 'New health score plus 0.55, up 0.05 from plus 0.50');
+    expect(newScoreSemantics(0.5, -0.03), 'New health score plus 0.47, down 0.03 from plus 0.50');
+    expect(newScoreSemantics(0.02, -0.05), 'New health score minus 0.03, down 0.05 from plus 0.02');
+    expect(newScoreSemantics(0.5, 0), 'New health score plus 0.50, about the same');
+    expect(scoreChangeOf(0.005), ScoreChange.better);
+    expect(scoreChangeOf(-0.005), ScoreChange.lower);
+    expect(scoreChangeOf(0.004), ScoreChange.same);
   });
 
   group('the Home card', () {
@@ -257,27 +266,68 @@ void main() {
       scoreDelta: delta,
     );
 
-    testWidgets('shows from → to (delta) above the survival rows, with a spoken form', (t) async {
+    testWidgets('better: old score plain, new score bold in a teal pill with the word and arrow', (t) async {
       await pump(t, card(current: 0.5, delta: 0.05));
-      expect(find.text('Health score +0.50 → +0.55 (+0.05)'), findsOneWidget);
+      expect(find.text('Health score +0.50 →'), findsOneWidget);
+      expect(find.text('▲ Better'), findsOneWidget);
+      expect(find.text('+0.55'), findsOneWidget);
+      expect(find.text('(+0.05)'), findsOneWidget);
+      expect(_pillFill(t, '▲ Better'), LtColors.mintTint);
+      expect(
+        t.widget<Text>(find.text('+0.55')).style!.fontSize!,
+        greaterThan(t.widget<Text>(find.text('Health score +0.50 →')).style!.fontSize!),
+      );
+      final sem = t.ensureSemantics();
+      await t.pump();
+      expect(t.getSemantics(find.text('+0.55')).label, contains('New health score plus 0.55, up 0.05 from plus 0.50'));
+      sem.dispose();
+      expect(find.text('About 4 more in 100'), findsOneWidget, reason: 'the survival rows stay');
+      expect(t.getTopLeft(find.text('+0.55')).dy, lessThan(t.getTopLeft(find.text('About 4 more in 100')).dy));
+    });
+
+    testWidgets('lower: a coral pill, down arrow, real minus', (t) async {
+      await pump(t, card(current: 0.5, delta: -0.03));
+      expect(find.text('▼ Lower'), findsOneWidget);
+      expect(find.text('+0.47'), findsOneWidget);
+      expect(find.text('(−0.03)'), findsOneWidget);
+      expect(_pillFill(t, '▼ Lower'), LtColors.peach);
       final sem = t.ensureSemantics();
       await t.pump();
       expect(
-        t.getSemantics(find.text('Health score +0.50 → +0.55 (+0.05)')).label,
-        contains('Health score would go from plus 0.50 to plus 0.55, up 0.05.'),
+        t.getSemantics(find.text('+0.47')).label,
+        contains('New health score plus 0.47, down 0.03 from plus 0.50'),
       );
       sem.dispose();
-      expect(find.text('About 4 more in 100'), findsOneWidget, reason: 'the survival rows stay');
-      expect(
-        t.getTopLeft(find.text('Health score +0.50 → +0.55 (+0.05)')).dy,
-        lessThan(t.getTopLeft(find.text('About 4 more in 100')).dy),
-      );
     });
 
-    testWidgets('a drop uses a real minus', (t) async {
-      await pump(t, card(current: 0.5, delta: -0.03));
-      expect(find.text('Health score +0.50 → +0.47 (−0.03)'), findsOneWidget);
+    testWidgets('about the same: a grey pill with no arrow, including the weight guard 0', (t) async {
+      for (final delta in [0.0, 0.004, -0.004]) {
+        await pump(t, card(current: 0.5, delta: delta));
+        expect(find.text('About the same'), findsOneWidget);
+        expect(find.text('▲ Better'), findsNothing);
+        expect(find.text('▼ Lower'), findsNothing);
+        expect(find.text('+0.50'), findsOneWidget);
+        expect(_pillFill(t, 'About the same'), LtColors.trackOff);
+      }
+      final sem = t.ensureSemantics();
+      await t.pump();
+      expect(t.getSemantics(find.text('+0.50')).label, contains('New health score plus 0.50, about the same'));
+      sem.dispose();
     });
+
+    for (final (w, scale) in [(320.0, 1.0), (390.0, 1.6), (320.0, 1.6)]) {
+      testWidgets('no overflow at ${w.toInt()} wide, $scale x', (t) async {
+        for (final delta in [0.05, -0.03, 0.0]) {
+          await pump(
+            t,
+            card(current: -0.4, delta: delta),
+            width: w,
+            scale: scale,
+          );
+          expect(t.takeException(), isNull);
+        }
+      });
+    }
 
     testWidgets('hidden when scoreDelta or the current score is null', (t) async {
       await pump(t, card(delta: null));
