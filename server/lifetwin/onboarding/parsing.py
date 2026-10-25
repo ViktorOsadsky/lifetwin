@@ -103,6 +103,25 @@ SKIP_WORDS = {
     "i prefer not to say",
     "prefer not to answer",
     "i'd rather not answer",
+    # Plain refusals: before, these got small talk ("That sounds nice") and the question again.
+    "next question",
+    "next one",
+    "i don't want to say",
+    "i do not want to say",
+    "i don't want to tell you",
+    "i do not want to tell you",
+    "i don't want to answer",
+    "i don't want to answer that",
+    "i don't want to answer this",
+    "i'd rather not tell you",
+    "none of your business",
+    "that's none of your business",
+    "i'm not telling",
+    "i'm not telling you",
+    "not telling",
+    "not saying",
+    "i'm not saying",
+    "no comment",
 }
 # Not knowing: recorded as unknown, distinct from skipped (intents.dont_know reads
 # many more phrasings; these are the short whole replies).
@@ -249,6 +268,9 @@ APOSTROPHES = [
 def normalize_text(text: str) -> str:
     """Map smart punctuation (iOS default), primes, fraction glyphs and missing
     apostrophes; collapse spaces."""
+    # Invisible format characters (zero-width space, joiners, soft hyphen, BOM) would
+    # split a word for every rule: "chest p<ZWSP>ain" must still read as chest pain.
+    text = "".join(c for c in text if unicodedata.category(c) != "Cf")
     text = text.translate(QUOTES)
     text = text.replace("''", '"')  # 5'4'' typed with two apostrophes
     for glyph, words in FRACTIONS.items():
