@@ -524,7 +524,9 @@ def _canonical(text: str) -> str:
     s = re.sub(r"(?<![\d.])(\d+(?:\.\d+)?) ish\b", r"about \1", s)
     # Speech fillers between words ("I'm uh a man"); "uh huh" and "uh uh" keep their meaning.
     s = re.sub(r"(?<=\w) (?:uh|um|uhm|erm)(?: (?:uh|um|uhm|erm))*,? (?!(?:huh|uh)\b)(?=\w)", " ", s)
-    s = re.sub(r"\b(?:it's|it is|its) more like (?=\d)", "about ", s)  # "these days it's more like 6"
+    s = re.sub(
+        r"\b(?:it's|it is|its) more like (?=\d)", "about ", s
+    )  # "these days it's more like 6"
     s = re.sub(
         r"(?<!\bi'd )(?<!\bwould )(?<!\bi )(?<!\bwe )(?<!\byou )(?<!\bthey )(?<!\bfeel )"
         r"(?<!\bmore )(?<!\bless )\blike (?=\d)",
@@ -1504,12 +1506,7 @@ def _exercise(
         return [minutes * 7], spans
     # Hours without how often ("an hour") beside another question, or any other
     # frequency ("every other day", "a 45 minute class"), are asked about.
-    if (
-        daily
-        or per_day
-        or (hours and not own_period)
-        or re.search(FREQUENCY, _blank(text, spans))
-    ):
+    if daily or per_day or (hours and not own_period) or re.search(FREQUENCY, _blank(text, spans)):
         return None
     return [minutes], spans
 
@@ -2349,7 +2346,9 @@ def _general_health(text: str) -> str | None:
     plain = _unhedged(re.sub(MAYBE, " ", text))
     # "I'd call it good", "I'd also say very good"
     said = re.sub(
-        r"\b(?:i'd|i would) (?:also |probably |honestly |definitely )?(?:say|call|rate)\b", " ", plain
+        r"\b(?:i'd|i would) (?:also |probably |honestly |definitely )?(?:say|call|rate)\b",
+        " ",
+        plain,
     )
     if re.search(UNCERTAIN, plain) or HYPOTHETICAL.search(said):
         return None
@@ -2364,6 +2363,9 @@ def _general_health(text: str) -> str | None:
                 return None
             found.append(rating)
         rest = re.sub(pattern, " ", rest)
+    # "Good, I mean, not great": a second, different word for it is asked about.
+    if found and re.search(HEALTH_BETWEEN[-1][0], rest):
+        return None
     return found[0] if len(set(found)) == 1 else None
 
 
@@ -2671,8 +2673,10 @@ def clarify(
             "For the forecast I can only use female or male at birth. "
             "Which fits best? You can also skip this question."
         )
-    if field == "sedentary_min_day" and not re.search(r"\d", canonical) and re.search(
-        VAGUE_PORTION, canonical
+    if (
+        field == "sedentary_min_day"
+        and not re.search(r"\d", canonical)
+        and re.search(VAGUE_PORTION, canonical)
     ):
         # "Half the day", "most of the day": never turned into a number.
         return 'About how many hours is that? For example, "about 6 hours".'
@@ -2798,7 +2802,11 @@ def _part_fields(part: str, asked: ProfileField, several: bool) -> set[str]:
     if not named:
         # "for ten years" is how long, never an age.
         named = {t for t, cue in TOPIC_UNITS.items() if t != "age" and re.search(cue, text)}
-    if not named and several and re.fullmatch(r"(?:i'm |i am )?(?:about )?[4-7] (?:[0-9]|1[01])", text):
+    if (
+        not named
+        and several
+        and re.fullmatch(r"(?:i'm |i am )?(?:about )?[4-7] (?:[0-9]|1[01])", text)
+    ):
         return {"height_cm"}  # "58, male, five ten": a spoken height
     # "I'm 70" is an age beside another answer, as a correction ("actually I'm 71,
     # not 72"), or where the question has no number for an answer ("female and 68").
@@ -3009,7 +3017,15 @@ def _chatter(part: str, field: ProfileField) -> bool:
         and not re.search(DAY_NAMES, text)
         and not any(
             pattern.search(text)
-            for pattern in (PAST_OLD, PAST_VERB, CHANGE, FUTURE, HYPOTHETICAL, NOT_CURRENT, REPORTED)
+            for pattern in (
+                PAST_OLD,
+                PAST_VERB,
+                CHANGE,
+                FUTURE,
+                HYPOTHETICAL,
+                NOT_CURRENT,
+                REPORTED,
+            )
         )
         and not re.search(
             rf"{DIABETES_UNCLEAR}|{HYPERTENSION_UNCLEAR}|\b(?:doctor|told|ruled|quit|stopped|"
@@ -3201,7 +3217,13 @@ def _other_topic_aside(part: str, field: ProfileField) -> str | None:
     return topics[0] if len(topics) == 1 else None
 
 
-NUMERIC_TOPICS = {"height_cm", "weight_kg", "sleep_hours", "sedentary_min_day", "exercise_minutes_weekly"}
+NUMERIC_TOPICS = {
+    "height_cm",
+    "weight_kg",
+    "sleep_hours",
+    "sedentary_min_day",
+    "exercise_minutes_weekly",
+}
 
 
 def _ambiguous_aside(part: str) -> bool:

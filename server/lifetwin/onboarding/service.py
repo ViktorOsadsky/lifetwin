@@ -50,15 +50,14 @@ from lifetwin.onboarding.parsing import (
     BP_FIELDS,
     BP_ORDER_MESSAGE,
     EXAMPLES,
-    FIELD_CUES,
+    FRIENDLY_LABELS,
+    NO_WORDS,
     NOTHING,
+    QUESTION_EXAMPLE_VALUES,
+    QUESTIONS,
     SELF_AGE,
     SENTENCE_END,
     TOPIC_UNITS,
-    FRIENDLY_LABELS,
-    NO_WORDS,
-    QUESTION_EXAMPLE_VALUES,
-    QUESTIONS,
     TOPICS,
     UNKNOWN_WORDS,
     YES_WORDS,
@@ -679,7 +678,10 @@ class ConversationService:
                     units = _canonical(text)
                     if (
                         PROFILE_WORDS.search(text.lower())
-                        or any(f != "age" and re.search(TOPIC_UNITS.get(f, NOTHING), units) for f in found)
+                        or any(
+                            f != "age" and re.search(TOPIC_UNITS.get(f, NOTHING), units)
+                            for f in found
+                        )
                     ) and any(self._open(state, f) for f in found):
                         answered = await self._turn(
                             TurnRequest(
@@ -1233,9 +1235,11 @@ class ConversationService:
         if conflicts and not candidates:
             # Nothing else was said: the new value is read back, and only a yes changes it.
             candidates = conflicts
-            conflict_lead = "Earlier you told me " + " and ".join(
-                _facts({field: saved[field] for field in conflicts})
-            ) + ". "
+            conflict_lead = (
+                "Earlier you told me "
+                + " and ".join(_facts({field: saved[field] for field in conflicts}))
+                + ". "
+            )
         elif conflicts:
             # Read back the rest; the saved answer stays until the person asks to change it.
             field = next(iter(conflicts))

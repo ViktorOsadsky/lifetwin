@@ -46,7 +46,9 @@ CONSENT = {"muse": {"provider_consent": True, "outside_ai_consent": {"muse": Tru
 
 def load(split: str) -> list[dict]:
     names = ["dev", "heldout"] if split == "all" else [split]
-    return [case for name in names for case in json.loads((DATA / f"{name}.json").read_text())["cases"]]
+    return [
+        case for name in names for case in json.loads((DATA / f"{name}.json").read_text())["cases"]
+    ]
 
 
 def same(got, want) -> bool:
@@ -118,7 +120,9 @@ def _onboarding_state(client, start: dict, extra: dict, log: list) -> dict:
     pending = start["pending"]
     state = {
         "phase": start["phase"],
-        "current_field": start["field"] if start["phase"] == "asking" or len(pending) == 1 else None,
+        "current_field": start["field"]
+        if start["phase"] == "asking" or len(pending) == 1
+        else None,
         "confirmed_profile": start["confirmed"],
         "pending_profile": pending,
         "unknown_fields": start["unknown"],
@@ -141,7 +145,13 @@ def play_onboarding(client, case: dict, extra: dict, log: list) -> dict:
     messages, read_backs, statuses, after_reply = [], [], [], False
     loop = False
     for text in case["turns"]:
-        body = {"action": "reply", "state": state, "text": text, "input_mode": "transcript", **extra}
+        body = {
+            "action": "reply",
+            "state": state,
+            "text": text,
+            "input_mode": "transcript",
+            **extra,
+        }
         result = _post(client, "/api/onboarding/turn", body, log)
         messages.append(result["message"])
         statuses.append((result["provider_status"], result["guide_mode"]))
@@ -307,10 +317,20 @@ def run_case(local, case: dict, mode: str, provider: bool, app, turn_log: list) 
             run = play_checkin(local.client, case, log)
     except Exception as exc:  # noqa: BLE001 - a crash is a reported result, not a stop
         result = {"id": case["id"], "category": case["category"], "split": case["split"]}
-        return {**result, "verdict": "missing", "why": [f"crash {type(exc).__name__}: {exc}"],
-                "skip_fail": False, "conflict_fail": False, "fields": len(case["expect"]),
-                "fields_right": 0, "wrong_values": 0, "llm": False, "unavailable": 0,
-                "say": case["turns"][-1], "crash": True}
+        return {
+            **result,
+            "verdict": "missing",
+            "why": [f"crash {type(exc).__name__}: {exc}"],
+            "skip_fail": False,
+            "conflict_fail": False,
+            "fields": len(case["expect"]),
+            "fields_right": 0,
+            "wrong_values": 0,
+            "llm": False,
+            "unavailable": 0,
+            "say": case["turns"][-1],
+            "crash": True,
+        }
     turn_log.extend(log)
     return score_case(case, run)
 
@@ -322,8 +342,14 @@ def evaluate(cases: list[dict], mode: str, provider: bool, workers: int = 1) -> 
     turn_log: list[float] = []
     with ThreadPoolExecutor(max_workers=workers) as pool:
         results = list(pool.map(lambda c: run_case(local, c, mode, provider, app, turn_log), cases))
-    return {"mode": mode, "results": results, "calls": meter.calls, "failed_calls": meter.failed,
-            "call_seconds": meter.seconds, "turn_seconds": turn_log}
+    return {
+        "mode": mode,
+        "results": results,
+        "calls": meter.calls,
+        "failed_calls": meter.failed,
+        "call_seconds": meter.seconds,
+        "turn_seconds": turn_log,
+    }
 
 
 def tally(results: list[dict]) -> dict:
@@ -350,27 +376,37 @@ def pct(values: list[float], q: float) -> float:
 def report(run: dict, verbose: bool = False) -> None:
     results = run["results"]
     print(f"\n== mode {run['mode']} ==")
-    print(f"{'split/category':34} {'n':>3} {'ok':>3} {'miss':>4} {'WRONG':>5} {'skip':>4} {'confl':>5}")
+    print(
+        f"{'split/category':34} {'n':>3} {'ok':>3} {'miss':>4} {'WRONG':>5} {'skip':>4} {'confl':>5}"
+    )
     for split in sorted({r["split"] for r in results}):
         rows = [r for r in results if r["split"] == split]
         for category in sorted({r["category"] for r in rows}):
             t = tally([r for r in rows if r["category"] == category])
-            print(f"{split + '/' + category:34} {t['n']:>3} {t['correct']:>3} {t['missing']:>4} "
-                  f"{t['wrong']:>5} {t['skip_fail']:>4} {t['conflict_fail']:>5}")
+            print(
+                f"{split + '/' + category:34} {t['n']:>3} {t['correct']:>3} {t['missing']:>4} "
+                f"{t['wrong']:>5} {t['skip_fail']:>4} {t['conflict_fail']:>5}"
+            )
         t = tally(rows)
-        print(f"{split + '/ALL':34} {t['n']:>3} {t['correct']:>3} {t['missing']:>4} {t['wrong']:>5} "
-              f"{t['skip_fail']:>4} {t['conflict_fail']:>5}  fields {t['fields_right']}/{t['fields']}, "
-              f"wrong values {t['wrong_values']}")
+        print(
+            f"{split + '/ALL':34} {t['n']:>3} {t['correct']:>3} {t['missing']:>4} {t['wrong']:>5} "
+            f"{t['skip_fail']:>4} {t['conflict_fail']:>5}  fields {t['fields_right']}/{t['fields']}, "
+            f"wrong values {t['wrong_values']}"
+        )
     if run["calls"]:
         calls, turns = run["call_seconds"], run["turn_seconds"]
-        print(f"provider calls {run['calls']} (failed {run['failed_calls']}); call p50 "
-              f"{statistics.median(calls):.2f}s p95 {pct(calls, 0.95):.2f}s; turn p50 "
-              f"{statistics.median(turns):.2f}s p95 {pct(turns, 0.95):.2f}s; "
-              f"llm-mode turns {sum(r['llm'] for r in results)}")
+        print(
+            f"provider calls {run['calls']} (failed {run['failed_calls']}); call p50 "
+            f"{statistics.median(calls):.2f}s p95 {pct(calls, 0.95):.2f}s; turn p50 "
+            f"{statistics.median(turns):.2f}s p95 {pct(turns, 0.95):.2f}s; "
+            f"llm-mode turns {sum(r['llm'] for r in results)}"
+        )
     if verbose:
         for r in results:
             if r["verdict"] != "correct":
-                print(f"  {r['verdict'].upper():7} {r['id']:28} {r['say']!r}: {'; '.join(r['why'])}")
+                print(
+                    f"  {r['verdict'].upper():7} {r['id']:28} {r['say']!r}: {'; '.join(r['why'])}"
+                )
                 if verbose > 1:
                     for message in r.get("messages", []):
                         print(f"            mochi: {message[:160]}")
