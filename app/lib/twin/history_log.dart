@@ -21,8 +21,8 @@ abstract final class HistoryKind {
   /// A confirmed correction to a past day's answer, linked to the entry it corrects.
   static const correction = 'correction';
 
-  /// A confirmed blood pressure reading (later also A1c or LDL from a document): dated
-  /// information for the person and the coach, never a model input.
+  /// A confirmed blood pressure, A1c or LDL reading: dated information for the person
+  /// and the coach, never a model input.
   static const reading = 'reading';
 
   static const checkins = {quick, daily, weekly};
@@ -98,6 +98,8 @@ const _profileWords = <String, (String, String)>{
   'diabetes': ('diabetes', ''),
   'systolic_bp': ('blood pressure, top number', 'mmHg'),
   'diastolic_bp': ('blood pressure, bottom number', 'mmHg'),
+  'hba1c': ('A1c', '%'),
+  'ldl_cholesterol': ('LDL cholesterol', 'mg/dL'),
   'general_health': ('how you rate your health', ''),
   'hypertension_diagnosed': ('told you have high blood pressure', ''),
   'sedentary_min_day': ('time sitting', 'minutes a day'),
@@ -281,6 +283,11 @@ class HistoryEntry {
       '${at.year.toString().padLeft(4, '0')}-${at.month.toString().padLeft(2, '0')}-${at.day.toString().padLeft(2, '0')}';
   String get time => '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}';
   String get sourceLabel => HistorySource.label(source);
+
+  /// A reading from a document that carried no date: [at] is when it was confirmed, so the
+  /// UI says "date not on the document".
+  bool get dateNotOnDocument =>
+      kind == HistoryKind.reading && source == HistorySource.document && items.every((i) => i.date == null);
 
   HistoryEntry withStatus({String? fedForecast, String? correctedBy}) => HistoryEntry(
     id: id,
