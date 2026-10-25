@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'checkin/change_chat.dart';
 import 'checkin/check_in.dart';
 import 'checkin/checkin_client.dart';
+import 'checkin/notebook_screen.dart';
 import 'experiment/answers.dart';
 import 'health/health_sample.dart';
 import 'onboarding/voice_onboarding_controller.dart';
@@ -134,6 +135,15 @@ class AgenticRoutes {
           onExperiment: () => experiment(c),
         ),
       ),
+    );
+  }
+
+  /// Mochi's notebook: the saved habit notes and the Memory switch.
+  void notebook(BuildContext context) {
+    final r = repo;
+    if (r == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (c) => NotebookScreen(repository: r, onBack: () => Navigator.of(c).pop())),
     );
   }
 
