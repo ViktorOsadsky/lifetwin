@@ -106,7 +106,7 @@ void main() {
       });
     });
 
-    test('a late partial after dispose does not arm a new send', skip: 'BUG: CheckinController._armEndOfTurn has no _disposed guard; a late caption after dispose finishes the (shared) mic', () {
+    test('a late partial after dispose does not arm a new send', () {
       fakeAsync((fa) {
         final c = listening(fa);
         c.dispose();
@@ -176,7 +176,7 @@ void main() {
       });
     });
 
-    test('dispose cancels pending timers and a late partial cannot send', skip: 'BUG: VoiceOnboardingController._armEndOfTurn has no _disposed guard; a late caption after dispose finishes the mic', () {
+    test('dispose cancels pending timers and a late partial cannot send', () {
       fakeAsync((fa) {
         final c = listening(fa);
         input.onCaption!('I am 70');
