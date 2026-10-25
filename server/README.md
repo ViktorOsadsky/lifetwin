@@ -112,6 +112,8 @@ The phone talks to Cartesia directly for Ink speech-to-text and Sonic text-to-sp
 
 `POST /api/voice/token` with `{"voice_consent": true}` returns `schema_version`, `token`, `expires_in`, `cartesia_version`, and the `stt` and `tts` connection settings (model, `pcm_s16le` encoding, sample rate, websocket URL; TTS also voice ID, speed and `calm` emotion). A missing or false consent is a 422 ("Please agree to use your voice first."). Missing configuration, or any Cartesia error or timeout, is a 503 `voice_unavailable` ("Voice isn't available right now. You can keep going by typing.") with no upstream text, key or token in the body or logs. Responses are `Cache-Control: no-store` and go through the normal request budget. `GET /api/capabilities` reports `voice` as `available` only when both the key and voice ID are set, otherwise `unavailable`.
 
+Planned reply field (not sent yet): `off_topic: true` on an onboarding or check-in turn means the heard reply was most likely someone else (a TV, another person). Send the same `state` back unchanged and record nothing; the app says "Sorry, I think I heard someone else. Could you say that again?" once per question and listens again. See `docs/voice-cartesia.md`.
+
 Privacy: audio and transcripts go to Cartesia only after the user consents, and only while they use tap-to-talk. This server does not receive or store audio. Typed input remains a complete alternative.
 
 The live Cartesia path is **untested without a key**. Tests mock the HTTP transport and check the exact request sent to `https://api.cartesia.ai/access-token`; the websocket STT/TTS protocol is the client's responsibility and is not exercised here.

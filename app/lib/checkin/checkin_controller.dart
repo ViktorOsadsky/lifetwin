@@ -177,6 +177,9 @@ class CheckinController extends ChangeNotifier {
   int _speechGen = 0;
 
   bool _nudged = false;
+
+  /// "I think I heard someone else" was said for this question (server `off_topic`).
+  bool _offTopicSaid = false;
   bool _nudging = false;
 
   /// Read-only, for the voice indicator: the nudge was said for this question.
@@ -933,11 +936,14 @@ class CheckinController extends ChangeNotifier {
       });
       return;
     }
-    _hf('turn', 'field=${t.currentField} phase=${t.phase} complete=${t.complete}');
+    _hf('turn', 'field=${t.currentField} phase=${t.phase} complete=${t.complete}${t.offTopic ? ' off_topic' : ''}');
     _set(() {
       if (_voiceBack) _voiceIn();
       correcting = false;
-      if (t.currentField != turn?.currentField || t.phase != turn?.phase) _nudged = false;
+      if (t.currentField != turn?.currentField || t.phase != turn?.phase) {
+        _nudged = false;
+        _offTopicSaid = false;
+      }
       _drops = 0;
       // The answer stays marked only if the reply took it; the same question asked again
       // (not understood, a check question, Go back) is open again.
@@ -947,13 +953,22 @@ class CheckinController extends ChangeNotifier {
       _turnToken++;
       turn = t;
       emergency = t.emergency;
-      mascotLine = t.message;
+      // Someone else was heard: the question on screen stays, and the screen says why.
+      if (!t.offTopic || mascotLine.isEmpty) mascotLine = t.message;
+      if (t.offTopic) notice = offTopicLine;
       phase = t.complete || t.phase == 'cancelled' ? CheckinPhase.done : CheckinPhase.idle;
     });
     if (t.complete) await _finish(t);
     _busy = false;
+    final sayOffTopic = t.offTopic && !_offTopicSaid;
+    if (t.offTopic) _offTopicSaid = true;
     // Nothing is said while the screen is out of sight.
     if (typing || !voiceUsable || screenReader || _paused) return;
+    if (t.offTopic) {
+      // Asked once per question; after that it just listens again, so a TV never loops it.
+      if (!sayOffTopic || await _speak(offTopicLine)) _listenAgain();
+      return;
+    }
     final first = _firstLine;
     _firstLine = false;
     if (await _speak(t.message, first: first)) _listenAgain();
