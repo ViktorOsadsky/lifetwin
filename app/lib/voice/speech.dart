@@ -51,9 +51,10 @@ abstract class SpeechInput {
   /// spoken line don't wait for it. Throws [VoiceUnavailableException] or [VoiceFailure].
   Future<void> warmUp();
 
-  /// Starts listening. [onCaption] receives the words heard so far.
+  /// Starts listening. [onCaption] receives the words heard so far. [onDropped] is called
+  /// once if the connection is lost while listening; listening has then already ended.
   /// Throws [MicDeniedException], [VoiceUnavailableException] or [VoiceFailure].
-  Future<void> start(void Function(String text) onCaption);
+  Future<void> start(void Function(String text) onCaption, {void Function(Object error)? onDropped});
 
   /// Stops listening and returns the final transcript (may be empty).
   Future<String> finish();

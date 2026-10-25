@@ -4,12 +4,14 @@ import 'dart:convert';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/voice/cartesia_speech.dart';
+import 'package:lifesim/voice/speech.dart';
 
 import 'engine_fakes.dart';
 
 void main() {
   drainTests();
   speakingTests();
+  hangTests();
 
   group('listening', () {
     late TokenServer server;
@@ -82,6 +84,103 @@ void speakingTests() {
       sockets.last.reply({'context_id': id, 'type': 'done'});
       await speaking;
       expect(player.calls, ['stop', 'begin', 'feed', 'finish']);
+    });
+  });
+}
+
+/// Short stand-ins for the real limits, so the tests run in real time.
+const _ready = Duration(milliseconds: 150);
+const _silence = Duration(milliseconds: 200);
+Future<void> _wait(int ms) => Future<void>.delayed(Duration(milliseconds: ms));
+
+void hangTests() {
+  group('no hangs', () {
+    test('the limits: 3 s for a socket to open, 4 s of no TTS audio', () {
+      expect(socketReadyLimit, const Duration(seconds: 3));
+      expect(ttsSilenceLimit, const Duration(seconds: 4));
+      final t = TokenServer().provider;
+      expect(CartesiaSpeechOutput(tokens: t, player: FakePlayer()).readyLimit, socketReadyLimit);
+      expect(CartesiaSpeechOutput(tokens: t, player: FakePlayer()).silenceLimit, ttsSilenceLimit);
+      expect(CartesiaSpeechInput(tokens: t, recorder: FakeRecorder()).readyLimit, socketReadyLimit);
+    });
+
+    test('a TTS socket that never opens fails at the ready limit (after one re-mint)', () async {
+      final sockets = Sockets(autoOpen: false);
+      final out = CartesiaSpeechOutput(
+        tokens: TokenServer().provider,
+        player: FakePlayer(),
+        connect: sockets.connect,
+        readyLimit: _ready,
+      );
+      Object? error;
+      final speaking = out.speak('Hello').catchError((Object e) => error = e);
+      await _wait(100);
+      expect(error, isNull);
+      await _wait(100); // the first socket gave up; one retry
+      expect(sockets.made, hasLength(2));
+      await speaking;
+      expect(error, isA<VoiceFailure>());
+    });
+
+    test('TTS audio that stops coming ends the line after the silence limit', () async {
+      final sockets = Sockets();
+      final player = FakePlayer();
+      final out = CartesiaSpeechOutput(
+        tokens: TokenServer().provider,
+        player: player,
+        connect: sockets.connect,
+        silenceLimit: _silence,
+      );
+      var done = false;
+      final speaking = out.speak('Hello').then((_) => done = true);
+      await pumpEventQueue();
+      sockets.last.reply({'context_id': contextOf(sockets.last), 'data': base64Encode(loudChunk())});
+      await _wait(120);
+      expect(done, false);
+      await speaking.timeout(const Duration(seconds: 1));
+      expect(player.calls.last, 'finish', reason: 'what did arrive is played out');
+    });
+
+    test('TTS with no audio at all fails instead of speaking for ever', () async {
+      final out = CartesiaSpeechOutput(
+        tokens: TokenServer().provider,
+        player: FakePlayer(),
+        connect: Sockets().connect,
+        silenceLimit: _silence,
+      );
+      await expectLater(out.speak('Hello').timeout(const Duration(seconds: 2)), throwsA(isA<VoiceFailure>()));
+    });
+
+    test('an STT socket that never opens fails start at the ready limit and closes the mic', () async {
+      final rec = FakeRecorder();
+      final input = CartesiaSpeechInput(
+        tokens: TokenServer().provider,
+        recorder: rec,
+        connect: Sockets(autoOpen: false).connect,
+        readyLimit: _ready,
+      );
+      Object? error;
+      final starting = input.start((_) {}).catchError((Object e) => error = e);
+      await _wait(80);
+      expect(error, isNull);
+      expect(rec.recording, true);
+      await starting.timeout(const Duration(seconds: 1));
+      expect(error, isA<VoiceFailure>());
+      expect(rec.recording, false);
+    });
+
+    test('a connection lost mid-listen ends listening at once and reports it', () async {
+      final rec = FakeRecorder();
+      final sockets = Sockets();
+      final input = CartesiaSpeechInput(tokens: TokenServer().provider, recorder: rec, connect: sockets.connect);
+      Object? dropped;
+      await input.start((_) {}, onDropped: (e) => dropped = e);
+      expect(rec.recording, true);
+      await sockets.last.incoming.close();
+      await pumpEventQueue();
+      expect(dropped, isA<VoiceFailure>());
+      expect(rec.recording, false);
+      expect(await input.finish(), '');
     });
   });
 }

@@ -300,7 +300,7 @@ class CheckinController extends ChangeNotifier {
           .start((text) {
             if (text != caption) _silentSeconds = 0;
             _set(() => caption = text);
-          })
+          }, onDropped: (_) => _inputDropped())
           .timeout(_micStartLimit);
       if (phase == CheckinPhase.listening) _startListenClock();
     } on MicDeniedException {
@@ -316,12 +316,30 @@ class CheckinController extends ChangeNotifier {
         voiceUsable = false;
         notice = voiceOffNotice;
       });
+    } on TimeoutException {
+      _set(() {
+        phase = CheckinPhase.idle;
+        notice = voiceTroubleNotice;
+      });
+      try {
+        await input.cancel().timeout(_quickLimit); // a start that never answered must not leave the mic on
+      } catch (_) {}
     } catch (_) {
       _set(() {
         phase = CheckinPhase.idle;
         notice = voiceTroubleNotice;
       });
     }
+  }
+
+  /// The connection was lost while listening. The input has already stopped the mic.
+  void _inputDropped() {
+    if (phase != CheckinPhase.listening) return;
+    _stopListenClock();
+    _set(() {
+      phase = CheckinPhase.idle;
+      notice = voiceTroubleNotice;
+    });
   }
 
   void _startListenClock() {

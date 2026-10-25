@@ -315,7 +315,7 @@ class VoiceOnboardingController extends ChangeNotifier {
           .start((text) {
             if (text != caption) _silentSeconds = 0;
             _set(() => caption = text);
-          })
+          }, onDropped: (_) => _inputDropped())
           .timeout(_micStartLimit);
       if (phase == VoicePhase.listening) _startListenClock();
     } on MicDeniedException {
@@ -332,12 +332,30 @@ class VoiceOnboardingController extends ChangeNotifier {
         voiceUsable = false;
         notice = voiceOffNotice;
       });
+    } on TimeoutException {
+      _set(() {
+        phase = VoicePhase.idle;
+        notice = voiceTroubleNotice;
+      });
+      try {
+        await input.cancel().timeout(_quickLimit); // a start that never answered must not leave the mic on
+      } catch (_) {}
     } catch (_) {
       _set(() {
         phase = VoicePhase.idle;
         notice = voiceTroubleNotice;
       });
     }
+  }
+
+  /// The connection was lost while listening. The input has already stopped the mic.
+  void _inputDropped() {
+    if (phase != VoicePhase.listening) return;
+    _stopListenClock();
+    _set(() {
+      phase = VoicePhase.idle;
+      notice = voiceTroubleNotice;
+    });
   }
 
   void _startListenClock() {

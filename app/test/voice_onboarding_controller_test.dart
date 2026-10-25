@@ -71,6 +71,17 @@ void main() {
     expect(r2.c.confirming, true);
   });
 
+  test('a connection lost while listening ends listening with the voice trouble notice', () async {
+    final r = Rig();
+    await r.c.answerConsent(true);
+    await r.c.startTalk();
+    expect(r.c.phase, VoicePhase.listening);
+    r.input.drop();
+    expect(r.c.phase, VoicePhase.idle);
+    expect(r.c.notice, voiceTroubleNotice);
+    expect(r.c.typing, false, reason: 'voice stays on; Talk can be tried again');
+  });
+
   test('voice_unavailable on the microphone path falls back to typing', () async {
     final r = Rig();
     await r.c.answerConsent(true);

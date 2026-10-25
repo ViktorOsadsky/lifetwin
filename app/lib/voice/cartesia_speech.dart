@@ -12,6 +12,12 @@ import 'voice_token.dart';
 
 typedef SocketConnector = WebSocketChannel Function(Uri uri);
 
+/// A voice socket that has not opened by then has failed.
+const socketReadyLimit = Duration(seconds: 3);
+
+/// Speech that sends no audio for this long is over (or has failed, if none came at all).
+const ttsSilenceLimit = Duration(seconds: 4);
+
 WebSocketChannel _defaultConnect(Uri uri) => WebSocketChannel.connect(uri);
 
 /// Counts microphone starts. The recorder sets its own audio session when it starts, so
@@ -132,11 +138,18 @@ class FlutterPcmSoundPlayer implements PcmPlayer {
 
 /// Cartesia Sonic text-to-speech over WebSocket. Wire details are in [CartesiaWire].
 class CartesiaSpeechOutput implements SpeechOutput {
-  CartesiaSpeechOutput({required this.tokens, PcmPlayer? player, SocketConnector? connect})
-    : _player = player ?? FlutterPcmSoundPlayer(),
-      _connect = connect ?? _defaultConnect;
+  CartesiaSpeechOutput({
+    required this.tokens,
+    PcmPlayer? player,
+    SocketConnector? connect,
+    this.readyLimit = socketReadyLimit,
+    this.silenceLimit = ttsSilenceLimit,
+  }) : _player = player ?? FlutterPcmSoundPlayer(),
+       _connect = connect ?? _defaultConnect;
 
   final VoiceTokenProvider tokens;
+  final Duration readyLimit;
+  final Duration silenceLimit;
   final PcmPlayer _player;
   final SocketConnector _connect;
 
@@ -174,18 +187,29 @@ class CartesiaSpeechOutput implements SpeechOutput {
     final audio = BytesBuilder(copy: false);
     var gotAudio = false;
     StreamSubscription<dynamic>? sub;
+    Timer? silence;
     try {
       _lastRate = token.ttsSampleRate;
       // The socket opens while the player sets up.
-      await Future.wait([ch.ready, _player.begin(token.ttsSampleRate)]);
+      await Future.wait([ch.ready.timeout(readyLimit), _player.begin(token.ttsSampleRate)]);
       if (_contextId != id) return;
       final finished = Completer<void>();
+      // A stream that goes quiet must not leave the mascot "speaking" until the caller's limit.
+      void armSilence() {
+        silence?.cancel();
+        silence = Timer(silenceLimit, () {
+          if (finished.isCompleted) return;
+          gotAudio ? finished.complete() : finished.completeError(const VoiceFailure('tts: no audio'));
+        });
+      }
+
       sub = ch.stream.listen(
         (m) async {
           if (m is! String) return;
           switch (CartesiaWire.parseTts(m, contextId: id)) {
             case TtsAudio(:final pcm):
               gotAudio = true;
+              armSilence();
               audio.add(pcm);
               if (_contextId == id) await _player.feed(pcm);
             case TtsDone():
@@ -204,6 +228,7 @@ class CartesiaSpeechOutput implements SpeechOutput {
         },
       );
       ch.sink.add(CartesiaWire.ttsRequest(token, text, id));
+      armSilence();
       await Future.any([finished.future, done.future]);
       if (_contextId == id && gotAudio) {
         _last
@@ -216,6 +241,7 @@ class CartesiaSpeechOutput implements SpeechOutput {
       if (e is VoiceFailure) rethrow;
       throw VoiceFailure('$e');
     } finally {
+      silence?.cancel();
       await sub?.cancel();
       if (identical(_channel, ch)) _channel = null;
       try {
@@ -264,11 +290,16 @@ class CartesiaSpeechOutput implements SpeechOutput {
 
 /// Cartesia streaming speech-to-text. Tap-to-talk: start, then finish.
 class CartesiaSpeechInput implements SpeechInput {
-  CartesiaSpeechInput({required this.tokens, AudioRecorder? recorder, SocketConnector? connect})
-    : _recorder = recorder ?? AudioRecorder(),
-      _connect = connect ?? _defaultConnect;
+  CartesiaSpeechInput({
+    required this.tokens,
+    AudioRecorder? recorder,
+    SocketConnector? connect,
+    this.readyLimit = socketReadyLimit,
+  }) : _recorder = recorder ?? AudioRecorder(),
+       _connect = connect ?? _defaultConnect;
 
   final VoiceTokenProvider tokens;
+  final Duration readyLimit;
   final AudioRecorder _recorder;
   final SocketConnector _connect;
 
@@ -286,6 +317,8 @@ class CartesiaSpeechInput implements SpeechInput {
   Completer<void>? _flushed;
   bool _forceNewToken = false;
   void Function(String)? _onCaption;
+  void Function(Object error)? _onDropped;
+  bool _finishing = false;
 
   /// Bumped by every teardown, so a start that was cancelled while waiting stops there.
   int _gen = 0;
@@ -305,12 +338,14 @@ class CartesiaSpeechInput implements SpeechInput {
   Future<void> warmUp() => tokens.prefetch();
 
   @override
-  Future<void> start(void Function(String text) onCaption) async {
+  Future<void> start(void Function(String text) onCaption, {void Function(Object error)? onDropped}) async {
     await _teardown();
     final gen = _gen;
     if (!await _recorder.hasPermission()) throw const MicDeniedException();
     if (gen != _gen) return; // cancelled meanwhile
     _onCaption = onCaption;
+    _onDropped = onDropped;
+    _finishing = false;
     _finals.clear();
     _partial = '';
     _error = null;
@@ -342,11 +377,27 @@ class CartesiaSpeechInput implements SpeechInput {
       final token = await tokens.get(forceNew: _forceNewToken); // may throw VoiceUnavailableException
       if (gen != _gen) return; // cancelled meanwhile; cancel() stopped the mic
       _forceNewToken = false;
-      _open(token);
-    } catch (_) {
+      await _open(token, gen);
+    } on VoiceUnavailableException {
       if (gen == _gen) await cancel();
       rethrow;
+    } catch (e) {
+      if (gen == _gen) await cancel();
+      if (e is VoiceFailure) rethrow;
+      throw VoiceFailure('$e');
     }
+  }
+
+  /// The socket closed or failed while listening (not while finishing): stop now and say so.
+  /// Before the socket is open, a failure fails [start] instead.
+  void _drop(Object e) {
+    final cb = _onDropped;
+    if (_finishing || !_ready || cb == null) return;
+    _onDropped = null;
+    _error ??= '$e';
+    _forceNewToken = true;
+    unawaited(cancel());
+    cb(VoiceFailure('stt: $e'));
   }
 
   void _onMic(Uint8List data) {
@@ -365,7 +416,9 @@ class CartesiaSpeechInput implements SpeechInput {
     }
   }
 
-  void _open(VoiceToken token) {
+  /// Opens the socket and sends the audio held so far. A socket that fails or does not open
+  /// within [readyLimit] fails the start right away.
+  Future<void> _open(VoiceToken token, int gen) async {
     final ch = _channel = _connect(CartesiaWire.sttUri(token));
     _msgSub = ch.stream.listen(
       (m) {
@@ -393,27 +446,25 @@ class CartesiaSpeechInput implements SpeechInput {
       onError: (Object e) {
         _error = '$e';
         _endFlush();
+        _drop(e);
       },
       onDone: () {
         _endFlush();
+        _drop('closed');
       },
     );
-    unawaited(
-      ch.ready.then(
-        (_) {
-          if (!identical(_channel, ch)) return;
-          _ready = true;
-          for (final c in _early) {
-            ch.sink.add(c);
-          }
-          _early.clear();
-        },
-        onError: (Object e) {
-          _error = '$e';
-          _forceNewToken = true;
-        },
-      ),
-    );
+    try {
+      await ch.ready.timeout(readyLimit);
+    } catch (e) {
+      _forceNewToken = true;
+      throw VoiceFailure('stt connect: $e');
+    }
+    if (gen != _gen || !identical(_channel, ch)) return; // cancelled meanwhile
+    _ready = true;
+    for (final c in _early) {
+      ch.sink.add(c);
+    }
+    _early.clear();
   }
 
   @override
@@ -423,6 +474,7 @@ class CartesiaSpeechInput implements SpeechInput {
       await cancel(); // never connected: just close the mic
       return '';
     }
+    _finishing = true;
     await _recorder.stop();
     await _micSub?.cancel();
     _micSub = null;
@@ -465,6 +517,7 @@ class CartesiaSpeechInput implements SpeechInput {
     _early.clear();
     _chunks.flush();
     _onCaption = null;
+    _onDropped = null;
     try {
       await ch?.sink.close();
     } catch (_) {}
