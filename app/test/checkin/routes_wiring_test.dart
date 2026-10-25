@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:lifesim/experiment/recommendations.dart';
 import 'package:lifesim/agentic_routes.dart';
 import 'package:lifesim/checkin/check_in_entry.dart';
 import 'package:lifesim/checkin/checkin_screen.dart' show CheckInScreen;
@@ -241,4 +246,143 @@ void main() {
     connected = true;
     expect(await read(), [sample]);
   });
+
+  group('Ideas for you, from /api/recommendations', () {
+    final reply = {
+      'status': 'ok',
+      'recommendations': [
+        {
+          'id': 'walk',
+          'lever': 'moderate_plus_90',
+          'title': 'A longer dog walk',
+          'message': 'A short walk is a great start.',
+          'based_on': ['moderate_recreation_min_week', 'note:exercise'],
+          'wellness_card': 'activity',
+        },
+        {
+          'id': 'rest',
+          'lever': 'short_sleep_plus_1h',
+          'title': 'A little more rest',
+          'message': 'A bit more sleep can help.',
+          'based_on': ['sleep_hours'],
+          'wellness_card': 'sleep',
+        },
+        {
+          'id': 'keep',
+          'lever': 'keep_it_up',
+          'title': 'Keep it up',
+          'message': 'Nice routine.',
+          'based_on': [],
+          'wellness_card': 'activity',
+        },
+      ],
+    };
+
+    Future<(List<Recommendation>, Map<String, dynamic>)> run(
+      WidgetTester t, {
+      String? provider,
+      bool memory = false,
+      Object? body,
+      int status = 200,
+    }) async {
+      await pump(t);
+      if (memory) {
+        await repo.applyMemoryConsent(true);
+        await repo.addHabitNote({'topic': 'exercise', 'text': 'I walk the dog after dinner'});
+      }
+      Map<String, dynamic>? sent;
+      final client = MockClient((req) async {
+        sent = jsonDecode(req.body) as Map<String, dynamic>;
+        return http.Response(jsonEncode(body ?? reply), status);
+      });
+      final source = HttpRecommendations(
+        repository: repo,
+        base: ApiBase('http://x'),
+        outsideAiProvider: provider,
+        client: client,
+      );
+      final ideas = await source.load();
+      return (ideas, sent ?? <String, dynamic>{});
+    }
+
+    testWidgets('maps ideas to levers; sends no outside-AI consent and no notes unless allowed', (t) async {
+      final (ideas, sent) = await run(t);
+      expect(ideas.map((i) => i.id), ['walk', 'rest', 'keep']);
+      expect(ideas[0].leverId, 'moderate_recreation_min_week');
+      expect(ideas[0].leverValue, 180);
+      expect(ideas[1].leverValue, 8);
+      expect(ideas[2].leverId, isNull);
+      expect(ideas[0].habitNoteQuote, isNull);
+      expect(sent['outside_ai_consent'], isEmpty);
+      expect(sent['habit_notes'], isEmpty);
+    });
+
+    testWidgets('with memory on and a yes for the provider: notes and consent go, the quote shows', (t) async {
+      final (ideas, sent) = await run(t, provider: 'muse', memory: true);
+      expect(sent['outside_ai_consent'], {'muse': true});
+      expect(sent['habit_notes'], [
+        {'topic': 'exercise'},
+      ]);
+      expect(ideas[0].habitNoteQuote, 'I walk the dog after dinner');
+    });
+
+    testWidgets('an unreachable or empty server falls back to the built-in ideas', (t) async {
+      final (broken, _) = await run(t, status: 500);
+      expect(broken, isA<List<Recommendation>>());
+      final (none, _) = await run(t, body: {'status': 'not_enough_information', 'recommendations': []});
+      expect(none, isA<List<Recommendation>>());
+    });
+
+    testWidgets('the Experiment offers Ideas for you; the consent is asked first, and a no still shows ideas', (
+      t,
+    ) async {
+      await pump(t, provider: meta);
+      String? usedProvider = 'unset';
+      routes = AgenticRoutes(
+        look: ValueNotifier(const TwinAppearance(name: 'Mochi')),
+        api: ApiBase(),
+        voice: () => VoiceOnboardingController(
+          guide: FakeConversationGuide(),
+          input: FakeSpeechInput(),
+          output: FakeSpeechOutput(),
+        ),
+        guide: ContractGuide(),
+        changeClient: FakeChangeClient(),
+        capabilities: FakeCapabilities(meta),
+        recommendations: (p) {
+          usedProvider = p;
+          return _Ideas();
+        },
+      )..attach(repo);
+      await t.pumpWidget(
+        MaterialApp(
+          theme: lifeTwinTheme(),
+          builder: routes.wrap,
+          home: Builder(
+            builder: (c) {
+              home = c;
+              return const Scaffold(body: Text('room'));
+            },
+          ),
+        ),
+      );
+      routes.experiment(home);
+      await t.pumpAndSettle();
+      await t.ensureVisible(find.text('Ideas for you'));
+      await t.tap(find.text('Ideas for you'));
+      await t.pumpAndSettle();
+      expect(find.text('No thanks'), findsOneWidget);
+      await t.tap(find.text('No thanks'));
+      await t.pumpAndSettle();
+      expect(usedProvider, isNull);
+      expect(find.text('Go to my room'), findsOneWidget);
+    });
+  });
+}
+
+class _Ideas implements RecommendationsSource {
+  @override
+  Future<List<Recommendation>> load() async => const [
+    Recommendation(id: 'rest', title: 'A little more rest', tip: 'A bit more sleep can help.', wellnessCardId: 'sleep'),
+  ];
 }
