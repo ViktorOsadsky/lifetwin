@@ -34,6 +34,8 @@ void main() {
     await t.pump();
     await t.pump();
     await openSettingsRow(t, 'Health documents');
+    await t.tap(find.text('Scan a document'));
+    await t.pumpAndSettle();
     for (final label in [
       'Choose a photo',
       'Yes, it is mine',

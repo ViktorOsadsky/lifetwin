@@ -97,6 +97,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
         api: _api,
         voice: () => _controller,
         onDeleted: _afterDelete,
+        documentService: widget.documentService == null ? null : () => widget.documentService!,
         healthSamples: connectedHealthSamples(
           widget.healthReader ?? HealthReader(),
           () =>
@@ -427,7 +428,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           MaterialPageRoute(
             builder: (c) => WellnessSettingsScreen(
               settings: value,
-              onMemory: () => _agentic.memoryChoice(c),
+              onMemory: () => _agentic.notebook(c),
               onSuggestions: () => _agentic.aiPrivacy(c),
               onReminders: () => _agentic.reminders(c),
               onMyData: () => _agentic.myData(c),
@@ -436,7 +437,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
                 SettingsEntry(label: 'Change an answer', description: 'Tell Mochi what changed', open: () => _agentic.changeAnswer(c)),
                 SettingsEntry(label: 'Weekly check-in', description: 'A few questions about your week', open: () => _agentic.weeklyCheckIn(c)),
                 SettingsEntry(label: 'Apple Health', description: 'Bring in values you check', open: () => _health(c)),
-                SettingsEntry(label: 'Health documents', description: 'Upload a visit summary or lab report', open: () => _documents(c)),
+                SettingsEntry(label: 'Health documents', description: 'Upload a visit summary or lab report', open: () => _agentic.healthDocuments(c)),
                 SettingsEntry(label: 'Try a change', description: 'Explore what could move your outlook', open: () => _agentic.experiment(c)),
                 SettingsEntry(label: 'What I see', description: 'Your wellness cards, with sources', open: () => _agentic.wellness(c)),
                 SettingsEntry(label: 'Still learning', description: 'Answers Mochi still needs', open: () => _agentic.stillLearning(c)),
