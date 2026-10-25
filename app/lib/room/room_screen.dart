@@ -8,6 +8,8 @@ import '../checkin/check_in_entry.dart';
 import '../experiment/room_pills.dart';
 import '../twin/twin_model.dart' show TwinAssessment, extrapolationCaveat;
 import '../forecast/forecast_client.dart';
+import '../wellness/home_panel.dart';
+import '../wellness/models.dart';
 import '../ui/swoosh_route.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
@@ -36,9 +38,15 @@ class RoomScreen extends StatefulWidget {
     required this.onFortune,
     this.outlook,
     this.hasProfile = false,
-    this.onUseHealth,
+    this.wellness,
+    this.onQuiz,
+    this.onHistory,
     this.extraPills = const [],
-    this.onUploadDocument,
+    this.onDrivers,
+    this.onSettings,
+    this.onBand,
+    this.today,
+    this.stateLine,
   });
 
   /// Cosmetic look only; never part of the health profile.
@@ -56,13 +64,27 @@ class RoomScreen extends StatefulWidget {
   /// it the fortune does not open: the twin asks to talk first.
   final bool hasProfile;
 
-  /// "Use my Apple Health": the Health import. Null (no pill) once Health data is confirmed.
-  final VoidCallback? onUseHealth;
-
+  /// Health score from the twin repository (the model's number as is).
+  final WellnessSnapshot? wellness;
+  final VoidCallback? onQuiz;
+  final VoidCallback? onHistory;
   /// More pills beside the status line (`roomPills`).
   final List<Widget> extraPills;
-  /// "Upload a document": health-document upload, offered at entry beside Apple Health.
-  final VoidCallback? onUploadDocument;
+
+  /// The pinned Settings icon in the header (Apple Health, documents, privacy and the rest live there).
+  final VoidCallback? onSettings;
+
+  /// The pinned "Add band" icon in the header (the wristband flow).
+  final VoidCallback? onBand;
+
+  /// Home's one "Today with Mochi" slot, under the check-in button.
+  final Widget? today;
+
+  /// A small state line on the score card ("Still learning 2").
+  final String? stateLine;
+
+  /// "What moves it" on the Home card.
+  final VoidCallback? onDrivers;
 
   static const talkFirst = "Let's talk first, so I can make your forecast.";
 
@@ -123,22 +145,6 @@ class _RoomScreenState extends State<RoomScreen> {
     _sim.press(a);
   }
 
-  /// "Use my Apple Health" ignores a second tap for 0.7 s, so a double tap opens the
-  /// import once.
-  Timer? _healthLock;
-
-  void _useHealth() {
-    if (_healthLock?.isActive ?? false) return;
-    _healthLock = Timer(const Duration(milliseconds: 700), () {});
-    widget.onUseHealth?.call();
-  }
-
-  void _uploadDocument() {
-    if (_healthLock?.isActive ?? false) return;
-    _healthLock = Timer(const Duration(milliseconds: 700), () {});
-    widget.onUploadDocument?.call();
-  }
-
   /// Fortune and the outlook card: with no finished conversation nothing opens and the
   /// twin says why, as on main.
   void _fortune() {
@@ -165,7 +171,6 @@ class _RoomScreenState extends State<RoomScreen> {
   @override
   void dispose() {
     _pressLock?.cancel();
-    _healthLock?.cancel();
     _sim.dispose();
     super.dispose();
   }
@@ -209,7 +214,17 @@ class _RoomScreenState extends State<RoomScreen> {
                               valueListenable: widget.appearance,
                               builder: (context, look, _) => NameBanner(name: look.name),
                             ),
-                            card: _OutlookCard(outlook: widget.outlook, onTap: _fortune),
+                            actions: [
+                              if (widget.onBand != null)
+                                _HeaderIcon(icon: Icons.directions_walk_rounded, label: 'Add band', onTap: widget.onBand!),
+                              if (widget.onHistory != null)
+                                _HeaderIcon(icon: Icons.history_rounded, label: 'My history', onTap: widget.onHistory!),
+                              if (widget.onSettings != null)
+                                _HeaderIcon(icon: Icons.settings_outlined, label: 'Settings', onTap: widget.onSettings!),
+                            ],
+                            card: widget.wellness == null ? _OutlookCard(outlook: widget.outlook, onTap: _fortune) : HomeWellnessPanel(
+                              snapshot: widget.wellness!, compact: true, onEstimate: _fortune, onDrivers: widget.onDrivers, stateLine: widget.stateLine,
+                            ),
                           ),
                           Opacity(
                             opacity: f.barOpacity.clamp(0.0, 1.0),
@@ -232,25 +247,16 @@ class _RoomScreenState extends State<RoomScreen> {
                                         ),
                                         const SizedBox(height: 10),
                                       ],
-                                      // The status line, with "Use my Apple Health" beside it until
-                                      // Health data has been confirmed.
-                                      Wrap(
-                                        alignment: WrapAlignment.center,
-                                        crossAxisAlignment: WrapCrossAlignment.center,
-                                        spacing: 8,
-                                        runSpacing: 8,
-                                        children: [
-                                          StatusPill(label: _sim.status, icon: Icons.circle),
-                                          if (widget.onUseHealth != null) _HealthPill(onTap: _useHealth),
-                                          ...widget.extraPills,
-                                          if (widget.onUploadDocument != null)
-                                            _HealthPill(
-                                              onTap: _uploadDocument,
-                                              label: 'Upload a document',
-                                              icon: Icons.description_outlined,
-                                            ),
-                                        ],
-                                      ),
+                                      if (widget.today != null) ...[widget.today!, const SizedBox(height: 10)],
+                                      if (widget.extraPills.isNotEmpty) ...[
+                                        Wrap(
+                                          alignment: WrapAlignment.center,
+                                          crossAxisAlignment: WrapCrossAlignment.center,
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: widget.extraPills,
+                                        ),
+                                      ],
                                       const SizedBox(height: 10),
                                       _ActivityRow(sim: _sim, press: _press),
                                       const SizedBox(height: 10),
@@ -259,6 +265,7 @@ class _RoomScreenState extends State<RoomScreen> {
                                         onTalk: widget.onTalk,
                                         onCustomize: widget.onCustomize,
                                         onFortune: _fortune,
+                                        onQuiz: widget.onQuiz,
                                       ),
                                     ],
                                   ),
@@ -280,29 +287,52 @@ class _RoomScreenState extends State<RoomScreen> {
   }
 }
 
+/// A small pinned icon in the header: 48 pt target.
+class _HeaderIcon extends StatelessWidget {
+  const _HeaderIcon({required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    tooltip: label,
+    onPressed: onTap,
+    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+    icon: Icon(icon, color: LtColors.ink, size: 28),
+  );
+}
+
 /// The banner and the outlook card side by side, stacked when the screen is
 /// narrow or the text is large (so nothing wraps letter by letter).
 class _TopBar extends StatelessWidget {
-  const _TopBar({super.key, required this.banner, required this.card});
+  const _TopBar({super.key, required this.banner, required this.card, this.actions = const []});
   final Widget banner;
+  final List<Widget> actions;
   final Widget card;
 
   @override
   Widget build(BuildContext context) {
     final big = MediaQuery.textScalerOf(context).scale(17) > 17 * 1.15;
     return LayoutBuilder(
-      builder: (context, box) => box.maxWidth >= 340 && !big
+      builder: (context, box) => box.maxWidth >= 340 && !big && card is! HomeWellnessPanel
           ? Row(
               children: [
                 banner,
                 const SizedBox(width: 10),
                 Expanded(child: card),
+                ...actions,
               ],
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Align(alignment: Alignment.centerLeft, child: banner),
+                Row(
+                  children: [
+                    Expanded(child: Align(alignment: Alignment.centerLeft, child: banner)),
+                    ...actions,
+                  ],
+                ),
                 const SizedBox(height: 8),
                 card,
               ],
@@ -506,7 +536,8 @@ class _ActivityRow extends StatelessWidget {
 }
 
 class _Dock extends StatelessWidget {
-  const _Dock({required this.frame, required this.onTalk, required this.onCustomize, required this.onFortune});
+  const _Dock({required this.frame, required this.onTalk, required this.onCustomize, required this.onFortune, this.onQuiz});
+  final VoidCallback? onQuiz;
   final SwooshRoomFrame frame;
   final VoidCallback onTalk;
   final VoidCallback onCustomize;
@@ -562,12 +593,12 @@ class _Dock extends StatelessWidget {
               ),
               Expanded(
                 child: _DockItem(
-                  label: 'Fortune',
-                  icon: Icons.auto_awesome_rounded,
+                  label: onQuiz == null ? 'Fortune' : 'Quiz',
+                  icon: onQuiz == null ? Icons.auto_awesome_rounded : Icons.quiz_outlined,
                   face: LtColors.night,
                   lip: const Color(0xFF0F1430),
                   iconColor: LtColors.gold,
-                  onTap: onFortune,
+                  onTap: onQuiz ?? onFortune,
                 ),
               ),
             ],
@@ -635,50 +666,3 @@ class _DockItem extends StatelessWidget {
   }
 }
 
-/// "Use my Apple Health", compact: a plain heart (never Apple's Health app icon) and one
-/// line that shrinks rather than wraps. At least 48 pt tall.
-/// An entry pill beside the status line: "Use my Apple Health" or "Upload a document".
-class _HealthPill extends StatelessWidget {
-  const _HealthPill({
-    required this.onTap,
-    this.label = 'Use my Apple Health',
-    this.icon = Icons.favorite_border_rounded,
-  });
-  final VoidCallback onTap;
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: label,
-      excludeSemantics: true,
-      onTap: onTap,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 48),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: LtColors.paper,
-            borderRadius: BorderRadius.circular(LtRadii.chip),
-            border: Border.all(color: LtColors.control, width: LtBorders.control),
-            boxShadow: LtShadows.small,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 24, color: LtColors.ink),
-              const SizedBox(width: 8),
-              Flexible(
-                child: _OneLine(label, style: LtText.body(weight: FontWeight.w700)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

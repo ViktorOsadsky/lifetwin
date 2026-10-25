@@ -54,7 +54,7 @@ const Map<RoomPose, double> _poseHeight = {
   RoomPose.stretch: 1.1,
   RoomPose.think: 1.0,
   RoomPose.ball: 1.0,
-  RoomPose.sleep: 0.72,
+  RoomPose.sleep: 0.66,
   RoomPose.dizzy: 0.98,
 };
 
@@ -116,6 +116,9 @@ double roomAlignmentY(RoomLayout layout, Size box, EdgeInsets clear) {
 /// same spot in `bear/pose_nohat/stand.png`, which shares its canvas), as
 /// fractions of the square sprite box, measured from the v2 art (darkest
 /// blobs in the head). Re-measure when that file is swapped for new art.
+/// How far the whole render sits below its cover-fit position, in logical px.
+const _sceneDrop = 16.0;
+
 const _eyes = [Offset(0.4123, 0.2959), Offset(0.6007, 0.2932)];
 const _standAssets = {'assets/twin/bear/pose/stand.png', 'assets/twin/bear/pose_nohat/stand.png'};
 
@@ -198,7 +201,10 @@ class _RoomSceneState extends State<RoomScene> {
     final vp = layout.viewport;
     return LayoutBuilder(
       builder: (context, box) => ClipRect(
-        child: FittedBox(
+        // The whole render sits a little lower, to balance the score card and the Today card.
+        child: Transform.translate(
+          offset: const Offset(0, _sceneDrop),
+          child: FittedBox(
           fit: BoxFit.cover,
           alignment: Alignment(0, roomAlignmentY(layout, box.biggest, widget.clear)),
           child: SizedBox(
@@ -208,11 +214,19 @@ class _RoomSceneState extends State<RoomScene> {
               clipBehavior: Clip.none,
               children: [
                 Positioned.fill(
-                  child: Image.asset(
+                  child: _roomLight(Image.asset(
                     layout.bgAsset,
                     fit: BoxFit.fill,
                     gaplessPlayback: true,
                     semanticLabel: 'A cozy room with a bed, a table, a yoga mat and a shelf with a crystal ball',
+                  )),
+                ),
+                // A flat rug on the bare right-hand floor, so the room feels balanced. Painted under the
+                // twin; the bundled room art, its lighting and the sim are untouched.
+                Positioned.fill(
+                  key: const ValueKey('room-rug'),
+                  child: IgnorePointer(
+                    child: ExcludeSemantics(child: _roomLight(CustomPaint(painter: _RugPainter()))),
                   ),
                 ),
                 if (sim.ballTaken) _layer(layout.shelfEmpty),
@@ -220,7 +234,7 @@ class _RoomSceneState extends State<RoomScene> {
                 ..._twin(layout),
                 // On the bed, only the quilt edge tucks it in; behind the bed, the whole bed covers it.
                 if (sim.inBed)
-                  _layer(layout.fgBed)
+                  _layer(layout.fgBed, feather: 5)
                 else if (layout.covers(layout.footprints['bed']!, sim.pos))
                   _layer(layout.fgBedFull, key: const ValueKey('room-bed-over')),
                 // The table layer holds the bowl too: patch it again on top.
@@ -229,6 +243,7 @@ class _RoomSceneState extends State<RoomScene> {
                   ..._bowl(layout),
                 ],
                 for (final z in sim.zs) _z(layout, z),
+                _activityPill(layout),
                 if (sim.fx.isNotEmpty)
                   Positioned.fill(
                     key: const ValueKey('room-fx'),
@@ -236,6 +251,7 @@ class _RoomSceneState extends State<RoomScene> {
                   ),
               ],
             ),
+          ),
           ),
         ),
       ),
@@ -261,7 +277,7 @@ class _RoomSceneState extends State<RoomScene> {
                 key: const ValueKey('room-apple-pop'),
                 scale: pop,
                 alignment: pivot,
-                child: Image.asset(layout.bowlApple.asset, fit: BoxFit.fill, gaplessPlayback: true),
+                child: _roomLight(Image.asset(layout.bowlApple.asset, fit: BoxFit.fill, gaplessPlayback: true)),
               ),
             ),
           ),
@@ -269,13 +285,46 @@ class _RoomSceneState extends State<RoomScene> {
     ];
   }
 
-  Widget _layer(RoomLayer l, {Key? key}) => Positioned.fromRect(
-    key: key,
-    rect: l.rect,
-    child: IgnorePointer(
-      child: ExcludeSemantics(child: Image.asset(l.asset, fit: BoxFit.fill, gaplessPlayback: true)),
+  /// [feather] fades the layer's top [feather] px in, so a twin behind it
+  /// sinks under the quilt instead of being sliced by a hard edge.
+  Widget _layer(RoomLayer l, {Key? key, double feather = 0}) {
+    Widget img = Image.asset(l.asset, fit: BoxFit.fill, gaplessPlayback: true);
+    if (feather > 0) {
+      img = ShaderMask(
+        blendMode: BlendMode.dstIn,
+        shaderCallback: (b) => LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
+          stops: [0, math.min(1.0, feather / b.height)],
+        ).createShader(b),
+        child: img,
+      );
+    }
+    return Positioned.fromRect(
+      key: key,
+      rect: l.rect,
+      child: IgnorePointer(child: ExcludeSemantics(child: _roomLight(img))),
+    );
+  }
+
+  Widget _roomLight(Widget child) => switch (widget.appearance.room) {
+    TwinRoom.original => child,
+    TwinRoom.morning => ColorFiltered(
+      colorFilter: ColorFilter.mode(
+        LtColors.mint.withValues(alpha: 0.16),
+        BlendMode.srcATop,
+      ),
+      child: child,
     ),
-  );
+    TwinRoom.twilight => ColorFiltered(
+      colorFilter: ColorFilter.mode(
+        LtColors.night.withValues(alpha: 0.28),
+        BlendMode.srcATop,
+      ),
+      child: child,
+    ),
+  };
 
   List<Widget> _twin(RoomLayout layout) {
     final proj = layout.projector;
@@ -287,8 +336,11 @@ class _RoomSceneState extends State<RoomScene> {
     final az = layout.cameraAzimuth;
     // The billboard leans back toward the camera; lying down, it faces it.
     final lean = (shape == RoomPose.sleep ? layout.cameraPitchDeg : layout.leanDeg) * math.pi / 180;
-    final h = layout.bearHeight * (_poseHeight[shape] ?? 1) * moodScale;
-    final feet = proj.project(x, y, z);
+    // The sleeping human is a little smaller and sits left, so its shoes stay inside the mattress.
+    final humanInBed = shape == RoomPose.sleep && widget.appearance.type == TwinType.human;
+    final h = layout.bearHeight * (_poseHeight[shape] ?? 1) * moodScale * (humanInBed ? 0.92 : 1);
+    final feet0 = proj.project(x, y, z);
+    final feet = humanInBed ? feet0.translate(-4, 0) : feet0;
     final head = proj.project(
       x - math.sin(lean) * math.sin(az) * h,
       y + math.cos(lean) * h,
@@ -390,11 +442,64 @@ class _RoomSceneState extends State<RoomScene> {
     ];
   }
 
+  /// What the twin is doing, in one word with a small icon, just under it.
+  Widget _activityPill(RoomLayout layout) {
+    final (label, icon) = switch (sim.activity) {
+      RoomActivity.sleeping => ('Sleeping', Icons.bedtime_rounded),
+      RoomActivity.walking => ('Walking', Icons.directions_walk_rounded),
+      RoomActivity.eating => ('Eating', Icons.restaurant_rounded),
+      RoomActivity.exercising => ('Exercising', Icons.fitness_center_rounded),
+      RoomActivity.fortune => ('Fortune', Icons.auto_awesome_rounded),
+      RoomActivity.relaxing => ('Relaxing', Icons.weekend_rounded),
+    };
+    final name = widget.appearance.name;
+    final who = name == null || name.trim().isEmpty ? 'Your twin' : name.trim();
+    final p = layout.projector.project(sim.pos.dx, 0, sim.pos.dy);
+    // Under the feet (on the bed: under the quilt edge), centred, kept inside the render.
+    final dy = sim.inBed ? -18.0 : 14.0;
+    return Positioned(
+      key: const ValueKey('room-activity'),
+      left: p.dx - 70,
+      top: p.dy + dy,
+      width: 140,
+      child: IgnorePointer(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Semantics(
+            liveRegion: true,
+            label: '$who is ${label.toLowerCase()}',
+            excludeSemantics: true,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
+              decoration: BoxDecoration(
+                color: LtColors.paper,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: LtColors.container, width: 1.5),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 16, color: LtColors.ink),
+                  const SizedBox(width: 4),
+                  Text(
+                    label,
+                    style: LtText.body(weight: FontWeight.w700)
+                        .copyWith(fontSize: 13, height: 1.1),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _z(RoomLayout layout, RoomZ z) {
     final p = layout.projector.project(z.x, z.y, z.z);
     final k = z.age / z.life;
     final opacity = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8;
-    final size = 18 * (1 + 0.6 * k);
+    final size = 12 * (1 + 0.4 * k);
     return Positioned(
       left: p.dx - size / 2,
       top: p.dy - size / 2,
@@ -534,4 +639,36 @@ class _FxPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_FxPainter old) => true;
+}
+
+/// An oval striped rug (the colours of the round rug already in the room) lying on the right-hand floor,
+/// with a small flat cushion on it. Flat shapes only: nothing for the twin to bump into.
+class _RugPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.translate(size.width * 0.83, size.height * 0.485);
+    canvas.rotate(-0.12);
+    canvas.scale(0.88);
+    Rect oval(double rx, double ry) => Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2);
+    final fills = [
+      (oval(64, 28), const Color(0xFFA9A8D6)),
+      (oval(55, 23), const Color(0xFFF2E3C2)),
+      (oval(40, 16), const Color(0xFFA9A8D6)),
+      (oval(32, 12), const Color(0xFFF2E3C2)),
+    ];
+    // A soft contact shadow, then the bands.
+    canvas.drawOval(oval(66, 30).shift(const Offset(0, 3)), Paint()..color = const Color(0x22000000));
+    for (final (r, c) in fills) {
+      canvas.drawOval(r, Paint()..color = c);
+    }
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(-8, 2), width: 28, height: 13),
+      Paint()..color = const Color(0xFFF2B98F),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_RugPainter old) => false;
 }

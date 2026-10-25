@@ -129,11 +129,22 @@ void main() {
         final first = repo.model.assessModel(toModelProfile(rosaProfile));
         expect(first.available, isTrue);
         expect(first.percentByYear[5]!, closeTo(96.92, 0.01));
-        expect(first.healthScore!, closeTo(-0.0375, 0.005));
+        expect(first.healthScore!, closeTo(0.0375, 0.005)); // higher = better
+        expect(first.rawLogRelativeHazard!, closeTo(-0.0375, 0.005));
         final seeded = repo.healthScoreHistory().first;
-        expect(seeded.score!, closeTo(-0.0375, 0.005));
+        expect(seeded.score!, closeTo(0.0375, 0.005));
       },
     );
+
+    test('Rosa gets a rough lifespan estimate (proof of concept)', () {
+      final e = repo.lifespanEstimate!;
+      expect(e.status, LifespanStatus.available);
+      expect(e.expectedAge, closeTo(88.7, 0.05)); // age 64 in the seed
+      expect(e.p25Age, closeTo(83.3, 0.05));
+      expect(e.p75Age, closeTo(95.0, 0.05));
+      expect(e.headline, contains('about 89'));
+      expect(e.expectedYear, 2051); // 2026 + round(88.7 - 64)
+    });
 
     test('the weekly check-in is the one that fed the forecast', () {
       final weekly = repo.history().firstWhere(
@@ -165,8 +176,8 @@ void main() {
       // A visible trend: the score moves between first and last.
       expect(
         points.last.score!,
-        lessThan(points.first.score!),
-      ); // lower hazard: healthier
+        greaterThan(points.first.score!),
+      ); // higher score: healthier
       expect(
         points.last.ageGroupPercentile!,
         greaterThan(points.first.ageGroupPercentile!),

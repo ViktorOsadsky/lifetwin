@@ -20,13 +20,14 @@ void main() {
 
   Map<String, dynamic> g(int i) => Map<String, dynamic>.from(golden[i]['profile'] as Map);
 
-  test('the score is predict()\'s log_relative_hazard_score exactly, for every golden vector', () {
+  test('the raw score is predict()\'s log_relative_hazard_score exactly, and the score is its negation', () {
     for (var i = 0; i < golden.length; i++) {
       final a = model.assessModel(g(i));
       final predicted = model.engine.model.predict(g(i));
       expect(predicted['status'], 'available');
-      expect(a.healthScore, predicted['log_relative_hazard_score']);
-      expect(a.healthScore, closeTo((golden[i]['log_relative_hazard_score'] as num).toDouble(), 1e-12));
+      expect(a.rawLogRelativeHazard, predicted['log_relative_hazard_score']);
+      expect(a.rawLogRelativeHazard, closeTo((golden[i]['log_relative_hazard_score'] as num).toDouble(), 1e-12));
+      expect(a.healthScore, -(predicted['log_relative_hazard_score'] as num)); // higher = better
       expect(a.healthScoreStatus, HealthScoreStatus.available);
     }
   });
@@ -58,12 +59,14 @@ void main() {
     for (final age in [30, 34, 80, 85]) {
       final a = model.assessModel({...g(0), 'age': age});
       expect(a.healthScoreStatus, HealthScoreStatus.extrapolated, reason: 'age $age');
-      expect(a.healthScore, a.survival['log_relative_hazard_score']);
+      expect(a.rawLogRelativeHazard, a.survival['log_relative_hazard_score']);
+      expect(a.healthScore, -(a.survival['log_relative_hazard_score'] as num));
       expect(a.healthScore, isNotNull);
     }
-    final anchor = model.assessModel({...g(0), 'age': 35}).healthScore!;
-    final older = model.assessModel({...g(0), 'age': 34}).healthScore!;
-    expect(older, lessThan(anchor)); // a year younger: lower modelled risk
+    final anchor = model.assessModel({...g(0), 'age': 35}).rawLogRelativeHazard!;
+    final younger = model.assessModel({...g(0), 'age': 34}).rawLogRelativeHazard!;
+    expect(younger, lessThan(anchor)); // a year younger: lower modelled risk
+    expect(model.assessModel({...g(0), 'age': 34}).healthScore!, greaterThan(-anchor)); // higher score
     expect(model.assessModel({...g(0), 'age': 79}).healthScoreStatus, HealthScoreStatus.available);
   });
 
@@ -82,10 +85,10 @@ void main() {
 
   test('the extrapolated score is the 35-year-old score plus the model\'s linear age term', () {
     final coef = ((model.engine.model.spec['coefficients'] as List).first as num).toDouble();
-    final at35 = model.assessModel({...g(0), 'age': 35}).healthScore!;
-    expect(model.assessModel({...g(0), 'age': 18}).healthScore, closeTo(at35 + coef * (18 - 35) / 10, 1e-12));
+    final at35 = model.assessModel({...g(0), 'age': 35}).rawLogRelativeHazard!;
+    expect(model.assessModel({...g(0), 'age': 18}).rawLogRelativeHazard, closeTo(at35 + coef * (18 - 35) / 10, 1e-12));
     // age_decade = (age - 55) / 10 is what the package encodes inside 35-79
-    expect(model.assessModel({...g(0), 'age': 45}).healthScore! - at35, closeTo(coef * 1.0, 1e-12));
+    expect(model.assessModel({...g(0), 'age': 45}).rawLogRelativeHazard! - at35, closeTo(coef * 1.0, 1e-12));
   });
 
   group('age-group percentile', () {
@@ -198,8 +201,9 @@ void main() {
       expect(base.ageGroupBand, '40–50');
       expect(base.ageGroupSize, greaterThanOrEqualTo(50));
       expect(base.ageGroupNearestBand, isFalse);
-      // The score itself is untouched.
-      expect(base.healthScore, model.engine.model.predict(g(0))['log_relative_hazard_score']);
+      // The score itself is untouched, and agrees in direction: healthier is higher.
+      expect(base.rawLogRelativeHazard, model.engine.model.predict(g(0))['log_relative_hazard_score']);
+      expect(base.healthScore!, greaterThan(bad.healthScore!));
       final young = model.assessModel({...g(0), 'age': 25});
       expect(young.ageGroupNearestBand, isTrue);
       expect(young.ageGroupBand, '35–45');
@@ -236,7 +240,49 @@ void main() {
       expect(repo.healthScoreMessage, isNotEmpty);
       await repo.saveConversationProfile(fullProfile);
       expect(repo.healthScoreStatus, HealthScoreStatus.available);
-      expect(repo.healthScore, repo.current!.survival['log_relative_hazard_score']);
+      expect(repo.rawLogRelativeHazard, repo.current!.survival['log_relative_hazard_score']);
+      expect(repo.healthScore, -repo.rawLogRelativeHazard!);
+    });
+
+    test('lifespanEstimate comes from the current profile; none before a profile or under 18', () async {
+      final repo = await repoOn(MemoryBackend());
+      expect(repo.lifespanEstimate, isNull);
+      await repo.saveConversationProfile(fullProfile);
+      final e = repo.lifespanEstimate!;
+      final age = repo.current!.profileUsed['age'] as num;
+      expect(e.expectedAge, greaterThan(age));
+      expect(e.expectedYear, now.year + (e.expectedAge - age + 0.5).floor());
+      expect(e.caveat, contains('Proof of concept'));
+      await repo.saveConversationProfile({...fullProfile, 'age': 17});
+      expect(repo.lifespanEstimate, isNull);
+    });
+
+    test('the lifespan reveal flag persists and Delete my data clears it', () async {
+      final backend = MemoryBackend();
+      final repo = await repoOn(backend);
+      await repo.saveConversationProfile(fullProfile);
+      expect(repo.lifespanRevealSeen, isFalse);
+      await repo.markLifespanRevealSeen();
+      expect(repo.lifespanRevealSeen, isTrue);
+      expect((await repoOn(backend)).lifespanRevealSeen, isTrue); // reopened from the file
+      await repo.deleteMyData();
+      expect(repo.lifespanRevealSeen, isFalse);
+      expect((await repoOn(backend)).lifespanRevealSeen, isFalse);
+    });
+
+    test('stored history keeps the raw value; the point shows the negated score', () async {
+      final backend = MemoryBackend();
+      final repo = await repoOn(backend);
+      await repo.saveConversationProfile(fullProfile);
+      final stored = (jsonDecode(backend.text!) as Map)['health_score'] as List;
+      expect((stored.single as Map)['score'], repo.rawLogRelativeHazard);
+      final point = repo.healthScoreHistory().single;
+      expect(point.rawLogRelativeHazard, repo.rawLogRelativeHazard);
+      expect(point.score, repo.healthScore);
+      // A point written before the sign change reads the same way.
+      final old = HealthScorePoint.fromJson({'at': '2026-10-01T09:00:00.000', 'score': 0.5, 'status': 'available'});
+      expect(old.score, -0.5);
+      expect(old.toJson()['score'], 0.5);
     });
 
     test('history grows on a feeding check-in, not on a non-feeding one, and is append-only', () async {

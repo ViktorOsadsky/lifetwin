@@ -27,6 +27,7 @@ class BandPairScreen extends StatefulWidget {
     required this.onClose,
     required this.onSeeToday,
     this.onOpenSettings,
+    this.onImportFile,
   });
 
   final BandStore store;
@@ -36,6 +37,9 @@ class BandPairScreen extends StatefulWidget {
 
   /// "Open Settings" when Bluetooth is not allowed (the app's own settings page).
   final VoidCallback? onOpenSettings;
+
+  /// "Import band file" on the first screen: a file instead of Bluetooth. Hidden when null.
+  final Future<void> Function()? onImportFile;
 
   @override
   State<BandPairScreen> createState() => _BandPairScreenState();
@@ -74,7 +78,7 @@ class _BandPairScreenState extends State<BandPairScreen> {
   @override
   Widget build(BuildContext context) {
     final (bubble, title, state) = switch (_step) {
-      _Step.before => ('Turn on your band.', 'Find your band', steadyTwin),
+      _Step.before => ('Put the band on your leg, then turn it on.', 'Find your band', steadyTwin),
       _Step.searching => ('Looking…', 'Find your band', curiousTwin),
       _Step.found => ('Found your band!', 'Pair your band', steadyTwin),
       _Step.trouble => ('Hmm, I can’t see it yet.', 'Can’t find your band', steadyTwin),
@@ -113,7 +117,11 @@ class _BandPairScreenState extends State<BandPairScreen> {
   List<Widget> _body() {
     switch (_step) {
       case _Step.before:
-        return [WholeWordText('Mochi uses Bluetooth to find your band.', style: LtText.body())];
+        return [
+          WholeWordText('Mochi uses Bluetooth to find your band.', style: LtText.body()),
+          const SizedBox(height: 8),
+          WholeWordText('Strap it around your leg, just above the ankle.', style: LtText.body()),
+        ];
       case _Step.searching:
         return [NoNumberBox(icon: Icons.bluetooth_searching_rounded, title: 'Looking for your band…')];
       case _Step.found:
@@ -130,7 +138,7 @@ class _BandPairScreenState extends State<BandPairScreen> {
               ),
               child: Row(
                 children: [
-                  const LeverIcon(Icons.watch_outlined),
+                  const LeverIcon(Icons.directions_walk_rounded),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -166,12 +174,12 @@ class _BandPairScreenState extends State<BandPairScreen> {
         ];
       case _Step.paired:
         return [
-          WholeWordText('Wear it all day. Mochi counts:', style: LtText.body()),
+          WholeWordText('Wear it on your leg all day. Mochi counts:', style: LtText.body()),
           const SizedBox(height: 6),
           for (final (icon, t, muted) in const [
             (Icons.directions_walk_rounded, 'Steps', false),
             (Icons.directions_run_rounded, 'Moderate minutes', false),
-            (Icons.watch_outlined, 'Time worn', false),
+            (Icons.directions_walk_rounded, 'Time worn', false),
             (Icons.favorite_border_rounded, 'Heart rate, later', true),
           ])
             Padding(
@@ -198,6 +206,11 @@ class _BandPairScreenState extends State<BandPairScreen> {
       case _Step.before:
         return col([
           LipButton(label: 'Find my band', icon: Icons.bluetooth_rounded, fontSize: 24, onTap: _search),
+          if (widget.onImportFile != null)
+            TextButton(
+              onPressed: () => widget.onImportFile!(),
+              child: Text('Import band file', style: LtText.body(weight: FontWeight.w700)),
+            ),
           TextButton(
             onPressed: widget.onClose,
             child: Text('Not now', style: LtText.body(weight: FontWeight.w700)),
@@ -311,7 +324,7 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
   static const banners = {
     BandStatus.notConnected: ('Band not connected', 'Saved days are safe.', 'Reconnect'),
     BandStatus.lowPower: ('Band power is low', 'Counting may stop soon.', null),
-    BandStatus.notWorn: ('Band is off your wrist', 'Put it on to count today.', null),
+    BandStatus.notWorn: ('Band is off your leg', 'Put it on to count today.', null),
     BandStatus.demo: ('Recorded demo', 'A saved day, not live.', null),
   };
 
@@ -323,7 +336,7 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
       final w = s.week();
       final today = w.days.last;
       final banner = banners[s.status];
-      final suggestion = widget.service.suggest(w, live: s.live);
+      final suggestion = widget.service.suggest(w, live: s.live, demo: s.demoOnly);
       return ExperimentPage(
         mode: LtMode.room,
         title: 'Your band',
@@ -385,21 +398,37 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
           const SizedBox(height: 10),
           _HourBars(hours: d.stepsByHour),
           const SizedBox(height: 8),
-          Row(
+          // Wraps (never overflows) at narrow widths and large text.
+          Wrap(
+            spacing: 16,
+            runSpacing: 6,
             children: [
-              const Icon(Icons.directions_run_rounded, size: 22),
-              const SizedBox(width: 6),
-              Text('${d.moderateMinutes} min moderate', style: LtText.body(weight: FontWeight.w700)),
-              const SizedBox(width: 16),
-              const Icon(Icons.watch_outlined, size: 22),
-              const SizedBox(width: 6),
-              Text('$hours hours worn', style: LtText.body(weight: FontWeight.w700)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.directions_run_rounded, size: 22),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text('${d.moderateMinutes} min moderate', style: LtText.body(weight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.directions_walk_rounded, size: 22),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text('$hours hours worn', style: LtText.body(weight: FontWeight.w700)),
+                  ),
+                ],
+              ),
             ],
           ),
           if (!d.isValid) ...[
             const SizedBox(height: 8),
             WholeWordText(
-              'Wear it ${(validDayMinutes - d.wornMinutes + 59) ~/ 60} more hours so today counts.',
+              'Wear it on your leg ${(validDayMinutes - d.wornMinutes + 59) ~/ 60} more hours so today counts.',
               style: LtText.body(color: LtColors.secondary),
             ),
           ],
@@ -408,8 +437,10 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
             children: [
               const Icon(Icons.favorite_border_rounded, size: 22, color: LtColors.secondary),
               const SizedBox(width: 6),
-              Text('Heart rate', style: LtText.body(color: LtColors.secondary)),
-              const Spacer(),
+              Expanded(
+                child: Text('Heart rate', style: LtText.body(color: LtColors.secondary)),
+              ),
+              const SizedBox(width: 8),
               const ModeTag(text: 'Coming soon'),
             ],
           ),
@@ -456,15 +487,16 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
             style: LtText.body(weight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
-          const Wrap(
+          Wrap(
             spacing: 8,
             children: [
-              ModeTag(text: 'From your band'),
-              ModeTag(text: 'Sensor estimate'),
+              if (suggestion?.demo ?? widget.store.demo) const ModeTag(text: BandSuggestion.demoLabel),
+              const ModeTag(text: 'From your band'),
+              const ModeTag(text: 'Sensor estimate'),
             ],
           ),
         ] else
-          WholeWordText('Wear it 4 days to get a weekly number.', style: LtText.body()),
+          WholeWordText('Wear it on your leg 4 days to get a weekly number.', style: LtText.body()),
         if (suggestion != null && widget.onUseSuggestion != null) ...[
           const SizedBox(height: 12),
           LipButton(
@@ -737,12 +769,13 @@ class _BandReadbackScreenState extends State<BandReadbackScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Wrap(
+                  Wrap(
                     spacing: 8,
                     runSpacing: 6,
                     children: [
-                      ModeTag(text: 'From your band'),
-                      ModeTag(text: 'Sensor estimate'),
+                      if (s.demo) const ModeTag(text: BandSuggestion.demoLabel),
+                      const ModeTag(text: 'From your band'),
+                      const ModeTag(text: 'Sensor estimate'),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -834,11 +867,12 @@ class BandSuggestScreen extends StatelessWidget {
                   style: LtText.body(),
                 ),
                 const SizedBox(height: 6),
-                const Wrap(
+                Wrap(
                   spacing: 8,
                   children: [
-                    ModeTag(text: 'From your band'),
-                    ModeTag(text: 'Sensor estimate'),
+                    if (suggestion.demo) const ModeTag(text: BandSuggestion.demoLabel),
+                    const ModeTag(text: 'From your band'),
+                    const ModeTag(text: 'Sensor estimate'),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -882,9 +916,16 @@ class BandSuggestScreen extends StatelessWidget {
 /// switch, and Unpair, which erases band days on this phone while confirmed answers stay. Nothing from
 /// the band goes to an outside AI provider.
 class BandSettingsScreen extends StatelessWidget {
-  const BandSettingsScreen({super.key, required this.store, required this.onBack});
+  const BandSettingsScreen({super.key, required this.store, required this.onBack, this.onImportFile, this.onForget});
   final BandStore store;
   final VoidCallback onBack;
+
+  /// "Import band file": picks a `lifetwin.band_day.v0` file and feeds the band days (the weekly suggestion
+  /// and its confirmation follow as usual). Hidden when null.
+  final Future<void> Function()? onImportFile;
+
+  /// What "Unpair" does when given (it forgets imported files too); the store's own unpair otherwise.
+  final Future<void> Function()? onForget;
 
   Future<void> _unpair(BuildContext context) async {
     final ok = await showModalBottomSheet<bool>(
@@ -922,7 +963,7 @@ class BandSettingsScreen extends StatelessWidget {
         ),
       ),
     );
-    if (ok == true) await store.unpair();
+    if (ok == true) await (onForget?.call() ?? store.unpair());
   }
 
   @override
@@ -930,14 +971,14 @@ class BandSettingsScreen extends StatelessWidget {
     listenable: store,
     builder: (context, _) => ExperimentPage(
       mode: LtMode.customize,
-      title: 'Wrist band',
+      title: 'Activity band',
       onBack: onBack,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              const LeverIcon(Icons.watch_outlined),
+              const LeverIcon(Icons.directions_walk_rounded),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(store.bandName ?? 'No band paired', style: LtText.body(size: 18, weight: FontWeight.w700)),
@@ -985,13 +1026,23 @@ class BandSettingsScreen extends StatelessWidget {
               onChanged: (_) => store.setDemo(!store.demo),
             ),
           ),
+          if (onImportFile != null) ...[
+            const SizedBox(height: 8),
+            LipButton(
+              label: 'Import band file',
+              kind: LipKind.secondary,
+              height: 56,
+              fontSize: 21,
+              onTap: () => onImportFile!(),
+            ),
+          ],
           const SizedBox(height: 8),
           LipButton(
             label: 'Unpair band',
             kind: LipKind.secondary,
             height: 56,
             fontSize: 21,
-            onTap: store.paired || store.demo ? () => _unpair(context) : null,
+            onTap: store.paired || store.demo || store.hasImportedFile ? () => _unpair(context) : null,
           ),
         ],
       ),
@@ -1037,7 +1088,7 @@ class BandPill extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.watch_outlined, size: 22, color: LtColors.ink),
+                const Icon(Icons.directions_walk_rounded, size: 22, color: LtColors.ink),
                 const SizedBox(width: 6),
                 Text(label, style: LtText.body(weight: FontWeight.w700)),
               ],

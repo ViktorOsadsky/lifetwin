@@ -52,9 +52,11 @@ class ForecastScreen extends StatefulWidget {
     this.speech,
     this.onAnswers,
     this.onPlayQuiz,
+    this.onDrivers,
     this.healthKeys = const {},
     this.appearance = const TwinAppearance(),
     this.onResult,
+    this.scoreCard,
   });
 
   final ForecastClient client;
@@ -73,6 +75,9 @@ class ForecastScreen extends StatefulWidget {
   /// Shown on "still learning" when a quiz exists.
   final VoidCallback? onPlayQuiz;
 
+  /// "What moves it": the outlook's drivers, from a supported result.
+  final VoidCallback? onDrivers;
+
   /// Profile keys that came from the Health app (the rest: "you told me").
   final Set<String> healthKeys;
 
@@ -81,6 +86,10 @@ class ForecastScreen extends StatefulWidget {
 
   /// Called with each forecast (the Room shows the last one).
   final ValueChanged<Forecast>? onResult;
+
+  /// The health score card. When given it leads the result, above the outlook
+  /// (owner ruling: the score is shown above any outlook and is visually stronger).
+  final Widget? scoreCard;
 
   @override
   State<ForecastScreen> createState() => _ForecastScreenState();
@@ -303,6 +312,7 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (widget.scoreCard != null) widget.scoreCard!,
         Semantics(
           header: true,
           child: WholeWordText('Your look ahead', style: LtText.display(22, color: LtColors.gold)),
@@ -383,6 +393,28 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
             ),
           ),
         ),
+        if (widget.onDrivers != null) ...[
+          const SizedBox(height: 8),
+          LipButton(
+            label: 'What moves it',
+            icon: Icons.tune_rounded,
+            kind: LipKind.secondary,
+            height: 56,
+            fontSize: 21,
+            onTap: widget.onDrivers,
+          ),
+        ],
+        if (widget.onPlayQuiz != null) ...[
+          const SizedBox(height: 8),
+          LipButton(
+            label: 'Play the quiz',
+            icon: Icons.extension_rounded,
+            kind: LipKind.secondary,
+            height: 56,
+            fontSize: 21,
+            onTap: widget.onPlayQuiz,
+          ),
+        ],
         const SizedBox(height: 4),
         Center(
           child: LinkButton(

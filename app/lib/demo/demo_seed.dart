@@ -108,7 +108,7 @@ Future<void> seedDemo(
       await repo.saveOnboarding({
         'memory_consent': true,
         'habit_notes': [
-          {'topic': 'walks', 'text': 'walks the dog in the morning'},
+          {'topic': 'exercise', 'text': 'walks the dog in the morning'},
           {'topic': 'sitting', 'text': 'sits a lot watching TV in the evening'},
         ],
         'confirmed_profile': rosaProfile,

@@ -82,6 +82,7 @@ body{margin:0}
 .rg{display:inline-flex;align-items:center;gap:6px;min-height:48px;height:48px;padding:0 16px;border-radius:24px;border:2px solid #8C6B5D;background:#FFF6DD;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
 p{overflow-wrap:break-word}
 h1,h2{margin:0}
+.dir{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 12px 0 8px;border-radius:18px;border:1.5px solid #A88B7D;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box;flex:none}
 .medal{flex:none;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#9FD9C3;border:2px solid #7A5B4E;outline:1px solid rgba(226,179,87,.8);outline-offset:-8px;box-shadow:inset 0 -4px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);color:#4A2F25}
 .medal b{font-family:Fredoka,system-ui,sans-serif;font-weight:600;line-height:1;letter-spacing:-.01em}
 .medal span{font-weight:700;line-height:1.1}
@@ -105,6 +106,8 @@ h1,h2{margin:0}
 .wk .d.on{background:#9FD9C3;border-color:#7A5B4E}
 .wk .d.today{box-shadow:0 0 0 3px #FFFDF8,0 0 0 5px #4A2F25}
 .wk .d.fut{border-style:dashed;color:#6B4E42}
+.spk{position:absolute;width:16px;height:16px;pointer-events:none}
+.vh{position:absolute!important;left:0;right:0;top:0;height:1px;margin:0;padding:0;overflow:hidden;clip-path:inset(50%);white-space:normal;border:0}
 .lg p,.lg span,.lg b,.lg h1,.lg h2,.lg li,.lg a,.lg button{overflow-wrap:normal;word-break:normal;hyphens:manual}
 .lg .lab,.lg .sub{font-size:27px}
 .lg .bub p{font-size:32px}
@@ -143,7 +146,7 @@ h1,h2{margin:0}
 .sb figcaption{font-size:14px;line-height:1.25}
 </style>
 </helmet>
-<div class="nb" style="width: 390px"><h2>K-8 / K-9 small and large</h2><ul><li>K-8: 1.6x text in 320&#215;693. The check-in moves into the pinned dock; other actions become rows; only Settings stays pinned on top.</li><li>K-9: standard text at 320 wide; same order as K-3/K-4; compact twin scale (stand = 140 pt).</li><li><span class="ph-tag">PLACEHOLDER</span>Score 72 and the sparkline, as in K-4. Tagline dropped on K-8 (text scale 1.5x+); on K-9 it runs full width.</li><li>K-8: the dock button reads &#8220;Check in&#8221; and that is also its accessible name.</li></ul></div>
+<div class="nb" style="width: 390px"><h2>K-8 / K-9 small and large</h2><ul><li>K-8: 1.6x text in 320&#215;693. The check-in moves into the pinned dock; other actions become rows; only Settings stays pinned on top.</li><li>K-8 ScoreCard: no tagline; &#8220;Average&#8221; sits over the tick; captions 24 pt. The card scrolls; bottom padding clears the dock.</li><li>K-9: standard text at 320 wide; the age-group line runs full width; scale captions 15 pt.</li><li>K-8: the dock button reads &#8220;Check in&#8221; and that is also its accessible name.</li></ul></div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":310}}'>
 class Component extends DCLogic {

@@ -11,6 +11,7 @@ import '../checkin/daily_logs.dart' show weekProgress;
 import '../documents/document_extract.dart' show DocumentCandidate;
 import 'checkin_applier.dart';
 import 'history_log.dart';
+import 'lifespan.dart';
 import 'profile_mapping.dart' show toModelProfile;
 import 'twin_experiment.dart';
 import 'twin_history.dart';
@@ -18,6 +19,7 @@ import 'twin_model.dart';
 import 'twin_state.dart';
 
 export 'history_log.dart';
+export 'lifespan.dart' show LifespanEstimate, LifespanStatus;
 
 part 'twin_store.dart';
 
@@ -33,7 +35,8 @@ part 'twin_store.dart';
 /// - [applyCheckin]: a finished check-in (weekly `profile_update`, quick `daily_logs`);
 /// - [applyDayCorrection]: a past day's answer corrected through a confirmed Mochi read-back;
 /// - [applyMemoryConsent] / [addHabitNote]: habit notes, only with `memory_consent`;
-/// - [saveTwinLook] and [saveCheckinSettings]: preferences, not health data;
+/// - [saveTwinLook], [saveCheckinSettings] and [markLifespanRevealSeen]: preferences, not
+///   health data;
 /// - [deleteMyData].
 /// Experiments ([experiment]) are hypothetical and never write. Every health write also
 /// appends its [HistoryEntry], so [history] shows what happened as it happened.
@@ -97,10 +100,14 @@ class TwinRepository extends ChangeNotifier {
   /// The confirmed profile on the phone.
   Map<String, dynamic> get profile => store.profile;
 
-  /// The health score: the model's `log_relative_hazard_score` as is (lower is lower
-  /// modelled risk, 0 is the average survey participant; includes age and sex). Null
-  /// unless the model gave a number; see [healthScoreStatus].
+  /// The health score: HIGHER IS BETTER (owner ruling 2026-10-24), 0 is the average survey
+  /// participant, typically about −3 to +3; includes age and sex. It is the negated
+  /// [rawLogRelativeHazard] (one adapter, [healthScoreFromRaw]). Null unless the model gave
+  /// a number; see [healthScoreStatus].
   double? get healthScore => _current?.healthScore;
+
+  /// The model's own `log_relative_hazard_score`, unchanged (lower is lower modelled risk).
+  double? get rawLogRelativeHazard => _current?.rawLogRelativeHazard;
 
   /// Healthier than this share (0–100) of people like you in the survey (same sex, nearby
   /// ages); see [TwinAssessment.ageGroupPercentile]. Null when there is no score.
@@ -109,6 +116,27 @@ class TwinRepository extends ChangeNotifier {
   String? get ageGroupBand => _current?.ageGroupBand;
   int? get ageGroupWidth => _current?.ageGroupWidth;
   bool? get ageGroupNearestBand => _current?.ageGroupNearestBand;
+
+  /// The one-time lifespan reveal (owner override 2026-10-24): a rough, proof-of-concept
+  /// expected age and YEAR (never a date) from the current profile; see
+  /// docs/lifespan-estimate.md. Null when there is no health score (no profile, missing
+  /// inputs, unsupported profile, under 18 or over 85).
+  LifespanEstimate? get lifespanEstimate {
+    final a = _current;
+    if (a == null || a.rawLogRelativeHazard == null) return null;
+    return LifespanEstimate.forProfile(a.profileUsed, currentYear: _clock().year);
+  }
+
+  /// True once the person has seen the lifespan reveal; the UI then de-emphasises it.
+  /// Persisted; [deleteMyData] clears it.
+  bool get lifespanRevealSeen => store.lifespanRevealSeen;
+
+  /// Records that the lifespan reveal was shown.
+  Future<void> markLifespanRevealSeen() async {
+    if (store.lifespanRevealSeen) return;
+    await store._setLifespanRevealSeen();
+    notifyListeners();
+  }
 
   /// Why [healthScore] has or lacks a number; null before a profile.
   HealthScoreStatus? get healthScoreStatus => _current?.healthScoreStatus;
@@ -637,7 +665,8 @@ class TwinRepository extends ChangeNotifier {
   }
 
   /// "Delete my data": the profile and its provenance, history, day logs, notes, settings,
-  /// the outside-AI consent and the twin look, on the phone, and the planned reminders.
+  /// the outside-AI consent, the twin look and the lifespan-reveal flag, on the phone, and
+  /// the planned reminders.
   Future<void> deleteMyData() async {
     try {
       await reminders?.port.cancelAll();
@@ -679,7 +708,7 @@ class TwinRepository extends ChangeNotifier {
   Future<void> _recordHealthScore(TwinAssessment a) => store._addHealthScore(
     HealthScorePoint(
       at: _clock(),
-      score: a.healthScore,
+      rawLogRelativeHazard: a.rawLogRelativeHazard,
       status: a.healthScoreStatus,
       ageGroupPercentile: a.ageGroupPercentile,
       ageGroupSize: a.ageGroupSize,

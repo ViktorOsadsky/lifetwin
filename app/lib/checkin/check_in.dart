@@ -36,6 +36,23 @@ import '../experiment/widgets/source_link.dart';
 /// `quick` is the 1-minute daily chat; `weekly` is the longer one.
 enum CheckInKind { quick, weekly }
 
+/// What the coach says after a check-in: its `encourage` line (null: use the built-in one) and, when it
+/// had a plan to compare with, the changes it made, one reason per line (empty: the plan stays the same;
+/// null: nothing to say about the plan).
+class TodayUpdate {
+  const TodayUpdate({this.encouragement, this.changes});
+  final String? encouragement;
+  final List<String>? changes;
+}
+
+/// After a check-in finishes: the coach revises today's plan with the check-in results ([update]) and
+/// "Here's today's plan" opens it ([open]).
+class TodayPlanHook {
+  const TodayPlanHook({required this.update, required this.open});
+  final Future<TodayUpdate> Function() update;
+  final void Function(BuildContext context) open;
+}
+
 /// What a check-in needs, provided once near the top of the app.
 class CheckInScope extends InheritedWidget {
   const CheckInScope({
@@ -49,6 +66,7 @@ class CheckInScope extends InheritedWidget {
     this.healthSamples,
     this.openUrl = defaultOpenUrl,
     this.now,
+    this.todayPlan,
     required super.child,
   });
 
@@ -69,6 +87,9 @@ class CheckInScope extends InheritedWidget {
 
   /// The clock for "due" (tests set it); the phone's clock by default.
   final DateTime Function()? now;
+
+  /// Encouragement and "Here's today's plan" on the finished check-in. Null: neither is shown.
+  final TodayPlanHook? todayPlan;
 
   static CheckInScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<CheckInScope>();
@@ -92,6 +113,7 @@ Future<void> openCheckIn(BuildContext context, {required CheckInKind kind}) {
     guide: scope.guide,
     input: scope.speechInput,
     output: scope.speechOutput,
+    ownsSpeech: false,
     store: TwinCheckinStore(scope.repository),
     reminders: scope.repository.reminders,
     healthSamples: scope.healthSamples,
@@ -109,6 +131,7 @@ Future<void> openCheckIn(BuildContext context, {required CheckInKind kind}) {
               repository: scope.repository,
               appearance: look,
               open: scope.openUrl,
+              todayPlan: scope.todayPlan,
               onDone: () => Navigator.of(route).pop(),
             ),
           ),

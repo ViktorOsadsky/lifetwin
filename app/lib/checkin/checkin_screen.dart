@@ -56,10 +56,14 @@ class CheckInScreen extends StatefulWidget {
     required this.onDone,
     this.open = defaultOpenUrl,
     this.readback = const ServerReadback(),
+    this.todayPlan,
   });
 
   final CheckinController controller;
   final CheckInKind kind;
+
+  /// Encouragement and "Here's today's plan" once the check-in is done. Null: neither.
+  final TodayPlanHook? todayPlan;
   final TwinRepository repository;
   final TwinAppearance appearance;
   final VoidCallback onDone;
@@ -119,8 +123,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
   /// Back to the Room; after "Stop for today" Mochi says it is okay.
   void _leave() {
     if (_stopped && _finished) {
-      ScaffoldMessenger.maybeOf(context)
-          ?.showSnackBar(const SnackBar(content: Text('That’s okay. I saved what you told me.')));
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('That’s okay. I saved what you told me.'), duration: Duration(seconds: 2)),
+      );
     }
     widget.onDone();
   }
@@ -288,6 +293,10 @@ class _CheckInScreenState extends State<CheckInScreen> {
           ),
           ConfirmedWeek(confirmed: confirmed),
         ],
+        if (widget.todayPlan case final hook?) ...[
+          const SizedBox(height: 12),
+          _Encouragement(hook: hook, onDone: widget.onDone),
+        ],
         if (c.progress != null && c.progress!.goodWeeks > 0) ...[
           const SizedBox(height: 10),
           WholeWordText(
@@ -297,41 +306,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
         ],
         if (c.offerReminder) ...[
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            decoration: BoxDecoration(
-              color: LtColors.paper,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: LtColors.container, width: 1.5),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                WholeWordText(
-                  'Would you like a gentle reminder each day?',
-                  style: LtText.body(weight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: LipButton(
-                        label: 'Not now',
-                        kind: LipKind.secondary,
-                        height: 56,
-                        fontSize: 19,
-                        onTap: c.declineReminders,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: LipButton(label: 'Yes', height: 56, fontSize: 19, onTap: c.acceptReminders),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          ReminderOfferCard(onNotNow: c.declineReminders, onYes: c.acceptReminders),
         ],
       ],
     );
@@ -608,6 +583,118 @@ class _AnswerList extends StatelessWidget {
                   ),
                 ),
         ),
+    ],
+  );
+}
+
+/// "Would you like a gentle reminder each day?" with Not now / Yes. Shown after the first
+/// check-in and at the end of onboarding.
+class ReminderOfferCard extends StatelessWidget {
+  const ReminderOfferCard({super.key, required this.onNotNow, required this.onYes});
+  final VoidCallback onNotNow;
+  final VoidCallback onYes;
+
+  @override
+  Widget build(BuildContext context) => Container(
+   padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+   decoration: BoxDecoration(
+     color: LtColors.paper,
+     borderRadius: BorderRadius.circular(18),
+     border: Border.all(color: LtColors.container, width: 1.5),
+   ),
+   child: Column(
+     crossAxisAlignment: CrossAxisAlignment.stretch,
+     children: [
+       WholeWordText(
+         'Would you like a gentle reminder each day?',
+         style: LtText.body(weight: FontWeight.w700),
+       ),
+       const SizedBox(height: 8),
+       Row(
+         children: [
+           Expanded(
+             child: LipButton(
+               label: 'Not now',
+               kind: LipKind.secondary,
+               height: 56,
+               fontSize: 19,
+               onTap: onNotNow,
+             ),
+           ),
+           const SizedBox(width: 10),
+           Expanded(
+             child: LipButton(label: 'Yes', height: 56, fontSize: 19, onTap: onYes),
+           ),
+         ],
+       ),
+     ],
+   ),
+ );
+}
+
+/// Mochi's encouragement after a check-in, and "Here's today's plan" (back to Home, then the plan).
+class _Encouragement extends StatefulWidget {
+  const _Encouragement({required this.hook, required this.onDone});
+  final TodayPlanHook hook;
+  final VoidCallback onDone;
+
+  static const fallback = 'Nice work today. A small step counts.';
+
+  @override
+  State<_Encouragement> createState() => _EncouragementState();
+}
+
+class _EncouragementState extends State<_Encouragement> {
+  // Asked once, not on every rebuild.
+  late final Future<TodayUpdate> _update = widget.hook.update().catchError((Object _) => const TodayUpdate());
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      FutureBuilder<TodayUpdate>(
+        future: _update,
+        builder: (_, snap) {
+          final u = snap.data;
+          final changes = u?.changes;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Semantics(
+                liveRegion: true,
+                child: WholeWordText(
+                  u?.encouragement ?? _Encouragement.fallback,
+                  style: LtText.body(weight: FontWeight.w700),
+                ),
+              ),
+              if (changes != null) ...[
+                const SizedBox(height: 10),
+                if (changes.isEmpty)
+                  WholeWordText('Your plan stays the same today.', style: LtText.body())
+                else ...[
+                  Semantics(
+                    header: true,
+                    child: Text('Mochi updated your plan', style: LtText.body(weight: FontWeight.w700)),
+                  ),
+                  for (final line in changes) WholeWordText(line, style: LtText.body()),
+                ],
+              ],
+            ],
+          );
+        },
+      ),
+      const SizedBox(height: 8),
+      LipButton(
+        label: 'Here’s today’s plan',
+        kind: LipKind.secondary,
+        height: 56,
+        fontSize: 20,
+        onTap: () {
+          final nav = Navigator.of(context);
+          widget.onDone();
+          widget.hook.open(nav.context);
+        },
+      ),
     ],
   );
 }

@@ -25,6 +25,7 @@ Further rulings:
   - Show numbers only when status is `available`. Otherwise show the status message and no number.
   - Label the curve **"Modeled survival of similar people"** and a comparison **"Modeled difference between profiles"**.
   - Never show a death date, life expectancy or years gained.
+    - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [docs/lifespan-estimate.md](../../lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else.
   - Never fill in healthy defaults. An unknown input stays unknown and the UI shows "still learning".
   - Show wellness cards beside the avatar, each with a visible source link. They are public-health guidance, not model output.
 - **Weight:** BMI above 27 has a near-zero, slightly inverse fitted association, which is NOT evidence that gaining weight helps. A weight lever may only move toward the healthy range. If `compare()` shows a gain for moving away from it, show "Not counted" instead of a number.
@@ -255,6 +256,7 @@ Daniel: "Make the statement of death timeline stronger, but make it clear in the
   - "It can't tell when any one person will die."
   - "Linked, not proven."
 - **Still forbidden** (model card, AGENTS.md): no death date, no age at death, no life expectancy, no years gained. The model only supports years 1–5. Status gating still applies, and so does the Rough guide badge.
+  - **Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [docs/lifespan-estimate.md](../../lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else.
 
 ## Answer provenance (engine)
 - Every stored answer and every `history()` item carries `source`: you_said | apple_health | document | mochi_change | wristband, plus `estimated: true` for sensor or proxy estimates.
@@ -278,8 +280,10 @@ Never promise anything about Muse's own retention; it's unverified.
 1. **Health score leads Home and everything after onboarding.** The outlook is shown ONCE as the reveal at the end of onboarding, then stays reachable behind a quiet "See your estimate" tap. Never front and centre after that.
 2. **Healthy habits for all ages.** Tone works for a 25-year-old: habits, gentle consistency, energy, sleep, movement, mood. Keep large text and 48pt targets. Nothing reads "for old people".
 3. **Daily check-in is the core loop.** The check-in entry is obvious on Home every day (primary button, not a chip).
+- **Health score direction (owner ruling 2026-10-24):** `repo.healthScore` is now higher = better (0 = survey average, typically about −3 to +3); see app/lib/README-model.md.
 - `healthScore` is a PLACEHOLDER, assumed 0–100, until Viktor's spec lands. Do not invent a formula, bands, or how many points any habit is worth. "What moves it" shows directions only (up/down), no point values. Trend data is placeholder and labelled so in board notes.
-- **Pending Tier-1 ruling (do not ship):** the owner asked for a reveal of "You're likely to live to about X" with a range. The on-device Cox model only supports 5-year survival (ages 30–85); it does not produce a lifespan. Until the owner rules, the reveal uses the supported 5-year statement (Outlook framing ruling). A lifespan-layout variant may be drawn with "X–Y" placeholders and a visible "Awaiting Viktor's method, not for build" tag outside the phone frame. (Draft method: PR #52, CDC 2024 life table x Cox relative risk; expected age + 25th–75th range. AGENTS.md conflict stays open until Viktor and the team sign off.) No real-looking lifespan numbers anywhere.
+- **Ruled 2026-10-24 (see the owner override above):** the one-time reveal may show the rough expected year and age range from `repo.lifespanEstimate` (ages 18–85, with its caveat; `lifespanRevealSeen` de-emphasises it afterwards). The text below is the earlier pending state, kept for history.
+- **Earlier, pending Tier-1 ruling:** the owner asked for a reveal of "You're likely to live to about X" with a range. The on-device Cox model only supports 5-year survival (ages 30–85); it does not produce a lifespan. Until the owner rules, the reveal uses the supported 5-year statement (Outlook framing ruling). A lifespan-layout variant may be drawn with "X–Y" placeholders and a visible "Awaiting Viktor's method, not for build" tag outside the phone frame. (Draft method: PR #52, CDC 2024 life table x Cox relative risk; expected age + 25th–75th range. AGENTS.md conflict stays open until Viktor and the team sign off.) No real-looking lifespan numbers anywhere.
 - Body never signals health; the score never reshapes the twin. Experiments stay hypothetical and never change the score.
 - **Owner rulings (via dqi26-45, 2026-10-24):**
   1. The score, lifespan, outlook and health advice need age 18 or over. Under 18 gets Mochi, the room, Customize and the quiz only.
@@ -304,3 +308,34 @@ Never promise anything about Muse's own retention; it's unverified.
   - Call `repo.refresh()` on app open.
   - `CheckinRecord` is renamed `CheckinEntry`.
 - **Score tagline, final (Daniel, relayed by dqi26-45, 2026-10-24: "keep it"):** "Feeling good now, and healthy years ahead." It is dropped at text scale 1.5x or more.
+- **Health score = Viktor's `log_relative_hazard_score` (Daniel, relayed by dqi26-45, 2026-10-24):** "There is not a wellness card. Read what he changed. He added some score between -3 and 3 that was calculated. Follow what he has. default to what he has."
+  - The value comes from `LifeTwinModel.predict()` when `survival.status == 'available'` (`model.dart:243`): Σ(input − dataset centre) × coefficient.
+  - Range is about −3 to +3. LOWER = lower modelled risk. 0 = the average survey participant. It includes the age and sex terms.
+  - Missing below 30 and for incomplete or unsupported profiles. It's present but extrapolated at 30–34 and 80–85.
+  - The engine will expose it as `TwinRepository.healthScore`.
+  - Show the value with Viktor's sign and scale, and make the direction obvious ("lower is better", a scale from lower risk to higher risk, 0 = "average for the survey"). No bands, no 0–100 mapping, no invented colours by value.
+  - This replaces the placeholder 72. Persona Rosa = −0.04 (`z_model/persona_out.json`). Golden vectors in the model package give −1.56, −0.09, +1.10.
+  - Open with the owner, via the peer: the sign presentation, and whether age and sex stay in. This also conflicts with "under-30s get both", because there's no score under 30.
+- **Health score update (Daniel via peer, 2026-10-24):**
+  - Keep Viktor's `log_relative_hazard_score` as the headline, with its sign as is (negative = lower modelled risk than the survey average).
+  - ADD `ageGroupPercentile`: "healthier than X of 100 people your age". It compares against the same sex in a ±5-year band from Viktor's reference set, with the age and sex terms excluded. Daniel: "there should be a statistic in the results that basically measures how healthy someone is relative to other people in their age group. that is what we are looking for."
+  - Extrapolate down to 18 with the Rough guide badge. Under 18: no number.
+  - API (pending): `healthScore`, `healthScoreStatus` (available / extrapolated / missingInputs / unsupportedAge / unsupportedProfile / invalidInput / underAge), `ageGroupPercentile`, `ageGroupBand`, `ageGroupSize`, `nearestBand`, `healthScoreHistory({from,to})`.
+- **Documents (peer answers):**
+  - Conflicting values follow the engine: the latest dated value wins; equal or missing dates mean both are dropped with a `conflicting_values` notice. There's no picker. Instead: "Your document shows two different weights" → "Tell Mochi which is right".
+  - Read-back wording stays Keep / Change with Mochi / Skip, plus Back.
+  - Readings: BP, `hba1c` (%) and `ldl_cholesterol` (mg/dL), each with unit, document date and source `document`. They're information only and also appear in History.
+  - Entry points: Settings › Health documents, the onboarding pill, Mochi, and a History link from document-sourced entries. No Home row.
+- **Outside-AI training disclosure (Daniel via peer, 2026-10-24: "do contributor mode of 1.3"):**
+  - The provider becomes `muse-spark-1.3-contributor`, and Meta may train on the content sent to it. `/api/capabilities.personalize.may_train_on_content: true` (PR coming).
+  - Every outside-AI consent shows "Meta may use what you share to improve its AI." next to Yes, only when the flag is true, with the company name bound.
+  - It applies to Personal suggestions, the AI helper, per-document Muse help, and the coach.
+- **Check-in care line (Daniel via peer):**
+  - On low mood, Mochi replies with empathy using the person's own words, offers support, shows the soft 911 line, then asks "keep going or stop here for today?".
+  - Stopping saves what's confirmed. The flag is `care_line_shown` (PR #64).
+  - Warm, no red. The explicit-crisis pause is unchanged.
+- **Training-line binding (confirmed by the peer):** company name from `personalize.company` ("Meta" for muse, "Anthropic" for claude); shown only when `personalize.may_train_on_content` is true.
+- **Contributor-mode scope (Daniel, own words, 2026-10-24):** "Yes, all answers may still go to Muse with consent; the training line is enough." Name and contact are still never sent.
+- **Owner override (2026-10-24), lifespan:** a rough expected YEAR and age range may be shown once at the end of onboarding as a proof of concept, labelled as an estimate (never a day), then reachable only behind "See your estimate". Source: `docs/lifespan-estimate.md` (PR #52). Ages 18–85, with Rough guide outside 35–79. The other no-death-date rules stay.
+- **Health score sign (Daniel via peer):** higher is better. Public `healthScore` = −raw (`rawLogRelativeHazard`). Scale reads "Higher risk ‹ Average › Better health". No hard-coded numbers.
+- **Quality gate (Daniel, own words, 2026-10-24):** "80 is about 80-82.5 is about fine". A screen passes at a critic score of 8.0 or higher with no blockers. No polish rounds above that.

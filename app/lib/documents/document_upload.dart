@@ -54,12 +54,14 @@ class DocumentUploadService {
 
   List<String>? _text;
   bool _truncated = false;
+  int _generation = 0;
 
   /// True while text waits for the Muse question.
   bool get holdingText => _text != null;
 
   Future<DocumentReading> read(DocumentSource source) async {
     discard();
+    final generation = _generation;
     final RecognisedDocument doc;
     try {
       doc = await ocr.scan(source);
@@ -73,11 +75,13 @@ class DocumentUploadService {
         _ => DocumentReadStatus.unreadable,
       });
     }
+    if (generation != _generation) return const DocumentReading(DocumentReadStatus.cancelled);
     return readText(doc);
   }
 
   /// The text path on its own, for [read] and for tests.
   Future<DocumentReading> readText(RecognisedDocument doc) async {
+    discard();
     // Nothing worth sending: say so without a network call.
     if (!doc.readable) return const DocumentReading(DocumentReadStatus.unreadable);
     _text = doc.pages;
@@ -93,24 +97,29 @@ class DocumentUploadService {
 
   /// Drops the recognised text.
   void discard() {
+    _generation++;
     _text = null;
     _truncated = false;
   }
 
   Future<DocumentReading> _extract({required bool outsideAi}) async {
+    final generation = _generation;
     final text = _text!;
     final truncated = _truncated;
     final DocumentExtraction r;
     try {
       r = await extractor.extract(text, outsideAi: outsideAi);
     } on DocumentExtractRejected catch (e) {
+      if (generation != _generation) return const DocumentReading(DocumentReadStatus.cancelled);
       discard();
       return DocumentReading(DocumentReadStatus.rejected, message: e.message);
     } on DocumentExtractUnavailable {
+      if (generation != _generation) return const DocumentReading(DocumentReadStatus.cancelled);
       // Keep nothing: a retry reads the document again.
       discard();
       return const DocumentReading(DocumentReadStatus.serverUnavailable);
     }
+    if (generation != _generation) return const DocumentReading(DocumentReadStatus.cancelled);
     final museCouldHelp = !outsideAi && r.providerStatus == 'consent_required';
     if (!museCouldHelp) discard();
     final status = r.notices.contains('multiple_patients')
@@ -134,7 +143,10 @@ class DocumentUploadService {
 
 /// What the person confirmed. Only [confirmed] values may be used.
 class DocumentImportResult {
-  const DocumentImportResult({this.confirmed = const [], this.toAsk = const []});
+  const DocumentImportResult({this.confirmed = const [], this.toAsk = const [], this.notices = const []});
+
+  /// The server's notices for this document (for example `conflicting_values`).
+  final List<String> notices;
 
   final List<DocumentCandidate> confirmed;
 
@@ -165,7 +177,9 @@ class DocumentImportResult {
 /// One question at a time: "Is this document about you?", then each candidate.
 /// No edits: "No" drops a value and Mochi asks for it instead.
 class DocumentConfirmation {
-  DocumentConfirmation(this.candidates);
+  DocumentConfirmation(this.candidates, {this.notices = const []});
+
+  final List<String> notices;
 
   final List<DocumentCandidate> candidates;
   bool? aboutYou;
@@ -192,7 +206,7 @@ class DocumentConfirmation {
   }
 
   DocumentImportResult get result {
-    if (aboutYou != true) return const DocumentImportResult();
+    if (aboutYou != true) return DocumentImportResult(notices: notices);
     final confirmed = <DocumentCandidate>[];
     final toAsk = <String>[];
     for (var i = 0; i < _answers.length; i++) {
@@ -203,7 +217,7 @@ class DocumentConfirmation {
         toAsk.add(c.field);
       }
     }
-    return DocumentImportResult(confirmed: confirmed, toAsk: toAsk);
+    return DocumentImportResult(confirmed: confirmed, toAsk: toAsk, notices: notices);
   }
 }
 
@@ -229,7 +243,7 @@ String documentReadBack(DocumentCandidate c, {required bool imperial, required D
   final date = c.date;
   final when = date == null ? '' : ' That was ${c.dateFromLine ? 'on' : 'from'} ${spokenDate(date, now)}.';
   if (!c.modelInput) {
-    return "Your document shows $said.$when I'll keep it as a note; it doesn't change your forecast. Is this right?";
+    return "Your document shows $said.$when This reading doesn't change your forecast. It is saved in your history only. Is this right?";
   }
   final old = date == null || now.difference(date).inDays > 365;
   return 'Your document says $said.$when ${old ? 'Is it still right today?' : 'Is this right?'}';
