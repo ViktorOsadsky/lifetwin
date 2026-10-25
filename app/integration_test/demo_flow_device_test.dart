@@ -45,7 +45,6 @@ import 'package:lifesim/checkin/checkin_reminders.dart';
 import 'package:lifesim/checkin/consent_screens.dart';
 import 'package:lifesim/checkin/notebook_screen.dart';
 import 'package:lifesim/experiment/room_pills.dart';
-import 'package:lifesim/experiment/widgets/source_link.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
 import 'package:lifesim/twin/twin_repository.dart';
@@ -278,11 +277,13 @@ String todayCardText() => oneLine(
       .join(' | '),
 );
 
-final signedScore = RegExp(r'^([+\-−]\d+\.\d\d|0\.00)$');
+// The health index (#126): about 1.0 for an average person, two decimals, may be above 2 or below 0.
+final signedScore = RegExp(r'^[+\-−]?\d+\.\d\d$');
 final aroundYear = RegExp(r'Around (20|21)\d\d');
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
 
   testWidgets('connected demo flow', timeout: const Timeout(Duration(minutes: 20)), (t) async {
     var pass = 0;
@@ -352,7 +353,7 @@ void main() {
             final consentAsked = await declineConsentIfAsked(t, seconds: 20);
             final loaded = await waitUntil(
               t,
-              () => todayRows.values.every((i) => shows(inside<TodayWithMochiCard>(find.byIcon(i)))),
+              () => shows(inside<TodayWithMochiCard>(find.textContaining('Today: '))),
               seconds: 40,
             );
             timings.add('  home: Today card loaded after ${DateTime.now().difference(started).inMilliseconds} ms');
@@ -380,7 +381,12 @@ void main() {
             final checkIns = checkIn.evaluate().length;
             final otherCheckIn = shows(find.widgetWithText(LipButton, 'Weekly check-in'));
             final card = find.byType(TodayWithMochiCard);
-            final cardTitle = shows(inside<TodayWithMochiCard>(txt('Today with Mochi')));
+            // The compact card (#127): "Today: workout · food · habit", the plan titles from the coach.
+            final cardTitle = shows(inside<TodayWithMochiCard>(find.textContaining('Today: ')));
+            final cardLine = todayCardText();
+            final cardRect = shows(card) ? t.getRect(card.first) : Rect.zero;
+            await log('  TODAY-CARD height=${cardRect.height.toStringAsFixed(1)} pt width=${cardRect.width.toStringAsFixed(1)} line="$cardLine"');
+            final cardTitles = cardLine.split(' · ').length >= 3;
             final activity = find.byKey(const ValueKey('room-activity'));
             final activityIcon = shows(find.descendant(of: activity, matching: find.byType(Icon)));
             final header = {
@@ -412,7 +418,7 @@ void main() {
               'info': shows(info),
               'chip(${revealSeen ? 'Around' : 'Your estimate'})': shows(chip),
               'oneCheckIn($checkIns)': checkIns == 1 && !otherCheckIn,
-              'todayCard': shows(card) && cardTitle && loaded,
+              'todayCard': shows(card) && cardTitle && loaded && cardTitles,
               'activityPill+icon': shows(activity) && activityIcon,
               'headerTopRight': headerTopRight,
             };
@@ -493,28 +499,14 @@ void main() {
             );
           });
 
-          // ---- 2. The Today card: Why? and a source per item, the plan screen, "Not for me" revises ----
+          // ---- 2. The Today card (compact, #127): a tap opens the plan; each item has why + source;
+          //         skipping / "Not done" on the workout revises the plan ----
           await step('2 today plan', () async {
-            final whys = inside<TodayWithMochiCard>(txt('Why?')).evaluate().length;
-            final sheet =
-                await tapFinder(t, inside<TodayWithMochiCard>(txt('Why?')), seconds: 3) &&
-                await waitUntil(t, () => shows(txt('Why this?')), seconds: 5);
-            await pumpFor(t, const Duration(milliseconds: 600));
-            final sheetText = screenText();
-            final source = shows(find.byType(SourceLink));
-            await tapFinder(t, find.widgetWithText(TextButton, 'Close'), seconds: 3);
-            await pumpFor(t, const Duration(milliseconds: 600));
-            await record(
-              '2 today card: each row has Why? with a source',
-              whys == todayRows.length && sheet && source,
-              'whyChips=$whys rows=${todayRows.length} whySheet=$sheet source=$source',
-              sheet && source ? '' : 'screen: $sheetText',
-            );
-
-            // The card opens the daily plan from the coach.
+            // The card opens the daily plan from the coach. The outside-AI consent comes from this tap.
             final started = DateTime.now();
-            final opened = await tapFinder(t, inside<TodayWithMochiCard>(txt('Today with Mochi')), seconds: 3);
-            final screenUp = await waitUntil(t, () => shows(find.byType(DailyPlanScreen)), seconds: 5);
+            final opened = await tapFinder(t, inside<TodayWithMochiCard>(find.textContaining('Today: ')), seconds: 3);
+            final consentOnTap = await declineConsentIfAsked(t, seconds: 6);
+            final screenUp = await waitUntil(t, () => shows(find.byType(DailyPlanScreen)), seconds: 8);
             final ready = await waitUntil(
               t,
               () => shows(txt('Awaiting professional review')) && !shows(find.bySemanticsLabel('Preparing your plan')),
@@ -551,60 +543,60 @@ void main() {
             final errors = RegExp(
               'The planner needs a moment|couldn’t connect|A lot is happening|Your plan has moved on',
             ).hasMatch(planText);
+            // Each item carries its reason and a source link (they were Why? chips on the old Home card).
             final pOk = opened && screenUp && ready && items >= 3 && sources == items && !errors && whyPlan;
             await record(
-              '2 today card opens the daily plan from the coach',
+              '2 today card opens the daily plan; each item has a reason and a source',
               pOk,
-              'opened=$opened ready=$ready items=$items withWhyAndSource=$sources errors=$errors whyThisPlan=$whyPlan $perItem '
+              'opened=$opened consentOnTap=$consentOnTap ready=$ready items=$items withWhyAndSource=$sources errors=$errors whyThisPlan=$whyPlan $perItem '
                   'general=${planText.contains('A general plan while Mochi gets to know you.')}',
               pOk ? '' : 'screen: $planText',
             );
-            await backAny(t);
-            await waitUntil(t, () => shows(find.byType(HomeWellnessPanel)), seconds: 5);
 
-            // "Not for me" on the workout: the coach revises the plan.
-            // The workout is the first row: the text between the title and its Why? chip.
-            String moveRow() {
-              final all = todayCardText();
-              final at = all.indexOf('Today with Mochi');
-              final end = all.indexOf('Why?');
-              return at < 0 || end < 0
-                  ? ''
-                  : all.substring(at + 'Today with Mochi'.length, end).replaceAll('|', '').trim();
+            // Changing the workout: the coach revises the plan. The workout is the first item card.
+            await t.drag(planScroll.first, const Offset(0, 4000), warnIfMissed: false);
+            await pumpFor(t, const Duration(milliseconds: 600));
+            String firstTitle() {
+              final card = find.ancestor(of: txt('Awaiting professional review'), matching: find.byType(WellnessCard));
+              if (!shows(card)) return '';
+              final texts = find
+                  .descendant(of: card.first, matching: find.byType(RichText))
+                  .evaluate()
+                  .map((x) => (x.widget as RichText).text.toPlainText().trim())
+                  .where((x) => x.length > 1)
+                  .toList();
+              return texts.length > 2 ? '${texts[1]} / ${texts[2]}' : (texts.length > 1 ? texts[1] : '');
             }
 
-            // The workout row's chip by its label ("Move: skip" is 👎, "Move: not for me").
-            Finder chip(String label) => find.descendant(
-              of: find.byType(TodayWithMochiCard),
-              matching: find.byWidgetPredicate((w) => w is Semantics && w.properties.label == label),
-            );
-            Future<String> whyText() async {
-              if (!await tapFinder(t, inside<TodayWithMochiCard>(txt('Why?')), seconds: 3)) return '';
-              await waitUntil(t, () => shows(txt('Why this?')), seconds: 5);
-              await pumpFor(t, const Duration(milliseconds: 500));
-              final all = screenText();
-              final at = all.indexOf('Why this?');
-              await tapFinder(t, find.widgetWithText(TextButton, 'Close'), seconds: 3);
-              await pumpFor(t, const Duration(milliseconds: 500));
-              return at < 0 ? '' : all.substring(at, (at + 160).clamp(0, all.length));
-            }
-
-            for (final (label, name) in [('Move: skip', '👎'), ('Move: not for me', '"Not for me"')]) {
-              final before = moveRow();
-              final whyBefore = await whyText();
+            // Skip (the old thumbs-down), then "Not done" with a reason (the old "Not for me").
+            for (final name in ['Skip', 'Not done']) {
+              final before = firstTitle();
               final reviseStart = DateTime.now();
-              final tapped = await tapFinder(t, chip(label), seconds: 3);
-              final revised = await waitUntil(t, () => moveRow() != before && moveRow().isNotEmpty, seconds: 20);
+              final tapped = await tapFinder(
+                t,
+                inside<DailyPlanScreen>(find.widgetWithText(OutlinedButton, name)),
+                seconds: 5,
+              );
+              var sent = tapped;
+              if (name == 'Not done' && tapped) {
+                sent =
+                    await tapFinder(t, find.widgetWithText(ChoiceChip, 'No time'), seconds: 5) &&
+                    await tapButton(t, 'Tell Mochi', seconds: 5);
+              }
+              final revised =
+                  sent && await waitUntil(t, () => firstTitle() != before && firstTitle().isNotEmpty, seconds: 25);
               timings.add('  $name revision: ${DateTime.now().difference(reviseStart).inMilliseconds} ms');
               await pumpFor(t, const Duration(milliseconds: 500));
-              final whyAfter = await whyText();
+              await t.drag(planScroll.first, const Offset(0, 4000), warnIfMissed: false);
+              await pumpFor(t, const Duration(milliseconds: 400));
               await record(
-                '2 today card: $name on the workout gives a revised plan',
+                '2 plan: "$name" on the workout gives a revised plan',
                 tapped && revised,
-                'tapped=$tapped before="$before" after="${moveRow()}"',
-                revised ? '' : 'workout unchanged; why before="$whyBefore" after="$whyAfter"',
+                'tapped=$tapped sent=$sent before="$before" after="${firstTitle()}"',
+                revised ? '' : 'workout unchanged',
               );
             }
+            await goHome(t);
           });
 
           // ---- 3. Quick check-in: one read-back, confirm, then the plan line and "Here's today's plan" ----
@@ -677,6 +669,7 @@ void main() {
             final hasButton = await waitUntil(t, () => shows(planButton), seconds: 5);
             final doneText = screenText();
             final tapped = hasButton && await tapFinder(t, planButton, seconds: 3);
+            await declineConsentIfAsked(t, seconds: 6);
             final planUp = tapped && await waitUntil(t, () => shows(find.byType(DailyPlanScreen)), seconds: 8);
             final pOk = planLine && hasButton && planUp;
             await record(

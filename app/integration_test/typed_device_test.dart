@@ -295,7 +295,8 @@ List<String> dateProblems(String text) {
 }
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
 
   testWidgets('typed end to end on the phone', timeout: const Timeout(Duration(minutes: 20)), (t) async {
     var pass = 0;
