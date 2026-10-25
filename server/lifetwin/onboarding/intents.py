@@ -1102,14 +1102,55 @@ EMERGENCY = re.compile(
     r"couldn't|could not) get (?:back )?up\b|"
     r"\b(?:took|taken|swallowed|had) (?:way )?too many (?:of )?(?:my )?(?:pills|tablets|meds|"
     r"medicines?|medications?|sleeping pills|painkillers)\b|\boverdos\w*|"
-    r"\b(?:don't|do not|can't|cannot) see the point (?:in|of) (?:living|going on|life|being alive)\b|"
-    r"\bno point (?:in )?(?:living|going on|being alive)\b|"
-    r"\b(?:want|wanna|wants) to die\b|\bwant to be dead\b|\bkill(?:ing)? myself\b(?! laughing)|"
-    r"\bend (?:my life|it all)\b|\bsuicid\w*|\bbetter off dead\b|\bno reason to live\b|"
-    r"\b(?:don't|do not) want to (?:live|be alive)(?: anymore| any more)?\b|"
     r"\b(?:i think|i feel like) (?:i'm|i am) dying\b|"
     r"\b(?:won't|will not|can't|cannot) stop (?:the )?bleeding\b|"
     r"\b(?:call|need|get me|send) (?:an ambulance|911|nine one one)\b"
+)
+# Thoughts of self-harm, active or passive, in everyday words and slang. Idioms ("this
+# meeting is killing me", "dying to try that") and a place or activity after "here"
+# ("I don't want to be here at the gym anymore") are not among them.
+SELF_HARM = re.compile(
+    r"\b(?:don't|do not|can't|cannot) see the point (?:in|of) (?:living|going on|life|being alive)\b|"
+    r"\bno point (?:in )?(?:living|going on|carrying on|keeping going|being alive|being here)\b|"
+    r"\bno reason to (?:live|keep going|go on|carry on|be here|be alive|stay)\b|"
+    r"\b(?:want|wanna|wants|wanted) to die\b|\bwant to be dead\b|\bwish i (?:was|were) dead\b|"
+    r"\bkill(?:ing)? myself\b(?! laughing)|\bkms\b|\bunaliv\w*|\bsuicid\w*|"
+    r"\b(?:end|ending|take|taking) my (?:own )?life\b|\bend(?:ing)? it all\b|"
+    r"\b(?:thinking|thought|think|thinkin) (?:about|of|abt) (?:ending (?:it|things)|"
+    r"not being (?:here|around|alive))\b(?! with\b)|"
+    r"\b(?:want|wanna|going|gonna|ready) to end (?:it|things)\b(?! with\b)|"
+    r"\bbetter off dead\b|\bbetter off without me\b|"
+    r"\b(?:don't|do not|didn't) want to (?:live|be alive|exist|wake up)(?: anymore| any more)?\b|"
+    r"\b(?:don't|do not|didn't) want to be here\b(?! (?:any ?more )?(?:at|in|on|with|"
+    r"for|doing|working|when|while|after|during|without)\b)|"
+    r"\b(?:don't|do not|didn't) want to be around (?:any ?more|for much longer)\b|"
+    r"\b(?:don't|do not|didn't) want to be around$|"
+    r"\b(?:rather|want to|wanna) not (?:be here|be around|exist|be alive|wake up)\b|"
+    r"\bwish i (?:could )?(?:just )?(?:wasn't here|weren't here|wasn't alive|could disappear|not wake up|"
+    r"didn't wake up|wouldn't wake up|never woke up|could sleep and not wake up)\b|"
+    r"\b(?:not|isn't|is not|ain't) worth living\b|\bgive(?:n)? up on (?:life|living)\b|"
+    r"\b(?:can't|cannot) (?:go on|keep going|carry on) (?:any ?more|like this)\b|"
+    r"\bself (?:harm\w*|injur\w*)\b|\bharm(?:ing)? myself\b|"
+    r"\b(?:want|wanna|urge|urges|going|gonna|thinking (?:about|of)|thought (?:about|of)) "
+    r"(?:to )?(?:hurt|hurting|cut|cutting) myself\b|"
+    r"\b(?:i'm|i am|feel like|feel|i feel) (?:such |just |only )?a burden\b|"
+    r"\b(?:don't|do not|can't) see the point (?:any ?more|in anything|of anything)\b|"
+    r"\bwhat's (?:even )?the point (?:any ?more|of (?:anything|living|going on|it all)|"
+    r"in (?:anything|living|going on))\b|"
+    r"\b(?:want|wanna) to disappear\b|\bhope i (?:don't|never) wake up\b|"
+    r"\b(?:sleep|go to sleep) and (?:not|never) wake up\b|"
+    r"\b(?:tired|sick) of (?:living|being alive|life|it all)\b|\bwill to live\b|"
+    r"\bbetter off if i (?:was|were|wasn't|weren't) (?:gone|here|around|dead|alive)\b|"
+    r"\brather be dead\b|\bwant (?:it all|everything) to (?:stop|end)\b|"
+    r"\b(?:want|wanna|going|gonna|thinking (?:about|of)|thought (?:about|of)) (?:to )?"
+    r"(?:take|taking|swallow\w*) all (?:of )?my (?:pills|tablets|meds)\b|"
+    r"\bswallowed all (?:of )?my (?:pills|tablets|meds)\b|"
+    r"\bsewer ?slide\b|\boff myself\b"
+)
+# Long ago, said plainly: "I self-harmed when I was a teenager".
+SELF_HARM_PAST = re.compile(
+    r"\b(?:years ago|when i was (?:young|younger|a (?:teen\w*|kid|child|student))|"
+    r"as a (?:teen\w*|kid|child)|in (?:19|20)\d\d)\b"
 )
 # "I had chest pain years ago": history, unless it is said to be happening now.
 HISTORY = re.compile(
@@ -1140,9 +1181,12 @@ RESUME = _units(
 
 
 def emergency(text: str) -> bool:
-    """A reply that says something urgent is happening now ("I've got chest pain")."""
+    """A reply that says something urgent is happening now ("I've got chest pain"), or
+    thoughts of self-harm ("I don't want to be here anymore")."""
     words = " ".join(re.sub(r"[^\w'\s.,;!?]", " ", normalize_text(text).lower()).split())
     for clause in re.split(r"[.,;!?]|\bbut\b", words):
+        if SELF_HARM.search(clause) and not SELF_HARM_PAST.search(clause):
+            return True
         if EMERGENCY.search(clause) and (
             not HISTORY.search(clause) or HAPPENING_NOW.search(clause)
         ):
