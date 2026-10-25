@@ -26,11 +26,6 @@ LEVER_FIELD: dict[str, str] = {
     "short_sleep_plus_1h": "sleep_hours",
     "sitting_minus_60_realistic": "sedentary_min_day",
 }
-MIN_ADULT_AGE = 18
-UNDER_AGE = (
-    "I'm only able to share ideas with adults for now. "
-    "A parent, guardian or your doctor is the best person to ask about healthy habits."
-)
 
 
 # Effect-size cue. Category cut-offs on the modeled 5-year survival difference, in

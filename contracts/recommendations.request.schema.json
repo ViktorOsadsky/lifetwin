@@ -1,5 +1,33 @@
 {
   "$defs": {
+    "DocumentContext": {
+      "additionalProperties": false,
+      "description": "What the person confirmed from health documents, kept on the phone with no expiry\nuntil Delete my data (owner ruling 2026-10-25). The phone sends it only with memory\nconsent. Informational: it is never a model input, never ranks or changes a plan,\nand is never sent to a provider.",
+      "properties": {
+        "diagnoses": {
+          "items": {
+            "enum": [
+              "diabetes",
+              "hypertension"
+            ],
+            "type": "string"
+          },
+          "maxItems": 2,
+          "title": "Diagnoses",
+          "type": "array"
+        },
+        "readings": {
+          "items": {
+            "$ref": "#/$defs/Reading"
+          },
+          "maxItems": 40,
+          "title": "Readings",
+          "type": "array"
+        }
+      },
+      "title": "DocumentContext",
+      "type": "object"
+    },
     "HabitNote": {
       "additionalProperties": false,
       "description": "What the person said about a habit, in short words taken from their reply.\n\nNotes are never health values and are never used by the model. They are returned\nto the app, which keeps them on the phone; the server stores nothing.",
@@ -539,11 +567,79 @@
       },
       "title": "HealthProfile",
       "type": "object"
+    },
+    "Reading": {
+      "additionalProperties": false,
+      "description": "A confirmed reading the phone keeps over time (owner ruling 2026-10-24): blood\npressure, and A1c or LDL from uploaded documents. Used only for trends and the\ncrisis line; never a diagnosis, never sent to a provider.",
+      "properties": {
+        "date": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "title": "Date",
+          "type": "string"
+        },
+        "field": {
+          "enum": [
+            "systolic_bp",
+            "diastolic_bp",
+            "a1c",
+            "ldl"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "typed",
+            "voice",
+            "apple_health",
+            "document",
+            "checkin"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "mmHg",
+            "%",
+            "mg/dL",
+            "mmol/L"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "maximum": 500,
+          "minimum": 0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "unit",
+        "date",
+        "source"
+      ],
+      "title": "Reading",
+      "type": "object"
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "document_context": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DocumentContext"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
     "excluded_ids": {
       "items": {
         "maxLength": 60,

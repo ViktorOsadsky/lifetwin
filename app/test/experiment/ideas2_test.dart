@@ -561,11 +561,13 @@ void main() {
       });
     }
 
-    testWidgets('(a) hidden under 18, and with featured null', (t) async {
+    testWidgets('(a) shown at any age', (t) async {
       final under = await routes({...older, 'age': 16});
       await pumpHome(t, under);
-      expect(find.textContaining('Today’s idea: ', findRichText: true), findsNothing);
-      expect(find.text('Walk-and-talk', findRichText: true), findsNothing);
+      expect(find.textContaining('Today’s idea: ', findRichText: true), findsWidgets);
+    });
+
+    testWidgets('(a) hidden with featured null', (t) async {
       final none = await routes(older, src: FakeIdeas(body(featured: null)));
       await pumpHome(t, none);
       expect(find.textContaining('Today’s idea: ', findRichText: true), findsNothing);
@@ -682,12 +684,12 @@ void main() {
       expect(tomorrow.bubbleDue, isTrue);
     });
 
-    testWidgets('(b) the bubble is not for under 18, and at 1.5x text Mochi opens the list directly', (t) async {
+    testWidgets('(b) the bubble shows under 18 too, and at 1.5x text Mochi opens the list directly', (t) async {
       final under = await routes({...older, 'age': 16});
       await pumpHome(t, under);
       await t.tap(find.byKey(const ValueKey('room-twin')));
       await t.pump(const Duration(milliseconds: 300));
-      expect(find.text('See ideas ›'), findsNothing);
+      expect(find.text('See ideas ›'), findsOneWidget);
       final a = await routes(older);
       await a.ideasHub.ensureToday();
       final look = ValueNotifier(const TwinAppearance(name: 'Mochi'));
@@ -866,7 +868,7 @@ void main() {
       expect(find.text('Ideas linked to a healthier score'), findsNothing);
     });
 
-    testWidgets('(f) the end of onboarding: Mochi\'s first ideas, one or two, with the caveat; under 18 none', (
+    testWidgets('(f) the end of onboarding: Mochi\'s first ideas, one or two, with the caveat; under 18 the same', (
       t,
     ) async {
       final a = await routes(older);
@@ -896,7 +898,7 @@ void main() {
           ),
         ),
       );
-      expect(under.ideasHub.featured, isNull, reason: 'never an entry point under 18');
+      expect(find.text('See all ideas ›'), findsOneWidget, reason: 'under 18 is treated like everyone');
     });
 
     testWidgets(

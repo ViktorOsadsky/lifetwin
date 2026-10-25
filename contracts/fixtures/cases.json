@@ -2112,7 +2112,7 @@
     }
   },
   {
-    "name": "recommendations-under-age",
+    "name": "recommendations-under-18-treated-normally",
     "method": "POST",
     "path": "/api/recommendations",
     "request_schema": "recommendations.request.schema.json",
@@ -2125,9 +2125,38 @@
     "status": 200,
     "response_schema": "recommendations.schema.json",
     "response_subset": {
-      "status": "under_age",
-      "recommendations": [],
-      "missing_inputs": []
+      "status": "ok"
+    }
+  },
+  {
+    "name": "recommendations-with-document-context",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 50,
+        "smoking_status": "current"
+      },
+      "document_context": {
+        "readings": [
+          {
+            "field": "a1c",
+            "value": 6.1,
+            "unit": "%",
+            "date": "2026-09-14",
+            "source": "document"
+          }
+        ],
+        "diagnoses": [
+          "hypertension"
+        ]
+      }
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok"
     }
   },
   {
@@ -2343,6 +2372,191 @@
     "response_subset": {
       "status": "error",
       "code": "invalid_request"
+    }
+  },
+  {
+    "name": "documents-read-claude-stubbed",
+    "method": "POST",
+    "path": "/api/documents/read",
+    "request_schema": "documents.read.request.schema.json",
+    "request": {
+      "pdf_base64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA1IDAgUiA+PiA+PiAvQ29udGVudHMgNCAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAzNDIgPj4Kc3RyZWFtCkJUIC9GMSAxMSBUZiAxNCBUTCA1MCA3ODAgVGQgKFNZTlRIRVRJQyBURVNUIENMSU5JQyAtIEFGVEVSIFZJU0lUIFNVTU1BUlkpIFRqIFQqIChQYXRpZW50OiBUZXN0eSBNY0Zha2VmYWNlKSBUaiBUKiAoRGF0ZSBvZiBzZXJ2aWNlOiAwOS8xNC8yMDI2KSBUaiBUKiAoVml0YWxzKSBUaiBUKiAoV2VpZ2h0OiAxODIgbGIpIFRqIFQqIChCbG9vZCBwcmVzc3VyZTogMTM4Lzg2IG1tSGcpIFRqIFQqIChQcm9ibGVtIExpc3QpIFRqIFQqIChUeXBlIDIgZGlhYmV0ZXMgbWVsbGl0dXMpIFRqIFQqIChGYW1pbHkgSGlzdG9yeSkgVGogVCogKE1vdGhlcjogaHlwZXJ0ZW5zaW9uKSBUaiBUKiAoKSBUaiBUKiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDYzNCAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjcwNAolJUVPRgo=",
+      "outside_ai_consent": {
+        "claude": true
+      }
+    },
+    "claude_stub": {
+      "findings": [
+        {
+          "field": "weight_kg",
+          "value": "82.6",
+          "unit": null,
+          "quote": "Weight: 182 lb",
+          "page": 1,
+          "section": "Vitals",
+          "date": "2026-09-14"
+        },
+        {
+          "field": "diabetes_diagnosed",
+          "value": "true",
+          "unit": null,
+          "quote": "Type 2 diabetes mellitus",
+          "page": 1,
+          "section": "Problem List",
+          "date": "2026-09-14"
+        },
+        {
+          "field": "hba1c",
+          "value": "7.1",
+          "unit": null,
+          "quote": "Hemoglobin A1c: 7.1 %",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        },
+        {
+          "field": "blood_pressure",
+          "value": "128/82",
+          "unit": null,
+          "quote": "Blood pressure: 138/86 mmHg",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        },
+        {
+          "field": "hypertension_diagnosed",
+          "value": "true",
+          "unit": null,
+          "quote": "Mother: hypertension",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        }
+      ]
+    },
+    "claude_stub_calls": 1,
+    "status": 200,
+    "response_schema": "documents.extract.schema.json",
+    "response_subset": {
+      "status": "found",
+      "provider_status": "used",
+      "candidates": [
+        {
+          "field": "weight_kg",
+          "use": "model_input",
+          "value": 82.6,
+          "unit": "kg",
+          "date": "2026-09-14",
+          "date_basis": "document",
+          "source_text": "Weight: 182 lb",
+          "page": 1,
+          "section": "Vitals",
+          "confidence": "high",
+          "method": "claude"
+        },
+        {
+          "field": "diabetes_diagnosed",
+          "use": "model_input",
+          "value": true,
+          "unit": null,
+          "date": "2026-09-14",
+          "date_basis": "document",
+          "source_text": "Type 2 diabetes mellitus",
+          "page": 1,
+          "section": "Problem List",
+          "confidence": "high",
+          "method": "claude"
+        }
+      ],
+      "notices": [
+        "other_person_skipped"
+      ]
+    }
+  },
+  {
+    "name": "documents-read-claude-without-consent",
+    "method": "POST",
+    "path": "/api/documents/read",
+    "request_schema": "documents.read.request.schema.json",
+    "request": {
+      "pdf_base64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA1IDAgUiA+PiA+PiAvQ29udGVudHMgNCAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAzNDIgPj4Kc3RyZWFtCkJUIC9GMSAxMSBUZiAxNCBUTCA1MCA3ODAgVGQgKFNZTlRIRVRJQyBURVNUIENMSU5JQyAtIEFGVEVSIFZJU0lUIFNVTU1BUlkpIFRqIFQqIChQYXRpZW50OiBUZXN0eSBNY0Zha2VmYWNlKSBUaiBUKiAoRGF0ZSBvZiBzZXJ2aWNlOiAwOS8xNC8yMDI2KSBUaiBUKiAoVml0YWxzKSBUaiBUKiAoV2VpZ2h0OiAxODIgbGIpIFRqIFQqIChCbG9vZCBwcmVzc3VyZTogMTM4Lzg2IG1tSGcpIFRqIFQqIChQcm9ibGVtIExpc3QpIFRqIFQqIChUeXBlIDIgZGlhYmV0ZXMgbWVsbGl0dXMpIFRqIFQqIChGYW1pbHkgSGlzdG9yeSkgVGogVCogKE1vdGhlcjogaHlwZXJ0ZW5zaW9uKSBUaiBUKiAoKSBUaiBUKiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDYzNCAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjcwNAolJUVPRgo=",
+      "outside_ai_consent": {}
+    },
+    "claude_stub": {
+      "findings": [
+        {
+          "field": "weight_kg",
+          "value": "82.6",
+          "unit": null,
+          "quote": "Weight: 182 lb",
+          "page": 1,
+          "section": "Vitals",
+          "date": "2026-09-14"
+        },
+        {
+          "field": "diabetes_diagnosed",
+          "value": "true",
+          "unit": null,
+          "quote": "Type 2 diabetes mellitus",
+          "page": 1,
+          "section": "Problem List",
+          "date": "2026-09-14"
+        },
+        {
+          "field": "hba1c",
+          "value": "7.1",
+          "unit": null,
+          "quote": "Hemoglobin A1c: 7.1 %",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        },
+        {
+          "field": "blood_pressure",
+          "value": "128/82",
+          "unit": null,
+          "quote": "Blood pressure: 138/86 mmHg",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        },
+        {
+          "field": "hypertension_diagnosed",
+          "value": "true",
+          "unit": null,
+          "quote": "Mother: hypertension",
+          "page": 1,
+          "section": null,
+          "date": "2026-09-14"
+        }
+      ]
+    },
+    "claude_stub_calls": 0,
+    "status": 200,
+    "response_schema": "documents.extract.schema.json",
+    "response_subset": {
+      "status": "nothing_found",
+      "candidates": [],
+      "provider_status": "consent_required"
+    }
+  },
+  {
+    "name": "documents-read-keyless-stays-on-phone",
+    "method": "POST",
+    "path": "/api/documents/read",
+    "request_schema": "documents.read.request.schema.json",
+    "request": {
+      "pdf_base64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA1IDAgUiA+PiA+PiAvQ29udGVudHMgNCAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAzNDIgPj4Kc3RyZWFtCkJUIC9GMSAxMSBUZiAxNCBUTCA1MCA3ODAgVGQgKFNZTlRIRVRJQyBURVNUIENMSU5JQyAtIEFGVEVSIFZJU0lUIFNVTU1BUlkpIFRqIFQqIChQYXRpZW50OiBUZXN0eSBNY0Zha2VmYWNlKSBUaiBUKiAoRGF0ZSBvZiBzZXJ2aWNlOiAwOS8xNC8yMDI2KSBUaiBUKiAoVml0YWxzKSBUaiBUKiAoV2VpZ2h0OiAxODIgbGIpIFRqIFQqIChCbG9vZCBwcmVzc3VyZTogMTM4Lzg2IG1tSGcpIFRqIFQqIChQcm9ibGVtIExpc3QpIFRqIFQqIChUeXBlIDIgZGlhYmV0ZXMgbWVsbGl0dXMpIFRqIFQqIChGYW1pbHkgSGlzdG9yeSkgVGogVCogKE1vdGhlcjogaHlwZXJ0ZW5zaW9uKSBUaiBUKiAoKSBUaiBUKiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDYzNCAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjcwNAolJUVPRgo=",
+      "outside_ai_consent": {
+        "claude": true
+      }
+    },
+    "status": 200,
+    "response_schema": "documents.extract.schema.json",
+    "response_subset": {
+      "status": "nothing_found",
+      "candidates": [],
+      "provider_status": "unavailable"
     }
   },
   {

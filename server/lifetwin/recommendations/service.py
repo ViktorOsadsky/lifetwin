@@ -41,9 +41,7 @@ from lifetwin.recommendations.ideas import (
 from lifetwin.recommendations.levers import (
     LEVER_FIELD,
     LEVER_ORDER,
-    MIN_ADULT_AGE,
     MODEL_VERSION,
-    UNDER_AGE,
     effect_category,
 )
 from lifetwin.recommendations.models import (
@@ -452,14 +450,6 @@ def featured(recs: list[Recommendation]) -> str | None:
 async def recommend(
     request: RecommendationRequest, personalizer: Personalizer | None = None
 ) -> RecommendationResponse:
-    if request.profile.age is not None and request.profile.age < MIN_ADULT_AGE:
-        return RecommendationResponse(
-            status="under_age",
-            message=UNDER_AGE,
-            recommendations=[],
-            character_hints=character_hints(request.profile, []),
-            lever_ranking=LeverRanking(model_version=MODEL_VERSION, order=list(LEVER_ORDER)),
-        )
     recs = suggest(request.profile, request.habit_notes, request.local_date, request.excluded_ids)
     phrased_by = "templates"
     if recs and consented(request.outside_ai_consent, personalizer):

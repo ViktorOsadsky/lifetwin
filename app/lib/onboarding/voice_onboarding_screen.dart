@@ -469,6 +469,11 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   bool get _voiceUi =>
       c.handsFree && !c.askingVoice && !c.emergency && c.phase != VoicePhase.consent && c.phase != VoicePhase.done;
 
+  /// The status pill and the hollow ring also show whenever the person types ("Not listening", VC-7), as in
+  /// the check-in: whether typing was chosen at the voice question or by "Type instead", and hands-free or not.
+  bool get _pillUi =>
+      _voiceUi || (c.typing && !c.askingVoice && !c.emergency && c.phase != VoicePhase.consent && c.phase != VoicePhase.done);
+
   /// What the pill and ring say now. Only an open microphone is ever [VoiceLook.listening].
   VoiceLook get _look {
     if (c.typing) return VoiceLook.typing;
@@ -602,7 +607,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       opacity: opacity,
       child: SizedBox(
         height: compact ? 150 : 250,
-        child: _voiceUi
+        child: _pillUi
             ? VoiceLive(look: _look, builder: (context, shown, hidden) => plate(shown, hidden))
             : plate(null, false),
       ),
@@ -687,7 +692,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
                     ),
                   ),
                 // The pill hangs 24 pt below the picture: room for it, the same in every state.
-                if (!keyboard) SizedBox(height: _voiceUi ? 36 : 10),
+                if (!keyboard) SizedBox(height: _pillUi ? 36 : 10),
                 ...top,
                 if (line.isNotEmpty && !inWindow) ...[_pad(_bubble(line, inWindow: false, header: header))],
                 ...story,
@@ -1012,15 +1017,14 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   }
 
   /// Ideas for you: "what should I do?" (`open_ideas`) shows today's idea; the finished intake closes with
-  /// Mochi's first ideas (adults only).
+  /// Mochi's first ideas.
   Widget? _ideasCard() {
     final access = IdeasScope.maybeOf(context);
     final turn = c.turn;
     if (access == null || turn == null || c.emergency) return null;
     if (c.phase == VoicePhase.done) {
-      final adult = ((c.confirmedProfile['age'] as num?) ?? 0) >= 18;
       final ideas = _tryIdeas(turn.recommendations);
-      if (!adult || ideas.isEmpty) return null;
+      if (ideas.isEmpty) return null;
       return Padding(
         padding: const EdgeInsets.only(top: 14),
         child: _pad(IdeasClosingCard(access: access, appearance: widget.appearance, ideas: ideas)),
