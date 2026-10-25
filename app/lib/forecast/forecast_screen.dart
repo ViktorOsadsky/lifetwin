@@ -55,6 +55,7 @@ class ForecastScreen extends StatefulWidget {
     this.onPlayQuiz,
     this.onDrivers,
     this.healthKeys = const {},
+    this.documentKeys = const {},
     this.appearance = const TwinAppearance(),
     this.onResult,
     this.scoreCard,
@@ -86,6 +87,9 @@ class ForecastScreen extends StatefulWidget {
 
   /// Profile keys that came from the Health app (the rest: "you told me").
   final Set<String> healthKeys;
+
+  /// Profile keys that came from a confirmed health document.
+  final Set<String> documentKeys;
 
   /// Cosmetic look of the twin on the night plate.
   final TwinAppearance appearance;
@@ -401,6 +405,7 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
                 forecast: f,
                 profile: widget.profile,
                 healthKeys: widget.healthKeys,
+                documentKeys: widget.documentKeys,
                 onAddAnswer: () {
                   Navigator.of(context).pop();
                   _answers();
