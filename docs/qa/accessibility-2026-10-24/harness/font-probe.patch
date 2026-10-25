@@ -1,15 +1,9 @@
 --- a/lib/main.dart
 +++ b/lib/main.dart
-@@ -1,3 +1,5 @@
+@@ -0,0 +1,2 @@
 +import 'dart:io' as qa134io;
 +import 'dart:convert' as qa134json;
- import 'package:flutter/material.dart';
- import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
- 
-@@ -536,7 +538,20 @@
-       title: 'LifeTwin',
-       debugShowCheckedModeBanner: false,
-       theme: lifeTwinTheme(),
+@@ -539 +541,14 @@
 -      builder: _agentic.wrap,
 +      builder: (context, child) {
 +        const scaleText = String.fromEnvironment('QA134_SCALE');
@@ -25,6 +19,3 @@
 +        return scale == null ? wrapped : MediaQuery(
 +          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)), child: wrapped);
 +      },
-       home: ListenableBuilder(
-         listenable: Listenable.merge([_controller, _wellness]),
-         builder: (context, _) => RoomScreen(

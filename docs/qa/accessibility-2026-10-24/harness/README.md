@@ -5,7 +5,7 @@ Use a fresh `/private/tmp` copy of `app/` from pin
 `1a648bd405df4c76b5c1dea3339194c31201913c`. Keep the shipping SDK floor unchanged;
 this run used Flutter 3.47.0/Dart 3.13.0 with a temporary floor only in that copy.
 
-Apply `font-probe.patch` inside that copy. It adds an app-temp JSON font read-back
+Apply `git apply --unidiff-zero /PATH/font-probe.patch` inside that copy. It adds an app-temp JSON font read-back
 and optional compile-time `QA134_SCALE` override around the existing app wrapper.
 Without that define, the native text scaler passes through unchanged. Seed data is
 production `DEMO_SEED=1`; never substitute expected score constants. Use only the
