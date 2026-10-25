@@ -142,7 +142,7 @@ void main() {
       await open(t, holdSpeech: true);
       expect(c.phase, VoicePhase.speaking);
       expect(find.text('Mochi is talking'), findsOneWidget);
-      expectRings({'speaking'});
+      expectRings({}); // Mochi talking: no ring.
       expect(find.byKey(dot), findsNothing);
       expect(find.text('Stop'), findsNothing);
       expect(find.text('How old are you?'), findsWidgets, reason: 'the whole line, no word timings');
@@ -254,7 +254,7 @@ void main() {
       expect(output.spoken.last, listeningNudge);
       expect(c.nudgeSpeaking, isTrue);
       expect(find.text('Mochi is talking'), findsOneWidget);
-      expectRings({'speaking'});
+      expectRings({}); // Mochi talking: no ring.
       expect(find.byKey(dot), findsNothing);
       expect(find.text(listeningNudge), findsOneWidget);
       output.finishSpeaking();
@@ -322,7 +322,7 @@ void main() {
       expect(output.replays, 1, reason: 'Mochi repeats the question');
       expect(input.listening, isFalse);
       expect(find.text('Mochi is talking'), findsOneWidget);
-      expectRings({'speaking'});
+      expectRings({}); // Mochi talking: no ring.
       output.replayGate!.complete();
       await t.pump();
       await t.pump(const Duration(milliseconds: 300));

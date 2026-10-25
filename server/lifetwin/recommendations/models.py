@@ -5,6 +5,7 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, Field
 
+from lifetwin.coach.models import DocumentContext
 from lifetwin.core.models import ApiModel, HealthProfile
 from lifetwin.onboarding.models import CharacterHints, HabitNote, Recommendation
 
@@ -24,6 +25,9 @@ LocalDate = Annotated[str, Field(pattern=r"^\d{4}-\d{2}-\d{2}$"), AfterValidator
 class RecommendationRequest(ApiModel):
     profile: HealthProfile
     habit_notes: list[HabitNote] = Field(default_factory=list, max_length=10)
+    # Document readings and diagnoses kept as long-term context (memory consent only).
+    # Informational: accepted, never a model input, never sent to a provider.
+    document_context: DocumentContext | None = None
     # Per-provider opt-in for outside-AI wording, e.g. {"claude": true}. Consent for one
     # provider never covers another. Without it, Mochi's own templates are used.
     outside_ai_consent: dict[Literal["claude", "muse"], bool] = Field(default_factory=dict)
@@ -46,6 +50,7 @@ class LeverRanking(ApiModel):
 class RecommendationResponse(ApiModel):
     schema_version: Literal["1.0"] = "1.0"
     # "not_enough_information": nothing confirmed yet that a suggestion could rest on.
+    # "under_age" is no longer sent (under-18s are treated normally); still accepted.
     status: Literal["ok", "not_enough_information", "under_age"]
     # Mochi's spoken lines: a short lead-in, then each suggestion.
     message: str = Field(min_length=1, max_length=1500)

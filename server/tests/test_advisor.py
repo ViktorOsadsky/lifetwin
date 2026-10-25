@@ -49,10 +49,9 @@ def test_supplements_are_optional_education_with_no_product_or_dose():
     assert action.modeled_effect is None
 
 
-def test_minor_and_unknown_ages_have_no_adult_targets():
+def test_minor_ages_get_the_same_notes_as_everyone():
     response = plan(profile=HealthProfile(age=15))
-    assert any("pediatric" in limitation for limitation in response.limitations)
-    assert not any("pediatric" in item for item in plan().limitations)
+    assert response.limitations == plan().limitations
     assert all("150" not in action.next_step for action in response.actions)
 
 

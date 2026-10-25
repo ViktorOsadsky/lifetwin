@@ -91,11 +91,13 @@ def test_the_40_edge_flips_between_39_and_40(client):
     assert workout(forty)["intensity"] != "vigorous"
 
 
-def test_the_18_edge_adults_get_the_young_adult_set_and_17_does_not(client):
+def test_the_18_edge_adults_get_the_young_adult_set_and_17_the_gentle_one(client):
     assert workout(plan(client, {"age": 18, "exercise_minutes_weekly": 300}))["intensity"] == (
         "vigorous"
     )
-    assert workout(plan(client, {"age": 17, "exercise_minutes_weekly": 300})) is None
+    assert workout(plan(client, {"age": 17, "exercise_minutes_weekly": 300}))["intensity"] != (
+        "vigorous"
+    )
 
 
 @pytest.mark.parametrize("age", [80, 85, 86, 120])
@@ -115,14 +117,11 @@ def test_unknown_or_under_18_never_gets_a_vigorous_pick(client, age, minutes):
     assert picked is None or picked["intensity"] != "vigorous"
 
 
-def test_under_18_is_not_handed_an_adult_plan(client):
-    body = plan(client, {"age": 17, "smoking_status": "current", "exercise_minutes_weekly": 0})
-    text = spoken(body)
-    assert "guidelines for adults" not in text
-    assert "quit smoking" not in text.lower()
-    assert body["status"] == "under_age" and body["items"] == [] and body["plan_type"] is None
-    assert body["revision_id"] is None and not body["emergency"]
-    assert "adults" in body["lines"][0]
+def test_under_18_gets_a_normal_plan(client):
+    body = plan(client, {"age": 16, "smoking_status": "current", "exercise_minutes_weekly": 0})
+    assert body["status"] == "ok" and body["items"] and body["plan_type"] is not None
+    assert body["revision_id"] is not None and not body["emergency"]
+    assert workout(body) is None or workout(body)["intensity"] != "vigorous"
 
 
 @pytest.mark.parametrize("age", [-1, 121, 200])
@@ -367,3 +366,31 @@ def test_blood_pressure_crisis_edge(client, readings, alert):
         assert body["mood"] == "concerned"
     else:
         assert body["alert"] is None
+
+
+DOCUMENT_CONTEXT = {
+    "readings": [
+        {"field": "a1c", "value": 6.1, "unit": "%", "date": "2026-09-14", "source": "document"},
+        {"field": "ldl", "value": 131, "unit": "mg/dL", "date": "2026-09-14", "source": "document"},
+    ],
+    "diagnoses": ["hypertension"],
+}
+
+
+def test_document_context_is_accepted_and_never_changes_the_plan(client):
+    profile = {"age": 50, "exercise_minutes_weekly": 60}
+    without = plan(client, profile)
+    with_context = plan(client, profile, document_context=DOCUMENT_CONTEXT)
+    assert with_context["status"] == without["status"] == "ok"
+    assert [i["catalog_id"] for i in with_context["items"]] == [
+        i["catalog_id"] for i in without["items"]
+    ]
+
+
+def test_document_context_cannot_be_dated_after_today(client):
+    future = {"readings": [{**DOCUMENT_CONTEXT["readings"][0], "date": "2026-11-01"}]}
+    response = client.post(
+        "/api/coach/plan",
+        json={"local_date": "2026-10-26", "profile": {"age": 50}, "document_context": future},
+    )
+    assert response.status_code == 422

@@ -10,8 +10,6 @@ import 'recommendations.dart';
 /// Home can show today's idea without a second call and the list still opens offline. It also holds
 /// the ideas hidden today ("Not for me"), which are sent as `excluded_ids` and are hidden here
 /// whether or not the server honours them.
-///
-/// The age rule is the caller's: under 18 nothing here is ever asked for.
 class IdeasHub extends ChangeNotifier {
   IdeasHub({required this.source, this.repo, DateTime Function()? now, this.allowed = _always})
     : _now = now ?? DateTime.now {

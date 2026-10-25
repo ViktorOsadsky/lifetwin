@@ -160,7 +160,7 @@ def _build() -> dict:
         "very_old_smoker": post(c, rec, {"profile": {**sure, "age": 90}}),
         "guideline_only": post(c, rec, {"profile": active}),
         "not_enough_information": post(c, rec, {"profile": {"age": 60}}),
-        "under_age": post(c, rec, {"profile": {"age": 16, "smoking_status": "never"}}),
+        "minor": post(c, rec, {"profile": {"age": 16, "smoking_status": "never"}}),
     }
 
     # Coach: the app's own request.

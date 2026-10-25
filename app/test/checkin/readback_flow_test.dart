@@ -342,7 +342,7 @@ void main() {
     expect(repo.store.checkins.single.answers['sleep_hours_last_night'], 7.5);
   });
 
-  test('the start request carries the profile age, and only a valid one', () async {
+  test('the start request carries the profile age (minors too), and only a valid one', () async {
     final bodies = <Map<String, dynamic>>[];
     http.Client fake() => MockClient((req) async {
       bodies.add(jsonDecode(req.body) as Map<String, dynamic>);
@@ -359,7 +359,7 @@ void main() {
         200,
       );
     });
-    for (final (age, sent) in [(62, 62), (62.0, 62), (17, null), (null, null), ('x', null), (121, null)]) {
+    for (final (age, sent) in [(62, 62), (62.0, 62), (17, 17), (0, null), (null, null), ('x', null), (121, null)]) {
       bodies.clear();
       final c = HttpCheckinClient(client: fake(), base: ApiBase('http://x'), age: () => age);
       await c.start(kind: 'quick', localDate: '2026-10-24');
