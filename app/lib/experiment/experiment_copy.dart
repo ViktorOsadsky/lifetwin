@@ -60,7 +60,7 @@ abstract final class ExperimentCopy {
   // Not available (Y-9, Y-10).
   static const outsideRange = 'Outside my range';
   static const beyondNumbers = 'Beyond my numbers';
-  static const ageRange = 'My numbers cover ages 30 to 85.';
+  static const ageRange = 'My numbers cover ages 18 to 85.';
   static const rareAnswers = 'Rare answers';
   static const tooRareToEstimate = 'Too rare to estimate';
   static const rareBody = 'More exercise than almost anyone in the health survey I learned from.';
