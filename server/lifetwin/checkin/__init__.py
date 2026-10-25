@@ -29,11 +29,11 @@ def checkin_start(
 
 
 @router.post("/checkin/turn", response_model=CheckinResponse)
-def checkin_turn(
+async def checkin_turn(
     request: CheckinTurnRequest,
     service: Annotated[CheckinService, Depends(get_service)],
 ) -> CheckinResponse:
-    return service.turn(request)
+    return await service.aturn(request)
 
 
 __all__ = [
