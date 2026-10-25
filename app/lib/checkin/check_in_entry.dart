@@ -36,13 +36,16 @@ class CheckInEntry extends StatelessWidget {
           history: repo.store.checkins,
           days: days,
           settings: repo.checkinSettings,
+          firstJoined: repo.firstJoined,
         );
         // Long-press: the weekly check-in on demand, whatever the schedule says (demo and "do it now").
-        Widget onDemand(Widget child) => GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onLongPress: () => openCheckIn(context, kind: CheckInKind.weekly),
-          child: child,
-        );
+        Widget onDemand(Widget child) => !repo.weeklyAvailable
+            ? child
+            : GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onLongPress: () => openCheckIn(context, kind: CheckInKind.weekly),
+                child: child,
+              );
         if (compact) {
           final today = isoDay(dayOf(now));
           final done = repo.store.checkins.any((c) => c.kind != 'weekly' && c.date == today);

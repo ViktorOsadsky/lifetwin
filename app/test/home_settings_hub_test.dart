@@ -74,6 +74,9 @@ void main() {
       await t.scrollUntilVisible(find.text(row), 200);
       expect(find.text(row), findsWidgets, reason: row);
     }
+    // Just joined: the weekly row says when it opens.
+    await t.scrollUntilVisible(find.text('Weekly check-in'), 200);
+    expect(find.textContaining('Your first weekly check-in opens on'), findsOneWidget);
     await t.ensureVisible(find.text('See your data or delete it'));
     await t.pumpAndSettle();
     await t.tap(find.text('See your data or delete it'));
