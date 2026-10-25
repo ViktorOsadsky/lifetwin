@@ -1,0 +1,21 @@
+--- a/lib/main.dart
++++ b/lib/main.dart
+@@ -0,0 +1,2 @@
++import 'dart:io' as qa134io;
++import 'dart:convert' as qa134json;
+@@ -539 +541,14 @@
+-      builder: _agentic.wrap,
++      builder: (context, child) {
++        const scaleText = String.fromEnvironment('QA134_SCALE');
++        final scale = double.tryParse(scaleText);
++        final nativeScaler = MediaQuery.textScalerOf(context);
++        final effectiveScaler = scale == null ? nativeScaler : TextScaler.linear(scale);
++        qa134io.File('${qa134io.Directory.systemTemp.path}/qa134-font.json').writeAsStringSync(qa134json.jsonEncode({
++          'define': scaleText, 'native20': nativeScaler.scale(20),
++          'effective17': effectiveScaler.scale(17), 'effective20': effectiveScaler.scale(20),
++          'effective48': effectiveScaler.scale(48),
++        }));
++        final wrapped = _agentic.wrap(context, child);
++        return scale == null ? wrapped : MediaQuery(
++          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)), child: wrapped);
++      },

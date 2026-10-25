@@ -1,9 +1,9 @@
 """Outside-AI providers that may phrase Mochi's lines. They never decide values.
 
-Owner rulings (2026-10-24): Muse by Meta is the demo provider now; Claude by Anthropic
-comes later behind the same interface (``PERSONALIZE_PROVIDER=claude``). Consent is
-per provider, so switching providers asks the person again. Keys stay server-side.
-Payloads and replies are never logged.
+Owner rulings (2026-10-24): Claude by Anthropic (Claude Haiku 5.5) is the provider once
+ANTHROPIC_API_KEY is set; Muse by Meta stays selectable (``PERSONALIZE_PROVIDER=muse``)
+and is the default without that key. Consent is per provider, so switching providers
+asks the person again. Keys stay server-side. Payloads and replies are never logged.
 """
 
 import json
@@ -11,6 +11,8 @@ import logging
 from typing import Literal, Protocol
 
 import httpx
+
+from lifetwin.core.claude import DEFAULT_MODEL, ClaudeJSON, ClaudeUnavailable
 
 logger = logging.getLogger(__name__)
 
@@ -117,21 +119,50 @@ class MusePersonalizer:
                 await client.aclose()
 
 
+# Every phrasing reply is {"lines": [...]} or {"line": "..."}; the instructions say which.
+PHRASE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "lines": {"type": "array", "items": {"type": "string"}},
+        "line": {"type": "string"},
+    },
+    "additionalProperties": False,
+}
+
+
 class ClaudePersonalizer:
-    """Claude by Anthropic: a placeholder until the owner switches it on (not wired yet)."""
+    """Claude by Anthropic over the official SDK (structured outputs, low latency).
+
+    There is no contributor mode: LLM_ALLOW_CONTRIBUTOR does not apply.
+    """
 
     name: ProviderName = "claude"
-
-    def __init__(self, *, api_key: str = "", model: str = ""):
-        self._api_key = api_key.strip()
-        self._model = model.strip()
-
     may_train_on_content = False
+
+    def __init__(
+        self,
+        *,
+        api_key: str = "",
+        model: str = DEFAULT_MODEL,
+        timeout_seconds: float = 6,
+        client=None,
+    ):
+        self._claude = ClaudeJSON(
+            api_key=api_key, model=model, timeout_seconds=timeout_seconds, client=client
+        )
 
     @property
     def configured(self) -> bool:
-        # Not implemented yet: never reports ready, so templates are used.
-        return False
+        return self._claude.configured
 
     async def phrase(self, instructions: str, facts: dict) -> dict:
-        raise PhrasingUnavailable()
+        try:
+            text = await self._claude.complete(
+                instructions, json.dumps(facts, ensure_ascii=False), PHRASE_SCHEMA
+            )
+            result = json.loads(text)
+        except (ClaudeUnavailable, ValueError, RecursionError) as exc:
+            raise PhrasingUnavailable() from exc
+        if not isinstance(result, dict):
+            raise PhrasingUnavailable()
+        return result

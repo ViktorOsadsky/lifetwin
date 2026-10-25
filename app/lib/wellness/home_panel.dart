@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../onboarding/missing_answers.dart';
 import '../twin/twin_model.dart' show extrapolationCaveat;
 import '../widgets/whole_word_text.dart';
 
@@ -26,8 +29,17 @@ class HomeWellnessPanel extends StatelessWidget {
     this.onDrivers,
     this.stateLine,
     this.compact = false,
+    this.onCollapse,
+    this.onAnswerMissing,
   });
   final bool compact;
+
+  /// Collapses the card to the score chip (the chevron at the card's bottom right). Null: no collapse button.
+  final VoidCallback? onCollapse;
+
+  /// "Answer N more questions" ([WellnessSnapshot.missingCount]): the one path back to the
+  /// missing answers, under a rough score or in place of the number. Hidden when null.
+  final VoidCallback? onAnswerMissing;
   final WellnessSnapshot snapshot;
   final VoidCallback? onHistory;
 
@@ -67,6 +79,15 @@ class HomeWellnessPanel extends StatelessWidget {
             ),
             icon: const Icon(Icons.chevron_right_rounded, color: LtColors.ink, size: 28),
             onPressed: onDrivers,
+          );
+    final collapse = onCollapse == null || score == null
+        ? null
+        : IconButton(
+            tooltip: 'Collapse health score',
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.keyboard_arrow_up_rounded, color: LtColors.ink, size: 28),
+            onPressed: onCollapse,
           );
     final label = Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
@@ -161,6 +182,8 @@ class HomeWellnessPanel extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: RoughGuideBadge(caveat: extrapolationCaveat),
             ),
+          if (snapshot.roughMissing && snapshot.missingCount > 0)
+            WholeWordText(roughMissingLabel(snapshot.missingCount), style: LtText.body(weight: FontWeight.w700)),
           if (score != null)
             Padding(
               padding: const EdgeInsets.only(right: 6, top: 4),
@@ -179,31 +202,230 @@ class HomeWellnessPanel extends StatelessWidget {
               padding: const EdgeInsets.only(right: 6),
               child: WholeWordText(HomeWellnessPanel.tagline, style: LtText.body()),
             ),
+          if (onAnswerMissing != null && snapshot.missingCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 6, top: 6),
+              child: LipButton(
+                label: answerMoreLabel(snapshot.missingCount),
+                icon: Icons.mic_none_rounded,
+                height: 52,
+                fontSize: 19,
+                onTap: onAnswerMissing,
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 6, top: 4),
-            // The Home card is compact: the chip only (design K-HZ-1 has no trend line).
-            child: compact
-                ? Align(alignment: Alignment.centerLeft, child: chip)
-                : big
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (score != null && snapshot.history.length >= 2) ScoreSparkline(values: snapshot.history),
-                      chip,
-                    ],
-                  )
-                : Row(
-                    children: [
-                      if (score != null) trend else const Spacer(),
-                      const SizedBox(width: 8),
-                      Flexible(child: chip),
-                    ],
-                  ),
+            // The collapse chevron shares the estimate chip's row, so collapsing costs the card no height.
+            child: _withCollapse(
+              collapse,
+              // The Home card is compact: the chip only (design K-HZ-1 has no trend line).
+              compact
+                  ? Align(alignment: Alignment.centerLeft, child: chip)
+                  : big
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (score != null && snapshot.history.length >= 2) ScoreSparkline(values: snapshot.history),
+                        chip,
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        if (score != null) trend else const Spacer(),
+                        const SizedBox(width: 8),
+                        Flexible(child: chip),
+                      ],
+                    ),
+            ),
           ),
         ],
       ),
     );
   }
+
+  static Widget _withCollapse(Widget? collapse, Widget row) => collapse == null
+      ? row
+      : Row(
+          children: [
+            Expanded(child: row),
+            collapse,
+          ],
+        );
+}
+
+/// Home's score card that can shrink to a chip ("+0.53 ▾") so the room shows. The state is kept per
+/// device (shared_preferences); with nothing stored (first launch after onboarding) it starts
+/// expanded, so the reveal lands. Under 18, or with no score yet, there is nothing to collapse.
+class CollapsibleHealthScore extends StatefulWidget {
+  const CollapsibleHealthScore({
+    super.key,
+    required this.snapshot,
+    required this.onEstimate,
+    this.onDrivers,
+    this.stateLine,
+    this.onAnswerMissing,
+  });
+  final WellnessSnapshot snapshot;
+  final VoidCallback onEstimate;
+  final VoidCallback? onDrivers;
+  final String? stateLine;
+
+  /// "Answer N more questions", in the expanded card (the collapsed chip shows "Rough guide").
+  final VoidCallback? onAnswerMissing;
+
+  static const prefsKey = 'home_score_collapsed';
+  static const duration = Duration(milliseconds: 200);
+
+  @override
+  State<CollapsibleHealthScore> createState() => _CollapsibleHealthScoreState();
+}
+
+class _CollapsibleHealthScoreState extends State<CollapsibleHealthScore> {
+  bool _collapsed = false;
+
+  /// The restored state is applied without animation.
+  bool _instant = false;
+  bool _touched = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_restore());
+  }
+
+  Future<void> _restore() async {
+    try {
+      final saved = (await SharedPreferences.getInstance()).getBool(CollapsibleHealthScore.prefsKey);
+      if (!mounted || _touched || saved == null || saved == _collapsed) return;
+      setState(() {
+        _collapsed = saved;
+        _instant = true;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _instant = false);
+      });
+    } catch (_) {
+      // No local storage (a test, a private mode): the card just starts expanded.
+    }
+  }
+
+  Future<void> _set(bool collapsed) async {
+    if (collapsed == _collapsed) return;
+    _touched = true;
+    setState(() => _collapsed = collapsed);
+    try {
+      await (await SharedPreferences.getInstance()).setBool(CollapsibleHealthScore.prefsKey, collapsed);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final snap = widget.snapshot;
+    final score = snap.displayScore;
+    final panel = HomeWellnessPanel(
+      key: const ValueKey('score-expanded'),
+      snapshot: snap,
+      compact: true,
+      onEstimate: widget.onEstimate,
+      onDrivers: widget.onDrivers,
+      stateLine: widget.stateLine,
+      onCollapse: () => _set(true),
+      onAnswerMissing: widget.onAnswerMissing,
+    );
+    if (snap.underAge || score == null) return panel;
+    final instant = MediaQuery.disableAnimationsOf(context) || _instant;
+    final shown = _collapsed
+        ? _CollapsedScoreChip(
+            key: const ValueKey('score-collapsed'),
+            snapshot: snap,
+            score: score,
+            onTap: () => _set(false),
+          )
+        : panel;
+    return SizeChangedLayoutNotifier(
+      child: GestureDetector(
+        behavior: HitTestBehavior.deferToChild,
+        onVerticalDragEnd: (e) {
+          if (!_collapsed && (e.primaryVelocity ?? 0) < -250) _set(true);
+        },
+        // Reduced motion (and the restored state) switches at once: no animation widgets at all.
+        child: instant
+            ? shown
+            : AnimatedSize(
+                duration: CollapsibleHealthScore.duration,
+                alignment: Alignment.topCenter,
+                child: AnimatedSwitcher(
+                  duration: CollapsibleHealthScore.duration,
+                  layoutBuilder: (current, previous) =>
+                      Stack(alignment: Alignment.topLeft, children: [...previous, ?current]),
+                  child: shown,
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+/// The collapsed card: the signed score and a chevron, in the card's own paper, border and shadow.
+class _CollapsedScoreChip extends StatelessWidget {
+  const _CollapsedScoreChip({super.key, required this.snapshot, required this.score, required this.onTap});
+  final WellnessSnapshot snapshot;
+  final double score;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        children: [
+          Semantics(
+            button: true,
+            label: 'Health score ${spokenHealthScore(score)}, collapsed. Tap to expand.',
+            excludeSemantics: true,
+            onTap: onTap,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(LtRadii.chip),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  padding: const EdgeInsets.only(left: 14, right: 6),
+                  decoration: BoxDecoration(
+                    color: LtColors.paper,
+                    borderRadius: BorderRadius.circular(LtRadii.chip),
+                    border: Border.all(color: LtColors.container, width: LtBorders.container),
+                    boxShadow: LtShadows.small,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        formatHealthScore(score),
+                        style: LtText.display(26, weight: FontWeight.w700),
+                        maxLines: 1,
+                        softWrap: false,
+                      ),
+                      const Icon(Icons.keyboard_arrow_down_rounded, color: LtColors.ink, size: 28),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (snapshot.roughGuide) const RoughGuideBadge(caveat: extrapolationCaveat),
+          // A rough score with answers missing: "Rough guide"; tapping it opens the card, where
+          // "Answer N more questions" is.
+          if (snapshot.roughMissing && snapshot.missingCount > 0)
+            RoughGuideBadge(caveat: roughMissingLabel(snapshot.missingCount), onTap: onTap, expanded: false),
+        ],
+      ),
+    ),
+  );
 }
 
 /// The big number and its circled i (own 48 target, opens [showHealthScoreSheet]). The number
@@ -461,6 +683,8 @@ class HealthScoreSummary extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: RoughGuideBadge(caveat: extrapolationCaveat),
           ),
+        if (snapshot.roughMissing && snapshot.missingCount > 0)
+          WholeWordText(roughMissingLabel(snapshot.missingCount), style: LtText.body(weight: FontWeight.w700)),
       ],
     );
   }
@@ -558,14 +782,16 @@ class ScoreScale extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        // OverflowBar also supports intrinsic sizing: this scale appears in the
+        // score explanation sheet as well as Home. Keep whole labels together
+        // and stack them before a narrow row can break words into letters.
+        OverflowBar(
+          alignment: MainAxisAlignment.spaceBetween,
+          spacing: 8,
+          overflowAlignment: OverflowBarAlignment.center,
           children: [
-            Flexible(child: Text('‹ Higher risk', style: LtText.body())),
-            Text('Average', style: LtText.body()),
-            Flexible(
-              child: Text('Better health ›', style: LtText.body(), textAlign: TextAlign.end),
-            ),
+            for (final label in ['‹ Higher risk', 'Average', 'Better health ›'])
+              IntrinsicWidth(child: Text(label, style: LtText.body())),
           ],
         ),
       ],

@@ -121,7 +121,6 @@ class TwinRepository extends ChangeNotifier {
   int? get ageGroupWidth => _current?.ageGroupWidth;
   bool? get ageGroupNearestBand => _current?.ageGroupNearestBand;
 
-
   /// The one-time lifespan reveal (owner override 2026-10-24): a rough, proof-of-concept
   /// age and YEAR (never a date) from the current profile: the model owner's yearly Cox
   /// projection blended with the life table at the seams (Rough guide where the life table
@@ -131,8 +130,25 @@ class TwinRepository extends ChangeNotifier {
   LifespanEstimate? get lifespanEstimate {
     final a = _current;
     if (a == null || a.rawLogRelativeHazard == null) return null;
+    if (a.roughMissing) {
+      // Rough (1 or 2 answers missing): the same marginalised hazard as the score.
+      final fill = a.raw['rough_fill'], shift = a.raw['rough_shift'];
+      if (fill is! Map || shift is! double) return null;
+      return LifespanEstimate.forProfile(
+        {...a.profileUsed, ...Map<String, dynamic>.from(fill)},
+        currentYear: _clock().year,
+        lab: model.projection,
+        logHazardShift: shift,
+      );
+    }
     return LifespanEstimate.forProfile(a.profileUsed, currentYear: _clock().year, lab: model.projection);
   }
+
+  /// The model inputs still missing (package names, e.g. `vigorous_recreation_min_week`); empty
+  /// before a profile and when nothing is missing. With 1 or 2 the score is rough
+  /// ([HealthScoreStatus.roughMissing]); with more there is none.
+  List<String> get missingInputs => _current?.missingInputs ?? const [];
+  int get missingCount => missingInputs.length;
 
   /// True once the person has seen the lifespan reveal; the UI then de-emphasises it.
   /// Persisted; [deleteMyData] clears it.
@@ -204,11 +220,13 @@ class TwinRepository extends ChangeNotifier {
   /// the confirmed profile ([saveConversationProfile]). [modelInputs] is the turn's
   /// `model_inputs`; [sources] the profile keys whose values came from somewhere other
   /// than the person's own words (Apple Health, a document, the wristband). The state's
-  /// `estimated_fields` (answers to Mochi's simpler questions) are marked estimated.
+  /// `estimated_fields` (answers to Mochi's simpler questions) and [estimatedFields]
+  /// (confirmed source estimates) are marked estimated.
   Future<TwinAssessment> saveOnboarding(
     Map<String, dynamic> state, {
     Map<String, dynamic>? modelInputs,
     Map<String, String> sources = const {},
+    Set<String> estimatedFields = const {},
   }) => _atomically(() async {
     // The first conversation is the onboarding; a later one changes answers through Mochi.
     final kind = store.hasProfile ? HistoryKind.mochiChange : HistoryKind.onboarding;
@@ -229,7 +247,7 @@ class TwinRepository extends ChangeNotifier {
       kind: kind,
       modelInputs: modelInputs,
       sources: sources,
-      estimated: {for (final f in state['estimated_fields'] as List? ?? const []) '$f'},
+      estimated: {...estimatedFields, for (final f in state['estimated_fields'] as List? ?? const []) '$f'},
     );
   });
 
@@ -302,31 +320,40 @@ class TwinRepository extends ChangeNotifier {
 
   /// The Apple Health values the person confirmed on the Health screen ("Is this
   /// accurate?"). History only: they reach the profile through the conversation.
-  Future<void> recordHealthImport(Map<String, Object?> values) =>
-      recordImport(values, source: HistorySource.appleHealth);
+  Future<void> recordHealthImport(Map<String, Object?> values, {Set<String> estimatedFields = const {}}) =>
+      recordImport(values, source: HistorySource.appleHealth, estimatedFields: estimatedFields);
 
   /// Values from Apple Health or the wristband that the person confirmed after a
   /// read-back, before the conversation takes them. History only. Wristband values are
   /// always estimates ("≈ Sensor estimate").
-  Future<void> recordImport(Map<String, Object?> values, {required String source, bool estimated = false}) =>
-      _atomically(() async {
-        final band = source == HistorySource.wristband;
-        await _record(
-          kind: band
-              ? HistoryKind.wristbandImport
-              : source == HistorySource.document
-              ? HistoryKind.document
-              : HistoryKind.healthImport,
-          source: source,
-          items: [
-            for (final e in values.entries)
-              if (e.value != null && (profileSchema[e.key]?.call(e.value!) ?? false))
-                HistoryItem(field: e.key, value: e.value, source: source, estimated: estimated || band),
-          ],
-        );
-        if (_current != null) await _recordHealthScore(_current!);
-        notifyListeners();
-      });
+  Future<void> recordImport(
+    Map<String, Object?> values, {
+    required String source,
+    bool estimated = false,
+    Set<String> estimatedFields = const {},
+  }) => _atomically(() async {
+    final band = source == HistorySource.wristband;
+    await _record(
+      kind: band
+          ? HistoryKind.wristbandImport
+          : source == HistorySource.document
+          ? HistoryKind.document
+          : HistoryKind.healthImport,
+      source: source,
+      items: [
+        for (final e in values.entries)
+          if (e.value != null && (profileSchema[e.key]?.call(e.value!) ?? false))
+            HistoryItem(
+              field: e.key,
+              value: e.value,
+              source: source,
+              estimated: estimated || estimatedFields.contains(e.key) || band,
+            ),
+      ],
+    );
+    if (_current != null) await _recordHealthScore(_current!);
+    notifyListeners();
+  });
 
   /// Where the stored value of [field] came from; null for a value saved before
   /// provenance was kept (treat it as "You said").
@@ -528,9 +555,9 @@ class TwinRepository extends ChangeNotifier {
   bool get outsideAiConsent => store.outsideAiConsent;
   String? get outsideAiProvider => store.outsideAiProvider;
 
-  /// Sets the consent for [provider] (`muse` today; the app shows the name from
-  /// `/api/capabilities` `personalize.display_name`).
-  Future<void> setOutsideAiConsent(bool consent, {String provider = 'muse'}) async {
+  /// Sets the consent for [provider], the id from `/api/capabilities` `personalize.provider`
+  /// (`claude` or `muse`). Required: no caller can record a consent for a provider by default.
+  Future<void> setOutsideAiConsent(bool consent, {required String provider}) async {
     await store._saveOutsideAiConsent(consent, provider);
     notifyListeners();
   }
@@ -759,8 +786,7 @@ class TwinRepository extends ChangeNotifier {
 
   List<HistoryItem> _documentReadingItems(DocumentCandidate c) {
     final date = c.date == null ? null : isoDate(c.date!);
-    HistoryItem item(String f, Object v) =>
-        HistoryItem(field: f, value: v, source: HistorySource.document, date: date);
+    HistoryItem item(String f, Object v) => HistoryItem(field: f, value: v, source: HistorySource.document, date: date);
     final v = c.value;
     switch (c.field) {
       case 'blood_pressure':

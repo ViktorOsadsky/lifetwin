@@ -1,0 +1,295 @@
+{
+  "kind": "visible native frame samples, points; not exhaustive hit testing",
+  "samples": [
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'Quiz. Play a round.'",
+      "x": 194.0,
+      "y": 70.0,
+      "width": 48.0,
+      "height": 48.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'Add band'",
+      "x": 242.0,
+      "y": 70.0,
+      "width": 48.0,
+      "height": 48.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'My history'",
+      "x": 290.0,
+      "y": 70.0,
+      "width": 48.0,
+      "height": 48.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'Settings'",
+      "x": 338.0,
+      "y": 70.0,
+      "width": 48.0,
+      "height": 48.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'What moves your score'",
+      "x": 328.5,
+      "y": 135.5,
+      "width": 48.0,
+      "height": 48.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'About the health score'",
+      "x": 181.3,
+      "y": 197.5,
+      "width": 48.0,
+      "height": 48.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'Your estimate. Open your estimate'",
+      "x": 31.5,
+      "y": 447.5,
+      "width": 223.2,
+      "height": 48.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'Check in. A 1-minute chat.'",
+      "x": 221.4,
+      "y": 530.5,
+      "width": 151.1,
+      "height": 62.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'Experiment with your twin'",
+      "x": 16.0,
+      "y": 626.0,
+      "width": 370.0,
+      "height": 112.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'Customize'",
+      "x": 24.0,
+      "y": 759.2,
+      "width": 92.5,
+      "height": 80.8,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'Talk'",
+      "x": 120.2,
+      "y": 769.2,
+      "width": 161.7,
+      "height": 70.8,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'Fortune'",
+      "x": 285.5,
+      "y": 756.0,
+      "width": 92.5,
+      "height": 84.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'Your bear twin in the Cal hat'",
+      "x": 118.9,
+      "y": 361.2,
+      "width": 95.5,
+      "height": 95.5,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-home-tree.txt",
+      "label": "'Your twin is relaxing. Change what Your twin does.'",
+      "x": 94.2,
+      "y": 455.4,
+      "width": 145.0,
+      "height": 49.7,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-settings-tree.txt",
+      "label": "'Back'",
+      "x": 18.0,
+      "y": 74.0,
+      "width": 52.0,
+      "height": 52.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-settings-tree.txt",
+      "label": "'Change an answer",
+      "x": 39.5,
+      "y": 299.5,
+      "width": 323.0,
+      "height": 123.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-settings-tree.txt",
+      "label": "'Weekly check-in",
+      "x": 39.5,
+      "y": 422.5,
+      "width": 323.0,
+      "height": 123.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-settings-tree.txt",
+      "label": "'Apple Health",
+      "x": 39.5,
+      "y": 545.5,
+      "width": 323.0,
+      "height": 123.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-settings-tree.txt",
+      "label": "'Health documents",
+      "x": 39.5,
+      "y": 668.5,
+      "width": 323.0,
+      "height": 123.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-settings-tree.txt",
+      "label": "'Try a change",
+      "x": 39.5,
+      "y": 791.5,
+      "width": 323.0,
+      "height": 48.5,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-score-info-tree.txt",
+      "label": "'Got it'",
+      "x": 34.0,
+      "y": 737.0,
+      "width": 334.0,
+      "height": 73.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-daily-checkin-tree.txt",
+      "label": "'Back'",
+      "x": 30.0,
+      "y": 112.0,
+      "width": 52.0,
+      "height": 52.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-daily-checkin-tree.txt",
+      "label": "'Skip'",
+      "x": 16.0,
+      "y": 399.0,
+      "width": 370.0,
+      "height": 52.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-daily-checkin-tree.txt",
+      "label": "'Send'",
+      "x": 334.0,
+      "y": 470.5,
+      "width": 52.0,
+      "height": 52.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-daily-checkin-tree.txt",
+      "label": "'I'",
+      "x": 0.0,
+      "y": 546.0,
+      "width": 134.0,
+      "height": 44.0,
+      "min44": true,
+      "preferred48": false
+    },
+    {
+      "capture": "scale16-daily-checkin-tree.txt",
+      "label": "'The'",
+      "x": 134.0,
+      "y": 546.0,
+      "width": 134.0,
+      "height": 44.0,
+      "min44": true,
+      "preferred48": false
+    },
+    {
+      "capture": "scale16-daily-checkin-tree.txt",
+      "label": "'I\u2019m'",
+      "x": 268.0,
+      "y": 546.0,
+      "width": 134.0,
+      "height": 44.0,
+      "min44": true,
+      "preferred48": false
+    },
+    {
+      "capture": "scale16-daily-checkin-tree.txt",
+      "label": "'shift'",
+      "x": 4.7,
+      "y": 705.0,
+      "width": 51.3,
+      "height": 54.0,
+      "min44": true,
+      "preferred48": true
+    },
+    {
+      "capture": "scale16-daily-checkin-tree.txt",
+      "label": "'send'",
+      "x": 300.7,
+      "y": 759.0,
+      "width": 99.0,
+      "height": 54.0,
+      "min44": true,
+      "preferred48": true
+    }
+  ]
+}

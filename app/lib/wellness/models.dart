@@ -66,6 +66,7 @@ class LifespanReveal {
     required this.expectedYear,
     this.caveat,
     this.roughGuide = false,
+    this.missingCount = 0,
     this.p25OpenEnded = false,
     this.openEnded = false,
     this.p75OpenEnded = false,
@@ -80,6 +81,9 @@ class LifespanReveal {
   /// The life table has the bigger weight (ages 18-39 and 75-85). The lifespan is shown as a
   /// rough guide whatever this says (see [lifespanCaption]); it only mirrors the engine's status.
   final bool roughGuide;
+
+  /// Rough with answers missing (1 or 2 inputs marginalised): "Rough guide: N answers missing".
+  final int missingCount;
 
   /// The engine's flags: that end of the range is the end of the table, shown "110+".
   final bool p25OpenEnded;
@@ -117,7 +121,15 @@ class WellnessSnapshot {
     this.lifespan,
     this.lifespanRevealSeen = false,
     this.history = const [],
+    this.missingCount = 0,
   });
+
+  /// The questions the estimate still needs ("Answer N more questions"); with 1 or 2 missing
+  /// inputs the score is rough ([HealthScoreStatus.roughMissing]).
+  final int missingCount;
+
+  /// The score is a rough guide because answers are missing.
+  bool get roughMissing => displayScore != null && status == HealthScoreStatus.roughMissing;
 
   final double? healthScore;
 

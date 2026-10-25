@@ -892,7 +892,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
             ),
           ),
         if (n != null && !keyboard) ...[
-          _pad(StepProgress(step: n, total: VoiceOnboardingController.questionCount)),
+          _pad(StepProgress(step: n, total: c.questionTotal)),
           const SizedBox(height: 12),
         ],
       ],

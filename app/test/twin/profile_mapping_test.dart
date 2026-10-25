@@ -137,7 +137,7 @@ void main() {
     expect(a.missingInputs, ['bmi', 'smoking_status']);
   });
 
-  test('exactly one model input missing: missing_inputs naming it, and no number', () {
+  test('exactly one model input missing: named; a rough number unless it is age or sex', () {
     final complete = appProfileFor(_golden0());
     // Each package input and the app field(s) that carry it.
     const carriers = {
@@ -157,10 +157,14 @@ void main() {
     for (final MapEntry(key: input, value: fields) in carriers.entries) {
       final p = {...complete}..removeWhere((k, _) => fields.contains(k));
       final a = model.assess(p);
-      expect(a.status, 'missing_inputs', reason: input);
+      // Owner ruling (2026-10-24): one missing input gives a rough, flagged number, except age
+      // and sex, which choose the people it is averaged over.
+      final rough = input != 'age' && input != 'sex_nhanes';
+      expect(a.status, rough ? 'available' : 'missing_inputs', reason: input);
+      expect(a.roughMissing, rough, reason: input);
       expect(a.missingInputs, [input], reason: input);
-      expect(a.percentByYear, isEmpty, reason: input);
-      expect(Forecast.fromAssessment(a).supported, isFalse, reason: input);
+      expect(a.percentByYear.isEmpty, !rough, reason: input);
+      expect(Forecast.fromAssessment(a).supported, rough, reason: input);
     }
   });
 

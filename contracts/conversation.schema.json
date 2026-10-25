@@ -49,6 +49,40 @@
     "ConversationState": {
       "additionalProperties": false,
       "properties": {
+        "ask_only": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": [
+                  "age",
+                  "sex",
+                  "height_cm",
+                  "weight_kg",
+                  "sleep_hours",
+                  "exercise_minutes_weekly",
+                  "smoking_status",
+                  "alcohol_drinks_weekly",
+                  "diabetes",
+                  "systolic_bp",
+                  "diastolic_bp",
+                  "general_health",
+                  "hypertension_diagnosed",
+                  "sedentary_min_day",
+                  "moderate_recreation_min_week",
+                  "vigorous_recreation_min_week"
+                ],
+                "type": "string"
+              },
+              "maxItems": 16,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ask Only"
+        },
         "confirmed_profile": {
           "$ref": "#/$defs/HealthProfile"
         },
@@ -159,6 +193,11 @@
           "default": null,
           "title": "Memory Consent"
         },
+        "missing_offered": {
+          "default": false,
+          "title": "Missing Offered",
+          "type": "boolean"
+        },
         "pending_estimate": {
           "anyOf": [
             {
@@ -185,6 +224,7 @@
             "offering",
             "probing",
             "confirming",
+            "missing",
             "ready",
             "cancelled"
           ],
@@ -393,7 +433,9 @@
         "habit_notes",
         "memory_consent",
         "seed",
-        "small_talk"
+        "small_talk",
+        "ask_only",
+        "missing_offered"
       ],
       "title": "ConversationState",
       "type": "object"
@@ -1309,6 +1351,14 @@
     "Recommendation": {
       "additionalProperties": false,
       "properties": {
+        "alternatives": {
+          "items": {
+            "$ref": "#/$defs/RecommendationIdea"
+          },
+          "maxItems": 3,
+          "title": "Alternatives",
+          "type": "array"
+        },
         "based_on": {
           "items": {
             "type": "string"
@@ -1383,6 +1433,21 @@
           "title": "Id",
           "type": "string"
         },
+        "kind": {
+          "enum": [
+            "walk",
+            "dance",
+            "stand",
+            "stretch",
+            "sleep",
+            "eat",
+            "social",
+            "breath",
+            "craving"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
         "lever": {
           "enum": [
             "quit_smoking",
@@ -1452,9 +1517,178 @@
         "experiment_target",
         "why_short",
         "source_domain",
-        "causal_interpretation"
+        "kind",
+        "causal_interpretation",
+        "alternatives"
       ],
       "title": "Recommendation",
+      "type": "object"
+    },
+    "RecommendationIdea": {
+      "additionalProperties": false,
+      "properties": {
+        "based_on": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 6,
+          "title": "Based On",
+          "type": "array"
+        },
+        "causal_interpretation": {
+          "const": false,
+          "default": false,
+          "title": "Causal Interpretation",
+          "type": "boolean"
+        },
+        "effect": {
+          "anyOf": [
+            {
+              "enum": [
+                "big",
+                "some",
+                "small",
+                "tiny"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effect"
+        },
+        "effect_note": {
+          "const": "Modeled difference for people like you, not a promise.",
+          "default": "Modeled difference for people like you, not a promise.",
+          "title": "Effect Note",
+          "type": "string"
+        },
+        "experiment_lever": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Experiment Lever"
+        },
+        "experiment_target": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Experiment Target"
+        },
+        "id": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "walk",
+            "dance",
+            "stand",
+            "stretch",
+            "sleep",
+            "eat",
+            "social",
+            "breath",
+            "craving"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "lever": {
+          "enum": [
+            "quit_smoking",
+            "vigorous_plus_60",
+            "moderate_plus_90",
+            "short_sleep_plus_1h",
+            "sitting_minus_60_realistic",
+            "keep_it_up"
+          ],
+          "title": "Lever",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 400,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "source_domain": {
+          "default": "",
+          "title": "Source Domain",
+          "type": "string"
+        },
+        "source_title": {
+          "title": "Source Title",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "wellness_card": {
+          "enum": [
+            "smoking",
+            "activity",
+            "sleep",
+            "sitting"
+          ],
+          "title": "Wellness Card",
+          "type": "string"
+        },
+        "why_short": {
+          "default": "",
+          "maxLength": 90,
+          "title": "Why Short",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "lever",
+        "title",
+        "message",
+        "based_on",
+        "wellness_card",
+        "source_title",
+        "source_url",
+        "effect",
+        "effect_note",
+        "experiment_lever",
+        "experiment_target",
+        "why_short",
+        "source_domain",
+        "kind",
+        "causal_interpretation"
+      ],
+      "title": "RecommendationIdea",
       "type": "object"
     }
   },

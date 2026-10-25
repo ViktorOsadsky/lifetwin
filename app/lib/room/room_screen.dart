@@ -48,7 +48,11 @@ class RoomScreen extends StatefulWidget {
     this.onBand,
     this.today,
     this.stateLine,
+    this.onAnswerMissing,
   });
+
+  /// "Answer N more questions" on the score card (missing_answers.dart). Hidden when null.
+  final VoidCallback? onAnswerMissing;
 
   /// Cosmetic look only; never part of the health profile.
   final ValueListenable<TwinAppearance> appearance;
@@ -252,8 +256,9 @@ class _RoomScreenState extends State<RoomScreen> {
                               if (widget.onSettings != null)
                                 _HeaderIcon(icon: Icons.settings_outlined, label: 'Settings', onTap: widget.onSettings!),
                             ],
-                            card: widget.wellness == null ? _OutlookCard(outlook: widget.outlook, onTap: _fortune) : HomeWellnessPanel(
-                              snapshot: widget.wellness!, compact: true, onEstimate: _fortune, onDrivers: widget.onDrivers, stateLine: widget.stateLine,
+                            card: widget.wellness == null ? _OutlookCard(outlook: widget.outlook, onTap: _fortune) : CollapsibleHealthScore(
+                              snapshot: widget.wellness!, onEstimate: _fortune, onDrivers: widget.onDrivers, stateLine: widget.stateLine,
+                              onAnswerMissing: widget.onAnswerMissing,
                             ),
                           ),
                           Opacity(
@@ -386,7 +391,7 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final big = MediaQuery.textScalerOf(context).scale(17) > 17 * 1.15;
     return LayoutBuilder(
-      builder: (context, box) => box.maxWidth >= 340 && !big && card is! HomeWellnessPanel
+      builder: (context, box) => box.maxWidth >= 340 && !big && card is! CollapsibleHealthScore
           ? Row(
               children: [
                 banner,

@@ -6,7 +6,8 @@ from lifetwin.app import create_app
 from lifetwin.core.config import Settings
 from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.models import HabitNote
-from lifetwin.recommendations.service import WHY_SHORT, suggest
+from lifetwin.recommendations.ideas import BY_ID, IDEAS
+from lifetwin.recommendations.service import suggest
 
 ALL_MISSING = [
     "smoking_status",
@@ -91,7 +92,7 @@ def test_sitting_target_never_negative():
 
 
 def test_why_short_templates_are_short_and_number_free():
-    for text in WHY_SHORT.values():
+    for text in (idea.why for idea in IDEAS):
         assert 0 < len(text) <= 90
         assert not any(ch.isdigit() for ch in text)
 
@@ -111,7 +112,8 @@ def test_why_short_on_every_produced_item():
 
 def test_activity_kind_only_uses_enjoy_template():
     recs = suggest(HealthProfile(), [HabitNote(topic="exercise", kind="walking")])
-    assert recs[0].why_short == WHY_SHORT["activity_enjoy"]
+    assert recs[0].lever == "moderate_plus_90" and "more" in BY_ID[recs[0].id].stages
+    assert recs[0].message.startswith("You said you enjoy walking.")
 
 
 def test_source_domain():
@@ -128,10 +130,18 @@ def test_under_age(client):
 
 
 def test_existing_fields_unchanged(client):
-    out = post(client, {"age": 70, "sex": "male", "smoking_status": "current"})
+    coping = [idea.id for idea in IDEAS if idea.coping]  # set aside: show the habit change
+    out = client.post(
+        "/api/recommendations",
+        json={
+            "profile": {"age": 70, "sex": "male", "smoking_status": "current"},
+            "excluded_ids": coping,
+        },
+    ).json()
     rec = out["recommendations"][0]
-    assert rec["id"] == rec["lever"] == "quit_smoking"
-    assert rec["title"] == "Support for quitting"
+    # The id is now the catalog idea's id; the lever and its card are unchanged.
+    assert rec["lever"] == "quit_smoking" and BY_ID[rec["id"]].lever == "quit_smoking"
+    assert rec["title"] == BY_ID[rec["id"]].title
     assert rec["effect"] == "big"
     assert rec["wellness_card"] == "smoking"
     assert rec["source_url"] == "https://www.cdc.gov/tobacco/about/"

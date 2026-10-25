@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../checkin/check_in.dart';
+import '../onboarding/missing_answers.dart';
 import '../twin/twin_repository.dart';
 import '../twin/twin_state.dart';
 import '../ui/theme.dart';
@@ -14,6 +15,7 @@ List<Widget> roomPills({
   required VoidCallback onExperiment,
   required VoidCallback onStillLearning,
   required VoidCallback onWellness,
+  VoidCallback? onAnswerMissing,
 }) {
   final repo = repository;
   if (repo == null) return const [];
@@ -21,14 +23,18 @@ List<Widget> roomPills({
     _Live(
       repo: repo,
       pill: (r) {
-        final n = r.current?.missingInputs.length ?? 0;
+        // The one path back to the missing answers ("Answer N more questions"); without it,
+        // the Still learning screen, which has the same action.
+        final n = missingQuestions(r.missingInputs, r.profile).length;
         return n == 0
             ? null
             : RoomPill(
                 icon: Icons.help_outline_rounded,
-                label: 'Still learning $n',
-                semantics: 'Still learning: $n answers to add',
-                onTap: onStillLearning,
+                label: onAnswerMissing == null ? 'Still learning $n' : answerMoreLabel(n),
+                semantics: onAnswerMissing == null
+                    ? 'Still learning: $n answers to add'
+                    : '${answerMoreLabel(n)}, with Mochi',
+                onTap: onAnswerMissing ?? onStillLearning,
               );
       },
     ),

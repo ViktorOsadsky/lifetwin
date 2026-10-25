@@ -156,7 +156,7 @@ void main() {
     test('is null whenever the model gives no number', () {
       final p = rosa();
       for (final a in [
-        model.assessModel({...p}..remove('bmi')), // missing input
+        model.assessModel({...p}..remove('bmi')..remove('sleep_hours')..remove('sedentary_min_day')), // 3 missing inputs (1-2 give a rough number)
         model.assessModel({...p, 'age': 86}), // unsupported age
         model.assessModel({...p, 'age': 17}), // under age
         model.assessModel({...p, 'bmi': 60, 'sedentary_min_day': 1200, 'sleep_hours': 2}), // unsupported
@@ -184,7 +184,13 @@ void main() {
       expect(repo.healthScoreHistory().last.score, repo.healthScore);
 
       final partial = TwinRepository(model: model, store: await TwinStore.open(MemoryBackend()));
-      await partial.saveConversationProfile(Map<String, dynamic>.from(fullProfile)..remove('sedentary_min_day'));
+      // 3 missing: no number (1-2 give a rough one).
+      await partial.saveConversationProfile(
+        Map<String, dynamic>.from(fullProfile)
+          ..remove('sedentary_min_day')
+          ..remove('sleep_hours')
+          ..remove('general_health'),
+      );
       expect(partial.healthScoreStatus, HealthScoreStatus.missingInputs);
       expect(partial.healthScore, isNull);
       expect(partial.healthGroupLabel, isNull);

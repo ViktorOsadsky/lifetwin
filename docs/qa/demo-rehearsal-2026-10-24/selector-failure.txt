@@ -1,0 +1,8 @@
+Source:1a648bd; final current-pin retry; one native UI test FAILED.
+DEMO133_BEAT intake 0.0009885833278531209 9.140705791665823 25.004269999990356
+DEMO133_BEAT reveal 25.004605833324604 52.69968983333092 55.005049833329394
+DEMO133_BEAT home 55.00512249999156 56.860732208326226 72.0050566666614
+DEMO133_BEAT daily-checkin 72.00514016665693 84.7993109166564 97.00518591665605
+/tmp/lifetwin-demo133-current-src/app/ios/Demo133UITests/Demo133UITests.swift:12: error: -[Demo133UITests.Demo133UITests testPrepareRealIntake] : XCTAssertTrue failed - Missing button Use in my what-if
+Test Case '-[Demo133UITests.Demo133UITests testPrepareRealIntake]' failed (158.200 seconds).
+** TEST EXECUTE FAILED **

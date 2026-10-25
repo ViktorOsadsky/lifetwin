@@ -660,12 +660,32 @@ def test_an_unrelated_reply_to_the_question_is_an_ordinary_turn():
     assert not result.state.care_question_open
 
 
-def test_the_rewording_hook_must_keep_the_safety_line():
-    keep = CheckinService(clock=lambda: TODAY, care_rewriter=lambda t, r: "Gentler. " + t)
-    drop = CheckinService(clock=lambda: TODAY, care_rewriter=lambda t, r: "No safety here.")
-    request = CheckinTurnRequest(action="reply", state=mood_state(), text="awful")
-    assert keep.turn(request).message.startswith("Gentler. ")
-    assert SAFETY in drop.turn(request).message
+class _Rewriter:
+    name = "claude"
+    configured = True
+    may_train_on_content = False
+
+    def __init__(self, reword):
+        self.reword = reword
+
+    async def phrase(self, instructions, facts):
+        return {"line": self.reword(facts["line"])}
+
+
+async def test_the_rewording_hook_must_keep_the_safety_line():
+    keep = CheckinService(
+        clock=lambda: TODAY, personalizer=_Rewriter(lambda t: "I'm here with you. " + t)
+    )
+    drop = CheckinService(clock=lambda: TODAY, personalizer=_Rewriter(lambda t: "No safety here."))
+    request = CheckinTurnRequest(
+        action="reply", state=mood_state(), text="awful", outside_ai_consent={"claude": True}
+    )
+    assert (await keep.aturn(request)).message.startswith("I'm here with you. ")
+    assert SAFETY in (await drop.aturn(request)).message
+    # Without consent for this provider, or on the sync path, the template stands.
+    muse_only = request.model_copy(update={"outside_ai_consent": {"muse": True}})
+    assert not (await keep.aturn(muse_only)).message.startswith("I'm here with you. ")
+    assert not keep.turn(request).message.startswith("I'm here with you. ")
 
 
 # --- The same care reply in the weekly check-in ---------------------------------------------

@@ -1,0 +1,21 @@
+{
+  "simulator": "AD68AA8D-3700-4E9C-B1E9-FE441057C67B",
+  "initial_state": "Shutdown",
+  "final_state": "Shutdown",
+  "initial_font": "large",
+  "restored_font": "large",
+  "initial_appearance": "light",
+  "restored_appearance": "light",
+  "voiceover_initial": false,
+  "voiceover_final": false,
+  "evidence": "native finally trace and successful simctl ui/uninstall/shutdown commands",
+  "removed_only": [
+    "com.danielqi.lifesim.a11y134",
+    "com.danielqi.lifesim.a11y134.A11y134UITests.xctrunner"
+  ],
+  "reduced_motion": "not changed",
+  "increase_contrast": "not changed",
+  "server8134": "stopped",
+  "screenshot_exporter": "stopped",
+  "physical_phone": "not used"
+}

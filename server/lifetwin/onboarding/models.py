@@ -107,6 +107,9 @@ class ConversationState(ApiModel):
         "offering",
         "probing",
         "confirming",
+        # "missing": the intake is through, some of the estimate's answers are missing, and
+        # Mochi asked once whether to answer them now ("Yes" asks only those; anything else ends).
+        "missing",
         "ready",
         "cancelled",
     ] = "idle"
@@ -145,6 +148,12 @@ class ConversationState(ApiModel):
     seed: int = Field(default=0, ge=0, le=2**31)
     # The last reply was small talk: one friendly turn, then back to the question.
     small_talk: bool = False
+    # "Answer N more questions": only these fields are asked; every other field counts as
+    # settled (never asked again). Set by the app with the saved profile in
+    # `confirmed_profile`, or by a "yes" in the missing phase. Null: the whole intake.
+    ask_only: list[ProfileField] | None = Field(default=None, max_length=FIELD_COUNT)
+    # The end-of-intake offer of the missing answers was made (it is made once, never again).
+    missing_offered: bool = False
 
     @model_validator(mode="after")
     def consistent_state(self):
@@ -163,9 +172,15 @@ class ConversationState(ApiModel):
                 raise ValueError("Skipped, unknown, estimated and probe lists must be unique")
         if self.phase == "asking" and self.current_field is None:
             raise ValueError("An asking state requires a current field")
-        if self.phase in {"ready", "cancelled", "idle", "remembering", "offering", "probing"} and (
-            self.current_field is not None
-        ):
+        if self.phase in {
+            "ready",
+            "cancelled",
+            "idle",
+            "remembering",
+            "offering",
+            "probing",
+            "missing",
+        } and (self.current_field is not None):
             raise ValueError("This phase cannot have a current field")
         if (self.phase == "probing") != (self.current_probe is not None):
             raise ValueError("Only the probing phase has a current probe")
@@ -273,7 +288,14 @@ Lever = Literal[
 ]
 
 
-class Recommendation(ApiModel):
+# The idea's gesture, for Mochi's pose on the card.
+IdeaKind = Literal[
+    "walk", "dance", "stand", "stretch", "sleep", "eat", "social", "breath", "craving"
+]
+
+
+class RecommendationIdea(ApiModel):
+    # The catalog idea's id (recommendations/ideas.py), e.g. "sit_ad_breaks".
     id: str = Field(min_length=1, max_length=60)
     # The model-sensitivity lever it follows, or "keep_it_up" for encouragement.
     lever: Lever
@@ -287,7 +309,8 @@ class Recommendation(ApiModel):
     source_title: str
     source_url: str
     # How much the model's difference for people like this person is, as a category only
-    # (never a number). Null for guideline-only items and ages outside 18-85.
+    # (never a number). Null for guideline-only items, coping tricks that are not the habit
+    # change itself (a craving tip, a wind-down routine) and ages outside 18-85.
     effect: Literal["big", "some", "small", "tiny"] | None = None
     effect_note: Literal["Modeled difference for people like you, not a promise."] = (
         "Modeled difference for people like you, not a promise."
@@ -300,7 +323,14 @@ class Recommendation(ApiModel):
     why_short: str = Field(default="", max_length=90)
     # Host of source_url, e.g. "cdc.gov".
     source_domain: str = ""
+    kind: IdeaKind
     causal_interpretation: Literal[False] = False
+
+
+class Recommendation(RecommendationIdea):
+    # Up to three other ideas for the same lever, already checked against the person's
+    # limitations and age, never the idea above. Alternatives have none of their own.
+    alternatives: list[RecommendationIdea] = Field(default_factory=list, max_length=3)
 
 
 class TurnResponse(ApiModel):

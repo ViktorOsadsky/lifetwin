@@ -1,0 +1,8 @@
+{
+  "lib_differences": [
+    "lib/main.dart"
+  ],
+  "assets_differences": [],
+  "pin": "1a648bd405df4c76b5c1dea3339194c31201913c",
+  "expected_lib_difference": "lib/main.dart: temporary font scaling/read-back only"
+}

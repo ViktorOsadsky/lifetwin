@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../experiment/experiment_page.dart';
+import '../onboarding/missing_answers.dart';
 import '../experiment/experiment_twins.dart';
 import '../experiment/widgets/widgets.dart';
 import '../onboarding/voice_onboarding_controller.dart' show listeningNudge;
@@ -80,6 +81,10 @@ class CheckInScreen extends StatefulWidget {
 
 class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserver {
   final _text = TextEditingController();
+  final _questionBubble = GlobalKey();
+  final _answerField = GlobalKey();
+  (String, String, String?)? _lastPrompt;
+  double _lastKeyboardInset = 0;
   TwinAssessment? _before;
   bool _nothing = false;
   bool _starting = true;
@@ -228,7 +233,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
       mode: LtMode.room,
       onBack: c.emergency ? c.continueAfterEmergency : widget.onDone,
       backLabel: c.emergency ? 'Continue' : 'Back',
-      dock: _dock(context),
+      dock: _keyboardDock(context),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -236,20 +241,11 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
             appearance: widget.appearance,
             twins: [TwinSlot(state: _twin(), x: 0.3)],
             overlay: _voiceUi ? _voiceOverlay() : null,
-            bubble: c.emergency
-                ? EmergencyCard.apology
-                : _nothing
-                ? 'All set for today!'
-                : bubbleFor(
-                    c.turn?.currentField,
-                    confirming: c.confirming,
-                    done: _finished,
-                    weekly: weekly,
-                    finalReadback: c.finalReadback,
-                  ),
           ),
           // The pill hangs 24 pt below the picture: room for it.
           SizedBox(height: _voiceUi ? 36 : 14),
+          _prompt(context),
+          const SizedBox(height: 14),
           Sheet(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: c.emergency
@@ -260,6 +256,40 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
       ),
     ),
   );
+
+  Widget _prompt(BuildContext context) {
+    final words = c.emergency
+        ? EmergencyCard.apology
+        : _nothing
+        ? 'All set for today!'
+        : bubbleFor(
+            c.turn?.currentField,
+            confirming: c.confirming,
+            done: _finished,
+            weekly: weekly,
+            finalReadback: c.finalReadback,
+          );
+    final prompt = (words, c.mascotLine, c.turn?.currentField);
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final reveal = keyboardInset > 0 && (keyboardInset != _lastKeyboardInset || prompt != _lastPrompt);
+    _lastKeyboardInset = keyboardInset;
+    _lastPrompt = prompt;
+    if (reveal) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _questionBubble.currentContext;
+        if (mounted && target != null) {
+          // Bottom alignment keeps the question above the answer dock. Do this only
+          // for a new question/keyboard geometry, never for an ordinary user scroll.
+          Scrollable.ensureVisible(target, alignment: 1);
+          final field = _answerField.currentContext;
+          if (field != null) Scrollable.ensureVisible(field, alignment: 1);
+        }
+      });
+    }
+    // Speech takes real space in the scroll view. A positioned bubble in the fixed
+    // plate can grow beyond its scroll extent and disappear behind the keyboard dock.
+    return Bubble(key: _questionBubble, text: words, tail: BubbleTail.none, fontSize: 19);
+  }
 
   Widget _title(String text) => Semantics(header: true, child: Text(text, style: LtText.display(28)));
 
@@ -368,6 +398,9 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
     );
   }
 
+  /// The questions the estimate still needs (missing_answers.dart).
+  int get _missing => missingQuestions(widget.repository.missingInputs, widget.repository.profile).length;
+
   Widget _done(BuildContext context) {
     final change = weekly ? OutlookChange.between(_before, widget.repository.current) : null;
     final confirmed = Map<String, dynamic>.from(c.turn?.state['confirmed'] as Map? ?? const {});
@@ -377,7 +410,14 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
         _title(weekly ? 'Outlook updated' : 'All done'),
         const SizedBox(height: 8),
         if (change != null)
-          OutlookChangeCard(change: change)
+          OutlookChangeCard(
+            change: change,
+            // "Still needed": the one path back to the missing answers.
+            answerLabel: _missing == 0 ? null : answerMoreLabel(_missing),
+            onTellMochi: _missing == 0 || CheckInScope.maybeOf(context)?.answerMissing == null
+                ? null
+                : () => CheckInScope.maybeOf(context)!.answerMissing!(context),
+          )
         else
           WholeWordText(
             widget.repository.twinState().mood == TwinMood.cheerful ? 'See you tomorrow!' : 'Thanks for telling me.',
@@ -407,6 +447,18 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
           ReminderOfferCard(onNotNow: c.declineReminders, onYes: c.acceptReminders),
         ],
       ],
+    );
+  }
+
+  Widget _keyboardDock(BuildContext context) {
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    if (keyboard == 0) return _dock(context);
+    final available = MediaQuery.sizeOf(context).height - keyboard - MediaQuery.paddingOf(context).vertical;
+    // Keep real space for the question when the keyboard reduces the page. The
+    // answer chips and input can scroll within their own region without hiding it.
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: available * 0.45),
+      child: SingleChildScrollView(child: _dock(context)),
     );
   }
 
@@ -518,6 +570,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
                 children: [
                   Expanded(
                     child: TextField(
+                      key: _answerField,
                       controller: _text,
                       autofocus: true,
                       textInputAction: TextInputAction.send,
@@ -645,7 +698,7 @@ class _Chip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[Icon(icon, size: 22, color: LtColors.ink), const SizedBox(width: 4)],
-            Text(label, style: LtText.display(19)),
+            Flexible(child: Text(label, style: LtText.display(19))),
           ],
         ),
       ),
@@ -731,40 +784,31 @@ class ReminderOfferCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-   padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-   decoration: BoxDecoration(
-     color: LtColors.paper,
-     borderRadius: BorderRadius.circular(18),
-     border: Border.all(color: LtColors.container, width: 1.5),
-   ),
-   child: Column(
-     crossAxisAlignment: CrossAxisAlignment.stretch,
-     children: [
-       WholeWordText(
-         'Would you like a gentle reminder each day?',
-         style: LtText.body(weight: FontWeight.w700),
-       ),
-       const SizedBox(height: 8),
-       Row(
-         children: [
-           Expanded(
-             child: LipButton(
-               label: 'Not now',
-               kind: LipKind.secondary,
-               height: 56,
-               fontSize: 19,
-               onTap: onNotNow,
-             ),
-           ),
-           const SizedBox(width: 10),
-           Expanded(
-             child: LipButton(label: 'Yes', height: 56, fontSize: 19, onTap: onYes),
-           ),
-         ],
-       ),
-     ],
-   ),
- );
+    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+    decoration: BoxDecoration(
+      color: LtColors.paper,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: LtColors.container, width: 1.5),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        WholeWordText('Would you like a gentle reminder each day?', style: LtText.body(weight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: LipButton(label: 'Not now', kind: LipKind.secondary, height: 56, fontSize: 19, onTap: onNotNow),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: LipButton(label: 'Yes', height: 56, fontSize: 19, onTap: onYes),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 }
 
 /// Mochi's encouragement after a check-in, and "Here's today's plan" (back to Home, then the plan).

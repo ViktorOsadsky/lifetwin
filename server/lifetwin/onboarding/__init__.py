@@ -5,7 +5,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request
 
 from lifetwin.onboarding.models import ConversationState, TurnRequest, TurnResponse
-from lifetwin.onboarding.providers import ChatCompletionsExtractor, OpenAIExtractor
+from lifetwin.onboarding.providers import (
+    AnthropicExtractor,
+    ChatCompletionsExtractor,
+    OpenAIExtractor,
+)
 from lifetwin.onboarding.service import ConversationService
 
 router = APIRouter(tags=["onboarding"])
@@ -25,6 +29,7 @@ async def conversation_turn(
 
 
 __all__ = [
+    "AnthropicExtractor",
     "ChatCompletionsExtractor",
     "ConversationService",
     "ConversationState",

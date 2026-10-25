@@ -1,0 +1,14 @@
+Test Case '-[A11y134UITests testVoiceOverCapabilityBase]' started.
+2026-10-24 22:52:13.902145-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-state initialEnabled=0
+2026-10-24 22:52:20.056771-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-service <XCUIVoiceOverService: enabled=YES>
+2026-10-24 22:52:20.064384-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-current LifeTwin A cozy room with a bed, a table, a yoga mat and a shelf
+2026-10-24 22:52:21.591481-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-forward-0 Your twin is walking. Change what Your twin does.
+2026-10-24 22:52:22.168572-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-forward-1 Twin name: My twin
+2026-10-24 22:52:22.691293-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-forward-2 Quiz. Play a round. Button
+2026-10-24 22:52:23.208268-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-forward-3 Add band Button
+2026-10-24 22:52:23.716518-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-forward-4 My history Button
+2026-10-24 22:52:24.232362-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-forward-5 Settings Button
+2026-10-24 22:52:25.003457-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-forward-6 Your twin is relaxing. Change what Your twin does.
+2026-10-24 22:52:25.531466-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-forward-7 What moves your score Button
+2026-10-24 22:52:32.134290-0700 A11y134UITests-Runner[90479:3119499] QA134 voiceover-restored finalEnabled=0
+Test Case '-[A11y134UITests testVoiceOverCapabilityBase]' passed (28.680 seconds).

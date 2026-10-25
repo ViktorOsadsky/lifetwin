@@ -1,0 +1,187 @@
+{
+  "issue": 134,
+  "status": "PARTIAL_FINDINGS_KEEP_OPEN",
+  "pin": "1a648bd405df4c76b5c1dea3339194c31201913c",
+  "device": "iPhone 18 Pro iOS 27.0",
+  "font_modes": {
+    "scale16": "app override1.6, systemLarge",
+    "native_max": "no override, accessibility-extra-extra-extra-large"
+  },
+  "definitions": {
+    "PASS": "Captured correct-route rendered content reviewed readable; not whole-app acceptance.",
+    "FAIL": "Reproduced visible/readout issue.",
+    "BLOCKED": "Incomplete capture or native diagnostic limitation; no product-failure inference."
+  },
+  "screens": [
+    {
+      "id": "onboarding-consent",
+      "screen": "Onboarding: voice/typed consent",
+      "layout_scale16": "PASS",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Voice/typed choice captured; not actual question/input."
+    },
+    {
+      "id": "onboarding-conversation",
+      "screen": "Onboarding: mascot conversation",
+      "layout_scale16": "BLOCKED",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Named conversation capture was AI consent, so excluded from actual question/input acceptance."
+    },
+    {
+      "id": "onboarding-readback",
+      "screen": "Onboarding: confirmation and imports",
+      "layout_scale16": "BLOCKED",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Real typed flow not completed."
+    },
+    {
+      "id": "onboarding-reveal",
+      "screen": "Onboarding: reveal",
+      "layout_scale16": "BLOCKED",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Actual reveal not reached."
+    },
+    {
+      "id": "home",
+      "screen": "Home",
+      "layout_scale16": "PASS",
+      "layout_native_max": "FAIL",
+      "actual_voiceover": "FAIL",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Current-pin actual VO8-step partial; activity announcements interleaved. Numeric score/info spoken order not reached. AXmax scale-label and Today-summary readability failures."
+    },
+    {
+      "id": "score-info",
+      "screen": "Score information sheet",
+      "layout_scale16": "PASS",
+      "layout_native_max": "PASS",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Current About the health score sheet. Full zero/group, confirmation and linked-not-proven caveats plus Got it accessible by scrolling. Actual VO traversal blocked."
+    },
+    {
+      "id": "daily-checkin",
+      "screen": "Daily check-in",
+      "layout_scale16": "FAIL",
+      "layout_native_max": "FAIL",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Question clipped behind dock while keyboard open; scrolling does not recover. Background tap did not dismiss keyboard, so dismissal recovery unverified."
+    },
+    {
+      "id": "experiment-hub",
+      "screen": "Experiment: hub",
+      "layout_scale16": "FAIL",
+      "layout_native_max": "FAIL",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Confirmed badge/mode label overlap at both sizes (#147). Initially cropped dock action is not proven unreachable."
+    },
+    {
+      "id": "experiment-lever",
+      "screen": "Experiment: lever",
+      "layout_scale16": "BLOCKED",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Native Sleep destination not established after bounded attempt; harness failure, not proven product navigation defect."
+    },
+    {
+      "id": "experiment-result",
+      "screen": "Experiment: result",
+      "layout_scale16": "BLOCKED",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "No current valid result capture."
+    },
+    {
+      "id": "ideas-list",
+      "screen": "Ideas: list",
+      "layout_scale16": "BLOCKED",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Earlier named list capture remained on hub."
+    },
+    {
+      "id": "ideas-detail",
+      "screen": "Ideas: detail",
+      "layout_scale16": "BLOCKED",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "No current valid detail capture."
+    },
+    {
+      "id": "ideas-effect",
+      "screen": "Ideas: effect sheet",
+      "layout_scale16": "BLOCKED",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "No current valid effect sheet."
+    },
+    {
+      "id": "band-panel",
+      "screen": "Band panel",
+      "layout_scale16": "BLOCKED",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Pairing introduction only; aggregate panel not reached."
+    },
+    {
+      "id": "settings",
+      "screen": "Settings",
+      "layout_scale16": "PASS",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "1.6 choices/My data captured. Maximum upper/mid rows readable but lower choices unvisited."
+    },
+    {
+      "id": "history",
+      "screen": "History: list",
+      "layout_scale16": "PASS",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "1.6 list reviewed readable; sheet not opened."
+    },
+    {
+      "id": "history-detail",
+      "screen": "History: day sheet",
+      "layout_scale16": "BLOCKED",
+      "layout_native_max": "BLOCKED",
+      "actual_voiceover": "BLOCKED",
+      "all_targets": "BLOCKED",
+      "exhaustive_contrast": "BLOCKED",
+      "notes": "Named detail capture remained list, excluded."
+    }
+  ]
+}
