@@ -195,7 +195,9 @@ def test_start_over_in_ask_only_keeps_the_other_answers(client):
 def test_ask_only_end_never_says_thank_you_twice(client, seed):
     """Bug hunt A: an answer's acknowledgement ("Thank you." is one of them) came before the finish line,
     which also opened with "Thank you.", so the end of the intake read "Thank you. Thank you. Your estimate..."."""
-    state = ask_only(without("hypertension_diagnosed", "diabetes"), ["hypertension_diagnosed", "diabetes"])
+    state = ask_only(
+        without("hypertension_diagnosed", "diabetes"), ["hypertension_diagnosed", "diabetes"]
+    )
     state["seed"] = seed
     result = turn(client, "start", state)
     for _ in range(10):
