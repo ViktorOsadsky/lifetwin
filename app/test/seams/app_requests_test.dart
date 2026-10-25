@@ -161,7 +161,7 @@ void main() {
     final d = Recorder()..reply = <String, dynamic>{'schema_version': '1.0', 'candidates': []};
     await HttpDocumentExtractor(client: d.client, base: ApiBase('https://t.test')).extract([
       'Blood pressure 128/78 mmHg on 2026-10-01',
-    ], outsideAi: false).then((_) {}, onError: (_) {});
+    ]).then((_) {}, onError: (_) {});
     out['documents_extract'] = d.last;
 
     final text = '${const JsonEncoder.withIndent(' ').convert(out)}\n';

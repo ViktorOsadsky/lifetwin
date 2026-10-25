@@ -86,13 +86,14 @@ class DocumentUploadService {
     if (!doc.readable) return const DocumentReading(DocumentReadStatus.unreadable);
     _text = doc.pages;
     _truncated = doc.truncated;
-    return _extract(outsideAi: false);
+    return _extract(const {});
   }
 
-  /// The person said yes to Muse by Meta: send the same text again with consent.
-  Future<DocumentReading> retryWithMuse() async {
+  /// The person said yes to the outside AI [provider] (its id from `/api/capabilities`):
+  /// send the same text again with consent for that provider only.
+  Future<DocumentReading> retryWithMuse(String provider) async {
     if (_text == null) return const DocumentReading(DocumentReadStatus.unreadable);
-    return _extract(outsideAi: true);
+    return _extract({provider: true});
   }
 
   /// Drops the recognised text.
@@ -102,13 +103,13 @@ class DocumentUploadService {
     _truncated = false;
   }
 
-  Future<DocumentReading> _extract({required bool outsideAi}) async {
+  Future<DocumentReading> _extract(Map<String, bool> outsideAiConsent) async {
     final generation = _generation;
     final text = _text!;
     final truncated = _truncated;
     final DocumentExtraction r;
     try {
-      r = await extractor.extract(text, outsideAi: outsideAi);
+      r = await extractor.extract(text, outsideAiConsent: outsideAiConsent);
     } on DocumentExtractRejected catch (e) {
       if (generation != _generation) return const DocumentReading(DocumentReadStatus.cancelled);
       discard();
@@ -120,7 +121,7 @@ class DocumentUploadService {
       return const DocumentReading(DocumentReadStatus.serverUnavailable);
     }
     if (generation != _generation) return const DocumentReading(DocumentReadStatus.cancelled);
-    final museCouldHelp = !outsideAi && r.providerStatus == 'consent_required';
+    final museCouldHelp = outsideAiConsent.isEmpty && r.providerStatus == 'consent_required';
     if (!museCouldHelp) discard();
     final status = r.notices.contains('multiple_patients')
         ? DocumentReadStatus.multiplePatients
