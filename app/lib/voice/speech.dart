@@ -11,6 +11,8 @@ import 'dart:async';
 /// Hands-free (the app's voice mode, VoiceOver off): quiet never closes the microphone.
 /// After [voiceNudgeAfter] of quiet Mochi nudges once, and the recognizer is restarted out of
 /// sight every [voiceSessionRestart] so the phone's session limit (about a minute) never shows.
+/// One answer is sent at the latest 30 s after its first word (time spent thinking before it
+/// does not count).
 const voiceQuietClose = Duration(seconds: 8);
 const voiceEndOfTurn = Duration(milliseconds: 2500);
 const voiceNudgeAfter = Duration(seconds: 20);
@@ -19,6 +21,11 @@ const voiceSessionRestart = Duration(seconds: 50);
 /// Hands-free: the first prompt's audio has this long to start. Otherwise its words stay on
 /// screen and the microphone opens, rather than leaving dead air.
 const voiceFirstAudioLimit = Duration(milliseconds: 1500);
+
+/// Hands-free: every later line's audio has this long to start (a token re-mint or a TTS
+/// socket that won't open can otherwise leave 4-8 s of dead air). Its words stay on screen
+/// and the microphone opens. Not for "Hear it again", which plays from memory.
+const voiceLaterAudioLimit = Duration(seconds: 3);
 
 /// Said (once per question) when the server marks a heard reply `off_topic`: the words were
 /// most likely someone else (a TV, another person). Nothing was recorded; Mochi listens again.

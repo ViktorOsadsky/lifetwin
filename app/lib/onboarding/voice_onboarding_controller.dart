@@ -114,6 +114,10 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// line that came while typing or out of sight is said fresh, never an older one replayed.
   GuideTurn? _saidTurn;
 
+  /// The turn whose line is the speaker's last audio (null: a notice or the nudge was said
+  /// since). Only then does "Hear it again" replay from memory.
+  GuideTurn? _audioTurn;
+
   /// "Change" was pressed: the next answer replaces the one being checked.
   /// The server needs the new answer along with the correction, so Change by
   /// itself sends nothing.
@@ -156,6 +160,10 @@ class VoiceOnboardingController extends ChangeNotifier {
   int _listenedSeconds = 0;
   int _silentSeconds = 0;
 
+  /// Hands-free: seconds since the first word of this listen. The [listenLimit] cap counts
+  /// from there, so time spent thinking never cuts an answer short.
+  int _talkSeconds = 0;
+
   /// Hands-free: the one nudge for this question was said.
   bool _nudged = false;
   bool _nudging = false;
@@ -194,6 +202,7 @@ class VoiceOnboardingController extends ChangeNotifier {
   bool _firstLine = true;
   Stopwatch? _openedAt;
   static const firstAudioLimit = voiceFirstAudioLimit;
+  static const laterAudioLimit = voiceLaterAudioLimit;
   static const nudgeAfter = voiceNudgeAfter;
   static const sessionRestart = voiceSessionRestart;
 
@@ -314,6 +323,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _drops = 0;
       _startFailures = 0;
       _saidTurn = null;
+      _audioTurn = null;
       _sending = null;
       savedNumber = null;
       _turnToken++;
@@ -550,6 +560,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (phase != VoicePhase.listening && _starting == null) return;
     if (caption.trim().isNotEmpty) return stopTalk();
     await cancelTalk();
+    if (!_micOff) _listenAgain(); // turned on again while the mic was still opening
   }
 
   /// "Turn on mic": hands-free listens again by itself.
@@ -682,10 +693,12 @@ class VoiceOnboardingController extends ChangeNotifier {
     _listenClock?.cancel();
     _listenedSeconds = 0;
     _silentSeconds = 0;
+    _talkSeconds = 0;
     _listenClock = Timer.periodic(const Duration(seconds: 1), (_) {
       if (phase != VoicePhase.listening) return _stopListenClock();
       _listenedSeconds++;
       _silentSeconds++;
+      if (caption.trim().isNotEmpty) _talkSeconds++;
       if (_listenedSeconds >= _healthyListen) _drops = 0;
       if (continuous && caption.trim().isEmpty) {
         // Quiet never closes a hands-free microphone: one nudge, then the recognizer restarts
@@ -701,7 +714,7 @@ class VoiceOnboardingController extends ChangeNotifier {
         return;
       }
       if (continuous) {
-        if (_listenedSeconds >= listenLimit.inSeconds) {
+        if (_talkSeconds >= listenLimit.inSeconds) {
           _stopListenClock();
           _hf('mic_close', 'listen_limit');
           unawaited(stopTalk());
@@ -1030,7 +1043,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (!_currentConversation(gen)) return;
     final line = mascotLine;
     // The speaker's last audio is replayed only when it is this very question.
-    if (await _speak(line, replay: output.canReplay && identical(_saidTurn, turn))) _listenAgain();
+    if (await _speak(line, replay: output.canReplay && identical(_audioTurn, turn))) _listenAgain();
   }
 
   // ---- server turn -----------------------------------------------------------
@@ -1253,7 +1266,7 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// Says an important notice out loud for someone using voice. A screen
   /// reader announces it already.
   Future<void> _speakNotice(String text) async {
-    if (!voiceUsable || screenReader) return;
+    if (!voiceUsable || screenReader || _paused) return; // never out loud from out of sight
     await _speak(text, mascotLine: false);
   }
 
@@ -1264,11 +1277,15 @@ class VoiceOnboardingController extends ChangeNotifier {
     // The speaker's last audio becomes this line: a replay is right only once it was said
     // to the end, and only for this turn.
     final saying = mascotLine ? turn : null;
-    _saidTurn = null;
+    // A notice or the nudge leaves the question it follows "said" (it is not read again on
+    // coming back), but it is the speaker's last audio now.
+    if (mascotLine) _saidTurn = null;
+    _audioTurn = null;
     _hf('tts_start', '${mascotLine ? 'line' : 'notice'}${first ? ' first' : ''}${replay ? ' replay' : ''}');
     _set(() => phase = VoicePhase.speaking);
-    // The first line: if no audio has started within [firstAudioLimit], its words are on
-    // screen, so speech stops and the microphone opens instead of leaving dead air.
+    // Hands-free: if no audio has started within [firstAudioLimit] (the first line) or
+    // [laterAudioLimit], its words are on screen, so speech stops and the microphone opens
+    // instead of leaving dead air.
     final late = Completer<void>();
     var heard = false;
     Timer? wait;
@@ -1281,10 +1298,15 @@ class VoiceOnboardingController extends ChangeNotifier {
       _hf('first_audio', at == null ? '' : 'opened+${at.elapsedMilliseconds}ms');
     }
 
-    if (first && continuous) {
-      wait = Timer(firstAudioLimit, () {
+    // Every later line too (not a replay, which plays from memory and reports no audio start).
+    if (continuous && !replay) {
+      final limit = first ? firstAudioLimit : laterAudioLimit;
+      wait = Timer(limit, () {
         if (heard || gen != _speechGen || _disposed) return;
-        _hf('error', 'no audio ${firstAudioLimit.inMilliseconds} ms after the first line came; listening instead');
+        _hf(
+          'error',
+          'no audio ${limit.inMilliseconds} ms after the ${first ? 'first ' : ''}line came; listening instead',
+        );
         _openedAt = null;
         late.complete();
       });
@@ -1295,15 +1317,15 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (late.isCompleted) {
         if (gen != _speechGen || _disposed) return false;
         await _stopOutput();
-        _hf('tts_end', 'gave_up_first');
-        if (gen == _speechGen) _saidTurn = saying; // on screen, and not said again
+        _hf('tts_end', first ? 'gave_up_first' : 'gave_up');
+        if (gen == _speechGen && mascotLine) _saidTurn = saying; // on screen, and not said again
         if (gen == _speechGen && phase == VoicePhase.speaking) {
           _set(() => phase = turn?.complete == true ? VoicePhase.done : VoicePhase.idle);
         }
         return gen == _speechGen;
       }
       _hf('tts_end', gen == _speechGen ? 'done' : 'stopped');
-      if (gen == _speechGen) _saidTurn = saying;
+      if (gen == _speechGen && mascotLine) _saidTurn = _audioTurn = saying;
     } on VoiceUnavailableException {
       _hf('tts_end', 'error voice_unavailable');
       // A notice that could not be said aloud is still on screen; replacing it (say, "can't
