@@ -1,0 +1,2 @@
+initialSpeech=LifeTwin A cozy room with a bed, a table, a yoga mat and a shelf error=(null)
+BLOCKED traversal: Error Domain=com.apple.xctest.voiceoverservice Code=3 "No speech available" UserInfo={NSLocalizedDescription=No speech available}
