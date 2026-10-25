@@ -101,11 +101,6 @@ def test_a_walk_with_a_duration_counts_as_light_activity_not_hard_exercise(clien
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: 'I'm 72 and sleep six hours and I don't smoke' drops age and sleep too "
-    "(the ambiguous smoking clause voids the whole reply)",
-)
 def test_an_unclear_clause_does_not_throw_away_the_clear_ones(client):
     out = first_reply(client, "I'm 72 and sleep six hours and I don't smoke")
     pending = filled(out["state"]["pending_profile"])
@@ -253,11 +248,6 @@ def test_plain_sex_at_birth_is_read_back_before_it_counts(client, text, sex):
         "I identify as a woman",
         "my gender is male",
     ],
-)
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: a statement of gender identity is read as sex at birth "
-    "('I'm a trans woman' -> female at birth)",
 )
 def test_gender_identity_is_not_sex_at_birth(text):
     assert parse_reply(text, "sex", today=date(2026, 10, 24)) == {}

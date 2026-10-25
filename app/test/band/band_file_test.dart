@@ -144,6 +144,7 @@ void main() {
         data['minutes']['positions_not_saved'] = 120;
         data['coverage']['wear_minutes'] += 120;
         data['coverage']['minutes_recorded'] += 120;
+        data['coverage']['last_minute'] = '21:59';
         days.add(BandDay.fromReport(parseBandFile(bytes(data)).single));
       }
       final week = BandWeek(days);

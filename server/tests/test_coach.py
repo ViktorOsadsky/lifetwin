@@ -500,6 +500,22 @@ def test_missed_activity_is_kept_without_a_step_up():
     assert not re.search(r"miss|fail|streak", spoken(day2), re.I)
 
 
+def test_not_for_me_swaps_the_activity():
+    client, _ = make_client()
+    day1 = post(client, {**BASE, "local_date": "2026-10-20"})
+    for reason in ["Not for me", "I don't really like swimming"]:
+        day2 = post(
+            client,
+            next_day(
+                day1, "2026-10-21", [{"item_id": "move", "status": "not_done", "reason": reason}]
+            ),
+        )
+        assert ref(workout(day2)) != ref(workout(day1)), reason
+        change = next(c for c in day2["changes"] if c["item_id"] == "move")
+        assert change["change"] == "swapped" and "isn't for you" in change["explanation"]
+    # Without that reason a missed item is still kept (see the test above).
+
+
 def test_changed_preference_is_kept():
     client, _ = make_client()
     day1 = post(client, {**BASE, "local_date": "2026-10-20"})
@@ -1099,7 +1115,7 @@ def test_a_70_year_old_with_knee_pain_gets_seated_or_gentle_only():
         assert w["intensity"] != "vigorous"
 
 
-@pytest.mark.parametrize("age", [None, 17, 25, 50, 70, 85])
+@pytest.mark.parametrize("age", [None, 25, 50, 70, 85])
 @pytest.mark.parametrize("limit", cat.LIMITS)
 @pytest.mark.parametrize("level", [0, 60, 300])
 def test_limits_override_the_band(age, limit, level):

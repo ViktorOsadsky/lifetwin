@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'band_data.dart';
 import 'band_file.dart';
+import 'band_sitting.dart';
 
 /// Bluetooth as the app can see it.
 enum BluetoothState { on, off, notAllowed }
@@ -89,6 +90,9 @@ List<BandMinute> recordedDemoMinutes(DateTime today) {
             at: day.add(Duration(hours: 8 + h, minutes: m)),
             steps: moving ? 90 : 4,
             moderate: moving && m < 6,
+            // Authored synthetic waking-day labels, not a sensor classifier.
+            posture: moving ? BandPosture.moving : BandPosture.sitting,
+            wakeState: BandWakeState.awake,
           ),
         );
       }
@@ -183,6 +187,12 @@ class BandStore extends ChangeNotifier {
         'Keep recorded demo data separate from measured imports.',
       );
     }
+    final today = _day(_now());
+    if (reports.any((r) => r.day.compareTo(today) > 0)) {
+      throw const BandFileFailure(
+        'A band report is dated after today. Check the date on the band.',
+      );
+    }
     for (final report in reports) {
       if (incoming.containsKey(report.day)) {
         throw const BandFileFailure('The delivery repeats a date.');
@@ -226,6 +236,19 @@ class BandStore extends ChangeNotifier {
   static String _day(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   BandDay get today => week().days.last;
+
+  /// Explicit waking-day coverage must come from acquisition/confirmed wake
+  /// context. Daily v0 files have no such minute labels, so yield no suggestion.
+  /// The built-in demo authors a complete synthetic 8 AM–8 PM waking window.
+  BandSittingRecording sittingDay({bool completeWakingDay = false}) {
+    final day = today;
+    return BandSittingRecording.fromMinutes(
+      date: day.date,
+      minutes: day.minutes,
+      completeWakingDay: demoOnly || completeWakingDay,
+      demo: demo,
+    );
+  }
 
   Future<bool> pair(BandDevice d) async {
     if (!await client.pair(d)) return false;
