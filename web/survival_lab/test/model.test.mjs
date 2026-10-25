@@ -57,10 +57,29 @@ test('both age-stepping methods match the Dart reference and mark extrapolation'
   assert.equal(supported.annual.medianCrossingAge, null);
 });
 
-test('missing and unsupported profiles produce no invented outputs', () => {
+test('realistic zero-shot profiles calculate with visible distribution warnings', () => {
+  const profile = neuralVectors[1].profile;
+  const young = lab.assess({...profile, age: 18, bmi: 60, sleep_hours: 11});
+  assert.equal(young.status, 'available');
+  assert.ok(young.warnings.some((warning) => warning.includes('Age 18')));
+  assert.ok(young.warnings.some((warning) => warning.includes('bmi')));
+  assert.ok(young.warnings.some((warning) => warning.includes('sleep hours')));
+  assert.ok(Number.isFinite(young.neural.relativeHazardVsReference));
+  assert.ok(young.current.survivalProbabilities.every((value) => value >= 0 && value <= 1));
+  assert.equal(young.annual.points[0].extrapolated, true);
+  assert.equal(young.annual.points.find((point) => point.age === 35).extrapolated, true);
+  assert.equal(young.annual.points.find((point) => point.age === 36).extrapolated, false);
+  assert.equal(lab.assess({...profile, age: 85}).status, 'available');
+  assert.equal(lab.assess({...profile, bmi: 60}).status, 'available');
+  assert.equal(lab.assess({...profile, sleep_hours: 13}).status, 'available');
+});
+
+test('impossible or missing values still fail clearly', () => {
   const profile = neuralVectors[1].profile;
   assert.equal(lab.assess({...profile, general_health: null}).status, 'missing_inputs');
-  assert.equal(lab.assess({...profile, age: 85}).status, 'unsupported_age');
-  assert.equal(lab.assess({...profile, bmi: 60}).status, 'unsupported_profile');
-  assert.throws(() => lab.assess({...profile, sleep_hours: 30}), /sleep_hours/);
+  assert.throws(() => lab.assess({...profile, age: 17}), /Age/);
+  assert.throws(() => lab.assess({...profile, bmi: 0}), /BMI/);
+  assert.throws(() => lab.assess({...profile, bmi: 1e308}), /unstable/);
+  assert.throws(() => lab.assess({...profile, sleep_hours: 30}), /Sleep/);
+  assert.throws(() => lab.assess({...profile, sleep_hours: 20, sedentary_min_day: 400}), /exceed available time/);
 });

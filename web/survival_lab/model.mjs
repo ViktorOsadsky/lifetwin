@@ -36,24 +36,27 @@ export function createLab({cox, neural, referenceBytes}) {
         throw new Error(`${key} must be a finite number`);
       }
     }
-    for (const [key, [lo, hi]] of Object.entries(cox.numeric_bounds)) {
-      // Age beyond 79 has its own supported-range message below.
-      if (key !== 'age' && (profile[key] < lo || profile[key] > hi)) {
-        throw new Error(`${key} must be between ${lo} and ${hi}`);
-      }
-    }
     for (const [key, allowed] of Object.entries(cox.categorical_allowed)) {
       if (!allowed.includes(profile[key])) throw new Error(`${key} has an unsupported category`);
     }
-    const activity = profile.vigorous_recreation_min_week + profile.moderate_recreation_min_week;
-    if (profile.sleep_hours * 60 + profile.sedentary_min_day > 1440 ||
-        activity > 10080 ||
-        profile.sleep_hours * 60 + profile.sedentary_min_day + activity / 7 > 1440) {
-      throw new Error('Sleep, sitting and recreation exceed available time');
+    if (!Number.isInteger(profile.age) || profile.age < 18 || profile.age >= 110) {
+      throw new Error('Age must be a whole number from 18 to 109');
     }
-    if (!Number.isInteger(profile.age)) throw new Error('Age must be in completed years');
-    if (profile.age < cox.age_range[0] || profile.age > cox.age_range[1]) {
-      return {status: 'unsupported_age', message: 'Current estimates support ages 35–79.'};
+    if (profile.bmi <= 0) throw new Error('BMI must be positive');
+    if (profile.sleep_hours < 0 || profile.sleep_hours > 24) {
+      throw new Error('Sleep must be between 0 and 24 hours per day');
+    }
+    if (profile.sedentary_min_day < 0 || profile.sedentary_min_day > 1440) {
+      throw new Error('Sitting must be between 0 and 1440 minutes per day');
+    }
+    for (const key of ['moderate_recreation_min_week', 'vigorous_recreation_min_week']) {
+      if (profile[key] < 0 || profile[key] > 10080) {
+        throw new Error(`${key} must be between 0 and 10080 minutes per week`);
+      }
+    }
+    const activity = profile.vigorous_recreation_min_week + profile.moderate_recreation_min_week;
+    if (profile.sleep_hours * 60 + profile.sedentary_min_day + activity / 7 > 1440) {
+      throw new Error('Sleep, sitting and recreation exceed available time');
     }
     return {status: 'valid'};
   }
@@ -89,8 +92,9 @@ export function createLab({cox, neural, referenceBytes}) {
   function supportIssues(profile, encoded) {
     const issues = [];
     for (const [key, [lo, hi]] of Object.entries(cox.numeric_support_1_99pct)) {
+      if (key === 'age') continue;
       if (profile[key] < lo || profile[key] > hi) {
-        issues.push(`${key} is outside the training 1st–99th percentile range`);
+        issues.push(`${key.replaceAll('_', ' ')} is outside the middle 98% of training values`);
       }
     }
     const distances = new Float64Array(referenceRows);
@@ -104,7 +108,7 @@ export function createLab({cox, neural, referenceBytes}) {
     }
     distances.sort();
     if (distances[cox.neighbor_count - 1] > cox.neighbor_distance_cutoff) {
-      issues.push('The input combination has few nearby training profiles');
+      issues.push('This combination has few nearby training profiles');
     }
     return issues;
   }
@@ -118,12 +122,14 @@ export function createLab({cox, neural, referenceBytes}) {
     const validity = validate(profile);
     if (validity.status !== 'valid') return validity;
     const {encoded, score} = coxScore(profile);
-    const issues = supportIssues(profile, encoded);
-    if (issues.length) {
-      return {status: 'unsupported_profile', message: 'No supported current estimate for this input combination.', issues};
+    if (!Number.isFinite(score)) throw new Error('Inputs produce an unstable Cox calculation');
+    const warnings = supportIssues(profile, encoded);
+    if (profile.age < cox.age_range[0] || profile.age > cox.age_range[1]) {
+      warnings.unshift(`Age ${profile.age} is outside the model's trained ages ${cox.age_range.join('–')}`);
     }
     return {
       status: 'available', modelVersion: cox.model_version, logRelativeHazard: score,
+      warnings,
       survivalProbabilities: cox.horizons_years.map((years) => survivalAt(profile, years)),
     };
   }
@@ -151,10 +157,14 @@ export function createLab({cox, neural, referenceBytes}) {
       activations = next;
     });
     const logRelativeHazard = activations[0];
+    const relativeHazardVsReference = Math.exp(logRelativeHazard - neural.reference_log_hazard);
+    if (!Number.isFinite(logRelativeHazard) || !Number.isFinite(relativeHazardVsReference)) {
+      throw new Error('Inputs produce an unstable neural calculation');
+    }
     return {
       modelVersion: neural.model_version,
       logRelativeHazard,
-      relativeHazardVsReference: Math.exp(logRelativeHazard - neural.reference_log_hazard),
+      relativeHazardVsReference,
       referenceProfile: neural.reference_profile,
     };
   }
@@ -163,20 +173,22 @@ export function createLab({cox, neural, referenceBytes}) {
     let cumulative = 1;
     let crossing = null;
     let crossingExtrapolated = false;
-    const points = [{age: profile.age, survivalPercent: 100, extrapolated: false}];
+    const points = [{age: profile.age, survivalPercent: 100,
+      extrapolated: profile.age < cox.age_range[0] || profile.age > cox.age_range[1]}];
     for (let blockAge = profile.age; blockAge < maximumAge; blockAge += step) {
-      if (blockAge > 79 && !includeExtrapolation) break;
+      if (blockAge > cox.age_range[1] && !includeExtrapolation) break;
       const future = {...profile, age: blockAge};
       const blockStart = cumulative;
+      const ageExtrapolated = blockAge < cox.age_range[0] || blockAge > cox.age_range[1];
       for (let years = 1; years <= Math.min(step, maximumAge - blockAge); years++) {
         const next = blockStart * survivalAt(future, years);
         const age = blockAge + years;
         if (crossing === null && cumulative > .5 && next <= .5) {
           crossing = age - 1 + (cumulative - .5) / (cumulative - next);
-          crossingExtrapolated = blockAge > 79;
+          crossingExtrapolated = ageExtrapolated;
         }
         cumulative = next;
-        points.push({age, survivalPercent: 100 * cumulative, extrapolated: blockAge > 79});
+        points.push({age, survivalPercent: 100 * cumulative, extrapolated: ageExtrapolated});
       }
     }
     return {step, points, medianCrossingAge: crossing, medianCrossingExtrapolated: crossingExtrapolated};
@@ -190,7 +202,7 @@ export function createLab({cox, neural, referenceBytes}) {
       if (current.status !== 'available') return {status: current.status, message: current.message, issues: current.issues ?? []};
       if (maximumAge <= profile.age || maximumAge > 110) throw new Error('Maximum age must be above current age and at most 110');
       return {
-        status: 'available', neural: predictNeural(profile), current,
+        status: 'available', neural: predictNeural(profile), current, warnings: current.warnings,
         annual: project(profile, 1, maximumAge, includeExtrapolation),
         fiveYear: project(profile, 5, maximumAge, includeExtrapolation),
       };

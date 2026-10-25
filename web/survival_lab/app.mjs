@@ -50,10 +50,12 @@ function renderChart(result) {
     svgElement('line', {x1: x(age), x2: x(age), y1: top, y2: bottom, class: 'grid'}, svg);
     svgElement('text', {x: x(age) - 11, y: bottom + 23, class: 'axis-label'}, svg, String(age));
   }
-  if (startAge < 80 && endAge > 79) {
-    svgElement('line', {x1: x(80), x2: x(80), y1: top, y2: bottom, class: 'limit'}, svg);
-    svgElement('text', {x: Math.min(x(80) + 6, right - 112), y: top + 15,
-      class: 'axis-label'}, svg, 'Age 80 input limit');
+  for (const [age, label] of [[35, 'Trained ages begin'], [80, 'Trained ages end']]) {
+    if (startAge < age && endAge >= age) {
+      svgElement('line', {x1: x(age), x2: x(age), y1: top, y2: bottom, class: 'limit'}, svg);
+      svgElement('text', {x: Math.min(x(age) + 6, right - 120), y: top + 15,
+        class: 'axis-label'}, svg, label);
+    }
   }
   svgElement('text', {x: (left + right) / 2 - 10, y: 403, class: 'axis-title'}, svg, 'AGE');
 
@@ -84,7 +86,7 @@ function renderTable(result) {
     const tr = document.createElement('tr');
     const a = yearly.get(age), b = blocks.get(age);
     for (const value of [age, display(a), display(b),
-      a?.extrapolated || b?.extrapolated ? 'extrapolated*' : 'trained-age input']) {
+      a?.extrapolated || b?.extrapolated ? 'age extrapolation*' : 'age input 35–79']) {
       const td = document.createElement('td');
       td.textContent = String(value);
       tr.append(td);
@@ -105,6 +107,18 @@ function showError(message) {
   $('error-box').hidden = false;
   $('result-content').hidden = true;
   $('run-status').textContent = 'Input needed';
+}
+
+function renderWarnings(warnings) {
+  const box = $('model-warnings');
+  const list = $('warning-list');
+  list.replaceChildren();
+  box.hidden = warnings.length === 0;
+  for (const warning of warnings) {
+    const item = document.createElement('li');
+    item.textContent = warning;
+    list.append(item);
+  }
 }
 
 function renderGap(result) {
@@ -135,7 +149,9 @@ function run() {
     currentResult = result;
     $('error-box').hidden = true;
     $('result-content').hidden = false;
-    $('run-status').textContent = 'Calculated locally';
+    $('run-status').textContent = result.warnings.length
+      ? 'Calculated locally · extrapolating' : 'Calculated locally';
+    renderWarnings(result.warnings);
     $('hazard-value').textContent = `${result.neural.relativeHazardVsReference.toFixed(2)}×`;
     $('cox-value').textContent = `${(100 * result.current.survivalProbabilities[4]).toFixed(2)}%`;
     crossing(result.annual, 'annual-value', 'annual-note');
