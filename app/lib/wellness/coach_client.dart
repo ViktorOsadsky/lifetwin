@@ -83,6 +83,21 @@ class DailyPlan {
   bool get reusedPrevious => json['reused_previous'] == true;
   bool get general => json['plan_type'] == 'general';
   String? get revision => json['revision_id'] as String?;
+  /// One line per real change to the day's activity, food or habit, in the coach's own words: kept items and
+  /// Mochi's fresh encouragement are not changes.
+  List<String> get changedLines {
+    final kinds = {for (final i in items) i['id']: i['kind']};
+    return [
+      for (final c in json['changes'] as List? ?? const [])
+        if (c is Map &&
+            c['explanation'] is String &&
+            c['change'] != 'kept' &&
+            kinds[c['item_id']] != 'encourage' &&
+            !_supplementText(c['explanation'] as String))
+          c['explanation'] as String,
+    ];
+  }
+
   List<String> get changes => [
     for (final c in json['changes'] as List? ?? const [])
       if (c is Map &&

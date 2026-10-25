@@ -591,7 +591,7 @@ void main() {
     ) async {
       final repo = await repoWith(older);
       await repo.applyMemoryConsent(true);
-      await repo.addHabitNote({'topic': 'walks', 'text': 'I walk the dog after dinner'});
+      await repo.addHabitNote({'topic': 'exercise', 'text': 'I walk the dog after dinner'});
       final ideas = await StubRecommendations(repo).load();
       expect(ideas, isNotEmpty);
       final activity = ideas.firstWhere((i) => i.wellnessCardId == 'activity');

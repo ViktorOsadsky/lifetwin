@@ -61,7 +61,7 @@ const rosaProfile = <String, dynamic>{
   'smoking_status': 'never',
   'diabetes': false,
   'hypertension_diagnosed': false,
-  'general_health': 3,
+  'general_health': 'good',
   'sedentary_min_day': 480,
   'moderate_recreation_min_week': 90,
   'vigorous_recreation_min_week': 0,
@@ -108,7 +108,7 @@ Future<void> seedDemo(
       await repo.saveOnboarding({
         'memory_consent': true,
         'habit_notes': [
-          {'topic': 'walks', 'text': 'walks the dog in the morning'},
+          {'topic': 'exercise', 'text': 'walks the dog in the morning'},
           {'topic': 'sitting', 'text': 'sits a lot watching TV in the evening'},
         ],
         'confirmed_profile': rosaProfile,

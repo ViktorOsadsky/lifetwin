@@ -389,7 +389,7 @@ class AgenticRoutes {
     }
     return TodayUpdate(
       encouragement: line,
-      changes: previous == null ? null : (plan.reusedPrevious ? const [] : plan.changes),
+      changes: previous == null ? null : (plan.reusedPrevious ? const [] : plan.changedLines),
     );
   }
 

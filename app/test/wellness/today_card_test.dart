@@ -203,4 +203,31 @@ void main() {
     expect(find.text('Mochi updated your plan'), findsNothing);
     expect(find.text('Here’s today’s plan'), findsOneWidget);
   });
+
+  test('a revision lists only real changes (the live coach also reports kept items and fresh encouragement)', () {
+    final plan = DailyPlan.fromJson({
+      'schema_version': '1.0',
+      'status': 'ok',
+      'revision_id': 'r2',
+      'local_date': '2026-10-24',
+      'based_on': 'r1',
+      'inputs': {'snapshot_id': 's1'},
+      'plan_type': 'personal',
+      'items': [
+        item('move', 'workout', 'Swimming', minutes: 20),
+        item('food', 'diet', 'Protein at each meal'),
+        item('cheer', 'encourage', 'A word from Mochi'),
+      ],
+      'changes': [
+        {
+          'item_id': 'move',
+          'change': 'swapped',
+          'explanation': 'You said a brisk walk hurt your knee, so today is swimming.',
+        },
+        {'item_id': 'food', 'change': 'kept', 'explanation': 'Kept protein, since nothing called for a change.'},
+        {'item_id': 'cheer', 'change': 'new', 'explanation': 'Fresh words from how your days went.'},
+      ],
+    });
+    expect(plan.changedLines, ['You said a brisk walk hurt your knee, so today is swimming.']);
+  });
 }
