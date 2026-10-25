@@ -166,6 +166,8 @@ class HomeWellnessPanel extends StatelessWidget {
                     ],
                   ),
                 ),
+                // A little air, so "91 of 100" never touches the chevron's ring.
+                const SizedBox(width: 6),
                 chevron,
               ],
             );
@@ -564,7 +566,8 @@ class _EstimateChip extends StatelessWidget {
           children: [
             Container(
               constraints: const BoxConstraints(minHeight: 48),
-              padding: const EdgeInsets.only(left: 12),
+              // The chevron carries its own space on the right; without it the label needs the same room.
+              padding: EdgeInsets.only(left: 12, right: onTap == null ? 12 : 4),
               decoration: BoxDecoration(
                 color: LtColors.paper,
                 borderRadius: BorderRadius.circular(LtRadii.chip),

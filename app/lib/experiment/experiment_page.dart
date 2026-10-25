@@ -74,6 +74,9 @@ class _ExperimentPageState extends State<ExperimentPage> {
     final d = reduced ? Duration.zero : const Duration(milliseconds: 200);
     final barOn = titled || _scrolled;
     final homeShown = HomeButton.shownFor(context);
+    // On a short phone (320 x 568) a pinned dock would leave almost no room for the page, so it
+    // scrolls at the end of the page instead.
+    final pinDock = MediaQuery.sizeOf(context).height >= 600;
     return ModeScaffold(
       mode: widget.mode,
       child: Column(
@@ -83,19 +86,28 @@ class _ExperimentPageState extends State<ExperimentPage> {
               children: [
                 SingleChildScrollView(
                   controller: _scroll,
-                  padding: EdgeInsets.fromLTRB(14, titled ? 90 : 76, 14, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (titled) ...[
-                        Semantics(header: true, child: Text(widget.title!, style: LtText.display(26))),
-                        if (widget.whatIfPill) ...[
-                          const SizedBox(height: 12),
-                          const Align(alignment: Alignment.centerLeft, child: ModePill.whatIf()),
-                        ],
-                        const SizedBox(height: 14),
-                      ],
-                      widget.body,
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(14, titled ? 90 : 76, 14, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (titled) ...[
+                              Semantics(header: true, child: Text(widget.title!, style: LtText.display(26))),
+                              if (widget.whatIfPill) ...[
+                                const SizedBox(height: 12),
+                                const Align(alignment: Alignment.centerLeft, child: ModePill.whatIf()),
+                              ],
+                              const SizedBox(height: 14),
+                            ],
+                            widget.body,
+                          ],
+                        ),
+                      ),
+                      // Not pinned: the same dock, full width, at the end of the page.
+                      if (!pinDock && widget.dock != null) widget.dock!,
                     ],
                   ),
                 ),
@@ -114,9 +126,7 @@ class _ExperimentPageState extends State<ExperimentPage> {
                           color: LtColors.paper,
                           border: Border(
                             bottom: BorderSide(
-                              color: titled && !_scrolled
-                                  ? Colors.transparent
-                                  : LtColors.container,
+                              color: titled && !_scrolled ? Colors.transparent : LtColors.container,
                               width: LtBorders.container,
                             ),
                           ),
@@ -141,11 +151,9 @@ class _ExperimentPageState extends State<ExperimentPage> {
               ],
             ),
           ),
-          if (widget.dock != null)
+          if (pinDock && widget.dock != null)
             ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.45,
-              ),
+              constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.45),
               child: SingleChildScrollView(child: widget.dock),
             ),
         ],
@@ -157,14 +165,7 @@ class _ExperimentPageState extends State<ExperimentPage> {
 /// One twin standing in a plate window: its state, where across the window it stands, and
 /// whether a lilac halo blooms behind it (the what-if twin).
 class TwinSlot {
-  const TwinSlot({
-    required this.state,
-    required this.x,
-    this.halo = false,
-    this.height = 196,
-    this.pose,
-    this.hop,
-  });
+  const TwinSlot({required this.state, required this.x, this.halo = false, this.height = 196, this.pose, this.hop});
   final TwinState state;
 
   /// Where the feet are across the window, 0 to 1.
@@ -215,23 +216,12 @@ class ExperimentPlate extends StatelessWidget {
           twinBuilder: (feet, scale, box) => Stack(
             children: [
               if (divider)
-                Positioned(
-                  left: box.width / 2 - 1,
-                  top: 36,
-                  bottom: 24,
-                  width: 2,
-                  child: const _DashedLine(),
-                ),
+                Positioned(left: box.width / 2 - 1, top: 36, bottom: 24, width: 2, child: const _DashedLine()),
               for (final t in twins)
                 () {
-                  final h = math.max(
-                    60.0,
-                    math.min(t.height, box.height * 0.84),
-                  );
+                  final h = math.max(60.0, math.min(t.height, box.height * 0.84));
                   final left = box.width * t.x - h / 2;
-                  final top =
-                      feet.dy -
-                      h * twinFeetAnchor(appearance.type, appearance.look);
+                  final top = feet.dy - h * twinFeetAnchor(appearance.type, appearance.look);
                   return Positioned(
                     left: left,
                     top: top,
@@ -249,25 +239,12 @@ class ExperimentPlate extends StatelessWidget {
                             child: const LottieBurst.whatIfAppear(),
                           ),
                         if (t.hop == null)
-                          TwinStateSprite(
-                            state: t.state,
-                            appearance: appearance,
-                            height: h,
-                            pose: t.pose,
-                          )
+                          TwinStateSprite(state: t.state, appearance: appearance, height: h, pose: t.pose)
                         else
                           AnimatedBuilder(
                             animation: t.hop!,
-                            builder: (_, child) => Transform.translate(
-                              offset: Offset(0, t.hop!.value),
-                              child: child,
-                            ),
-                            child: TwinStateSprite(
-                              state: t.state,
-                              appearance: appearance,
-                              height: h,
-                              pose: t.pose,
-                            ),
+                            builder: (_, child) => Transform.translate(offset: Offset(0, t.hop!.value), child: child),
+                            child: TwinStateSprite(state: t.state, appearance: appearance, height: h, pose: t.pose),
                           ),
                       ],
                     ),
@@ -278,24 +255,37 @@ class ExperimentPlate extends StatelessWidget {
         ),
         overlay: LayoutBuilder(
           builder: (context, box) => Stack(
-            clipBehavior:
-                Clip.none, // the voice pill hangs over the bottom edge
+            clipBehavior: Clip.none, // the voice pill hangs over the bottom edge
             children: [
               ?overlay,
               if (bubble != null)
-                Positioned(
-                  right: 6,
-                  top: 119,
-                  width: math.min(170, box.maxWidth * 0.5),
-                  child: Align(
-                    alignment: Alignment.topRight,
-                    child: Bubble(
-                      text: bubble!,
-                      tail: BubbleTail.left,
-                      fontSize: 19,
+                () {
+                  // Large text starts the bubble higher (unless a pill sits up there); what still does
+                  // not fit above the sheet's edge is scaled down whole, never hidden under the sheet.
+                  final top = overlay == null && MediaQuery.textScalerOf(context).scale(1) >= 1.5 ? 80.0 : 119.0;
+                  final width = math.min(170.0, box.maxWidth * 0.5);
+                  return Positioned(
+                    right: 6,
+                    top: top,
+                    width: width,
+                    height: math.max(0, box.maxHeight - top - 22),
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.topRight,
+                        // The text grows only a little with the person's size: the window has no room for more.
+                        child: MediaQuery.withClampedTextScaling(
+                          maxScaleFactor: 1.2,
+                          child: SizedBox(
+                            width: width,
+                            child: Bubble(text: bubble!, tail: BubbleTail.left, fontSize: 19),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                }(),
             ],
           ),
         ),
@@ -307,8 +297,7 @@ class ExperimentPlate extends StatelessWidget {
 class _DashedLine extends StatelessWidget {
   const _DashedLine();
   @override
-  Widget build(BuildContext context) =>
-      CustomPaint(painter: _DashedLinePainter());
+  Widget build(BuildContext context) => CustomPaint(painter: _DashedLinePainter());
 }
 
 class _DashedLinePainter extends CustomPainter {
@@ -318,11 +307,7 @@ class _DashedLinePainter extends CustomPainter {
       ..color = LtColors.container
       ..strokeWidth = 1.5;
     for (var y = 0.0; y < size.height; y += 10) {
-      canvas.drawLine(
-        Offset(size.width / 2, y),
-        Offset(size.width / 2, math.min(y + 5, size.height)),
-        p,
-      );
+      canvas.drawLine(Offset(size.width / 2, y), Offset(size.width / 2, math.min(y + 5, size.height)), p);
     }
   }
 

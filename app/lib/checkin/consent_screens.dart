@@ -438,7 +438,7 @@ class _SwitchRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: LtText.body(size: 18, weight: FontWeight.w700)),
+                    WholeWordText(title, style: LtText.body(size: 18, weight: FontWeight.w700)),
                     WholeWordText(sub, style: LtText.body(color: LtColors.secondary)),
                   ],
                 ),

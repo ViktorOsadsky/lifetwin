@@ -103,33 +103,41 @@ class _StillLearningScreenState extends State<StillLearningScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          almost ? ExperimentCopy.almostReady : ExperimentCopy.stillLearning,
-                          style: LtText.display(28),
-                        ),
+                () {
+                  final title = Semantics(
+                    header: true,
+                    child: WholeWordText(
+                      almost ? ExperimentCopy.almostReady : ExperimentCopy.stillLearning,
+                      style: LtText.display(28),
+                    ),
+                  );
+                  final chip = DashedBox(
+                    color: LtColors.control,
+                    radius: 16,
+                    fill: LtColors.paper,
+                    constraints: const BoxConstraints(minHeight: 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Center(
+                      widthFactor: 1,
+                      child: Text(
+                        almost ? ExperimentCopy.stillLearning : ExperimentCopy.toGo(n),
+                        style: LtText.body(weight: FontWeight.w700),
                       ),
                     ),
-                    DashedBox(
-                      color: LtColors.control,
-                      radius: 16,
-                      fill: LtColors.paper,
-                      constraints: const BoxConstraints(minHeight: 32),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Center(
-                        widthFactor: 1,
-                        child: Text(
-                          almost ? ExperimentCopy.stillLearning : ExperimentCopy.toGo(n),
-                          style: LtText.body(weight: FontWeight.w700),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                  // Large text: the chip goes under the title, so the title keeps whole words.
+                  return MediaQuery.textScalerOf(context).scale(1) >= 1.5
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [title, const SizedBox(height: 6), chip],
+                        )
+                      : Row(
+                          children: [
+                            Expanded(child: title),
+                            chip,
+                          ],
+                        );
+                }(),
                 const SizedBox(height: 6),
                 WholeWordText(
                   almost ? ExperimentCopy.firstINeed : ExperimentCopy.onceIKnow,

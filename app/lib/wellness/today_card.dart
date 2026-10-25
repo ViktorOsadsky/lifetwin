@@ -284,14 +284,18 @@ class _TodayWithMochiCardState extends State<TodayWithMochiCard> with WidgetsBin
                           ),
                         ],
                       )
-                    : Row(
-                        children: [
-                          Expanded(child: summary),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8, right: 6),
-                            child: trailing,
-                          ),
-                        ],
+                    // 48 pt to tap even when there is no check-in button beside the words.
+                    : ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Row(
+                          children: [
+                            Expanded(child: summary),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8, right: 6),
+                              child: trailing,
+                            ),
+                          ],
+                        ),
                       ),
               ),
               if (widget.ideas case final access?)
