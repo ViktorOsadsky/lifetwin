@@ -4,6 +4,7 @@ The provider identifies exact evidence spans, not trusted health values. The
 same conservative local parser validates those spans before user confirmation.
 Responses API reference: https://developers.openai.com/api/docs/guides/structured-outputs
 Chat Completions (Muse): https://dev.meta.ai/docs/structured-output
+Claude (Anthropic Messages API, structured outputs): lifetwin/core/claude.py
 """
 
 import json
@@ -11,6 +12,7 @@ from typing import Protocol
 
 import httpx
 
+from lifetwin.core.claude import DEFAULT_MODEL, ClaudeJSON, ClaudeUnavailable
 from lifetwin.onboarding.models import ExtractionResult, ProfileField
 from lifetwin.onboarding.parsing import QUESTIONS
 
@@ -150,6 +152,48 @@ class OpenAIExtractor:
         finally:
             if self._client is None:
                 await client.aclose()
+
+
+class AnthropicExtractor:
+    """Claude by Anthropic (official SDK, structured outputs). Selected by LLM_PROVIDER=anthropic.
+
+    Like the other adapters it only points at evidence: the reply is validated strictly
+    and grounded by the caller, never trusted. ``complete_json`` also serves documents.
+    """
+
+    provider = "claude"
+
+    def __init__(
+        self,
+        *,
+        api_key: str = "",
+        model: str = DEFAULT_MODEL,
+        timeout_seconds: float = 6,
+        client=None,
+    ):
+        self._claude = ClaudeJSON(
+            api_key=api_key, model=model, timeout_seconds=timeout_seconds, client=client
+        )
+
+    @property
+    def configured(self) -> bool:
+        return self._claude.configured
+
+    async def extract(self, text: str, field: ProfileField) -> ExtractionResult:
+        content = await self.complete_json(
+            _instructions(field), text, ExtractionResult.model_json_schema()
+        )
+        try:
+            return ExtractionResult.model_validate_json(content)
+        except ValueError as exc:
+            raise ExtractionUnavailable() from exc
+
+    async def complete_json(self, instructions: str, text: str, schema: dict) -> str:
+        """One structured reply as raw JSON text; the caller validates and grounds it."""
+        try:
+            return await self._claude.complete(instructions, text, schema)
+        except ClaudeUnavailable as exc:
+            raise ExtractionUnavailable() from exc
 
 
 class ChatCompletionsExtractor:

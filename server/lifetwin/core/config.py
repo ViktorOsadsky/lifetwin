@@ -3,7 +3,7 @@
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,8 +13,10 @@ class Settings(BaseSettings):
     app_env: Literal["development", "test", "production"] = "development"
     openai_api_key: SecretStr = SecretStr("")
     openai_model: str = ""
-    # Conversation-guide provider: "openai" keeps the OPENAI_* settings above.
-    llm_provider: Literal["openai", "chat_completions"] = "openai"
+    # Conversation-guide provider: "openai" keeps the OPENAI_* settings above, "chat_completions"
+    # is Muse (LLM_*), "anthropic" is Claude (ANTHROPIC_API_KEY, CLAUDE_MODEL). Unset (or
+    # blank): Claude when ANTHROPIC_API_KEY is present, else "openai".
+    llm_provider: Literal["openai", "chat_completions", "anthropic"] | None = None
     llm_base_url: str = ""
     llm_model: str = ""
     llm_api_key: SecretStr = SecretStr("")
@@ -26,14 +28,16 @@ class Settings(BaseSettings):
     coach_llm_daily_cap: int = Field(default=30, ge=0, le=10000)
     coach_llm_timeout_seconds: float = Field(default=10, gt=0, le=20)
     # Outside-AI wording for Mochi's lines and suggestions, used only with the person's
-    # consent for this provider. "muse" reuses the LLM_* key and model; "claude" is a
-    # placeholder until it is switched on.
-    personalize_provider: Literal["muse", "claude"] = "muse"
+    # consent for this provider. "muse" reuses the LLM_* key and model; "claude" uses
+    # ANTHROPIC_API_KEY and CLAUDE_MODEL. Unset (or blank): "claude" when ANTHROPIC_API_KEY
+    # is present, else "muse".
+    personalize_provider: Literal["muse", "claude"] | None = None
     # Short onboarding demo: at most one habit follow-up. Same questions, same order, the
     # memory question and the Apple Health offer after age, sex and smoking stay.
     onboarding_demo: bool = False
     anthropic_api_key: SecretStr = SecretStr("")
-    claude_model: str = ""
+    # The cheap, fast Claude model; blank keeps Claude unconfigured.
+    claude_model: str = "claude-haiku-5-5"
     tavily_api_key: SecretStr = SecretStr("")
     cartesia_api_key: SecretStr = SecretStr("")
     cartesia_version: str = "2026-08-14"
@@ -69,10 +73,21 @@ class Settings(BaseSettings):
     )
     cors_origins: str = ""
 
-    @field_validator("llm_provider", mode="before")
+    @field_validator("llm_provider", "personalize_provider", mode="before")
     @classmethod
-    def blank_provider_is_default(cls, value):
-        return "openai" if isinstance(value, str) and not value.strip() else value
+    def blank_provider_is_unset(cls, value):
+        return None if isinstance(value, str) and not value.strip() else value
+
+    @model_validator(mode="after")
+    def default_providers(self):
+        # Owner ruling (2026-10-24): Claude by default once an Anthropic key is configured;
+        # Muse (and the OpenAI extractor) stay selectable, and stay the default without it.
+        claude = bool(self.anthropic_api_key.get_secret_value().strip())
+        if self.llm_provider is None:
+            self.llm_provider = "anthropic" if claude else "openai"
+        if self.personalize_provider is None:
+            self.personalize_provider = "claude" if claude else "muse"
+        return self
 
     @field_validator("cors_origins")
     @classmethod
@@ -117,6 +132,10 @@ class Settings(BaseSettings):
 
     @property
     def llm_configured(self) -> bool:
+        if self.llm_provider == "anthropic":
+            return bool(
+                self.anthropic_api_key.get_secret_value().strip() and self.claude_model.strip()
+            )
         if self.llm_provider == "chat_completions":
             return bool(
                 (self.llm_allow_contributor or "contributor" not in self.llm_model.lower())

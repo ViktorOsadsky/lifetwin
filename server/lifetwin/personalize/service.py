@@ -30,6 +30,12 @@ QUESTION = RULES + (
     'optionally echoing "said". At most 30 words, ending with "?". '
     'Reply with JSON: {"line": "..."}.'
 )
+CARE = RULES + (
+    'The person said "said" when asked how they feel. Rewrite "line" as one short, gentle '
+    "reply in the same spirit: empathy and support, no advice, no questions, no fixing. "
+    "End with its last sentence copied word for word. At most 60 words, one paragraph. "
+    'Reply with JSON: {"line": "..."}.'
+)
 
 
 def consented(consent: dict[str, bool], personalizer: Personalizer | None) -> bool:
@@ -100,3 +106,20 @@ async def phrase_question(
     if not safe_line(text, json.dumps(facts, ensure_ascii=False), max_length=200):
         return None
     return text.strip() if text.strip().endswith("?") else None
+
+
+async def phrase_care(
+    personalizer: Personalizer, line: str, said: str, timeout: float = 6
+) -> str | None:
+    """A reworded check-in care reply, or None to keep Mochi's own. The caller still
+    requires the safety sentence."""
+    facts = {"line": line, "said": said}
+    try:
+        async with asyncio.timeout(timeout):
+            reply = await personalizer.phrase(CARE, facts)
+    except (PhrasingUnavailable, TimeoutError):
+        return None
+    text = reply.get("line") if isinstance(reply, dict) else None
+    if not safe_line(text, json.dumps(facts, ensure_ascii=False)):
+        return None
+    return text.strip()

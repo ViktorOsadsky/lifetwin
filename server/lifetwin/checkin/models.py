@@ -282,6 +282,9 @@ class CheckinTurnRequest(ApiModel):
     state: CheckinState
     text: str | None = Field(default=None, min_length=1, max_length=2000)
     input_mode: Literal["text", "transcript"] = "text"
+    # Per-provider opt-in to outside-AI wording of the care reply, e.g. {"claude": true}.
+    # Consent for one provider never covers another. Empty: Mochi's own words.
+    outside_ai_consent: dict[Literal["claude", "muse"], bool] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def action_payload(self):
