@@ -129,6 +129,14 @@ void main() {
     expect(opened(t), CheckInKind.quick);
   });
 
+  testWidgets('a reminder tapped while a check-in is open does not stack a second one', (t) async {
+    await pump(t);
+    await tap(t, reminderPayload(ReminderCheckin.daily));
+    await tap(t, reminderPayload(ReminderCheckin.weekly));
+    expect(find.byType(CheckInScreen, skipOffstage: false), findsOneWidget);
+    expect(opened(t), CheckInKind.quick);
+  });
+
   testWidgets('Remind me later and other notifications just open the app', (t) async {
     await pump(t);
     await tap(t, null);

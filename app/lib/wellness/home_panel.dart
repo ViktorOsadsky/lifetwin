@@ -276,6 +276,9 @@ class CollapsibleHealthScore extends StatefulWidget {
   final VoidCallback? onAnswerMissing;
 
   static const prefsKey = 'home_score_collapsed';
+
+  /// "Delete my data": the folded-away choice goes too, as on a fresh install.
+  static Future<void> forget() async => (await SharedPreferences.getInstance()).remove(prefsKey);
   static const duration = Duration(milliseconds: 200);
 
   @override

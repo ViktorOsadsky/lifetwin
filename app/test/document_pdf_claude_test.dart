@@ -291,6 +291,36 @@ void main() {
       expect(ocr.recognised.single, pdfBytes);
     });
 
+    testWidgets('leaving while the server is asked opens no picker and changes nothing', (t) async {
+      setPhone(t);
+      final ocr = FakeOcr();
+      final asked = Completer<PdfReaderInfo?>();
+      final slow = _SlowPdfReader(asked.future);
+      final service = DocumentUploadService(
+        ocr: ocr,
+        extractor: FakeText(),
+        pdfPicker: ocr,
+        pdfReader: slow,
+      );
+      final nav = GlobalKey<NavigatorState>();
+      await t.pumpWidget(MaterialApp(navigatorKey: nav, home: const Scaffold(body: Text('room'))));
+      nav.currentState!.push(
+        MaterialPageRoute<void>(builder: (_) => DocumentUploadScreen(service: service, onDone: (_) {})),
+      );
+      await t.pumpAndSettle();
+      await t.ensureVisible(find.text('Choose a PDF'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Choose a PDF'));
+      await t.pump();
+      expect(slow.asked, 1);
+      nav.currentState!.pop();
+      await t.pumpAndSettle();
+      asked.complete(null); // no provider: the old path would now open the phone's picker
+      await t.pumpAndSettle();
+      expect(ocr.scanned, isEmpty);
+      expect(t.takeException(), isNull);
+    });
+
     testWidgets('a training line shows only when the capabilities say the provider may train', (t) async {
       await open(
         t,
@@ -440,4 +470,16 @@ void main() {
       expect(find.text('Upload a health document?'), findsOneWidget);
     });
   });
+}
+
+class _SlowPdfReader extends FakePdfReader {
+  _SlowPdfReader(this._info) : super(null);
+  final Future<PdfReaderInfo?> _info;
+  int asked = 0;
+
+  @override
+  Future<PdfReaderInfo?> info() {
+    asked++;
+    return _info;
+  }
 }

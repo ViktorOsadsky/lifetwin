@@ -259,6 +259,13 @@ void main() {
       expect(jsonEncode(b), isNot(contains('"featured"')));
     });
 
+    test('more than 50 hidden in a day sends the latest 50 (the server takes at most 50)', () async {
+      final r = await repo();
+      final hidden = [for (var i = 0; i < 60; i++) 'idea-$i'];
+      final b = recommendationsRequestBody(r, excludedIds: hidden);
+      expect(b['excluded_ids'], hidden.sublist(10));
+    });
+
     test('the kind picks the pose, with a stand fallback', () {
       expect(ideaPose('walk'), TwinPose.walkSide);
       expect(ideaPose('social'), TwinPose.walkSide);

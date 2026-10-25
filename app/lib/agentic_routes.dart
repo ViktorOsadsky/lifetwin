@@ -14,6 +14,7 @@ import 'documents/health_documents_screen.dart';
 import 'wellness/coach_client.dart';
 import 'wellness/coach_context.dart';
 import 'wellness/daily_plan_screen.dart';
+import 'wellness/home_panel.dart' show CollapsibleHealthScore;
 import 'wellness/plan_acceptance.dart';
 import 'wellness/today_card.dart';
 import 'checkin/check_in.dart';
@@ -185,7 +186,7 @@ class AgenticRoutes {
     final r = repo, context = navigatorKey.currentContext;
     if (r == null || context == null || !context.mounted) return;
     final target = reminderTapTarget(payload, weeklyOpen: r.weeklyAvailable);
-    if (target == null || CheckInScope.maybeOf(context) == null) return;
+    if (target == null || CheckInScope.maybeOf(context) == null || checkInOpen) return;
     await openCheckIn(context, kind: target == ReminderCheckin.weekly ? CheckInKind.weekly : CheckInKind.quick);
   }
 
@@ -410,6 +411,7 @@ class AgenticRoutes {
     final r = repo;
     if (r != null) bandService = BandService(repository: r);
     planAcceptance.clear();
+    CollapsibleHealthScore.forget().ignore();
     _provider = null;
     _hub?.clear();
     onDeleted?.call();
