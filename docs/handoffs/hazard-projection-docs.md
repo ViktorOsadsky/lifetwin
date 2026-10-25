@@ -1,41 +1,43 @@
-# Cox score, hazard index and rough projection: documentation handoff
+# Current Cox score and proposed health-index/projection handoff
 
-Track / task: D trust and submission copy, [#108](https://github.com/ViktorOsadsky/lifetwin/issues/108). Docs only; existing owners are unchanged.
+Track / task: D trust and submission copy, [#108](https://github.com/ViktorOsadsky/lifetwin/issues/108), documentation draft [#115](https://github.com/ViktorOsadsky/lifetwin/pull/115). Docs only; existing owners are unchanged.
 
-## Current implementation and selected direction
+## Current main and held proposal
 
-Reviewed baseline: `0417b45`. The score and age-group percentile exist in the app. The hazard index and replacement lifespan projection described in #108 are the selected product direction, pending peer-engine integration. This handoff does not claim that planned code or final device acceptance exists.
+The current-main model behavior reviewed from `0417b45` is the negated Cox log-relative-hazard score, its survey percentile and the CDC life-table reveal. [PR #126](https://github.com/ViktorOsadsky/lifetwin/pull/126), reviewed at `02f57169976337db66e74aa9feaa740043d0e636`, is **open and explicitly held for owner confirmation**. Its latest “Projection with fixes” section supersedes the earlier unavailable-threshold description in its body. These docs do not promote that proposal to implemented or approved behavior.
 
-| Output | Meaning and direction | Status at the reviewed baseline |
+| Output | Current main | Proposal in held PR #126 |
 |---|---|---|
-| Health score | Cox `log_relative_hazard_score` with its sign flipped; higher is better. This is a model-derived score, not a 0–100 clinical scale. | Implemented by `healthScoreFromRaw`. |
-| “Healthier than X of 100 people your age” | Percentile against same-sex, similar-age people in the unweighted NHANES reference; higher is better. It is not a national-population ranking. | Implemented by `AgeGroupReference`; retain the survey qualification. |
-| Hazard index | A separate Cox comparison with a reference person of the same age and sex: 1.0 is typical for that reference, lower is better. It is a relative hazard, not a mortality probability, percentile or years remaining. | Pending app implementation; do not substitute the neural lab's fixed-profile ratio. |
-| Rough lifespan guide | Repeated one-year Cox steps with age advancing and all other profile inputs fixed, assuming nothing changes. It is an unvalidated projection, not life expectancy or a personal death date. Nothing past age 79 is validated. | The root projection lab contains this recurrence; app adoption is pending. |
-| Neural model | Shelved for the selected app experience. | The root research handoff still contains a frozen neural model; shelving does not mean its artifact was deleted. |
+| Health score | `−log_relative_hazard_score`, including age/sex terms; higher is better. | Cox health index `exp(median s of the band − s(profile))`, removing age/sex terms from both; 1.0 is the group median and higher is better. |
+| “Healthier than X of 100 people your age” | Same-sex, nearby-age percentile from unweighted NHANES reference rows. | Same reference rows and band as the index; retain the survey qualification, not a national ranking. |
+| Separate hazard index | No separate getter. | No separate lower-is-better `hazardIndex` getter; the proposed ratio is exposed as `healthScore`. |
+| Rough lifespan guide | CDC 2024 life-table wrapper throughout eligible ages 18–85. | Ages 35–79: yearly Cox projection; ages 18–34 and 80–85: retained CDC fallback with extrapolated status. Under 18, over 85, missing or unsupported inputs remain unavailable. |
+| Neural output | This bundled app snapshot uses Cox. | The shared lab loads/computes a neural result, but the app does not read it for the displayed score or reveal. This is not a claim that neural execution or artifacts were removed. |
 
-Implementation references: [app score and percentile](../../app/lib/twin/twin_model.dart), [current repository lifespan getter](../../app/lib/twin/twin_repository.dart), [current bundled package](../../app/packages/lifetwin_on_device/README.md), and [root projection lab](../../model_handoff/lifetwin_on_device/lib/src/projection.dart). The selected direction comes from [#108](https://github.com/ViktorOsadsky/lifetwin/issues/108).
+References: [current score](../../app/lib/twin/twin_model.dart), [current repository getter](../../app/lib/twin/twin_repository.dart), [proposed score/reference code](https://github.com/ViktorOsadsky/lifetwin/blob/02f57169976337db66e74aa9feaa740043d0e636/app/lib/twin/twin_model.dart), [proposed lifespan code](https://github.com/ViktorOsadsky/lifetwin/blob/02f57169976337db66e74aa9feaa740043d0e636/app/lib/twin/lifespan.dart), and [source Cox card](../../model_handoff/lifetwin_on_device/MODEL_CARD.md).
 
-## Projection boundary
+## Proposed index contract
 
-The yearly recurrence starts at survival 1. Each year it multiplies by the Cox model's one-year survival for the newly advanced age, keeping BMI, smoking, diagnoses, health rating, sleep, activity and sitting fixed. This is a sequence of hypothetical snapshot assessments, not a fitted longitudinal model. The root lab also offers a five-year-block experiment; #108 selects the **yearly** path for the rough guide.
+Here `s` is the Cox log relative hazard without `age_decade` and `female`, using the same-sex, nearby-age survey band already ranked by `ageGroupPercentile`. The proposal selects the lower median when a band has an even number of rows. The index is a positive ratio of modeled hazards, not a probability or a 0–100 clinical score. The proposed `healthGroupLabel` names the actual band; ages outside 35–79 use the nearest band's reference and retain the rough-guide warning. Raw Cox log hazard remains available internally.
 
-The root lab's `median_crossing_age` is the interpolated 50% crossing of that simulation, if reached. It is not a mean expected lifetime. Do not present it as a validated lifespan, guarantee a crossing when none exists, or infer causal years gained from a profile comparison. Any age/year and range shown by the app must come from the eventual engine contract; this docs change creates no conversion or range method.
+Proposed history points carry `engine: cox_index_v1`, `health_index` and the raw `score`. Default history/sparkline reads exclude untagged or other-engine points rather than mixing the old negative-log scale with the new ratio. No historical profile is invented to recompute an old index. [Proposed score and history API](https://github.com/ViktorOsadsky/lifetwin/pull/126/files).
 
-The measured Cox horizons remain years 1–5 for supported assessment ages 35–79. Repeating the one-year calculation does not extend that validation to a lifetime. The full recurrence is unvalidated, including its tail and every reassessment past 79. Preserve warnings for any out-of-range starting age, missing inputs or unsupported profile; never fill a missing number by hand. [Source model card](../../model_handoff/lifetwin_on_device/MODEL_CARD.md), [projection definition](../../model_handoff/lifetwin_on_device/README.md#projection-definitions).
+## Proposed projection, flags and fallback
 
-## Previous CDC wrapper
+For assessment ages 35–79, the proposed reveal uses `LifeTwinProjectionLab.assess(profile, includeExtrapolation: true)['annual']`: multiply one-year Cox survival at each advanced age while all other inputs stay fixed, **assuming nothing changes**. It is an unvalidated recurrence, not a fitted longitudinal model or mean life expectancy. The root lab also has a five-year-block experiment; this proposal selects the yearly path.
 
-The app at the reviewed baseline still calls `TwinRepository.lifespanEstimate`, implemented by the [CDC 2024 life-table wrapper](../../app/lib/twin/lifespan.dart). Its expected age, expected year, age-band factors and 25th–75th-percentile range belong to that earlier method. [Its method note](../lifespan-estimate.md) records historical calculation checks; those checks do not validate the new yearly projection.
+`expectedAge` would contain the interpolated 50% survival crossing; `p25Age` and `p75Age` the 75% and 25% crossings. If a threshold has not been reached by the simulation limit of 110, the API would return the sentinel age 110 and its corresponding `openEnded`, `p25OpenEnded` or `p75OpenEnded` flag. The proposed headline prints **110+** for a flagged threshold. That means the simulated threshold was not reached within the followed curve; it is neither an observed crossing nor a validated personal age. The latest proposal makes the seeded demo Rosa available; the earlier “Rosa is null” behavior is superseded.
 
-When the peer engine lands, the yearly Cox projection supersedes that wrapper for the selected product flow. Verify the implementation before changing “pending” to “implemented”; do not mix the CDC range or attenuation assumptions into the new recurrence. The older owner-override text in `AGENTS.md`, `MASTER_PLAN.md` and the CDC method note still needs coordinated reconciliation by its owners.
+For ages 18–34 and 80–85, the proposal would retain the [CDC life-table method](../lifespan-estimate.md), including its mean expected age and 25th–75th-percentile range, with `extrapolated`/rough-guide status. It would therefore mix a projection median inside 35–79 with a different method's mean outside. The source/PR acknowledges large discontinuities at 34→35 and 79→80, tracked as a strict known bug. These seams remain unresolved; do not imply continuity or a validated birthday-related change in outlook.
+
+The measured Cox scope remains supported assessment ages 35–79 and horizons 1–5. Those results do not validate either lifetime method, open-ended flags or the method switch. Nothing past 79 is validated in this rough guide. No exact death date, clinical prediction, guaranteed survival or causal years gained is supported. [Projection definition](../../model_handoff/lifetwin_on_device/README.md#projection-definitions), [latest held proposal](https://github.com/ViktorOsadsky/lifetwin/pull/126).
 
 ## Verification and next dependency
 
-Result: source-linked submission and package documentation for the current score and pending hazard/projection transition. No app code, model artifact, inference method, shared schema or model version changes.
+Result: factual current-main documentation plus conditional copy for the latest held proposal. No app code, inference method, model artifact, schema or model version changes. The CDC method is not globally superseded: it remains current main and the proposed out-of-range fallback.
 
-PR / merge state: local `codex/d-hazard-projection-docs` branch; no push, PR or merge performed by this task.
+PR / merge state: docs draft #115 remains conditional; engine #126 is open under an explicit owner hold. This task makes a local docs commit only, with no push, merge or posts. Owner confirmation and applicable checks remain dependencies; a strict known-bug test or arithmetic golden check does not establish clinical or long-range validation.
 
-Checks actually run: all local Markdown targets in the five changed documents resolve; `git diff --check` passes. Stage logs contain 105 / 94 / 113 / 115 words, including tool/timing/rating lines and link labels. The confirmed team section is unchanged, and the model card's Development and Data/interpretation paragraphs match the source card exactly. This docs task ran no inference or device checks.
+Checks actually run: all local Markdown targets in these five documents resolve; `git diff --check` passes. Stage logs contain **107 / 104 / 123 / 124 words**, including tool/timing/rating lines and link labels, with all minutes/ratings still `[fill in]`. The confirmed team section is unchanged, and the model card's Development and Data/interpretation paragraphs match the source card exactly. No engine, provider, UI or device tests were run by this documentation review.
 
-Next dependency: identify and inspect the peer-engine PR, verify the hazard reference and rough-guide API, reconcile this status and the app integration README, then run the applicable engine and UI checks before final demo/submission. Daniel retains final device/demo acceptance and stage timing/rating entry.
+Next dependency: root coordinates the #107/#108 contract differences, owner hold and failing-check/known-seam concerns. After any approved engine merge, inspect the actual merged implementation and reconcile these five docs and shared guides before claiming the proposed index or reveal is shipped. Daniel retains final device/demo acceptance and stage timing/rating entry.

@@ -4,7 +4,7 @@ This folder (`lib/twin/`) is the data and logic layer behind the forecast, "expe
 
 ## The model package
 
-`packages/lifetwin_on_device/` is a pinned Cox snapshot (model `personal-cox-v2-20261024T182404Z`), originally copied from `model_handoff/lifetwin_on_device/`. The root handoff has since added experimental projection/neural APIs; this vendored copy has not automatically adopted them. The app's `pubspec.yaml` depends on the vendored path. [#108](https://github.com/ViktorOsadsky/lifetwin/issues/108) selects Cox for the score, a same-age/sex hazard index and a rough yearly projection; the latter two remain pending in the reviewed `0417b45` app. [Transition handoff](../../docs/handoffs/hazard-projection-docs.md).
+`packages/lifetwin_on_device/` is a pinned Cox snapshot (model `personal-cox-v2-20261024T182404Z`), originally copied from `model_handoff/lifetwin_on_device/`. Main's score remains the negated Cox log hazard and its reveal remains the CDC wrapper. The root handoff has separate experimental APIs. [PR #126](https://github.com/ViktorOsadsky/lifetwin/pull/126), reviewed at `02f5716`, proposes a median-relative Cox health index and mixed projection/CDC reveal, but is **open and held for owner confirmation**. The conditional proposal below is not an implementation-status promotion. [Contract handoff](../../docs/handoffs/hazard-projection-docs.md).
 
 - **Why a copy:** it pins the model/API the app was tested with, so a new root export cannot silently change app results. The current root package removed the assessment/guidance API used here; adoption requires an explicit adapter integration and relevant checks, rather than a blind copy.
 - **Checks** (run in `packages/lifetwin_on_device/`): `flutter test` and `dart tool/check.dart`. Both pass on macOS. `flutter analyze` in `app/` excludes `packages/**` because the vendored code uses its own style.
@@ -37,7 +37,7 @@ What the UI sees for these ages:
 
 The age term is linear: the package encodes `age_decade = (age − 55) / 10` (checked in a test), so the move is exact for any age. Over 85 there is no number: `unsupported_age` with "Annual estimates support ages 18–85 only." Under 18 there is no number either: `under_age` with "LifeTwin estimates are for adults, ages 18 and over." (the app is 18+ for medical features). `Forecast`, `ExperimentResult` and the health score all go through `TwinModelService`, so they agree; the package's own `assess()`/`compare()` still say 35–79. The wellness cards don't change, because the package's guidance only changes at ages 18, 61 and 65, which neither anchor crosses.
 
-## Health score
+## Health score (current main)
 
 **Higher is better** (owner ruling, 2026-10-24: "higher should mean better health rating"). 0 is the average survey participant; the typical range is about −3 to +3.
 
@@ -65,19 +65,9 @@ Added beside the score; the score itself is unchanged, and the percentile alread
 
 History is kept in its own append-only list on the phone (`health_score` in the store; it is a separate list because a point holds a score and status, not field items). A point is recorded after a Mochi conversation save (onboarding or change), a check-in that feeds the forecast (day rows, a weekly summary or a profile change; a daily check-in with only a feeling does not), a day correction that changes a day row, and a confirmed import. A point with no number records its status. `deleteMyData()` clears it. Each point stores the **raw** value under the JSON key `score` (as before the sign change, so older history stays valid); `HealthScorePoint.score` negates it on read.
 
-## Hazard index (pending peer-engine integration)
+## Lifespan reveal (current main: CDC wrapper)
 
-The selected [#108](https://github.com/ViktorOsadsky/lifetwin/issues/108) index compares the person's Cox relative hazard with a reference person of their own age and sex. **1.0 is typical for that reference; lower is better.** It is separate from the sign-flipped health score and the “Healthier than X of 100 people your age” survey percentile; neither is a survival probability. The root neural lab's ratio against a fixed age-55 profile is a different reference and must not be substituted. Neural models are shelved for the app direction, although their research artifacts remain in the root handoff.
-
-No hazard-index API is present in the reviewed `0417b45` app. Confirm the peer implementation's reference calculation and returned fields before wiring UI or changing this status. [Current/pending handoff](../../docs/handoffs/hazard-projection-docs.md).
-
-## Lifespan: current CDC wrapper and pending yearly projection
-
-The selected replacement is a **rough-guide projection from repeated one-year Cox steps, assuming nothing changes**: advance age each year, hold all other inputs fixed, and multiply each new one-year survival. It is **not life expectancy**. Nothing past age 79 is validated, and the recurrence itself has not been validated as a longitudinal model even within the checked age range. The root lab's 50% crossing is a simulation threshold, not an expected lifetime or a personal death age. [Projection definition](../../model_handoff/lifetwin_on_device/README.md#projection-definitions), [transition handoff](../../docs/handoffs/hazard-projection-docs.md).
-
-App adoption is pending at `0417b45`: `TwinRepository.lifespanEstimate` still uses the CDC wrapper described below. Once the peer engine replaces it, this CDC method becomes historical for the product flow. Its expected year, 25th–75th-percentile range, age-band factors and attenuation are not definitions of the new yearly Cox projection. The eventual engine contract must supply any displayed age/year or range; this documentation does not create one.
-
-**Current CDC API (before the replacement lands).** Owner override (2026-10-24): a rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method and validation: [docs/lifespan-estimate.md](../../docs/lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band).
+Owner override (2026-10-24): a rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method and validation: [docs/lifespan-estimate.md](../../docs/lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band).
 
 | API | Meaning |
 |---|---|
@@ -87,6 +77,32 @@ App adoption is pending at `0417b45`: `TwinRepository.lifespanEstimate` still us
 | `LifespanEstimate.status` | `LifespanStatus.available` (35–79) or `extrapolated` (18–34, 80–85: nearest band's calibration) |
 | `LifespanEstimate.caveat` | "Proof of concept: a rough estimate …" text; always show it with the number |
 | `TwinRepository.lifespanRevealSeen` / `markLifespanRevealSeen()` | One-time flag: show the reveal once, then de-emphasise it. Persisted; `deleteMyData()` clears it |
+
+## Conditional proposal in held PR #126
+
+The following describes source at `02f57169976337db66e74aa9feaa740043d0e636`, **not merged behavior**. [PR #126](https://github.com/ViktorOsadsky/lifetwin/pull/126) explicitly requires owner confirmation. Its latest “Projection with fixes” section supersedes the earlier null-at-missing-crossings behavior in its body. Applicable checks and the known method seams remain review dependencies.
+
+### Proposed health index and history
+
+`healthScore = exp(median s of the band − s(profile))`, where `s` is the Cox log relative hazard with the `age_decade` and `female` terms removed. The band is the same-sex, nearby-age survey group already used by `ageGroupPercentile` (the same widening/nearest-band rules above). The proposal uses the lower median for an even-sized group. **1.0 is the group median; higher is better.** This positive ratio is not the current negative-log scale, a probability or a national-population comparison. The proposal exposes it through `TwinAssessment.healthScore` / `TwinRepository.healthScore`, with `healthGroupLabel` naming the actual band. It does **not** expose a separate lower-is-better `hazardIndex` getter.
+
+Raw Cox log hazard would remain internal as `rawLogRelativeHazard`. Proposed history stores `engine: cox_index_v1`, `health_index` and raw `score`; `healthScoreHistory({from, to, engine})` defaults to the new engine and excludes legacy/other-scale points. The current history contract above remains the main implementation until a verified merge.
+
+The proposed shared lab loads and computes a neural output, but the app does not read it for the health index or reveal. “Shelved for product outputs” must not be read as removal of neural execution or its bundled artifact. [Proposed score code](https://github.com/ViktorOsadsky/lifetwin/blob/02f57169976337db66e74aa9feaa740043d0e636/app/lib/twin/twin_model.dart).
+
+### Proposed yearly guide, open-ended thresholds and fallback
+
+For ages 35–79 the proposed reveal reads `LifeTwinProjectionLab.assess(profile, includeExtrapolation: true)['annual']`: repeated one-year Cox steps as age advances with all other inputs fixed, **assuming nothing changes**. This is not mean life expectancy. `expectedAge` would be the interpolated 50% survival crossing; `p25Age` and `p75Age` the 75% and 25% crossings. The recurrence is unvalidated even inside the checked ages; nothing past 79 is validated in the rough guide.
+
+| Proposed API / case | Meaning if this proposal is approved and merged |
+|---|---|
+| `p25OpenEnded`, `openEnded`, `p75OpenEnded` | The curve did not reach 75%, 50% or 25% by simulation age 110. The associated age is sentinel 110 and the headline shows **110+**. This is not a measured crossing or a guaranteed personal age. |
+| `expectedYear` | A rounded calendar-year guide derived from the selected age; no exact date. Open-ended age flags still need to remain visible. |
+| Assessment ages 18–34 and 80–85 | Retained CDC life-table fallback: mean expected age and 25th–75th-percentile range, with `extrapolated`/rough-guide status. The CDC method is not wholly superseded. |
+| Under 18, over 85, incomplete/unsupported inputs | No estimate through the repository API. The in-range lab also requires a loaded lab and completed-year age. |
+| Seeded demo Rosa | The latest proposal produces a result using open-ended flags; the earlier “Rosa is null” version is superseded. |
+
+Large jumps at 34→35 and 79→80 remain acknowledged as a strict known bug: the implementation would switch between a CDC mean outside the checked ages and a Cox projection median inside. Do not describe a continuous method, a validated birthday effect, or a causal change. Keep the method, open-ended flags, rough-guide caveat and past-79 limits with any displayed result. [Latest proposed lifespan code](https://github.com/ViktorOsadsky/lifetwin/blob/02f57169976337db66e74aa9feaa740043d0e636/app/lib/twin/lifespan.dart), [status and unresolved seams](../../docs/handoffs/hazard-projection-docs.md).
 
 ## Profile mapping (`profile_mapping.dart`)
 

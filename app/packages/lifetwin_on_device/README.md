@@ -2,17 +2,18 @@
 
 This package runs the trained LifeTwin Cox model **inside the Flutter app on iOS**. The app bundle contains `model.json` (learned coefficients and baseline survival) and `support_reference.f64.gz` (encoded training reference vectors for the model's input-support check). Inference uses Dart only. There is no Python interpreter, HTTP request, backend process, internet connection, TensorFlow, Core ML, or TFLite at runtime.
 
-## App presentation and pending engine transition
+## Current app and conditional PR #126 proposal
 
-This vendored copy is pinned to the Cox engine below; the root `model_handoff` package has a separate experimental API. Do not replace this copy without checking the app adapters. See the [integration README](../../lib/README-model.md) and [#108 handoff](../../../docs/handoffs/hazard-projection-docs.md) for the current/pending boundary.
+The current bundled app snapshot exposes a Cox score equal to `−log_relative_hazard_score` (higher is better), plus the same-sex, nearby-age survey percentile. Main still uses the CDC life-table reveal. The root research package has a separate experimental API; adopting it is an explicit adapter change, not an automatic package copy. [Current integration](../../lib/README-model.md).
 
-- **Health score, implemented in the app adapter:** the Cox `log_relative_hazard_score` with its sign flipped, so higher is better. The raw value is a log relative hazard; it is not a survival percentage or a 0–100 clinical score.
-- **Age-group comparison, implemented:** “Healthier than X of 100 people your age,” qualified as people like you in the survey. X is the same-sex, similar-age percentile of the unweighted NHANES reference, not a ranking of the national population.
-- **Hazard index, pending:** a separate Cox ratio against a person of the same age and sex; 1.0 is typical for that reference and lower is better. It is not the health score, percentile or a probability. The selected reference is not the neural lab's fixed age-55 profile.
-- **Rough lifespan guide, pending:** the selected replacement uses yearly repeated one-year Cox steps, advancing age while all other inputs stay fixed: “assuming nothing changes.” It is not life expectancy. Nothing past age 79 is validated, and even the within-range recurrence has not been validated as a longitudinal model. The app's current CDC life-table wrapper is the earlier method; its expected-age/range calculations must not be reused as definitions of this new projection.
-- **Neural models are shelved** for this app direction. Historical neural benchmark figures remain in the [model card](MODEL_CARD.md); the root research package retaining a neural artifact does not make it the app's score or hazard index.
+[PR #126](https://github.com/ViktorOsadsky/lifetwin/pull/126), reviewed at `02f5716`, is **open and held for owner confirmation**. If approved and merged, its latest proposal would:
 
-These transition statements describe the requested product direction in [#108](https://github.com/ViktorOsadsky/lifetwin/issues/108), not a completed peer-engine integration. The model's measured Cox scope remains supported assessment ages 35–79 and years 1–5. [Source model card](../../../model_handoff/lifetwin_on_device/MODEL_CARD.md), [yearly projection definition](../../../model_handoff/lifetwin_on_device/README.md#projection-definitions).
+- Replace the displayed score with `exp(median band s − s(profile))`, where `s` excludes the Cox age/sex terms and the reference is the same-sex, nearby-age survey band. **1.0 is the median; higher is better.** The percentile remains “Healthier than X of 100 people your age,” qualified as people like you in the survey. There is no separate lower-is-better hazard-index getter.
+- Use repeated one-year Cox steps for the rough guide at ages 35–79, advancing age with other inputs fixed: **assuming nothing changes**. `expectedAge` would be the 50% crossing, with the 75%/25% crossings defining the age range. This is not mean life expectancy. An unreached threshold at the 110 simulation limit would use 110 plus `p25OpenEnded`, `openEnded` or `p75OpenEnded`; the headline would show **110+**, not a measured crossing.
+- Retain the CDC life-table fallback at ages 18–34 and 80–85 with extrapolated status; under 18, over 85 and unsupported/missing profiles remain unavailable. Large jumps at the method boundaries are acknowledged and unresolved. The CDC method would remain a fallback, rather than becoming wholly historical.
+- Keep displayed score/reveal outputs Cox-based. The shared projection lab would still load and compute a neural output that the app does not read; neural execution/artifacts are not removed by that product choice.
+
+The measured Cox scope remains supported assessment ages 35–79 and years 1–5. Neither repeated lifetime projection, fallback switching nor open-ended display extends that validation; nothing past 79 is validated in the rough guide. No exact date, clinical prediction or causal years gained is supported. [Source model card](../../../model_handoff/lifetwin_on_device/MODEL_CARD.md), [current/proposed contract handoff](../../../docs/handoffs/hazard-projection-docs.md).
 
 ## Add it to the iOS Flutter app
 
