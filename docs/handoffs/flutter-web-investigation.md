@@ -78,13 +78,15 @@ and a reload after every deployment. [Flutter deployment guidance](https://docs.
 
 ## Hosting recommendation
 
-**Owner choice after this investigation began: Vercel through Vercel MCP.** Root
-found the Vercel integration disabled by enterprise administration. Enablement is
-pending; no Vercel CLI, browser, alternate connector or hosting fallback is used
-to bypass that restriction. The root-path release is prepared locally at
-`app/build/web/`; it has no demo seed and uses only public API configuration.
+**Owner choice after this investigation began: Vercel through MCP Bridge.** The
+user selected the separate MCP Bridge connection. Root configured the official
+Vercel MCP endpoint through its OAuth adapter; user authentication is underway,
+and deployment remains pending root. The native Vercel plugin's disabled state
+does not establish a restriction on this separately authorized connection. The
+root-path release is prepared locally at `app/build/web/`; it has no demo seed and
+uses only public API configuration.
 
-After Vercel MCP is enabled, inspect its actual deployment tools before choosing
+After MCP Bridge authentication completes, inspect Vercel's actual deployment tools before choosing
 an upload flow. For a static-artifact deployment, stage only the release files,
 select the **Other** framework (`framework: null`), disable the build command,
 and serve that artifact directory. Do not deploy the repository root as static
@@ -114,7 +116,7 @@ coordinated Supabase CORS change. Preview aliases each have distinct origins;
 never allow `*.vercel.app` or all sites. [Vercel build configuration](https://vercel.com/docs/builds/configure-a-build),
 [static project configuration](https://vercel.com/docs/project-configuration/vercel-json).
 
-The following alternatives were evaluated, **not selected as a bypass**:
+The following hosting alternatives were evaluated before the Vercel choice:
 
 For a synthetic hackathon demo, **GitHub Pages is the first account option to
 evaluate**: this repository is public and the existing GitHub account has write
