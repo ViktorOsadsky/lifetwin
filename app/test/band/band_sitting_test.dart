@@ -150,7 +150,11 @@ void main() {
         final measured = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
         measured.remove('synthetic_demo');
         final report = BandDayReport.fromJson(measured);
-        final store = BandStore(StubBandClient(), now: () => report.date);
+        final store = BandStore(
+          StubBandClient(),
+          now: () =>
+              DateTime(report.date.year, report.date.month, report.date.day),
+        );
         addTearDown(store.dispose);
         store.importReports([report]);
         expect(store.live, isTrue);
