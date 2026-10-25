@@ -107,7 +107,27 @@ def test_provider_file_filters_non_edge_settings_and_rejects_public_tokens(tmp_p
         f"LLM_API_KEY={SECRET}\nAPI_GATEWAY_TOKEN=obsolete\nSUPABASE_SERVICE_ROLE_KEY=never-copy\nMODEL_ARTIFACT_PATH=/tmp/model\n",
     )
     assert bridge.provision_values(path) == {"LLM_API_KEY": SECRET}
-    assert len(bridge.SETTING_NAMES) == 22
+    assert len(bridge.SETTING_NAMES) == 23
+
+
+@pytest.mark.parametrize("provider", ["claude", "muse", "local"])
+def test_conversation_provider_survives_provisioning_without_changing_other_providers(
+    tmp_path, provider
+):
+    path = private_source(
+        tmp_path,
+        f"CONVERSATION_PROVIDER={provider}\nPERSONALIZE_PROVIDER=muse\nLLM_PROVIDER=chat_completions\n",
+    )
+    values = bridge.provision_values(path)
+    assert values == {
+        "CONVERSATION_PROVIDER": provider,
+        "PERSONALIZE_PROVIDER": "muse",
+        "LLM_PROVIDER": "chat_completions",
+    }
+    assert f'"CONVERSATION_PROVIDER": "{provider}"' in bridge.provisioning_query(values)
+    path.write_text("CONVERSATION_PROVIDER=unsupported\n")
+    with pytest.raises(bridge.BridgeFailure):
+        bridge.provision_values(path)
 
 
 @pytest.mark.parametrize("cors_name", ["CORS_ORIGINS", "LIFETWIN_CORS_ORIGINS"])
@@ -309,14 +329,13 @@ def test_pdf_configuration_imports_and_validates_server_limits(tmp_path):
             bridge.provision_values(path)
 
 
-def test_runtime_provisioner_and_database_pdf_allowlists_agree():
+def test_runtime_provisioner_and_latest_database_allowlists_agree():
     repository = SCRIPTS.parent
     runtime = (repository / "supabase/functions/lifetwin-api/settings.ts").read_text()
     runtime_array = runtime.split("export const SETTING_NAMES = [", 1)[1].split("] as const", 1)[0]
     runtime_names = set(re.findall(r'"([A-Z][A-Z0-9_]+)"', runtime_array))
-    migrations = list((repository / "supabase/migrations").glob("*pdf_provider_config.sql"))
-    assert len(migrations) == 1
-    migration = migrations[0].read_text()
+    migrations = sorted((repository / "supabase/migrations").glob("*_provider_config.sql"))
+    migration = migrations[-1].read_text()
     sql_array = migration.split("all(array[", 1)[1].split("])", 1)[0]
     database_names = set(re.findall(r"'([A-Z][A-Z0-9_]+)'", sql_array))
     assert runtime_names == database_names == bridge.SETTING_NAMES

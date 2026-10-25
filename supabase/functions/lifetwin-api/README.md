@@ -35,8 +35,13 @@ override Vault settings. The service-role key is provided by Supabase at
 runtime. See
 [credential entry and updates](../../../docs/backend-credentials.md).
 
-Apply the later `lifetwin_pdf_provider_config` migration as well before
-configuring PDF options.
+Apply the later `lifetwin_pdf_provider_config` migration before configuring PDF
+options, and `lifetwin_conversation_provider_config` before setting
+`CONVERSATION_PROVIDER`. Set that value to `claude` for conversation turns;
+`PERSONALIZE_PROVIDER=muse` keeps Ideas, coach and recommendations on Muse.
+Claude still requires the person's provider consent. `local` disables
+conversation AI; `muse` is available as an explicit override. Changing this
+setting does not grant consent or change the PDF provider.
 
 The database stores encrypted provider configuration and anonymous aggregate
 provider-call counters only. It stores no profiles, documents, transcripts or
