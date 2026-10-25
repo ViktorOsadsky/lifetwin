@@ -768,8 +768,7 @@ class CheckinController extends ChangeNotifier {
   Future<void> hearAgain() async {
     if (!canHearAgain) return;
     if (phase == CheckinPhase.listening) await cancelTalk();
-    // Replays from memory only when the last line spoken was the question (not a nudge).
-    if (await _speak(mascotLine, replay: output.canReplay && _lastSpoken == mascotLine)) _listenAgain();
+    if (await _speak(mascotLine, replay: output.canReplay)) _listenAgain();
   }
 
   // ---- reminders -----------------------------------------------------------
@@ -980,10 +979,7 @@ class CheckinController extends ChangeNotifier {
 
   /// True when the line ran to its end (or, the first line, gave up waiting for audio)
   /// and nothing else took over meanwhile: hands-free may listen next.
-  String? _lastSpoken;
-
   Future<bool> _speak(String line, {bool replay = false, bool first = false}) async {
-    if (!replay) _lastSpoken = line;
     final gen = ++_speechGen;
     _hf('tts_start', '${first ? 'first' : 'line'}${replay ? ' replay' : ''}');
     _set(() => phase = CheckinPhase.speaking);
