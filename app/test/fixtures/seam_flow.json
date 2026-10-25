@@ -380,7 +380,7 @@
    },
    "lever_ranking": {
     "source": "docs/model-sensitivity.json",
-    "model_version": "personal-cox-v2-20261024T182404Z",
+    "model_version": "personal-cox-bmi35-v3-20261024",
     "order": [
      "quit_smoking",
      "vigorous_plus_60",
@@ -449,7 +449,7 @@
    },
    "lever_ranking": {
     "source": "docs/model-sensitivity.json",
-    "model_version": "personal-cox-v2-20261024T182404Z",
+    "model_version": "personal-cox-bmi35-v3-20261024",
     "order": [
      "quit_smoking",
      "vigorous_plus_60",
@@ -518,7 +518,7 @@
    },
    "lever_ranking": {
     "source": "docs/model-sensitivity.json",
-    "model_version": "personal-cox-v2-20261024T182404Z",
+    "model_version": "personal-cox-bmi35-v3-20261024",
     "order": [
      "quit_smoking",
      "vigorous_plus_60",
@@ -568,7 +568,7 @@
    },
    "lever_ranking": {
     "source": "docs/model-sensitivity.json",
-    "model_version": "personal-cox-v2-20261024T182404Z",
+    "model_version": "personal-cox-bmi35-v3-20261024",
     "order": [
      "quit_smoking",
      "vigorous_plus_60",
@@ -603,7 +603,7 @@
    },
    "lever_ranking": {
     "source": "docs/model-sensitivity.json",
-    "model_version": "personal-cox-v2-20261024T182404Z",
+    "model_version": "personal-cox-bmi35-v3-20261024",
     "order": [
      "quit_smoking",
      "vigorous_plus_60",
@@ -632,7 +632,7 @@
    },
    "lever_ranking": {
     "source": "docs/model-sensitivity.json",
-    "model_version": "personal-cox-v2-20261024T182404Z",
+    "model_version": "personal-cox-bmi35-v3-20261024",
     "order": [
      "quit_smoking",
      "vigorous_plus_60",
@@ -5806,7 +5806,7 @@
   },
   "lever_ranking": {
    "source": "docs/model-sensitivity.json",
-   "model_version": "personal-cox-v2-20261024T182404Z",
+   "model_version": "personal-cox-bmi35-v3-20261024",
    "order": [
     "quit_smoking",
     "vigorous_plus_60",

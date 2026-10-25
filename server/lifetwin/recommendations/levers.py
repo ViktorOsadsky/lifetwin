@@ -1,13 +1,14 @@
-"""Lever ranking from docs/model-sensitivity.json (branch codex/d-model-sensitivity, 65acf39).
+"""Cached recommendation ranking and effect cues from docs/model-sensitivity.json.
 
-That scan ranks the recommendable levers by their median modeled 5-year difference
-for each age band and sex; the order is identical in every group, so only the order
-is kept here. No percentage points are copied: Mochi never quotes them, and the app
-computes a person's own difference with the on-device ``compare()``.
-``test_recommendations.py`` checks this order against the JSON when it is present.
+The approved Cox v3 scan ranks recommendable levers by their median modeled 5-year
+survival difference. The order is identical in every group. Group medians stay on
+the server and produce categorical cues only; Mochi never quotes their figures.
+The app computes a person's own difference with the on-device ``compare()``.
+``test_recommendation_effect.py`` checks the cached medians and model provenance
+against the JSON.
 """
 
-MODEL_VERSION = "personal-cox-v2-20261024T182404Z"
+MODEL_VERSION = "personal-cox-bmi35-v3-20261024"
 SOURCE = "docs/model-sensitivity.json"
 LEVER_ORDER: tuple[str, ...] = (
     "quit_smoking",
