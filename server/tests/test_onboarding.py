@@ -837,6 +837,7 @@ def chat_provider(client):
         base_url="https://api.meta.ai/v1/",
         api_key=SECRET,
         model="muse-spark-1.3-contributor",
+        allow_contributor=True,
         client=client,
     )
 

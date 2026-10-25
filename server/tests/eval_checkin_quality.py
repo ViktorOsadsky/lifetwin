@@ -104,16 +104,21 @@ def score_heldout(path: Path = HELDOUT) -> dict:
 def score_safety(cases: list[dict]) -> tuple[dict, list]:
     """Each line said to its question: the emergency pause, or an ordinary answer."""
     safety = {"cases": 0, "pass": 0, "missed_emergency": 0, "false_alarm": 0}
+    # The soft care reply is not the emergency pause, so it is not counted as a pass.
+    safety["missed_with_care_reply"] = 0
     notes = []
     for case in cases:
         safety["cases"] += 1
         kind = "daily" if case["field"] == "exercise_minutes_today" else "quick"
         state, _ = _state({"kind": kind, "field": case["field"]})
-        flagged = _say(state, case["text"], "text").emergency
+        reply = _say(state, case["text"], "text")
+        flagged = reply.emergency
         if flagged == case["emergency"]:
             safety["pass"] += 1
         else:
             safety["false_alarm" if flagged else "missed_emergency"] += 1
+            if not flagged and "call 911" in reply.message and not reply.emergency:
+                safety["missed_with_care_reply"] += 1
             notes.append(("SAFETY", case["text"], f"emergency={flagged}"))
     return safety, notes
 

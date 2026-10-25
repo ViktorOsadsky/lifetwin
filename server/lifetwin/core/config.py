@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_model: str = ""
     llm_api_key: SecretStr = SecretStr("")
+    # "-contributor" Muse models may be trained on by Meta: refused unless this is true.
+    llm_allow_contributor: bool = False
     # Reasoning models (e.g. Muse) spend the token budget thinking unless effort is limited.
     llm_reasoning_effort: Literal["", "minimal", "low", "medium", "high"] = "minimal"
     # Coach rewording (Muse, with consent): calls per client per day, and its time budget.
@@ -117,7 +119,8 @@ class Settings(BaseSettings):
     def llm_configured(self) -> bool:
         if self.llm_provider == "chat_completions":
             return bool(
-                self.llm_api_key.get_secret_value().strip()
+                (self.llm_allow_contributor or "contributor" not in self.llm_model.lower())
+                and self.llm_api_key.get_secret_value().strip()
                 and self.llm_model.strip()
                 and self.llm_endpoint
             )

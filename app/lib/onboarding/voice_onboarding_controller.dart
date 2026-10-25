@@ -84,8 +84,25 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// aloud, so the mascot does not speak them a second time. Set by the screen.
   bool screenReader = false;
 
-  /// How many questions the intake has (one per profile field).
-  static const questionCount = 11;
+  /// The fields the intake asks about, in the server's order (its ASKED list). Blood pressure
+  /// comes from Apple Health or a reading, not from a question.
+  static const askedFields = [
+    'age',
+    'sex',
+    'smoking_status',
+    'height_cm',
+    'weight_kg',
+    'sleep_hours',
+    'general_health',
+    'hypertension_diagnosed',
+    'diabetes',
+    'sedentary_min_day',
+    'moderate_recreation_min_week',
+    'vigorous_recreation_min_week',
+  ];
+
+  /// How many questions the intake has (one per asked field).
+  static int get questionCount => askedFields.length;
 
   /// The microphone closes by itself after this long with no new words, or
   /// after [listenLimit] in all, so it is never left open by mistake.
@@ -138,7 +155,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     return left <= 10 ? left : null;
   }
 
-  /// Questions answered or skipped, not counting one reopened by "go back".
+  /// Questions answered, skipped or marked "I don't know", not counting one reopened by "go back".
   Set<String> get _doneFields {
     final s = state;
     if (s == null) return {};
@@ -147,14 +164,18 @@ class VoiceOnboardingController extends ChangeNotifier {
       for (final e in confirmed.entries)
         if (e.value != null) '${e.key}',
       for (final f in (s['skipped_fields'] as List?) ?? const []) '$f',
+      for (final f in (s['unknown_fields'] as List?) ?? const []) '$f',
     }..remove(s['current_field']);
   }
 
-  /// "Question N of 11", worked out from the server's state. Null when there is no question.
+  /// "Question N of 12", worked out from the server's state. Null when there is no question
+  /// (done, or a habit follow-up). Only the asked fields count, so a follow-up or a blood
+  /// pressure reading never moves the number past the last question.
   int? get questionNumber {
     final t = turn;
-    if (t == null || t.complete) return null;
-    return (_doneFields.length + 1).clamp(1, questionCount);
+    if (t == null || t.complete || t.phase == 'probing') return null;
+    final done = _doneFields.where(askedFields.contains).length;
+    return (done + 1).clamp(1, questionCount);
   }
 
   /// "Go back" reopens the answer before this question; once done, the last one, so an

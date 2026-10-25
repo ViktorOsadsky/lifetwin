@@ -30,7 +30,12 @@ from lifetwin.documents import router as documents_router
 from lifetwin.onboarding import ChatCompletionsExtractor, ConversationService, OpenAIExtractor
 from lifetwin.onboarding import router as onboarding_router
 from lifetwin.onboarding.probes import MAX_PROBES
-from lifetwin.personalize.providers import DISPLAY_NAMES, ClaudePersonalizer, MusePersonalizer
+from lifetwin.personalize.providers import (
+    COMPANIES,
+    DISPLAY_NAMES,
+    ClaudePersonalizer,
+    MusePersonalizer,
+)
 from lifetwin.prediction import load_model
 from lifetwin.prediction.models import PredictionResponse
 from lifetwin.quiz.router import router as quiz_router
@@ -131,6 +136,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             model=settings.llm_model,
             timeout_seconds=settings.provider_timeout_seconds,
             reasoning_effort=settings.llm_reasoning_effort,
+            allow_contributor=settings.llm_allow_contributor,
         )
     )
     application.state.personalizer = personalizer
@@ -142,6 +148,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 model=settings.llm_model,
                 timeout_seconds=settings.provider_timeout_seconds,
                 reasoning_effort=settings.llm_reasoning_effort,
+                allow_contributor=settings.llm_allow_contributor,
             )
             if settings.llm_provider == "chat_completions"
             else OpenAIExtractor(
@@ -242,7 +249,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "personalize": {
                 "provider": personalizer.name,
                 "display_name": DISPLAY_NAMES[personalizer.name],
+                "company": COMPANIES[personalizer.name],
                 "configured": personalizer.configured,
+                "may_train_on_content": personalizer.may_train_on_content,
             },
             "coach": {
                 "endpoint": "/api/coach/plan",
@@ -251,7 +260,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "personalize": {
                     "provider": personalizer.name,
                     "display_name": DISPLAY_NAMES[personalizer.name],
+                    "company": COMPANIES[personalizer.name],
                     "configured": personalizer.configured,
+                    "may_train_on_content": personalizer.may_train_on_content,
                     "daily_cap_per_client": settings.coach_llm_daily_cap,
                 },
             },

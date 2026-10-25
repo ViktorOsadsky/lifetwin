@@ -455,12 +455,12 @@ void main() {
       expect(told, [null]);
     });
 
-    testWidgets('an age outside 30 to 85: no number, the cards that are going well, each with its source', (t) async {
-      final repo = await repoWith({...older, 'age': 25, 'smoking_status': 'never'});
+    testWidgets('an age outside 18 to 85: no number, the cards that are going well, each with its source', (t) async {
+      final repo = await repoWith({...older, 'age': 90, 'smoking_status': 'never'});
       expect(repo.experiment()!.current.status, 'unsupported_age');
       await pumpHub(t, repo);
       expect(find.text('Outside my range'), findsOneWidget);
-      expect(find.text('My numbers cover ages 30 to 85.'), findsOneWidget);
+      expect(find.text('My numbers cover ages 18 to 85.'), findsOneWidget);
       expect(find.byType(LeverRow), findsNothing);
       expect(anyText(t, RegExp(r'About \d|in 100')), isFalse);
       final strengths = repo.wellnessCards.where((c) => c.level == 'strength').length;

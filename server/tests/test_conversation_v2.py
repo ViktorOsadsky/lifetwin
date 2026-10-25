@@ -819,6 +819,8 @@ def test_capabilities_name_the_provider_that_would_be_called(setting, name):
     assert personalize == {
         "provider": name,
         "display_name": DISPLAY_NAMES[name],
+        "may_train_on_content": False,
+        "company": {"muse": "Meta", "claude": "Anthropic"}[name],
         "configured": False,
     }
     assert app.state.personalizer.name == name
@@ -979,3 +981,38 @@ def test_scorers_report_value_cases_apart_from_ask_again_cases():
     assert report["value_only"].get("wrong", 0) == 0
     assert report["ask_again"].get("took_a_value", 0) == 0
     assert sum(report["value_only"].values()) == 23
+
+
+@pytest.mark.parametrize(
+    "text", ["no", "No.", "nope", "none", "None", "not really", "zero", "nah", "no, none"]
+)
+def test_a_bare_no_to_harder_exercise_is_zero_minutes(text):
+    out = reply(asking("vigorous_recreation_min_week"), text)
+    assert "couldn't read" not in out["message"]
+    pending = out["state"]["pending_profile"]
+    assert pending["vigorous_recreation_min_week"] == 0
+
+
+def test_a_bare_no_to_lighter_activity_is_zero_minutes_too():
+    out = reply(asking("moderate_recreation_min_week"), "no")
+    assert out["state"]["pending_profile"]["moderate_recreation_min_week"] == 0
+
+
+def test_going_back_after_i_dont_know_says_not_sure_not_skipped():
+    state = asking(
+        "diabetes",
+        unknown_fields=["hypertension_diagnosed"],
+        confirmed_profile={"age": 60},
+    )
+    out = reply(state, "go back to my high blood pressure")
+    assert "You weren't sure before" in out["message"]
+    assert "skipped" not in out["message"]
+    skipped = asking("diabetes", skipped_fields=["hypertension_diagnosed"])
+    assert "You skipped it before" in reply(skipped, "go back to my high blood pressure")["message"]
+
+
+def test_the_read_back_of_no_harder_exercise_is_grammatical():
+    state = asking("diabetes", confirmed_profile={"age": 60, "vigorous_recreation_min_week": 0})
+    out = reply(state, "go back to my harder exercise")
+    assert "Right now I have no harder exercise." in out["message"]
+    assert "have that no" not in out["message"]

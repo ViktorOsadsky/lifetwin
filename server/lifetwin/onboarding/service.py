@@ -1417,14 +1417,20 @@ class ConversationService:
         }
         label = self._label(field)
         if saved:
+            fact = _facts(saved)[0]
+            have = fact if fact.startswith("no ") else f"that {fact}"  # "I have no harder exercise"
             return (
-                f"Okay, let's go back to your {label}. Right now I have that {_facts(saved)[0]}. "
+                f"Okay, let's go back to your {label}. Right now I have {have}. "
                 + QUESTIONS[field]
                 + ' If that was right, say "keep it".'
             )
-        if field in state.skipped_fields or field in state.unknown_fields:
+        if field in state.skipped_fields:
             return (
                 f"Okay, let's go back to your {label}. You skipped it before. " + QUESTIONS[field]
+            )
+        if field in state.unknown_fields:
+            return (
+                f"Okay, let's go back to your {label}. You weren't sure before. " + QUESTIONS[field]
             )
         return f"Okay, let's do your {label}. " + QUESTIONS[field]
 

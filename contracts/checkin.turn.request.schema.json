@@ -35,6 +35,16 @@
           "default": null,
           "title": "Age Band"
         },
+        "care_line_shown": {
+          "default": false,
+          "title": "Care Line Shown",
+          "type": "boolean"
+        },
+        "care_question_open": {
+          "default": false,
+          "title": "Care Question Open",
+          "type": "boolean"
+        },
         "checking": {
           "items": {
             "enum": [
