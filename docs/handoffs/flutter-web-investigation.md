@@ -166,6 +166,26 @@ option, but no Firebase access is established and it adds another account setup.
 
 ## Remaining browser integration work
 
+### Mobile viewport follow-up
+
+The owner requested the website use the mobile layout. The web entry point now
+embeds Flutter into `#lifetwin-app`, capped at 430 CSS pixels wide and 932 pixels
+high, centered on the lavender page. Narrower screens use their available width;
+the height follows the dynamic browser viewport. Flutter's actual view is
+constrained, including navigation, dialogs and text input, rather than merely
+cropping a desktop canvas. Native app code and backend contracts are unchanged.
+This uses Flutter's supported [single-view host embedding](https://docs.flutter.dev/platform-integration/web/embedding-flutter-web#custom-element-hostelement)
+and [custom bootstrap](https://docs.flutter.dev/platform-integration/web/initialization#write-a-custom-bootstrap-script).
+
+Validation: release web build and analyzer passed. At a 1280 × 720 browser size,
+both the host and Flutter view measured 430 × 720, centered at x=425. Guest entry
+and the consent screen rendered inside that frame without browser errors or
+warnings. A real 375 × 667 iframe rendered the guest screen with its button
+visible. The compiled Dart and model assets are byte-identical to the original
+release; only `index.html` and `flutter_bootstrap.js` changed. The deployment can
+reuse the original uploaded archive parts and copy these two updated files into
+`public/` after unpacking. The follow-up PR records its deployment result.
+
 | Area | Observed boundary / next change |
 | --- | --- |
 | Live API | The selected canonical origin is configured and CORS probes pass. Keep JWT verification, public anon headers and the exact-origin allowlist; additional aliases need a separately coordinated update. |

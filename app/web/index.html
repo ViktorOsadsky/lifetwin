@@ -3,14 +3,41 @@
 <head>
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="LifeTwin: a little twin, a healthier routine.">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="LifeTwin">
   <meta name="theme-color" content="#EAE5F7">
   <title>LifeTwin</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #EAE5F7;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    #lifetwin-app {
+      position: relative;
+      width: min(100%, 430px);
+      height: 100%;
+      max-height: 932px;
+      overflow: hidden;
+      box-shadow: 0 0 32px rgb(58 45 36 / 12%);
+    }
+  </style>
 </head>
 <body>
+  <div id="lifetwin-app"></div>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
