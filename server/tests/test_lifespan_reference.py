@@ -146,7 +146,7 @@ def _close(a: object, b: object) -> bool:
     if isinstance(a, dict) and isinstance(b, dict):
         return a.keys() == b.keys() and all(_close(a[k], b[k]) for k in a)
     if isinstance(a, list) and isinstance(b, list):
-        return len(a) == len(b) and all(_close(x, y) for x, y in zip(a, b))
+        return len(a) == len(b) and all(_close(x, y) for x, y in zip(a, b, strict=True))
     return a == b
 
 
