@@ -8,6 +8,8 @@ import 'package:lifesim/checkin/checkin_reminders.dart';
 import 'package:lifesim/checkin/checkin_store.dart';
 import 'package:lifesim/health/health_sample.dart';
 import 'package:lifesim/voice/fakes.dart';
+import 'package:lifesim/onboarding/voice_onboarding_controller.dart' show voiceOffNotice;
+import 'package:lifesim/voice/speech.dart';
 
 /// A scripted quick check-in: sleep, then sitting, read back each, then done.
 class FakeCheckinGuide implements CheckinGuide {
@@ -468,6 +470,21 @@ void main() {
     await c.declineReminders();
     expect((await store.settings()).reminderOffered, isTrue);
     expect(port.asks, 0);
+  });
+
+  test('after a 503, voice comes back on the next turn once a token is minted', () async {
+    final c = make();
+    await c.start();
+    input.startError = const VoiceUnavailableException();
+    input.warmUpError = const VoiceUnavailableException();
+    await c.startTalk();
+    expect(c.voiceUsable, isFalse);
+    expect(c.notice, voiceOffNotice);
+    input.startError = null;
+    input.warmUpError = null;
+    await c.submitTyped('7'); // the retry during this turn succeeds
+    expect(c.voiceUsable, isTrue);
+    expect(c.typing, isFalse);
   });
 
   test('microphone refused: typing instead', () async {

@@ -94,6 +94,32 @@ void main() {
     expect(r.c.typing, true);
   });
 
+  test('after a 503, a token is retried in the background and voice is back on the next turn', () async {
+    final r = Rig();
+    await r.c.answerConsent(true);
+    r.input.startError = const VoiceUnavailableException();
+    r.input.warmUpError = const VoiceUnavailableException(); // still down
+    final warmUps = r.input.warmUps;
+    await r.c.startTalk();
+    expect(r.c.notice, voiceOffNotice);
+    expect(r.c.voiceUsable, false);
+    expect(r.input.warmUps, warmUps + 1, reason: 'retried in the background at once');
+    await r.c.submitTyped('70');
+    expect(r.c.typing, true, reason: 'the retry failed: still typing');
+    expect(r.c.voiceUsable, false);
+
+    r.input.startError = null;
+    r.input.warmUpError = null; // the provider is back
+    final spoken = r.output.spoken.length;
+    await r.c.submitTyped('no');
+    expect(r.c.voiceUsable, true);
+    expect(r.c.typing, false);
+    expect(r.output.spoken.length, spoken + 1, reason: 'the next question is spoken again');
+    await r.c.startTalk();
+    expect(r.c.phase, VoicePhase.listening);
+    await r.c.cancelTalk();
+  });
+
   test('voice_unavailable while speaking falls back to typing and keeps the line', () async {
     final r = Rig();
     r.output.speakError = const VoiceUnavailableException();

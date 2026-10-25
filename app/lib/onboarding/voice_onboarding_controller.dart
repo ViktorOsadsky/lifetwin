@@ -329,8 +329,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() {
         phase = VoicePhase.idle;
         typing = true;
-        voiceUsable = false;
-        notice = voiceOffNotice;
+        _voiceOut();
       });
     } on TimeoutException {
       _set(() {
@@ -393,8 +392,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() {
         phase = VoicePhase.idle;
         typing = true;
-        voiceUsable = false;
-        notice = voiceOffNotice;
+        _voiceOut();
       });
       return;
     } catch (_) {
@@ -540,6 +538,7 @@ class VoiceOnboardingController extends ChangeNotifier {
         voiceUsable = true;
         typing = false;
         notice = null;
+        _clearOutage();
       }
     });
     if (yes) _warmUp();
@@ -568,6 +567,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       return _send('start');
     }
     _busy = true;
+    _tryVoiceAgain();
     if (action == 'reply' && text != null) _lastReply = (text, fromTranscript);
     // After "No, change it" the next answer is a correction. Otherwise a reply
     // to a read-back goes as a reply, so the server can hear "yes", "no" or a new value.
@@ -611,6 +611,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     }
     _busy = false;
     _set(() {
+      if (_voiceBack) _voiceIn();
       correcting = false;
       turn = t;
       mascotLine = t.message;
@@ -623,6 +624,48 @@ class VoiceOnboardingController extends ChangeNotifier {
       return _send('import', values: pending, importSource: _pendingSource);
     }
     if (!typing && voiceUsable && !screenReader) await _speak(t.message);
+  }
+
+  // ---- voice outage ----------------------------------------------------------
+
+  /// Voice was switched off because the server said it is unavailable (not by the person).
+  bool _voiceOutage = false;
+
+  /// A token was minted since the outage: voice comes back on the next turn.
+  bool _voiceBack = false;
+  Future<void>? _recovering;
+
+  /// Shows the "voice unavailable" notice and switches to typing; call inside [_set].
+  /// A token is retried in the background, and again with every turn.
+  void _voiceOut() {
+    typing = true;
+    voiceUsable = false;
+    notice = voiceOffNotice;
+    _voiceOutage = true;
+    _voiceBack = false;
+    _tryVoiceAgain();
+  }
+
+  void _tryVoiceAgain() {
+    if (!_voiceOutage || _voiceBack || _recovering != null || _disposed) return;
+    _recovering = input
+        .warmUp()
+        .then((_) => _voiceBack = _voiceOutage, onError: (Object _) => false)
+        .whenComplete(() => _recovering = null);
+  }
+
+  /// Voice works again: back to talking, as before the outage. Call inside [_set].
+  void _voiceIn() {
+    voiceUsable = true;
+    typing = false;
+    _voiceOutage = false;
+    _voiceBack = false;
+  }
+
+  /// The person chose voice again themselves; no outage to recover from.
+  void _clearOutage() {
+    _voiceOutage = false;
+    _voiceBack = false;
   }
 
   // ---- speaking --------------------------------------------------------------
@@ -663,8 +706,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (gen == _speechGen && mascotLine) {
         _set(() {
           typing = true;
-          voiceUsable = false;
-          notice = voiceOffNotice;
+          _voiceOut();
         });
       }
     } catch (_) {

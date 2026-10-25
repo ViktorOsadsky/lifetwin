@@ -313,8 +313,7 @@ class CheckinController extends ChangeNotifier {
       _set(() {
         phase = CheckinPhase.idle;
         typing = true;
-        voiceUsable = false;
-        notice = voiceOffNotice;
+        _voiceOut();
       });
     } on TimeoutException {
       _set(() {
@@ -377,8 +376,7 @@ class CheckinController extends ChangeNotifier {
       _set(() {
         phase = CheckinPhase.idle;
         typing = true;
-        voiceUsable = false;
-        notice = voiceOffNotice;
+        _voiceOut();
       });
       return;
     } catch (_) {
@@ -552,6 +550,7 @@ class CheckinController extends ChangeNotifier {
   Future<void> _send(Future<CheckinTurn> Function() request) async {
     if (_busy) return;
     _busy = true;
+    _tryVoiceAgain();
     _set(() {
       phase = CheckinPhase.interpreting;
       notice = null;
@@ -577,6 +576,7 @@ class CheckinController extends ChangeNotifier {
       return;
     }
     _set(() {
+      if (_voiceBack) _voiceIn();
       correcting = false;
       turn = t;
       emergency = t.emergency;
@@ -619,6 +619,42 @@ class CheckinController extends ChangeNotifier {
     });
   }
 
+  // ---- voice outage ----------------------------------------------------------
+
+  /// Voice was switched off because the server said it is unavailable (not by the person).
+  bool _voiceOutage = false;
+
+  /// A token was minted since the outage: voice comes back on the next turn.
+  bool _voiceBack = false;
+  Future<void>? _recovering;
+
+  /// Shows the "voice unavailable" notice and switches to typing; call inside [_set].
+  /// A token is retried in the background, and again with every turn.
+  void _voiceOut() {
+    typing = true;
+    voiceUsable = false;
+    notice = voiceOffNotice;
+    _voiceOutage = true;
+    _voiceBack = false;
+    _tryVoiceAgain();
+  }
+
+  void _tryVoiceAgain() {
+    if (!_voiceOutage || _voiceBack || _recovering != null || _disposed) return;
+    _recovering = input
+        .warmUp()
+        .then((_) => _voiceBack = _voiceOutage, onError: (Object _) => false)
+        .whenComplete(() => _recovering = null);
+  }
+
+  /// Voice works again: back to talking, as before the outage. Call inside [_set].
+  void _voiceIn() {
+    voiceUsable = true;
+    typing = false;
+    _voiceOutage = false;
+    _voiceBack = false;
+  }
+
   // ---- speaking ----------------------------------------------------------------
 
   /// Gets voice ready in the background; any problem shows up when voice is used.
@@ -650,8 +686,7 @@ class CheckinController extends ChangeNotifier {
       if (gen == _speechGen) {
         _set(() {
           typing = true;
-          voiceUsable = false;
-          notice = voiceOffNotice;
+          _voiceOut();
         });
       }
     } catch (_) {
