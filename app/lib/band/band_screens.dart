@@ -10,6 +10,7 @@ import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart' hide TwinMood;
 import '../widgets/whole_word_text.dart';
+import 'band_charts.dart';
 import 'band_data.dart';
 import 'band_service.dart';
 import 'band_store.dart';
@@ -293,7 +294,7 @@ class _Check extends StatelessWidget {
   );
 }
 
-/// The band panel (H-5, H-10, H-13): Today and Week tabs, with one state banner at the top at a time.
+/// The band panel (H-5, H-10, H-13): Today, the 7-day strip and the hourly chart, with one state banner at the top at a time.
 /// Everything is computed on the phone from minute records in memory; every number is a "Sensor
 /// estimate". No survival number or difference appears here.
 class BandPanelScreen extends StatefulWidget {
@@ -319,7 +320,8 @@ class BandPanelScreen extends StatefulWidget {
 }
 
 class _BandPanelScreenState extends State<BandPanelScreen> {
-  bool _week = false;
+  bool _sitting = false;
+  bool _howOpen = false;
 
   static const banners = {
     BandStatus.notConnected: ('Band not connected', 'Saved days are safe.', 'Reconnect'),
@@ -350,19 +352,13 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: NoNumberBox(icon: Icons.info_outline_rounded, title: banner.$1, body: banner.$2),
               ),
-            Row(
-              children: [
-                Expanded(
-                  child: _Tab(label: 'Today', on: !_week, onTap: () => setState(() => _week = false)),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _Tab(label: 'Week', on: _week, onTap: () => setState(() => _week = true)),
-                ),
-              ],
-            ),
+            _todayCard(today),
             const SizedBox(height: 12),
-            if (!_week) _todayCard(today) else _weekCard(w, suggestion),
+            _weekCard(w, suggestion),
+            const SizedBox(height: 12),
+            _hourlyCard(today),
+            const SizedBox(height: 12),
+            _howCard(),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -384,55 +380,55 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
     },
   );
 
+  Widget _fact(IconData icon, String text) => Padding(
+    padding: const EdgeInsets.only(top: 8),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 22, color: LtColors.secondary),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: LtText.body(weight: FontWeight.w700))),
+      ],
+    ),
+  );
+
   Widget _todayCard(BandDay d) {
-    final hours = (d.wornMinutes / 60).floor();
+    final sit = d.sittingMinutes, longest = d.longestSittingMinutes;
+    final stood = d.standUps, standing = d.standingMinutes;
+    final light = d.lightWalkingMinutes, mod = d.moderateWalkingMinutes;
     return Sheet(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(_n(d.steps), style: LtText.display(44)),
-          Text('steps today', style: LtText.body(color: LtColors.secondary)),
-          const SizedBox(height: 4),
-          const ModeTag(text: 'Sensor estimate'),
-          const SizedBox(height: 10),
-          _HourBars(hours: d.stepsByHour),
-          const SizedBox(height: 8),
-          // Wraps (never overflows) at narrow widths and large text.
-          Wrap(
-            spacing: 16,
-            runSpacing: 6,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.directions_run_rounded, size: 22),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text('${d.moderateMinutes} min moderate', style: LtText.body(weight: FontWeight.w700)),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.directions_walk_rounded, size: 22),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text('$hours hours worn', style: LtText.body(weight: FontWeight.w700)),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          Text('Today', style: LtText.display(20)),
           if (!d.isValid) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
+            WholeWordText('Not enough wear time today', style: LtText.display(24)),
+            const SizedBox(height: 4),
             WholeWordText(
-              'Wear it on your leg ${(validDayMinutes - d.wornMinutes + 59) ~/ 60} more hours so today counts.',
+              'Wear the band on your leg a little longer and today will count.',
               style: LtText.body(color: LtColors.secondary),
             ),
+          ] else ...[
+            Text(groupThousands(d.steps), style: LtText.display(44)),
+            Text('steps', style: LtText.body(color: LtColors.secondary)),
+            const SizedBox(height: 4),
+            const Align(alignment: Alignment.centerLeft, child: ModeTag(text: 'Sensor estimate')),
+            _fact(Icons.directions_run_rounded, '${d.moderateMinutes} active minutes'),
+            if (sit != null)
+              _fact(
+                Icons.event_seat_outlined,
+                longest == null
+                    ? 'Sitting ${durationText(sit)}'
+                    : 'Sitting ${durationText(sit)} · longest stretch ${durationText(longest)}',
+              ),
+            if (stood != null) _fact(Icons.accessibility_new_rounded, 'Stood up $stood times'),
+            if (standing != null) _fact(Icons.person_outline_rounded, 'Standing ${durationText(standing)}'),
+            if (light != null && mod != null)
+              _fact(Icons.directions_walk_rounded, 'Walking ${durationText(light)} light · ${durationText(mod)} moderate'),
           ],
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Row(
             children: [
               const Icon(Icons.favorite_border_rounded, size: 22, color: LtColors.secondary),
@@ -454,41 +450,19 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            for (final d in w.days)
-              Expanded(
-                child: Semantics(
-                  label: '${_dow(d.date)}: ${d.isValid ? 'counted' : 'not counted'}',
-                  excludeSemantics: true,
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 56,
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        decoration: BoxDecoration(
-                          color: d.isValid ? LtColors.mint : LtColors.paper,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: LtColors.control, width: 1.5),
-                        ),
-                        child: d.isValid ? const Icon(Icons.check_rounded, size: 22) : null,
-                      ),
-                      Text(_dow(d.date), style: LtText.body(size: 15)),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
+        Text('Steps this week', style: LtText.display(20)),
         const SizedBox(height: 10),
+        BandWeekStrip(days: w.days),
+        const SizedBox(height: 12),
         if (w.hasEstimate) ...[
           Text(
-            '${w.validCount} of 7 days counted · about ${w.estimateMinutesPerWeek} minutes a week',
+            '${w.validCount} of 7 days counted · about ${w.estimateMinutesPerWeek} active minutes a week',
             style: LtText.body(weight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Wrap(
             spacing: 8,
+            runSpacing: 6,
             children: [
               if (suggestion?.demo ?? widget.store.demo) const ModeTag(text: BandSuggestion.demoLabel),
               const ModeTag(text: 'From your band'),
@@ -516,8 +490,76 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
     ),
   );
 
-  static String _n(int v) => v.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]},');
-  static String _dow(DateTime d) => const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'][d.weekday - 1];
+  Widget _hourlyCard(BandDay d) => Sheet(
+    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Through the day', style: LtText.display(20)),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _Segment(label: 'Steps', on: !_sitting, onTap: () => setState(() => _sitting = false)),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _Segment(label: 'Sitting', on: _sitting, onTap: () => setState(() => _sitting = true)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        BandHourlyChart(day: d, sitting: _sitting),
+        const SizedBox(height: 4),
+        Text(
+          _sitting ? 'Minutes sitting each hour' : 'Steps each hour',
+          style: LtText.body(color: LtColors.secondary),
+        ),
+      ],
+    ),
+  );
+
+  Widget _howCard() => Sheet(
+    padding: const EdgeInsets.fromLTRB(8, 4, 16, 4),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _howOpen,
+          label: 'How the band counts',
+          excludeSemantics: true,
+          onTap: () => setState(() => _howOpen = !_howOpen),
+          child: InkWell(
+            onTap: () => setState(() => _howOpen = !_howOpen),
+            borderRadius: BorderRadius.circular(16),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 52),
+              child: Row(
+                children: [
+                  const SizedBox(width: 8),
+                  const Icon(Icons.info_outline_rounded, size: 24),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text('How the band counts', style: LtText.body(weight: FontWeight.w700))),
+                  Icon(_howOpen ? Icons.expand_less_rounded : Icons.expand_more_rounded, size: 28),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (_howOpen)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 0, 12),
+            child: WholeWordText(
+              'The band is worn on your leg. It counts your steps and sees whether you are sitting '
+              'or lying, standing, or walking. It does not see your heart or what you are doing. '
+              'Every number is an estimate.${widget.store.demo ? ' These days are demo data.' : ''}',
+              style: LtText.body(color: LtColors.secondary),
+            ),
+          ),
+      ],
+    ),
+  );
 }
 
 class ModeTag extends StatelessWidget {
@@ -538,8 +580,8 @@ class ModeTag extends StatelessWidget {
   );
 }
 
-class _Tab extends StatelessWidget {
-  const _Tab({required this.label, required this.on, required this.onTap});
+class _Segment extends StatelessWidget {
+  const _Segment({required this.label, required this.on, required this.onTap});
   final String label;
   final bool on;
   final VoidCallback onTap;
@@ -566,44 +608,6 @@ class _Tab extends StatelessWidget {
       ),
     ),
   );
-}
-
-/// Steps by hour from 7 AM, one colour; a not-worn hour is a dashed baseline.
-class _HourBars extends StatelessWidget {
-  const _HourBars({required this.hours});
-  final List<int?> hours;
-
-  @override
-  Widget build(BuildContext context) {
-    final shown = hours.sublist(7, 16);
-    final peak = shown.whereType<int>().fold<int>(1, (a, b) => b > a ? b : a);
-    return Semantics(
-      image: true,
-      label:
-          'Steps each hour: ${[for (var i = 0; i < shown.length; i++) '${i + 7}:00 ${shown[i] ?? 'not worn'}'].join(', ')}',
-      excludeSemantics: true,
-      child: SizedBox(
-        height: 96,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            for (final v in shown)
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  height: v == null ? 4 : (8 + 80 * v / peak),
-                  decoration: v == null
-                      ? BoxDecoration(
-                          border: Border(bottom: BorderSide(color: LtColors.control, width: 1.5)),
-                        )
-                      : BoxDecoration(color: LtColors.teal, borderRadius: BorderRadius.circular(4)),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 /// The band's suggestion and its read-back (H-6, H-7, H-7v). "Use this" opens the read-back; only the

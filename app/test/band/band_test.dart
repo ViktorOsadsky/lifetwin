@@ -381,7 +381,7 @@ void main() {
     });
 
     testWidgets(
-      'panel: Today and Week, sensor estimate tags, no survival number; under 4 days gives no weekly number',
+      'panel: Today, week and hours, sensor estimate tags, no survival number; under 4 days gives no weekly number',
       (t) async {
         final repo = await repoWith(30);
         final store = BandStore(StubBandClient(), now: () => today);
@@ -391,12 +391,8 @@ void main() {
         }
         final svc = BandService(repository: repo, now: () => today);
         await pump(t, BandPanelScreen(store: store, service: svc, onBack: () {}, onSettings: () {}));
-        expect(find.text('steps today'), findsOneWidget);
-        expect(find.text('Sensor estimate'), findsOneWidget);
+        expect(find.text('Not enough wear time today'), findsOneWidget);
         expect(find.text('Coming soon'), findsOneWidget);
-        expect(find.textContaining('Wear it'), findsOneWidget);
-        await t.tap(find.text('Week'));
-        await t.pump();
         expect(find.text('Wear it on your leg 4 days to get a weekly number.'), findsOneWidget);
         for (final s in t.widgetList<Text>(find.byType(Text)).map((w) => w.data ?? '')) {
           expect(RegExp(r'in 100|survival|alive').hasMatch(s), isFalse, reason: s);
@@ -446,8 +442,6 @@ void main() {
     testWidgets('panel: after Yes, save the suggestion is gone and the saved state shows', (t) async {
       final (repo, store, svc) = await panelWithOffer();
       await pump(t, panelOver(store, svc, readback: true));
-      await t.tap(find.text('Week'));
-      await t.pump();
       expect(find.text('Mochi has a suggestion'), findsOneWidget);
       await t.tap(find.text('Mochi has a suggestion'));
       await t.pumpAndSettle();
@@ -463,8 +457,6 @@ void main() {
     testWidgets('panel: after Not now the suggestion is gone and nothing is saved', (t) async {
       final (repo, store, svc) = await panelWithOffer();
       await pump(t, panelOver(store, svc, readback: false));
-      await t.tap(find.text('Week'));
-      await t.pump();
       await t.tap(find.text('Mochi has a suggestion'));
       await t.pumpAndSettle();
       await t.tap(find.text('Not now'));
@@ -503,8 +495,6 @@ void main() {
       final store = BandStore(StubBandClient(), now: () => today)..setDemo(true);
       final svc = BandService(repository: repo, now: () => today);
       await pump(t, BandPanelScreen(store: store, service: svc, onBack: () {}, onSettings: () {}));
-      await t.tap(find.text('Week'));
-      await t.pump();
       expect(find.text('Demo data'), findsOneWidget);
       final o = svc.suggest(store.week(), live: store.live, demo: store.demoOnly)!;
       await pump(
