@@ -31,7 +31,7 @@ void main() {
     addTearDown(look.dispose);
     var done = 0;
     await t.pumpWidget(MaterialApp(home: CustomizeScreen(appearance: look, onDone: () => done++)));
-    for (final label in ['Bear', 'Human', 'Hats', 'Tops', 'Glasses', 'Fur', 'Aids', 'Cal hat', 'Save look']) {
+    for (final label in ['Bear', 'Human', 'Hats', 'Room', 'Cal hat', 'Save look']) {
       expect(find.text(label), findsOneWidget);
     }
     expect(t.getSemantics(find.text('Cal hat')), isSemantics(label: 'Cal hat', isChecked: true));
@@ -44,6 +44,26 @@ void main() {
     await t.pump();
     expect(look.value, const TwinAppearance(type: TwinType.human, look: TwinLook.calHat));
     expect(done, 1);
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('Customize hides what has no art: no "coming soon", only real tabs and tiles', (t) async {
+    setPhone(t);
+    final look = ValueNotifier(const TwinAppearance());
+    addTearDown(look.dispose);
+    await t.pumpWidget(MaterialApp(home: CustomizeScreen(appearance: look, onDone: () {})));
+    expect(find.textContaining('coming soon', findRichText: true), findsNothing);
+    for (final gone in ['Tops', 'Glasses', 'Fur', 'Aids', 'Beanie', 'Sun hat', 'Cap', 'Visor']) {
+      expect(find.text(gone), findsNothing, reason: gone);
+    }
+    expect(find.text('Cal hat'), findsOneWidget);
+    expect(find.text('No hat'), findsOneWidget);
+    await t.tap(find.text('Room'));
+    await t.pumpAndSettle();
+    expect(find.textContaining('coming soon', findRichText: true), findsNothing);
+    for (final tile in ['Cozy', 'Morning', 'Twilight']) {
+      expect(find.text(tile), findsOneWidget);
+    }
     expect(t.takeException(), isNull);
   });
 
