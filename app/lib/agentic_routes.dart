@@ -123,7 +123,7 @@ class AgenticRoutes {
         voiceUsable: () => v.voiceUsable,
         healthSamples: healthSamples,
         appearance: look,
-        todayPlan: TodayPlanHook(encouragement: _encouragement, open: (c) => todayPlan(c)),
+        todayPlan: TodayPlanHook(update: _planUpdate, open: (c) => todayPlan(c)),
         child: child!,
       ),
     );
@@ -316,21 +316,38 @@ class AgenticRoutes {
     return answer;
   }
 
-  /// The coach's `encourage` line for today (null when the coach cannot be reached).
-  Future<String?> _encouragement() async {
+  /// The latest plan the coach gave, so a later revision can say what changed.
+  DailyPlan? _lastPlan;
+
+  /// After a check-in: asks the coach to revise today's plan with the check-in results (the same
+  /// `previous_plan` path the plan screen uses) and returns its encouragement and, one line each, its own
+  /// reasons for what changed. Without an earlier plan to compare with there is nothing to say about changes.
+  Future<TodayUpdate> _planUpdate() async {
     final r = repo;
-    if (r == null) return null;
-    final plan = await coach.plan(coachContext(r));
-    for (final i in plan.items) {
-      if (i['kind'] == 'encourage') return i['message'] as String;
+    if (r == null) return const TodayUpdate();
+    final context = coachContext(r);
+    final previous = _lastPlan;
+    if (previous != null && previous.revision != null && !previous.emergency) {
+      context['previous_plan'] = previous.previousPlan();
+      context['latest_revision_id'] = previous.revision;
     }
-    return null;
+    final plan = await coach.plan(context);
+    _lastPlan = plan;
+    String? line;
+    for (final i in plan.items) {
+      if (i['kind'] == 'encourage') line = i['message'] as String;
+    }
+    return TodayUpdate(
+      encouragement: line,
+      changes: previous == null ? null : (plan.reusedPrevious ? const [] : plan.changes),
+    );
   }
 
   /// "Today with Mochi" for Home: mount it where the Today card goes. It asks the outside-AI consent once
   /// before the first plan (the coach may use the same provider), and opens the full plan on a tap.
   Widget todayCard(BuildContext context, {VoidCallback? onTalk}) => TodayWithMochiCard(
     client: coach,
+    onPlan: (p) => _lastPlan = p,
     confirmedContext: () => coachContext(repo!),
     beforeFirstPlan: () => ensureOutsideAiConsent(context),
     onOpen: () => todayPlan(context, onTalk: onTalk),
@@ -344,6 +361,7 @@ class AgenticRoutes {
       MaterialPageRoute<void>(
         builder: (page) => DailyPlanScreen(
           client: coach,
+          onPlan: (p) async => _lastPlan = p,
           confirmedContext: () => coachContext(r),
           onBack: () => Navigator.of(page).pop(),
           onTalk: () {

@@ -79,6 +79,8 @@ class DailyPlan {
   bool get emergency =>
       json['emergency'] == true || json['status'] == 'emergency';
   bool get paused => emergency || json['movement_paused'] == true;
+  /// Nothing new arrived since the earlier plan: the same revision came back.
+  bool get reusedPrevious => json['reused_previous'] == true;
   bool get general => json['plan_type'] == 'general';
   String? get revision => json['revision_id'] as String?;
   List<String> get changes => [
