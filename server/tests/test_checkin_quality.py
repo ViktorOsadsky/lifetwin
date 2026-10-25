@@ -282,3 +282,28 @@ def test_the_closing_line_encourages_without_claims_or_streaks():
         line = CLOSINGS[kind]["default"]
         assert not line.startswith("That's all")
         assert not re.search(r"streak|in a row|healthier|risk|improv|forecast", line, re.I)
+
+
+# --- A change of mind inside one answer: the last number said wins -------------------------
+
+
+@pytest.mark.parametrize(
+    ("field", "kind", "text", "expected"),
+    [
+        (V, "quick", "ran 20 min, no wait 25", {V: 25}),
+        (V, "quick", "an easy walk, 30 minutes, no wait, 40", {M: 40}),
+        (SLEEP, "quick", "7, actually 8", {SLEEP: 8}),
+        (SLEEP, "quick", "8, no, more like 7", {SLEEP: 7}),
+        (S, "quick", "about 6 hours, no actually 7", {S: 420}),
+        (
+            "exercise_minutes_today",
+            "daily",
+            "ran 20 min, no wait 25",
+            {"exercise_minutes_today": 25},
+        ),
+        (SLEEP, "quick", "6 or 7", {SLEEP: 6.5}),  # a range: the midpoint, by convention
+        (SLEEP, "quick", "7 hours, actually I'm not sure", {}),
+    ],
+)
+def test_the_last_number_said_wins(field, kind, text, expected):
+    assert heard(say(at(field, kind=kind), text)) == expected

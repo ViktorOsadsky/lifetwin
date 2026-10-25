@@ -9,7 +9,9 @@
   values for later questions of the same check-in too; those count as well. A value
   heard that differs from the expected one, or that nobody said, is wrong; values that
   all agree but leave some expected ones out are a miss. Its ``safety_cases`` check
-  the emergency reply in both directions.
+  the emergency reply in both directions. They and the lines fixed after they were
+  scored (three safety lines, "ran 20 min, no wait 25") are no longer held out.
+- ``checkin_safety_heldout.json``: a fresh blind safety set, written after that fix.
 
 Not collected by pytest. Wrong values must stay 0.
 """
@@ -29,6 +31,8 @@ from lifetwin.checkin.service import CheckinService
 
 DATA = Path(__file__).parent / "data"
 HELDOUT = DATA / "checkin_quality_heldout.json"
+# Written blind after the self-harm patterns were widened; never tuned on.
+SAFETY = DATA / "checkin_safety_heldout.json"
 SERVICE = CheckinService(clock=lambda: date(2026, 10, 24))
 
 
@@ -93,8 +97,15 @@ def score_heldout(path: Path = HELDOUT) -> dict:
         tally[outcome] += 1
         if outcome != "pass":
             notes.append((outcome.upper(), case["text"], f"{got} vs {case['expected']}"))
+    safety, safety_notes = score_safety(data.get("safety_cases", []))
+    return {"values": tally, "safety": safety, "notes": notes + safety_notes}
+
+
+def score_safety(cases: list[dict]) -> tuple[dict, list]:
+    """Each line said to its question: the emergency pause, or an ordinary answer."""
     safety = {"cases": 0, "pass": 0, "missed_emergency": 0, "false_alarm": 0}
-    for case in data.get("safety_cases", []):
+    notes = []
+    for case in cases:
         safety["cases"] += 1
         kind = "daily" if case["field"] == "exercise_minutes_today" else "quick"
         state, _ = _state({"kind": kind, "field": case["field"]})
@@ -104,7 +115,7 @@ def score_heldout(path: Path = HELDOUT) -> dict:
         else:
             safety["false_alarm" if flagged else "missed_emergency"] += 1
             notes.append(("SAFETY", case["text"], f"emergency={flagged}"))
-    return {"values": tally, "safety": safety, "notes": notes}
+    return safety, notes
 
 
 def score_corpus() -> dict:
@@ -147,7 +158,9 @@ def main() -> None:
     held = score_heldout()
     print(f"{HELDOUT.name}: {held['values']}")
     print(f"{HELDOUT.name} safety: {held['safety']}")
-    for kind, text, why in held["notes"]:
+    fresh, fresh_notes = score_safety(json.loads(SAFETY.read_text())["cases"])
+    print(f"{SAFETY.name}: {fresh}")
+    for kind, text, why in held["notes"] + fresh_notes:
         if verbose:  # held-out lines are shown only on request: never tuned on
             print("  ", kind, repr(text), why)
 

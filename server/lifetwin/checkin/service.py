@@ -54,7 +54,13 @@ from lifetwin.checkin.scripts import (
     CheckinField,
     quick_script,
 )
-from lifetwin.checkin.understanding import ACTIVITY, read_activity, read_sitting
+from lifetwin.checkin.understanding import (
+    ACTIVITY,
+    SELF_CORRECTION,
+    last_said,
+    read_activity,
+    read_sitting,
+)
 from lifetwin.core.models import CheckinValues
 from lifetwin.onboarding.habits import merge, read_notes
 from lifetwin.onboarding.intents import (
@@ -1124,6 +1130,8 @@ class CheckinService:
 
     def _read(self, state: CheckinState, text: str, voice: bool):
         """(values, follow-up, same as before) for a reply to the current question."""
+        if SELF_CORRECTION.search(_canonical(normalize_text(text))):
+            text = last_said(text)  # "7, actually 8": the number said last
         field = state.current_field
         names = self._asked(state)
         previous = {

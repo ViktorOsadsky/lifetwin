@@ -146,8 +146,36 @@ IDIOMS = (
 MORE_THAN = r"\band a (?:bit|little)\b|\b(?:\d+|an?) (?:minute|hour)s? (?:plus|or more)\b|\bodd\b"
 
 
+# A change of mind inside one answer: "ran 20 min, no wait 25", "7, actually 8",
+# "8, no, more like 7". The number said last replaces the one before it.
+SELF_CORRECTION = re.compile(
+    r"(?P<old>(?<![\d.])\d+(?:\.\d+)?)(?P<unit> ?(?:minute|hour)s?\b)?"
+    r"[\s,.;:!-]+(?:(?:no|nope|sorry|oh|um|er|uh)[\s,.;:!-]+)*"
+    r"(?:wait|actually|i mean|i meant|make that|scratch that|correction|hang on|hold on|"
+    r"no no|or rather|rather|more like)[\s,.;:!-]+"
+    r"(?:(?:no|it was|it's|more like|like|about|maybe|probably|closer to)[\s,.;:!-]+)*"
+    r"(?P<new>(?<![\d.])\d+(?:\.\d+)?)(?P<newunit> ?(?:minute|hour)s?\b)?"
+)
+
+
+def last_said(text: str) -> str:
+    """The answer with each change of mind applied: the last number said wins, in the
+    unit said with it (or the first number's unit)."""
+    plain = _canonical(normalize_text(text))
+
+    def keep(match: re.Match) -> str:
+        unit = match.group("newunit") or match.group("unit") or ""
+        return match.group("new") + unit
+
+    for _ in range(3):  # "7, no wait 8, actually 9"
+        plain, changed = SELF_CORRECTION.subn(keep, plain)
+        if not changed:
+            break
+    return plain
+
+
 def _plain(text: str) -> str:
-    text = _canonical(normalize_text(text))
+    text = last_said(text)
     text = re.sub(IDIOMS, " ", text)
     # "Chased the kids for an hour": the person's own activity, the kids are only in it.
     text = re.sub(
