@@ -2,7 +2,7 @@
 
 Goal for the judges: one connected story of everything we promise. Say what you bring, see your twin's modeled outlook and health score, check in, try a change, get a plan, add a document and a wristband value, see where every number came from, and keep control of your data.
 
-Persona: **Rosa, 68** (former smoker, high blood pressure, sits a lot, walks the dog). Two ways to run it:
+Persona: **Rosa, 64** (never smoked, no diagnoses, sits a lot, walks the dog; the approved design persona, BMI 25.1). Two ways to run it:
 
 - **Seeded (recommended for the judged run):** build with `DEMO_SEED=1`. Rosa already has 16 days of history, so steps 3 to 9 show real data. Do step 1 live on a second, empty phone or simulator if you want to show onboarding.
 - **Live from empty:** build without `DEMO_SEED`. Step 1 creates the profile; the history steps are thinner. Use this only for the onboarding segment.
@@ -42,22 +42,22 @@ Show: the Room with the bear.
 ### 1. Short onboarding with Apple Health quick-fill (50 s)
 Needs: server up, `ONBOARDING_DEMO=1`, `LLM_*` for free-form answers, Cartesia for voice. Use a fresh install without the seed.
 - Tap **Talk**. Mochi greets you. Agree to the voice prompt (or tap **Type instead**).
-- Say or type: "I'm 68." Then "Female." Then "I used to smoke, I quit." Confirm each read-back with **Yes**.
+- Say or type: "I'm 64." Then "Female." Then "I've never smoked." Confirm each read-back with **Yes**.
 - Mochi asks about memory: say "Yes, remember my habits." Say one habit: "I walk the dog in the morning."
 - When Mochi offers Apple Health, tap **Use my Apple Health**, allow access, review the values, tap **Yes, that's right** on the read-back.
 Should appear: read-backs after each answer, a rough-estimate tag on simple-question answers, the Health values filled in (height, weight, sleep, activity), then Mochi finishing.
-Fallback: tap **Type instead** and type the answers; if the server is unreachable, switch to the seeded phone and say "here is Rosa after two weeks". If Health has no data, answer height and weight by voice (163 cm, 68 kg).
+Fallback: tap **Type instead** and type the answers; if the server is unreachable, switch to the seeded phone and say "here is Rosa after two weeks". If Health has no data, answer height and weight by voice (162.6 cm, 66.5 kg).
 
 ### 2. Outlook reveal (25 s)
 The one-time lifespan/outlook reveal is still pending Viktor. Do not claim life expectancy. Use the 5-year statement.
 Tap the outlook card in the Room (or the Fortune ball). Say: "Out of 100 people with answers like Rosa's, about N are modeled to be alive in five years. This is the modeled survival of similar people, not a prediction about Rosa."
-Should appear: the "Modeled survival of similar people" title, a 5-year number, and the drivers in plain words. No death date, no years gained.
+Should appear: the "Modeled survival of similar people" title, a 5-year number (about 97 in 100 for Rosa at onboarding), and the drivers in plain words. No death date, no years gained.
 Fallback: if the number is missing, read the message on screen (it says what is still needed) and fill that input by Talk. A missing number is the correct behaviour, not a bug.
 Depends on: on-device model only. No server.
 
 ### 3. Health score hero (25 s) (pending UI for the percentile line)
 Say: "This is Viktor's health score for Rosa. It comes from the same model. Lower hazard is healthier, and the app says how she compares with people her age: healthier than X of 100 people her age."
-Should appear (seeded): the score and the age-group percentile; the trend over the 16 days starts near 51 and ends near 57 (the percentile follows the events, from the real model).
+Should appear (seeded): the score and the age-group percentile; the score starts near -0.04 (about 79th percentile for her age group) and ends near -0.13 (about 86th) over the 16 days, following the events, from the real model.
 Fallback if the hero is not merged: describe it from the Room outlook card and say the score and percentile exist in the app's engine (`healthScore`, `ageGroupPercentile`). Do not invent a number.
 Depends on: on-device only.
 
@@ -80,7 +80,7 @@ Fallback if the screen is not merged: the engine exists (`POST /api/coach/plan`,
 Depends on: server `/api/coach/plan`; Muse rewording only with outside-AI consent (OFF in the seed).
 
 ### 7. Mochi change (15 s, seeded)
-Say: "When Rosa told Mochi she sits less in the evening, the change was saved as a Mochi change, with its source." (Seeded: sitting 420 to 360 minutes a day.) Live option: tap **Talk**, say "I sit less now, about six hours." Confirm the read-back.
+Say: "When Rosa told Mochi she sits less in the evening, the change was saved as a Mochi change, with its source." (Seeded: sitting 480 to 420 minutes a day.) Live option: tap **Talk**, say "I sit less now, about six hours." Confirm the read-back.
 Depends on: server change chat and `LLM_*` for the live version; the seeded one needs nothing.
 
 ### 8. Health document upload (30 s)
@@ -97,7 +97,7 @@ Depends on: on-device only. The seed supplies every source.
 ### 10. Wristband confirmation (25 s)
 Open the band screen. Tap **Try a recorded demo** if the band is not on hand, or **Find my band** then **Pair**. Mochi suggests a moderate-activity number from the last 7 days (needs 4 valid days). Tap **Use this**, then confirm the read-back with **Yes, save**.
 Should appear: "From your band" and an "approximate, sensor estimate" tag. Say: "Band values are estimates, and are never sent to an outside AI."
-Fallback: recorded demo data; if even that fails, show the seeded value in history (moderate activity 140 minutes a week, source band, estimate).
+Fallback: recorded demo data; if even that fails, show the seeded value in history (moderate activity 90 to 120 minutes a week, source band, estimate).
 Depends on: on-device only (Bluetooth), or the recorded demo.
 
 ### 11. Privacy (25 s)

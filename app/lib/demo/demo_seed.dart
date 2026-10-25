@@ -1,4 +1,4 @@
-/// Opt-in demo data: "Rosa", 68, with about two weeks of history on the phone, so a judged
+/// Opt-in demo data: "Rosa", 64, with about two weeks of history on the phone, so a judged
 /// walkthrough starts from a lived-in app instead of an empty one.
 ///
 /// Off unless the app is built with `--dart-define=DEMO_SEED=1`. With the flag absent or 0,
@@ -29,7 +29,11 @@ Future<TwinRepository> openTwin({
   DateTime Function()? now,
 }) async {
   if (!demo) {
-    return TwinRepository.open(bundle: bundle, backend: backend, reminders: reminders);
+    return TwinRepository.open(
+      bundle: bundle,
+      backend: backend,
+      reminders: reminders,
+    );
   }
   // The repository keeps this clock; while seeding it reads the simulated time, afterwards the real one.
   DateTime? simulated;
@@ -47,18 +51,18 @@ Future<TwinRepository> openTwin({
   return repo;
 }
 
-/// Rosa's confirmed profile at onboarding (the model's supported ranges; BMI about 25.6).
+/// Rosa's confirmed profile at onboarding: the approved design persona (BMI 25.149; 5-year survival about 96.9 %).
 const rosaProfile = <String, dynamic>{
-  'age': 68,
+  'age': 64,
   'sex': 'female',
-  'height_cm': 163.0,
-  'weight_kg': 68.0,
+  'height_cm': 162.6,
+  'weight_kg': 66.49,
   'sleep_hours': 6.5,
-  'smoking_status': 'former',
+  'smoking_status': 'never',
   'diabetes': false,
-  'hypertension_diagnosed': true,
+  'hypertension_diagnosed': false,
   'general_health': 3,
-  'sedentary_min_day': 420,
+  'sedentary_min_day': 480,
   'moderate_recreation_min_week': 90,
   'vigorous_recreation_min_week': 0,
 };
@@ -130,7 +134,7 @@ Future<void> seedDemo(
     final k = ago % 3; // a little day-to-day variation, deterministic
     final sleep = better ? 6.8 + 0.2 * k : 6.0 + 0.2 * k;
     final moderate = better ? 18 + 2 * k : 10 + 2 * k;
-    final sitting = better ? 390 - 5 * k : 450 - 5 * k;
+    final sitting = better ? 430 - 5 * k : 490 - 5 * k;
     final unknown = date == dontKnow;
     events.add((
       at(ago, 10, 15),
@@ -179,8 +183,8 @@ Future<void> seedDemo(
         'confirmed': {
           'sleep_hours': 6.9,
           'vigorous_recreation_min_week': 0,
-          'moderate_recreation_min_week': 140,
-          'sedentary_min_day': 360,
+          'moderate_recreation_min_week': 120,
+          'sedentary_min_day': 420,
           'wellbeing': 'good',
         },
       },
@@ -219,7 +223,7 @@ Future<void> seedDemo(
   events.add((
     at(sundayAgo + 3, 18),
     () => repo.saveConversationProfile({
-      'sedentary_min_day': 360,
+      'sedentary_min_day': 420,
     }, kind: HistoryKind.mochiChange),
   ));
 
@@ -228,7 +232,7 @@ Future<void> seedDemo(
   events.add((
     at(sundayAgo + 1, 19),
     () => repo.saveConversationProfile(
-      {'moderate_recreation_min_week': 140},
+      {'moderate_recreation_min_week': 120},
       kind: HistoryKind.mochiChange,
       sources: {'moderate_recreation_min_week': HistorySource.wristband},
     ),

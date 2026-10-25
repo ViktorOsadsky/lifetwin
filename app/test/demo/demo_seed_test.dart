@@ -42,8 +42,9 @@ void main() {
     setUp(() async => repo = await seeded());
 
     test('Rosa has a supported profile and a score from the real model', () {
-      expect(repo.profile['age'], 68);
-      expect(repo.profile['smoking_status'], 'former');
+      expect(repo.profile['age'], 64);
+      expect(repo.profile['smoking_status'], 'never');
+      expect(repo.profile['hypertension_diagnosed'], false);
       final a = repo.current!;
       expect(a.available, isTrue);
       expect(a.healthScoreStatus, HealthScoreStatus.available);
@@ -116,6 +117,23 @@ void main() {
         HistorySource.mochiChange,
       );
     });
+
+    test(
+      'onboarding matches the approved design persona (persona_out.json)',
+      () {
+        final h = (rosaProfile['height_cm'] as double) / 100;
+        expect(
+          (rosaProfile['weight_kg'] as double) / (h * h),
+          closeTo(25.14860539551897, 0.01),
+        );
+        final first = repo.model.assessModel(toModelProfile(rosaProfile));
+        expect(first.available, isTrue);
+        expect(first.percentByYear[5]!, closeTo(96.92, 0.01));
+        expect(first.healthScore!, closeTo(-0.0375, 0.005));
+        final seeded = repo.healthScoreHistory().first;
+        expect(seeded.score!, closeTo(-0.0375, 0.005));
+      },
+    );
 
     test('the weekly check-in is the one that fed the forecast', () {
       final weekly = repo.history().firstWhere(
