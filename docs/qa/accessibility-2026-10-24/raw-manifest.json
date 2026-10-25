@@ -1,0 +1,306 @@
+{
+  "pin": "1a648bd405df4c76b5c1dea3339194c31201913c",
+  "retention": "Temporary local files, not durable hosted artifacts; includes excluded historical/wrong-route diagnostics. Only named committed images support acceptance.",
+  "entries": [
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/font-readback.json",
+      "bytes": 138,
+      "sha256": "403b0b005f767aca77b482be24d3e0823fd3c1f5c4eb26249cde99a880246df8"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-band-pair.png",
+      "bytes": 957634,
+      "sha256": "cd40fa9d376a6b13b1898efa6908cd1a6d27c92c413d86c9bfd18bc863fbe749"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-daily-checkin-scroll1.png",
+      "bytes": 902743,
+      "sha256": "101aabadb4fe4536847f84d177bdc9ba187d1e7567e5656950d39aafd0e63ea8"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-daily-checkin-scroll2.png",
+      "bytes": 903544,
+      "sha256": "1e0080b2376294fad02672e3700a399d2eb25d53643d62507b9c556d7084cffc"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-daily-checkin.png",
+      "bytes": 902743,
+      "sha256": "101aabadb4fe4536847f84d177bdc9ba187d1e7567e5656950d39aafd0e63ea8"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-experiment-hub.png",
+      "bytes": 1068918,
+      "sha256": "3e0f84d177bb1e07df2d0c122703b2bdfa4fe02ac682855430b5ff0dd262b792"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-experiment-lever.png",
+      "bytes": 540714,
+      "sha256": "29b4f803709bbd0b530bcb3a12da3373cb23ef9c010eecb1ff18eb7dc50a5b80"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-history-detail-scroll1.png",
+      "bytes": 551072,
+      "sha256": "37365fc20a7b1c001da060873160eee9bdae058a59793110da6e195910a33f70"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-history-detail-scroll2.png",
+      "bytes": 538701,
+      "sha256": "930c880a3a4170e34086e10e4dff902aba2e9f0e6c08285894b5e7973dfdb045"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-history-detail-scroll3.png",
+      "bytes": 558573,
+      "sha256": "f945e495655fe52f1d359c3b7292d929690b396e7d67e393a30c7cf5bfb6446e"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-history-detail.png",
+      "bytes": 565210,
+      "sha256": "55c3d61c62ef02865d7f4e808a88e07ce121606d3775f166ff212cfc4ce5e9a3"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-history.png",
+      "bytes": 833441,
+      "sha256": "c42b9d8677212f3d6fa0fd21d6fe546b7be2fefaceab53f709c3b73a12af852d"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-home-scroll1.png",
+      "bytes": 830177,
+      "sha256": "90cfa9ef5673d7ff072a1a584e181f010d636cb85876aed4c8fcb64b3d66b6af"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-home-scroll2.png",
+      "bytes": 815129,
+      "sha256": "d96d548316b81068e52754dbbead0016b010ed4c7d9b92d560ac90e393365221"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-home-scroll3.png",
+      "bytes": 805026,
+      "sha256": "869d4e17aeafbb3fffd7effac49b0a0f954cd305448de7725fc8351019768b08"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-home-scroll4.png",
+      "bytes": 804941,
+      "sha256": "3707b28f6189a115c23b289632dc14c2de17b693b57ad9e0bcde4998f767ce8e"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-home.png",
+      "bytes": 769512,
+      "sha256": "e01f3518b4ab6d656b63e803a8e961232f04331138e18034a29012944113d3d2"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-ideas-list.png",
+      "bytes": 529507,
+      "sha256": "44362fe29be1b4abefbd9d5078dcc673dbb99c91db25075c96776285913fdcbd"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-missing-action-Half an hour more sleep.png",
+      "bytes": 539271,
+      "sha256": "86d99b4335be1ce1a7f951e0b934f3c803634da49e03716a1b708628feda2a79"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-missing-action-Try a recorded demo.png",
+      "bytes": 828219,
+      "sha256": "4261d32f54559abd496bb35c5ab23a4132dac4e80dc0f019f6f5ea42ee79cf05"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-missing-contains-Open details.png",
+      "bytes": 535586,
+      "sha256": "752b867552144319ebb509ed59b2c7053d938a71c514d6029934fcc96e284f33"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-onboarding-consent.png",
+      "bytes": 900770,
+      "sha256": "e58318a7a09f27049dae6b144543f63db1c21c79de456bbd3085639655229b54"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-onboarding-conversation-scroll1.png",
+      "bytes": 566272,
+      "sha256": "ea03f35dabc56ce3bcbe287b00dcd639aa1d2a7150cfcba8148eed5d859b068c"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-onboarding-conversation-scroll2.png",
+      "bytes": 566272,
+      "sha256": "ea03f35dabc56ce3bcbe287b00dcd639aa1d2a7150cfcba8148eed5d859b068c"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-onboarding-conversation.png",
+      "bytes": 890693,
+      "sha256": "daac9ed283ef5104bbf3216bafafaad14752d36040ac946b3c246b2a1849cad2"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-score-dismissed.png",
+      "bytes": 769428,
+      "sha256": "515482ebe78565c9e9f48b84235c4bb90ffde7612b5555a6a0f83997e48bf3cb"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-score-info-scroll1.png",
+      "bytes": 549003,
+      "sha256": "f801033b2a675eebf5d84437199a225769379771b9e3f8abfab91284fd979574"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-score-info-scroll2.png",
+      "bytes": 549003,
+      "sha256": "f801033b2a675eebf5d84437199a225769379771b9e3f8abfab91284fd979574"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-score-info.png",
+      "bytes": 549003,
+      "sha256": "f801033b2a675eebf5d84437199a225769379771b9e3f8abfab91284fd979574"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-settings-scroll1.png",
+      "bytes": 515794,
+      "sha256": "755d1c0243528b114466b8227b120dcb4cb962e05c2c14b8b696caed5d544dad"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-settings-scroll2.png",
+      "bytes": 568468,
+      "sha256": "4adac194162c1e58737f0184cf595de100044d4e95e142bf5004cfbd08d81147"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-settings-scroll3.png",
+      "bytes": 566670,
+      "sha256": "f1a86617843bc6ca04d1fb31aa371fa53ae588470affc21dbac7f5f6d71ea7e5"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-readable/scale16-settings.png",
+      "bytes": 704888,
+      "sha256": "3aef96ba7717e43ceb4a1beb772b4991a58d27c713925a2861daf8b2cc1168a2"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-daily-checkin-after-background-tap.png",
+      "bytes": 756197,
+      "sha256": "1c001754c4b3288b3b2545076a5032da9be725b04f86fce5a3715c04270851c2"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-daily-checkin-scroll1.png",
+      "bytes": 756326,
+      "sha256": "afe04aaa9eba308991a70b7eaafae9c9735419ebf4641810e2e73db791c1fe03"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-daily-checkin-scroll2.png",
+      "bytes": 756197,
+      "sha256": "1c001754c4b3288b3b2545076a5032da9be725b04f86fce5a3715c04270851c2"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-daily-checkin.png",
+      "bytes": 756197,
+      "sha256": "1c001754c4b3288b3b2545076a5032da9be725b04f86fce5a3715c04270851c2"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-experiment-hub.png",
+      "bytes": 870952,
+      "sha256": "6e822e7387b6d3ded4a4022aaa73409f7b9c4f9572618f1b0403b21221b080c7"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-home-scroll1.png",
+      "bytes": 471465,
+      "sha256": "7d0cff97e57c2569b8e17e88b822d7b91a76773bcb06208d3eba96e6d2cbfa74"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-home-scroll2.png",
+      "bytes": 712397,
+      "sha256": "e3555b9c5ee8f42cf53b20dcf31b36e6ecfab8fca2d2e1cbfbae270322571381"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-home-scroll3.png",
+      "bytes": 686978,
+      "sha256": "f7e9d79089f1f40f97b6bea2d15997c8309a2f9eb0a3b70dd0ff5af91cc2a855"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-home-scroll4.png",
+      "bytes": 686978,
+      "sha256": "f7e9d79089f1f40f97b6bea2d15997c8309a2f9eb0a3b70dd0ff5af91cc2a855"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-home.png",
+      "bytes": 468237,
+      "sha256": "cefc21379c2848ffbae35a66a072561ff9b8a31601fbb128e1adfc139f95cf98"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-missing-action-Sleep.png",
+      "bytes": 896937,
+      "sha256": "4f3718cef50d4a9289b7113df44dafc96785cffc43aa1d7093f048dbb7d8f7a1"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-score-dismissed.png",
+      "bytes": 468237,
+      "sha256": "cefc21379c2848ffbae35a66a072561ff9b8a31601fbb128e1adfc139f95cf98"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-score-info-scroll1.png",
+      "bytes": 603121,
+      "sha256": "f19df5fe4329250c441f95e782d6e6b36c26a018c32b518a0fbd2f0757ed3385"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-score-info-scroll2.png",
+      "bytes": 596744,
+      "sha256": "b02b3b4aef62ceeeac5d0265d1ee76b6782c372a46e6c02e7801a5c1b57c54f5"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-score-info.png",
+      "bytes": 573699,
+      "sha256": "f38a5f7742021e1793e86a9bcd19acc35ec7729adb08e51efc4fec87a7c406c1"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-settings-scroll1.png",
+      "bytes": 462126,
+      "sha256": "6b5331f1a69a56761aa5e678371bf3d2c62b9b7a170a9f8587d00ca5465a3ff5"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-settings-scroll2.png",
+      "bytes": 459659,
+      "sha256": "c6d2116298e63fb80c93643f9147a0259dbc2cddd2a8c34dd852e9738140967c"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-settings-scroll3.png",
+      "bytes": 473573,
+      "sha256": "dec723b9a794eb06f29f9ba0d65ef38f816644fb91ba848abb8e052adaffb157"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/ax5-settings.png",
+      "bytes": 705088,
+      "sha256": "1c914674b34db431125fdf08e914f2b20e0dfc7d8a8a28195c735174636ea1ba"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-readable/font-readback.json",
+      "bytes": 126,
+      "sha256": "135a9041cc75f0dea4d87fb75f253177bf54e889b587e9c83bef8d5851b09f1d"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-layout.log",
+      "bytes": 216507,
+      "sha256": "7872504eaa8ba00bb6f568f18da4fc9bac06bee702b5616b6de2581434761341"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-scale16-routes.log",
+      "bytes": 138052,
+      "sha256": "76c03dcd618ad9c03eeb739c278aa5d5ecf2c2c0ef0c14cf1f72c28aa98247f4"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-layout.log",
+      "bytes": 142441,
+      "sha256": "b4c34274048ef1803be6d7ef544dab7173c53405aea4bc1227190bdf8ebbd4f4"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-home-voiceover.log",
+      "bytes": 15851,
+      "sha256": "86a563f6ee4cfa9373c6de05123c03a097c242ecf684a679df3517c5d66441d6"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/final-ax5-native-build.log",
+      "bytes": 223748,
+      "sha256": "a2132b47136c8822b82a812d4af58486df9604127c06ceada73d348220eb81cf"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/probe-base.log",
+      "bytes": 16231,
+      "sha256": "4c1c9b24ccff7fe89cf7b2b72f32777a68cbf9faf4cefc3dca4b256c0a366996"
+    },
+    {
+      "local_path": "/private/tmp/lifetwin-accessibility-134/routes-base.log",
+      "bytes": 227133,
+      "sha256": "e1619540c6aafcad0b2d1b5f8c3685ae7e8ed625d99b0b1689c01f722b082d2c"
+    }
+  ]
+}
