@@ -106,6 +106,8 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('Got it'));
     await t.pumpAndSettle();
+    // Survival is labelled on the forecast itself, not only on the detail screen.
+    expect(find.text('Modeled survival of similar people'), findsOneWidget);
     // The 1- and 3-year values live on the detail curve.
     await t.ensureVisible(find.text('See what shaped it'));
     await t.pumpAndSettle();
@@ -113,7 +115,7 @@ void main() {
     await t.pumpAndSettle();
     expect(
       find.bySemanticsLabel(
-        'Out of 100 people with answers like yours: about 98 after 1 year, about 96 after 2 years, '
+        'Modeled survival of similar people. Out of 100 people with answers like yours: about 98 after 1 year, about 96 after 2 years, '
         'about 93 after 3 years, about 91 after 4 years, about 88 after 5 years.',
       ),
       findsOneWidget,

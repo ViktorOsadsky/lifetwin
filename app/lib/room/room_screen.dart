@@ -4,6 +4,9 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../checkin/check_in_entry.dart';
+import '../experiment/room_pills.dart';
+import '../twin/twin_model.dart' show TwinAssessment, extrapolationCaveat;
 import '../forecast/forecast_client.dart';
 import '../wellness/home_panel.dart';
 import '../wellness/models.dart';
@@ -40,6 +43,7 @@ class RoomScreen extends StatefulWidget {
     this.onQuiz,
     this.onHistory,
     this.onPlan,
+    this.extraPills = const [],
     this.onUploadDocument,
   });
 
@@ -66,6 +70,8 @@ class RoomScreen extends StatefulWidget {
   final VoidCallback? onQuiz;
   final VoidCallback? onHistory;
   final VoidCallback? onPlan;
+  /// More pills beside the status line (`roomPills`).
+  final List<Widget> extraPills;
   /// "Upload a document": health-document upload, offered at entry beside Apple Health.
   final VoidCallback? onUploadDocument;
 
@@ -190,7 +196,9 @@ class _RoomScreenState extends State<RoomScreen> {
               Positioned.fill(
                 child: ValueListenableBuilder<TwinAppearance>(
                   valueListenable: widget.appearance,
-                  builder: (context, look, _) => RoomScene(sim: _sim, appearance: look, clear: _clear),
+                  builder: (context, look, _) => RoomTwinState(
+                    builder: (state) => RoomScene(sim: _sim, appearance: look, clear: _clear, twinState: state),
+                  ),
                 ),
               ),
               SafeArea(
@@ -227,6 +235,7 @@ class _RoomScreenState extends State<RoomScreen> {
                                     key: _bottomKey,
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
+                                      const CheckInEntry(),
                                       if (_needTalk && !widget.hasProfile) ...[
                                         const Bubble(
                                           text: RoomScreen.talkFirst,
@@ -247,6 +256,7 @@ class _RoomScreenState extends State<RoomScreen> {
                                           StatusPill(label: _sim.status, icon: Icons.circle),
                                           if (widget.onPlan != null) _HealthPill(onTap: widget.onPlan!, label: 'Today’s plan', icon: Icons.wb_sunny_outlined),
                                           if (widget.onUseHealth != null) _HealthPill(onTap: _useHealth),
+                                          ...widget.extraPills,
                                           if (widget.onUploadDocument != null)
                                             _HealthPill(
                                               onTap: _uploadDocument,
@@ -334,9 +344,9 @@ class _OutlookCard extends StatelessWidget {
     final has = f != null && f.supported;
     final years = has ? f.maxHorizonYears : 5;
     final line = has ? 'about ${f.outOf100(years)} in 100' : 'Ask the ball';
-    return Semantics(
+    final card = Semantics(
       button: true,
-      label: 'Your $years-year look: $line',
+      label: 'Your $years-year look: $line${has ? '. ${TwinAssessment.survivalTitle}' : ''}',
       excludeSemantics: true,
       onTap: onTap,
       child: GestureDetector(
@@ -371,6 +381,7 @@ class _OutlookCard extends StatelessWidget {
                   children: [
                     WholeWordText('Your $years-yr look', style: LtText.body()),
                     WholeWordText(line, style: LtText.display(19)),
+                    if (has) WholeWordText(TwinAssessment.survivalTitle, style: LtText.body(size: 15)),
                   ],
                 ),
               ),
@@ -378,6 +389,13 @@ class _OutlookCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+    // Age 30-34 or 80-85: a Rough guide badge beside the number, opening the engine's caveat.
+    if (!has || !f.extrapolated) return card;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [card, RoughGuideBadge(caveat: extrapolationCaveat)],
     );
   }
 }

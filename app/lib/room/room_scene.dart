@@ -4,11 +4,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../twin/twin_state.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/twin_sprite.dart';
 import 'room_layout.dart';
+import 'room_mood_pose.dart';
 import 'room_sim.dart';
 
 /// The room, as three pre-rendered layers with the twin between them:
@@ -23,10 +25,13 @@ import 'room_sim.dart';
 /// Swap point: a future room engine (for example Flame) replaces this widget
 /// and its projector; [RoomSim] and the screen around it stay the same.
 class RoomScene extends StatefulWidget {
-  const RoomScene({super.key, required this.sim, required this.appearance, this.clear = EdgeInsets.zero});
+  const RoomScene({super.key, required this.sim, required this.appearance, this.clear = EdgeInsets.zero, this.twinState});
 
   final RoomSim sim;
   final TwinAppearance appearance;
+
+  /// The character's state; while the twin just stands around it shows this pose. Null: plain standing.
+  final TwinState? twinState;
 
   /// How much of the screen the UI covers at the top and the bottom.
   final EdgeInsets clear;
@@ -292,14 +297,15 @@ class _RoomSceneState extends State<RoomScene> {
 
   List<Widget> _twin(RoomLayout layout) {
     final proj = layout.projector;
-    final (twinPose, shape) = resolveRoomPose(widget.appearance, sim.pose);
+    final (roomPose, roomShape) = resolveRoomPose(widget.appearance, sim.pose);
+    final (twinPose, shape, moodScale) = applyMoodPose(widget.appearance, roomPose, roomShape, widget.twinState);
     final asset = twinAsset(widget.appearance.type, widget.appearance.look, twinPose);
     final size = twinSpriteSize1x[asset] ?? const Size(180, 180);
     final x = sim.pos.dx, z = sim.pos.dy, y = sim.yOff + sim.bob;
     final az = layout.cameraAzimuth;
     // The billboard leans back toward the camera; lying down, it faces it.
     final lean = (shape == RoomPose.sleep ? layout.cameraPitchDeg : layout.leanDeg) * math.pi / 180;
-    final h = layout.bearHeight * (_poseHeight[shape] ?? 1);
+    final h = layout.bearHeight * (_poseHeight[shape] ?? 1) * moodScale;
     final feet = proj.project(x, y, z);
     final head = proj.project(
       x - math.sin(lean) * math.sin(az) * h,

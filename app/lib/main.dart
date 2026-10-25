@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'checkin/checkin_reminders.dart';
 import 'customize/customize_screen.dart';
+import 'agentic_routes.dart';
 import 'documents/document_screen.dart';
 import 'documents/document_extract.dart';
 import 'documents/document_upload.dart';
@@ -46,6 +47,7 @@ class LifeTwinApp extends StatefulWidget {
     this.documentService,
     this.appearance,
     this.twin,
+    this.agentic,
   });
 
   /// Tests pass a controller built from fakes.
@@ -56,6 +58,9 @@ class LifeTwinApp extends StatefulWidget {
 
   /// Tests may pass one; otherwise the model is loaded and the store opened at startup.
   final Future<TwinRepository>? twin;
+
+  /// The agentic screens' shell (check-ins, Experiment, pills). Tests pass one with fake clients.
+  final AgenticRoutes? agentic;
 
   /// Tests pass a fake; otherwise Apple Health.
   final HealthReader? healthReader;
@@ -79,6 +84,8 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       widget.twin ?? TwinRepository.open(reminders: CheckinReminders(LocalNotificationPort()));
   late final ForecastClient _forecast =
       widget.forecastClient ?? OnDeviceForecastClient(_twin, modelInputs: () => _controller.modelInputs);
+
+  late final AgenticRoutes _agentic = widget.agentic ?? AgenticRoutes(look: _look, api: _api, voice: () => _controller);
 
   /// The profile saved on the phone by an earlier session, once the store is open.
   Map<String, dynamic>? _stored;
@@ -163,6 +170,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       _look.addListener(_saveLook);
       setState(() {
         _wellness = RepositoryWellness(repo);
+        _agentic.attach(repo);
         if (repo.store.hasProfile) _stored = repo.store.profile;
       });
     }, onError: (Object e) => debugPrint('LifeTwin model or store did not load: $e'));
@@ -348,6 +356,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       title: 'LifeTwin',
       debugShowCheckedModeBanner: false,
       theme: lifeTwinTheme(),
+      builder: _agentic.wrap,
       home: ListenableBuilder(
         listenable: Listenable.merge([_controller, _wellness]),
         builder: (context, _) => RoomScreen(
@@ -359,11 +368,12 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onCustomize: () => _customize(context),
           onFortune: () => _ceremony(context),
           outlook: _outlook,
-          // Health score stays unknown; the seven days come from the phone repository.
+          // The seven days come from the phone repository.
           wellness: _wellness?.snapshot ?? const WellnessSnapshot(),
           onHistory: _wellness == null ? null : () => _history(context),
           onPlan: _wellness != null && (_profile?['age'] as num? ?? 0) >= 18 ? () => _plan(context) : null,
           onQuiz: () => _playQuiz(context),
+          extraPills: _agentic.pills(context),
         ),
       ),
     );
