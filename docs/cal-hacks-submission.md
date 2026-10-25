@@ -2,7 +2,7 @@
 
 Updated October 24, 2026 for [#76](https://github.com/ViktorOsadsky/lifetwin/issues/76). Writing only: this does not publish to Devpost, create slides, change sharing, or claim the final demo was rehearsed. Daniel owns final names, stage timings/ratings and submission. The earlier draft lived on the design-handoff branch; this version brings the updated copy onto main.
 
-Sources of truth: [approved design handoff](design/agentic/agentic-handoff.md), [current demo script](demo-script.md), [packaged model card](../model_handoff/lifetwin_on_device/MODEL_CARD.md), [app model integration](../app/lib/README-model.md) and [backend guide](../server/README.md). Design approvals describe the intended experience; the running demo must establish which screens are ready.
+Sources of truth: [approved design handoff](design/agentic/agentic-handoff.md), [current demo script](demo-script.md), [packaged model card](../model_handoff/lifetwin_on_device/MODEL_CARD.md), [app model integration](../app/lib/README-model.md), [one-time lifespan method and owner override](lifespan-estimate.md) and [backend guide](../server/README.md). Design approvals describe the intended experience; the running demo must establish which screens are ready.
 
 ## Devpost description
 
@@ -20,6 +20,8 @@ LifeTwin makes the experience a pet game, led by Mochi and a customizable bear t
 
 The home experience leads with a health score based on Viktor's model and “Healthier than X of 100 people your age.” That comparison comes from the model's survey reference group; it is not a ranking of everyone in the country. The outlook explains modeled survival of similar people. X and every displayed outlook value come from the engine. [Model integration and comparison reference](../app/lib/twin/twin_model.dart)
 
+A separate on-device engine supports a one-time rough expected age and age range, with an optional rounded calendar year. This is a labeled proof of concept that then recedes behind the daily companion experience; final reveal UI/device acceptance remains Daniel's check. [Lifespan reveal and method](lifespan-estimate.md)
+
 Daily check-ins capture what actually happened. “Experiment with your twin” explores a hypothetical change without overwriting saved answers. A cited daily plan can adapt to feedback, while the twin responds with a friendly reaction. Game reactions and quiz points stay separate from medical inputs and predictions. [Demo flow](demo-script.md), [game and model boundaries](../MASTER_PLAN.md)
 
 Health documents produce dated candidates for review; a lab reading is not automatically a model input. Our homemade band contributes device estimates through a local file import, with wear coverage and confirmation boundaries. Its unknown time stays unknown, and a recorded demo remains visibly synthetic. Bluetooth is a stretch feature, not a completed integration. [Document intake](document-upload.md), [band intake](wearable-file-format.md)
@@ -36,7 +38,9 @@ We explored and reviewed screens in Claude Design, kept an export-based handoff 
 
 For the selected Cox model, the later NHANES cycle test recorded a **C-index of 0.790 versus 0.727** for an age/sex baseline. Mean predicted versus observed five-year survival was **94.27% versus 94.67%**. These are measured model-evaluation results, not a claim of 79% accuracy or a result for an individual user. [Model card](../model_handoff/lifetwin_on_device/MODEL_CARD.md)
 
-The checked age range is **35–79**. The submission's broader **30–85** framing is a rough guide: ages 30–34 and 80–85 are outside that checked range and require the extrapolation label. Model outputs describe observational associations, not proof that a lifestyle change causes longer life. The model is a hackathon research prototype, has not been externally validated, and does not provide a clinical diagnosis, an exact death date or causal years gained. The selected package supports annual survival horizons one through five. [Model card](../model_handoff/lifetwin_on_device/MODEL_CARD.md), [app extrapolation wrapper](../app/lib/twin/twin_model.dart)
+The Cox model's checked age range is **35–79**. The submission's broader **30–85** framing is a rough guide: ages 30–34 and 80–85 are outside that checked range and require the extrapolation label. Model outputs describe observational associations, not proof that a lifestyle change causes longer life. The model is a hackathon research prototype, has not been externally validated, and does not provide a clinical diagnosis, an exact death date or causal years gained. The selected package supports annual survival horizons one through five. [Model card](../model_handoff/lifetwin_on_device/MODEL_CARD.md), [app extrapolation wrapper](../app/lib/twin/twin_model.dart)
+
+Separately, the one-time lifespan wrapper combines the CDC/NCHS *United States Life Tables, 2024* with the Cox model's relative risk, adjusted by assessment-age band and attenuated after five years. Its expected age, age range and optional rounded calendar year are rough extrapolations under the owner override. The five-year evaluation above does not validate these lifetime estimates, and calculation checks do not establish personal predictive validity. This proof of concept makes no exact-date, clinical or causal years-gained claim. [Method, assumptions and limitations](lifespan-estimate.md), [owner override](../AGENTS.md)
 
 ### What comes next
 
@@ -86,7 +90,7 @@ Do not infer a Devpost team list from GitHub assignees or commit authors. Confir
 - Fill team membership/contributions, stage minutes and ratings; remove unused team rows.
 - Confirm the submission age wording: #76 requests the 30–85 rough-guide frame, while current app code also extrapolates ages 18–29. Neither extends the model's checked 35–79 range.
 - Check every demo step against the merged app. The demo script includes pending-screen fallbacks; the band handoff separately records simulator Inbox success and remaining Files/Share/device acceptance.
-- Use the model card's measured figures verbatim. Use the demo engine's actual values on screen; do not reuse an illustrative personal number or promise a lifespan result from the selected five-year package.
+- Use the model card's measured figures verbatim and the demo engine's actual values on screen; do not reuse an illustrative personal number. Keep the selected package's one-to-five-year survival results separate from the one-time life-table wrapper. Label that reveal as a rough proof of concept with its caveat, never an exact date or a validated personal lifespan.
 - Keep seeded history, synthetic usability sessions and fake document uploads labeled as demonstrations. A demo is not a real older-adult study.
 - Add the final demo video, Figma Slides deck and design links, verify current track requirements and judge access, and submit from Daniel's account. These artifacts/account actions were not performed here.
 
