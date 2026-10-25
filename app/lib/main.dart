@@ -86,7 +86,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   late final Future<TwinRepository> _twin =
       widget.twin ?? openTwin(reminders: CheckinReminders(LocalNotificationPort()));
   late final ForecastClient _forecast =
-      widget.forecastClient ?? OnDeviceForecastClient(_twin, modelInputs: () => _controller.modelInputs);
+      widget.forecastClient ?? OnDeviceForecastClient(_twin, modelInputs: () => _saved ? null : _controller.modelInputs);
 
   late final AgenticRoutes _agentic = widget.agentic ?? AgenticRoutes(look: _look, api: _api, voice: () => _controller);
 
@@ -144,15 +144,37 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   /// The answers a forecast uses: whatever the conversation holds now, once finished.
   /// Read live, so "start over" or a changed answer never leaves an older forecast behind.
   /// Before this session's conversation starts, the profile saved on the phone is used.
+  ///
+  /// Once the finished intake is saved on the phone ([_saved]) the saved profile is read instead, so
+  /// a later change through Mochi or a weekly check-in shows in the forecast, not the old intake.
   Map<String, dynamic>? get _profile {
     final turn = _controller.turn;
-    if (turn != null) return turn.complete ? _controller.confirmedProfile : null;
+    if (turn != null && !(turn.complete && _saved)) return turn.complete ? _controller.confirmedProfile : null;
     final repo = _wellness?.repository;
     return repo == null ? _stored : (repo.store.hasProfile ? repo.profile : null);
   }
 
   /// The last supported forecast, for the Room's outlook card.
   final _outlook = ValueNotifier<Forecast?>(null);
+
+  /// The finished intake is on the phone, so the saved profile (not the intake's answers and its
+  /// `model_inputs`) is what the forecast reads. Cleared when the conversation is reopened.
+  bool _saved = false;
+
+  /// Fills [_outlook] from the phone's own current assessment, so the Room never shows an older
+  /// number after a change. Not while an intake is still running.
+  void _syncOutlook() {
+    final a = _wellness?.repository.current;
+    final turn = _controller.turn;
+    if (a == null || (turn != null && !turn.complete)) return;
+    final f = Forecast.fromAssessment(a);
+    _outlook.value = f.supported ? f : null;
+  }
+
+  void _intakeChanged() {
+    final turn = _controller.turn;
+    if (turn != null && !turn.complete) _saved = false;
+  }
 
   static VoiceOnboardingController _live(ApiBase api) {
     final tokens = VoiceTokenProvider(base: api);
@@ -171,11 +193,14 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       final look = repo.store.twin;
       if (look != null && widget.appearance == null) _look.value = _appearanceFrom(look);
       _look.addListener(_saveLook);
+      repo.addListener(_syncOutlook);
+      _controller.addListener(_intakeChanged);
       setState(() {
         _wellness = RepositoryWellness(repo);
         _agentic.attach(repo);
         if (repo.store.hasProfile) _stored = repo.store.profile;
       });
+      _syncOutlook();
     }, onError: (Object e) => debugPrint('LifeTwin model or store did not load: $e'));
   }
 
@@ -217,12 +242,20 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       for (final e in _documentValues.entries)
         if (confirmed[e.key] == e.value) e.key: HistorySource.document,
     };
-    _twin.then((repo) => repo.saveOnboarding(state, modelInputs: _controller.modelInputs, sources: sources)).ignore();
+    _twin
+        .then((repo) => repo.saveOnboarding(state, modelInputs: _controller.modelInputs, sources: sources))
+        .then<void>((_) {
+          _saved = true;
+          _syncOutlook();
+        })
+        .ignore();
   }
 
   @override
   void dispose() {
     _look.removeListener(_saveLook);
+    _wellness?.repository.removeListener(_syncOutlook);
+    _controller.removeListener(_intakeChanged);
     _wellness?.dispose();
     _controller.dispose();
     if (widget.appearance == null) _look.dispose();
@@ -231,7 +264,10 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     super.dispose();
   }
 
-  void _toRoom(BuildContext context) => Navigator.of(context).popUntil((r) => r.isFirst);
+  void _toRoom(BuildContext context) {
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    _syncOutlook();
+  }
 
   /// The conversation, swooshing up from the Room.
   void _talk(BuildContext context) => SwooshRoute.push<void>(
