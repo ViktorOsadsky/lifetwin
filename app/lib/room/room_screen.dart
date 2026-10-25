@@ -216,7 +216,7 @@ class _RoomScreenState extends State<RoomScreen> {
                             ),
                             actions: [
                               if (widget.onBand != null)
-                                _HeaderIcon(icon: Icons.watch_outlined, label: 'Add band', onTap: widget.onBand!),
+                                _HeaderIcon(icon: Icons.directions_walk_rounded, label: 'Add band', onTap: widget.onBand!),
                               if (widget.onHistory != null)
                                 _HeaderIcon(icon: Icons.history_rounded, label: 'My history', onTap: widget.onHistory!),
                               if (widget.onSettings != null)

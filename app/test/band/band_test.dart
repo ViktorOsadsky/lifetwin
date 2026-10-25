@@ -169,14 +169,64 @@ void main() {
       expect(repo.profile['moderate_recreation_min_week'], 40, reason: 'confirmed answers stay');
     });
 
-    test('recorded demo: the Recorded demo state, live is false, nothing offered', () async {
-      final repo = await repoWith(30);
-      final store = BandStore(StubBandClient(), now: () => today)..setDemo(true);
-      expect(store.status, BandStatus.demo);
-      expect(store.live, isFalse);
-      final svc = BandService(repository: repo, now: () => today);
-      expect(store.week().hasEstimate, isTrue);
-      expect(svc.suggest(store.week(), live: store.live), isNull);
+    test(
+      'recorded demo: the Recorded demo state, live is false; only the labelled demo suggestion is offered',
+      () async {
+        final repo = await repoWith(30);
+        final store = BandStore(StubBandClient(), now: () => today)..setDemo(true);
+        expect(store.status, BandStatus.demo);
+        expect(store.live, isFalse);
+        expect(store.demoOnly, isTrue);
+        final svc = BandService(repository: repo, now: () => today);
+        expect(store.week().hasEstimate, isTrue);
+        expect(svc.suggest(store.week(), live: store.live), isNull, reason: 'not live: nothing unless demo is allowed');
+      },
+    );
+
+    group('the recorded demo\'s one "Demo data" suggestion', () {
+      late BandStore store;
+      setUp(() => store = BandStore(StubBandClient(), now: () => today)..setDemo(true));
+
+      BandSuggestion? offer(BandService s) => s.suggest(store.week(), live: store.live, demo: store.demoOnly);
+
+      test('exactly one suggestion, labelled demo; showing it saves nothing', () async {
+        final repo = await repoWith(30);
+        final s = BandService(repository: repo, now: () => today);
+        final o = offer(s)!;
+        expect(o.demo, isTrue);
+        expect(BandSuggestion.demoLabel, 'Demo data');
+        expect(repo.profile['moderate_recreation_min_week'], 30);
+        expect(repo.provenance(bandField)?.source, isNot(HistorySource.wristband));
+      });
+
+      test('confirming saves it like a live estimate (wristband source, estimated)', () async {
+        final repo = await repoWith(30);
+        final s = BandService(repository: repo, now: () => today);
+        final o = offer(s)!;
+        await s.confirm(o);
+        expect(repo.profile['moderate_recreation_min_week'], o.estimate);
+        final p = repo.provenance(bandField)!;
+        expect(p.source, HistorySource.wristband);
+        expect(p.estimated, isTrue);
+        expect(offer(s), isNull, reason: 'not offered again that week');
+      });
+
+      test('dismissing saves nothing and it is not offered again that week, only the next', () async {
+        final repo = await repoWith(30);
+        var now = today;
+        final s = BandService(repository: repo, now: () => now);
+        final o = offer(s)!;
+        s.dismiss();
+        expect(repo.profile['moderate_recreation_min_week'], 30);
+        expect(offer(s), isNull);
+        now = today.add(const Duration(days: 8));
+        expect(offer(s)?.estimate, o.estimate);
+      });
+
+      test('a paired band or an imported file takes priority: the demo is not the source', () {
+        store.paired = true;
+        expect(store.demoOnly, isFalse);
+      });
     });
 
     test('no band, no heart rate number, no survival number anywhere on the store', () {
@@ -347,7 +397,7 @@ void main() {
         expect(find.textContaining('Wear it'), findsOneWidget);
         await t.tap(find.text('Week'));
         await t.pump();
-        expect(find.text('Wear it 4 days to get a weekly number.'), findsOneWidget);
+        expect(find.text('Wear it on your leg 4 days to get a weekly number.'), findsOneWidget);
         for (final s in t.widgetList<Text>(find.byType(Text)).map((w) => w.data ?? '')) {
           expect(RegExp(r'in 100|survival|alive').hasMatch(s), isFalse, reason: s);
         }
@@ -376,6 +426,34 @@ void main() {
       await t.pumpAndSettle();
       expect(store.paired, isFalse);
       expect(store.minutes, isEmpty);
+    });
+
+    testWidgets('the panel, the suggestion and the read-back carry the Demo data tag', (t) async {
+      final repo = await repoWith(30);
+      final store = BandStore(StubBandClient(), now: () => today)..setDemo(true);
+      final svc = BandService(repository: repo, now: () => today);
+      await pump(t, BandPanelScreen(store: store, service: svc, onBack: () {}, onSettings: () {}));
+      await t.tap(find.text('Week'));
+      await t.pump();
+      expect(find.text('Demo data'), findsOneWidget);
+      final o = svc.suggest(store.week(), live: store.live, demo: store.demoOnly)!;
+      await pump(
+        t,
+        BandSuggestScreen(
+          service: svc,
+          store: store,
+          suggestion: o,
+          appearance: const TwinAppearance(),
+          onBack: () {},
+          onUse: () {},
+        ),
+      );
+      expect(find.text('Demo data'), findsOneWidget);
+      await pump(
+        t,
+        BandReadbackScreen(service: svc, suggestion: o, appearance: const TwinAppearance(), onClose: () {}),
+      );
+      expect(find.text('Demo data'), findsOneWidget);
     });
   });
 }

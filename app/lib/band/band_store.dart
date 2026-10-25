@@ -138,6 +138,9 @@ class BandStore extends ChangeNotifier {
   /// Live data only: false for the recorded demo.
   bool get live => (paired || hasImportedFile) && !demo;
 
+  /// The recorded demo is all there is: no paired band and no imported file (those take priority).
+  bool get demoOnly => demo && !paired && !hasImportedFile;
+
   BandStatus get status {
     if (demo) return BandStatus.demo;
     if (connectionLost || hasImportedFile && !paired) {

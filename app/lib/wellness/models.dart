@@ -16,7 +16,7 @@ enum ValueSource {
   appleHealth('Apple Health'),
   document('Document'),
   mochiChange('Mochi conversation'),
-  wristband('Wristband');
+  wristband('Activity band');
 
   const ValueSource(this.label);
   final String label;

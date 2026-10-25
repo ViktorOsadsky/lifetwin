@@ -155,7 +155,7 @@ void main() {
         ),
       );
       expect(find.text('2 good weeks'), findsOneWidget);
-      expect(find.text('Wristband · Estimated'), findsOneWidget);
+      expect(find.text('Activity band · Estimated'), findsOneWidget);
       expect(find.text('Older reading: recorded'), findsNothing);
       expect(find.byType(TextField), findsNothing);
       await t.tap(find.text('All time'));

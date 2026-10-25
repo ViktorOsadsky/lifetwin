@@ -468,7 +468,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
                 SettingsEntry(label: 'Try a change', description: 'Explore what could move your outlook', open: () => _agentic.experiment(c)),
                 SettingsEntry(label: 'What I see', description: 'Your wellness cards, with sources', open: () => _agentic.wellness(c)),
                 SettingsEntry(label: 'Still learning', description: 'Answers Mochi still needs', open: () => _agentic.stillLearning(c)),
-                SettingsEntry(label: 'Wristband', description: 'Pair or try the recorded demo', open: () => _agentic.bandFlow(c)),
+                SettingsEntry(label: 'Activity band', description: 'Pair or try the recorded demo', open: () => _agentic.bandFlow(c)),
               ],
             ),
           ),

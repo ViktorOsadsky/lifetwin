@@ -78,7 +78,7 @@ class _BandPairScreenState extends State<BandPairScreen> {
   @override
   Widget build(BuildContext context) {
     final (bubble, title, state) = switch (_step) {
-      _Step.before => ('Turn on your band.', 'Find your band', steadyTwin),
+      _Step.before => ('Put the band on your leg, then turn it on.', 'Find your band', steadyTwin),
       _Step.searching => ('Looking…', 'Find your band', curiousTwin),
       _Step.found => ('Found your band!', 'Pair your band', steadyTwin),
       _Step.trouble => ('Hmm, I can’t see it yet.', 'Can’t find your band', steadyTwin),
@@ -117,7 +117,11 @@ class _BandPairScreenState extends State<BandPairScreen> {
   List<Widget> _body() {
     switch (_step) {
       case _Step.before:
-        return [WholeWordText('Mochi uses Bluetooth to find your band.', style: LtText.body())];
+        return [
+          WholeWordText('Mochi uses Bluetooth to find your band.', style: LtText.body()),
+          const SizedBox(height: 8),
+          WholeWordText('Strap it around your leg, just above the ankle.', style: LtText.body()),
+        ];
       case _Step.searching:
         return [NoNumberBox(icon: Icons.bluetooth_searching_rounded, title: 'Looking for your band…')];
       case _Step.found:
@@ -134,7 +138,7 @@ class _BandPairScreenState extends State<BandPairScreen> {
               ),
               child: Row(
                 children: [
-                  const LeverIcon(Icons.watch_outlined),
+                  const LeverIcon(Icons.directions_walk_rounded),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -170,12 +174,12 @@ class _BandPairScreenState extends State<BandPairScreen> {
         ];
       case _Step.paired:
         return [
-          WholeWordText('Wear it all day. Mochi counts:', style: LtText.body()),
+          WholeWordText('Wear it on your leg all day. Mochi counts:', style: LtText.body()),
           const SizedBox(height: 6),
           for (final (icon, t, muted) in const [
             (Icons.directions_walk_rounded, 'Steps', false),
             (Icons.directions_run_rounded, 'Moderate minutes', false),
-            (Icons.watch_outlined, 'Time worn', false),
+            (Icons.directions_walk_rounded, 'Time worn', false),
             (Icons.favorite_border_rounded, 'Heart rate, later', true),
           ])
             Padding(
@@ -320,7 +324,7 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
   static const banners = {
     BandStatus.notConnected: ('Band not connected', 'Saved days are safe.', 'Reconnect'),
     BandStatus.lowPower: ('Band power is low', 'Counting may stop soon.', null),
-    BandStatus.notWorn: ('Band is off your wrist', 'Put it on to count today.', null),
+    BandStatus.notWorn: ('Band is off your leg', 'Put it on to count today.', null),
     BandStatus.demo: ('Recorded demo', 'A saved day, not live.', null),
   };
 
@@ -332,7 +336,7 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
       final w = s.week();
       final today = w.days.last;
       final banner = banners[s.status];
-      final suggestion = widget.service.suggest(w, live: s.live);
+      final suggestion = widget.service.suggest(w, live: s.live, demo: s.demoOnly);
       return ExperimentPage(
         mode: LtMode.room,
         title: 'Your band',
@@ -412,7 +416,7 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.watch_outlined, size: 22),
+                  const Icon(Icons.directions_walk_rounded, size: 22),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text('$hours hours worn', style: LtText.body(weight: FontWeight.w700)),
@@ -424,7 +428,7 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
           if (!d.isValid) ...[
             const SizedBox(height: 8),
             WholeWordText(
-              'Wear it ${(validDayMinutes - d.wornMinutes + 59) ~/ 60} more hours so today counts.',
+              'Wear it on your leg ${(validDayMinutes - d.wornMinutes + 59) ~/ 60} more hours so today counts.',
               style: LtText.body(color: LtColors.secondary),
             ),
           ],
@@ -433,7 +437,9 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
             children: [
               const Icon(Icons.favorite_border_rounded, size: 22, color: LtColors.secondary),
               const SizedBox(width: 6),
-              Expanded(child: Text('Heart rate', style: LtText.body(color: LtColors.secondary))),
+              Expanded(
+                child: Text('Heart rate', style: LtText.body(color: LtColors.secondary)),
+              ),
               const SizedBox(width: 8),
               const ModeTag(text: 'Coming soon'),
             ],
@@ -481,15 +487,16 @@ class _BandPanelScreenState extends State<BandPanelScreen> {
             style: LtText.body(weight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
-          const Wrap(
+          Wrap(
             spacing: 8,
             children: [
-              ModeTag(text: 'From your band'),
-              ModeTag(text: 'Sensor estimate'),
+              if (suggestion?.demo ?? widget.store.demo) const ModeTag(text: BandSuggestion.demoLabel),
+              const ModeTag(text: 'From your band'),
+              const ModeTag(text: 'Sensor estimate'),
             ],
           ),
         ] else
-          WholeWordText('Wear it 4 days to get a weekly number.', style: LtText.body()),
+          WholeWordText('Wear it on your leg 4 days to get a weekly number.', style: LtText.body()),
         if (suggestion != null && widget.onUseSuggestion != null) ...[
           const SizedBox(height: 12),
           LipButton(
@@ -762,12 +769,13 @@ class _BandReadbackScreenState extends State<BandReadbackScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Wrap(
+                  Wrap(
                     spacing: 8,
                     runSpacing: 6,
                     children: [
-                      ModeTag(text: 'From your band'),
-                      ModeTag(text: 'Sensor estimate'),
+                      if (s.demo) const ModeTag(text: BandSuggestion.demoLabel),
+                      const ModeTag(text: 'From your band'),
+                      const ModeTag(text: 'Sensor estimate'),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -859,11 +867,12 @@ class BandSuggestScreen extends StatelessWidget {
                   style: LtText.body(),
                 ),
                 const SizedBox(height: 6),
-                const Wrap(
+                Wrap(
                   spacing: 8,
                   children: [
-                    ModeTag(text: 'From your band'),
-                    ModeTag(text: 'Sensor estimate'),
+                    if (suggestion.demo) const ModeTag(text: BandSuggestion.demoLabel),
+                    const ModeTag(text: 'From your band'),
+                    const ModeTag(text: 'Sensor estimate'),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -962,14 +971,14 @@ class BandSettingsScreen extends StatelessWidget {
     listenable: store,
     builder: (context, _) => ExperimentPage(
       mode: LtMode.customize,
-      title: 'Wrist band',
+      title: 'Activity band',
       onBack: onBack,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              const LeverIcon(Icons.watch_outlined),
+              const LeverIcon(Icons.directions_walk_rounded),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(store.bandName ?? 'No band paired', style: LtText.body(size: 18, weight: FontWeight.w700)),
@@ -1079,7 +1088,7 @@ class BandPill extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.watch_outlined, size: 22, color: LtColors.ink),
+                const Icon(Icons.directions_walk_rounded, size: 22, color: LtColors.ink),
                 const SizedBox(width: 6),
                 Text(label, style: LtText.body(weight: FontWeight.w700)),
               ],
