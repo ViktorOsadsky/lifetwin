@@ -753,6 +753,10 @@ void main() {
         expect((talkBtn.center.dx - dock.center.dx).abs(), lessThanOrEqualTo(1), reason: 'Talk centred at $size x$scale');
         expect(iItem.height, greaterThanOrEqualTo(56));
         for (final label in ['Customize', 'Ideas']) {
+          final circle = t.getRect(find.descendant(of: find.ancestor(of: find.text(label), matching: find.byType(ConstrainedBox)).first, matching: find.byType(Container)).first);
+          expect((talkBtn.center.dy - circle.center.dy).abs(), lessThanOrEqualTo(1), reason: 'Talk level with $label circle at $size x$scale');
+        }
+        for (final label in ['Customize', 'Ideas']) {
           final para = t.renderObject<RenderParagraph>(find.text(label));
           expect(t.widget<Text>(find.text(label)).maxLines, 1);
           final lineH = para.text.style!.fontSize! * para.textScaler.scale(1) * para.text.style!.height!;

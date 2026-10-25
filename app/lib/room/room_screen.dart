@@ -611,6 +611,8 @@ class _Dock extends StatelessWidget {
           final side = math.max(_labelWidth(context, 'Customize', body), _labelWidth(context, 'Ideas', body));
           final talk = math.max(120.0, math.min(talkW, box.maxWidth - side * _labelFloor(context)));
           return Row(
+            // Top-aligned: Talk's centre is held on the circles' centre, with the labels below.
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: _DockItem(
@@ -624,8 +626,12 @@ class _Dock extends StatelessWidget {
               ),
               SizedBox(
                 width: math.min(talk, box.maxWidth * 0.5),
-                // Scaled down whole (never wrapped) if its slot is narrower.
-                child: Center(
+                height: _dockCircle,
+                // Scaled down whole (never wrapped) if its slot is narrower. The pill is taller than
+                // the circle row, so it overflows evenly above and below its centre.
+                child: OverflowBox(
+                  minHeight: 0,
+                  maxHeight: double.infinity,
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: IntrinsicWidth(
@@ -664,6 +670,9 @@ class _Dock extends StatelessWidget {
   }
 }
 
+/// The dock circles' diameter; Talk is centred on the same line.
+const double _dockCircle = 62;
+
 class _DockItem extends StatelessWidget {
   const _DockItem({
     required this.label,
@@ -698,11 +707,11 @@ class _DockItem extends StatelessWidget {
           constraints: const BoxConstraints(minWidth: 88, minHeight: 96),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Container(
-                width: 62,
-                height: 62,
+                width: _dockCircle,
+                height: _dockCircle,
                 decoration: BoxDecoration(
                   color: face,
                   shape: BoxShape.circle,
