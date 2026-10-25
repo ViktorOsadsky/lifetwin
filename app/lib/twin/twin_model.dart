@@ -1,7 +1,7 @@
-import 'dart:io' show gzip;
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart' show GZipDecoder;
 import 'package:flutter/services.dart' show AssetBundle, rootBundle;
 import 'package:lifetwin_on_device/lifetwin_on_device.dart';
 
@@ -277,7 +277,9 @@ class TwinModelService {
     final engine = LifeTwinEngine(await loadLifeTwinModel(bundle: bundle));
     final projection = await loadLifeTwinProjectionLab(bundle: assets, cox: engine.model);
     final data = await assets.load('packages/lifetwin_on_device/assets/support_reference.f64.gz');
-    final bytes = Uint8List.fromList(gzip.decode(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)));
+    final bytes = Uint8List.fromList(
+      const GZipDecoder().decodeBytes(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)),
+    );
     final reference = Float64List(bytes.lengthInBytes ~/ 8);
     final view = ByteData.sublistView(bytes);
     for (var i = 0; i < reference.length; i++) {

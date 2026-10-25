@@ -41,6 +41,8 @@ class NativeBandFiles implements BandFilePicker {
     try {
       final result = await channel.invokeListMethod<Uint8List>(method);
       return result;
+    } on MissingPluginException {
+      throw const BandFileFailure('Band file import is unavailable on this device.');
     } on PlatformException catch (e) {
       if (e.code == 'cancelled') return null;
       throw BandFileFailure(
@@ -57,7 +59,13 @@ class NativeBandFiles implements BandFilePicker {
   Future<List<Uint8List>> recoverInbox() async =>
       await _read('recoverInbox') ?? const [];
   @override
-  Future<void> clear() => channel.invokeMethod<void>('clear');
+  Future<void> clear() async {
+    try {
+      await channel.invokeMethod<void>('clear');
+    } on MissingPluginException {
+      // This platform never received a native inbox to clear.
+    }
+  }
 }
 
 class BandImportOutcome {

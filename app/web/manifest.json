@@ -1,0 +1,10 @@
+{
+  "name": "LifeTwin",
+  "short_name": "LifeTwin",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#EAE5F7",
+  "theme_color": "#EAE5F7",
+  "description": "A little twin. A healthier routine.",
+  "prefer_related_applications": false
+}
