@@ -1145,7 +1145,28 @@ SELF_HARM = re.compile(
     r"\b(?:want|wanna|going|gonna|thinking (?:about|of)|thought (?:about|of)) (?:to )?"
     r"(?:take|taking|swallow\w*) all (?:of )?my (?:pills|tablets|meds)\b|"
     r"\bswallowed all (?:of )?my (?:pills|tablets|meds)\b|"
-    r"\bsewer ?slide\b|\boff myself\b"
+    r"\bsewer ?slide\b|\boff myself\b|"
+    # Saving up the means: "I've got pills saved up for when it gets bad".
+    r"\b(?:sav(?:ed|ing)(?: \w+)? up|been saving|stockpil\w*|hoard\w*|stash\w*|squirrel\w* away|"
+    r"put(?:ting)? aside|set aside)\b[^.;!?]{0,30}\b(?:pills|tablets|meds|medications?|painkillers)\b|"
+    r"\b(?:pills|tablets|meds|medications?|painkillers)\b[^.;!?]{0,20}\b(?:sav(?:ed|ing) up|"
+    r"stockpiled|hoarded|stashed|put aside|set aside)\b|"
+    r"\b(?:got|have|keep\w*|kept|sav\w*)\b[^.;!?]{0,40}\bfor when (?:it|things|life|i) "
+    r"(?:gets?|get|becomes?|am|can't|cannot)(?: too)? (?:bad|worse|much|unbearable|hard|enough|"
+    r"take it|cope|ready)\b|\b(?:got|have) the means\b|"
+    # "Thinking about not waking up", "I wouldn't mind not waking up".
+    r"\b(?:thinking|thought|think|dream\w*|wish\w*|wouldn't mind|would be nice|rather|want|"
+    r"wanna|okay with|ok with|fine with|happy with|pray\w*|hope|hoping) (?:about |of )?(?:just )?"
+    r"(?:not|never) wak(?:e|ing)\b(?! (?:up )?(?:so |too )?(?:early|late|at|till|until|before|"
+    r"in time|on time|for)\b)|"
+    # "No point in me being here", "my family would cope fine without me".
+    r"\b(?:no|what's the|what is the) point (?:in |of )?(?:me|my) (?:being here|being around|"
+    r"being alive|existing|living|going on|carrying on)\b|"
+    r"\b(?:would|'d|will) (?:cope|manage|get on|get by|be fine|be okay|be ok|be happier|be better)"
+    r"(?: fine| better| okay)?\b[^.;!?]{0,20}\bwithout me\b(?! (?:for|at|on|in|today|tomorrow|"
+    r"tonight|this|next|while)\b)|"
+    r"\b(?:would|'d|will) (?:cope|manage|be fine|be okay)(?: fine| just fine)?(?: if i (?:was|were|wasn't|weren't)"
+    r" (?:gone|here|around))\b"
 )
 # Long ago, said plainly: "I self-harmed when I was a teenager".
 SELF_HARM_PAST = re.compile(

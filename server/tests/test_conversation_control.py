@@ -747,6 +747,14 @@ EMERGENCIES = [
     "I want it all to stop",
     "thinking about taking all my pills",
     "sewer slide thoughts again",
+    # Saving up the means, not waking up, and "no point in me being here".
+    "ive got pills saved up for when it gets bad",
+    "I've been stockpiling my sleeping tablets",
+    "I keep a stash of painkillers for when I can't take it anymore",
+    "I've been thinking about not waking up",
+    "honestly I wouldn't mind not waking up",
+    "No point in me being here at all, my family would cope fine",
+    "they'd manage fine without me",
 ]
 NOT_EMERGENCIES = [
     "my heart attack was in 2015",
@@ -782,6 +790,11 @@ NOT_EMERGENCIES = [
     "what's the point of the gym",
     "I'm tired of this weather",
     "I took all my pills this morning like the doctor said",
+    "I didn't wake up till 9",
+    "I was thinking about not waking up so early tomorrow",
+    "I keep my pills in the kitchen in case I get a migraine",
+    "saving up for a holiday",
+    "the team would cope fine without me for a week",
 ]
 
 
