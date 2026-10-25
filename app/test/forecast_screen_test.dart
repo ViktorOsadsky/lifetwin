@@ -316,8 +316,10 @@ void main() {
     expect(find.text(sentence), findsOneWidget);
     await t.tap(find.bySemanticsLabel('Back'));
     await t.pumpAndSettle();
-    // Back from the forecast lands on the Room, whose outlook card now shows the real number.
+    // Back lands on wellness-first Home; the estimate is secondary.
     expect(find.byType(RoomScreen), findsOneWidget);
-    expect(find.text('about 88 in 100'), findsOneWidget);
+    expect(find.text('Getting to know you'), findsOneWidget);
+    expect(find.text('about 88 in 100'), findsNothing);
+    expect(find.text('See your estimate'), findsOneWidget);
   });
 }

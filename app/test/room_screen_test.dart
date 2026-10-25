@@ -405,15 +405,17 @@ void main() {
       return (c, forecast);
     }
 
-    testWidgets('Continue opens the fortune; Back returns to the Room, whose card and Fortune then work', (t) async {
+    testWidgets('Continue opens the fortune; Back returns to the Room, whose quiet estimate link still works', (t) async {
       final (_, forecast) = await start(t);
       expect(forecast.calls, hasLength(1));
       await t.tap(find.bySemanticsLabel('Back'));
       await t.pumpAndSettle();
       expect(find.byType(RoomScreen), findsOneWidget);
-      expect(find.text('about 88 in 100'), findsOneWidget); // the real forecast on the outlook card
+      expect(find.text('Getting to know you'), findsOneWidget);
+      expect(find.text('about 88 in 100'), findsNothing);
       forecast.answers.add(Forecast.parse(supportedJson()));
-      await t.tap(find.text('Fortune'));
+      await t.ensureVisible(find.text('See your estimate'));
+      await t.tap(find.text('See your estimate'));
       await pumpUntil(t, find.byType(FortuneCeremonyScreen));
       await t.pumpAndSettle();
       await t.tap(find.text('Ask the ball'));
@@ -436,7 +438,8 @@ void main() {
       // Left unfinished: the Room no longer offers a forecast from the older answers.
       Navigator.of(t.element(find.byType(VoiceOnboardingScreen))).pop();
       await t.pumpAndSettle();
-      await t.tap(find.text('Fortune'));
+      await t.ensureVisible(find.text('See your estimate'));
+      await t.tap(find.text('See your estimate'));
       await t.pump();
       expect(find.text(RoomScreen.talkFirst), findsOneWidget);
       await frames(t, 3);

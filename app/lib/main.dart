@@ -10,6 +10,9 @@ import 'health/health_summary.dart';
 import 'onboarding/voice_onboarding_controller.dart';
 import 'onboarding/voice_onboarding_screen.dart';
 import 'room/room_screen.dart';
+import 'quiz/quiz_game.dart';
+import 'quiz/quiz_screen.dart';
+import 'wellness/models.dart';
 import 'ui/swoosh_route.dart';
 import 'ui/theme.dart';
 import 'ui/twin_appearance.dart';
@@ -52,6 +55,40 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
 
   /// Profile keys that came from Apple Health, to label their source.
   final _healthKeys = <String>{};
+  QuizGame? _quiz;
+  bool _openingQuiz = false;
+
+  Future<void> _playQuiz(BuildContext context) async {
+    if (_openingQuiz) return;
+    _openingQuiz = true;
+    try {
+      if (_quiz == null) {
+        final questions = await loadReviewedQuiz();
+        if (!mounted) return;
+        _quiz = QuizGame(questions);
+      }
+      if (!context.mounted) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (c) => QuizScreen(
+            game: _quiz,
+            appearance: _look.value,
+            onBack: () => Navigator.of(c).pop(),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('The quiz needs a moment. Try again soon.'),
+          ),
+        );
+      }
+    } finally {
+      _openingQuiz = false;
+    }
+  }
 
   /// The answers a forecast uses: whatever the conversation holds now, once finished.
   /// Read live, so "start over" or a changed answer never leaves an older forecast behind.
@@ -74,6 +111,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     _controller.dispose();
     if (widget.appearance == null) _look.dispose();
     _outlook.dispose();
+    _quiz?.dispose();
     super.dispose();
   }
 
@@ -167,6 +205,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onCustomize: () => _customize(context),
           onFortune: () => _ceremony(context),
           outlook: _outlook,
+          // Unknown until the twin-integration history and healthScore contracts land.
+          wellness: const WellnessSnapshot(),
+          onQuiz: () => _playQuiz(context),
         ),
       ),
     );

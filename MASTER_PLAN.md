@@ -18,7 +18,8 @@ New explicit user decisions take precedence. Otherwise this guide resolves the d
 | Backend | Python/FastAPI owns server inference, research and provider credentials. A separate Dart Cox package supports on-device inference; use one explicit model boundary per result. |
 | Experience | Mostly full-screen pet-game UI, inspired by Talking Tom: an expressive mascot, customizable digital twin, SVG art and LottieFiles animations. The mascot conversation replaces traditional health-input onboarding screens. |
 | Intake | Offer health-document upload immediately, alongside Apple Health import and mascot-led voice/text. Extract candidate fields, confirm them, then ask only for missing required inputs. Upload is planned; Cartesia voice and Apple Health paths already exist. |
-| Longevity output | Magic-ball reveal, supported annual survival curve, model-grounded drivers and scenario differences. Explain what changes the outlook beyond a single five-year percentage. No exact death year, arbitrary curve cutoff or unsupported life-expectancy estimate (spec §15). |
+| Home | Lead with wellness and a placeholder `healthScore` (0–100); show “Getting to know you” without a number until the score spec is approved. A seven-day history view preserves missing days as unknown. The lifespan reveal occurs at the end of onboarding, then stays behind a quiet “See your estimate” link. See [#54](https://github.com/ViktorOsadsky/lifetwin/issues/54). |
+| Longevity output | Secondary magic-ball reveal, supported annual survival curve, model-grounded drivers and scenario differences. Explain what changes the outlook beyond a single five-year percentage. No exact death year, arbitrary curve cutoff or unsupported life-expectancy estimate (spec §15). |
 | Quiz | Challenging food-choice and situational questions. Wrong answers immediately make the twin look sicker in game state; explanations and recovery opportunities teach the user. Quiz penalties never alter real health inputs or model predictions. |
 | Optimization direction | Improve survival probability at a supported horizon. If a validated longevity summary is added later, improve it toward a longer life: a later date, not an earlier one. |
 | Recommendations | A daily health-planning agent is the target: incorporate confirmed updates and feedback, research feasible actions, and revise a short daily schedule with reasons. Model sensitivity is one input; reminders and score calculations alone do not fulfill this requirement. Supplement discovery remains optional and unmodeled. |
@@ -35,6 +36,12 @@ Prediction implementation has since progressed beyond the earlier deferral: `/ap
 Health-document upload/extraction and a scheduled autonomous daily planner remain proposed. This documentation change does not implement them, change contracts or select a new prediction engine. The original `projectspec.md` remains preserved; the [October 23 meeting decisions](docs/meetings/2026-10-23-product-refinement.md) refine its product vision through this guide and the reconciliation.
 
 The skill pack contains prior research about other product ideas. Reuse relevant tools and instructions, but do not treat RecallDesk, commerce, or finance examples as this app's product requirements. Do not claim that a fixture or helper script is the LifeTwin application.
+
+## Current wellness UI assignments
+
+Issues [#54–57](https://github.com/ViktorOsadsky/lifetwin/issues/54) refine the October 23 vision toward wellness-first Home, quiz/Customize (approved Q), Settings/History/errors (R), and upload/plan/directional drivers (S). FlareYun's UI branch uses the existing painted-card artwork and tokens. The [implementation handoff](docs/design/wellness-ui-handoff.md) distinguishes connected features from presentation seams and pending engine work. Keep existing team-plan owners; this does not assign their dependencies to a new track.
+
+Check-in, conversation, consent, wristband and Experiment screens remain on [PR #58](https://github.com/ViktorOsadsky/lifetwin/pull/58). Settings links to those owners. Do not derive a score from quiz health, subjective mood, survival probability or band counts. Driver UI shows supported directions, without point values or causal claims ([#56](https://github.com/ViktorOsadsky/lifetwin/issues/56)).
 
 ## Product loop
 

@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../forecast/forecast_client.dart';
+import '../wellness/home_panel.dart';
+import '../wellness/models.dart';
 import '../ui/swoosh_route.dart';
 import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
@@ -34,6 +36,9 @@ class RoomScreen extends StatefulWidget {
     this.outlook,
     this.hasProfile = false,
     this.onUseHealth,
+    this.wellness,
+    this.onQuiz,
+    this.onHistory,
   });
 
   /// Cosmetic look only; never part of the health profile.
@@ -53,6 +58,11 @@ class RoomScreen extends StatefulWidget {
 
   /// "Use my Apple Health": the Health import. Null (no pill) once Health data is confirmed.
   final VoidCallback? onUseHealth;
+
+  /// Snapshot from the twin adapter; no score until its specification lands.
+  final WellnessSnapshot? wellness;
+  final VoidCallback? onQuiz;
+  final VoidCallback? onHistory;
 
   static const talkFirst = "Let's talk first, so I can make your forecast.";
 
@@ -191,7 +201,9 @@ class _RoomScreenState extends State<RoomScreen> {
                               valueListenable: widget.appearance,
                               builder: (context, look, _) => NameBanner(name: look.name),
                             ),
-                            card: _OutlookCard(outlook: widget.outlook, onTap: _fortune),
+                            card: widget.wellness == null ? _OutlookCard(outlook: widget.outlook, onTap: _fortune) : HomeWellnessPanel(
+                              snapshot: widget.wellness!, compact: true, now: DateTime.now(), onEstimate: _fortune, onHistory: widget.onHistory,
+                            ),
                           ),
                           Opacity(
                             opacity: f.barOpacity.clamp(0.0, 1.0),
@@ -233,6 +245,7 @@ class _RoomScreenState extends State<RoomScreen> {
                                         onTalk: widget.onTalk,
                                         onCustomize: widget.onCustomize,
                                         onFortune: _fortune,
+                                        onQuiz: widget.onQuiz,
                                       ),
                                     ],
                                   ),
@@ -265,7 +278,7 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final big = MediaQuery.textScalerOf(context).scale(17) > 17 * 1.15;
     return LayoutBuilder(
-      builder: (context, box) => box.maxWidth >= 340 && !big
+      builder: (context, box) => box.maxWidth >= 340 && !big && card is! HomeWellnessPanel
           ? Row(
               children: [
                 banner,
@@ -472,7 +485,8 @@ class _ActivityRow extends StatelessWidget {
 }
 
 class _Dock extends StatelessWidget {
-  const _Dock({required this.frame, required this.onTalk, required this.onCustomize, required this.onFortune});
+  const _Dock({required this.frame, required this.onTalk, required this.onCustomize, required this.onFortune, this.onQuiz});
+  final VoidCallback? onQuiz;
   final SwooshRoomFrame frame;
   final VoidCallback onTalk;
   final VoidCallback onCustomize;
@@ -528,12 +542,12 @@ class _Dock extends StatelessWidget {
               ),
               Expanded(
                 child: _DockItem(
-                  label: 'Fortune',
-                  icon: Icons.auto_awesome_rounded,
+                  label: onQuiz == null ? 'Fortune' : 'Quiz',
+                  icon: onQuiz == null ? Icons.auto_awesome_rounded : Icons.quiz_outlined,
                   face: LtColors.night,
                   lip: const Color(0xFF0F1430),
                   iconColor: LtColors.gold,
-                  onTap: onFortune,
+                  onTap: onQuiz ?? onFortune,
                 ),
               ),
             ],
