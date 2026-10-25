@@ -1355,6 +1355,25 @@ def dont_know(text: str) -> bool:
     return any(_DK_LEAD.match(clause) for clause in clauses)
 
 
+def unknown_beside_answer(text: str) -> tuple[str, str] | None:
+    """ "I don't know my weight, but I'm 5'4": the doubt, and what else was said.
+
+    Clauses that only say they don't know (no number) are the doubt; everything else is
+    returned as the rest, so a fact beside "I don't know" is not lost. None when there
+    is no such split."""
+    words = " ".join(normalize_text(text).split())
+    clauses = [c.strip() for c in re.split(r"[,.;]|\bbut\b|\band\b|\bso\b", words) if c.strip()]
+    doubt = [
+        c
+        for c in clauses
+        if not re.search(r"\d", c) and _DK_LEAD.match(" ".join(c.lower().split()))
+    ]
+    rest = [c for c in clauses if c not in doubt]
+    if not doubt or not rest:
+        return None
+    return " ".join(doubt), ", ".join(rest)
+
+
 def hedged_answer(text: str) -> str | None:
     """The answer after a doubt about something else, kept with its own words."""
     match = HEDGED_ANSWER.match(" ".join(normalize_text(text).split()).lower())
