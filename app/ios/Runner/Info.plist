@@ -49,6 +49,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>LifeTwin connects to your activity band to read your daily activity.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>LifeTwin uses the camera only when you choose to scan a health document. The text is read on your phone; the picture is not kept.</string>
 	<key>NSMicrophoneUsageDescription</key>

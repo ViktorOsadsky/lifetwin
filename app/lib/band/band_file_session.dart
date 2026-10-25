@@ -1,3 +1,5 @@
+import 'band_ble.dart';
+import 'band_ble_fbp.dart';
 import 'band_file_intake.dart';
 import 'band_store.dart';
 
@@ -5,7 +7,7 @@ import 'band_store.dart';
 /// Call forgetImports() from My data/unpair. This owns no confirmed profile.
 class BandFileSession {
   BandFileSession._() {
-    store = BandStore(StubBandClient());
+    store = BandStore(BleBandClient(const FlutterBluePlusRadio()));
     intake = BandFileIntake(store: store);
   }
   static BandFileSession? _current;

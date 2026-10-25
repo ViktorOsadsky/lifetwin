@@ -20,6 +20,16 @@ What Cartesia does **not** do: understanding answers. Ink's transcript goes to t
 
 ## Setup
 
+For the hosted backend, plain `flutter run` from `app/` loads the optional local
+public `assets/config/backend.json` at startup. See [iOS testing](ios-testing.md)
+for its one-time setup. Alternatively, use `bash scripts/run-app.sh -d "iPhone 18 Pro"` from
+the repository root (or `scripts/ios-device.sh` for a connected phone). The
+helper loads the ignored `.env.deploy/flutter.json`, including the public
+Supabase gateway key. See [iOS testing](ios-testing.md) for configuration.
+Provider credentials stay on the backend.
+
+For a local Python server:
+
 1. Put `CARTESIA_API_KEY` and `CARTESIA_VOICE_ID` in `.env` (see `.env.example`).
 2. Run the server: `uv run uvicorn lifetwin.app:app --host 0.0.0.0 --port 8000`.
 3. Build the app with the server address, for example `--dart-define=API_BASE_URL=http://<usb-link-ip>:8000,http://<mac>.local:8000`. Several addresses, separated by commas, are checked at once and the first one that answers is used. See [ios-testing.md](ios-testing.md).
