@@ -25,6 +25,20 @@ List<(String, String)> profileLabels(Map<String, dynamic> profile, {required boo
       'diabetes' => v == true ? 'Diabetes: yes' : 'Diabetes: no',
       'systolic_bp' => dia is num ? 'Blood pressure $v/$dia' : 'Blood pressure top number $v',
       'diastolic_bp' => 'Blood pressure bottom number $v',
+      'general_health' => switch (v) {
+        'excellent' || 'very_good' || 'good' || 'fair' || 'poor' => 'Health: ${'$v'.replaceAll('_', ' ')}',
+        _ => 'Health: not sure',
+      },
+      'hypertension_diagnosed' => switch (v) {
+        true => 'Told you have high blood pressure: yes',
+        false => 'Told you have high blood pressure: no',
+        _ => 'Told you have high blood pressure: not sure',
+      },
+      'sedentary_min_day' => v is num ? 'Sitting: ${_duration(v, 'a day')}' : 'Sitting: not sure',
+      'moderate_recreation_min_week' =>
+        v is num ? 'Easier activity: ${_minutes(v)}' : 'Easier activity: not sure',
+      'vigorous_recreation_min_week' =>
+        v is num ? 'Out-of-breath activity: ${_minutes(v)}' : 'Out-of-breath activity: not sure',
       _ => null,
     };
     if (label != null) out.add((e.key, label));
@@ -39,3 +53,12 @@ String _height(num cm, bool imperial) {
 }
 
 String _num(num v) => v == v.roundToDouble() ? '${v.round()}' : v.toStringAsFixed(1);
+
+/// "none" for 0, else "150 min a week".
+String _minutes(num v) => v <= 0 ? 'none' : '${_num(v)} min a week';
+
+/// Minutes as hours when it is a round-ish amount: "6 h a day", "45 min a day".
+String _duration(num minutes, String per) {
+  if (minutes < 60) return '${_num(minutes)} min $per';
+  return '${_num((minutes / 60 * 10).round() / 10)} h $per';
+}

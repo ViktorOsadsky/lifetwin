@@ -17,12 +17,17 @@ New explicit user decisions take precedence. Otherwise this guide resolves the d
 | App | Flutter/Dart, with iOS testing through Xcode as specified in the team plan. The earlier Next.js/web stack is superseded. |
 | Backend | Python/FastAPI owns server inference, research and provider credentials. A separate Dart Cox package supports on-device inference; use one explicit model boundary per result. |
 | Experience | Mostly full-screen pet-game UI, inspired by Talking Tom: an expressive mascot, customizable digital twin, SVG art and LottieFiles animations. The mascot conversation replaces traditional health-input onboarding screens. |
-| Intake | Offer health-document upload immediately, alongside Apple Health import and mascot-led voice/text. Extract candidate fields, confirm them, then ask only for missing required inputs. Upload is planned; Cartesia voice and Apple Health paths already exist. |
-| Longevity output | Magic-ball reveal, supported annual survival curve, model-grounded drivers and scenario differences. Explain what changes the outlook beyond a single five-year percentage. No exact death year, arbitrary curve cutoff or unsupported life-expectancy estimate (spec §15). |
+| Intake | Offer health-document upload immediately, alongside Apple Health import and mascot-led voice/text. Extract candidate fields, confirm them, then ask only for missing required inputs. On-device document OCR and confirmed import now exist alongside Cartesia voice and Apple Health. |
+| Home | Lead with wellness and a placeholder `healthScore` (0–100); show “Getting to know you” without a number until the score spec is approved. A seven-day history view preserves missing days as unknown. The lifespan reveal occurs at the end of onboarding, then stays behind a quiet “See your estimate” link. See [#54](https://github.com/ViktorOsadsky/lifetwin/issues/54). |
+| Longevity output | Secondary magic-ball reveal, supported annual survival curve, model-grounded drivers and scenario differences. Explain what changes the outlook beyond a single five-year percentage. No exact death year, arbitrary curve cutoff or unsupported life-expectancy estimate (spec §15). |
 | Quiz | Challenging food-choice and situational questions. Wrong answers immediately make the twin look sicker in game state; explanations and recovery opportunities teach the user. Quiz penalties never alter real health inputs or model predictions. |
 | Optimization direction | Improve survival probability at a supported horizon. If a validated longevity summary is added later, improve it toward a longer life: a later date, not an earlier one. |
 | Recommendations | A daily health-planning agent is the target: incorporate confirmed updates and feedback, research feasible actions, and revise a short daily schedule with reasons. Model sensitivity is one input; reminders and score calculations alone do not fulfill this requirement. Supplement discovery remains optional and unmodeled. |
 | Delivery | Short branches, PRs, then merges to `main`. Direct pushes to `main` are superseded by the user's PR requirement. |
+
+**Owner override (2026-10-24):** A rough expected year and age range may be shown once as a proof of concept, labelled as an estimate, never as a specific date. Method: [docs/lifespan-estimate.md](docs/lifespan-estimate.md) (the CDC 2024 life table plus the model owner's Cox relative risk, adjusted by age band). Scope: this one-time reveal only; the rule still applies everywhere else. This covers the "No exact death year … life-expectancy" limit in the Longevity output row above. Daniel, after talking to Viktor in person:
+
+> "We should extrapolate an expected death year or date, but then it basically goes away as we focus on relative health score. It doesn't matter how accurate it is for this, as it will never be truly accurate if we extrapolate. it is more of a proof of concept. Age bands should be extrapolated and adjusted. [...] He [Viktor] is okay with the extrapolation. We don't really need beyond five years."
 
 See [the prospective tech stack](docs/tech-stack.md) for package/provider defaults and pending upload/planner choices; use the voice guide for the implemented Cartesia path. See [the PRD reconciliation](docs/prd-reconciliation.md) for updates to the original spec.
 
@@ -32,9 +37,15 @@ As of the October 24 reconciliation, `main` contains a Flutter game shell with v
 
 Prediction implementation has since progressed beyond the earlier deferral: `/api/predict` serves a root DeepSurv artifact when installed; a separate [on-device Cox package](model_handoff/lifetwin_on_device/README.md) provides annual years 1–5 survival, comparison and supported-window reassessment. The [Cox model card](model_handoff/lifetwin_on_device/MODEL_CARD.md) restricts its display to complete, supported profiles ages 35–79. These are distinct models/boundaries; do not mix their outputs, eligibility rules or versions. Server compare/sensitivity routes remain 501, while an [offline Cox sensitivity analysis](docs/model-sensitivity.md) exists. The original backend audit is a dated snapshot, not a current feature inventory.
 
-Health-document upload/extraction and a scheduled autonomous daily planner remain proposed. This documentation change does not implement them, change contracts or select a new prediction engine. The original `projectspec.md` remains preserved; the [October 23 meeting decisions](docs/meetings/2026-10-23-product-refinement.md) refine its product vision through this guide and the reconciliation.
+Health-document upload/extraction (#51) and a stateless cited daily planner (#53) are now merged. The wellness UI branch connects them to foreground routes; persisted plan/feedback history and an unattended schedule remain follow-up work. This documentation change does not implement them, change contracts or select a new prediction engine. The original `projectspec.md` remains preserved; the [October 23 meeting decisions](docs/meetings/2026-10-23-product-refinement.md) refine its product vision through this guide and the reconciliation.
 
 The skill pack contains prior research about other product ideas. Reuse relevant tools and instructions, but do not treat RecallDesk, commerce, or finance examples as this app's product requirements. Do not claim that a fixture or helper script is the LifeTwin application.
+
+## Current wellness UI assignments
+
+Issues [#54–57](https://github.com/ViktorOsadsky/lifetwin/issues/54) refine the October 23 vision toward wellness-first Home, quiz/Customize (approved Q), Settings/History/errors (R), and upload/plan/directional drivers (S). FlareYun's UI branch uses the existing painted-card artwork and tokens. The [implementation handoff](docs/design/wellness-ui-handoff.md) distinguishes connected features from presentation seams and pending engine work. Keep existing team-plan owners; this does not assign their dependencies to a new track.
+
+Check-in, conversation, consent, wristband and Experiment screens remain on [PR #58](https://github.com/ViktorOsadsky/lifetwin/pull/58). Settings links to those owners. Do not derive a score from quiz health, subjective mood, survival probability or band counts. Driver UI shows supported directions, without point values or causal claims ([#56](https://github.com/ViktorOsadsky/lifetwin/issues/56)).
 
 ## Product loop
 
@@ -77,7 +88,7 @@ Cartesia Sonic/Ink integration now exists; [the voice guide](docs/voice-cartesia
 
 The magic-ball scene is presentation around a prediction result: awaiting model → reveal → mascot explanation → inspect or experiment. Bind the spoken/captioned result to the same validated value, horizon and model version shown in details. If no prediction is supported, the mascot explains that limitation instead of inventing a fortune. Any future date-like summary requires a separately reviewed definition, model support and prominent uncertainty; never derive a date from an arbitrary curve endpoint.
 
-## Health-document intake (planned)
+## Health-document intake
 
 The [October 23 meeting](docs/meetings/2026-10-23-product-refinement.md) makes upload an entry point rather than a task after a long intake. Let users decline upload and continue with Apple Health or conversation. Upload failure must preserve confirmed values and offer retry or text.
 
@@ -85,7 +96,7 @@ Extract only schema-supported candidate fields with source page/section, measure
 
 Before implementation, B/C/D must agree file formats and size limits, extraction/OCR and provider processing, candidate/provenance shapes, confirmation behavior and ephemeral deletion. No raw documents, identifiers or extracted profiles belong in logs, research queries, fixtures or Git. Upload is separate from Apple Health; its existing raw-sample routing and on-device provenance decisions remain in [apple-health.md](docs/apple-health.md).
 
-## Daily health-planning agent (planned)
+## Daily health-planning agent
 
 The product promise is a health secretary that prepares and revises a useful daily plan. A fixed notification, a scripted check-in, an LLM interpretation or a deterministic score alone does not demonstrate that loop. The agent must choose a next action from current context, use bounded evidence/tools, incorporate feedback, and show the resulting plan revision.
 

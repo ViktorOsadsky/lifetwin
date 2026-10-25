@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -61,21 +62,61 @@ class VoiceToken {
 }
 
 /// Mints tokens from our server (the Cartesia key never reaches the app).
+///
+/// While voice is in use a fresh token is kept ready: [prefetch] mints one ahead of the first
+/// Talk, and a token is re-minted in the background once less than [refreshBefore] of it is
+/// left, so speaking and listening never wait for a mint mid-conversation. The background
+/// refresh stops once voice has not been used for [keepWarmFor].
 class VoiceTokenProvider {
-  VoiceTokenProvider({http.Client? client, String? baseUrl, ApiBase? base, DateTime Function()? now})
-    : _client = client ?? http.Client(),
-      base = base ?? ApiBase(baseUrl ?? apiBaseUrl, client),
-      _now = now ?? DateTime.now;
+  VoiceTokenProvider({
+    http.Client? client,
+    String? baseUrl,
+    ApiBase? base,
+    DateTime Function()? now,
+    this.refreshBefore = const Duration(seconds: 60),
+    this.keepWarmFor = const Duration(minutes: 5),
+  }) : _client = client ?? http.Client(),
+       base = base ?? ApiBase(baseUrl ?? apiBaseUrl, client),
+       _now = now ?? DateTime.now;
 
   final http.Client _client;
   final ApiBase base;
   final DateTime Function() _now;
+  final Duration refreshBefore;
+  final Duration keepWarmFor;
   VoiceToken? _cached;
+  Future<VoiceToken>? _minting;
+  Timer? _refresh;
+  DateTime? _lastUse;
 
   /// Returns a cached token while it is fresh; [forceNew] re-mints (after a socket error).
-  Future<VoiceToken> get({bool forceNew = false}) async {
+  /// Callers at the same time share one mint.
+  Future<VoiceToken> get({bool forceNew = false}) {
+    _lastUse = _now();
     final c = _cached;
-    if (!forceNew && c != null && c.isFresh(_now())) return c;
+    if (!forceNew && c != null && c.isFresh(_now())) return Future.value(c);
+    return _mintShared();
+  }
+
+  /// Voice is about to be used (consent given, voice mode on): have a token ready.
+  Future<VoiceToken> prefetch() => get();
+
+  Future<VoiceToken> _mintShared() => _minting ??= _mint().whenComplete(() => _minting = null);
+
+  void _scheduleRefresh(VoiceToken t) {
+    _refresh?.cancel();
+    _refresh = null;
+    final wait = t.expiresAt.subtract(refreshBefore).difference(_now());
+    if (wait <= Duration.zero) return; // too short-lived to refresh ahead
+    _refresh = Timer(wait, () {
+      _refresh = null;
+      final last = _lastUse;
+      if (last == null || _now().difference(last) > keepWarmFor) return; // voice not in use: let it lapse
+      _mintShared().ignore(); // a failed refresh is retried on demand by the next get()
+    });
+  }
+
+  Future<VoiceToken> _mint() async {
     try {
       final url = await base.url();
       final r = await _client
@@ -87,7 +128,12 @@ class VoiceTokenProvider {
           .timeout(const Duration(seconds: 15));
       if (r.statusCode == 503) throw const VoiceUnavailableException();
       if (r.statusCode != 200) throw VoiceFailure('token HTTP ${r.statusCode}');
-      return _cached = VoiceToken.fromJson(jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>, now: _now());
+      final t = _cached = VoiceToken.fromJson(
+        jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>,
+        now: _now(),
+      );
+      _scheduleRefresh(t);
+      return t;
     } on VoiceUnavailableException {
       rethrow;
     } on VoiceFailure {

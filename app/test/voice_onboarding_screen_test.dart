@@ -51,7 +51,137 @@ Future<void> choose(WidgetTester t, String voiceLabel, {bool aiHelper = false}) 
   await t.pumpAndSettle();
 }
 
+/// Two answers already in: the conversation is on its third question.
+class ThirdQuestionGuide extends FakeConversationGuide {
+  @override
+  Future<GuideTurn> turn({
+    required String action,
+    Map<String, dynamic>? state,
+    String? text,
+    bool fromTranscript = false,
+    Map<String, Object>? values,
+    bool aiHelper = false,
+    String? importSource,
+  }) async => GuideTurn(
+    state: {
+      'phase': 'asking',
+      'current_field': 'smoking_status',
+      'confirmed_profile': {'age': 60, 'sex': 'male'},
+      'pending_profile': <String, dynamic>{},
+    },
+    message: 'Do you smoke?',
+    complete: false,
+  );
+}
+
 void main() {
+  group('the one import control: Fill from Apple Health or a document', () {
+    const label = 'Fill from Apple Health or a document';
+
+    Future<(VoiceOnboardingController, List<String>)> open(WidgetTester t) async {
+      t.view.physicalSize = const Size(390, 844);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      final c = VoiceOnboardingController(
+        guide: FakeConversationGuide(),
+        input: FakeSpeechInput(),
+        output: FakeSpeechOutput(),
+      );
+      final opened = <String>[];
+      await t.pumpWidget(
+        MaterialApp(
+          home: VoiceOnboardingScreen(
+            controller: c,
+            onDone: (_) {},
+            onUseHealth: () => opened.add('health'),
+            onUploadDocument: () => opened.add('document'),
+          ),
+        ),
+      );
+      await choose(t, "No, I'll type");
+      return (c, opened);
+    }
+
+    testWidgets('is visible at question 1, 48 pt tall, with no second import control beside it', (t) async {
+      final (c, _) = await open(t);
+      expect(c.questionNumber, 1);
+      expect(find.text(label), findsOneWidget);
+      expect(t.getSize(find.byType(ImportControl)).height, greaterThanOrEqualTo(48));
+      expect(find.text('Use Apple Health'), findsNothing, reason: 'no inline buttons, only the sheet has them');
+      expect(find.text('Upload a document'), findsNothing);
+      expect(find.text('Fill this in faster'), findsNothing);
+      expect(find.byType(ImportControl), findsOneWidget);
+    });
+
+    testWidgets('opens the sheet; Use Apple Health and Upload a document route to their imports', (t) async {
+      var (c, opened) = await open(t);
+      await t.tap(find.text(label));
+      await t.pumpAndSettle();
+      expect(find.text('Use Apple Health'), findsOneWidget);
+      expect(find.text('Upload a document'), findsOneWidget);
+      await t.pump(const Duration(milliseconds: 700)); // a fresh question ignores a tap at first
+      await t.tap(find.text('Use Apple Health'));
+      await t.pumpAndSettle();
+      expect(opened, ['health']);
+      await t.tap(find.bySemanticsLabel(label));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Upload a document'));
+      await t.pumpAndSettle();
+      expect(opened, ['health', 'document']);
+    });
+
+    testWidgets('Not now collapses it to an icon in the same spot, still reachable', (t) async {
+      final h = t.ensureSemantics();
+      await open(t);
+      final before = t.getTopLeft(find.byType(ImportControl));
+      await t.tap(find.text(label));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Not now'));
+      await t.pumpAndSettle();
+      expect(find.text(label), findsNothing, reason: 'the words are gone');
+      expect(find.byType(ImportControl), findsOneWidget);
+      expect(t.getTopLeft(find.byType(ImportControl)), before, reason: 'same spot');
+      expect(t.getSize(find.byType(ImportControl)).height, greaterThanOrEqualTo(48));
+      expect(find.bySemanticsLabel(label), findsOneWidget);
+      await t.tap(find.byType(ImportControl));
+      await t.pumpAndSettle();
+      expect(find.text('Use Apple Health'), findsOneWidget, reason: 'still opens the sheet');
+      h.dispose();
+    });
+
+    testWidgets('after an import it says where from, and stays reachable', (t) async {
+      final (c, _) = await open(t);
+      await c.importHealth({'height_cm': 170});
+      await t.pump();
+      expect(find.text('Added from Apple Health ✓'), findsOneWidget);
+      expect(find.byType(ImportControl), findsOneWidget);
+      await t.pump(const Duration(seconds: 7));
+      expect(find.text('Added from Apple Health ✓'), findsNothing);
+      expect(find.byType(ImportControl), findsOneWidget);
+    });
+  });
+
+  testWidgets('an emergency pauses calmly: Call 911 is a tap, Continue sends resume and asks the question again', (
+    t,
+  ) async {
+    final r = Rig();
+    await r.pump(t);
+    await choose(t, "No, I'll type");
+    await t.enterText(find.byType(TextField), 'I have chest pain');
+    await t.testTextInput.receiveAction(TextInputAction.send);
+    await t.pumpAndSettle();
+    expect(r.c.emergency, isTrue);
+    expect(find.text('Call 911'), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing, reason: 'nothing else to answer during the pause');
+    await t.tap(find.text('Continue'));
+    await t.pumpAndSettle();
+    expect(r.guide.calls.last['action'], 'resume');
+    expect(r.c.emergency, isFalse);
+    expect(find.text('Call 911'), findsNothing);
+    expect(find.text('How old are you?'), findsWidgets);
+  });
+
   testWidgets('a double tap on a voice answer does not also answer the AI-helper question', (t) async {
     for (final voice in ["Yes, I'll talk", "No, I'll type"]) {
       await t.pumpWidget(const SizedBox()); // a fresh screen each time
@@ -134,11 +264,11 @@ void main() {
     await r.pump(t);
     await choose(t, "No, I'll type");
     expect(find.text('How old are you?'), findsOneWidget);
-    expect(find.text('Tap to talk'), findsNothing);
+    expect(find.text('Talk or type'), findsNothing);
     expect(r.output.spoken, isEmpty);
-    await t.pump(const Duration(milliseconds: 700)); // the first question's Health link ignores a second tap at first
-    await t.tap(find.text('Use my Apple Health'));
-    expect(r.health, true);
+    // The opening is decluttered: one plain example, no Health button (the pill carries it).
+    expect(find.text('Use my Apple Health'), findsNothing);
+    expect(find.textContaining('Try saying'), findsOneWidget);
     await t.enterText(find.byType(TextField), '70');
     await t.tap(find.text('Send'));
     await t.pumpAndSettle();
@@ -153,10 +283,10 @@ void main() {
     expect(find.text('How old are you?'), findsOneWidget);
     expect(r.output.spoken, ['How old are you?']);
     expect(find.text('Hear it again'), findsOneWidget);
-    expect(find.text('Tap to talk'), findsOneWidget);
+    expect(find.text('Talk or type'), findsOneWidget);
 
     r.input.captions = ['I am 70'];
-    await t.tap(find.text('Tap to talk')); // quick tap = start
+    await t.tap(find.text('Talk or type')); // quick tap = start
     await t.pumpAndSettle();
     expect(find.text('Hearing:'), findsOneWidget);
     expect(find.text('I am 70'), findsOneWidget);
@@ -181,11 +311,29 @@ void main() {
     final g = await t.startGesture(t.getCenter(find.byType(TalkButton)));
     await t.pump();
     expect(r.c.phase, VoicePhase.listening);
-    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 700)));
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 1100)));
     await g.up();
     await t.pumpAndSettle();
     expect(r.input.finishes, 1);
     expect(find.text('Yes'), findsOneWidget);
+  });
+
+  testWidgets('letting go while the mic is still opening does not send; it keeps listening', (t) async {
+    final r = Rig();
+    await r.pump(t);
+    await choose(t, "Yes, I'll talk");
+    r.input.permission = Completer<bool>(); // the mic is "starting" until this is answered
+    final g = await t.startGesture(t.getCenter(find.byType(TalkButton)));
+    await t.pump();
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 1100)));
+    await g.up();
+    await t.pump();
+    r.input.permission!.complete(true);
+    await t.pumpAndSettle();
+    expect(r.input.finishes, 0, reason: 'a release before the mic opened is not "send"');
+    expect(r.c.phase, VoicePhase.listening);
+    await r.c.stopTalk(); // stops the listening clock
+    await t.pumpAndSettle();
   });
 
   testWidgets('mic denied: plain message stays, typing box appears', (t) async {
@@ -193,7 +341,7 @@ void main() {
     r.input.startError = const MicDeniedException();
     await r.pump(t);
     await choose(t, "Yes, I'll talk");
-    await t.tap(find.text('Tap to talk'));
+    await t.tap(find.text('Talk or type'));
     await t.pumpAndSettle();
     expect(find.textContaining('open Settings'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
@@ -206,9 +354,9 @@ void main() {
     r.input.transcript = '';
     await r.pump(t, scale: 2.0);
     await choose(t, "Yes, I'll talk");
-    await t.ensureVisible(find.text('Tap to talk'));
+    await t.ensureVisible(find.text('Talk or type'));
     await t.pumpAndSettle();
-    await t.tap(find.text('Tap to talk'));
+    await t.tap(find.text('Talk or type'));
     await t.pumpAndSettle();
     await t.ensureVisible(find.byType(TalkButton));
     await t.pumpAndSettle();
@@ -218,7 +366,7 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('app starts on the Room; Talk opens the voice screen and Apple Health import', (t) async {
+  testWidgets('app starts on the Room; Talk opens the voice screen without a Health button', (t) async {
     final r = Rig();
     await t.pumpWidget(LifeTwinApp(controller: r.c));
     expect(find.byType(RoomScreen), findsOneWidget);
@@ -226,12 +374,8 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('Talk with me?'), findsOneWidget);
     await choose(t, "No, I'll type");
-    await t.pump(const Duration(milliseconds: 700)); // the first question's Health link ignores a second tap at first
-    await t.ensureVisible(find.text('Use my Apple Health'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Use my Apple Health'));
-    await t.pumpAndSettle();
-    expect(find.text('Use Apple Health?'), findsOneWidget);
+    expect(find.text('How old are you?'), findsOneWidget);
+    expect(find.text('Use my Apple Health'), findsNothing);
   });
 
   testWidgets('AI helper consent explains where answers go; yes turns it on for every turn', (t) async {
@@ -359,7 +503,7 @@ void main() {
     final r = Rig();
     await r.pump(t);
     await choose(t, "No, I'll type");
-    expect(find.text('Tap to talk'), findsNothing);
+    expect(find.text('Talk or type'), findsNothing);
     final talk = find.text('Talk instead');
     await t.ensureVisible(talk);
     expect(
@@ -380,7 +524,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text("Yes, I'll talk"));
     await t.pumpAndSettle();
-    expect(find.text('Tap to talk'), findsOneWidget);
+    expect(find.text('Talk or type'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
     await t.ensureVisible(find.text('Type instead'));
     await t.tap(find.text('Type instead'));
@@ -546,7 +690,7 @@ void main() {
       for (final l in ['Female', 'Male', 'Not sure', 'I smoke now']) {
         expect(find.text(l), findsNothing);
       }
-      expect(find.text('Tap to talk'), findsOneWidget);
+      expect(find.text('Talk or type'), findsOneWidget);
     });
 
     testWidgets('no buttons while confirming, or while correcting', (t) async {
@@ -611,8 +755,9 @@ class FieldGuide implements ConversationGuide {
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
-    Map<String, num>? values,
+    Map<String, Object>? values,
     bool aiHelper = false,
+    String? importSource,
   }) async {
     calls.add({'action': action, 'text': ?text});
     if (hold != null) await hold!.future;

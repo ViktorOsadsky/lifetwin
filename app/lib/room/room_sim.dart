@@ -12,6 +12,9 @@ enum RoomPose { stand, wave, walk, walkFront, walkBack, sit, eat, jump, stretch,
 /// The activity buttons, plus Fortune.
 enum RoomAction { exercise, eat, sleep, fortune }
 
+/// What the twin is doing, for the small activity pill beside it.
+enum RoomActivity { sleeping, walking, eating, exercising, fortune, relaxing }
+
 enum _Mode { idle, walk, fade, arrived, act, extra }
 
 /// A floating "z" while the twin sleeps (world position, velocity, age).
@@ -119,6 +122,21 @@ class RoomSim extends ChangeNotifier {
 
   /// The bed's foreground layer covers the twin only while it is on the bed.
   bool get inBed => onBed || (action == RoomAction.sleep && (_phase == 'climb' || _phase == 'getup'));
+
+  /// The one-word activity the pill shows.
+  RoomActivity get activity {
+    if (inBed) return RoomActivity.sleeping;
+    if (_mode == _Mode.act) {
+      return switch (action) {
+        RoomAction.exercise => RoomActivity.exercising,
+        RoomAction.eat => RoomActivity.eating,
+        RoomAction.fortune => RoomActivity.fortune,
+        _ => RoomActivity.relaxing,
+      };
+    }
+    if (_mode == _Mode.walk || _mode == _Mode.fade) return RoomActivity.walking;
+    return RoomActivity.relaxing;
+  }
 
   /// The shadow sits on the quilt while the twin is on the bed.
   bool get shadowOnBed => onBed || (action == RoomAction.sleep && _phase == 'climb' && _actT > 0.3);
@@ -602,12 +620,13 @@ class RoomSim extends ChangeNotifier {
             final r = layout.camRight;
             zs.add(
               RoomZ(
-                pos.dx - r.dx * 0.3,
-                layout.bedTop + 0.55,
-                pos.dy - r.dy * 0.3,
-                r.dx * 0.12 + 0.02,
-                0.32,
-                r.dy * 0.12,
+                // Above and to the left of the head, drifting away from the face.
+                pos.dx - r.dx * 0.5,
+                layout.bedTop + 0.95,
+                pos.dy - r.dy * 0.5,
+                -r.dx * 0.08,
+                0.3,
+                -r.dy * 0.08,
                 reduced ? 1.6 : 2.4,
               ),
             );

@@ -1,0 +1,229 @@
+{
+  "$defs": {
+    "DocumentCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ],
+          "title": "Confidence",
+          "type": "string"
+        },
+        "date": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date"
+        },
+        "date_basis": {
+          "anyOf": [
+            {
+              "enum": [
+                "line",
+                "document"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date Basis"
+        },
+        "field": {
+          "enum": [
+            "height_cm",
+            "weight_kg",
+            "smoking_status",
+            "diabetes_diagnosed",
+            "hypertension_diagnosed",
+            "blood_pressure",
+            "hba1c",
+            "ldl_cholesterol"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "method": {
+          "default": "parser",
+          "enum": [
+            "parser",
+            "muse"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "page": {
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "maxLength": 60,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "source_text": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Source Text",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "enum": [
+                "cm",
+                "kg",
+                "mmHg",
+                "%",
+                "mg/dL",
+                "mmol/L"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "use": {
+          "enum": [
+            "model_input",
+            "information"
+          ],
+          "title": "Use",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "field",
+        "use",
+        "value",
+        "unit",
+        "date",
+        "date_basis",
+        "source_text",
+        "page",
+        "section",
+        "confidence",
+        "method"
+      ],
+      "title": "DocumentCandidate",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "candidates": {
+      "items": {
+        "$ref": "#/$defs/DocumentCandidate"
+      },
+      "maxItems": 40,
+      "title": "Candidates",
+      "type": "array"
+    },
+    "identifiers_removed": {
+      "minimum": 0,
+      "title": "Identifiers Removed",
+      "type": "integer"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "notices": {
+      "items": {
+        "enum": [
+          "other_person_skipped",
+          "multiple_patients",
+          "conflicting_values",
+          "language_not_supported",
+          "partly_unreadable"
+        ],
+        "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Notices",
+      "type": "array"
+    },
+    "provider_status": {
+      "default": "not_requested",
+      "enum": [
+        "not_requested",
+        "consent_required",
+        "used",
+        "unavailable"
+      ],
+      "title": "Provider Status",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "found",
+        "nothing_found",
+        "unreadable"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "candidates",
+    "notices",
+    "identifiers_removed",
+    "provider_status",
+    "limitations"
+  ],
+  "title": "DocumentExtractResponse",
+  "type": "object"
+}

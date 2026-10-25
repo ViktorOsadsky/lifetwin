@@ -1,0 +1,110 @@
+<!doctype html>
+<!-- LifeTwin agentic screens (prefix Z), v1. Tokens and components match V and X. Twin sprites: sprites/v2, one scale per character (stand pose = 196px), feet on one baseline. -->
+<!-- Flutter: the page is a scroll view with the dock AND back/close pinned (never inside the scroll view); scroll content gets bottom padding = dock height + 16. Sections are flow layout with min-heights, never fixed heights, so 200% text grows. Only the plate window has a fixed height; the twin sits in a fixed 200px box. -->
+<!-- TwinState (engine PR #47): TwinMood cheerful | content | curious | sleepy | cozy | concerned; TwinStateReason emergency | notFeelingGreat | shortSleep | active | feelingGood | needsInput | exploring | steady. Sprite map: concerned -> concerned.png, sleepy -> sleepy.png, curious -> thinking.png, cheerful -> proud.png (or jump/wave), cozy -> sit.png, content -> stand/wave; listening only while Mochi probes. Derived from avatar.strengths/opportunities, check-in wellbeing, recent sleep and activity, and the emergency flag. Never sad or ill from a diagnosis or an outlook; opportunities are framed as invitations. The sticker names the reason in plain words. Outlook card: appears under Daily check-in once survival.status is available after intake (shown on Z-35, same slot); omitted on Z-11 to Z-14, Z-28 and Z-29 only to keep these mood boards focused. Hidden while status is missing_inputs (Room then shows nothing numeric). Daily check-in is the most visible Room action (owner: new information should come in often); weekly is the quieter row below it. -->
+<!-- History is a 56pt row in the Check-ins section (under Weekly), opening R-3. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Z Room rough guide</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.scr{width:390px;position:relative;overflow:hidden;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#4A2F25;-webkit-font-smoothing:antialiased}
+.g-mint{background:radial-gradient(140% 70% at 50% 18%,#E3F5EC 0%,#D3EEE2 72%)}
+.g-lav{background:radial-gradient(140% 70% at 50% 18%,#F0ECFD 0%,#E6E0FA 72%)}
+.g-paper{background:radial-gradient(140% 70% at 50% 18%,#FFFBF3 0%,#F6EEE2 72%)}
+.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.pn{position:relative;box-sizing:border-box;border:1.5px solid #A88B7D;border-radius:28px;background:#FFFDF8;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.win{border-radius:30px}
+.pa{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border-radius:24px;overflow:hidden;background:#E9E2F8}
+.pa img.plate{position:absolute;display:block;object-fit:cover}
+.key{position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:1px solid rgba(226,179,87,.7);border-radius:24px;pointer-events:none}
+.banner{position:absolute;left:50%;transform:translateX(-50%);height:44px;max-width:240px;box-sizing:border-box;padding:0 20px;display:flex;align-items:center;justify-content:center;gap:6px;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;white-space:nowrap;z-index:3}
+.banner .br{color:#B4532F}
+.btn{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:#4A2F25;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid #8C6B5D;background:#FFFDF8;padding:0;text-align:left;text-decoration:none}
+.btn.fd{font-family:Fredoka,system-ui,sans-serif;font-weight:600}
+.lip{background:#9FD9C3;box-shadow:inset 0 -3px 0 rgba(95,175,147,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-cream{background:#FFFDF8;box-shadow:inset 0 -3px 0 rgba(233,223,208,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.lip-ink{background:#4A2F25;color:#FFFDF8;border-color:#2E1C15;box-shadow:inset 0 -3px 0 rgba(0,0,0,.35),0 6px 16px rgba(74,47,37,.18)}
+.lip-teal{background:#17594A;color:#FFFDF8;border-color:#0F3F33;box-shadow:inset 0 -4px 0 rgba(10,60,48,.45),0 8px 18px rgba(36,128,106,.28)}
+.cta{width:100%;min-height:64px;border-radius:32px;font-size:24px}
+.cta2{width:100%;min-height:56px;border-radius:28px;font-size:20px}
+.link{border:0;background:transparent;box-shadow:none;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;font-weight:700;font-size:17px;min-height:48px;min-width:48px;padding:0 6px}
+.back{position:absolute;width:52px;height:52px;border-radius:26px;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75);z-index:2}
+.tail{position:absolute;width:20px;height:20px;background:#FFFDF8;border:1.5px solid #A88B7D;border-top-color:transparent;border-right-color:transparent;box-sizing:border-box}
+.bub{position:absolute;z-index:2;padding:12px 16px;border-radius:24px;max-width:180px;white-space:normal}
+.bub p{margin:0;font-size:20px;line-height:1.18;position:relative}
+.sheet{margin-top:-14px;padding:16px 16px 18px;z-index:1}
+.card{margin-top:14px;padding:14px 14px 16px}
+.lab{font-size:17px;font-weight:700;margin:0;line-height:1.2}
+.sub{font-size:17px;line-height:1.3;color:#6B4E42;margin:0}
+.dots{display:flex;gap:8px;justify-content:center;align-items:center}
+.dot{width:12px;height:12px;border-radius:6px;border:2px solid #8C6B5D;box-sizing:border-box;background:#FFFDF8}
+.dot.done{background:#4A2F25;border-color:#4A2F25}
+.dot.now{width:30px;background:#9FD9C3;border-color:#7A5B4E}
+.ic{width:44px;height:44px;border-radius:22px;flex:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:2px solid #8C6B5D}
+.say{align-self:flex-end;max-width:286px;position:relative;box-sizing:border-box;background:#E3F5EC;border:1.5px solid #A88B7D;border-radius:22px 22px 6px 22px;padding:10px 16px;font-size:18px;line-height:1.3}
+.say small{display:block;font-size:17px;color:#6B4E42;margin-bottom:2px}
+.msay{align-self:flex-start;max-width:286px;box-sizing:border-box;background:#FFFDF8;border:1.5px solid #A88B7D;border-radius:22px 22px 22px 6px;padding:10px 16px;font-size:18px;line-height:1.3}
+.msay.now{border:2px solid #7A5B4E;box-shadow:0 3px 10px rgba(74,47,37,.10)}
+.fchip{display:flex;align-items:center;gap:12px;box-sizing:border-box;width:100%;min-height:60px;border:1.5px solid #A88B7D;border-radius:20px;background:#FBF7F0;padding:6px 14px 6px 10px;text-align:left}
+.fchip .t{flex:1;min-width:0}
+.fchip .t span{display:block;font-size:17px;line-height:1.2;color:#6B4E42}
+.fchip .t b{display:block;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:22px;line-height:1.15;color:#4A2F25}
+.fchip .ed{width:48px;height:48px;border-radius:24px;flex:none;display:flex;align-items:center;justify-content:center;border:2px solid #8C6B5D;box-sizing:border-box;background:#FFFDF8}
+.fchip.unk{border-style:dashed;border-color:#8C6B5D;background:#FBF7F0;box-shadow:none}
+.src{display:inline-flex;align-items:center;gap:4px}
+.ans{min-height:52px;border-radius:26px;padding:0 18px;font-size:18px;font-weight:700;box-shadow:0 3px 10px rgba(74,47,37,.10);white-space:nowrap}
+.ans.on{background:#9FD9C3;border-color:#7A5B4E;box-shadow:0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)}
+.ans.unk{border-style:dashed;box-shadow:none;background:#FBF7F0}
+.wrap{display:flex;flex-wrap:wrap;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 14px;border-radius:18px;background:#9FD9C3;border:2px solid #8C6B5D;font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:19px;white-space:nowrap;box-sizing:border-box}
+.tag{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:16px;border:1.5px solid #A88B7D;background:#FFFDF8;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
+.tag.dash{border-style:dashed}
+.sw{width:64px;height:38px;border-radius:19px;flex:none;position:relative;box-sizing:border-box;border:2px solid #7A5B4E;background:#9FD9C3}
+.sw i{position:absolute;right:3px;top:3px;width:28px;height:28px;border-radius:14px;background:#FFFDF8;border:2px solid #7A5B4E;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.row{position:relative;display:flex;align-items:center;gap:12px;box-sizing:border-box;border:2px solid #8C6B5D;border-radius:22px;background:#FFFDF8;padding:8px 10px 8px 12px;box-shadow:0 3px 10px rgba(74,47,37,.10);width:100%;min-height:64px;text-align:left}
+.row .rt{flex:1;min-width:0}
+.row .rt b{display:block;font-size:18px;line-height:1.2}
+.row .rt span{display:block;font-size:17px;line-height:1.25;color:#6B4E42}
+.dock{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;background:#FFFDF8;border-top:1.5px solid #A88B7D;border-radius:28px 28px 0 0;box-shadow:0 -6px 16px rgba(74,47,37,.12),inset 0 1px 0 rgba(255,255,255,.75);padding:10px 16px 18px;z-index:5}
+.full .dock{position:relative;margin-top:16px}
+.bar{position:absolute;left:14px;right:14px;bottom:30px;z-index:5}
+.full .bar{position:relative;left:auto;right:auto;bottom:auto;margin:16px 14px 30px}
+.phdr{position:absolute;left:0;right:0;top:0;height:120px;box-sizing:border-box;background:#FFFBF3;border-bottom:1.5px solid #E9DFD0;z-index:6;display:flex;align-items:flex-end;gap:12px;padding:0 16px 12px}
+.pin{position:absolute;width:52px;height:52px;border-radius:26px;z-index:4}
+.rg{display:inline-flex;align-items:center;gap:6px;min-height:48px;height:48px;padding:0 16px;border-radius:24px;border:2px solid #8C6B5D;background:#FFF6DD;font-size:17px;font-weight:700;white-space:nowrap;box-sizing:border-box}
+p{overflow-wrap:break-word}
+h1,h2{margin:0}
+</style>
+</helmet>
+<div class="scr g-lav" style="height: 844px">
+<div class="scroll" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow-y: auto; overflow-x: hidden"><div class="flow" style="padding: 77px 14px 166px; display: flex; flex-direction: column">
+<!-- TwinState: mood=content, reason=steady, sprite=bear/hat/stand.png -->
+<div class="pn win" style="height: 320px"><div class="pa"><img class="plate" src="/_blob/d16f2dd61c0d54c11b27c2e6626acc71" alt="" style="width: 460px; height: 690px; left: -98px; top: -66px"><div aria-hidden="true" style="position: absolute; left: 12px; top: 110px; width: 240px; height: 210px; background: radial-gradient(closest-side, rgba(255,227,176,.30), rgba(255,227,176,0))"></div><div aria-hidden="true" style="position: absolute; left: 62px; top: 291px; width: 140px; height: 18px; border-radius: 50%; background: rgba(74,47,37,.22); filter: blur(3px)"></div><div style="position: absolute; left: 32px; top: 100px; width: 200px; height: 200px; display: flex; align-items: flex-end; justify-content: center"><img src="/_blob/64fb077acf9c1187a447e7fc26e322a0" alt="Mochi the bear standing contentedly" style="width: 130px; height: 196px; display: block; position: relative; left: -1px; top: 5px"></div><div class="pn" role="status" style="position: absolute; left: 12px; top: 16px; border-radius: 18px; padding: 8px 14px 8px 10px; display: flex; align-items: center; gap: 10px; z-index: 2"><span style="width: 34px; height: 34px; border-radius: 17px; background: #F8D98A; display: flex; align-items: center; justify-content: center; flex: none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.2c1.8 1.6 5.2 1.6 7 0"/><path d="M9 10h.01M15 10h.01" stroke-width="3"/></svg></span><span style="line-height: 1.15"><b style="font-size: 18px; display: block">Feeling content</b><span style="font-size: 17px; color: #6B4E42">A steady week</span></span></div></div><div class="key"></div>
+<div class="banner" style="top: -22px" aria-label="Twin name: Mochi"><span class="br">{</span><span>Mochi</span><span class="br">}</span></div>
+<div class="pn bub" style="right: 8px; top: 80px"><span class="tail" style="left: -10px; top: 26px; transform: rotate(45deg)"></span><p class="fd">Got a minute to check in?</p></div>
+</div>
+<section aria-label="Check-ins" style="margin-top: 14px; margin-bottom: 16px"><a class="btn lip row" href="Z-15-Daily.dc.html" style="min-height: 76px; border-color: #7A5B4E; background: #9FD9C3"><span class="ic" style="width: 48px; height: 48px; border-radius: 24px; background: #FFF1C9"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.5 1.5M17.2 17.2l1.5 1.5M5.3 18.7l1.5-1.5M17.2 6.8l1.5-1.5"/></svg></span><span class="rt"><b class="fd" style="font-size: 22px">Daily check-in</b><span style="color: #3E2A21">A 1-minute chat</span></span><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M9 5l7 7-7 7"/></svg></a><!-- Outlook card, age 82 (extrapolated: true): 5-yr 93.26%. Owner ruling: plain "still alive". The whole card is one button (Stack: InkWell over the content); the Rough guide badge is its own 48pt target above it, 8px+ from the chevron, and opens the caveat verbatim. --><div style="position: relative; margin-top: 10px"><a class="btn" href="#outlook" aria-label="About 93 in 100 still alive in 5 years. Rough guide. Opens your outlook." style="position: absolute; inset: 0; border-radius: 22px; border: 1.5px solid #8C6B5D; background: #FFFDF8; z-index: 0"></a><div style="position: relative; z-index: 1; pointer-events: none; padding: 12px 14px; min-height: 76px; box-sizing: border-box"><p class="fd" style="margin: 0; font-size: 24px; line-height: 1.1; white-space: nowrap">About 93 in 100</p><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><p class="fd" style="margin: 0; font-size: 24px; line-height: 1.1; white-space: nowrap">still alive</p><span style="pointer-events: auto; flex: none"><button class="rg btn" aria-label="Rough guide. Tap for why."><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M4 10c2.5-2.5 5.5-2.5 8 0s5.5 2.5 8 0M4 15c2.5-2.5 5.5-2.5 8 0s5.5 2.5 8 0"/></svg><span>Rough guide</span></button><!-- Rough guide sheet (verbatim): Your age is outside the ages this model was checked on (35&#8211;79), so treat this as a rough guide. --></span></div><div style="display: flex; align-items: center; gap: 8px; margin-top: 2px"><div style="flex: 1; min-width: 0"><p style="margin: 0; font-size: 17px; line-height: 1.25">People like you, in 5 years</p><p style="margin: 2px 0 0; font-size: 17px; color: #6B4E42">Modeled survival of similar people</p></div><span style="margin-left: 8px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M9 5l7 7-7 7"/></svg></span></div></div></div><a class="btn row" href="Z-16-Weekly.dc.html" style="min-height: 56px; margin-top: 10px; padding: 4px 12px; box-shadow: none; border-width: 1.5px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14.5h.01M12 14.5h.01M16 14.5h.01" stroke-width="3"/></svg><span class="rt" style="display: flex; justify-content: space-between; align-items: center; gap: 8px"><b>Weekly check-in</b><span>Sunday</span></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M9 5l7 7-7 7"/></svg></a><a class="btn row" href="R-3-History.dc.html" style="min-height: 56px; margin-top: 10px; padding: 4px 12px; box-shadow: none; border-width: 1.5px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="rt" style="display: flex; justify-content: space-between; align-items: center; gap: 8px"><b>History</b><span>Past check-ins</span></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M9 5l7 7-7 7"/></svg></a></section>
+</div></div>
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 50px; background: #E6E0FA; z-index: 4"></div>
+<nav class="pn bar" aria-label="Room actions" style="min-height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px">
+<button class="btn" style="width: 94px; min-height: 100px; flex-direction: column; gap: 6px; border: 0; background: transparent; font-size: 17px; font-weight: 700"><span style="width: 60px; height: 60px; border-radius: 30px; border: 2px solid #8C6B5D; display: flex; align-items: center; justify-content: center; box-sizing: border-box; background: #F8B9A0; box-shadow: inset 0 -3px 0 rgba(232,149,122,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><path d="M8.5 3.5L3 6.5l2 5 3-1.2V20.5h8V10.3l3 1.2 2-5-5.5-3c-.6 1.6-2.2 2.7-4 2.7s-3.4-1.1-4-2.7z"/></svg></span><span>Customize</span></button>
+<button class="btn lip fd" style="width: 144px; height: 72px; border-radius: 36px; font-size: 26px"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4A2F25" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span>Talk</span></button>
+<button class="btn" style="width: 94px; min-height: 100px; flex-direction: column; gap: 6px; border: 0; background: transparent; font-size: 17px; font-weight: 700"><span style="width: 60px; height: 60px; border-radius: 30px; border: 2px solid #8C6B5D; display: flex; align-items: center; justify-content: center; box-sizing: border-box; background: #1E2547; box-shadow: inset 0 -3px 0 rgba(15,20,48,.7),0 6px 16px rgba(74,47,37,.14),inset 0 1px 0 rgba(255,255,255,.75)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E8B64C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex: none"><circle cx="12" cy="10" r="6.5"/><path d="M6.5 20.5h11l-1.8-3.6H8.3z"/><path d="M9.2 8.6a3.2 3.2 0 0 1 2.6-2.2"/></svg></span><span>Fortune</span></button>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

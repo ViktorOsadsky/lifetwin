@@ -442,6 +442,11 @@ FIELD_NAMES: dict[ProfileField, str] = {
     "diabetes": r"diabetes|blood sugar",
     "systolic_bp": r"blood pressure|bp|top (?:blood pressure )?number",
     "diastolic_bp": r"bottom (?:blood pressure )?number",
+    "general_health": r"general health|overall health|health rating|health",
+    "hypertension_diagnosed": r"high blood pressure|hypertension",
+    "sedentary_min_day": r"sitting|sitting time|sitting down|how much i sit",
+    "moderate_recreation_min_week": r"lighter activity|light activity|light exercise|walking|walks",
+    "vigorous_recreation_min_week": r"harder exercise|hard exercise|vigorous exercise|vigorous activity",
 }
 _NAME = "|".join(FIELD_NAMES.values())
 _THE = r"(?:my |the |your )?"
@@ -486,6 +491,42 @@ TAGGED_QUESTION = re.compile(
 )
 
 
+# "Can we talk about my sleep?", "let's do the sitting question": the person picks
+# the topic. Each topic maps to the question it opens (``topic_field``).
+TOPIC_NAMES: dict[str, str] = {
+    r"(?:my |the |how i )?(?:sleep|sleeping)(?: question)?|how (?:much|well) i sleep": "sleep_hours",
+    r"(?:my |the )?(?:general |overall )?health(?: question)?|how i feel": "general_health",
+    r"(?:my |the )?(?:high )?blood pressure(?: question)?|(?:my )?hypertension": "hypertension_diagnosed",
+    r"(?:my |the )?(?:diabetes|blood sugar)(?: question)?": "diabetes",
+    r"(?:my |the )?(?:sitting|sitting time|sitting down)(?: question| part)?|how much i sit": (
+        "sedentary_min_day"
+    ),
+    r"(?:my |the )?(?:exercise|exercising|activity|walking|walks|workouts?|moving)(?: questions?| part)?"
+    r"|how active i am|what i do to stay active": "moderate_recreation_min_week",
+    r"(?:my |the )?(?:harder|hard|vigorous) (?:exercise|activity)": "vigorous_recreation_min_week",
+    r"(?:my |the )?(?:smoking|cigarettes)(?: question)?": "smoking_status",
+    r"(?:my |the )?weight(?: question)?|how much i weigh": "weight_kg",
+    r"(?:my |the )?height(?: question)?|how tall i am": "height_cm",
+    r"(?:my |the )?age(?: question)?|how old i am": "age",
+    r"(?:my |the )?(?:sex|gender)(?: question)?": "sex",
+}
+_TOPIC = "|".join(f"(?:{names})" for names in TOPIC_NAMES)
+JUMP = re.compile(
+    r"(?:actually |wait |oh |and |but )?"
+    r"(?:(?:can|could|shall) we (?:please )?(?:talk about|go to|go back to|do|skip (?:ahead )?to|"
+    r"move (?:on )?to|switch to|get to|jump to|chat about|discuss)"
+    r"|let's (?:talk about|do|go to|move on to|skip (?:ahead )?to|switch to|chat about|get to)"
+    r"|let me tell you about|i (?:want|wanted|would like|'d like) to (?:talk about|tell you about|"
+    r"do|go to)|i'd (?:rather|prefer to) (?:talk about|do)|(?:what|how) about"
+    r"|i have something to (?:say|tell you) about|talk about)"
+    rf" (?P<topic>{_TOPIC})(?: (?:first|now|instead|next|for a minute|for a bit|then))?"
+)
+
+
+def topic_field(topic: str) -> ProfileField:
+    return next(field for names, field in TOPIC_NAMES.items() if re.fullmatch(names, topic))
+
+
 IntentKind = Literal[
     "repeat",
     "slower",
@@ -498,6 +539,7 @@ IntentKind = Literal[
     "back",
     "skip",
     "ask",
+    "jump",
 ]
 
 
@@ -557,6 +599,9 @@ def control_intent(text: str) -> Intent | None:
         field = next(f for f, names in FIELD_NAMES.items() if re.fullmatch(names, name))
         said = any(change.group(f"r{i}") for i in range(1, 5))
         return Intent("back", field, _original_rest(text, field) if said else None)
+    jump = JUMP.fullmatch(words)
+    if jump:
+        return Intent("jump", topic_field(jump.group("topic")))
     if _full(SKIP_REQUEST, words):
         return Intent("skip")
     if is_question_back(text):
@@ -923,17 +968,23 @@ def focus(
     transcript: bool = False,
     confirming: bool = False,
     checkin: bool = False,
+    also: tuple[str, ...] = (),
 ) -> str:
     """Leave out room chatter around an answer.
 
     A sentence (and, in a voice transcript, a comma-separated piece) goes only when
-    it holds nothing for the asked question and nothing that could change an
-    answer's meaning: "Are we gonna include this, bro? Female." is "Female". A
+    it holds nothing for the asked question (or the ``also`` questions) and nothing
+    that could change an answer's meaning: "Are we gonna include this, bro? Female." is "Female". A
     reply with nothing on topic stays whole, so "say that again" still works.
     """
 
     def keep(piece: str) -> bool:
-        return _on_topic(piece, field, confirming, checkin) or _changes_meaning(piece)
+        # ``also``: other questions a piece may answer ("I'm 72, female"), kept for them.
+        return (
+            _on_topic(piece, field, confirming, checkin)
+            or _changes_meaning(piece)
+            or any(_on_topic(piece, other, False) for other in also)
+        )
 
     # Each sentence keeps its own end, so "yes?" stays a question.
     parts = re.split(f"({SENTENCE_END})", text)
@@ -1041,18 +1092,86 @@ RESUME_LEAD = "Okay, let's carry on. "
 # dying to see my grandkids" and "this pain in my knee" are not among them.
 EMERGENCY = re.compile(
     r"\bchest pains?\b|\bpains? in (?:my|the) chest\b|\btightness in my chest\b|"
-    r"\bmy chest (?:hurts|is hurting|is (?:really |so |very )?tight|feels (?:tight|heavy))\b|"
+    r"\bmy chest (?:hurts|is hurting|has been hurting|keeps hurting|won't stop hurting|"
+    r"is (?:really |so |very )?tight|feels (?:tight|heavy))\b|"
     r"\b(?:can't|cannot|can not|couldn't|could not) (?:breathe|catch my breath|get my breath)\b|"
     r"\b(?:struggling|trouble|hard|difficulty) (?:to )?breath(?:e|ing)\b|"
     r"\bhaving a (?:heart attack|stroke)\b|"
     r"\b(?:think|feel like) (?:i'm|i am|it's|it is) (?:a |having a )?(?:heart attack|stroke)\b|"
-    r"\b(?:fell|fallen|had a fall)(?: down)?,? and (?:i )?(?:can't|cannot|can not) get up\b|"
-    r"\b(?:want|wanna|wants) to die\b|\bwant to be dead\b|\bkill(?:ing)? myself\b(?! laughing)|"
-    r"\bend (?:my life|it all)\b|\bsuicid\w*|\bbetter off dead\b|\bno reason to live\b|"
-    r"\b(?:don't|do not) want to (?:live|be alive)(?: anymore| any more)?\b|"
+    r"\b(?:fell|fallen|had a fall|took a fall)\b[^.;!?]{0,60}?\b(?:can't|cannot|can not|"
+    r"couldn't|could not) get (?:back )?up\b|"
+    r"\b(?:took|taken|swallowed|had) (?:way )?too many (?:of )?(?:my )?(?:pills|tablets|meds|"
+    r"medicines?|medications?|sleeping pills|painkillers)\b|\boverdos\w*|"
     r"\b(?:i think|i feel like) (?:i'm|i am) dying\b|"
     r"\b(?:won't|will not|can't|cannot) stop (?:the )?bleeding\b|"
     r"\b(?:call|need|get me|send) (?:an ambulance|911|nine one one)\b"
+)
+# Thoughts of self-harm, active or passive, in everyday words and slang. Idioms ("this
+# meeting is killing me", "dying to try that") and a place or activity after "here"
+# ("I don't want to be here at the gym anymore") are not among them.
+SELF_HARM = re.compile(
+    r"\b(?:don't|do not|can't|cannot) see the point (?:in|of) (?:living|going on|life|being alive)\b|"
+    r"\bno point (?:in )?(?:living|going on|carrying on|keeping going|being alive|being here)\b|"
+    r"\bno reason to (?:live|keep going|go on|carry on|be here|be alive|stay)\b|"
+    r"\b(?:want|wanna|wants|wanted) to die\b|\bwant to be dead\b|\bwish i (?:was|were) dead\b|"
+    r"\bkill(?:ing)? myself\b(?! laughing)|\bkms\b|\bunaliv\w*|\bsuicid\w*|"
+    r"\b(?:end|ending|take|taking) my (?:own )?life\b|\bend(?:ing)? it all\b|"
+    r"\b(?:thinking|thought|think|thinkin) (?:about|of|abt) (?:ending (?:it|things)|"
+    r"not being (?:here|around|alive))\b(?! with\b)|"
+    r"\b(?:want|wanna|going|gonna|ready) to end (?:it|things)\b(?! with\b)|"
+    r"\bbetter off dead\b|\bbetter off without me\b|"
+    r"\b(?:don't|do not|didn't) want to (?:live|be alive|exist|wake up)(?: anymore| any more)?\b|"
+    r"\b(?:don't|do not|didn't) want to be here\b(?! (?:any ?more )?(?:at|in|on|with|"
+    r"for|doing|working|when|while|after|during|without)\b)|"
+    r"\b(?:don't|do not|didn't) want to be around (?:any ?more|for much longer)\b|"
+    r"\b(?:don't|do not|didn't) want to be around$|"
+    r"\b(?:rather|want to|wanna) not (?:be here|be around|exist|be alive|wake up)\b|"
+    r"\bwish i (?:could )?(?:just )?(?:wasn't here|weren't here|wasn't alive|could disappear|not wake up|"
+    r"didn't wake up|wouldn't wake up|never woke up|could sleep and not wake up)\b|"
+    r"\b(?:not|isn't|is not|ain't) worth living\b|\bgive(?:n)? up on (?:life|living)\b|"
+    r"\b(?:can't|cannot) (?:go on|keep going|carry on) (?:any ?more|like this)\b|"
+    r"\bself (?:harm\w*|injur\w*)\b|\bharm(?:ing)? myself\b|"
+    r"\b(?:want|wanna|urge|urges|going|gonna|thinking (?:about|of)|thought (?:about|of)) "
+    r"(?:to )?(?:hurt|hurting|cut|cutting) myself\b|"
+    r"\b(?:i'm|i am|feel like|feel|i feel) (?:such |just |only )?a burden\b|"
+    r"\b(?:don't|do not|can't) see the point (?:any ?more|in anything|of anything)\b|"
+    r"\bwhat's (?:even )?the point (?:any ?more|of (?:anything|living|going on|it all)|"
+    r"in (?:anything|living|going on))\b|"
+    r"\b(?:want|wanna) to disappear\b|\bhope i (?:don't|never) wake up\b|"
+    r"\b(?:sleep|go to sleep) and (?:not|never) wake up\b|"
+    r"\b(?:tired|sick) of (?:living|being alive|life|it all)\b|\bwill to live\b|"
+    r"\bbetter off if i (?:was|were|wasn't|weren't) (?:gone|here|around|dead|alive)\b|"
+    r"\brather be dead\b|\bwant (?:it all|everything) to (?:stop|end)\b|"
+    r"\b(?:want|wanna|going|gonna|thinking (?:about|of)|thought (?:about|of)) (?:to )?"
+    r"(?:take|taking|swallow\w*) all (?:of )?my (?:pills|tablets|meds)\b|"
+    r"\bswallowed all (?:of )?my (?:pills|tablets|meds)\b|"
+    r"\bsewer ?slide\b|\boff myself\b|"
+    # Saving up the means: "I've got pills saved up for when it gets bad".
+    r"\b(?:sav(?:ed|ing)(?: \w+)? up|been saving|stockpil\w*|hoard\w*|stash\w*|squirrel\w* away|"
+    r"put(?:ting)? aside|set aside)\b[^.;!?]{0,30}\b(?:pills|tablets|meds|medications?|painkillers)\b|"
+    r"\b(?:pills|tablets|meds|medications?|painkillers)\b[^.;!?]{0,20}\b(?:sav(?:ed|ing) up|"
+    r"stockpiled|hoarded|stashed|put aside|set aside)\b|"
+    r"\b(?:got|have|keep\w*|kept|sav\w*)\b[^.;!?]{0,40}\bfor when (?:it|things|life|i) "
+    r"(?:gets?|get|becomes?|am|can't|cannot)(?: too)? (?:bad|worse|much|unbearable|hard|enough|"
+    r"take it|cope|ready)\b|\b(?:got|have) the means\b|"
+    # "Thinking about not waking up", "I wouldn't mind not waking up".
+    r"\b(?:thinking|thought|think|dream\w*|wish\w*|wouldn't mind|would be nice|rather|want|"
+    r"wanna|okay with|ok with|fine with|happy with|pray\w*|hope|hoping) (?:about |of )?(?:just )?"
+    r"(?:not|never) wak(?:e|ing)\b(?! (?:up )?(?:so |too )?(?:early|late|at|till|until|before|"
+    r"in time|on time|for)\b)|"
+    # "No point in me being here", "my family would cope fine without me".
+    r"\b(?:no|what's the|what is the) point (?:in |of )?(?:me|my) (?:being here|being around|"
+    r"being alive|existing|living|going on|carrying on)\b|"
+    r"\b(?:would|'d|will) (?:cope|manage|get on|get by|be fine|be okay|be ok|be happier|be better)"
+    r"(?: fine| better| okay)?\b[^.;!?]{0,20}\bwithout me\b(?! (?:for|at|on|in|today|tomorrow|"
+    r"tonight|this|next|while)\b)|"
+    r"\b(?:would|'d|will) (?:cope|manage|be fine|be okay)(?: fine| just fine)?(?: if i (?:was|were|wasn't|weren't)"
+    r" (?:gone|here|around))\b"
+)
+# Long ago, said plainly: "I self-harmed when I was a teenager".
+SELF_HARM_PAST = re.compile(
+    r"\b(?:years ago|when i was (?:young|younger|a (?:teen\w*|kid|child|student))|"
+    r"as a (?:teen\w*|kid|child)|in (?:19|20)\d\d)\b"
 )
 # "I had chest pain years ago": history, unless it is said to be happening now.
 HISTORY = re.compile(
@@ -1062,7 +1181,7 @@ HISTORY = re.compile(
 )
 HAPPENING_NOW = re.compile(
     r"\b(?:now|right now|today|tonight|this (?:morning|afternoon|evening)|all (?:day|morning|night)|"
-    r"just now|still|again)\b"
+    r"just now|still|again|has been|have been|keeps?|won't stop|since (?:last|this|yesterday))\b"
 )
 RESUME = _units(
     "continue",
@@ -1083,9 +1202,12 @@ RESUME = _units(
 
 
 def emergency(text: str) -> bool:
-    """A reply that says something urgent is happening now ("I've got chest pain")."""
+    """A reply that says something urgent is happening now ("I've got chest pain"), or
+    thoughts of self-harm ("I don't want to be here anymore")."""
     words = " ".join(re.sub(r"[^\w'\s.,;!?]", " ", normalize_text(text).lower()).split())
     for clause in re.split(r"[.,;!?]|\bbut\b", words):
+        if SELF_HARM.search(clause) and not SELF_HARM_PAST.search(clause):
+            return True
         if EMERGENCY.search(clause) and (
             not HISTORY.search(clause) or HAPPENING_NOW.search(clause)
         ):
@@ -1093,6 +1215,169 @@ def emergency(text: str) -> bool:
     return False
 
 
+# A warm reply to a low mood answer in a check-in: empathy, gentle support, then the
+# safety line softly. It is no pause: the check-in goes on if the person wants. (The
+# emergency check above runs first and takes priority.) Templates only; see the rewording
+# hook in CheckinService.
+SAFETY_PHRASE = "hurting yourself, please call 911."
+CARE_TEMPLATES = (
+    "I'm really sorry today's been so hard. Thank you for telling me. You don't have to carry "
+    "it alone. If it would help, we can just take this slowly. And if you're ever thinking "
+    "about " + SAFETY_PHRASE,
+    "That sounds like a heavy day, and I'm glad you said so. There's no rush here, and we can "
+    "go as gently as you like. And if you're ever thinking about " + SAFETY_PHRASE,
+    "Thank you for being honest with me. I'm sorry things feel this hard right now. You're not "
+    "on your own with it. If you're ever thinking about " + SAFETY_PHRASE,
+    "I'm sorry you're having such a rough time. It's okay to feel this way, and it's okay to "
+    "take things slowly. I'm here with you. If you're ever thinking about " + SAFETY_PHRASE,
+    "I'm glad you told me, even though it's hard to say. You don't have to have it all worked "
+    "out. We can keep this very simple today. And if you're ever thinking about " + SAFETY_PHRASE,
+)
+CARE_QUESTION = "Would you like to keep going with the check-in, or stop here for today?"
+# What the person named, reflected back in their own words (no advice, no diagnosis).
+_REFLECT = (
+    ("lonely", "Feeling lonely is really hard."),
+    ("empty", "Feeling empty is really hard."),
+    ("hopeless", "Feeling hopeless is really hard."),
+    ("awful", "Feeling awful is really hard."),
+    ("terrible", "Feeling terrible is really hard."),
+    ("down", "Feeling down is really hard."),
+    ("struggling", "Struggling like that is really hard."),
+    ("cope", "Feeling like you can't cope is really hard."),
+)
+_TAIL = (
+    r"(?: (?:today|at the moment|right now|lately|actually|really|thanks|thank you|to be honest))*"
+)
+_LEAD = (
+    r"(?:(?:i'm|i am|i feel|i've been feeling|i have been feeling|feeling|just|pretty|really|"
+    r"so|very|quite|a bit|bit) )*"
+)
+LOW_MOOD = re.compile(
+    rf"{_LEAD}(?:awful|terrible|hopeless|lonely|empty|struggling|really down|feeling down|"
+    rf"not (?:so |that |very )?(?:great|good)){_TAIL}"
+    r"|(?:i feel|i'm feeling|i am feeling|feeling|i'm|i am) (?:\w+ )?(?:awful|terrible|hopeless|"
+    rf"lonely|empty|really down|struggling|so down|not (?:so )?great){_TAIL}"
+    rf"|(?:i'm|i am|i've been|i have been) struggling(?: a lot| lately){_TAIL}"
+    r"|(?:i )?(?:can't|cannot|can not) cope"
+)
+
+
+def low_mood(text: str) -> bool:
+    """A mood answer that is clearly low ("awful", "really down", "I can't cope"). Weather,
+    traffic and the like are no match: only a short answer about oneself counts."""
+    words = " ".join(re.sub(r"[^\w'\s]", " ", normalize_text(text).lower()).split())
+    return bool(LOW_MOOD.fullmatch(words))
+
+
+def care_reply(text: str, day_number: int) -> str:
+    """The template for the day, with the person's own word reflected first."""
+    words = normalize_text(text).lower()
+    reflect = next((line + " " for key, line in _REFLECT if key in words), "")
+    return reflect + CARE_TEMPLATES[day_number % len(CARE_TEMPLATES)]
+
+
+_STOP = re.compile(r"\b(?:stop|end|finish|quit|done|enough|not now|call it a day|no more)\b")
+_KEEP = re.compile(
+    r"\b(?:keep going|keep on|continue|carry on|go on|go ahead|yes|yeah|yep|sure|okay|ok|fine)\b"
+)
+
+
+def care_choice(text: str) -> str | None:
+    """The answer to CARE_QUESTION: "keep" going, "stop", or None (anything else)."""
+    words = " ".join(re.sub(r"[^\w'\s]", " ", normalize_text(text).lower()).split())
+    if len(words.split()) > 8:
+        return None
+    if _STOP.search(words) and not re.search(r"\b(?:don't|do not|not) (?:want to )?stop", words):
+        return "stop"
+    return "keep" if _KEEP.search(words) or _STOP.search(words) else None
+
+
 def resumes(text: str) -> bool:
     """ "Continue", "let's carry on": go on with the question that was paused."""
     return _full(RESUME, phrase(text))
+
+
+# ---------------------------------------------------------------------------
+# "I don't know"
+# ---------------------------------------------------------------------------
+
+_DK = (
+    r"(?:i )?(?:really |honestly |just |truly |simply )?(?:don't|do not) (?:really |even |honestly )?"
+    r"(?:know|remember|recall)"
+    r"|(?:i )?dunno|(?:i )?(?:have |got )?(?:no|not a|no earthly|not the (?:slightest|faintest|foggiest)) "
+    r"(?:idea|clue)|(?:i )?haven't (?:a|the (?:faintest|foggiest|slightest)) (?:clue|idea)"
+    r"|(?:i'm |i am )?(?:really |honestly |just )?not (?:really |quite |too |entirely |exactly |totally |"
+    r"a hundred percent |100 percent )?(?:sure|certain)|unsure|uncertain"
+    r"|beats me|search me|who knows|(?:i )?(?:couldn't|could not|can't|cannot) (?:really )?(?:tell you|say)"
+    r"|hard to (?:say|tell)|(?:i )?(?:can't|cannot|couldn't) (?:really )?(?:remember|recall)"
+    r"|(?:i )?forg[eo]t|i've forgotten|i have forgotten|pass|i'll pass|unknown"
+    r"|(?:i'd|i would|i'll|i will|i|let me|i'll need to|i'd need to|i need to|i have to|i'd have to|"
+    r"i would have to|i'll have to|i will have to) (?:have to |need to )?(?:check|look(?: it| that)? up|find out|"
+    r"ask (?:my|the|a) \w+)"
+    r"|(?:you'd|you would|you'll|you will) (?:have to|need to) ask (?:my|the) \w+"
+    r"|(?:my|the) (?:doctor|doc|nurse|gp|daughter|son|wife|husband) (?:would|will|might|could) know"
+    r"|ask my (?:doctor|doc|nurse|gp)"
+    r"|(?:i've |i have |i )?never (?:thought about|measured|counted|checked|tracked|timed|weighed|"
+    r"had it (?:checked|tested|measured|taken)|been (?:tested|checked|measured|weighed|told))"
+    r"|(?:i )?(?:don't|do not) (?:keep track|track|count|measure|own a scale|have a scale|"
+    r"weigh myself|know my numbers|pay attention)"
+    r"|(?:i )?haven't (?:weighed myself|been weighed|measured|checked|had it checked)"
+    r"|it varies(?: so much| a lot| too much)?"
+)
+_DK_LEAD = re.compile(
+    r"^(?:(?:oh|uh|um|hmm|gosh|well|sorry|honestly|to be honest|oh dear|goodness|golly),? )*"
+    rf"(?:{_DK})\b"
+)
+_DK_TAIL = (
+    r"(?:\s+(?:to be honest|honestly|really|offhand|off hand|off the top of my head|exactly|"
+    r"for sure|i'm afraid|sorry|right now|at the moment|dear|anymore|any more))*"
+)
+# "I don't know if I'd call it exercise, but I walk an hour a day", "not sure exactly,
+# but 7 hours": the doubt is about something else (or only the exact figure), and the
+# rest is the answer. A bare "I'm not sure. About 7 hours." is still asked about.
+HEDGED_ANSWER = re.compile(
+    rf"^(?:(?:oh|uh|um|hmm|gosh|well|honestly),? )*(?:{_DK})\b"
+    r" (?:if|whether|why|what to call it|exactly|for sure|offhand|to the minute)\b[^,;.]*"
+    r"\s*(?:[,;.]|\s(?=but\b)|\s-\s)\s*(?:but\s+|though\s+)?(?P<rest>\S.*)$"
+)
+
+
+def dont_know(text: str) -> bool:
+    """ "No idea", "I'd have to check", "my doctor would know", "pass": the person doesn't
+    know the answer. Every clause is either such a phrase or plain context, and no
+    clause holds a number."""
+    words = " ".join(re.sub(r"[^\w'\s,.;]", " ", normalize_text(text).lower()).split())
+    if re.search(r"\d", _canonical(words)):
+        return False
+    clauses = [c.strip() for c in re.split(r"[,.;]|\bbut\b|\bso\b", words) if c.strip()]
+    if not clauses:
+        return False
+    return any(_DK_LEAD.match(clause) for clause in clauses)
+
+
+def unknown_beside_answer(text: str) -> tuple[str, str] | None:
+    """ "I don't know my weight, but I'm 5'4": the doubt, and what else was said.
+
+    Clauses that only say they don't know (no number) are the doubt; everything else is
+    returned as the rest, so a fact beside "I don't know" is not lost. None when there
+    is no such split."""
+    words = " ".join(normalize_text(text).split())
+    clauses = [c.strip() for c in re.split(r"[,.;]|\bbut\b|\band\b|\bso\b", words) if c.strip()]
+    doubt = [
+        c
+        for c in clauses
+        if not re.search(r"\d", c) and _DK_LEAD.match(" ".join(c.lower().split()))
+    ]
+    rest = [c for c in clauses if c not in doubt]
+    if not doubt or not rest:
+        return None
+    return " ".join(doubt), ", ".join(rest)
+
+
+def hedged_answer(text: str) -> str | None:
+    """The answer after a doubt about something else, kept with its own words."""
+    match = HEDGED_ANSWER.match(" ".join(normalize_text(text).split()).lower())
+    if not match:
+        return None
+    start = len(text) - len(match.group("rest"))
+    return text[start:].strip() if start > 0 and text[start:].strip() else match.group("rest")

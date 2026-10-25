@@ -1,0 +1,508 @@
+import 'dart:io' show gzip;
+import 'dart:math' as math;
+import 'dart:typed_data';
+
+import 'package:flutter/services.dart' show AssetBundle, rootBundle;
+import 'package:lifetwin_on_device/lifetwin_on_device.dart';
+
+import 'profile_mapping.dart';
+
+/// Typed reading of one `LifeTwinEngine.assess()` result. The raw map is kept as it
+/// came, so `profile_used` and `input_provenance` are preserved for the UI.
+class TwinAssessment {
+  TwinAssessment(this.raw)
+    : survival = Map<String, dynamic>.from(raw['survival'] as Map? ?? const {}),
+      invalidInput = null;
+
+  /// A profile value the package refused (`FormatException`): ask the person to correct
+  /// it. Never shown as a number.
+  TwinAssessment.invalid(String message, {this.invalidInput})
+    : raw = const {},
+      survival = {'status': 'invalid_input', 'message': message};
+
+  final Map<String, dynamic> raw;
+  final Map<String, dynamic> survival;
+
+  /// The model input the package refused, by its package name, when it could be told.
+  final String? invalidInput;
+
+  /// `available`, `missing_inputs`, `unsupported_age`, `under_age`, `unsupported_profile`, or the
+  /// app's own `invalid_input`.
+  String get status => survival['status'] as String? ?? 'invalid_input';
+  bool get available => status == 'available';
+
+  /// The package's status message, shown instead of a number when not [available].
+  String? get message => survival['message'] as String?;
+
+  /// Package input names (e.g. `sedentary_min_day`, `bmi`) still needed.
+  List<String> get missingInputs => [for (final m in survival['missing_inputs'] as List? ?? const []) '$m'];
+  List<String> get supportIssues => [for (final m in survival['support_issues'] as List? ?? const []) '$m'];
+
+  String get modelVersion => survival['model_version'] as String? ?? '';
+  String? get interpretation => survival['interpretation'] as String?;
+
+  /// Cumulative survival 0..1 through years 1–5; empty unless [available].
+  Map<int, double> get survivalByYear => yearMap(survival['survival_probabilities']);
+
+  /// The same in percent, as the package gives it; empty unless [available].
+  Map<int, double> get percentByYear => yearMap(survival['survival_percent_by_year']);
+
+  Map<String, dynamic> get profileUsed => Map<String, dynamic>.from(raw['profile_used'] as Map? ?? const {});
+  Map<String, dynamic> get inputProvenance => Map<String, dynamic>.from(raw['input_provenance'] as Map? ?? const {});
+
+  /// `profile_snapshot`, `daily_logs` or `weekly_summaries`.
+  String get source => inputProvenance['source'] as String? ?? 'profile_snapshot';
+
+  Map<String, dynamic> get avatar => Map<String, dynamic>.from(raw['avatar'] as Map? ?? const {});
+  List<String> get strengths => [for (final s in avatar['strengths'] as List? ?? const []) '$s'];
+  List<String> get opportunities => [for (final s in avatar['opportunities'] as List? ?? const []) '$s'];
+
+  /// The age is 18–34 or 80–85, outside the ages the model was checked on; numbers are a
+  /// rough guide and carry [extrapolationCaveat].
+  bool get extrapolated => raw['extrapolated'] == true;
+
+  /// The model owner's own number, `log_relative_hazard_score`, exactly as the model
+  /// gives it (for ages 18–34 and 80–85, the same extrapolated score the forecast uses).
+  /// Lower is lower modelled risk, 0 is the average survey participant, and it includes
+  /// the age and sex terms. Null unless the model gave a number; never filled in.
+  double? get rawLogRelativeHazard {
+    final s = survival['log_relative_hazard_score'];
+    return available && s is num ? s.toDouble() : null;
+  }
+
+  /// The health score shown to the person: HIGHER IS BETTER (owner ruling 2026-10-24);
+  /// 0 is the average survey participant. See [healthScoreFromRaw].
+  double? get healthScore => healthScoreFromRaw(rawLogRelativeHazard);
+
+  HealthScoreStatus get healthScoreStatus => switch (status) {
+    'available' => extrapolated ? HealthScoreStatus.extrapolated : HealthScoreStatus.available,
+    'missing_inputs' => HealthScoreStatus.missingInputs,
+    'unsupported_age' => HealthScoreStatus.unsupportedAge,
+    'under_age' => HealthScoreStatus.underAge,
+    'unsupported_profile' => HealthScoreStatus.unsupportedProfile,
+    _ => HealthScoreStatus.invalidInput,
+  };
+
+  /// How healthy the person is relative to people like them in the survey: the share
+  /// (0–100) of the package's reference people of the same sex and age band whose score is
+  /// HIGHER (worse), both scored without the age and sex terms. 70 means "healthier than 70
+  /// of 100 people like you in the survey". The reference is unweighted survey
+  /// participants, not a national population. Null when there is no [healthScore].
+  double? get ageGroupPercentile => (raw['age_group'] as Map?)?['percentile'] as double?;
+
+  /// The number of reference people compared.
+  int? get ageGroupSize => (raw['age_group'] as Map?)?['size'] as int?;
+
+  /// The reference ages compared, e.g. `40–50`.
+  String? get ageGroupBand {
+    final g = raw['age_group'] as Map?;
+    return g == null ? null : '${g['band_low']}–${g['band_high']}';
+  }
+
+  /// The half-width used: 5, widened to 7 then 10 when fewer than 50 people fit.
+  int? get ageGroupWidth => (raw['age_group'] as Map?)?['width'] as int?;
+
+  /// True when the age is outside 35–79 and the nearest band inside it was used.
+  bool? get ageGroupNearestBand => (raw['age_group'] as Map?)?['nearest_band'] as bool?;
+
+  /// `steady`, `explore_changes` or `needs_input`.
+  String get wellnessState => avatar['wellness_state'] as String? ?? 'needs_input';
+
+  List<WellnessCard> get wellnessCards => [
+    for (final c in raw['wellness_cards'] as List? ?? const [])
+      if (c is Map) WellnessCard.fromJson(Map<String, dynamic>.from(c)),
+  ];
+
+  /// "Modeled survival of similar people" (the package's display rule).
+  static const survivalTitle = 'Modeled survival of similar people';
+
+  /// "Modeled difference between profiles".
+  static const scenarioTitle = 'Modeled difference between profiles';
+
+  /// `{'1': x, …}` → `{1: x, …}`.
+  static Map<int, double> yearMap(Object? m) => {
+    if (m is Map)
+      for (final e in m.entries)
+        if (int.tryParse('${e.key}') != null && e.value is num) int.parse('${e.key}'): (e.value as num).toDouble(),
+  };
+}
+
+/// Why the health score has, or lacks, a number. `extrapolated` has a number (age 30–34
+/// or 80–85, a rough guide); the others have none. `underAge` is under 18. `invalidInput` is the app's own status
+/// for a value the package refused.
+enum HealthScoreStatus {
+  available('available'),
+  extrapolated('extrapolated'),
+  missingInputs('missing_inputs'),
+  unsupportedAge('unsupported_age'),
+  underAge('under_age'),
+  unsupportedProfile('unsupported_profile'),
+  invalidInput('invalid_input');
+
+  const HealthScoreStatus(this.wire);
+
+  /// The name stored in the score history.
+  final String wire;
+
+  bool get hasScore => this == available || this == extrapolated;
+
+  static HealthScoreStatus fromWire(Object? v) => values.firstWhere((s) => s.wire == v, orElse: () => invalidInput);
+}
+
+/// A public-health guidance card from the package, shown beside the twin with its
+/// source link. Not derived from the survival model.
+class WellnessCard {
+  const WellnessCard({
+    required this.id,
+    required this.level,
+    required this.title,
+    required this.message,
+    required this.sourceUrl,
+  });
+
+  factory WellnessCard.fromJson(Map<String, dynamic> j) => WellnessCard(
+    id: '${j['id']}',
+    level: '${j['level']}',
+    title: '${j['title']}',
+    message: '${j['message']}',
+    sourceUrl: '${j['source_url']}',
+  );
+
+  /// `smoking`, `activity`, `sleep`, `sitting`, `sitting_trend`, `bmi`, `adult_guidance_scope`.
+  final String id;
+
+  /// `strength`, `opportunity` or `info`.
+  final String level;
+  final String title;
+  final String message;
+  final String sourceUrl;
+}
+
+/// The ONE place the health score's direction is set. Owner ruling (2026-10-24): "higher
+/// should mean better health rating", so the displayed score is the negated
+/// `log_relative_hazard_score`. If the model owner changes the scoring, change only this.
+double? healthScoreFromRaw(double? rawLogRelativeHazard) =>
+    rawLogRelativeHazard == null ? null : -rawLogRelativeHazard;
+
+/// Owner ruling: "it is okay to extrapolate a bit below and above the age ranges".
+const extrapolatedAgeRange = (low: 18, high: 85);
+const checkedAgeRange = (low: 35, high: 79);
+const extrapolationCaveat =
+    'Your age is outside the ages this model was checked on (35–79), so treat this as a rough guide.';
+const unsupportedAgeMessage = 'Annual estimates support ages 18–85 only.';
+const underAgeMessage = 'LifeTwin estimates are for adults, ages 18 and over.';
+const underAge = 18;
+
+/// The checked age the package is run at for an extrapolated [age]; null when [age] needs
+/// no extrapolation (inside 35–79, outside 18–85, or not a number).
+num? anchorAge(Object? age) {
+  if (age is! num) return null;
+  if (age >= extrapolatedAgeRange.low && age < checkedAgeRange.low) return checkedAgeRange.low;
+  if (age > checkedAgeRange.high && age <= extrapolatedAgeRange.high) return checkedAgeRange.high;
+  return null;
+}
+
+/// The model, loaded once at startup, and the one place the app calls it.
+///
+/// Ages 18–34 and 80–85 (owner ruling) go through a narrow wrapper around the copied
+/// package, which itself accepts only 35–79. The package runs at the nearest checked age
+/// (35 or 79), so every other check (missing inputs, entry ranges, the 1st–99th percentile
+/// support and the nearest-neighbour support) still applies unchanged. Then only the age
+/// term is moved to the person's real age with the model's own coefficient:
+/// `score += coefficient[age_decade] * (age - anchor) / 10`, `S(t) = baseline(t)^exp(score)`.
+/// The age is not clamped, so an 84-year-old is not shown a 79-year-old's survival.
+class TwinModelService {
+  TwinModelService(this.engine, {Float64List? reference})
+    : _ageGroups = reference == null
+          ? null
+          : AgeGroupReference(
+              reference,
+              [for (final c in engine.model.spec['coefficients'] as List) (c as num).toDouble()],
+              [for (final c in engine.model.spec['feature_center'] as List) (c as num).toDouble()],
+            ),
+      _ageCoefficient = ((engine.model.spec['coefficients'] as List).first as num).toDouble(),
+      _baseline = [for (final b in engine.model.spec['baseline_survival'] as List) (b as num).toDouble()],
+      _horizons = [for (final h in engine.model.spec['horizons_years'] as List) '$h'] {
+    if ((engine.model.spec['encoded_features'] as List).first != 'age_decade') {
+      throw const FormatException('The model no longer starts with age_decade; review the age extrapolation');
+    }
+  }
+
+  final LifeTwinEngine engine;
+  final AgeGroupReference? _ageGroups;
+  final double _ageCoefficient;
+  final List<double> _baseline;
+  final List<String> _horizons;
+
+  static Future<TwinModelService> load({AssetBundle? bundle}) async {
+    final assets = bundle ?? rootBundle;
+    final engine = LifeTwinEngine(await loadLifeTwinModel(bundle: bundle));
+    final data = await assets.load('packages/lifetwin_on_device/assets/support_reference.f64.gz');
+    final bytes = Uint8List.fromList(gzip.decode(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)));
+    final reference = Float64List(bytes.lengthInBytes ~/ 8);
+    final view = ByteData.sublistView(bytes);
+    for (var i = 0; i < reference.length; i++) {
+      reference[i] = view.getFloat64(i * 8, Endian.little);
+    }
+    return TwinModelService(engine, reference: reference);
+  }
+
+  String get modelVersion => engine.model.spec['model_version'] as String;
+
+  /// Assesses the confirmed app profile. [window] is `{'daily_logs': [...]}` or
+  /// `{'weekly_summaries': [...]}` (see twin_history.dart), or empty for a snapshot.
+  TwinAssessment assess(Map<String, dynamic> appProfile, {Map<String, dynamic> window = const {}, DateTime? asOf}) =>
+      assessModel(toModelProfile(appProfile), window: window, asOf: asOf);
+
+  /// Assesses an already mapped model profile.
+  TwinAssessment assessModel(
+    Map<String, dynamic> modelProfile, {
+    Map<String, dynamic> window = const {},
+    DateTime? asOf,
+  }) {
+    final age = modelProfile['age'];
+    final anchor = anchorAge(age);
+    final request = <String, dynamic>{
+      'profile': anchor == null ? modelProfile : {...modelProfile, 'age': anchor},
+      ...window,
+    };
+    if (asOf != null) request['as_of_date'] = isoDate(asOf);
+    try {
+      final raw = engine.assess(request);
+      if (anchor == null) {
+        final survival = _ageMessage(raw['survival'] as Map, age);
+        return TwinAssessment({...raw, 'survival': survival, ..._ageGroup(survival, modelProfile)});
+      }
+      // The guidance cards change only at ages 18, 61 and 65, which no anchor crosses.
+      final survival = _moveAge(raw['survival'] as Map, from: anchor, to: age as num);
+      return TwinAssessment({
+        ...raw,
+        'profile_used': {...raw['profile_used'] as Map<String, dynamic>, 'age': age},
+        'survival': survival,
+        'extrapolated': true,
+        'extrapolation_caveat': extrapolationCaveat,
+        ..._ageGroup(survival, modelProfile),
+      });
+    } on FormatException catch (e) {
+      return invalidAssessment(e);
+    }
+  }
+
+  /// `LifeTwinEngine.compare()` with the same age extrapolation. Request and result have
+  /// the package's shapes, plus `extrapolated` and `extrapolation_caveat`.
+  Map<String, dynamic> compare(Map<String, dynamic> request) {
+    final current = Map<String, dynamic>.from(request['current_profile'] as Map);
+    final alternative = Map<String, dynamic>.from(request['alternative_profile'] as Map);
+    final a = anchorAge(current['age']), b = anchorAge(alternative['age']);
+    final c = engine.compare({
+      'current_profile': a == null ? current : {...current, 'age': a},
+      'alternative_profile': b == null ? alternative : {...alternative, 'age': b},
+    });
+    if (a == null && b == null) {
+      return {
+        ...c,
+        'current': _ageMessage(c['current'] as Map, current['age']),
+        'alternative': _ageMessage(c['alternative'] as Map, alternative['age']),
+      };
+    }
+    final first = a == null
+        ? _ageMessage(c['current'] as Map, current['age'])
+        : _moveAge(c['current'] as Map, from: a, to: current['age'] as num);
+    final second = b == null
+        ? _ageMessage(c['alternative'] as Map, alternative['age'])
+        : _moveAge(c['alternative'] as Map, from: b, to: alternative['age'] as num);
+    Map<String, double>? difference;
+    if (first['status'] == 'available' && second['status'] == 'available') {
+      final p = first['survival_probabilities'] as Map<String, double>;
+      final q = second['survival_probabilities'] as Map<String, double>;
+      difference = {for (final y in p.keys) y: 100 * (q[y]! - p[y]!)};
+    }
+    return {
+      ...c,
+      'current': first,
+      'alternative': second,
+      'changed_features': [
+        for (final k in modelInputs)
+          if (current[k] != alternative[k]) k,
+      ],
+      'modeled_difference_percentage_points': difference,
+      'extrapolated': true,
+      'extrapolation_caveat': extrapolationCaveat,
+    };
+  }
+
+  /// The app supports 18–85, so its own message replaces the package's "35–79 only"; under
+  /// 18 the status is `under_age`.
+  Map<String, dynamic> _ageMessage(Map survival, Object? age) {
+    final out = Map<String, dynamic>.from(survival);
+    if (survival['status'] == 'unsupported_age') {
+      final under = age is num && age < underAge;
+      out['status'] = under ? 'under_age' : 'unsupported_age';
+      out['message'] = under ? underAgeMessage : unsupportedAgeMessage;
+    }
+    return out;
+  }
+
+  /// `{'age_group': …}` for an available [survival], else nothing.
+  Map<String, dynamic> _ageGroup(Map survival, Map<String, dynamic> modelProfile) {
+    final score = survival['log_relative_hazard_score'];
+    final age = modelProfile['age'], sex = modelProfile['sex_nhanes'];
+    if (survival['status'] != 'available' || score is! num || age is! num || sex is! num || _ageGroups == null) {
+      return const {};
+    }
+    return {'age_group': _ageGroups.compare(score: score.toDouble(), age: age, female: sex == 2).toJson()};
+  }
+
+  /// The package's survival at the anchor age, moved to the real age along the age term.
+  Map<String, dynamic> _moveAge(Map survival, {required num from, required num to}) {
+    final out = {...Map<String, dynamic>.from(survival), 'extrapolated': true};
+    if (survival['status'] != 'available') return out;
+    final score = (survival['log_relative_hazard_score'] as num) + _ageCoefficient * (to - from) / 10;
+    final power = math.exp(score.clamp(-40, 40));
+    final fractions = <String, double>{};
+    for (var i = 0; i < _horizons.length; i++) {
+      final s = math.pow(_baseline[i], power).toDouble();
+      if (!s.isFinite || s <= 0 || s > 1 || (i > 0 && s > fractions[_horizons[i - 1]]! + 1e-10)) {
+        throw const FormatException('Invalid survival curve');
+      }
+      fractions[_horizons[i]] = s;
+    }
+    return {
+      ...out,
+      'log_relative_hazard_score': score,
+      'survival_probabilities': fractions,
+      'survival_percent_by_year': {for (final e in fractions.entries) e.key: 100 * e.value},
+    };
+  }
+}
+
+/// The people compared for the age-group statistic.
+class AgeGroup {
+  const AgeGroup({
+    required this.percentile,
+    required this.size,
+    required this.bandLow,
+    required this.bandHigh,
+    required this.width,
+    required this.nearestBand,
+  });
+
+  /// 0–100: the share of the band whose score is higher (worse) than the person's.
+  final double percentile;
+  final int size;
+  final num bandLow;
+  final num bandHigh;
+
+  /// Half-width of the band in years: 5, 7 or 10.
+  final int width;
+  final bool nearestBand;
+
+  Map<String, dynamic> toJson() => {
+    'percentile': percentile,
+    'size': size,
+    'band_low': bandLow,
+    'band_high': bandHigh,
+    'width': width,
+    'nearest_band': nearestBand,
+  };
+}
+
+/// The package's reference set (`support_reference.f64.gz`: rows of the encoded features),
+/// scored without the age_decade and female terms, for "relative to people like you in the
+/// survey". The rows are unweighted survey participants, not a national population.
+class AgeGroupReference {
+  AgeGroupReference(Float64List data, this._coef, this._centre)
+    : assert(_coef.length == _centre.length && data.length % _coef.length == 0),
+      _rows = data.length ~/ _coef.length,
+      _ages = [],
+      _female = [],
+      _scores = [] {
+    final n = _coef.length;
+    for (var r = 0; r < _rows; r++) {
+      var s = 0.0;
+      for (var i = 0; i < n; i++) {
+        if (i == _ageColumn || i == _femaleColumn) continue;
+        s += (data[r * n + i] - _centre[i]) * _coef[i];
+      }
+      _ages.add(data[r * n + _ageColumn] * 10 + 55);
+      _female.add(data[r * n + _femaleColumn] == 1);
+      _scores.add(s);
+    }
+  }
+
+  static const _ageColumn = 0, _femaleColumn = 8;
+  static const minPeople = 50;
+  static const widths = [5, 7, 10];
+
+  final List<double> _coef, _centre;
+  final int _rows;
+  final List<double> _ages, _scores;
+  final List<bool> _female;
+
+  int get length => _rows;
+
+  /// The reference people of one sex with ages in [low, high] (inclusive).
+  int count({required bool female, required num low, required num high}) {
+    var n = 0;
+    for (var r = 0; r < _rows; r++) {
+      if (_female[r] == female && _ages[r] >= low && _ages[r] <= high) n++;
+    }
+    return n;
+  }
+
+  /// The statistic for a person with model [score] (which includes the age and sex terms)
+  /// at [age]. Band: age ±5 years, same sex; ±7 then ±10 when fewer than 50 people. Outside
+  /// 35–79 the nearest ±w band inside 35–79 is used.
+  AgeGroup compare({required double score, required num age, required bool female}) {
+    final own =
+        score -
+        ((age - 55) / 10 - _centre[_ageColumn]) * _coef[_ageColumn] -
+        ((female ? 1 : 0) - _centre[_femaleColumn]) * _coef[_femaleColumn];
+    final nearest = age < checkedAgeRange.low || age > checkedAgeRange.high;
+    late num low, high;
+    var width = widths.last, size = 0;
+    for (final w in widths) {
+      final centre = nearest ? age.clamp(checkedAgeRange.low + w, checkedAgeRange.high - w) : age;
+      low = math.max(centre - w, checkedAgeRange.low);
+      high = math.min(centre + w, checkedAgeRange.high);
+      width = w;
+      size = count(female: female, low: low, high: high);
+      if (size >= minPeople) break;
+    }
+    var worse = 0;
+    for (var r = 0; r < _rows; r++) {
+      if (_female[r] == female && _ages[r] >= low && _ages[r] <= high && _scores[r] > own) worse++;
+    }
+    return AgeGroup(
+      percentile: size == 0 ? 0 : 100 * worse / size,
+      size: size,
+      bandLow: low,
+      bandHigh: high,
+      width: width,
+      nearestBand: nearest,
+    );
+  }
+}
+
+/// A plain "please check this answer" for a value the package refused.
+TwinAssessment invalidAssessment(FormatException e) {
+  final text = e.message;
+  final key = modelInputs.followedBy(['height_cm', 'weight_kg']).where(text.contains).firstOrNull;
+  final label = switch (key) {
+    null => null,
+    'height_cm' || 'weight_kg' => 'height and weight',
+    _ => modelInputLabels[key],
+  };
+  return TwinAssessment.invalid(
+    label == null
+        ? 'One of your answers is outside what the model can read. Please check your answers.'
+        : 'Your answer for $label is outside what the model can read. Please check it.',
+    invalidInput: key == 'height_cm' || key == 'weight_kg' ? 'bmi' : key,
+  );
+}
+
+String isoDate(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+/// The calendar day of [d], as a UTC midnight (the package's date arithmetic).
+DateTime dayOf(DateTime d) => DateTime.utc(d.year, d.month, d.day);

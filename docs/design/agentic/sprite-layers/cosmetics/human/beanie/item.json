@@ -1,0 +1,23 @@
+{
+ "schema": "lifetwin.cosmetic_human_overlay.v1",
+ "id": "beanie",
+ "target": "sprites/v2/human/nohat/stand.png",
+ "sprite_size": [
+  198,
+  395
+ ],
+ "viewBox": [
+  -40,
+  -40,
+  278,
+  435
+ ],
+ "transform_from_rig": "matrix(0.5 0 0 0.5 -63.0 -18.0)",
+ "layers": [
+  {
+   "name": "hat_front",
+   "file": "hat_front.svg",
+   "order": "over sprite"
+  }
+ ]
+}

@@ -41,11 +41,20 @@ dependencies:
   http: ^1.6.0
   url_launcher: ^6.3.2
   lottie: ^3.1.0
+  # The on-device survival model (copied from model_handoff/, see lib/README-model.md).
+  lifetwin_on_device:
+    path: packages/lifetwin_on_device
+  # Check-in reminders at the person's chosen time (lib/checkin/checkin_reminders.dart).
+  flutter_local_notifications: ^22.3.2
+  timezone: ^0.11.2
+  flutter_timezone: ^5.1.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   integration_test:
     sdk: flutter
+  fake_async: ^1.3.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -81,7 +90,9 @@ flutter:
     - assets/fonts/fredoka/OFL.txt
     - assets/fonts/atkinson_hyperlegible/OFL.txt
     - assets/scene/room/      # pre-rendered room layers + room_layers.json
+    - assets/quiz/
     - assets/lottie/          # design/lottie/out (ball_glow in the fortune ceremony)
+    - assets/model/model-sensitivity.json  # lever order, copied from docs/model-sensitivity.json (codex/d-model-sensitivity 65acf39)
     # assets/twin/svg/ (v2 vector sprites) is kept in the repo for future use and is not bundled.
 
   # SIL Open Font License 1.1 (from github.com/google/fonts); the licence texts sit beside them.

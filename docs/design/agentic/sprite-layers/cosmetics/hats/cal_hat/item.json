@@ -1,0 +1,167 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "cal_hat",
+ "category": "hat",
+ "label": "Cal hat",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "hat_under",
+   "slot": "hat_under",
+   "bone": "head",
+   "z": 45,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 111,
+    "y": 212,
+    "w": 416,
+    "h": 138
+   },
+   "vector": "hat_under.svg",
+   "painted": "hat_under.p.png",
+   "note": "canonical painted layer sprites/v2/hat_layers/bear_hat_under.png at 2.5x"
+  },
+  {
+   "name": "hat_front",
+   "slot": "hat_front",
+   "bone": "head",
+   "z": 70,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 55,
+    "y": 64,
+    "w": 523,
+    "h": 287
+   },
+   "vector": "hat_front.svg",
+   "painted": "hat_front.p.png",
+   "note": "canonical painted layer sprites/v2/hat_layers/bear_hat_notched.png at 2.5x"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "hatclip",
+ "colourable": {},
+ "material": "canonical",
+ "notes": [
+  "The approved canonical v2 Cal hat (painted), not redrawn. Uses the rig head variant hatclip, as the rig does.",
+  "\"Cal\" is on the front only; walk_back sprites use the logo-free bear_hat_back.png."
+ ],
+ "fit": {
+  "frame": "canonical Cal hat (rig hat_front/hd == v2 hatcomp canonical placement)",
+  "anchor": [
+   320,
+   191
+  ],
+  "band_bottom": [
+   [
+    148,
+    224
+   ],
+   [
+    200,
+    207
+   ],
+   [
+    245,
+    198
+   ],
+   [
+    320,
+    191
+   ],
+   [
+    395,
+    196
+   ],
+   [
+    440,
+    205
+   ],
+   [
+    492,
+    222
+   ]
+  ],
+  "front_max_over_eyes": [
+   [
+    150,
+    269
+   ],
+   [
+    170,
+    262
+   ],
+   [
+    200,
+    254
+   ],
+   [
+    245,
+    244
+   ],
+   [
+    320,
+    238
+   ],
+   [
+    395,
+    244
+   ],
+   [
+    440,
+    252
+   ],
+   [
+    470,
+    259
+   ],
+   [
+    490,
+    277
+   ]
+  ],
+  "ref_head": {
+   "width_at_band": 396,
+   "crown_top_y": 105
+  },
+  "per_head_scale": "for an age/build head variant: s = head_width / 396, about anchor, then move anchor to the variant crown-base centre",
+  "v2_sprites": "rig px -> v2 hat-stand px: x = (x_rig - 49) / 2.5 + 3, y = (y_rig - 45) / 2.5 + 3; then apply hatc/bear_match.json per pose like the canonical hat"
+ },
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side",
+   "back"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head",
+  "note": "only the front layers ship here; the canonical logo-free back (sprites/v2/hat_layers/bear_hat_back.png) and the view-matched layers in progress under sprites/v2/hat_layers/views/ should be wired as they land"
+ }
+}

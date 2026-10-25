@@ -7,6 +7,7 @@ where every field the server always emits (including defaulted safety markers) i
 from lifetwin.advisor.models import AdvisorRequest, AdvisorResponse
 from lifetwin.change.models import ChangeResponse, ChangeStartRequest, ChangeTurnRequest
 from lifetwin.checkin.models import CheckinResponse, CheckinStartRequest, CheckinTurnRequest
+from lifetwin.coach.models import CoachPlanRequest, CoachPlanResponse
 from lifetwin.core.models import (
     ApiError,
     CompareRequest,
@@ -14,9 +15,11 @@ from lifetwin.core.models import (
     HealthProfile,
     SensitivityRequest,
 )
+from lifetwin.documents.models import DocumentExtractRequest, DocumentExtractResponse
 from lifetwin.onboarding.models import TurnRequest, TurnResponse
 from lifetwin.prediction.models import PredictionResponse
 from lifetwin.quiz.models import QuizBankResponse, QuizQuestion
+from lifetwin.recommendations.models import RecommendationRequest, RecommendationResponse
 from lifetwin.voice.models import VoiceTokenRequest, VoiceTokenResponse
 
 REQUEST = "validation"
@@ -41,8 +44,14 @@ SCHEMAS = {
     "change.schema.json": (ChangeResponse, RESPONSE),
     "advisor.request.schema.json": (AdvisorRequest, REQUEST),
     "advisor.schema.json": (AdvisorResponse, RESPONSE),
+    "recommendations.request.schema.json": (RecommendationRequest, REQUEST),
+    "recommendations.schema.json": (RecommendationResponse, RESPONSE),
     "quiz.schema.json": (QuizBankResponse, RESPONSE),
     "quiz.question.schema.json": (QuizQuestion, RESPONSE),
     "voice.token.request.schema.json": (VoiceTokenRequest, REQUEST),
     "voice.token.schema.json": (VoiceTokenResponse, RESPONSE),
+    "coach.plan.request.schema.json": (CoachPlanRequest, REQUEST),
+    "coach.plan.schema.json": (CoachPlanResponse, RESPONSE),
+    "documents.extract.request.schema.json": (DocumentExtractRequest, REQUEST),
+    "documents.extract.schema.json": (DocumentExtractResponse, RESPONSE),
 }

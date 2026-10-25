@@ -75,4 +75,48 @@ void main() {
     expect(c.turn, isNull);
     expect(forecast.calls, 0);
   });
+  testWidgets(
+    'room lighting is a cosmetic draft: Back discards, Save applies',
+    (t) async {
+      setPhone(t);
+      final look = ValueNotifier(const TwinAppearance());
+      addTearDown(look.dispose);
+      var done = 0;
+      Future<void> open() async {
+        await t.pumpWidget(
+          MaterialApp(
+            home: CustomizeScreen(
+              key: UniqueKey(),
+              appearance: look,
+              onDone: () => done++,
+            ),
+          ),
+        );
+        await t.tap(find.text('Room'));
+        await t.pump();
+      }
+
+      await open();
+      await t.ensureVisible(find.text('Twilight'));
+      await t.tap(find.text('Twilight'));
+      await t.pump();
+      expect(look.value.room, TwinRoom.original);
+      await t.ensureVisible(find.byType(RoundBackButton));
+      await t.tap(find.byType(RoundBackButton));
+      expect(look.value.room, TwinRoom.original);
+      expect(done, 1);
+      await open();
+      await t.ensureVisible(find.text('Morning'));
+      await t.tap(find.text('Morning'));
+      await t.pump();
+      await t.ensureVisible(find.text('Save look'));
+      await t.tap(find.text('Save look'));
+      await t.pump();
+      expect(look.value.room, TwinRoom.morning);
+      expect(look.value.type, TwinType.bear);
+      expect(look.value.look, TwinLook.calHat);
+      expect(done, 2);
+      expect(t.takeException(), isNull);
+    },
+  );
 }

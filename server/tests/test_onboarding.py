@@ -37,9 +37,16 @@ def turn(client, action, state=None, **values):
     return response.json()
 
 
+def begin(client):
+    """Start, and say yes to Mochi's first question (may it remember the little things)."""
+    return turn(client, "reply", turn(client, "start")["state"], text="yes")
+
+
 def test_first_turn_uses_guided_mascot_instead_of_fake_voice_or_llm(client):
     result = turn(client, "start")
-    assert result["state"]["current_field"] == "age"
+    # v2: Mochi first asks whether it may remember the little things; then the age.
+    assert result["state"]["phase"] == "remembering"
+    assert begin(client)["state"]["current_field"] == "age"
     assert result["guide_mode"] == "guided"
     assert result["provider_status"] == "not_configured"
     assert result["voice_status"] == "deferred"
@@ -48,7 +55,7 @@ def test_first_turn_uses_guided_mascot_instead_of_fake_voice_or_llm(client):
 
 
 def test_confirmation_and_correction_keep_candidates_separate(client):
-    state = turn(client, "start")["state"]
+    state = begin(client)["state"]
     result = turn(client, "reply", state, text="35 years old")
     assert result["state"]["confirmed_profile"]["age"] is None
     assert result["state"]["pending_profile"]["age"] == 35
@@ -64,7 +71,7 @@ def test_labeled_multi_answer_and_metric_conversion_are_explicit(client):
     result = turn(
         client,
         "reply",
-        turn(client, "start")["state"],
+        begin(client)["state"],
         text="age: 40; weight: 154 pounds; height: 1.75 m",
     )
     pending = result["state"]["pending_profile"]
@@ -110,23 +117,29 @@ def test_targeted_measurement_parser(field, text, expected):
 
 
 def test_transcript_has_identical_confirmation_semantics(client):
-    state = turn(client, "start")["state"]
+    state = begin(client)["state"]
     assert turn(client, "reply", state, text="35", input_mode="text") == turn(
         client, "reply", state, text="35", input_mode="transcript"
     )
 
 
 def test_skip_unknown_completion_and_ready_correction(client):
-    result = turn(client, "start")
-    for _ in range(11):
-        result = turn(client, "reply", result["state"], text="I don't know")
+    result = begin(client)
+    for _ in range(40):
+        if result["complete"]:
+            break
+        # The Apple Health offer is declined; every question is answered "I don't know".
+        text = "no thanks" if result["state"]["phase"] == "offering" else "I don't know"
+        result = turn(client, "reply", result["state"], text=text)
     assert result["complete"] is True
     assert all(value is None for value in result["state"]["confirmed_profile"].values())
+    assert result["state"]["skipped_fields"] == []
+    assert result["model_inputs"]["status"] == "still_learning"
     result = turn(client, "correct", result["state"], field="weight_kg", text="70 kg")
     assert result["complete"] is False
     result = turn(client, "confirm", result["state"])
     assert result["state"]["confirmed_profile"]["weight_kg"] == 70
-    assert "weight_kg" not in result["state"]["skipped_fields"]
+    assert "weight_kg" not in result["state"]["unknown_fields"]
     assert result["complete"] is True
 
 
@@ -159,7 +172,7 @@ def test_bad_transitions_and_oversized_or_inconsistent_inputs_are_rejected(clien
         ).status_code
         == 422
     )
-    state = turn(client, "reply", turn(client, "start")["state"], text="35")["state"]
+    state = turn(client, "reply", begin(client)["state"], text="35")["state"]
     assert (
         client.post("/api/onboarding/turn", json={"action": "skip", "state": state}).status_code
         == 409
@@ -388,13 +401,13 @@ def test_grounding_requires_field_context_full_tokens_and_all_clauses(text, fiel
 )
 def test_keyless_contradictory_or_unaccounted_clauses_require_clarification(client, text):
     assert parse_reply(text, "age") == {}
-    result = turn(client, "reply", turn(client, "start")["state"], text=text)
+    result = turn(client, "reply", begin(client)["state"], text=text)
     assert result["state"]["phase"] == "asking"
     assert result["state"]["pending_profile"]["weight_kg"] is None
 
 
 def test_single_pending_correction_uses_pending_field_instead_of_old_question(client):
-    result = turn(client, "reply", turn(client, "start")["state"], text="weight: 70 kg")
+    result = turn(client, "reply", begin(client)["state"], text="weight: 70 kg")
     assert result["state"]["current_field"] == "weight_kg"
     result = turn(client, "correct", result["state"], text="80 kg")
     assert result["state"]["pending_profile"]["weight_kg"] == 80
@@ -405,7 +418,7 @@ def test_single_pending_correction_uses_pending_field_instead_of_old_question(cl
 
 
 def test_multi_pending_correction_requires_field_and_never_guesses(client):
-    result = turn(client, "reply", turn(client, "start")["state"], text="age: 35; weight: 70 kg")
+    result = turn(client, "reply", begin(client)["state"], text="age: 35; weight: 70 kg")
     assert result["state"]["current_field"] is None
     pending = result["state"]["pending_profile"]
     result = turn(client, "correct", result["state"], text="80 kg")
@@ -638,27 +651,24 @@ def test_curly_apostrophes_parse(field, text, expected):
     assert parse_reply(text, field) == expected
 
 
-def test_curly_apostrophe_skip_word_skips(client):
+def test_curly_apostrophe_unknown_word_is_unknown(client):
     result = turn(client, "reply", asking("systolic_bp"), text="I don’t know")
-    assert "systolic_bp" in result["state"]["skipped_fields"]
+    assert "systolic_bp" in result["state"]["unknown_fields"]
+    assert "systolic_bp" not in result["state"]["skipped_fields"]
 
 
-# d-intake-6: natural ways to say "I don't know".
-@pytest.mark.parametrize(
-    "text",
-    [
-        "don't know",
-        "I'm not sure",
-        "no idea",
-        "pass",
-        "next",
-        "I'd rather not say",
-        "skip this one",
-    ],
-)
+# d-intake-6: natural ways to decline. v2: not knowing is recorded as unknown instead.
+@pytest.mark.parametrize("text", ["next", "I'd rather not say", "skip this one"])
 def test_expanded_skip_words(client, text):
     result = turn(client, "reply", asking("weight_kg"), text=text)
     assert "weight_kg" in result["state"]["skipped_fields"]
+
+
+@pytest.mark.parametrize("text", ["don't know", "I'm not sure", "no idea", "pass"])
+def test_unknown_words_are_unknown_not_skipped(client, text):
+    result = turn(client, "reply", asking("weight_kg"), text=text)
+    assert "weight_kg" in result["state"]["unknown_fields"]
+    assert "weight_kg" not in result["state"]["skipped_fields"]
 
 
 @pytest.mark.parametrize("field", ["systolic_bp", "diastolic_bp"])
@@ -753,7 +763,7 @@ def test_unitless_or_approximate_number_gets_specific_follow_up(client, field, t
 
 def test_start_and_fallback_messages_avoid_jargon(client):
     start = turn(client, "start")["message"]
-    assert "You can talk or type" in start and "skip any question" in start
+    assert "You can talk or type" in start and "skip anything" in start
     assert "transcript" not in start
     message = turn(client, "reply", asking("age"), text="purple")["message"]
     assert "listed category" not in message and "units" not in message
@@ -827,6 +837,7 @@ def chat_provider(client):
         base_url="https://api.meta.ai/v1/",
         api_key=SECRET,
         model="muse-spark-1.3-contributor",
+        allow_contributor=True,
         client=client,
     )
 
@@ -1129,6 +1140,20 @@ def test_import_says_when_the_current_question_was_not_in_the_health_app(client)
     result = turn(client, "import", asking("weight_kg"), values={"height_cm": 172.7})
     assert result["state"]["current_field"] == "weight_kg"
     assert "didn't have your weight" in result["message"]
+
+
+def test_document_import_names_the_document_and_skips_those_questions(client):
+    values = {"height_cm": 167.6, "smoking_status": "former", "diabetes": True}
+    result = turn(
+        client, "import", asking("smoking_status"), values=values, import_source="document"
+    )
+    confirmed = result["state"]["confirmed_profile"]
+    assert confirmed["smoking_status"] == "former" and confirmed["diabetes"] is True
+    assert result["state"]["current_field"] not in values
+    assert "from your document" in result["message"]
+    assert "Apple Health" not in result["message"]
+    result = turn(client, "import", asking("weight_kg"), values=values, import_source="document")
+    assert "Your document didn't show your weight" in result["message"]
 
 
 def test_import_that_answers_the_current_question_does_not_repeat_it(client):

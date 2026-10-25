@@ -3,6 +3,13 @@ import 'dart:async';
 /// Voice is only input/output around the server-run conversation.
 /// Everything the UI knows about voice goes through these interfaces.
 
+/// End of turn while listening, for onboarding and check-ins alike. Before any word is heard,
+/// the microphone closes after [voiceQuietClose] of quiet. Once a word has been heard, what
+/// was said is sent after [voiceEndOfTurn] with the transcript unchanged and no new partials.
+/// A tap still sends at once.
+const voiceQuietClose = Duration(seconds: 8);
+const voiceEndOfTurn = Duration(milliseconds: 2500);
+
 /// Voice cannot be used right now (server says off, no token, provider down).
 /// The app falls back to typing.
 class VoiceUnavailableException implements Exception {
@@ -47,9 +54,14 @@ abstract class SpeechInput {
   /// the first time, and waits for the answer however long the person takes to read it.
   Future<bool> hasPermission();
 
-  /// Starts listening. [onCaption] receives the words heard so far.
+  /// Gets voice ready ahead of time (an access token), so the first Talk and the first
+  /// spoken line don't wait for it. Throws [VoiceUnavailableException] or [VoiceFailure].
+  Future<void> warmUp();
+
+  /// Starts listening. [onCaption] receives the words heard so far. [onDropped] is called
+  /// once if the connection is lost while listening; listening has then already ended.
   /// Throws [MicDeniedException], [VoiceUnavailableException] or [VoiceFailure].
-  Future<void> start(void Function(String text) onCaption);
+  Future<void> start(void Function(String text) onCaption, {void Function(Object error)? onDropped});
 
   /// Stops listening and returns the final transcript (may be empty).
   Future<String> finish();
@@ -69,6 +81,9 @@ class GuideTurn {
     required this.complete,
     this.mascotState = 'asking',
     this.providerStatus = 'not_configured',
+    this.modelInputs,
+    this.clientAction,
+    this.emergency = false,
   });
 
   final Map<String, dynamic> state;
@@ -79,6 +94,18 @@ class GuideTurn {
   /// The server's AI-helper status for this turn, e.g. `consent_required`.
   final String providerStatus;
 
+  /// The server's `model_inputs`: the on-device model's `profile` from confirmed answers
+  /// only, and `status` (`ready`, `still_learning` or `unsupported_age`). Null from a
+  /// server that doesn't send it.
+  final Map<String, dynamic>? modelInputs;
+
+  /// What the server asks the app to do now: `open_health_import` after a yes to the
+  /// Apple Health offer.
+  final String? clientAction;
+
+  /// Something urgent was said: pause calmly, show "Call 911" and Continue (which sends `resume`).
+  final bool emergency;
+
   String get phase => (state['phase'] as String?) ?? 'idle';
   bool get isConfirming => phase == 'confirming';
 }
@@ -88,13 +115,15 @@ abstract class ConversationGuide {
   /// [action] is one of start, reply, confirm, correct, skip, cancel, import.
   /// [values] carries already-confirmed answers for import (e.g. Apple Health).
   /// [aiHelper] is the person's consent for the server's AI helper to read replies.
+  /// [importSource] names where imported values came from: `apple_health` (default) or `document`.
   Future<GuideTurn> turn({
     required String action,
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
-    Map<String, num>? values,
+    Map<String, Object>? values,
     bool aiHelper = false,
+    String? importSource,
   });
 }
 

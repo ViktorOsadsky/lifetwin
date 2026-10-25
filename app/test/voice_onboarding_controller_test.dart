@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/voice/fakes.dart';
@@ -14,6 +15,76 @@ class Rig {
 }
 
 void main() {
+  group('end of turn', () {
+    /// Consent given and listening, inside [fa].
+    Rig listening(FakeAsync fa) {
+      final r = Rig();
+      r.c.answerConsent(true);
+      fa.flushMicrotasks();
+      r.c.startTalk();
+      fa.flushMicrotasks();
+      expect(r.c.phase, VoicePhase.listening);
+      return r;
+    }
+
+    test('the limits live in one place', () {
+      expect(voiceEndOfTurn, const Duration(milliseconds: 2500));
+      expect(voiceQuietClose, const Duration(seconds: 8));
+      expect(VoiceOnboardingController.endOfTurn, voiceEndOfTurn);
+      expect(VoiceOnboardingController.silenceLimit, voiceQuietClose);
+    });
+
+    test('after words: no send at 2.4 s of quiet, sent at 2.5 s', () {
+      fakeAsync((fa) {
+        final r = listening(fa);
+        r.input.onCaption!('I am 70');
+        fa.elapse(const Duration(milliseconds: 2400));
+        expect(r.input.finishes, 0);
+        expect(r.c.phase, VoicePhase.listening);
+        fa.elapse(const Duration(milliseconds: 100));
+        expect(r.input.finishes, 1);
+        expect(r.guide.calls.last['fromTranscript'], true);
+      });
+    });
+
+    test('a new partial restarts the wait, even with the same words', () {
+      fakeAsync((fa) {
+        final r = listening(fa);
+        r.input.onCaption!('I am');
+        fa.elapse(const Duration(seconds: 2));
+        r.input.onCaption!('I am');
+        fa.elapse(const Duration(milliseconds: 2400));
+        expect(r.input.finishes, 0);
+        fa.elapse(const Duration(milliseconds: 100));
+        expect(r.input.finishes, 1);
+      });
+    });
+
+    test('before the first word only the 8 s close applies', () {
+      fakeAsync((fa) {
+        final r = listening(fa);
+        r.input.onCaption!(''); // nothing heard yet
+        fa.elapse(const Duration(milliseconds: 7900));
+        expect(r.input.finishes, 0);
+        expect(r.c.phase, VoicePhase.listening);
+        fa.elapse(const Duration(milliseconds: 100));
+        expect(r.input.finishes, 1);
+      });
+    });
+
+    test('a tap still sends at once', () {
+      fakeAsync((fa) {
+        final r = listening(fa);
+        r.input.onCaption!('I am 70');
+        r.c.stopTalk();
+        fa.flushMicrotasks();
+        expect(r.input.finishes, 1);
+        fa.elapse(const Duration(seconds: 5));
+        expect(r.input.finishes, 1, reason: 'the end-of-turn wait was dropped');
+      });
+    });
+  });
+
   test('happy path: consent, ask, talk, confirm, done', () async {
     final r = Rig();
     await r.c.answerConsent(true);
@@ -71,6 +142,17 @@ void main() {
     expect(r2.c.confirming, true);
   });
 
+  test('a connection lost while listening ends listening with the voice trouble notice', () async {
+    final r = Rig();
+    await r.c.answerConsent(true);
+    await r.c.startTalk();
+    expect(r.c.phase, VoicePhase.listening);
+    r.input.drop();
+    expect(r.c.phase, VoicePhase.idle);
+    expect(r.c.notice, voiceTroubleNotice);
+    expect(r.c.typing, false, reason: 'voice stays on; Talk can be tried again');
+  });
+
   test('voice_unavailable on the microphone path falls back to typing', () async {
     final r = Rig();
     await r.c.answerConsent(true);
@@ -81,6 +163,32 @@ void main() {
     expect(r.c.notice, voiceOffNotice);
     await r.c.setTyping(false); // cannot switch back to voice
     expect(r.c.typing, true);
+  });
+
+  test('after a 503, a token is retried in the background and voice is back on the next turn', () async {
+    final r = Rig();
+    await r.c.answerConsent(true);
+    r.input.startError = const VoiceUnavailableException();
+    r.input.warmUpError = const VoiceUnavailableException(); // still down
+    final warmUps = r.input.warmUps;
+    await r.c.startTalk();
+    expect(r.c.notice, voiceOffNotice);
+    expect(r.c.voiceUsable, false);
+    expect(r.input.warmUps, warmUps + 1, reason: 'retried in the background at once');
+    await r.c.submitTyped('70');
+    expect(r.c.typing, true, reason: 'the retry failed: still typing');
+    expect(r.c.voiceUsable, false);
+
+    r.input.startError = null;
+    r.input.warmUpError = null; // the provider is back
+    final spoken = r.output.spoken.length;
+    await r.c.submitTyped('no');
+    expect(r.c.voiceUsable, true);
+    expect(r.c.typing, false);
+    expect(r.output.spoken.length, spoken + 1, reason: 'the next question is spoken again');
+    await r.c.startTalk();
+    expect(r.c.phase, VoicePhase.listening);
+    await r.c.cancelTalk();
   });
 
   test('voice_unavailable while speaking falls back to typing and keeps the line', () async {

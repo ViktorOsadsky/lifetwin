@@ -35,6 +35,8 @@ const voiceTroubleNotice = "I couldn't use the voice just now. You can try again
 const speakTroubleNotice = "I couldn't say that out loud. You can read my words above.";
 const healthWaitNotice = 'Please answer Yes or No first. Then you can add your Apple Health answers.';
 const healthNoneNotice = "No Apple Health answers were added, so I'll keep asking you. That's okay.";
+const documentWaitNotice = 'Please answer Yes or No first. Then you can add the answers from your document.';
+const documentNoneNotice = "No answers from your document were added, so I'll keep asking you. That's okay.";
 const healthRejectedPrefix = "I couldn't add your Apple Health answers. ";
 
 /// Runs the conversation loop. The server decides what happens; this class only
@@ -82,12 +84,31 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// aloud, so the mascot does not speak them a second time. Set by the screen.
   bool screenReader = false;
 
-  /// How many questions the intake has (one per profile field).
-  static const questionCount = 11;
+  /// The fields the intake asks about, in the server's order (its ASKED list). Blood pressure
+  /// comes from Apple Health or a reading, not from a question.
+  static const askedFields = [
+    'age',
+    'sex',
+    'smoking_status',
+    'height_cm',
+    'weight_kg',
+    'sleep_hours',
+    'general_health',
+    'hypertension_diagnosed',
+    'diabetes',
+    'sedentary_min_day',
+    'moderate_recreation_min_week',
+    'vigorous_recreation_min_week',
+  ];
+
+  /// How many questions the intake has (one per asked field).
+  static int get questionCount => askedFields.length;
 
   /// The microphone closes by itself after this long with no new words, or
   /// after [listenLimit] in all, so it is never left open by mistake.
-  static const silenceLimit = Duration(seconds: 8);
+  static const silenceLimit = voiceQuietClose; // before the first word
+  static const endOfTurn = voiceEndOfTurn; // after a word: send once this quiet
+  Timer? _endOfTurnTimer;
   static const listenLimit = Duration(seconds: 30);
   Timer? _listenClock;
   int _listenedSeconds = 0;
@@ -119,6 +140,13 @@ class VoiceOnboardingController extends ChangeNotifier {
   Map<String, dynamic> get confirmedProfile =>
       Map<String, dynamic>.from((turn?.state['confirmed_profile'] as Map?) ?? const {});
 
+  /// Mochi is offering Apple Health (after age, sex and smoking), or the person said yes
+  /// and the server asked the app to open the import: show the Apple Health button.
+  bool get healthOffer => turn?.clientAction == 'open_health_import' || turn?.phase == 'offering';
+
+  /// The latest turn's `model_inputs` (see GuideTurn.modelInputs).
+  Map<String, dynamic>? get modelInputs => turn?.modelInputs;
+
   bool get canRetry => _retry != null;
   bool get canHearAgain => voiceUsable && mascotLine.isNotEmpty && !typing && phase != VoicePhase.interpreting;
 
@@ -129,7 +157,7 @@ class VoiceOnboardingController extends ChangeNotifier {
     return left <= 10 ? left : null;
   }
 
-  /// Questions answered or skipped, not counting one reopened by "go back".
+  /// Questions answered, skipped or marked "I don't know", not counting one reopened by "go back".
   Set<String> get _doneFields {
     final s = state;
     if (s == null) return {};
@@ -138,14 +166,18 @@ class VoiceOnboardingController extends ChangeNotifier {
       for (final e in confirmed.entries)
         if (e.value != null) '${e.key}',
       for (final f in (s['skipped_fields'] as List?) ?? const []) '$f',
+      for (final f in (s['unknown_fields'] as List?) ?? const []) '$f',
     }..remove(s['current_field']);
   }
 
-  /// "Question N of 11", worked out from the server's state. Null when there is no question.
+  /// "Question N of 12", worked out from the server's state. Null when there is no question
+  /// (done, or a habit follow-up). Only the asked fields count, so a follow-up or a blood
+  /// pressure reading never moves the number past the last question.
   int? get questionNumber {
     final t = turn;
-    if (t == null || t.complete) return null;
-    return (_doneFields.length + 1).clamp(1, questionCount);
+    if (t == null || t.complete || t.phase == 'probing') return null;
+    final done = _doneFields.where(askedFields.contains).length;
+    return (done + 1).clamp(1, questionCount);
   }
 
   /// "Go back" reopens the answer before this question; once done, the last one, so an
@@ -159,6 +191,17 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- consent -----------------------------------------------------------
 
+  /// After "Delete my data": forget the conversation and the choices made in it, so the next Talk starts fresh.
+  void resetConversation() => _set(() {
+    turn = null;
+    correcting = false;
+    askingVoice = false;
+    aiHelper = false;
+    notice = null;
+    caption = '';
+    mascotLine = '';
+  });
+
   Future<void> answerConsent(bool yes, {bool aiHelper = false}) async {
     if (phase != VoicePhase.consent || _busy) return;
     _set(() {
@@ -166,6 +209,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       typing = !yes;
       this.aiHelper = aiHelper;
     });
+    if (yes) _warmUp(); // the token is ready by the time the first question is spoken
     await _send('start');
   }
 
@@ -183,7 +227,9 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- Apple Health --------------------------------------------------------
 
-  Map<String, num>? _pendingHealth;
+  /// Confirmed Apple Health or document answers waiting for the conversation to start.
+  Map<String, Object>? _pendingHealth;
+  String _pendingSource = 'apple_health';
 
   /// True while Apple Health values wait for the conversation to start.
   bool get hasPendingHealth => _pendingHealth != null;
@@ -197,31 +243,55 @@ class VoiceOnboardingController extends ChangeNotifier {
   /// True when the values were taken: queued for the start, or sent and accepted. False
   /// when nothing was added (none checked, busy, an answer still being confirmed, or the
   /// server refused them or could not be reached); the reason is in [notice].
-  Future<bool> importHealth(Map<String, num> values) async {
+  Future<bool> importHealth(Map<String, num> values) =>
+      _importConfirmed(values, source: 'apple_health', none: healthNoneNotice, wait: healthWaitNotice);
+
+  /// Adds answers the person confirmed one by one from an uploaded document
+  /// (app/lib/documents/). Same rules as [importHealth]; a separate source.
+  Future<bool> importDocument(Map<String, Object> values) =>
+      _importConfirmed(values, source: 'document', none: documentNoneNotice, wait: documentWaitNotice);
+
+  /// The last import that was taken: how many answers and from where (`apple_health` or `document`), for the
+  /// quiet "Added N things" note. A new record each time.
+  ({int count, String source})? lastImport;
+
+  Future<bool> _importConfirmed(
+    Map<String, Object> values, {
+    required String source,
+    required String none,
+    required String wait,
+  }) async {
     if (turn == null) {
       if (values.isEmpty) return false;
       _pendingHealth = {...?_pendingHealth, ...values};
+      _pendingSource = source;
+      _set(() => lastImport = (count: values.length, source: source));
       return true;
     }
     if (_busy) return false;
     if (values.isEmpty) {
       // Once every question is answered there is nothing left to "keep asking".
-      if (turn?.complete != true) _set(() => notice = healthNoneNotice);
+      if (turn?.complete != true) _set(() => notice = none);
       return false;
     }
     if (confirming) {
-      _set(() => notice = healthWaitNotice);
+      _set(() => notice = wait);
       return false;
     }
     await _stopSpeech();
     final before = turn;
-    await _send('import', values: values);
-    return notice == null && !identical(turn, before);
+    await _send('import', values: values, importSource: source);
+    final taken = notice == null && !identical(turn, before);
+    if (taken) _set(() => lastImport = (count: values.length, source: source));
+    return taken;
   }
 
   // ---- talking -----------------------------------------------------------
 
   /// Opens the microphone. Pressing Talk while the mascot speaks stops the mascot first.
+  /// The microphone is still opening (permission or connecting): a release now is not "send".
+  bool get micStarting => _starting != null;
+
   Future<void> startTalk() {
     // Ignore a second press while we are already starting, listening or waiting.
     if (_starting != null) return _starting!;
@@ -250,7 +320,8 @@ class VoiceOnboardingController extends ChangeNotifier {
           .start((text) {
             if (text != caption) _silentSeconds = 0;
             _set(() => caption = text);
-          })
+            _armEndOfTurn(text);
+          }, onDropped: (_) => _inputDropped())
           .timeout(_micStartLimit);
       if (phase == VoicePhase.listening) _startListenClock();
     } on MicDeniedException {
@@ -264,15 +335,32 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() {
         phase = VoicePhase.idle;
         typing = true;
-        voiceUsable = false;
-        notice = voiceOffNotice;
+        _voiceOut();
       });
+    } on TimeoutException {
+      _set(() {
+        phase = VoicePhase.idle;
+        notice = voiceTroubleNotice;
+      });
+      try {
+        await input.cancel().timeout(_quickLimit); // a start that never answered must not leave the mic on
+      } catch (_) {}
     } catch (_) {
       _set(() {
         phase = VoicePhase.idle;
         notice = voiceTroubleNotice;
       });
     }
+  }
+
+  /// The connection was lost while listening. The input has already stopped the mic.
+  void _inputDropped() {
+    if (phase != VoicePhase.listening) return;
+    _stopListenClock();
+    _set(() {
+      phase = VoicePhase.idle;
+      notice = voiceTroubleNotice;
+    });
   }
 
   void _startListenClock() {
@@ -295,6 +383,18 @@ class VoiceOnboardingController extends ChangeNotifier {
   void _stopListenClock() {
     _listenClock?.cancel();
     _listenClock = null;
+    _endOfTurnTimer?.cancel();
+    _endOfTurnTimer = null;
+  }
+
+  /// Every caption (a new partial or final) restarts the end-of-turn wait, once a word is heard.
+  void _armEndOfTurn(String text) {
+    if (text.trim().isEmpty) return;
+    _endOfTurnTimer?.cancel();
+    _endOfTurnTimer = Timer(endOfTurn, () {
+      _endOfTurnTimer = null;
+      if (phase == VoicePhase.listening) unawaited(stopTalk());
+    });
   }
 
   /// Closes the microphone and sends what was heard.
@@ -310,8 +410,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() {
         phase = VoicePhase.idle;
         typing = true;
-        voiceUsable = false;
-        notice = voiceOffNotice;
+        _voiceOut();
       });
       return;
     } catch (_) {
@@ -405,6 +504,15 @@ class VoiceOnboardingController extends ChangeNotifier {
     await _button('reply', text: 'go back');
   }
 
+  /// The conversation is paused because something urgent was said.
+  bool get emergency => turn?.emergency == true;
+
+  /// Continue after the pause: the server repeats the same question.
+  Future<void> continueAfterEmergency() async {
+    if (!emergency) return;
+    await _button('resume');
+  }
+
   /// Stops the mascot talking.
   Future<void> stopSpeaking() => _stopSpeech();
 
@@ -430,6 +538,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() => askingVoice = true);
       return;
     }
+    if (!value) _warmUp();
     if (value) {
       if (phase == VoicePhase.listening) await cancelTalk();
       await _stopSpeech();
@@ -447,8 +556,10 @@ class VoiceOnboardingController extends ChangeNotifier {
         voiceUsable = true;
         typing = false;
         notice = null;
+        _clearOutage();
       }
     });
+    if (yes) _warmUp();
   }
 
   Future<void> hearAgain() async {
@@ -460,7 +571,13 @@ class VoiceOnboardingController extends ChangeNotifier {
 
   // ---- server turn -----------------------------------------------------------
 
-  Future<void> _send(String action, {String? text, bool fromTranscript = false, Map<String, num>? values}) async {
+  Future<void> _send(
+    String action, {
+    String? text,
+    bool fromTranscript = false,
+    Map<String, Object>? values,
+    String? importSource,
+  }) async {
     if (_busy) return;
     if (turn == null && action != 'start') {
       // The first question never arrived (e.g. no network), so there is nothing to answer
@@ -468,6 +585,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       return _send('start');
     }
     _busy = true;
+    _tryVoiceAgain();
     if (action == 'reply' && text != null) _lastReply = (text, fromTranscript);
     // After "No, change it" the next answer is a correction. Otherwise a reply
     // to a read-back goes as a reply, so the server can hear "yes", "no" or a new value.
@@ -487,6 +605,7 @@ class VoiceOnboardingController extends ChangeNotifier {
             fromTranscript: fromTranscript,
             values: values,
             aiHelper: aiHelper,
+            importSource: importSource,
           )
           .timeout(_turnLimit);
     } on GuideRejected catch (e) {
@@ -502,13 +621,15 @@ class VoiceOnboardingController extends ChangeNotifier {
       _set(() {
         phase = VoicePhase.idle;
         notice = e is GuideTooBusy ? e.message : noNetworkNotice;
-        _retry = () => _send(action, text: text, fromTranscript: fromTranscript, values: values);
+        _retry = () =>
+            _send(action, text: text, fromTranscript: fromTranscript, values: values, importSource: importSource);
       });
       if (!typing) await _speakNotice(notice!);
       return;
     }
     _busy = false;
     _set(() {
+      if (_voiceBack) _voiceIn();
       correcting = false;
       turn = t;
       mascotLine = t.message;
@@ -518,12 +639,57 @@ class VoiceOnboardingController extends ChangeNotifier {
     if (action == 'start' && pending != null) {
       // The answer to the import asks the first open question, so only it is spoken.
       _pendingHealth = null;
-      return _send('import', values: pending);
+      return _send('import', values: pending, importSource: _pendingSource);
     }
     if (!typing && voiceUsable && !screenReader) await _speak(t.message);
   }
 
+  // ---- voice outage ----------------------------------------------------------
+
+  /// Voice was switched off because the server said it is unavailable (not by the person).
+  bool _voiceOutage = false;
+
+  /// A token was minted since the outage: voice comes back on the next turn.
+  bool _voiceBack = false;
+  Future<void>? _recovering;
+
+  /// Shows the "voice unavailable" notice and switches to typing; call inside [_set].
+  /// A token is retried in the background, and again with every turn.
+  void _voiceOut() {
+    typing = true;
+    voiceUsable = false;
+    notice = voiceOffNotice;
+    _voiceOutage = true;
+    _voiceBack = false;
+    _tryVoiceAgain();
+  }
+
+  void _tryVoiceAgain() {
+    if (!_voiceOutage || _voiceBack || _recovering != null || _disposed) return;
+    _recovering = input
+        .warmUp()
+        .then((_) => _voiceBack = _voiceOutage, onError: (Object _) => false)
+        .whenComplete(() => _recovering = null);
+  }
+
+  /// Voice works again: back to talking, as before the outage. Call inside [_set].
+  void _voiceIn() {
+    voiceUsable = true;
+    typing = false;
+    _voiceOutage = false;
+    _voiceBack = false;
+  }
+
+  /// The person chose voice again themselves; no outage to recover from.
+  void _clearOutage() {
+    _voiceOutage = false;
+    _voiceBack = false;
+  }
+
   // ---- speaking --------------------------------------------------------------
+
+  /// Gets voice ready in the background; any problem shows up when voice is used.
+  void _warmUp() => input.warmUp().ignore();
 
   Future<void> _stopOutput() async {
     try {
@@ -558,8 +724,7 @@ class VoiceOnboardingController extends ChangeNotifier {
       if (gen == _speechGen && mascotLine) {
         _set(() {
           typing = true;
-          voiceUsable = false;
-          notice = voiceOffNotice;
+          _voiceOut();
         });
       }
     } catch (_) {

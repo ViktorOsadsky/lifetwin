@@ -1,9 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../checkin/consent_screens.dart' show TrainingLine;
+import '../checkin/consents.dart' show AiProvider;
+import '../checkin/emergency_card.dart';
 import '../forecast/profile_labels.dart';
 import '../health/readback.dart' show usesImperial;
 import '../ui/swoosh_route.dart';
@@ -49,6 +53,8 @@ class VoiceOnboardingScreen extends StatefulWidget {
     this.onUseHealth,
     this.onOpenSettings = openAppSettings,
     this.appearance = const TwinAppearance(),
+    this.aiProvider,
+    this.onUploadDocument,
   });
 
   final VoiceOnboardingController controller;
@@ -59,11 +65,17 @@ class VoiceOnboardingScreen extends StatefulWidget {
   /// Opens the Apple Health import. The chip is hidden when null.
   final VoidCallback? onUseHealth;
 
+  /// Opens the document upload ("Upload a document" in the "Fill this in faster" sheet). Hidden when null.
+  final VoidCallback? onUploadDocument;
+
   /// Opens the phone's Settings app after the microphone was not allowed.
   final Future<void> Function() onOpenSettings;
 
   /// Cosmetic look of the twin in the window.
   final TwinAppearance appearance;
+
+  /// The outside AI provider, for the training line beside "Yes, turn it on" when the server says it applies.
+  final AiProvider? aiProvider;
 
   @override
   State<VoiceOnboardingScreen> createState() => _VoiceOnboardingScreenState();
@@ -123,6 +135,98 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
     if (!_justChanged) widget.onUseHealth?.call();
   }
 
+  // ---- the one import control ---------------------------------------------------
+
+  /// "Not now" in the sheet shrinks the control to an icon, in the same spot, for the rest of the talk.
+  bool _importCollapsed = false;
+
+  /// Visible from the first question on, until the conversation is done. One control, no timers.
+  bool get _importWanted =>
+      c.phase != VoicePhase.done &&
+      c.phase != VoicePhase.consent &&
+      c.turn != null &&
+      !c.emergency &&
+      (widget.onUseHealth != null || widget.onUploadDocument != null);
+
+  void _fasterSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: LtColors.paper,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(LtRadii.panel))),
+      builder: (sheet) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Semantics(
+                header: true,
+                child: WholeWordText('Fill from Apple Health or a document', style: LtText.display(28)),
+              ),
+              const SizedBox(height: 8),
+              WholeWordText('Mochi asks fewer questions when you add health data.', style: LtText.body()),
+              const SizedBox(height: 16),
+              if (widget.onUseHealth != null)
+                LipButton(
+                  label: 'Use Apple Health',
+                  icon: Icons.favorite_border_rounded,
+                  kind: LipKind.secondary,
+                  height: 64,
+                  onTap: () {
+                    Navigator.of(sheet).pop();
+                    widget.onUseHealth!();
+                  },
+                ),
+              if (widget.onUploadDocument != null) ...[
+                const SizedBox(height: 12),
+                LipButton(
+                  label: 'Upload a document',
+                  icon: Icons.description_outlined,
+                  kind: LipKind.secondary,
+                  height: 64,
+                  onTap: () {
+                    Navigator.of(sheet).pop();
+                    widget.onUploadDocument!();
+                  },
+                ),
+              ],
+              const SizedBox(height: 12),
+              LipButton(
+                label: 'Not now',
+                height: 48,
+                onTap: () {
+                  Navigator.of(sheet).pop();
+                  setState(() => _importCollapsed = true);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// "Added N things from Apple Health": a quiet note, gone after 6 s (8 s with large text).
+  String? _importNote;
+  Timer? _noteTimer;
+  ({int count, String source})? _shownImport;
+
+  void _importChanged() {
+    final i = c.lastImport;
+    if (i == null || identical(i, _shownImport)) return;
+    _shownImport = i;
+    _noteTimer?.cancel();
+    setState(
+      () => _importNote = 'Added from ${i.source == 'document' ? 'your document' : 'Apple Health'} ✓',
+    );
+    _noteTimer = Timer(Duration(seconds: largeText(context) ? 8 : 6), () {
+      if (mounted) setState(() => _importNote = null);
+    });
+  }
+
   /// Back to the Room, as the swipe-back does: the route is popped, the controller (and
   /// every confirmed answer) stays with the app. The guard keeps a double tap from also
   /// popping the Room's own route.
@@ -157,6 +261,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   void initState() {
     super.initState();
     c.addListener(_changed);
+    c.addListener(_importChanged);
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -202,6 +307,8 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   @override
   void dispose() {
     c.removeListener(_changed);
+    c.removeListener(_importChanged);
+    _noteTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _aiLock?.cancel();
     _turnLock?.cancel();
@@ -565,6 +672,7 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         "If I can't understand an answer, an AI service can read your words. "
         "It's off unless you say yes. You can change this in Settings.",
     buttons: [
+      if (widget.aiProvider?.trainingLine case final line?) TrainingLine(line),
       LipButton(
         label: 'Yes, turn it on',
         icon: Icons.check_rounded,
@@ -589,6 +697,17 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
   bool get _showsTypingBox => c.typing && c.phase != VoicePhase.done && (!c.confirming || c.correcting);
 
   Widget _talk(SwooshFrame frame, double windowOpacity) {
+    if (c.emergency) {
+      // The calm pause: nothing is saved, no progress, no other buttons. Call 911 is a tap, never automatic.
+      return _page(
+        frame: frame,
+        windowOpacity: windowOpacity,
+        line: EmergencyCard.apology,
+        crowded: true,
+        story: const [],
+        controls: [EmergencyCard(onContinue: c.continueAfterEmergency, picksUpAt: c.mascotLine)],
+      );
+    }
     final keyboard = _keyboard;
     final busy = c.phase == VoicePhase.interpreting;
     final line = c.mascotLine.isEmpty ? (busy ? 'One moment…' : '') : c.mascotLine;
@@ -633,6 +752,20 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
           const SizedBox(height: 10),
           _pad(_ValueCard(text: _readBackValue)),
         ],
+        // The opening: one plain example. Apple Health and documents are in the "Fill this in faster" pill.
+        if (c.questionNumber == 1 && c.caption.isEmpty && !keyboard) ...[
+          const SizedBox(height: 8),
+          _pad(Text('Try saying: “I’m 62.”', style: LtText.body(color: LtColors.secondary))),
+        ],
+        if (c.healthOffer && _importWanted && !keyboard) ...[
+          const SizedBox(height: 8),
+          _pad(
+            Text(
+              'Tap the button below to fill from Apple Health or a document.',
+              style: LtText.body(color: LtColors.secondary),
+            ),
+          ),
+        ],
         if (voiceLine != null) ...[
           const SizedBox(height: 4),
           _pad(Align(alignment: Alignment.centerLeft, child: voiceLine)),
@@ -655,7 +788,34 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
         if (quick) ...[const SizedBox(height: 14), KeyedSubtree(key: _quickKey, child: _pad(_quickAnswers(busy)))],
         const SizedBox(height: 8),
       ],
-      controls: _controls(keyboard),
+      controls: [
+        // The one import control, in a fixed slot at the top of the controls (always in view).
+        if (!keyboard && _importWanted)
+          SizedBox(
+            height: 56,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: [
+                  Flexible(
+                    child: ImportControl(collapsed: _importCollapsed || _importNote != null || largeText(context), onTap: _fasterSheet),
+                  ),
+                  if (_importNote != null)
+                    Expanded(
+                      child: Semantics(
+                        liveRegion: true,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Text(_importNote!, style: LtText.body(color: LtColors.secondary)),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ..._controls(keyboard),
+      ],
     );
   }
 
@@ -745,11 +905,6 @@ class _VoiceOnboardingScreenState extends State<VoiceOnboardingScreen> with Widg
       if (quick) ...[_quickAnswers(busy), const SizedBox(height: 8)],
       // With quick answers on screen they are the big choices; Talk is the smaller one.
       if (quick) TalkButton(controller: c, compact: true) else ..._answerControls(busy, keyboard),
-      // On the first question: Apple Health instead of answering, right under Talk (or Send).
-      if (!keyboard && widget.onUseHealth != null && c.questionNumber == 1 && c.phase != VoicePhase.listening) ...[
-        const SizedBox(height: 12),
-        _healthButton(),
-      ],
       if (!keyboard) _switchMode(),
       LinkButton(label: 'Skip this question', onTap: busy ? null : _skip),
       if (!keyboard) ..._chips(),
@@ -1017,7 +1172,7 @@ class TalkButton extends StatefulWidget {
 }
 
 class _TalkButtonState extends State<TalkButton> {
-  static const _holdThreshold = Duration(milliseconds: 600);
+  static const _holdThreshold = Duration(seconds: 1);
   DateTime? _downAt;
   bool _stoppedByThisPress = false;
 
@@ -1039,6 +1194,8 @@ class _TalkButtonState extends State<TalkButton> {
     final at = _downAt;
     if (_stoppedByThisPress || at == null) return;
     _downAt = null;
+    // Letting go while the mic is still opening would send nothing ("I didn't hear anything"): keep listening.
+    if (c.micStarting) return;
     // A long press is "hold to talk": letting go sends. A short tap keeps listening.
     if (DateTime.now().difference(at) >= _holdThreshold) c.stopTalk();
   }
@@ -1054,10 +1211,14 @@ class _TalkButtonState extends State<TalkButton> {
     final listening = c.phase == VoicePhase.listening;
     final busy = c.phase == VoicePhase.interpreting;
     final left = c.listenSecondsLeft;
+    // The very first question, before any answer: the button says it takes talking or typing.
+    final opening = !widget.compact && c.questionNumber == 1 && c.caption.isEmpty && c.phase == VoicePhase.idle;
     final label = busy
         ? 'One moment…'
         : c.phase == VoicePhase.speaking
         ? 'Tap to answer'
+        : opening
+        ? 'Talk or type'
         : 'Tap to talk';
     final big = largeText(context);
 
@@ -1146,18 +1307,27 @@ class _TalkButtonState extends State<TalkButton> {
         lip: 5,
         radius: 30,
         enabled: !busy,
-        child: lay(mic, WholeWordText(label, textAlign: TextAlign.center, style: LtText.display(26))),
+        child: lay(
+          opening
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [mic, const SizedBox(width: 6), const Icon(Icons.keyboard_outlined, size: 30, color: LtColors.ink)],
+                )
+              : mic,
+          WholeWordText(label, textAlign: TextAlign.center, style: LtText.display(26)),
+        ),
       );
     }
 
     return Semantics(
       button: true,
       enabled: !busy,
-      label: busy ? label : (listening ? 'Stop listening' : 'Talk'),
+      label: busy ? label : (listening ? 'Stop listening' : (opening ? 'Talk or type' : 'Talk')),
       value: listening ? 'Listening' : 'Not listening',
       hint: busy ? null : (listening ? 'Double tap when you are done' : 'Double tap, then speak'),
       excludeSemantics: true,
       onTap: busy ? null : () => listening ? c.stopTalk() : c.startTalk(),
+      customSemanticsActions: opening ? {const CustomSemanticsAction(label: 'Type instead'): () => c.setTyping(true)} : null,
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: _down,
@@ -1250,4 +1420,50 @@ class _NoticeBox extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The one import control: a compact pill ("Fill from Apple Health or a document"), or after "Not now" a
+/// small icon in the same spot. Both are 48 pt targets and always reachable.
+class ImportControl extends StatelessWidget {
+  const ImportControl({super.key, required this.collapsed, required this.onTap});
+  final bool collapsed;
+  final VoidCallback onTap;
+
+  static const label = 'Fill from Apple Health or a document';
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: label,
+    excludeSemantics: true,
+    onTap: onTap,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: collapsed
+          ? const SizedBox(width: 48, height: 48, child: Icon(Icons.bolt_rounded, size: 26, color: LtColors.ink))
+          : Container(
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: LtColors.paper,
+                borderRadius: BorderRadius.circular(LtRadii.chip),
+                border: Border.all(color: LtColors.control, width: LtBorders.control),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.bolt_rounded, size: 22, color: LtColors.ink),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(label, maxLines: 1, style: LtText.body(size: 16, weight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+    ),
+  );
 }

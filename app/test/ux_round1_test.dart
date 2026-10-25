@@ -43,8 +43,9 @@ class StepGuide implements ConversationGuide {
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
-    Map<String, num>? values,
+    Map<String, Object>? values,
     bool aiHelper = false,
+    String? importSource,
   }) async {
     calls.add({'action': action, 'text': ?text});
     if (gate != null) await gate!.future;
@@ -99,7 +100,7 @@ class StepGuide implements ConversationGuide {
 class LiveInput extends FakeSpeechInput {
   void Function(String)? say;
   @override
-  Future<void> start(void Function(String text) onCaption) async {
+  Future<void> start(void Function(String text) onCaption, {void Function(Object error)? onDropped}) async {
     starts++;
     say = onCaption;
   }
@@ -344,7 +345,7 @@ void main() {
       expect(r.c.phase, VoicePhase.idle);
       expect(find.text('Speaking…'), findsNothing);
       expect(find.text('Hear it again'), findsOneWidget);
-      expect(talkLabel(t), 'Tap to talk');
+      expect(talkLabel(t), 'Talk or type');
     });
   });
 
@@ -492,7 +493,7 @@ void main() {
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await t.pumpAndSettle();
-      expect(find.text('Tap to talk'), findsOneWidget);
+      expect(find.text('Talk or type'), findsOneWidget);
       await tapTalk(t);
       expect(r.c.phase, VoicePhase.listening);
       await r.c.cancelTalk(); // stops the listening clock before the test ends
@@ -540,7 +541,7 @@ void main() {
       final r = Rig();
       await r.pump(t);
       await r.start(t, voice: true);
-      expect(talkLabel(t), 'Tap to talk');
+      expect(talkLabel(t), 'Talk or type');
       expect(semanticsValue(t), 'Not listening');
       expect(find.byType(RecordingDot), findsNothing);
 
@@ -611,21 +612,21 @@ void main() {
       final r = Rig(guide: StepGuide());
       await r.pump(t);
       await r.start(t, voice: false);
-      expect(find.text('Question 1 of 11'), findsOneWidget);
+      expect(find.text('Question 1 of 12'), findsOneWidget);
       expect(find.text('Go back'), findsNothing);
 
       await t.enterText(find.byType(TextField), '70');
       await t.tap(find.text('Send'));
       await t.pumpAndSettle();
-      expect(find.text('Question 1 of 11'), findsOneWidget); // still checking the first answer
+      expect(find.text('Question 1 of 12'), findsOneWidget); // still checking the first answer
       expect(find.text('Go back'), findsNothing);
       await t.tap(find.text('Yes'));
       await t.pumpAndSettle();
-      expect(find.text('Question 2 of 11'), findsOneWidget);
+      expect(find.text('Question 2 of 12'), findsOneWidget);
 
       await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
       await tapText(t, 'Skip this question');
-      expect(find.text('Question 3 of 11'), findsOneWidget);
+      expect(find.text('Question 3 of 12'), findsOneWidget);
 
       expect(t.getSize(button('Go back')).height, greaterThanOrEqualTo(56));
       await t.pump(const Duration(milliseconds: 700)); // links that stay in place ignore a second tap at first
@@ -633,25 +634,18 @@ void main() {
       expect(r.calls.last, {'action': 'reply', 'text': 'go back'});
       expect(find.textContaining('Question about sex'), findsOneWidget);
       // The reopened question counts as the one being asked.
-      expect(find.text('Question 2 of 11'), findsOneWidget);
+      expect(find.text('Question 2 of 12'), findsOneWidget);
       expect(find.text('You said: go back'), findsNothing);
     });
   });
 
   group('8. controls', () {
-    testWidgets('the AI helper chip and Settings switch stay in step; Apple Health only on the first question', (
-      t,
-    ) async {
+    testWidgets('the AI helper chip and Settings switch stay in step', (t) async {
       final r = Rig(guide: StepGuide());
       await r.pump(t);
       await r.start(t, voice: false);
       expect(find.text('AI helper: Off'), findsOneWidget);
-      expect(find.text('Use my Apple Health'), findsOneWidget);
-      // A full-width button right under Send, above "Talk instead".
-      final health = t.getRect(button('Use my Apple Health'));
-      expect(health.height, greaterThanOrEqualTo(56));
-      expect(health.top, greaterThanOrEqualTo(t.getRect(button('Send')).bottom));
-      expect(health.bottom, lessThanOrEqualTo(t.getRect(button('Talk instead')).top));
+      expect(find.text('Use my Apple Health'), findsNothing, reason: 'the opening is decluttered');
       expect(find.widgetWithText(LinkButton, 'Talk instead'), findsOneWidget);
 
       await tapText(t, 'Settings');
@@ -672,25 +666,12 @@ void main() {
     });
 
     for (final scale in [1.0, 3.1]) {
-      testWidgets('scale $scale: "Use my Apple Health" sits under Tap to talk, above Type instead, and opens', (
-        t,
-      ) async {
+      testWidgets('scale $scale: the opening has no Apple Health button and does not overflow', (t) async {
         final r = Rig();
         await r.pump(t, scale: scale);
         await r.start(t, voice: true);
         expect(t.takeException(), isNull);
-        final health = button('Use my Apple Health');
-        await t.ensureVisible(health);
-        await t.pumpAndSettle();
-        expect(t.getSize(health).height, greaterThanOrEqualTo(56));
-        expect(t.getRect(health).top, greaterThanOrEqualTo(t.getRect(find.byType(TalkButton)).bottom));
-        await t.ensureVisible(button('Type instead'));
-        await t.pumpAndSettle();
-        expect(t.getRect(button('Type instead')).top, greaterThanOrEqualTo(t.getRect(health).bottom));
-        await t.ensureVisible(health);
-        await t.pumpAndSettle();
-        await t.tap(health);
-        expect(r.healthOpened, 1);
+        expect(find.text('Use my Apple Health'), findsNothing);
       });
     }
 

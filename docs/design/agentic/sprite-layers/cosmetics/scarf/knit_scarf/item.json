@@ -1,0 +1,105 @@
+{
+ "schema": "lifetwin.cosmetic.v1",
+ "id": "knit_scarf",
+ "category": "scarf",
+ "label": "Knit scarf",
+ "units": "rig px (design/rig/rig.json canvas [640, 900], anchor [320, 852]); every SVG uses absolute rig coordinates with viewBox = box",
+ "layers": [
+  {
+   "name": "scarf_tail",
+   "slot": "scarf_tail",
+   "bone": "torso",
+   "z": 33,
+   "pivot": [
+    321.5,
+    745.0
+   ],
+   "box": {
+    "x": 328,
+    "y": 479,
+    "w": 112,
+    "h": 176
+   },
+   "vector": "scarf_tail.svg",
+   "painted": "scarf_tail.p.png"
+  },
+  {
+   "name": "scarf_wrap",
+   "slot": "scarf_wrap",
+   "bone": "neck",
+   "z": 36,
+   "pivot": [
+    319.0,
+    415.0
+   ],
+   "box": {
+    "x": 138,
+    "y": 373,
+    "w": 364,
+    "h": 186
+   },
+   "vector": "scarf_wrap.svg",
+   "painted": "scarf_wrap.p.png"
+  }
+ ],
+ "hide_body_slots": [],
+ "head_variant": "default",
+ "colourable": {
+  "knit": {
+   "key": "#c8643f",
+   "tones": {
+    "hi": "#e1a689",
+    "lt": "#d58563",
+    "base": "#c8643f",
+    "sh": "#9c5142",
+    "dk": "#753e38",
+    "ink": "#592f25"
+   }
+  },
+  "stripe": {
+   "key": "#f1e2c4",
+   "tones": {
+    "hi": "#f7ead0",
+    "lt": "#f4e5c8",
+    "base": "#f1e2c4",
+    "sh": "#baaca1",
+    "dk": "#8b7f7d",
+    "ink": "#665851"
+   }
+  }
+ },
+ "material": "knit",
+ "notes": [
+  "Same silhouettes as the rig's canonical Cal scarf, in a rust-and-oatmeal colourway; recolour to navy/gold for a Cal scarf."
+ ],
+ "views": {
+  "needed": [
+   "front",
+   "three_quarter",
+   "side",
+   "back"
+  ],
+  "available": [
+   "front"
+  ],
+  "supported_poses": [
+   "stand",
+   "wave",
+   "walk_front",
+   "sit",
+   "jump",
+   "stretch",
+   "think",
+   "eat",
+   "hold_ball",
+   "shrug",
+   "dizzy"
+  ],
+  "unsupported_poses": [
+   "sleep",
+   "walk_back",
+   "walk_side"
+  ],
+  "rule": "hide this item (or fall back to no accessory) on unsupported poses; never paste the front view on a turned head"
+ }
+}

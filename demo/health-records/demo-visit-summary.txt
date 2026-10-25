@@ -1,0 +1,25 @@
+SYNTHETIC DEMO DATA - NOT A REAL HEALTH RECORD
+LifeTwin Demonstration Clinic
+After-visit summary
+Patient: Rosa Sample (fictional)
+DOB: 1960-04-12 | Sex: Female
+MRN: DEMO-0001
+Date of service: 2026-10-20
+
+Vitals
+Height: 165 cm
+Weight: 78 kg
+Blood pressure: 132/78 mmHg
+
+Social History
+Former smoker, quit 2010
+
+Problem List
+Type 2 diabetes mellitus
+Essential hypertension
+
+Lab Results
+Hemoglobin A1c: 6.8 %
+LDL Cholesterol: 122 mg/dL
+
+Not affiliated with Epic or MyChart. All identities and values are invented.

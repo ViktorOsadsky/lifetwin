@@ -1,0 +1,260 @@
+{
+  "$defs": {
+    "CharacterHints": {
+      "additionalProperties": false,
+      "description": "Coarse, kind hints for the twin's look; null until there is something to go on.\n\nmood (how the person says they feel): \"good\", \"okay\", \"not_great\" (the check-in\nwellbeing scale). energy (sleep and activity): \"high\", \"medium\", \"low\".",
+      "properties": {
+        "energy": {
+          "anyOf": [
+            {
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Energy"
+        },
+        "mood": {
+          "anyOf": [
+            {
+              "enum": [
+                "good",
+                "okay",
+                "not_great"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mood"
+        }
+      },
+      "required": [
+        "mood",
+        "energy"
+      ],
+      "title": "CharacterHints",
+      "type": "object"
+    },
+    "LeverRanking": {
+      "additionalProperties": false,
+      "properties": {
+        "model_version": {
+          "title": "Model Version",
+          "type": "string"
+        },
+        "order": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Order",
+          "type": "array"
+        },
+        "source": {
+          "const": "docs/model-sensitivity.json",
+          "default": "docs/model-sensitivity.json",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "model_version",
+        "order"
+      ],
+      "title": "LeverRanking",
+      "type": "object"
+    },
+    "Recommendation": {
+      "additionalProperties": false,
+      "properties": {
+        "based_on": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 6,
+          "title": "Based On",
+          "type": "array"
+        },
+        "causal_interpretation": {
+          "const": false,
+          "default": false,
+          "title": "Causal Interpretation",
+          "type": "boolean"
+        },
+        "effect": {
+          "anyOf": [
+            {
+              "enum": [
+                "big",
+                "some",
+                "small",
+                "tiny"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effect"
+        },
+        "effect_note": {
+          "const": "Modeled difference for people like you, not a promise.",
+          "default": "Modeled difference for people like you, not a promise.",
+          "title": "Effect Note",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "lever": {
+          "enum": [
+            "quit_smoking",
+            "vigorous_plus_60",
+            "moderate_plus_90",
+            "short_sleep_plus_1h",
+            "sitting_minus_60_realistic",
+            "keep_it_up"
+          ],
+          "title": "Lever",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 400,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "source_title": {
+          "title": "Source Title",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "wellness_card": {
+          "enum": [
+            "smoking",
+            "activity",
+            "sleep",
+            "sitting"
+          ],
+          "title": "Wellness Card",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "lever",
+        "title",
+        "message",
+        "based_on",
+        "wellness_card",
+        "source_title",
+        "source_url",
+        "effect",
+        "effect_note",
+        "causal_interpretation"
+      ],
+      "title": "Recommendation",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "causal_interpretation": {
+      "const": false,
+      "default": false,
+      "title": "Causal Interpretation",
+      "type": "boolean"
+    },
+    "character_hints": {
+      "$ref": "#/$defs/CharacterHints"
+    },
+    "lever_ranking": {
+      "$ref": "#/$defs/LeverRanking"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "message": {
+      "maxLength": 1500,
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "phrased_by": {
+      "default": "templates",
+      "enum": [
+        "templates",
+        "claude",
+        "muse"
+      ],
+      "title": "Phrased By",
+      "type": "string"
+    },
+    "recommendations": {
+      "items": {
+        "$ref": "#/$defs/Recommendation"
+      },
+      "maxItems": 3,
+      "title": "Recommendations",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "ok",
+        "not_enough_information"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "message",
+    "recommendations",
+    "character_hints",
+    "lever_ranking",
+    "phrased_by",
+    "causal_interpretation",
+    "limitations"
+  ],
+  "title": "RecommendationResponse",
+  "type": "object"
+}

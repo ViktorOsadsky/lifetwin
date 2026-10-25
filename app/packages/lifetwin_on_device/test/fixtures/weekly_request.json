@@ -1,0 +1,21 @@
+{
+  "as_of_date": "2026-10-24",
+  "profile": {
+    "age": 45,
+    "sex_nhanes": 1,
+    "bmi": 25,
+    "smoking_status": 0,
+    "diabetes_diagnosed": 0,
+    "hypertension_diagnosed": 0,
+    "general_health": 2
+  },
+  "weekly_summaries": [
+    {
+      "week_start": "2026-10-12",
+      "sleep_hours": 7,
+      "vigorous_recreation_min_week": 60,
+      "moderate_recreation_min_week": 165,
+      "sedentary_min_day": 393
+    }
+  ]
+}

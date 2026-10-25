@@ -59,9 +59,14 @@ class FakeSpeechInput implements SpeechInput {
   Object? startError;
   Object? finishError;
 
+  /// Thrown by [warmUp] if set.
+  Object? warmUpError;
+  int warmUps = 0;
+
   int starts = 0;
   int finishes = 0;
   int cancels = 0;
+  int disposals = 0;
 
   /// Set to hold the "Allow microphone?" answer until it is completed.
   Completer<bool>? permission;
@@ -69,15 +74,30 @@ class FakeSpeechInput implements SpeechInput {
   @override
   Future<bool> hasPermission() async => permission == null ? true : permission!.future;
 
+  /// The latest listen's callbacks, so a test can send words or drop the connection later.
+  void Function(String text)? onCaption;
+  void Function(Object error)? onDropped;
+
   @override
-  Future<void> start(void Function(String text) onCaption) async {
+  Future<void> warmUp() async {
+    warmUps++;
+    if (warmUpError != null) throw warmUpError!;
+  }
+
+  @override
+  Future<void> start(void Function(String text) onCaption, {void Function(Object error)? onDropped}) async {
     starts++;
     if (startError != null) throw startError!;
     if (!await hasPermission()) throw const MicDeniedException(); // as the real recorder does
+    this.onCaption = onCaption;
+    this.onDropped = onDropped;
     for (final c in captions) {
       onCaption(c);
     }
   }
+
+  /// The connection is lost while listening.
+  void drop([Object error = const VoiceFailure('dropped')]) => onDropped?.call(error);
 
   @override
   Future<String> finish() async {
@@ -92,7 +112,9 @@ class FakeSpeechInput implements SpeechInput {
   }
 
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() async {
+    disposals++;
+  }
 }
 
 /// A small scripted conversation: asks age, then height, then asks to confirm.
@@ -115,8 +137,9 @@ class FakeConversationGuide implements ConversationGuide {
     Map<String, dynamic>? state,
     String? text,
     bool fromTranscript = false,
-    Map<String, num>? values,
+    Map<String, Object>? values,
     bool aiHelper = false,
+    String? importSource,
   }) async {
     calls.add({
       'action': action,
@@ -125,6 +148,7 @@ class FakeConversationGuide implements ConversationGuide {
       'state': state,
       'values': values,
       'aiHelper': aiHelper,
+      'importSource': importSource,
     });
     if (gate != null) await gate!.future;
     if (failNext) {
@@ -168,6 +192,17 @@ class FakeConversationGuide implements ConversationGuide {
           confirmed,
           pending,
         );
+      // Something urgent: pause calmly. "resume" (Continue) asks the same question again.
+      case 'reply' when (text ?? '').contains('chest pain'):
+        return _turn(
+          'asking',
+          'I’m sorry you’re going through that. If you need help right now, please call 911. We can carry on whenever you’re ready.',
+          confirmed,
+          pending,
+          emergency: true,
+        );
+      case 'resume':
+        return _turn('asking', 'How old are you?', confirmed, pending);
       case 'reply' when text == 'go back':
         return _turn('asking', "Okay, let's go back to your age. How old are you?", confirmed, pending);
       case 'reply':
@@ -203,8 +238,10 @@ class FakeConversationGuide implements ConversationGuide {
     bool complete = false,
     String mascot = 'asking',
     String provider = 'not_configured',
+    bool emergency = false,
   }) {
     return GuideTurn(
+      emergency: emergency,
       providerStatus: provider,
       state: {
         'phase': phase,

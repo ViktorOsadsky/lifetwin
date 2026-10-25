@@ -93,7 +93,7 @@ void main() {
     final input = FakeSpeechInput()..captions = ['I am 70'];
     final c = await _open(t, input: input);
     await _consent(t, "Yes, I'll talk");
-    await t.tap(find.text('Tap to talk'));
+    await t.tap(find.text('Talk or type'));
     await t.pump(const Duration(milliseconds: 100)); // not settled: the listening clock would time out
     expect(c.phase, VoicePhase.listening);
 
