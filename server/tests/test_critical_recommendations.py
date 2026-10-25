@@ -20,6 +20,7 @@ from lifetwin.app import create_app
 from lifetwin.core.config import Settings
 from lifetwin.core.models import HealthProfile
 from lifetwin.onboarding.models import HabitNote
+from lifetwin.recommendations.ideas import BY_ID
 from lifetwin.recommendations.levers import (
     EFFECT_NOTE,
     LEVER_ORDER,
@@ -171,7 +172,7 @@ def check_product_rules(profile):
 )
 def test_no_activity_gets_a_small_start_not_a_target_of_150(profile):
     (rec,) = [r for r in suggest(HealthProfile(**profile), []) if r.wellness_card == "activity"]
-    assert rec.title == "A small start"
+    assert "start" in BY_ID[rec.id].stages  # a small-start idea from the catalog
     assert "10 to 15 minutes" in rec.message
     assert "150" not in rec.message
 
@@ -449,7 +450,8 @@ def test_unsafe_outside_wording_falls_back_to_the_template(line):
     body = post(make_client(provider), {"smoking_status": "current"}, consent={"muse": True})
     assert provider.calls == 1
     assert body["phrased_by"] == "templates"
-    assert body["recommendations"][0]["message"].startswith("Quitting smoking helps")
+    template = suggest(HealthProfile(smoking_status="current"), [])[0].message
+    assert body["recommendations"][0]["message"] == template
 
 
 @pytest.mark.parametrize(

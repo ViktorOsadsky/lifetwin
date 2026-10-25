@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from make_app_fixtures import TODAY, WEEKLY_REPLIES, client, onboarding, post
+from make_app_fixtures import TODAY, WEEKLY_REPLIES, client, onboarding, pinned_day, post
 
 from lifetwin.app import create_app
 from lifetwin.core.config import Settings
@@ -122,6 +122,11 @@ def error_bodies() -> dict:
 
 
 def build() -> dict:
+    with pinned_day():
+        return _build()
+
+
+def _build() -> dict:
     c = client()
     ob = onboarding(c, memory=True)
     profile = ob["state"]["confirmed_profile"]
