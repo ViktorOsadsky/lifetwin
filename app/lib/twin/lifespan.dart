@@ -150,8 +150,9 @@ class LifespanEstimate {
     final age = profile['age'];
     if (age is! num ||
         age < lifespanProfileAges.low ||
-        age > lifespanProfileAges.high)
+        age > lifespanProfileAges.high) {
       return null;
+    }
     final LifespanCurve curve;
     try {
       curve = estimateLifespanForProfile(profile);

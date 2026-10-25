@@ -65,12 +65,16 @@ class CheckinController extends ChangeNotifier {
     this.onFinished,
     DateTime Function()? clock,
     this.voiceUsable = true,
+    this.ownsSpeech = true,
   }) : _clock = clock ?? DateTime.now,
        typing = !voiceUsable;
 
   final CheckinGuide guide;
   final SpeechInput input;
   final SpeechOutput output;
+
+  /// False when [input] and [output] are the app-wide ones shared with later check-ins: dispose leaves them alone.
+  final bool ownsSpeech;
   final CheckinStore store;
   final CheckinScheduler scheduler;
 
@@ -647,8 +651,10 @@ class CheckinController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _stopListenClock();
-    input.dispose();
-    output.dispose();
+    if (ownsSpeech) {
+      input.dispose();
+      output.dispose();
+    }
     super.dispose();
   }
 }

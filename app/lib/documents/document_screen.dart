@@ -82,7 +82,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
       } else if (r.candidates.isEmpty) {
         _step = _Step.failed;
       } else {
-        _confirm = DocumentConfirmation(r.candidates);
+        _confirm = DocumentConfirmation(r.candidates, notices: r.notices);
         _step = _Step.aboutYou;
       }
     });
@@ -219,7 +219,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
     }
     final n = r.confirmed.length;
     return 'You checked $n ${n == 1 ? 'answer' : 'answers'}. I will ask you about anything else I still need.'
-        '${r.notes.isEmpty ? '' : ' Additional readings are not saved yet.'}';
+        '${r.notes.isEmpty ? '' : ' Extra readings are saved in your history only.'}';
   }
 
   static String _failureTitle(DocumentReading r) => switch (r.status) {

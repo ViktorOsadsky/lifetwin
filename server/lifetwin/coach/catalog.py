@@ -5,13 +5,37 @@ the on-device package's wellness-card sources for sleep and smoking. None of thi
 had professional review yet; every card says so (``reviewed_by``).
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 Source = tuple[str, str]
 
 CDC_OLDER: Source = (
     "CDC: Physical activity guidelines for older adults",
     "https://cdc.gov/physical-activity-basics/guidelines/older-adults.html",
+)
+CDC_ADULTS: Source = (
+    "CDC: Physical activity guidelines for adults",
+    "https://cdc.gov/physical-activity-basics/guidelines/adults.html",
+)
+NHS_ADULTS: Source = (
+    "NHS: Physical activity guidelines for adults aged 19 to 64",
+    "https://www.nhs.uk/live-well/exercise/exercise-guidelines/physical-activity-guidelines-for-adults-aged-19-to-64/",
+)
+DGA: Source = (
+    "Dietary Guidelines for Americans, 2020-2025",
+    "https://www.dietaryguidelines.gov/sites/default/files/2021-03/Dietary_Guidelines_for_Americans-2020-2025.pdf",
+)
+NHS_WATER: Source = (
+    "NHS: Water, drinks and your health",
+    "https://www.nhs.uk/live-well/eat-well/food-guidelines-and-food-labels/water-drinks-nutrition/",
+)
+NIDDK_DIABETES_FOOD: Source = (
+    "NIDDK: Diet, eating and physical activity with diabetes",
+    "https://www.niddk.nih.gov/health-information/diabetes/overview/diet-eating-physical-activity",
+)
+NIDDK_KIDNEY_FOOD: Source = (
+    "NIDDK: Eating and nutrition for chronic kidney disease",
+    "https://www.niddk.nih.gov/health-information/kidney-disease/chronic-kidney-disease-ckd/eating-nutrition",
 )
 CDC_COUNTS: Source = (
     "CDC: What counts as physical activity for older adults",
@@ -76,6 +100,17 @@ GAIN_FRAMING: Source = (
     "Gallagher & Updegraff 2012: gain-framed messages and prevention behaviours",
     "https://pmc.ncbi.nlm.nih.gov/articles/PMC3397368",
 )
+
+
+def band(age: int | None) -> str:
+    """The age band that shapes wording and picks. Unknown or under 18 -> "neutral",
+    which keeps the gentle set that fits anyone."""
+    if age is None or age < 18:
+        return "neutral"
+    if age < 40:
+        return "young"
+    return "mid" if age < 65 else "older"
+
 
 LIMITS = ("knee_pain", "walking_aid", "fall_risk", "cardio_caution", "seated_only")
 
@@ -364,6 +399,129 @@ ACTIVITIES: dict[str, Activity] = {
             CDC_COUNTS,
             anchors=("danc", "music"),
         ),
+        Activity(
+            "jog_walk",
+            "A brisk walk or jog",
+            "Walk briskly, or jog if you like, for {minutes} minutes, at a pace where you can "
+            "still talk in short sentences.",
+            20,
+            15,
+            40,
+            "aerobic",
+            "moderate",
+            "moderate",
+            "standing",
+            CDC_ADULTS,
+            anchors=("jog", "run"),
+            indoor=False,
+        ),
+        Activity(
+            "bodyweight_circuit",
+            "A bodyweight circuit",
+            "Go round squats, lunges, push-ups and a plank, about a minute each, for {minutes} "
+            "minutes. Rest when you need to.",
+            15,
+            10,
+            30,
+            "strength",
+            "vigorous",
+            "vigorous",
+            "standing",
+            CDC_ADULTS,
+            anchors=("gym", "circuit", "weights", "lift"),
+        ),
+        Activity(
+            "cycling",
+            "Cycling",
+            "Ride a bike at a steady pace for {minutes} minutes, to somewhere you need to go "
+            "or just for fun.",
+            30,
+            15,
+            60,
+            "aerobic",
+            "moderate",
+            "moderate",
+            "seated",
+            NHS_ADULTS,
+            anchors=("bike", "cycl"),
+            indoor=False,
+        ),
+        Activity(
+            "sport_friends",
+            "A sport with friends",
+            "Play a sport you enjoy with friends for {minutes} minutes: football, basketball, "
+            "tennis or anything that gets you moving.",
+            30,
+            20,
+            60,
+            "aerobic",
+            "vigorous",
+            "vigorous",
+            "standing",
+            CDC_ADULTS,
+            anchors=("football", "soccer", "basketball", "tennis", "sport", "team"),
+            indoor=False,
+        ),
+        Activity(
+            "stairs",
+            "Take the stairs",
+            "Climb up and down a flight of stairs at a steady pace for {minutes} minutes, or "
+            "take the stairs instead of the lift today.",
+            10,
+            5,
+            20,
+            "aerobic",
+            "moderate",
+            "moderate",
+            "standing",
+            CDC_ADULTS,
+            anchors=("stair",),
+        ),
+        Activity(
+            "swim_laps",
+            "Swimming",
+            "Swim at a steady pace for {minutes} minutes, resting at the wall whenever you like.",
+            20,
+            15,
+            40,
+            "aerobic",
+            "moderate",
+            "moderate",
+            "water",
+            NHS_ADULTS,
+            anchors=("swim", "pool"),
+            indoor=False,
+        ),
+        Activity(
+            "strength_twice",
+            "Strength work",
+            "Do squats, lunges, a plank and rows with a backpack or a band for {minutes} "
+            "minutes. Two days a week is a good rhythm.",
+            20,
+            15,
+            40,
+            "strength",
+            "moderate",
+            "none",
+            "standing",
+            NHS_ADULTS,
+            anchors=("gym", "weights", "lift"),
+        ),
+        Activity(
+            "mobility_flow",
+            "Mobility and stretching",
+            "Sit tall on a chair or a mat and slowly move your neck, shoulders, back and hips "
+            "through their range for {minutes} minutes.",
+            10,
+            5,
+            20,
+            "flexibility",
+            "light",
+            "none",
+            "seated",
+            NHS_ADULTS,
+            anchors=("yoga", "stretch"),
+        ),
     )
 }
 
@@ -372,20 +530,35 @@ ACTIVITIES: dict[str, Activity] = {
 # balance supported; a heart or breathing caution keeps to gentle walking and light
 # seated moves; seated only means seated.
 UNSUPPORTED = {"one_leg_stand", "tai_chi", "dancing"}
+# The younger-band picks that need steady footing, so a walker, cane or fall history rules
+# them out just as it rules out the unsupported balance moves.
+UNSTEADY = {
+    "jog_walk",
+    "bodyweight_circuit",
+    "cycling",
+    "sport_friends",
+    "stairs",
+    "swim_laps",
+    "strength_twice",
+}
 
 
 def allowed(activity: Activity, limits: set[str], *, age: int | None) -> bool:
     if "seated_only" in limits and (
-        activity.position != "seated" or activity.id == "stationary_bike"
+        activity.position != "seated" or activity.id in {"stationary_bike", "cycling"}
     ):
         return False
     if "knee_pain" in limits and activity.position not in {"seated", "water"}:
         return False
     if "walking_aid" in limits and (
-        activity.id in UNSUPPORTED or activity.id in {"walk_brisk", "hill_walk", "water_walk"}
+        activity.id in UNSUPPORTED
+        or activity.id in UNSTEADY
+        or activity.id in {"walk_brisk", "hill_walk", "water_walk"}
     ):
         return False
-    if "fall_risk" in limits and (activity.id in UNSUPPORTED or activity.id == "hill_walk"):
+    if "fall_risk" in limits and (
+        activity.id in UNSUPPORTED or activity.id in UNSTEADY or activity.id == "hill_walk"
+    ):
         return False
     if "cardio_caution" in limits and activity.intensity != "light" and activity.id != "walk_short":
         return False
@@ -443,6 +616,51 @@ POOLS: dict[str, tuple[str, ...]] = {
 }
 SMALL_START_MAX = 10
 
+# Younger bands lead with their own picks and fall back to the seated and water moves from
+# the base pool, which are what the limits leave standing. The limits are applied after
+# the band, so they always win. 65+ and unknown ages keep the base pools.
+BAND_POOLS: dict[str, dict[str, tuple[str, ...]]] = {
+    "young": {
+        "none": ("walk_short", "stairs", "cycling", "mobility_flow", "swim_laps", "jog_walk"),
+        "some": ("jog_walk", "cycling", "stairs", "strength_twice", "swim_laps", "dancing"),
+        "active": (
+            "bodyweight_circuit",
+            "sport_friends",
+            "jog_walk",
+            "cycling",
+            "swim_laps",
+            "strength_twice",
+            "stairs",
+            "dancing",
+        ),
+    },
+    "mid": {
+        "none": ("walk_short", "swim_laps", "cycling", "mobility_flow", "stairs"),
+        "some": ("walk_brisk", "swim_laps", "cycling", "strength_twice", "mobility_flow"),
+        "active": (
+            "strength_twice",
+            "walk_brisk",
+            "swim_laps",
+            "cycling",
+            "hill_walk",
+            "mobility_flow",
+            "dancing",
+        ),
+    },
+}
+
+
+def pool_for(level: str, age: int | None) -> tuple[str, ...]:
+    """The pick order for an activity level and age. Band picks come first, then the seated
+    and water moves of the base pool, so a person with limits always has something."""
+    lead = BAND_POOLS.get(band(age), {}).get(level)
+    if lead is None:
+        return POOLS[level]
+    tail = tuple(
+        a for a in POOLS[level] if a not in lead and ACTIVITIES[a].position in {"seated", "water"}
+    )
+    return lead + tail
+
 
 @dataclass(frozen=True)
 class Card:
@@ -458,6 +676,14 @@ class Card:
     # Fixed wording: never sent for rephrasing.
     fixed: bool = False
     variants: dict = field(default_factory=dict)
+    # Fields (message, why, source) that replace the base wording for everyone but 65+,
+    # whose cards keep the older-adult wording and sources above.
+    younger: dict = field(default_factory=dict)
+
+    def for_band(self, age: int | None) -> "Card":
+        if band(age) == "older" or not self.younger:
+            return self
+        return replace(self, **self.younger)
 
 
 DIET: dict[str, Card] = {
@@ -472,6 +698,11 @@ DIET: dict[str, Card] = {
             "Many older adults don't get enough protein, and it helps keep muscles strong.",
             ACL_PROTEIN,
             keep_words=("doctor",),
+            younger={
+                "why": "Most people do well with some protein at each meal, and it helps keep "
+                "muscles strong.",
+                "source": DGA,
+            },
         ),
         Card(
             "fluids",
@@ -482,6 +713,10 @@ DIET: dict[str, Card] = {
             "Thirst fades with age, so it helps to drink before you feel thirsty.",
             NIA_MEALS,
             keep_words=("unless your doctor",),
+            younger={
+                "why": "Most people feel better when they drink water regularly through the day.",
+                "source": NHS_WATER,
+            },
         ),
         Card(
             "dash_less_salt",
@@ -508,6 +743,11 @@ DIET: dict[str, Card] = {
             "Add a fruit, a vegetable, or a whole grain like oats or beans to one meal today.",
             "Fruit, vegetables and whole grains are the heart of healthy eating for older adults.",
             NIA_MEALS,
+            younger={
+                "why": "Most people eat less fiber than they could, and fruit, vegetables and "
+                "whole grains are the heart of healthy eating.",
+                "source": DGA,
+            },
         ),
         Card(
             "care_team_food",
@@ -520,6 +760,11 @@ DIET: dict[str, Card] = {
             "care team.",
             MEDICARE_MNT,
             fixed=True,
+            younger={
+                "message": "With diabetes, your care team or a dietitian is the best guide for "
+                "food choices. Your doctor can refer you to a dietitian.",
+                "source": NIDDK_DIABETES_FOOD,
+            },
         ),
         Card(
             "care_team_kidney",
@@ -531,6 +776,12 @@ DIET: dict[str, Card] = {
             "Protein and fluid needs with kidney disease are different for each person.",
             MEDICARE_MNT,
             fixed=True,
+            younger={
+                "message": "With kidney disease, please ask your kidney doctor or a dietitian "
+                "before changing how much protein or fluid you have. Your doctor can refer you "
+                "to a dietitian.",
+                "source": NIDDK_KIDNEY_FOOD,
+            },
         ),
     )
 }

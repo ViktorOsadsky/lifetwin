@@ -308,3 +308,34 @@ Never promise anything about Muse's own retention; it's unverified.
   - Call `repo.refresh()` on app open.
   - `CheckinRecord` is renamed `CheckinEntry`.
 - **Score tagline, final (Daniel, relayed by dqi26-45, 2026-10-24: "keep it"):** "Feeling good now, and healthy years ahead." It is dropped at text scale 1.5x or more.
+- **Health score = Viktor's `log_relative_hazard_score` (Daniel, relayed by dqi26-45, 2026-10-24):** "There is not a wellness card. Read what he changed. He added some score between -3 and 3 that was calculated. Follow what he has. default to what he has."
+  - The value comes from `LifeTwinModel.predict()` when `survival.status == 'available'` (`model.dart:243`): Σ(input − dataset centre) × coefficient.
+  - Range is about −3 to +3. LOWER = lower modelled risk. 0 = the average survey participant. It includes the age and sex terms.
+  - Missing below 30 and for incomplete or unsupported profiles. It's present but extrapolated at 30–34 and 80–85.
+  - The engine will expose it as `TwinRepository.healthScore`.
+  - Show the value with Viktor's sign and scale, and make the direction obvious ("lower is better", a scale from lower risk to higher risk, 0 = "average for the survey"). No bands, no 0–100 mapping, no invented colours by value.
+  - This replaces the placeholder 72. Persona Rosa = −0.04 (`z_model/persona_out.json`). Golden vectors in the model package give −1.56, −0.09, +1.10.
+  - Open with the owner, via the peer: the sign presentation, and whether age and sex stay in. This also conflicts with "under-30s get both", because there's no score under 30.
+- **Health score update (Daniel via peer, 2026-10-24):**
+  - Keep Viktor's `log_relative_hazard_score` as the headline, with its sign as is (negative = lower modelled risk than the survey average).
+  - ADD `ageGroupPercentile`: "healthier than X of 100 people your age". It compares against the same sex in a ±5-year band from Viktor's reference set, with the age and sex terms excluded. Daniel: "there should be a statistic in the results that basically measures how healthy someone is relative to other people in their age group. that is what we are looking for."
+  - Extrapolate down to 18 with the Rough guide badge. Under 18: no number.
+  - API (pending): `healthScore`, `healthScoreStatus` (available / extrapolated / missingInputs / unsupportedAge / unsupportedProfile / invalidInput / underAge), `ageGroupPercentile`, `ageGroupBand`, `ageGroupSize`, `nearestBand`, `healthScoreHistory({from,to})`.
+- **Documents (peer answers):**
+  - Conflicting values follow the engine: the latest dated value wins; equal or missing dates mean both are dropped with a `conflicting_values` notice. There's no picker. Instead: "Your document shows two different weights" → "Tell Mochi which is right".
+  - Read-back wording stays Keep / Change with Mochi / Skip, plus Back.
+  - Readings: BP, `hba1c` (%) and `ldl_cholesterol` (mg/dL), each with unit, document date and source `document`. They're information only and also appear in History.
+  - Entry points: Settings › Health documents, the onboarding pill, Mochi, and a History link from document-sourced entries. No Home row.
+- **Outside-AI training disclosure (Daniel via peer, 2026-10-24: "do contributor mode of 1.3"):**
+  - The provider becomes `muse-spark-1.3-contributor`, and Meta may train on the content sent to it. `/api/capabilities.personalize.may_train_on_content: true` (PR coming).
+  - Every outside-AI consent shows "Meta may use what you share to improve its AI." next to Yes, only when the flag is true, with the company name bound.
+  - It applies to Personal suggestions, the AI helper, per-document Muse help, and the coach.
+- **Check-in care line (Daniel via peer):**
+  - On low mood, Mochi replies with empathy using the person's own words, offers support, shows the soft 911 line, then asks "keep going or stop here for today?".
+  - Stopping saves what's confirmed. The flag is `care_line_shown` (PR #64).
+  - Warm, no red. The explicit-crisis pause is unchanged.
+- **Training-line binding (confirmed by the peer):** company name from `personalize.company` ("Meta" for muse, "Anthropic" for claude); shown only when `personalize.may_train_on_content` is true.
+- **Contributor-mode scope (Daniel, own words, 2026-10-24):** "Yes, all answers may still go to Muse with consent; the training line is enough." Name and contact are still never sent.
+- **Owner override (2026-10-24), lifespan:** a rough expected YEAR and age range may be shown once at the end of onboarding as a proof of concept, labelled as an estimate (never a day), then reachable only behind "See your estimate". Source: `docs/lifespan-estimate.md` (PR #52). Ages 18–85, with Rough guide outside 35–79. The other no-death-date rules stay.
+- **Health score sign (Daniel via peer):** higher is better. Public `healthScore` = −raw (`rawLogRelativeHazard`). Scale reads "Higher risk ‹ Average › Better health". No hard-coded numbers.
+- **Quality gate (Daniel, own words, 2026-10-24):** "80 is about 80-82.5 is about fine". A screen passes at a critic score of 8.0 or higher with no blockers. No polish rounds above that.

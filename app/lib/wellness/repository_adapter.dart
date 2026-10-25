@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-import '../twin/lifespan.dart' show LifespanEstimate, LifespanStatus;
 import '../twin/twin_repository.dart';
 import 'models.dart';
 

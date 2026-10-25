@@ -18,11 +18,19 @@ class HomeWellnessPanel extends StatelessWidget {
     required this.snapshot,
     required this.onEstimate,
     this.onHistory,
+    this.onDrivers,
+    this.stateLine,
     this.compact = false,
   });
   final bool compact;
   final WellnessSnapshot snapshot;
   final VoidCallback? onHistory;
+
+  /// "What moves it": the outlook's drivers.
+  final VoidCallback? onDrivers;
+
+  /// A small state line under the score ("Still learning 2").
+  final String? stateLine;
   final VoidCallback onEstimate;
 
   static const tagline = 'Feeling good now, and healthy years ahead.';
@@ -36,16 +44,15 @@ class HomeWellnessPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         HealthScoreSummary(snapshot: snapshot, compact: compact),
+        if (stateLine != null) WholeWordText(stateLine!, style: LtText.body(size: 15)),
         // Under 18 there is no estimate; History stays reachable.
         Wrap(
           alignment: WrapAlignment.spaceBetween,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            if (onHistory != null)
-              TextButton(
-                onPressed: onHistory,
-                child: const WholeWordText('My history'),
-              ),
+            if (onHistory != null) TextButton(onPressed: onHistory, child: const WholeWordText('My history')),
+            if (!snapshot.underAge && onDrivers != null)
+              TextButton(onPressed: onDrivers, child: const WholeWordText('What moves it')),
             if (!snapshot.underAge)
               TextButton(
                 onPressed: onEstimate,

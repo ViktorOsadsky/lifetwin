@@ -52,6 +52,7 @@ class ForecastScreen extends StatefulWidget {
     this.speech,
     this.onAnswers,
     this.onPlayQuiz,
+    this.onDrivers,
     this.healthKeys = const {},
     this.appearance = const TwinAppearance(),
     this.onResult,
@@ -73,6 +74,9 @@ class ForecastScreen extends StatefulWidget {
 
   /// Shown on "still learning" when a quiz exists.
   final VoidCallback? onPlayQuiz;
+
+  /// "What moves it": the outlook's drivers, from a supported result.
+  final VoidCallback? onDrivers;
 
   /// Profile keys that came from the Health app (the rest: "you told me").
   final Set<String> healthKeys;
@@ -389,6 +393,28 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
             ),
           ),
         ),
+        if (widget.onDrivers != null) ...[
+          const SizedBox(height: 8),
+          LipButton(
+            label: 'What moves it',
+            icon: Icons.tune_rounded,
+            kind: LipKind.secondary,
+            height: 56,
+            fontSize: 21,
+            onTap: widget.onDrivers,
+          ),
+        ],
+        if (widget.onPlayQuiz != null) ...[
+          const SizedBox(height: 8),
+          LipButton(
+            label: 'Play the quiz',
+            icon: Icons.extension_rounded,
+            kind: LipKind.secondary,
+            height: 56,
+            fontSize: 21,
+            onTap: widget.onPlayQuiz,
+          ),
+        ],
         const SizedBox(height: 4),
         Center(
           child: LinkButton(
