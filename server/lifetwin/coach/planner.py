@@ -1243,7 +1243,11 @@ class Planner:
         }[mood]
         # The first line is the long-standing one; the rest rotate by date, so a day's
         # plan always reads the same when it is rebuilt.
-        text = lines[0] if self.profile.age is None else lines[int(str(self.today).replace("-", "")) % len(lines)]
+        text = (
+            lines[0]
+            if self.profile.age is None
+            else lines[int(str(self.today).replace("-", "")) % len(lines)]
+        )
         if mood in {"happy", "proud", "celebrate"} and good_weeks >= 2:
             text += f" That makes {good_weeks} good weeks lately."
         goal = next((g for g in self.req.goals if self.goal_ok(g)), None)
