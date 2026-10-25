@@ -350,13 +350,15 @@ void main() {
           // ---- 1. Home: only the listed parts, fitting 390 x 844 ----
           await step('1 home', () async {
             final started = DateTime.now();
-            final consentAsked = await declineConsentIfAsked(t, seconds: 20);
+            // Home never asks for the consent by itself, so the card is timed first; waiting 20 s for a consent
+            // screen that does not come used to be counted as the card's load time.
             final loaded = await waitUntil(
               t,
               () => shows(inside<TodayWithMochiCard>(find.textContaining('Today: '))),
               seconds: 40,
             );
             timings.add('  home: Today card loaded after ${DateTime.now().difference(started).inMilliseconds} ms');
+            final consentAsked = await declineConsentIfAsked(t, seconds: 2);
             await pumpFor(t, const Duration(milliseconds: 800));
             final text = screenText();
             await log('  home: $text');

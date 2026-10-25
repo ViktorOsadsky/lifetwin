@@ -503,6 +503,7 @@ class AgenticRoutes {
         condensed: condensed,
         trailing: trailing,
         client: coach,
+        initialPlan: _lastPlan,
         onPlan: (p) => _lastPlan = p,
         acceptance: planAcceptance,
         confirmedContext: () => coachContext(repo!),
