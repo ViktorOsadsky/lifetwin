@@ -3,9 +3,25 @@
   "additionalProperties": false,
   "properties": {
     "outside_ai_consent": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "propertyNames": {
+            "enum": [
+              "claude",
+              "muse"
+            ]
+          },
+          "type": "object"
+        }
+      ],
       "default": false,
-      "title": "Outside Ai Consent",
-      "type": "boolean"
+      "title": "Outside Ai Consent"
     },
     "pages": {
       "items": {

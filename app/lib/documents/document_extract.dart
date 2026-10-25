@@ -105,8 +105,9 @@ class DocumentExtractRejected implements Exception {
 }
 
 abstract class DocumentExtractor {
-  /// Sends only recognised text. [outsideAi] is the person's yes to Muse by Meta.
-  Future<DocumentExtraction> extract(List<String> pages, {bool outsideAi = false});
+  /// Sends only recognised text. [outsideAiConsent] is `{providerId: true}` after the person's yes
+  /// to that provider for this document, else empty.
+  Future<DocumentExtraction> extract(List<String> pages, {Map<String, bool> outsideAiConsent = const {}});
 }
 
 /// POST /api/documents/extract. Stateless: the server keeps nothing.
@@ -119,14 +120,14 @@ class HttpDocumentExtractor implements DocumentExtractor {
   final ApiBase base;
 
   @override
-  Future<DocumentExtraction> extract(List<String> pages, {bool outsideAi = false}) async {
+  Future<DocumentExtraction> extract(List<String> pages, {Map<String, bool> outsideAiConsent = const {}}) async {
     try {
       final url = await base.url();
       final r = await _client
           .post(
             Uri.parse('$url/api/documents/extract'),
             headers: {'content-type': 'application/json'},
-            body: jsonEncode({'pages': pages, 'outside_ai_consent': outsideAi}),
+            body: jsonEncode({'pages': pages, 'outside_ai_consent': outsideAiConsent}),
           )
           .timeout(const Duration(seconds: 30));
       if (r.statusCode == 200) return DocumentExtraction.fromJson(jsonDecode(utf8.decode(r.bodyBytes)));

@@ -10,6 +10,8 @@ import 'package:lifesim/forecast/forecast_client.dart';
 import 'package:lifesim/forecast/fortune_ceremony_screen.dart';
 import 'package:lifesim/health/health_sample.dart';
 import 'package:lifesim/health/health_screen.dart';
+import 'package:lifesim/health/workout_averages.dart';
+import 'package:lifesim/twin/twin_repository.dart';
 import 'package:lifesim/main.dart';
 import 'package:lifesim/onboarding/voice_onboarding_controller.dart';
 import 'package:lifesim/onboarding/voice_onboarding_screen.dart';
@@ -385,6 +387,48 @@ void main() {
     await t.tap(find.text('Not now'));
     await t.pumpAndSettle();
     expect(c.confirmedProfile, {'weight_kg': 68});
+  });
+
+  testWidgets('Settings confirms native workout estimates before recording their source', (t) async {
+    setPhone(t);
+    const channel = MethodChannel('lifetwin/health_activity');
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(
+      channel,
+      (_) async => {
+        'schema': WorkoutAverages.schema,
+        'window_days': 28,
+        'method': WorkoutAverages.method,
+        'moderate_weekly_minutes': 30,
+        'vigorous_weekly_minutes': null,
+        'eligible_workout_count': 1,
+        'excluded_counts': {for (final key in WorkoutAverages.exclusionKeys) key: 0},
+        'truncated': false,
+        'requires_recreation_confirmation': true,
+      },
+    );
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    final repo = await memoryRepo(roomModel);
+    final controller = fakeController();
+    await t.pumpWidget(LifeTwinApp(controller: controller, healthReader: FakeReader([]), twin: Future.value(repo)));
+    await t.pump();
+    await t.pump();
+    await openSettingsRow(t, 'Apple Health');
+    await t.tap(find.text('Yes, use Apple Health'));
+    await t.pumpAndSettle();
+    expect(find.textContaining('Were these recreational activities'), findsOneWidget);
+    expect(repo.history().where((e) => e.kind == HistoryKind.healthImport), isEmpty);
+    await t.tap(find.text("Yes, that's right"));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Continue'));
+    await t.pumpAndSettle();
+    final imported = repo.history().singleWhere((e) => e.kind == HistoryKind.healthImport).items.single;
+    expect(
+      (imported.field, imported.value, imported.source, imported.estimated),
+      ('moderate_recreation_min_week', 30, HistorySource.appleHealth, true),
+    );
+    expect(repo.profile, isEmpty, reason: 'Only the later completed conversation saves the profile');
+    expect(controller.hasPendingHealth, isTrue);
   });
 
   group('in the app, after a typed answer', () {

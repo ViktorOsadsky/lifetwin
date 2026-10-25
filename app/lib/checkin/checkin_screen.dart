@@ -79,6 +79,10 @@ class CheckInScreen extends StatefulWidget {
 
 class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserver {
   final _text = TextEditingController();
+  final _questionBubble = GlobalKey();
+  final _answerField = GlobalKey();
+  (String, String, String?)? _lastPrompt;
+  double _lastKeyboardInset = 0;
   TwinAssessment? _before;
   bool _nothing = false;
   bool _starting = true;
@@ -182,25 +186,16 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
       mode: LtMode.room,
       onBack: c.emergency ? c.continueAfterEmergency : widget.onDone,
       backLabel: c.emergency ? 'Continue' : 'Back',
-      dock: _dock(context),
+      dock: _keyboardDock(context),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ExperimentPlate(
             appearance: widget.appearance,
             twins: [TwinSlot(state: _twin(), x: 0.3)],
-            bubble: c.emergency
-                ? EmergencyCard.apology
-                : _nothing
-                ? 'All set for today!'
-                : bubbleFor(
-                    c.turn?.currentField,
-                    confirming: c.confirming,
-                    done: _finished,
-                    weekly: weekly,
-                    finalReadback: c.finalReadback,
-                  ),
           ),
+          const SizedBox(height: 14),
+          _prompt(context),
           const SizedBox(height: 14),
           Sheet(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -212,6 +207,40 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
       ),
     ),
   );
+
+  Widget _prompt(BuildContext context) {
+    final words = c.emergency
+        ? EmergencyCard.apology
+        : _nothing
+        ? 'All set for today!'
+        : bubbleFor(
+            c.turn?.currentField,
+            confirming: c.confirming,
+            done: _finished,
+            weekly: weekly,
+            finalReadback: c.finalReadback,
+          );
+    final prompt = (words, c.mascotLine, c.turn?.currentField);
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final reveal = keyboardInset > 0 && (keyboardInset != _lastKeyboardInset || prompt != _lastPrompt);
+    _lastKeyboardInset = keyboardInset;
+    _lastPrompt = prompt;
+    if (reveal) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _questionBubble.currentContext;
+        if (mounted && target != null) {
+          // Bottom alignment keeps the question above the answer dock. Do this only
+          // for a new question/keyboard geometry, never for an ordinary user scroll.
+          Scrollable.ensureVisible(target, alignment: 1);
+          final field = _answerField.currentContext;
+          if (field != null) Scrollable.ensureVisible(field, alignment: 1);
+        }
+      });
+    }
+    // Speech takes real space in the scroll view. A positioned bubble in the fixed
+    // plate can grow beyond its scroll extent and disappear behind the keyboard dock.
+    return Bubble(key: _questionBubble, text: words, tail: BubbleTail.none, fontSize: 19);
+  }
 
   Widget _title(String text) => Semantics(header: true, child: Text(text, style: LtText.display(28)));
 
@@ -359,6 +388,18 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
     );
   }
 
+  Widget _keyboardDock(BuildContext context) {
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    if (keyboard == 0) return _dock(context);
+    final available = MediaQuery.sizeOf(context).height - keyboard - MediaQuery.paddingOf(context).vertical;
+    // Keep real space for the question when the keyboard reduces the page. The
+    // answer chips and input can scroll within their own region without hiding it.
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: available * 0.45),
+      child: SingleChildScrollView(child: _dock(context)),
+    );
+  }
+
   Widget _dock(BuildContext context) {
     final pad = EdgeInsets.fromLTRB(16, 12, 16, 14 + MediaQuery.paddingOf(context).bottom);
     if (c.emergency) return const SizedBox.shrink();
@@ -467,6 +508,7 @@ class _CheckInScreenState extends State<CheckInScreen> with WidgetsBindingObserv
                 children: [
                   Expanded(
                     child: TextField(
+                      key: _answerField,
                       controller: _text,
                       autofocus: true,
                       textInputAction: TextInputAction.send,
@@ -566,7 +608,7 @@ class _Chip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[Icon(icon, size: 22, color: LtColors.ink), const SizedBox(width: 4)],
-            Text(label, style: LtText.display(19)),
+            Flexible(child: Text(label, style: LtText.display(19))),
           ],
         ),
       ),

@@ -70,9 +70,11 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
       widget.service.discard();
       return _show(_reading!, askedMuse: true);
     }
+    final provider = widget.provider;
+    if (provider == null) return;
     final request = ++_request;
     setState(() => _step = _Step.reading);
-    final reading = await widget.service.retryWithMuse();
+    final reading = await widget.service.retryWithMuse(provider.id);
     if (request == _request) _show(reading, askedMuse: true);
   }
 

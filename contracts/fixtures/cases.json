@@ -2570,7 +2570,6 @@
           "effect": null,
           "experiment_lever": null,
           "experiment_target": null,
-          "why_short": "You are already active, so keep doing what works for you.",
           "source_domain": "cdc.gov"
         }
       }
@@ -2677,6 +2676,80 @@
         "current_field": "wellbeing",
         "care_line_shown": true,
         "care_question_open": false
+      }
+    }
+  },
+  {
+    "name": "recommendations-ideas-with-kind-and-alternatives",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 70,
+        "sex": "female",
+        "smoking_status": "never",
+        "sleep_hours": 6,
+        "moderate_recreation_min_week": 60,
+        "vigorous_recreation_min_week": 0,
+        "sedentary_min_day": 600
+      },
+      "habit_notes": [
+        {
+          "topic": "exercise",
+          "kind": "walking",
+          "with": "dog"
+        },
+        {
+          "topic": "sitting",
+          "kind": "tv"
+        }
+      ],
+      "local_date": "2026-10-26"
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "featured": "pace_dog_home",
+      "recommendations": {
+        "$each": {
+          "causal_interpretation": false,
+          "alternatives": {
+            "$each": {
+              "effect_note": "Modeled difference for people like you, not a promise.",
+              "source_domain": "cdc.gov",
+              "causal_interpretation": false
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "recommendations-featured-idea-for-the-day",
+    "method": "POST",
+    "path": "/api/recommendations",
+    "request_schema": "recommendations.request.schema.json",
+    "request": {
+      "profile": {
+        "age": 58,
+        "smoking_status": "current",
+        "sleep_hours": 8,
+        "moderate_recreation_min_week": 200,
+        "vigorous_recreation_min_week": 0
+      },
+      "local_date": "2026-10-26"
+    },
+    "status": 200,
+    "response_schema": "recommendations.schema.json",
+    "response_subset": {
+      "status": "ok",
+      "featured": "smoke_quit_jar",
+      "recommendations": {
+        "$each": {
+          "causal_interpretation": false
+        }
       }
     }
   },

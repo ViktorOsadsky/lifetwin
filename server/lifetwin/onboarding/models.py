@@ -288,7 +288,14 @@ Lever = Literal[
 ]
 
 
-class Recommendation(ApiModel):
+# The idea's gesture, for Mochi's pose on the card.
+IdeaKind = Literal[
+    "walk", "dance", "stand", "stretch", "sleep", "eat", "social", "breath", "craving"
+]
+
+
+class RecommendationIdea(ApiModel):
+    # The catalog idea's id (recommendations/ideas.py), e.g. "sit_ad_breaks".
     id: str = Field(min_length=1, max_length=60)
     # The model-sensitivity lever it follows, or "keep_it_up" for encouragement.
     lever: Lever
@@ -315,7 +322,14 @@ class Recommendation(ApiModel):
     why_short: str = Field(default="", max_length=90)
     # Host of source_url, e.g. "cdc.gov".
     source_domain: str = ""
+    kind: IdeaKind
     causal_interpretation: Literal[False] = False
+
+
+class Recommendation(RecommendationIdea):
+    # Up to three other ideas for the same lever, already checked against the person's
+    # limitations and age, never the idea above. Alternatives have none of their own.
+    alternatives: list[RecommendationIdea] = Field(default_factory=list, max_length=3)
 
 
 class TurnResponse(ApiModel):

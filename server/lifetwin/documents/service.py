@@ -78,10 +78,19 @@ MUSE_INSTRUCTIONS = (
 
 class DocumentService:
     def __init__(self, extractor=None, *, muse_enabled: bool = False, timeout_seconds: float = 12):
-        # The Chat Completions (Muse) adapter, or None. Used only when enabled and consented.
+        # The selected outside-AI adapter (Muse over Chat Completions, or Claude), or None.
+        # Used only when enabled and the person agreed for that provider. It gets the
+        # words only, never the photo.
         self.extractor = extractor
+        self.provider = getattr(extractor, "provider", "muse")
         self.muse_enabled = muse_enabled
         self.timeout = timeout_seconds
+
+    def _consented(self, consent: bool | dict[str, bool]) -> bool:
+        if isinstance(consent, bool):
+            # The older app's bare yes was asked naming Muse by Meta: it covers Muse only.
+            return consent and self.provider == "muse"
+        return consent.get(self.provider) is True
 
     @property
     def muse_available(self) -> bool:
@@ -118,7 +127,7 @@ class DocumentService:
         )
         has_inputs = any(f.field in parser.MODEL_INPUTS for f in parsed.found)
         if self.muse_available and (not has_inputs or parsed.garbled_lines):
-            if request.outside_ai_consent:
+            if self._consented(request.outside_ai_consent):
                 try:
                     async with asyncio.timeout(self.timeout):
                         extra = await self._muse(stripped.pages, today)
@@ -163,7 +172,7 @@ class DocumentService:
         for evidence in result.candidates:
             for item in _ground(evidence, context, today):
                 item.confidence = "low"
-                item.method = "muse"
+                item.method = self.provider
                 found.append(item)
         return found
 

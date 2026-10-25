@@ -63,6 +63,13 @@ void main() {
     expect(result.unavailableActivity.keys, [HealthField.sedentaryMinDay]);
   });
 
+  test('pre-read samples are used without another generic query', () async {
+    messenger.setMockMethodCallHandler(channel, (_) async => payload(moderate: null));
+    final result = await SummaryReader().readSummary(now: now, samples: []);
+    expect(result.candidates, isEmpty, reason: 'The fake read() weight must not be queried again');
+    expect(result.unavailableActivity.keys, containsAll(modelActivityFields));
+  });
+
   test('moderate-only aggregate offers no vigorous zero and never supplies sitting', () {
     final result = summarizeWithAvailability([], now, workoutAverages: WorkoutAverages.parse(payload()));
     expect(result.candidates.single.field, HealthField.moderateRecreationMinWeek);

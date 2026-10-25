@@ -7,6 +7,8 @@ here.
 """
 
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -16,6 +18,7 @@ from lifetwin.app import create_app
 from lifetwin.checkin.service import CheckinService
 from lifetwin.core.config import Settings
 from lifetwin.onboarding import ConversationService, get_service
+from lifetwin.recommendations import service as recommendation_service
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "app" / "test" / "fixtures" / "merged_flow.json"
@@ -127,7 +130,23 @@ def checkin(c: TestClient, start: dict, replies: dict) -> dict:
     raise AssertionError("check-in did not finish: " + r["message"])
 
 
+@contextmanager
+def pinned_day() -> Iterator[None]:
+    """Ideas rotate by calendar day; the fixtures use the app tests' day, never today's."""
+    original = recommendation_service.today
+    recommendation_service.today = lambda: TODAY
+    try:
+        yield
+    finally:
+        recommendation_service.today = original
+
+
 def build() -> dict:
+    with pinned_day():
+        return _build()
+
+
+def _build() -> dict:
     c = client()
     quick = []
     # Seven evening check-ins ending yesterday: each completes its own day's row.

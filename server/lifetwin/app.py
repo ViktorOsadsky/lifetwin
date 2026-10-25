@@ -27,7 +27,12 @@ from lifetwin.core.models import (
 )
 from lifetwin.documents import DocumentService
 from lifetwin.documents import router as documents_router
-from lifetwin.onboarding import ChatCompletionsExtractor, ConversationService, OpenAIExtractor
+from lifetwin.onboarding import (
+    AnthropicExtractor,
+    ChatCompletionsExtractor,
+    ConversationService,
+    OpenAIExtractor,
+)
 from lifetwin.onboarding import router as onboarding_router
 from lifetwin.onboarding.probes import MAX_PROBES
 from lifetwin.personalize.providers import (
@@ -127,7 +132,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = settings
     personalizer = (
         ClaudePersonalizer(
-            api_key=settings.anthropic_api_key.get_secret_value(), model=settings.claude_model
+            api_key=settings.anthropic_api_key.get_secret_value(),
+            model=settings.claude_model,
+            timeout_seconds=min(6, settings.provider_timeout_seconds),
         )
         if settings.personalize_provider == "claude"
         else MusePersonalizer(
@@ -142,7 +149,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.personalizer = personalizer
     application.state.conversation_service = ConversationService(
         extractor=(
-            ChatCompletionsExtractor(
+            AnthropicExtractor(
+                api_key=settings.anthropic_api_key.get_secret_value(),
+                model=settings.claude_model,
+                timeout_seconds=min(6, settings.provider_timeout_seconds),
+            )
+            if settings.llm_provider == "anthropic"
+            else ChatCompletionsExtractor(
                 base_url=settings.llm_endpoint,
                 api_key=settings.llm_api_key.get_secret_value(),
                 model=settings.llm_model,
@@ -161,16 +174,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         personalizer=personalizer,
         max_probes=1 if settings.onboarding_demo else MAX_PROBES,
     )
-    # Documents: the deterministic parser always; Muse only when enabled, configured
-    # (Chat Completions) and the person agreed in the request.
+    # Documents: the deterministic parser always; the selected outside AI (Muse over Chat
+    # Completions, or Claude) only when enabled, configured and the person agreed for
+    # that provider in the request. It reads the words only, never the photo.
     conversation_extractor = application.state.conversation_service.extractor
     application.state.document_service = DocumentService(
-        conversation_extractor if settings.llm_provider == "chat_completions" else None,
+        conversation_extractor
+        if settings.llm_provider in {"chat_completions", "anthropic"}
+        else None,
         muse_enabled=settings.document_muse_enabled,
         timeout_seconds=settings.provider_timeout_seconds,
     )
     # Check-ins are guided only and stateless: the caller sends the previous answers.
-    application.state.checkin_service = CheckinService()
+    # The care reply may be reworded by the shared personalizer, only with consent for it.
+    application.state.checkin_service = CheckinService(
+        personalizer=personalizer, timeout_seconds=min(6, settings.provider_timeout_seconds)
+    )
     # Changing a saved answer is a stateless talk with Mochi: the caller sends the profile.
     application.state.change_service = ChangeService()
     application.state.research_client = TavilyResearch(
