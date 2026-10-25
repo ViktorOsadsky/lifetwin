@@ -7,10 +7,12 @@ class WellnessDay {
   const WellnessDay({
     required this.date,
     this.healthScore,
+    this.logged = false,
     this.values = const [],
   });
   final DateTime date;
   final int? healthScore;
+  final bool logged;
   final List<HistoryValue> values;
 }
 
@@ -41,11 +43,19 @@ class HistoryValue {
     required this.value,
     this.source,
     this.estimated = false,
+    this.previousValue,
+    this.recordedAt,
+    this.status,
+    this.forDay,
   });
   final String label;
   final String value;
   final ValueSource? source;
   final bool estimated;
+  final String? previousValue;
+  final String? recordedAt;
+  final String? status;
+  final DateTime? forDay;
 
   String get provenance =>
       '${source?.label ?? 'Source not recorded'}${estimated ? ' · Estimated' : ''}';

@@ -73,6 +73,13 @@
   {"field": "systolic_bp", "profile": {}, "consent": false, "mode": "text", "turns": ["her blood pressure is 120 over 70"], "expected": {}, "why": "her value refused"},
   {"field": null, "profile": {}, "consent": false, "mode": "text", "turns": ["his weight is 180 pounds"], "expected": {}, "why": "his value refused"},
   {"field": "weight_kg", "profile": {}, "consent": false, "mode": "text", "turns": ["she weighs 140"], "expected": {}, "why": "she weighs refused"},
-  {"field": "weight_kg", "profile": {}, "consent": false, "mode": "text", "turns": ["she said she weighs 140"], "expected": {}, "why": "reported someone else refused"}
+  {"field": "weight_kg", "profile": {}, "consent": false, "mode": "text", "turns": ["she said she weighs 140"], "expected": {}, "why": "reported someone else refused"},
+  {"field": "vigorous_recreation_min_week", "profile": {"vigorous_recreation_min_week": 0}, "consent": false, "mode": "text", "turns": ["I jog about 40 minutes a week now"], "expected": {"vigorous_recreation_min_week": 40}, "why": "harder activity from the button"},
+  {"field": "moderate_recreation_min_week", "profile": {"moderate_recreation_min_week": 60}, "consent": false, "mode": "transcript", "turns": ["about two hours a week of gardening"], "expected": {"moderate_recreation_min_week": 120}, "why": "lighter activity in hours"},
+  {"field": "sedentary_min_day", "profile": {"sedentary_min_day": 480}, "consent": false, "mode": "text", "turns": ["I sit about 6 hours a day now"], "expected": {"sedentary_min_day": 360}, "why": "less sitting"},
+  {"field": "hypertension_diagnosed", "profile": {"hypertension_diagnosed": false}, "consent": false, "mode": "text", "turns": ["yes, my doctor told me last month"], "expected": {"hypertension_diagnosed": true}, "why": "a new diagnosis of high blood pressure"},
+  {"field": "general_health", "profile": {"general_health": "fair"}, "consent": false, "mode": "text", "turns": ["very good"], "expected": {"general_health": "very_good"}, "why": "health rating up"},
+  {"field": null, "profile": {"sedentary_min_day": 480}, "consent": false, "mode": "text", "turns": ["I'm sitting less these days", "about 5 hours"], "expected": {"sedentary_min_day": 300}, "why": "free sitting"},
+  {"field": null, "profile": {"general_health": "fair"}, "consent": false, "mode": "text", "turns": ["I'd like to update my health rating", "good"], "expected": {"general_health": "good"}, "why": "free health rating"}
  ]
 }

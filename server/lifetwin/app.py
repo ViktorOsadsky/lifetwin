@@ -25,10 +25,13 @@ from lifetwin.core.models import (
 )
 from lifetwin.onboarding import ChatCompletionsExtractor, ConversationService, OpenAIExtractor
 from lifetwin.onboarding import router as onboarding_router
+from lifetwin.onboarding.probes import MAX_PROBES
+from lifetwin.personalize.providers import DISPLAY_NAMES, ClaudePersonalizer, MusePersonalizer
 from lifetwin.prediction import load_model
 from lifetwin.prediction.models import PredictionResponse
 from lifetwin.quiz.router import router as quiz_router
 from lifetwin.quiz.service import load_bank
+from lifetwin.recommendations.router import router as recommendations_router
 from lifetwin.research.tavily import TavilyResearch
 from lifetwin.voice import VoiceService, voice_configured
 from lifetwin.voice import router as voice_router
@@ -110,6 +113,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         responses=COMMON_ERRORS,
     )
     application.state.settings = settings
+    personalizer = (
+        ClaudePersonalizer(
+            api_key=settings.anthropic_api_key.get_secret_value(), model=settings.claude_model
+        )
+        if settings.personalize_provider == "claude"
+        else MusePersonalizer(
+            base_url=settings.llm_base_url,
+            api_key=settings.llm_api_key.get_secret_value(),
+            model=settings.llm_model,
+            timeout_seconds=settings.provider_timeout_seconds,
+            reasoning_effort=settings.llm_reasoning_effort,
+        )
+    )
+    application.state.personalizer = personalizer
     application.state.conversation_service = ConversationService(
         extractor=(
             ChatCompletionsExtractor(
@@ -127,6 +144,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         ),
         timeout_seconds=settings.provider_timeout_seconds,
+        personalizer=personalizer,
+        max_probes=1 if settings.onboarding_demo else MAX_PROBES,
     )
     # Check-ins are guided only and stateless: the caller sends the previous answers.
     application.state.checkin_service = CheckinService()
@@ -199,6 +218,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "prediction": prediction_state,
             "voice": "available" if voice_configured(settings) else "unavailable",
             "health_data_storage": "none",
+            # The app's consent text names this provider; consent is per provider.
+            "personalize": {
+                "provider": personalizer.name,
+                "display_name": DISPLAY_NAMES[personalizer.name],
+                "configured": personalizer.configured,
+            },
         }
 
     @application.post(
@@ -254,6 +279,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         responses={**BODY_ERRORS, **_described({409: "Invalid change transition"})},
     )
     application.include_router(advisor_router, prefix="/api", responses=BODY_ERRORS)
+    application.include_router(recommendations_router, prefix="/api", responses=BODY_ERRORS)
     application.include_router(
         quiz_router,
         prefix="/api",

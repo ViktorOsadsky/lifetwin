@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'checkin/checkin_reminders.dart';
 import 'customize/customize_screen.dart';
 import 'forecast/forecast_client.dart';
 import 'forecast/forecast_screen.dart';
@@ -13,9 +14,13 @@ import 'room/room_screen.dart';
 import 'quiz/quiz_game.dart';
 import 'quiz/quiz_screen.dart';
 import 'wellness/models.dart';
+import 'wellness/repository_adapter.dart';
+import 'wellness/history_screen.dart';
+import 'twin/twin_repository.dart';
 import 'ui/swoosh_route.dart';
 import 'ui/theme.dart';
 import 'ui/twin_appearance.dart';
+import 'ui/twin_assets.dart';
 import 'voice/cartesia_speech.dart';
 import 'voice/http_conversation_guide.dart';
 import 'voice/voice_token.dart';
@@ -24,15 +29,19 @@ void main() => runApp(const LifeTwinApp());
 
 /// The game shell: the Room is home; Talk opens the mascot conversation
 /// (with the Apple Health import), Fortune the magic ball, Customize the look.
-/// The confirmed profile is kept in memory for this session only.
+/// The confirmed profile, check-in history and twin look are kept on the phone only
+/// (lib/twin/twin_store.dart); the forecast runs on the phone (lib/twin/).
 class LifeTwinApp extends StatefulWidget {
-  const LifeTwinApp({super.key, this.controller, this.forecastClient, this.healthReader, this.appearance});
+  const LifeTwinApp({super.key, this.controller, this.forecastClient, this.healthReader, this.appearance, this.twin});
 
   /// Tests pass a controller built from fakes.
   final VoiceOnboardingController? controller;
 
-  /// Tests pass a fake; otherwise POST /api/predict on the same server.
+  /// Tests pass a fake; otherwise the on-device model.
   final ForecastClient? forecastClient;
+
+  /// Tests may pass one; otherwise the model is loaded and the store opened at startup.
+  final Future<TwinRepository>? twin;
 
   /// Tests pass a fake; otherwise Apple Health.
   final HealthReader? healthReader;
@@ -48,7 +57,15 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   // Start finding the server now, while the Room is on screen.
   late final ApiBase _api = ApiBase()..url().ignore();
   late final VoiceOnboardingController _controller = widget.controller ?? _live(_api);
-  late final ForecastClient _forecast = widget.forecastClient ?? HttpForecastClient(base: _api);
+  // Loaded once, at startup.
+  late final Future<TwinRepository> _twin =
+      widget.twin ?? TwinRepository.open(reminders: CheckinReminders(LocalNotificationPort()));
+  late final ForecastClient _forecast =
+      widget.forecastClient ?? OnDeviceForecastClient(_twin, modelInputs: () => _controller.modelInputs);
+
+  /// The profile saved on the phone by an earlier session, once the store is open.
+  Map<String, dynamic>? _stored;
+  RepositoryWellness? _wellness;
 
   /// Cosmetic only; never merged into the confirmed profile.
   late final ValueNotifier<TwinAppearance> _look = widget.appearance ?? ValueNotifier(const TwinAppearance());
@@ -90,9 +107,19 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
     }
   }
 
+  /// The Apple Health values taken this session, so a value is labelled Apple Health only
+  /// while the confirmed answer is still that value.
+  final _healthValues = <String, Object?>{};
+
   /// The answers a forecast uses: whatever the conversation holds now, once finished.
   /// Read live, so "start over" or a changed answer never leaves an older forecast behind.
-  Map<String, dynamic>? get _profile => _controller.turn?.complete == true ? _controller.confirmedProfile : null;
+  /// Before this session's conversation starts, the profile saved on the phone is used.
+  Map<String, dynamic>? get _profile {
+    final turn = _controller.turn;
+    if (turn != null) return turn.complete ? _controller.confirmedProfile : null;
+    final repo = _wellness?.repository;
+    return repo == null ? _stored : (repo.store.hasProfile ? repo.profile : null);
+  }
 
   /// The last supported forecast, for the Room's outlook card.
   final _outlook = ValueNotifier<Forecast?>(null);
@@ -107,7 +134,63 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _twin.then((repo) {
+      if (!mounted) return;
+      final look = repo.store.twin;
+      if (look != null && widget.appearance == null) _look.value = _appearanceFrom(look);
+      _look.addListener(_saveLook);
+      setState(() {
+        _wellness = RepositoryWellness(repo);
+        if (repo.store.hasProfile) _stored = repo.store.profile;
+      });
+    }, onError: (Object e) => debugPrint('LifeTwin model or store did not load: $e'));
+  }
+
+  void _saveLook() => _wellness?.repository.saveTwinLook(_appearanceJson(_look.value)).ignore();
+
+  void _history(BuildContext context) {
+    final adapter = _wellness;
+    if (adapter == null) return;
+    Navigator.of(context).push<void>(MaterialPageRoute(builder: (c) => ListenableBuilder(
+      listenable: adapter,
+      builder: (_, _) => HistoryScreen(days: adapter.historyDays(), goodWeeks: adapter.repository.goodWeeks(), now: DateTime.now(),
+        onBack: () => Navigator.of(c).pop(), onTalk: () { Navigator.of(c).pop(); _talk(context); }),
+    )));
+  }
+
+  static Map<String, dynamic> _appearanceJson(TwinAppearance a) => {
+    'type': a.type.name,
+    'look': a.look.slug,
+    'name': a.name,
+    'room': a.room.name,
+  };
+
+  static TwinAppearance _appearanceFrom(Map<String, dynamic> j) => TwinAppearance(
+    type: TwinType.values.firstWhere((t) => t.name == j['type'], orElse: () => TwinType.bear),
+    look: TwinLook.values.firstWhere((l) => l.slug == j['look'], orElse: () => TwinLook.calHat),
+    name: j['name'] as String?,
+    room: TwinRoom.values.firstWhere((r) => r.name == j['room'], orElse: () => TwinRoom.original),
+  );
+
+  /// Keeps the finished conversation on the phone: memory consent, habit notes (only
+  /// with consent) and the confirmed answers, each Apple Health value labelled as such.
+  void _keepConversation() {
+    final state = _controller.state;
+    if (state == null) return;
+    final confirmed = (state['confirmed_profile'] as Map?) ?? const {};
+    final sources = {
+      for (final e in _healthValues.entries)
+        if (confirmed[e.key] == e.value) e.key: HistorySource.appleHealth,
+    };
+    _twin.then((repo) => repo.saveOnboarding(state, modelInputs: _controller.modelInputs, sources: sources)).ignore();
+  }
+
+  @override
   void dispose() {
+    _look.removeListener(_saveLook);
+    _wellness?.dispose();
     _controller.dispose();
     if (widget.appearance == null) _look.dispose();
     _outlook.dispose();
@@ -124,7 +207,10 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       controller: _controller,
       appearance: _look.value,
       onUseHealth: () => _health(talkContext),
-      onDone: (_) => _ceremony(talkContext, fromTalk: true),
+      onDone: (profile) {
+        _keepConversation();
+        _ceremony(talkContext, fromTalk: true);
+      },
     ),
   );
 
@@ -140,7 +226,11 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           final values = {for (final c in result.confirmed) c.field.profileKey: c.value};
           // Only once the values were taken (sent and accepted, or queued for the start of
           // the talk) are they labelled "Apple Health" and does the Room's pill go away.
-          if (await _controller.importHealth(values) && mounted) setState(() => _healthKeys.addAll(values.keys));
+          if (await _controller.importHealth(values)) {
+            _twin.then((repo) => repo.recordHealthImport(values)).ignore();
+            _healthValues.addAll(values);
+            if (mounted) setState(() => _healthKeys.addAll(values.keys));
+          }
         },
       ),
     ),
@@ -196,7 +286,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
       debugShowCheckedModeBanner: false,
       theme: lifeTwinTheme(),
       home: ListenableBuilder(
-        listenable: _controller,
+        listenable: Listenable.merge([_controller, _wellness]),
         builder: (context, _) => RoomScreen(
           appearance: _look,
           hasProfile: _profile != null,
@@ -205,8 +295,9 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
           onCustomize: () => _customize(context),
           onFortune: () => _ceremony(context),
           outlook: _outlook,
-          // Unknown until the twin-integration history and healthScore contracts land.
-          wellness: const WellnessSnapshot(),
+          // Health score stays unknown; the seven days come from the phone repository.
+          wellness: _wellness?.snapshot ?? const WellnessSnapshot(),
+          onHistory: _wellness == null ? null : () => _history(context),
           onQuiz: () => _playQuiz(context),
         ),
       ),

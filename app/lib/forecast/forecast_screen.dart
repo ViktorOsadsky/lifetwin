@@ -4,6 +4,8 @@ import '../ui/theme.dart';
 import '../ui/twin_appearance.dart';
 import '../ui/twin_assets.dart';
 import '../ui/widgets/widgets.dart';
+import '../twin/profile_mapping.dart' show joinPlain;
+import '../twin/twin_model.dart' show extrapolationCaveat;
 import '../voice/speech.dart';
 import '../widgets/whole_word_text.dart';
 import 'forecast_client.dart';
@@ -17,8 +19,12 @@ String forecastSentence(Forecast f) {
       'were still living $years ${years == 1 ? 'year' : 'years'} later.';
 }
 
-String unsupportedSentence(Forecast f) =>
-    "I can't make a forecast for you yet. ${f.reason ?? 'The model does not cover these answers.'}";
+/// The package's status message, and for missing answers what is still needed. No number.
+String unsupportedSentence(Forecast f) {
+  final needed = f.missingLabels;
+  return "I can't make a forecast for you yet. ${f.reason ?? 'The model does not cover these answers.'}"
+      "${needed.isEmpty ? '' : ' Still needed: ${joinPlain(needed)}.'}";
+}
 
 const couldNotReach = "I couldn't get your forecast just now.";
 const stillLearningLine = "The ball isn't ready yet.";
@@ -30,13 +36,9 @@ List<String> forecastMeaning(Forecast f) => [
   'They are not a promise, and they are not a date.',
   'They show links, not causes. Changing one answer may not change what happens.',
   'We only look ${f.maxHorizonYears} years ahead, as far as the model was checked.',
-  if (f.filledIn.isNotEmpty)
-    'We have not asked about everything yet. For ${_join(f.filledIn)}, '
-        'the forecast used typical answers from the survey.',
+  'It is worked out on your phone, from your own answers only. Nothing is filled in for you.',
+  if (f.extrapolated) extrapolationCaveat,
 ];
-
-String _join(List<String> items) =>
-    items.length == 1 ? items.single : '${items.sublist(0, items.length - 1).join(', ')} and ${items.last}';
 
 /// V-4 fortune result, with V-5 still learning and the unsupported state.
 /// Shows only real response fields: never an age, a date, a countdown or a
@@ -77,7 +79,7 @@ class ForecastScreen extends StatefulWidget {
   /// Cosmetic look of the twin on the night plate.
   final TwinAppearance appearance;
 
-  /// Called with each forecast the server returns (the Room shows the last one).
+  /// Called with each forecast (the Room shows the last one).
   final ValueChanged<Forecast>? onResult;
 
   @override
@@ -332,6 +334,12 @@ class _ForecastScreenState extends State<ForecastScreen> with SingleTickerProvid
           textAlign: TextAlign.center,
           style: LtText.body(color: LtColors.gold),
         ),
+        if (f.extrapolated)
+          WholeWordText(
+            extrapolationCaveat,
+            textAlign: TextAlign.center,
+            style: LtText.body(color: LtColors.cream),
+          ),
         const SizedBox(height: 4),
         Wrap(
           alignment: WrapAlignment.spaceBetween,

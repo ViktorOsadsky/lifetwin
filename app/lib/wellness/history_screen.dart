@@ -115,6 +115,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           value.provenance,
                           style: LtText.body(size: 15),
                         ),
+                        ..._metadata(value),
                       ],
                     ),
                   ),
@@ -161,6 +162,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     style: LtText.body(weight: FontWeight.w700),
                   ),
                   WholeWordText(value.provenance, style: LtText.body(size: 15)),
+                  ..._metadata(value),
                 ],
               ),
             ),
@@ -181,4 +183,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
     ),
   );
+  List<Widget> _metadata(HistoryValue value) => [
+    if (value.forDay != null)
+      WholeWordText(
+        'For ${MaterialLocalizations.of(context).formatMediumDate(value.forDay!)}',
+        style: LtText.body(size: 15),
+      ),
+    if (value.previousValue != null)
+      WholeWordText(
+        'Previously: ${value.previousValue}',
+        style: LtText.body(size: 15),
+      ),
+    if (value.recordedAt != null)
+      WholeWordText(
+        'Confirmed at ${value.recordedAt}',
+        style: LtText.body(size: 15),
+      ),
+    if (value.status != null)
+      WholeWordText(
+        value.status!,
+        style: LtText.body(size: 15, weight: FontWeight.w700),
+      ),
+  ];
 }

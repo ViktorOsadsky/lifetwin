@@ -13,18 +13,26 @@ from pydantic import Field, model_validator
 from lifetwin.core.models import ApiModel, HealthProfile
 from lifetwin.onboarding.models import MascotEvent
 
-# The answers a person can ask to change. Blood pressure is one reading, so it is
-# changed as both numbers under "systolic_bp".
+# The answers a person can ask to change, in the profile's (and on-device model's) names.
+# Blood pressure is one reading, so it is changed as both numbers under "systolic_bp"
+# (the readings history keeps it). "exercise_minutes_weekly" is the older single
+# activity answer, kept until the change conversation splits a duration by pace the
+# way onboarding does; the model reads the two activity fields.
 ChangeField = Literal[
     "age",
     "sex",
     "height_cm",
     "weight_kg",
     "sleep_hours",
+    "vigorous_recreation_min_week",
+    "moderate_recreation_min_week",
+    "sedentary_min_day",
     "exercise_minutes_weekly",
     "smoking_status",
     "alcohol_drinks_weekly",
     "diabetes",
+    "hypertension_diagnosed",
+    "general_health",
     "systolic_bp",
 ]
 CHANGE_FIELDS: tuple[ChangeField, ...] = get_args(ChangeField)

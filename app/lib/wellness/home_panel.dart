@@ -111,7 +111,7 @@ class SevenDayTrend extends StatelessWidget {
                 label:
                     '${day.date.month}/${day.date.day}: ${switch (validHealthScore(day.healthScore)) {
                       final score? => 'score $score',
-                      _ => day.values.isEmpty ? 'not recorded' : 'check-in recorded, no score yet',
+                      _ => day.values.isEmpty && !day.logged ? 'not recorded' : 'check-in recorded, no score yet',
                     }}',
                 excludeSemantics: true,
                 child: Column(
@@ -128,7 +128,7 @@ class SevenDayTrend extends StatelessWidget {
                         decoration: BoxDecoration(
                           color:
                               validHealthScore(day.healthScore) != null ||
-                                  day.values.isNotEmpty
+                                  (day.logged || day.values.isNotEmpty)
                               ? LtColors.mint
                               : LtColors.trackOff,
                           border: Border.all(color: LtColors.control),
