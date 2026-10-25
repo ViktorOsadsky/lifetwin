@@ -137,12 +137,25 @@ class CheckinController extends ChangeNotifier {
   int _silentSeconds = 0;
   int _speechGen = 0;
 
+  /// A yes/no is open: the one read-back at the end ([finalReadback]), a check question
+  /// about one unusual answer ([checkQuestion]), or (weekly) the read-back of one answer.
   bool get confirming => turn?.isConfirming ?? false;
 
-  /// The read-back is Apple Health's value: label the buttons "Looks right" / "Not quite".
-  bool get confirmingHealth => confirming && (turn?.fromHealth ?? false);
+  /// Quick and daily: the one read-back of every answer, at the end. [confirm] saves them
+  /// all; [change] then the person's words ("my sleep was 6 hours") correct one.
+  bool get finalReadback => turn?.isFinalReadback ?? false;
+
+  /// Quick and daily: "Did I hear 15 hours of sleep? ... Is that right?" mid check-in.
+  bool get checkQuestion => turn?.isCheckQuestion ?? false;
+
+  /// The answers heard so far and not saved yet, in the server's field names.
+  Map<String, dynamic> get heardAnswers => turn?.pending ?? const {};
+
+  /// Apple Health's value is offered (quick: in the question; weekly never): label the
+  /// buttons "Looks right" ([confirm]) / "Not quite" ([change]).
+  bool get confirmingHealth => (turn?.offersHealthValue ?? false) || (confirming && (turn?.fromHealth ?? false));
   bool get canRetry => _retry != null;
-  bool get canGoBack => turn != null && !confirming && !emergency && (turn!.doneFields.isNotEmpty);
+  bool get canGoBack => turn != null && (!confirming || finalReadback) && !emergency && (turn!.doneFields.isNotEmpty);
   bool get canHearAgain => voiceUsable && mascotLine.isNotEmpty && !typing && phase != CheckinPhase.interpreting;
 
   /// "Question N of M" for the open question; the activity's follow-up counts with it.
@@ -392,15 +405,19 @@ class CheckinController extends ChangeNotifier {
     await submitTyped(text);
   }
 
-  /// "Yes, that's right" ("Looks right" for Apple Health) to the read-back.
+  /// "Yes, that's right" to the read-back (at the end, a check question, or weekly one
+  /// answer), or "Looks right" to Apple Health's offered value.
   Future<void> confirm() async {
-    if (!confirming) return;
+    if (!confirming && !confirmingHealth) return;
     await _button('confirm');
   }
 
-  /// "No, let me fix it": the next answer replaces the one read back. Sends nothing.
+  /// "No, let me fix it": the next answer is sent as `"no, <answer>"` and replaces the one
+  /// read back (at the end: "no, my sleep was 6 hours" changes that answer). Sends nothing.
   Future<void> change() async {
-    if (_busy || !confirming || (phase != CheckinPhase.idle && phase != CheckinPhase.speaking)) return;
+    if (_busy || !(confirming || confirmingHealth) || (phase != CheckinPhase.idle && phase != CheckinPhase.speaking)) {
+      return;
+    }
     await _stopSpeech();
     _set(() {
       correcting = true;
@@ -499,7 +516,7 @@ class CheckinController extends ChangeNotifier {
     final state = turn!.state;
     // After "No, let me fix it", a reply is the right answer for the read-back; the
     // server reads "no, <answer>" as a correction.
-    final words = confirming && correcting ? 'no, $text' : text;
+    final words = (confirming || confirmingHealth) && correcting ? 'no, $text' : text;
     await _send(
       () => guide.turn(action: 'reply', state: state, text: words, fromTranscript: fromTranscript).timeout(_turnLimit),
     );

@@ -294,7 +294,7 @@
     },
     "QuickSuggestions": {
       "additionalProperties": false,
-      "description": "Apple Health values for the quick check-in, read on the phone and not yet\nconfirmed. Mochi reads each back (\"Looks right?\"); nothing is kept without a yes.",
+      "description": "Apple Health values for the quick check-in, read on the phone and not yet\nconfirmed. Mochi offers each in its question; nothing is kept without the final yes.",
       "properties": {
         "activity_minutes": {
           "anyOf": [
@@ -346,6 +346,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "age": {
+      "anyOf": [
+        {
+          "maximum": 120,
+          "minimum": 18,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Age"
+    },
     "kind": {
       "enum": [
         "daily",

@@ -152,7 +152,7 @@ QUESTIONS: dict[CheckinKind, dict[CheckinField, dict[str, str]]] = {
         },
         "exercise_minutes_today": {
             "ask": (
-                "Did you move or exercise today, like a walk or some gardening? "
+                "Did you move or exercise today, like a walk or a bike ride? "
                 "About how many minutes?"
             ),
             "again": (
@@ -209,11 +209,11 @@ QUESTIONS: dict[CheckinKind, dict[CheckinField, dict[str, str]]] = {
         },
         "moderate_recreation_min_week": {
             "ask": (
-                "And easier activity this week, like gentle walks, gardening or housework? "
+                "And easier activity this week, like gentle walks or housework? "
                 "About how many minutes, all together?"
             ),
             "follow": (
-                "And easier activity this week, like gentle walks, gardening or housework? "
+                "And easier activity this week, like gentle walks or housework? "
                 "About how many minutes, all together?"
             ),
         },
@@ -273,7 +273,9 @@ QUESTIONS: dict[CheckinKind, dict[CheckinField, dict[str, str]]] = {
             "again_none": (
                 "Last time you hardly slept at all. How about last night? About how many hours?"
             ),
-            "health": "Apple Health says you slept about {value} last night. Looks right?",
+            "health": (
+                "Apple Health says you slept about {value} last night. Does that sound right?"
+            ),
         },
         "vigorous_recreation_min": {
             "ask": (
@@ -296,9 +298,9 @@ QUESTIONS: dict[CheckinKind, dict[CheckinField, dict[str, str]]] = {
             ),
         },
         "moderate_recreation_min": {
-            "ask": "And anything easier {day}, like an easy walk or pottering about? About how long?",
+            "ask": "And anything easier {day}, like an easy walk or some housework? About how long?",
             "follow": (
-                "And anything easier {day}, like an easy walk or pottering about? About how long?"
+                "And anything easier {day}, like an easy walk or some housework? About how long?"
             ),
         },
         "sedentary_min_day": {
@@ -322,7 +324,7 @@ QUESTIONS: dict[CheckinKind, dict[CheckinField, dict[str, str]]] = {
             ),
             "health": (
                 "One more, only if you like. Yesterday was a bit of a blank, but Apple Health "
-                "says you slept about {value} the night before. Looks right?"
+                "says you slept about {value} the night before. Does that sound right?"
             ),
         },
     },
@@ -337,7 +339,7 @@ HELP: dict[CheckinKind, dict[CheckinField, str]] = {
         ),
         "exercise_minutes_today": (
             "I'm asking how many minutes you moved on purpose today, like walking, swimming "
-            'or gardening. For example, "20 minutes". If you didn\'t, just say no.'
+            'or cycling. For example, "20 minutes". If you didn\'t, just say no.'
         ),
         "alcohol_drinks_yesterday": (
             "I'm asking how many drinks of beer, wine or liquor you had yesterday. One beer "
@@ -352,13 +354,13 @@ HELP: dict[CheckinKind, dict[CheckinField, str]] = {
         ),
         "vigorous_recreation_min_week": (
             "I'm asking about activity that got you out of breath this week, like brisk "
-            "walking uphill, and easier activity, like gentle walks or gardening. For "
-            'example, "an hour of hard walking and two hours of gardening". If you didn\'t, '
+            "walking uphill, and easier activity, like gentle walks. For example, "
+            '"an hour of hard walking and two hours of easy walks". If you didn\'t, '
             "say none."
         ),
         "moderate_recreation_min_week": (
-            "I'm asking about easier activity this week, like gentle walks, gardening or "
-            'housework, all together. For example, "2 hours". If you didn\'t, say none.'
+            "I'm asking about easier activity this week, like gentle walks or housework, "
+            'all together. For example, "2 hours". If you didn\'t, say none.'
         ),
         "sedentary_min_day": (
             "I'm asking how many hours you sat on a usual day this week, while awake: "
@@ -396,7 +398,7 @@ HELP["quick"] = {
         "walk for half an hour\". If you didn't, just say no."
     ),
     "moderate_recreation_min": (
-        "I'm asking about easy activity, like a gentle walk, gardening or housework. "
+        "I'm asking about easy activity, like a gentle walk or housework. "
         'For example, "30 minutes". If you didn\'t, just say no.'
     ),
     "sedentary_min_day": (
@@ -410,16 +412,17 @@ HELP["quick"] = {
     ),
 }
 
-# Closing lines: short and kind. Never advice, a prediction, a date or a score.
+# Closing lines: short, kind and encouraging. Never advice, a health claim, a prediction,
+# a date, a score or a streak.
 CLOSINGS: dict[CheckinKind, dict[str, str]] = {
     "daily": {
-        "default": "That's all for today. Thank you for checking in with me! See you tomorrow.",
+        "default": "All saved. Nice work taking a minute for yourself today! See you tomorrow.",
         "not_great": (
             "Thank you for telling me. I hope tomorrow feels a little better. See you then."
         ),
     },
     "quick": {
-        "default": "That's all. Thank you for checking in with me!",
+        "default": "All saved. Nice work taking a minute for yourself today!",
         "not_great": "Thank you for telling me. I hope the rest of the day is gentle with you.",
     },
     "weekly": {
@@ -457,3 +460,166 @@ PRIVATE_NOTE = (
     "Nothing is saved until you say yes."
 )
 HOW_ARE_YOU = "I'm a happy bear, thank you for asking! "
+
+AgeBand = Literal["younger", "older"]
+# Everyday examples by age (the app sends the profile's age; 60 and over is "older").
+# The plain QUESTIONS and HELP suit anyone. Older people keep gardening and pottering
+# about; younger people hear the gym, running, cycling, the commute and desk time. A
+# tuple rotates by date, like the sitting question, so the same words don't come daily.
+AGE_FORMS: dict[
+    AgeBand, dict[CheckinKind, dict[CheckinField, dict[str, str | tuple[str, ...]]]]
+] = {
+    "older": {
+        "daily": {
+            "exercise_minutes_today": {
+                "ask": (
+                    "Did you move or exercise today, like a walk or some gardening? "
+                    "About how many minutes?"
+                ),
+            },
+        },
+        "weekly": {
+            "moderate_recreation_min_week": {
+                "ask": (
+                    "And easier activity this week, like gentle walks, gardening or housework? "
+                    "About how many minutes, all together?"
+                ),
+                "follow": (
+                    "And easier activity this week, like gentle walks, gardening or housework? "
+                    "About how many minutes, all together?"
+                ),
+            },
+        },
+        "quick": {
+            "moderate_recreation_min": {
+                "ask": (
+                    "And anything easier {day}, like an easy walk or pottering about? "
+                    "About how long?"
+                ),
+                "follow": (
+                    "And anything easier {day}, like an easy walk or pottering about? "
+                    "About how long?"
+                ),
+            },
+        },
+    },
+    "younger": {
+        "daily": {
+            "exercise_minutes_today": {
+                "ask": (
+                    "Did you move or exercise today, like the gym, a run or cycling to work? "
+                    "About how many minutes?",
+                    "Did you get some exercise today, like a workout, a game of football or a "
+                    "walk to work? About how many minutes?",
+                ),
+            },
+        },
+        "weekly": {
+            "vigorous_recreation_min_week": {
+                "ask": (
+                    "Now activity this week. Did anything get you out of breath, like running, "
+                    "the gym or cycling hard? And easier things, like walking to work? About "
+                    "how many minutes of each?"
+                ),
+                "follow": (
+                    "And did anything this week get you out of breath, like running, the gym "
+                    "or cycling hard? About how many minutes, all together?"
+                ),
+            },
+            "moderate_recreation_min_week": {
+                "ask": (
+                    "And easier activity this week, like walking to work or an easy bike ride? "
+                    "About how many minutes, all together?"
+                ),
+                "follow": (
+                    "And easier activity this week, like walking to work or an easy bike ride? "
+                    "About how many minutes, all together?"
+                ),
+            },
+            "sedentary_min_day": {
+                "ask": (
+                    "On a usual day this week, about how many hours did you spend sitting? "
+                    "Count desk time, the commute, meals and screens."
+                ),
+            },
+        },
+        "quick": {
+            "vigorous_recreation_min": {
+                "ask": (
+                    "Did you get out and about {day}? Tell me if anything got you out of "
+                    "breath, like a run or a gym class, or if it was easy, like walking to "
+                    "work, and for about how long.",
+                    "Did you get moving {day}? Tell me if anything got you out of breath, "
+                    "like a spin class or a game of football, or if it was easy, like an easy "
+                    "bike ride, and for about how long.",
+                    "Did you get out and about {day}? Tell me if anything got you out of "
+                    "breath, like HIIT or cycling hard, or if it was easy, like a walk at "
+                    "lunch, and for about how long.",
+                ),
+                "follow": (
+                    "And did anything {day} get you out of breath, like a run, the gym or "
+                    "cycling hard? If so, for about how long?"
+                ),
+            },
+            "moderate_recreation_min": {
+                "ask": (
+                    "And anything easier {day}, like walking to work or an easy bike ride? "
+                    "About how long?"
+                ),
+                "follow": (
+                    "And anything easier {day}, like walking to work or an easy bike ride? "
+                    "About how long?"
+                ),
+            },
+            "sedentary_min_day": {
+                "ask": (
+                    "About how many hours did you spend sitting {day}? Count desk time, the "
+                    "commute, meals and screens.",
+                    "Thinking of {day}, about how many hours were you sitting down, like at a "
+                    "desk, in meetings or gaming?",
+                    "Roughly how many hours did you sit {day}, all together? Desk time, the "
+                    "commute and TV all count.",
+                ),
+            },
+        },
+    },
+}
+AGE_HELP: dict[AgeBand, dict[CheckinKind, dict[CheckinField, str]]] = {
+    "older": {
+        "daily": {
+            "exercise_minutes_today": (
+                "I'm asking how many minutes you moved on purpose today, like walking, "
+                'swimming or gardening. For example, "20 minutes". If you didn\'t, just say no.'
+            ),
+        },
+        "quick": {
+            "moderate_recreation_min": (
+                "I'm asking about easy activity, like a gentle walk, gardening or housework. "
+                'For example, "30 minutes". If you didn\'t, just say no.'
+            ),
+        },
+    },
+    "younger": {
+        "daily": {
+            "exercise_minutes_today": (
+                "I'm asking how many minutes you moved on purpose today, like the gym, a run "
+                'or cycling to work. For example, "45 minutes". If you didn\'t, just say no.'
+            ),
+        },
+        "quick": {
+            "vigorous_recreation_min": (
+                "I'm asking what you did to move about, and whether any of it got you out of "
+                'breath. For example, "45 minutes at the gym", or "an easy walk to work, 20 '
+                "minutes\". If you didn't, just say no."
+            ),
+            "moderate_recreation_min": (
+                "I'm asking about easy activity, like walking to work or an easy bike ride. "
+                'For example, "30 minutes". If you didn\'t, just say no.'
+            ),
+            "sedentary_min_day": (
+                "I'm asking how many hours you were sitting while awake: desk time, the "
+                'commute, meals, screens. For example, "about 8 hours". A close guess is fine.'
+            ),
+        },
+    },
+}

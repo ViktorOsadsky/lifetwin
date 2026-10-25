@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'checkin/checkin_reminders.dart';
 import 'customize/customize_screen.dart';
+import 'demo/demo_seed.dart';
 import 'agentic_routes.dart';
 import 'documents/document_screen.dart';
 import 'documents/document_extract.dart';
@@ -83,7 +84,7 @@ class _LifeTwinAppState extends State<LifeTwinApp> {
   late final VoiceOnboardingController _controller = widget.controller ?? _live(_api);
   // Loaded once, at startup.
   late final Future<TwinRepository> _twin =
-      widget.twin ?? TwinRepository.open(reminders: CheckinReminders(LocalNotificationPort()));
+      widget.twin ?? openTwin(reminders: CheckinReminders(LocalNotificationPort()));
   late final ForecastClient _forecast =
       widget.forecastClient ?? OnDeviceForecastClient(_twin, modelInputs: () => _controller.modelInputs);
 

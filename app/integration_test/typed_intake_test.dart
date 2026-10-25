@@ -198,16 +198,16 @@ void main() {
   testWidgets('the Skip button moves past a question, and Go back reopens it', (t) async {
     await startTyped(t);
     await hideKeyboard(t);
-    expect(find.text('Question 1 of 11'), findsOneWidget);
+    expect(find.text('Question 1 of 12'), findsOneWidget);
     expect(find.text('Go back'), findsNothing);
     await tapText(t, 'Skip this question');
     await waitForReply(t, find.textContaining(sexQuestion));
     await hideKeyboard(t);
-    expect(find.text('Question 2 of 11'), findsOneWidget);
+    expect(find.text('Question 2 of 12'), findsOneWidget);
     await tapText(t, 'Go back');
     await waitForReply(t, find.textContaining('go back to your age'));
     await hideKeyboard(t);
-    expect(find.text('Question 1 of 11'), findsOneWidget);
+    expect(find.text('Question 1 of 12'), findsOneWidget);
   });
 
   testWidgets('"skip" typed moves past a question', (t) async {

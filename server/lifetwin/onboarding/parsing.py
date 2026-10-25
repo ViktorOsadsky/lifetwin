@@ -515,6 +515,26 @@ def _canonical(text: str) -> str:
     s = re.sub(r"\b(?:a )?quarter (?:of an )?hour\b", "15 minute", s)
     s = re.sub(r"\b3 quarters of an hour\b", "45 minute", s)
     s = re.sub(r"\ban hour\b", "1 hour", s)
+    # Texting shorthand: "7h", "45m" stay units below; laughter carries nothing;
+    # "5ish", "like 5", "like an hour" are estimates, read back as "about".
+    s = re.sub(r"(?<=\d) h\b", " hour", s)
+    s = re.sub(r"\b(?:lol|lmao|lmfao|rofl|haha\w*|hehe\w*)\b", " ", s)
+    s = re.sub(r"\b(?:tbh|ngl)\b", " to be honest ", s)
+    s = re.sub(r"\bidk\b", "i don't know", s)
+    s = re.sub(r"(?<![\d.])(\d+(?:\.\d+)?) ish\b", r"about \1", s)
+    s = re.sub(
+        r"(?<!\bi'd )(?<!\bwould )(?<!\bi )(?<!\bwe )(?<!\byou )(?<!\bthey )(?<!\bfeel )"
+        r"(?<!\bmore )(?<!\bless )\blike (?=\d)",
+        "about ",
+        s,
+    )
+    # "15 minutes each way" is 30 minutes all together.
+    s = re.sub(
+        r"(?<![\d.])(\d+(?:\.\d+)?) (minutes?|mins?|hours?|hrs?)((?: [a-z]+){0,3}?) "
+        r"(?:each way|each direction|both ways)\b",
+        lambda m: f"{float(m.group(1)) * 2:g} {m.group(2)}{m.group(3)}",
+        s,
+    )
     s = re.sub(r"(\d+(?:\.\d+)?) (hours?|hrs?) and a half\b", lambda m: _half(m, 0.5) + " hour", s)
     s = re.sub(r"(\d+) and (?:a )?half\b", lambda m: _half(m, 0.5), s)
     s = re.sub(r"(\d+) and a quarter\b", lambda m: _half(m, 0.25), s)
@@ -1827,14 +1847,24 @@ def _grammar(field: str, period: str | None):
     return NUMERIC[field]
 
 
+BARE_NO = re.compile(r"^(?:no|nope|nah|not really|not at all|no i don't|no i do not)$")
+
+
+def _activity(text: str, today: date) -> Found:
+    """Minutes a week of one kind of activity: a bare "no" answers "how many?" with none."""
+    if BARE_NO.fullmatch(text.strip(" .!,")):
+        return [0], [(0, len(text))]
+    return _exercise(text, today)
+
+
 NUMERIC = {
     "age": _age,
     "height_cm": _height,
     "weight_kg": _weight,
     "sleep_hours": _sleep,
     "exercise_minutes_weekly": _exercise,
-    "moderate_recreation_min_week": _exercise,
-    "vigorous_recreation_min_week": _exercise,
+    "moderate_recreation_min_week": _activity,
+    "vigorous_recreation_min_week": _activity,
     "sedentary_min_day": _sitting,
     "alcohol_drinks_weekly": _alcohol,
 }
@@ -2824,7 +2854,17 @@ def parse_reply(
     # One measurement may contain commas or "and" ("5 feet, 10 inches").
     whole = parse_value(field, text, today=today, period=period)
     split = re.sub(SEX_AND_NUMBER, lambda m: (m.group(1) or m.group(2)) + ", ", text, flags=re.I)
-    parts = [part for part in re.split(r"[;,]|\s+and\s+", split, flags=re.I) if part.strip()]
+    # "an hour and a half", "an hour and fifteen minutes" are one duration, not two parts.
+    parts = [
+        part
+        for part in re.split(
+            r"[;,]|\s+and\s+(?!(?:a\s+)?(?:half|quarter)\b|three\s+quarters\b|"
+            r"[\w-]+(?:\s+[\w-]+)?\s+min)",
+            split,
+            flags=re.I,
+        )
+        if part.strip()
+    ]
     labeled = any(re.fullmatch(LABELED, part, re.I) for part in parts)
     own = [part for part in parts if not _others(part)]
     # "I weigh about the same as my wife, 150": a value set against someone else's is
