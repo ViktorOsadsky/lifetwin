@@ -61,6 +61,17 @@ provider, proposes an exact quoted span, and passes the deterministic parser
 before a confirmation. It never writes confirmed health inputs on the provider's
 authority.
 
+Yes/no replies (memory consent, the Apple Health and missing-answer offers,
+read-backs and changes) go through `intent.ts`, a port of the server's
+`lifetwin/core/intent.py`. Its lexicon, questions and Claude prompt are exported
+to `intent-data.json` by `scripts/export_edge_intent.py`, which also writes the
+server's 187-reply matrix to `contracts/fixtures/yes-no-intent.json`;
+`intent.test.ts` requires the same reading on every row. Claude is asked only
+when the rules are unsure, with `provider_consent` and
+`outside_ai_consent.claude`, never for the memory question and never to read a
+number. Conversation turns use `CONVERSATION_PROVIDER` (blank means Claude when
+`ANTHROPIC_API_KEY` is set).
+
 Requests and responses use the existing 29 JSON schemas. Ordinary bodies are
 limited to 32 KiB and document bodies to 384 KiB, with a five-second body
 deadline. Whole-PDF JSON is capped at 14,000,000 bytes (10 MiB decoded, 20

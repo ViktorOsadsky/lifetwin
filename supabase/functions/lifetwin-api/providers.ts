@@ -41,6 +41,34 @@ export function selectedProvider(config: Config): "muse" | "claude" {
     : "muse";
 }
 
+/**
+ * Owner ruling (2026-10-25): conversation turns (onboarding, check-in, change) are read
+ * by Claude once it is set up, whatever LLM_PROVIDER or PERSONALIZE_PROVIDER say:
+ * CONVERSATION_PROVIDER, blank meaning "claude" with ANTHROPIC_API_KEY, else "muse"
+ * (server/lifetwin/core/config.py). "local" makes no model call.
+ */
+export function conversationProvider(
+  config: Config,
+): "claude" | "muse" | "local" {
+  const named = (config.CONVERSATION_PROVIDER ?? "").trim().toLowerCase();
+  if (named === "claude" || named === "muse" || named === "local") return named;
+  return (config.ANTHROPIC_API_KEY ?? "").trim() ? "claude" : "muse";
+}
+
+/**
+ * The config for a conversation turn's model calls, its provider as PERSONALIZE_PROVIDER.
+ * "muse" is the shared AI helper per LLM_PROVIDER, as on the server.
+ */
+export function conversationConfig(config: Config): Config {
+  return {
+    ...config,
+    PERSONALIZE_PROVIDER: conversationProvider(config) === "claude" ||
+        config.LLM_PROVIDER === "anthropic"
+      ? "claude"
+      : "muse",
+  };
+}
+
 export function providerInfo(config: Config) {
   const provider = selectedProvider(config);
   const contributor = provider === "muse" &&
@@ -140,6 +168,7 @@ export async function completeJSON(
   user: string,
   schema: Record<string, unknown>,
   fetcher: Fetcher = fetch,
+  limits: { timeoutMs?: number; maxTokens?: number } = {},
 ): Promise<unknown | null> {
   const info = providerInfo(config);
   if (!info.configured) return null;
@@ -158,7 +187,7 @@ export async function completeJSON(
       {
         method: "POST",
         redirect: "error",
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(limits.timeoutMs ?? 6000),
         headers: claude
           ? {
             "content-type": "application/json",
@@ -173,7 +202,7 @@ export async function completeJSON(
           claude
             ? {
               model: config.CLAUDE_MODEL || "claude-haiku-5-5",
-              max_tokens: 800,
+              max_tokens: limits.maxTokens ?? 800,
               system: [{
                 type: "text",
                 text: system,
@@ -188,7 +217,7 @@ export async function completeJSON(
             }
             : {
               model: config.LLM_MODEL,
-              max_completion_tokens: 800,
+              max_completion_tokens: limits.maxTokens ?? 800,
               messages: [{ role: "system", content: system }, {
                 role: "user",
                 content: user,
