@@ -94,9 +94,9 @@ void main() {
 
   double top(WidgetTester t, Finder f) => t.getTopLeft(f.first).dy;
 
-  testWidgets('order: quiz above the score card; Experiment below Check in and the largest button', (t) async {
+  testWidgets('order: quiz icon in the top row, above the score card; Experiment below Check in and the largest button', (t) async {
     await pumpHome(t);
-    final quiz = find.text('Quiz · play');
+    final quiz = find.byTooltip('Quiz');
     final card = find.byType(HomeWellnessPanel);
     final checkIn = find.text('Check in');
     final experiment = find.text('Experiment with your twin');
@@ -117,7 +117,7 @@ void main() {
     // Experiment is the biggest action after Check in: taller than Check in, far larger than the quiz chip.
     double h(Finder f) => t.getSize(find.ancestor(of: f, matching: find.byType(LipButton)).first).height;
     expect(h(experiment), greaterThanOrEqualTo(h(checkIn)));
-    expect(t.getSize(find.ancestor(of: quiz, matching: find.byType(Container)).first).height, lessThan(h(experiment)));
+    expect(t.getSize(quiz).height, lessThan(h(experiment)));
     // Everything fits: Home does not scroll at 390 x 844.
     expect(t.state<ScrollableState>(find.byType(Scrollable).first).position.maxScrollExtent, 0);
     // A picture for review.
@@ -132,22 +132,27 @@ void main() {
   });
 
   for (final (w, h, top, bottom) in [(390.0, 844.0, 0.0, 0.0), (402.0, 874.0, 62.0, 34.0)]) {
-  testWidgets('Mochi has a clear window and the quiz chip is the topmost element at $w x $h (top inset $top)', (t) async {
+  testWidgets('Mochi has a clear window and the quiz icon is in the topmost row at $w x $h (top inset $top)', (t) async {
     await pumpHome(t, width: w, height: h, topInset: top, bottomInset: bottom);
     await loadArt(t);
-    // The quiz chip is the first element, one inset (safe area + 8) from the top; gaps below are 8.
-    final quizBox = t.getRect(find.ancestor(of: find.text('Quiz · play'), matching: find.byType(Semantics)).first);
+    // The quiz icon sits in the header row, which is the first row: one inset (safe area + 8) from the
+    // top, and the quiz is the leftmost of the header icons. The gap to the score card is 8.
+    final quizBox = t.getRect(find.byTooltip('Quiz'));
     expect(quizBox.top, top + 8);
-    final header = t.getRect(find.byTooltip('Settings'));
-    expect(header.top, greaterThanOrEqualTo(quizBox.bottom));
-    expect(t.getTopLeft(find.byType(HomeWellnessPanel)).dy - header.bottom, lessThanOrEqualTo(8.5));
-    expect(top, lessThan(quizBox.top));
+    expect(quizBox.width >= 48 && quizBox.height >= 48, isTrue, reason: '48 pt hit area');
+    for (final other in ['Add band', 'My history', 'Settings']) {
+      expect(quizBox.center.dx, lessThan(t.getRect(find.byTooltip(other)).center.dx), reason: 'quiz is first: $other');
+      expect(quizBox.top, lessThanOrEqualTo(t.getRect(find.byTooltip(other)).top));
+    }
+    expect(t.getTopLeft(find.byType(HomeWellnessPanel)).dy - quizBox.bottom, lessThanOrEqualTo(8.5));
+    expect(find.bySemanticsLabel('Quiz. Play a round.'), findsOneWidget);
+    expect(find.text('Quiz · play'), findsNothing);
     final twin = t.getRect(find.byType(TwinSprite).first);
     // The sprite box has transparent margins: test against the body (the middle of the box).
     final body = Rect.fromCenter(center: twin.center, width: twin.width * 0.5, height: twin.height * 0.7);
     Rect box(Finder f, Type within) => t.getRect(find.ancestor(of: f.first, matching: find.byType(within)).first);
     final boxes = <String, Rect>{
-      'quiz chip': box(find.text('Quiz · play'), Semantics),
+      'quiz icon': t.getRect(find.byTooltip('Quiz')),
       'score card': t.getRect(find.byType(HomeWellnessPanel)),
       'check in': box(find.text('Check in'), LipButton),
       'today row': box(find.textContaining('Today', findRichText: true), WellnessCard),
@@ -163,7 +168,7 @@ void main() {
         final bnd = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
         final img = await bnd.toImage(pixelRatio: 2);
         final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
-        File('${shots.path}/home_top_17pro.png').writeAsBytesSync(bytes!.buffer.asUint8List());
+        File('${shots.path}/home_quiz_icon.png').writeAsBytesSync(bytes!.buffer.asUint8List());
       });
     }
   });
