@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LifeTwin art preview</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="art.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 400 16px/1.4 var(--font-body); }
+  main { max-width: 1280px; margin: 0 auto; padding: var(--s24) var(--s20) var(--s40); }
+  h1 { font: 800 34px/1.2 var(--font-display); margin: 0 0 var(--s8); }
+  h2 { font: 700 22px/1.3 var(--font-display); margin: var(--s40) 0 var(--s12); }
+  p.note { color: var(--ink-2); margin: 0; max-width: 62ch; }
+  .grid { display: grid; gap: var(--s16); grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .cell { margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--s8); padding: var(--s12) var(--s8); border-radius: var(--r-small); background: var(--sheet); }
+  .cell figcaption { font: 500 12px/16px var(--font-body); color: var(--ink-2); text-align: center; }
+  .cell svg { width: 110px; }
+  .cell.pip svg, .cell.ball svg { width: 96px; }
+  .habs { display: grid; gap: var(--s24); grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .habs.wide { grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); }
+  .habs figure { margin: 0; }
+  .habs figcaption { font: 500 12px/16px var(--font-body); color: var(--ink-2); margin-top: var(--s4); }
+  .habs svg { width: 100%; height: auto; }
+  .icons { display: grid; gap: var(--s12); grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+  .icons .cell { padding: var(--s12) var(--s4); color: var(--blue-600); }
+  .icons svg { width: 28px; }
+  .row { display: flex; gap: var(--s24); align-items: center; flex-wrap: wrap; }
+  .row svg { width: 90px; }
+  .row .hearts svg { width: 110px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>LifeTwin art preview</h1>
+  <p class="note">Every variant of every art.js function on the page ground. Web port of the Flutter painters.</p>
+  <div id="root"></div>
+</main>
+<script type="module">
+  import { twinSVG, pipSVG, magicBallSVG, habitatSVG, heartsSVG, iconSVG, iconNames } from './art.js';
+  const cell = (svg, cap, cls = '') => `<figure class="cell ${cls}">${svg}<figcaption>${cap}</figcaption></figure>`;
+  const sect = (h, body, note = '') => `<h2>${h}</h2>${note ? `<p class="note">${note}</p><br>` : ''}${body}`;
+  const moods = ['happy', 'calm', 'tired', 'thinking', 'sick', 'recovering'];
+  const hairs = ['short', 'bob', 'curly'];
+  const hairColors = ['black', 'brown', 'auburn', 'blonde', 'silver'];
+  const tops = ['blue', 'green', 'sun', 'sky', 'slate'];
+  let html = '';
+
+  html += sect('Twin: moods', `<div class="grid">${moods.map((m) => cell(twinSVG({ mood: m, title: `Twin, ${m}` }), m)).join('')}</div>`);
+  html += sect('Twin: skin 1 to 5', `<div class="grid">${[1, 2, 3, 4, 5].map((s) => cell(twinSVG({ skin: s, hairColor: ['black', 'brown', 'auburn', 'blonde', 'silver'][s - 1], top: tops[s - 1] }), `skin ${s}`)).join('')}</div>`);
+  html += sect('Twin: hair style x colour', `<div class="grid">${hairs.flatMap((hr) => hairColors.map((c) => cell(twinSVG({ hair: hr, hairColor: c, skin: 2 }), `${hr}, ${c}`))).join('')}</div>`);
+  html += sect('Twin: tops and extras', `<div class="grid">${tops.map((t) => cell(twinSVG({ top: t, skin: 3 }), `top ${t}`)).join('')}${['glasses', 'headband'].map((x) => cell(twinSVG({ extra: x, hair: 'bob', hairColor: 'auburn', skin: 4 }), x)).join('')}${['wave', 'cheer', 'huddle', 'reach'].map((p) => cell(twinSVG({ pose: p, skin: 2, hair: 'curly' }), `pose ${p}`)).join('')}</div>`);
+  html += sect('Twin: moods with curly hair and glasses (the widest silhouette)', `<div class="grid">${moods.map((m) => cell(twinSVG({ mood: m, hair: 'curly', extra: 'glasses', skin: 5, hairColor: 'silver' }), m)).join('')}</div>`);
+  html += sect('Pip', `<div class="grid">${['idle', 'listening', 'thinking', 'speaking', 'celebrating'].map((s) => cell(pipSVG({ state: s, shadow: true }), s, 'pip')).join('')}</div>`);
+  html += sect('Magic ball', `<div class="grid">${[0, 0.5, 1].map((g) => cell(magicBallSVG({ glow: g }), `glow ${g}`, 'ball')).join('')}</div>`);
+  html += sect('Game health hearts', `<div class="row">${[0, 1, 2, 3].map((v) => `<div class="hearts">${heartsSVG({ value: v, max: 3 })}</div>`).join('')}</div>`);
+  html += sect('Icons', `<div class="icons">${iconNames.map((n) => cell(iconSVG(n), n)).join('')}</div>`);
+
+  const tiers = ['thriving', 'good', 'steady', 'resting'];
+  const moodForTier = { thriving: 'happy', good: 'calm', steady: 'thinking', resting: 'tired' };
+  html += sect('Habitat: room', `<div class="habs">${tiers.map((t) => `<figure>${habitatSVG({ tier: t, aspect: 'room', title: `Habitat, ${t}`, actors: [
+    { svg: twinSVG({ mood: moodForTier[t], skin: 2, hair: 'bob', hairColor: 'brown', top: 'green' }), x: 0.4, width: 150 },
+    { svg: pipSVG({ state: t === 'thriving' ? 'celebrating' : 'idle' }), x: 0.74, width: 90, lift: 12, footprint: 60 }] })}<figcaption>${t}</figcaption></figure>`).join('')}</div>`,
+    'Sky fades into the page ground at the top and the meadow feathers into it at the bottom.');
+  html += sect('Habitat: wide', `<div class="habs wide">${tiers.map((t) => `<figure>${habitatSVG({ tier: t, aspect: 'wide', actors: [
+    { svg: twinSVG({ mood: moodForTier[t] }), x: 0.5, width: 170 }] })}<figcaption>${t}</figcaption></figure>`).join('')}</div>`);
+  html += sect('Habitat: sick twin, recovering twin, bare scene', `<div class="habs">${[
+    habitatSVG({ tier: 'steady', actors: [{ svg: twinSVG({ mood: 'sick', skin: 1, hair: 'short' }), x: 0.5, width: 190 }] }),
+    habitatSVG({ tier: 'good', actors: [{ svg: twinSVG({ mood: 'recovering', skin: 3, hair: 'curly' }), x: 0.5, width: 190 }] }),
+    habitatSVG({ tier: 'resting' })].map((s) => `<figure>${s}</figure>`).join('')}</div>`);
+
+  document.getElementById('root').innerHTML = html;
+</script>
+</body>
+</html>

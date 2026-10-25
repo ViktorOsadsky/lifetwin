@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LifeTwin</title>
+<meta name="description" content="A pet game with a digital twin of you. Chat with Pip, try changes on your twin, and keep play and health apart.">
+<meta name="theme-color" content="#F4F8FF">
+<script>document.documentElement.classList.add('js');</script>
+<link rel="preload" href="shared/fonts/BricolageGrotesque-Variable.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="shared/tokens.css">
+<link rel="stylesheet" href="shared/art.css">
+<link rel="stylesheet" href="landing.css">
+<noscript><style>.js .in, .in { opacity: 1 !important; animation: none !important; }</style></noscript>
+</head>
+<body>
+
+<main>
+  <!-- First viewport: the habitat, the twin, Pip and the four jars -->
+  <section class="hero" aria-labelledby="hero-h">
+    <div class="sky in" style="--d:0ms" data-slot="hero-habitat" aria-hidden="true"></div>
+
+    <div class="bar">
+      <a class="brand in" style="--d:120ms" href="#top" aria-label="LifeTwin home">
+        <span class="brand-pip" data-slot="brand-pip"></span>
+        <span class="brand-name">LifeTwin</span>
+      </a>
+      <a class="link link-bar in" style="--d:240ms" href="demo/">Try the demo<span class="ic" data-icon="chevronRight"></span></a>
+    </div>
+
+    <div class="copy">
+      <h1 id="hero-h"><span class="line in" style="--d:220ms">A pet that</span> <span class="line in" style="--d:300ms">keeps your</span> <span class="line in" style="--d:380ms">health honest.</span></h1>
+      <p class="sub in" style="--d:520ms">Chat with Pip. Try changes on your twin.</p>
+      <div class="cta in" style="--d:640ms">
+        <a class="btn btn-primary" href="demo/">Try the demo</a>
+        <a class="link" href="https://github.com/ViktorOsadsky/lifetwin" rel="noopener">See the code<span class="ic" data-icon="chevronRight"></span></a>
+      </div>
+    </div>
+
+    <div class="actors">
+      <div class="tshadow in" style="--d:480ms"></div>
+      <div class="actor twin">
+        <div class="pop in" style="--d:520ms"><div class="lean" id="twin-lean"><div class="stack" id="twin-stack"></div></div></div>
+      </div>
+      <div class="actor pip">
+        <div class="pop in" style="--d:640ms">
+          <div class="bubble" id="bubble" aria-hidden="true"><span id="bubble-text">Hi! Pick a jar.</span></div>
+          <div class="lean"><div class="stack" id="pip-stack"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="jars" aria-label="The four jars">
+      <a class="jar" href="#looks" data-jar="looks" style="--x:15%;--y:86%;--w:clamp(118px,10vw,150px);--i:0">
+        <span class="jar-fig in" style="--d:760ms"><span class="jar-art" data-jar-art="looks"></span><span class="jar-name">Looks</span></span>
+      </a>
+      <a class="jar" href="#health" data-jar="health" style="--x:30%;--y:94%;--w:clamp(130px,11.5vw,168px);--i:1">
+        <span class="jar-fig in" style="--d:880ms"><span class="jar-art" data-jar-art="health"></span><span class="jar-name">Game health</span></span>
+      </a>
+      <a class="jar" href="#answers" data-jar="answers" style="--x:77.5%;--y:94%;--w:clamp(130px,11.5vw,168px);--i:2">
+        <span class="jar-fig in" style="--d:1000ms"><span class="jar-art" data-jar-art="answers"></span><span class="jar-name">Your answers</span></span>
+      </a>
+      <a class="jar" href="#experiments" data-jar="experiments" style="--x:91.5%;--y:86%;--w:clamp(118px,10vw,150px);--i:3">
+        <span class="jar-fig in" style="--d:1120ms"><span class="jar-art" data-jar-art="experiments"></span><span class="jar-name">Experiments</span></span>
+      </a>
+    </nav>
+  </section>
+
+  <!-- Looks -->
+  <section class="sec sec-stack" id="looks" aria-labelledby="looks-h">
+    <div class="wrap">
+      <div class="head">
+        <h2 id="looks-h">Looks are just looks.</h2>
+        <p class="lede">Looks never change a number.</p>
+      </div>
+      <div class="looks-row" data-slot="looks-art"></div>
+      <p class="note"><span class="ic" data-icon="info"></span>Example numbers · linked, not proven</p>
+    </div>
+  </section>
+
+  <!-- Game health -->
+  <section class="sec sec-health" id="health" aria-labelledby="health-h">
+    <div class="wrap split split-art-first">
+      <div class="health-art" data-slot="health-art"></div>
+      <div class="head">
+        <h2 id="health-h">Wrong answers mean sniffles.</h2>
+        <p class="lede">Only game hearts change. Never your answers.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Your answers -->
+  <section class="sec sec-answers" id="answers" aria-labelledby="answers-h">
+    <div class="wrap split">
+      <div class="head">
+        <h2 id="answers-h">You always say yes.</h2>
+        <p class="lede">Answers change only with new real measurements.</p>
+      </div>
+      <div class="answers-art" data-slot="answers-art"></div>
+    </div>
+  </section>
+
+  <!-- Experiments -->
+  <section class="sec sec-stack sec-exp" id="experiments" aria-labelledby="exp-h">
+    <div class="wrap">
+      <div class="head head-end">
+        <h2 id="exp-h">Test on a copy.</h2>
+        <p class="lede">Reset any time. Your real answers stay put.</p>
+      </div>
+      <div class="exp-art" data-slot="exp-art"></div>
+      <p class="note note-end"><span class="ic" data-icon="info"></span>Example numbers · linked, not proven</p>
+    </div>
+  </section>
+
+  <!-- Closing band -->
+  <section class="close" aria-labelledby="close-h">
+    <div class="close-art" data-slot="close-habitat" aria-hidden="true"></div>
+    <div class="close-copy">
+      <h2 id="close-h">Meet your twin.</h2>
+      <p class="lede">Try the demo. Pip is waiting.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="demo/">Try the demo</a>
+        <a class="link" href="https://github.com/ViktorOsadsky/lifetwin" rel="noopener">See the code<span class="ic" data-icon="chevronRight"></span></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>Made at Cal Hacks 13.</p>
+  <p>Voice runs in the phone app.</p>
+</footer>
+
+<script type="module" src="landing.js"></script>
+</body>
+</html>
