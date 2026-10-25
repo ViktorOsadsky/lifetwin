@@ -139,6 +139,7 @@ Future<void> openCheckIn(BuildContext context, {required CheckInKind kind}) {
     ownsSpeech: false,
     store: TwinCheckinStore(scope.repository),
     reminders: scope.repository.reminders,
+    replanReminders: scope.repository.replanReminders,
     healthSamples: scope.healthSamples,
     clock: scope.now,
     voiceUsable: scope.voiceUsable?.call() ?? false,

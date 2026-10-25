@@ -98,6 +98,22 @@ void main() {
     expect((doc['readings'] as List).length, 4);
   });
 
+  test('past 40 document readings the newest are kept, not the oldest', () async {
+    await repo.applyMemoryConsent(true);
+    // 25 more blood pressure documents (2 readings each), newest last: 54 readings in all.
+    for (var i = 1; i <= 25; i++) {
+      clock = DateTime(2026, 10, 26, 9, i);
+      await repo.recordDocumentReadings([
+        cand('blood_pressure', '${100 + i}/70', unit: 'mmHg', date: DateTime(2026, 10, i)),
+      ]);
+    }
+    final readings = (shown(coachContext(repo, now: clock))['readings'] as List).cast<Map<String, dynamic>>();
+    expect(readings, hasLength(40));
+    final systolic = [for (final r in readings) if (r['field'] == 'systolic_bp') r['value']];
+    expect(systolic, contains(125)); // the newest document
+    expect(systolic, isNot(contains(138))); // the oldest one dropped
+  });
+
   test('Delete my data clears it', () async {
     await repo.applyMemoryConsent(true);
     await repo.deleteMyData();

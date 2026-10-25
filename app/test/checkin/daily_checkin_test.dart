@@ -14,7 +14,11 @@ import '../support/app_fonts.dart';
 
 import 'package:lifesim/voice/fakes.dart';
 
+import 'package:lifesim/checkin/checkin_models.dart';
+import 'package:lifesim/checkin/checkin_reminders.dart';
+
 import '../checkin_controller_test.dart' show FakeCheckinGuide;
+import '../checkin_reminders_test.dart' show FakePort;
 import 'readback_flow_test.dart' show ContractGuide;
 
 const profile = {
@@ -148,6 +152,34 @@ void main() {
         }
       },
     );
+
+    testWidgets('finishing a check-in keeps the weekly reminder and a pending Remind me later', (t) async {
+      final port = FakePort();
+      repo = TwinRepository(
+        model: model,
+        store: await TwinStore.open(MemoryBackend()),
+        clock: () => now,
+        reminders: CheckinReminders(port),
+      );
+      await repo.saveConversationProfile(profile); // joined today, 2026-10-24
+      await repo.saveCheckinSettings(const CheckinSettings(remindersOn: true, reminderOffered: true));
+      await repo.remindLater(); // 11:00 today
+      guide = ContractGuide();
+      await pumpRoom(t);
+      await t.tap(find.text('Check in'));
+      await t.pumpAndSettle();
+      await t.enterText(find.byType(TextField), '7 hours');
+      await t.testTextInput.receiveAction(TextInputAction.send);
+      await t.pumpAndSettle();
+      await t.tap(find.text('About 6 hours'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Looks right'));
+      await t.pumpAndSettle();
+      expect(repo.store.checkins, hasLength(1));
+      // Day 7 after joining (2026-10-31) is still the weekly one, and the remind-later survives.
+      expect(port.payloads[20261031], reminderPayload(ReminderCheckin.weekly));
+      expect(port.scheduled.where((s) => s.$1 == 99).map((s) => s.$2), [DateTime(2026, 10, 24, 11)]);
+    });
 
     testWidgets('a low answer gets a warm reply with Keep going / Stop for today; Stop saves what was heard', (
       t,
