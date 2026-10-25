@@ -177,7 +177,8 @@ Map<String, dynamic>? _documentContext(TwinRepository repo, String today) {
   }
   if (readings.isEmpty && diagnoses.isEmpty) return null;
   return {
-    'readings': readings.skip(readings.length > 40 ? readings.length - 40 : 0).toList(),
+    // Newest first, so the 40 most recent are kept.
+    'readings': readings.take(40).toList(),
     'diagnoses': diagnoses.toList(),
   };
 }
